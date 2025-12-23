@@ -1,0 +1,26 @@
+# Basics directories
+node_modules
+coverage
+build
+dist
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+pnpm-error.log*
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+*.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+.next

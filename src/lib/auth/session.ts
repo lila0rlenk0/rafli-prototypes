@@ -3,17 +3,9 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import 'server-only';
 
-const SESSION_COOKIE_NAME = 'raffly-session';
-const TOKEN_COOKIE_NAME = 'raffly-token';
-
-// Cookie options
-const COOKIE_OPTIONS = {
-	httpOnly: true,
-	secure: process.env.NODE_ENV === 'production',
-	sameSite: 'lax' as const,
-	maxAge: 60 * 60 * 24 * 7, // 7 days
-	path: '/',
-};
+import { env } from '@/env/client';
+import { AUTH_COOKIES, COOKIE_OPTIONS } from './config';
+import { decodeJwt } from './jwt';
 
 // Set authentication cookies
 export async function setAuthCookies(
@@ -23,10 +15,10 @@ export async function setAuthCookies(
 	const cookieStore = await cookies();
 
 	// Store token in httpOnly cookie
-	cookieStore.set(TOKEN_COOKIE_NAME, token, COOKIE_OPTIONS);
+	cookieStore.set(AUTH_COOKIES.TOKEN, token, COOKIE_OPTIONS);
 
 	// Store user data in separate cookie (can be read client-side if needed)
-	cookieStore.set(SESSION_COOKIE_NAME, JSON.stringify(user), {
+	cookieStore.set(AUTH_COOKIES.SESSION, JSON.stringify(user), {
 		...COOKIE_OPTIONS,
 		httpOnly: false,
 	});
@@ -35,7 +27,7 @@ export async function setAuthCookies(
 // Get authentication token
 export async function getAuthToken(): Promise<string | null> {
 	const cookieStore = await cookies();
-	return cookieStore.get(TOKEN_COOKIE_NAME)?.value ?? null;
+	return cookieStore.get(AUTH_COOKIES.TOKEN)?.value ?? null;
 }
 
 // Get current session
@@ -44,11 +36,12 @@ export const getSession = cache(async (): Promise<AuthSession | null> => {
 	if (!token) return null;
 
 	try {
-		// Validate session with backend
+		// Validate session and get fresh JWT token from backend
 		const response = await fetch(
-			`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/get-session`,
+			`${env.NEXT_PUBLIC_BACKEND_URL}/api/auth/token`,
 			{
 				headers: {
+					'Content-Type': 'application/json',
 					Authorization: `Bearer ${token}`,
 				},
 				cache: 'no-store',
@@ -56,25 +49,27 @@ export const getSession = cache(async (): Promise<AuthSession | null> => {
 		);
 
 		if (!response.ok) {
-			await clearAuthCookies();
 			return null;
 		}
 
 		const data = await response.json();
+		const jwtToken = data.token;
+
+		// Decode JWT to extract user data
+		const payload = decodeJwt(jwtToken);
 
 		return {
 			user: {
-				id: data.user.id,
-				email: data.user.email,
-				emailVerified: data.user.emailVerified,
-				name: data.user.name,
-				image: data.user.image,
+				id: payload.sub || payload.id,
+				email: payload.email,
+				emailVerified: payload.emailVerified,
+				name: payload.name,
+				image: null, // JWT doesn't include image, fetch separately if needed
 			},
-			token,
-			expiresAt: data.session.expiresAt,
+			token: jwtToken,
+			expiresAt: new Date(payload.exp * 1000).toISOString(),
 		};
 	} catch {
-		await clearAuthCookies();
 		return null;
 	}
 });
@@ -84,13 +79,6 @@ export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
 	const session = await getSession();
 	return session?.user ?? null;
 });
-
-// Clear authentication cookies
-export async function clearAuthCookies(): Promise<void> {
-	const cookieStore = await cookies();
-	cookieStore.delete(TOKEN_COOKIE_NAME);
-	cookieStore.delete(SESSION_COOKIE_NAME);
-}
 
 // Require authentication (throws if not authenticated)
 export async function requireAuth(): Promise<AuthSession> {

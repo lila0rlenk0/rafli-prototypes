@@ -1,3 +1,4 @@
+import { Navbar } from '@/components/ui/navbar';
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { ReactNode } from 'react';
@@ -14,5 +15,5 @@ export default async function ProtectedLayout({
 		redirect('/sign-in');
 	}
 
-	return <>{children}</>;
+	return <Navbar>{children}</Navbar>;
 }

@@ -1,5 +1,5 @@
-import { getCurrentUser } from '@/lib/auth/session';
 import { SignOutButton } from '@/components/auth/sign-out-button';
+import { getCurrentUser } from '@/lib/auth/session';
 
 export default async function DashboardPage() {
 	const user = await getCurrentUser();
@@ -7,14 +7,14 @@ export default async function DashboardPage() {
 	return (
 		<div className="container mx-auto p-8">
 			<div className="max-w-2xl">
-				<div className="flex items-center justify-between mb-6">
+				<div className="mb-6 flex items-center justify-between">
 					<h1 className="text-3xl font-bold">Dashboard</h1>
 					<SignOutButton variant="outline" />
 				</div>
 
 				{user && (
-					<div className="bg-white rounded-lg border p-6 shadow-sm">
-						<h2 className="text-xl font-semibold mb-4">User Information</h2>
+					<div className="rounded-lg border bg-white p-6 shadow-sm">
+						<h2 className="mb-4 text-xl font-semibold">User Information</h2>
 						<div className="space-y-2">
 							<div>
 								<span className="font-medium">Name:</span> {user.name}
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
 							</div>
 							<div>
 								<span className="font-medium">User ID:</span>{' '}
-								<code className="bg-gray-100 px-2 py-1 rounded text-sm">
+								<code className="rounded bg-gray-100 px-2 py-1 text-sm">
 									{user.id}
 								</code>
 							</div>

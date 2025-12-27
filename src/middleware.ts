@@ -2,7 +2,7 @@ import { AUTH_COOKIES } from '@/lib/auth/config';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Define route patterns
-const protectedRoutes = ['/dashboard', '/profile', '/settings'];
+const protectedRoutes = ['/dashboard', '/my-raffles/create', '/profile'];
 const authRoutes = ['/sign-in', '/sign-up', '/forgot-password'];
 
 export function middleware(request: NextRequest) {

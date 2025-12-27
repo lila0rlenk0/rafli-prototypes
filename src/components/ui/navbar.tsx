@@ -33,7 +33,7 @@ export function Navbar({ children }: NavbarProps) {
 				</div>
 			</div>
 
-			<div className="mx-auto mt-10 h-[calc(100dvh-4rem)] max-w-[1200px] overflow-auto pb-10">
+			<div className="mx-auto mt-10 max-w-[1200px] overflow-auto pb-10">
 				{children}
 			</div>
 		</div>

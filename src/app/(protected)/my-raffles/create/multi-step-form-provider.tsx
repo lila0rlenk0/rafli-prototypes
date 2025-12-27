@@ -43,6 +43,8 @@ export function MultiStepFormProvider({
 			title: '',
 			description: '',
 			price: 0,
+			category: '',
+			coverImage: [],
 		},
 	});
 

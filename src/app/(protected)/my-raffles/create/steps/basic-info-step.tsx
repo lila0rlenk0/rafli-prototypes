@@ -1,9 +1,15 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import {
+	Dropzone,
+	DropzoneContent,
+	DropzoneEmptyState,
+} from '@/components/ui/dropzone';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { X } from 'lucide-react';
+import { Image as ImageIcon, X } from 'lucide-react';
+import Image from 'next/image';
 import { STEPS } from '.';
 import { useMultiStepForm } from '../multi-step-form-provider';
 
@@ -24,10 +30,15 @@ export function BasicInfoStep() {
 	const description = watch('description');
 	const price = watch('price');
 	const category = watch('category');
+	const coverImage = watch('coverImage');
 
 	// Check if any field in this step is filled
 	const hasFilledFields = Boolean(
-		title || description || (price && price > 0) || category,
+		title ||
+		description ||
+		(price && price > 0) ||
+		category ||
+		(coverImage && coverImage.length > 0),
 	);
 
 	// Check if all fields in this step are filled and valid
@@ -47,12 +58,18 @@ export function BasicInfoStep() {
 		setValue('description', '');
 		setValue('price', 0);
 		setValue('category', '');
+		setValue('coverImage', []);
 	};
 
 	// Handle continue with validation
 	const handleContinue = async () => {
 		// Trigger validation for current step fields
-		const isValid = await trigger(['title', 'description', 'price', 'category']);
+		const isValid = await trigger([
+			'title',
+			'description',
+			'price',
+			'category',
+		]);
 
 		if (isValid) {
 			nextStep();
@@ -64,13 +81,64 @@ export function BasicInfoStep() {
 			<h2 className="mb-6 text-xl font-semibold">{currentStep.title}</h2>
 
 			<div className="flex flex-col gap-2">
+				<label htmlFor="coverImage" className="font-medium">
+					Cover Image
+				</label>
+				<Dropzone
+					src={coverImage}
+					accept={{
+						'image/png': ['.png'],
+						'image/jpeg': ['.jpg', '.jpeg'],
+						'audio/mp3': ['.mp3'],
+					}}
+					maxSize={10 * 1024 * 1024}
+					maxFiles={4}
+					onDrop={acceptedFiles => {
+						setValue('coverImage', [...(coverImage || []), ...acceptedFiles]);
+					}}
+					className="w-full rounded-lg border-[#E5E5E5] bg-white hover:bg-white"
+				>
+					<DropzoneEmptyState />
+					<DropzoneContent />
+				</Dropzone>
+				{touchedFields.coverImage && errors.coverImage && (
+					<span className="text-sm text-red-500">
+						{errors.coverImage.message}
+					</span>
+				)}
+
+				<div className="grid grid-cols-4 gap-4">
+					{Array.from({ length: 4 }).map((_, index) => {
+						const file = coverImage?.[index];
+						return (
+							<div
+								key={index}
+								className="relative flex aspect-square max-h-28 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
+							>
+								{file ? (
+									<Image
+										src={URL.createObjectURL(file)}
+										alt={`Preview ${index + 1}`}
+										fill
+										className="object-contain"
+									/>
+								) : (
+									<ImageIcon className="size-6 text-gray-400" />
+								)}
+							</div>
+						);
+					})}
+				</div>
+			</div>
+
+			<div className="flex flex-col gap-2">
 				<label htmlFor="title" className="font-medium">
 					Raffle title
 				</label>
 				<Input
 					id="title"
 					type="text"
-					placeholder="Enter raffle title"
+					placeholder="Smart Watch"
 					className="border-[#E5E5E5]"
 					aria-invalid={!!errors.title}
 					aria-describedby={errors.title ? 'title-error' : undefined}

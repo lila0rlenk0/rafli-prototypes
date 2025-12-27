@@ -1,6 +1,8 @@
-import { Button } from '@/components/ui/button';
-import { Copy, X } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import Link from 'next/link';
+
+import { FormStepComponent } from './form-step-component';
+import { MultiStepFormProvider } from './multi-step-form-provider';
 
 const LEFT_PANEL_LINKS = [
 	{
@@ -49,27 +51,9 @@ export default function RafflesCreatePage() {
 				))}
 			</div>
 
-			<div className="flex w-full flex-col space-y-6">
-				<div className="flex w-full items-center justify-between">
-					<h1 className="text-4xl font-semibold">Create Raffle</h1>
-					<div className="flex items-center gap-2">
-						<Button variant="outline" disabled>
-							Preview Page
-						</Button>
-
-						<X className="size-5" />
-					</div>
-				</div>
-
-				<div className="relative h-3 w-full">
-					<div className="absolute h-3 w-full rounded-full bg-[#EEEEEE]" />
-					<div className="bg-green absolute h-3 w-[calc(30%)] rounded-full" />
-				</div>
-
-				<div className="w-full rounded-2xl bg-white p-8">
-					<h2 className="text-xl font-semibold">Lets add Basics</h2>
-				</div>
-			</div>
+			<MultiStepFormProvider>
+				<FormStepComponent />
+			</MultiStepFormProvider>
 		</div>
 	);
 }

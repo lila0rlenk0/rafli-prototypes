@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const protectedRoutes = ['/dashboard', '/my-raffles/create', '/profile'];
 const authRoutes = ['/sign-in', '/sign-up', '/forgot-password'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 	const hasToken = request.cookies.get(AUTH_COOKIES.TOKEN);
 

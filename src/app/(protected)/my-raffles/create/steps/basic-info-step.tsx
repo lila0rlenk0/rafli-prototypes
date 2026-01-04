@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import {
 	Dropzone,
 	DropzoneContent,
@@ -12,6 +13,7 @@ import { Image as ImageIcon, X } from 'lucide-react';
 import Image from 'next/image';
 import { STEPS } from '.';
 import { useMultiStepForm } from '../multi-step-form-provider';
+import { RAFFLE_CATEGORIES } from '../schema';
 
 export function BasicInfoStep() {
 	const { form, currentStep: stepIndex, nextStep } = useMultiStepForm();
@@ -187,11 +189,13 @@ export function BasicInfoStep() {
 					<label htmlFor="category" className="font-medium">
 						Category
 					</label>
-					<Input
-						id="category"
-						className="border-[#E5E5E5]"
-						placeholder="Device"
-						{...register('category')}
+					<Combobox
+						options={RAFFLE_CATEGORIES}
+						value={category}
+						onValueChange={value => setValue('category', value)}
+						placeholder="Select category"
+						searchPlaceholder="Search category..."
+						emptyText="No category found."
 					/>
 					{touchedFields.category && errors.category && (
 						<span className="text-sm text-red-500">

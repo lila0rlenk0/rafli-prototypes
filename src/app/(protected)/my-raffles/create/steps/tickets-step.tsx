@@ -1,6 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { CircleDashed, Clock, InfoIcon, X } from 'lucide-react';
 import { useMultiStepForm } from '../multi-step-form-provider';
@@ -33,6 +35,14 @@ export function TicketsStep() {
 		(maxParticipants && maxParticipants > 0),
 	);
 
+	// Check if end date is after start date
+	const isDateRangeValid = useMemo(() => {
+		if (!startDate || !endDate) return true; // Don't validate if dates are not set
+		const start = new Date(startDate);
+		const end = new Date(endDate);
+		return end > start;
+	}, [startDate, endDate]);
+
 	// Check if all fields in this step are filled and valid
 	const isCurrentStepValid =
 		Boolean(startDate) &&
@@ -41,6 +51,7 @@ export function TicketsStep() {
 		Boolean(numberOfWinners && numberOfWinners > 0) &&
 		Boolean(minParticipants && minParticipants > 0) &&
 		Boolean(maxParticipants && maxParticipants > 0) &&
+		isDateRangeValid &&
 		!errors.startDate &&
 		!errors.endDate &&
 		!errors.pricePerTicket &&
@@ -86,14 +97,11 @@ export function TicketsStep() {
 						<label htmlFor="startDate" className="font-medium">
 							Start Date
 						</label>
-						<Input
-							id="startDate"
-							type="text"
-							className="border-[#E5E5E5]"
+						<DatePicker
+							value={startDate}
+							onValueChange={value => setValue('startDate', value)}
 							placeholder="Select start date"
-							{...register('startDate')}
 						/>
-						{/* TODO: implement calendar component */}
 						{touchedFields.startDate && errors.startDate && (
 							<span className="text-sm text-red-500">
 								{errors.startDate.message}
@@ -105,17 +113,19 @@ export function TicketsStep() {
 						<label htmlFor="endDate" className="font-medium">
 							End Date
 						</label>
-						<Input
-							id="endDate"
-							type="text"
-							className="border-[#E5E5E5]"
+						<DatePicker
+							value={endDate}
+							onValueChange={value => setValue('endDate', value)}
 							placeholder="Select end date"
-							{...register('endDate')}
 						/>
-						{/* TODO: implement calendar component */}
 						{touchedFields.endDate && errors.endDate && (
 							<span className="text-sm text-red-500">
 								{errors.endDate.message}
+							</span>
+						)}
+						{startDate && endDate && !isDateRangeValid && (
+							<span className="text-sm text-red-500">
+								End date must be after start date
 							</span>
 						)}
 					</div>

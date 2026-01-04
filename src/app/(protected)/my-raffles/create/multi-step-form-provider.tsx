@@ -45,6 +45,12 @@ export function MultiStepFormProvider({
 			price: 0,
 			category: '',
 			coverImage: [],
+			startDate: '',
+			endDate: '',
+			pricePerTicket: 0,
+			numberOfWinners: 0,
+			minParticipants: 0,
+			maxParticipants: 0,
 		},
 	});
 

@@ -27,7 +27,7 @@ export function FormHeader() {
 			<div className="relative my-4 h-2 w-full">
 				<div className="absolute h-full w-full rounded-full bg-[#EEEEEE]" />
 				<div
-					className="bg-green absolute h-full rounded-full"
+					className="bg-green absolute h-full max-w-full rounded-full"
 					style={{ width: `${progress}%` }}
 				/>
 			</div>

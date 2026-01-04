@@ -2,7 +2,7 @@ import { AUTH_COOKIES } from '@/lib/auth/config';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Define route patterns
-const protectedRoutes = ['/dashboard', '/my-raffles/create', '/profile'];
+const protectedRoutes = ['/browse', '/my-raffles/create', '/profile'];
 const authRoutes = ['/sign-in', '/sign-up', '/forgot-password'];
 
 export function proxy(request: NextRequest) {
@@ -25,7 +25,7 @@ export function proxy(request: NextRequest) {
 	// Redirect to dashboard if accessing auth route WITH token
 	// This prevents authenticated users from seeing sign-in/sign-up pages
 	if (isAuthRoute && hasToken) {
-		return NextResponse.redirect(new URL('/dashboard', request.url));
+		return NextResponse.redirect(new URL('/browse', request.url));
 	}
 
 	return NextResponse.next();

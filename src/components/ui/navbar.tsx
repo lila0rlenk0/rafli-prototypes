@@ -12,7 +12,7 @@ export function Navbar({ children }: NavbarProps) {
 		<div className="mx-auto w-full max-w-[1300px]">
 			<div className="flex h-16 items-center justify-between px-6">
 				<div className="flex items-center gap-8">
-					<Link href="/dashboard" className="mr-12">
+					<Link href="/browse" className="mr-12">
 						<Logo />
 					</Link>
 

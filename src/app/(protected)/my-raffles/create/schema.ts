@@ -25,11 +25,13 @@ export const raffleFormSchema = z.object({
 	category: z.string().min(1, 'Category is required'),
 	coverImage: z.array(fileSchema).optional(),
 
-	// You can add more fields for other steps here
-	// Step 2: Details (example)
-	// startDate: z.date().optional(),
-	// endDate: z.date().optional(),
-	// maxTickets: z.number().optional(),
+	// Step 2: Active time period & Tickets
+	startDate: z.string().min(1, 'Start date is required'),
+	endDate: z.string().min(1, 'End date is required'),
+	pricePerTicket: z.number().min(0.01, 'Price per ticket must be greater than 0'),
+	numberOfWinners: z.number().min(1, 'Number of winners must be at least 1'),
+	minParticipants: z.number().min(1, 'Min participants must be at least 1'),
+	maxParticipants: z.number().min(1, 'Max participants must be at least 1'),
 });
 
 export type RaffleFormData = z.infer<typeof raffleFormSchema>;

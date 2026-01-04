@@ -48,7 +48,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 			}
 
 			// Success - redirect to dashboard
-			router.push('/dashboard');
+			router.push('/browse');
 			router.refresh();
 		});
 	}

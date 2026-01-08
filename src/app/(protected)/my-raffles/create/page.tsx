@@ -53,7 +53,7 @@ export default function RafflesCreatePage() {
 			</div>
 
 			<MultiStepFormProvider>
-				<div className="flex w-full flex-col">
+				<div className="flex w-full max-w-[815px] flex-col">
 					<FormHeader />
 					<FormStepComponent />
 				</div>

@@ -1,4 +1,5 @@
 import { BasicInfoStep } from './basic-info-step';
+import { ReviewStep } from './review-step';
 import { TicketsStep } from './tickets-step';
 
 export const STEPS = [
@@ -9,5 +10,9 @@ export const STEPS = [
 	{
 		title: 'Active time period & Tickets',
 		component: TicketsStep,
+	},
+	{
+		title: 'Review',
+		component: ReviewStep,
 	},
 ];

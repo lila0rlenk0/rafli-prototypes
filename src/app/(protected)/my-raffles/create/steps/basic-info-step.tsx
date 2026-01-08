@@ -9,11 +9,11 @@ import {
 } from '@/components/ui/dropzone';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Image as ImageIcon, X } from 'lucide-react';
+import { DollarSign, Image as ImageIcon, X } from 'lucide-react';
 import Image from 'next/image';
 import { STEPS } from '.';
 import { useMultiStepForm } from '../multi-step-form-provider';
-import { RAFFLE_CATEGORIES } from '../schema';
+import { MAX_FILE_SIZE, RAFFLE_CATEGORIES } from '../schema';
 
 export function BasicInfoStep() {
 	const { form, currentStep: stepIndex, nextStep } = useMultiStepForm();
@@ -93,7 +93,7 @@ export function BasicInfoStep() {
 						'image/jpeg': ['.jpg', '.jpeg'],
 						'audio/mp3': ['.mp3'],
 					}}
-					maxSize={10 * 1024 * 1024}
+					maxSize={MAX_FILE_SIZE}
 					maxFiles={4}
 					onDrop={acceptedFiles => {
 						setValue('coverImage', [...(coverImage || []), ...acceptedFiles]);
@@ -173,14 +173,17 @@ export function BasicInfoStep() {
 					<label htmlFor="price" className="font-medium">
 						Declared value
 					</label>
-					<Input
-						id="price"
-						type="number"
-						step="0.01"
-						className="border-[#E5E5E5]"
-						placeholder="0.00"
-						{...register('price', { valueAsNumber: true })}
-					/>
+					<div className="relative">
+						<DollarSign className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-500" />
+						<Input
+							id="price"
+							type="number"
+							step="0.01"
+							className="border-[#E5E5E5] pl-9"
+							placeholder="0.00"
+							{...register('price', { valueAsNumber: true })}
+						/>
+					</div>
 					{touchedFields.price && errors.price && (
 						<span className="text-sm text-red-500">{errors.price.message}</span>
 					)}

@@ -7,7 +7,7 @@ import { useMultiStepForm } from './multi-step-form-provider';
 export function FormHeader() {
 	const { currentStep, totalSteps, previousStep } = useMultiStepForm();
 
-	const progress = (currentStep + 1 / totalSteps) * 100;
+	const progress = ((currentStep + 1) / totalSteps) * 100;
 
 	const shouldDisablePreviousStep = currentStep === 0;
 

@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
-import { CircleDashed, Clock, InfoIcon, X } from 'lucide-react';
+import { CircleDashed, Clock, DollarSign, InfoIcon, X } from 'lucide-react';
+import { useMemo } from 'react';
 import { useMultiStepForm } from '../multi-step-form-provider';
 
 export function TicketsStep() {
@@ -155,14 +155,18 @@ export function TicketsStep() {
 						<label htmlFor="pricePerTicket" className="font-medium">
 							Price per Ticket
 						</label>
-						<Input
-							id="pricePerTicket"
-							type="number"
-							step="0.01"
-							className="border-[#E5E5E5]"
-							placeholder="0.00"
-							{...register('pricePerTicket', { valueAsNumber: true })}
-						/>
+						<div className="relative">
+							<DollarSign className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-500" />
+							<Input
+								id="pricePerTicket"
+								step="0.01"
+								min="0"
+								placeholder="0.00"
+								type="number"
+								className="border-[#E5E5E5] pl-9"
+								{...register('pricePerTicket', { valueAsNumber: true })}
+							/>
+						</div>
 						{touchedFields.pricePerTicket && errors.pricePerTicket && (
 							<span className="text-sm text-red-500">
 								{errors.pricePerTicket.message}

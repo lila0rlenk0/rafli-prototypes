@@ -143,7 +143,7 @@ export const DropzoneContent = ({
 				Click to upload or drag an drop
 			</p>
 			<p className="text-muted-foreground w-full text-xs text-wrap">
-				PNG JPEG MP3 up to 10mb
+				PNG JPEG MP3 up to 5mb
 			</p>
 		</div>
 	);

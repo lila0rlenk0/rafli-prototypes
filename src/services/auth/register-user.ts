@@ -1,30 +1,21 @@
 'use server';
 
-import { env } from '@/env/client';
+import { AxiosError } from 'axios';
+
+import { baseClient } from '@/lib/api/client';
 import type { SignUpInput } from '@/types/auth';
 
 export async function registerUser(input: SignUpInput) {
 	try {
-		const response = await fetch(
-			`${env.NEXT_PUBLIC_BACKEND_URL}/api/auth/sign-up/email`,
-			{
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(input),
-			},
-		);
+		const response = await baseClient.post('/api/auth/sign-up/email', input);
 
-		if (!response.ok) {
-			const error = await response.json();
-			return { error: error.message || 'Sign up failed' };
+		return { success: !!response.data.user };
+	} catch (error) {
+		if (error instanceof AxiosError) {
+			return {
+				error: error.response?.data?.message || 'Sign up failed',
+			};
 		}
-
-		const data = await response.json();
-
-		return { success: !!data.user };
-	} catch {
 		return { error: 'Network error. Please try again.' };
 	}
 }

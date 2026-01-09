@@ -1,7 +1,9 @@
 'use server';
 
-import { env } from '@/env/client';
-import { getAuthToken } from '@/lib/auth/session';
+import { AxiosError } from 'axios';
+
+import { authenticatedClient } from '@/lib/api/client';
+import { API_TIMEOUTS } from '@/lib/api/config';
 import { uploadGalleryResponseSchema } from '@/types/raffle';
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
@@ -33,41 +35,39 @@ export async function uploadGalleryImages(raffleId: string, files: File[]) {
 			}
 		}
 
-		const token = await getAuthToken();
-
-		if (!token) {
-			return { error: 'You must be signed in to upload images' };
-		}
-
 		const formData = new FormData();
 		// Backend expects multiple 'files' fields
 		files.forEach(file => {
 			formData.append('files', file);
 		});
 
-		const response = await fetch(
-			`${env.NEXT_PUBLIC_BACKEND_URL}/raffles/${raffleId}/gallery`,
+		const response = await authenticatedClient.post(
+			`/raffles/${raffleId}/gallery`,
+			formData,
 			{
-				method: 'POST',
+				timeout: API_TIMEOUTS.UPLOAD,
 				headers: {
-					Authorization: `Bearer ${token}`,
+					// Axios detects FormData and sets Content-Type automatically
+					'Content-Type': 'multipart/form-data',
 				},
-				body: formData,
 			},
 		);
 
-		if (!response.ok) {
-			return { error: 'Failed to upload images. Please try again' };
-		}
-
-		const data = await response.json();
-		const parsed = uploadGalleryResponseSchema.parse(data);
+		const parsed = uploadGalleryResponseSchema.parse(response.data);
 
 		return {
 			success: true,
 			galleryMediaUrls: parsed.galleryMediaUrls,
 		};
 	} catch (error) {
+		if (error instanceof AxiosError) {
+			if (error.code === 'ECONNABORTED') {
+				return { error: 'Upload timeout. Files may be too large.' };
+			}
+			return {
+				error: error.response?.data?.message || 'Failed to upload images',
+			};
+		}
 		console.error('Upload gallery error:', error);
 		return { error: 'Something went wrong while uploading' };
 	}

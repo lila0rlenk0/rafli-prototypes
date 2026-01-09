@@ -1,7 +1,9 @@
 'use server';
 
-import { env } from '@/env/client';
-import { getAuthToken } from '@/lib/auth/session';
+import { AxiosError } from 'axios';
+
+import { authenticatedClient } from '@/lib/api/client';
+import { API_TIMEOUTS } from '@/lib/api/config';
 import type { CreateRaffleInput } from '@/types/raffle';
 import { createRafflePayloadSchema, raffleSchema } from '@/types/raffle';
 
@@ -15,12 +17,6 @@ const CATEGORY_ID_MAP: Record<string, string> = {
 
 export async function createRaffle(input: CreateRaffleInput) {
 	try {
-		const token = await getAuthToken();
-
-		if (!token) {
-			return { error: 'You must be signed in to create a raffle' };
-		}
-
 		const categoryId = CATEGORY_ID_MAP[input.category];
 		if (!categoryId) {
 			return { error: 'Invalid category' };
@@ -50,27 +46,27 @@ export async function createRaffle(input: CreateRaffleInput) {
 			return { error: 'Invalid raffle data' };
 		}
 
-		const response = await fetch(`${env.NEXT_PUBLIC_BACKEND_URL}/raffles`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`,
-			},
-			body: JSON.stringify(validationResult.data),
-		});
+		const response = await authenticatedClient.post(
+			'/raffles',
+			validationResult.data,
+			{ timeout: API_TIMEOUTS.MUTATION },
+		);
 
-		const data = await response.json();
-		if (!response.ok) {
-			return { error: 'Failed to create raffle' };
-		}
-
-		const raffle = raffleSchema.parse(data);
+		const raffle = raffleSchema.parse(response.data);
 
 		return {
 			success: true,
 			raffle,
 		};
 	} catch (error) {
+		if (error instanceof AxiosError) {
+			if (error.code === 'ECONNABORTED') {
+				return { error: 'Request timeout. Please try again.' };
+			}
+			return {
+				error: error.response?.data?.message || 'Failed to create raffle',
+			};
+		}
 		console.error(error);
 		return { error: 'Network error' };
 	}

@@ -1,49 +1,38 @@
 'use server';
 
-import { env } from '@/env/client';
-import { getAuthToken } from '@/lib/auth/session';
+import { AxiosError } from 'axios';
+import { z } from 'zod';
+
+import { authenticatedClient } from '@/lib/api/client';
 import {
-	ListRafflesResponse,
-	MyRafflesQuery,
+	type ListRafflesResponse,
+	type MyRafflesQuery,
 	raffleSchema,
 	RaffleStatus,
 } from '@/types/raffle';
-import { z } from 'zod';
 
+/**
+ * Fetches the current user's raffles with optional filtering
+ *
+ * @param query - Optional query parameters for filtering raffles
+ * @returns List of raffles or error message
+ */
 export async function getMyRaffles(
 	query?: MyRafflesQuery,
 ): Promise<ListRafflesResponse | { error: string }> {
 	try {
-		const token = await getAuthToken();
+		// Build query params
+		const params: Record<string, string> = {
+			status: query?.status || RaffleStatus.Draft,
+		};
 
-		if (!token) {
-			return { error: 'You must be signed in to view your raffles' };
-		}
-
-		const params = new URLSearchParams();
-		if (query?.category) params.append('category', query.category);
-		if (query?.limit) params.append('limit', query.limit.toString());
-		if (query?.page) params.append('page', query.page.toString());
-		if (query?.sort) params.append('sort', query.sort);
-		if (query?.status) params.append('status', query.status);
-		else params.append('status', RaffleStatus.Draft); // Default to draft if not specified
-
-		const response = await fetch(
-			`${env.NEXT_PUBLIC_BACKEND_URL}/me/raffles?${params.toString()}`,
-			{
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-				cache: 'no-store',
-			},
-		);
-
-		if (!response.ok) {
-			return { error: 'Failed to fetch raffles' };
-		}
-
-		const data = await response.json();
+		if (query?.category) params.category = query.category;
+		if (query?.limit) params.limit = query.limit.toString();
+		if (query?.page) params.page = query.page.toString();
+		if (query?.sort) params.sort = query.sort;
+		const response = await authenticatedClient.get('/me/raffles', {
+			params,
+		});
 
 		// Validate response data structure
 		const listSchema = z.object({
@@ -54,8 +43,13 @@ export async function getMyRaffles(
 			totalPages: z.number(),
 		});
 
-		return listSchema.parse(data);
+		return listSchema.parse(response.data);
 	} catch (error) {
+		if (error instanceof AxiosError) {
+			return {
+				error: error.response?.data?.message || 'Failed to fetch raffles',
+			};
+		}
 		console.error('Get my raffles error:', error);
 		return { error: 'Something went wrong while fetching raffles' };
 	}

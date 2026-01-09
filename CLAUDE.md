@@ -21,6 +21,91 @@ Server actions provide several critical benefits:
 - If you need to create a client-side function, document the reasoning clearly
 - Always consider security implications before exposing any client-side request logic
 
+### Caching with Next.js 16 'use cache'
+
+#### The Limitation
+Next.js 16's `'use cache'` directive **cannot access dynamic data sources** like `cookies()`, `headers()`, or `searchParams`. Since our authentication uses cookies to store the Bearer token, we cannot use caching for authenticated endpoints.
+
+#### Simplified Cache Strategy
+
+To keep the architecture simple and maintainable:
+
+**✅ Use cache for:**
+- Public GET endpoints (no authentication required)
+- Static or semi-static data that doesn't require user context
+- Examples: public raffle listings, categories, public profiles
+
+**❌ Don't use cache for:**
+- Any authenticated endpoints (requires cookies for token)
+- Mutations (POST, PUT, PATCH, DELETE)
+- User-specific data
+- Real-time or frequently changing data
+
+#### Pattern for Public Cached Endpoints
+
+```tsx
+'use server';
+
+/**
+ * Fetches public raffles with caching
+ */
+export async function getPublicRaffles(params?: QueryParams) {
+  'use cache';
+
+  try {
+    // Use baseClient (no authentication)
+    const response = await baseClient.get('/public/raffles', {
+      params,
+      next: {
+        tags: ['public-raffles'],
+        revalidate: 60, // Cache for 60 seconds
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    return { error: 'Failed to fetch raffles' };
+  }
+}
+```
+
+#### Pattern for Authenticated Endpoints (No Cache)
+
+```tsx
+'use server';
+
+/**
+ * Fetches user's raffles
+ * No caching because it requires authentication (cookies)
+ */
+export async function getMyRaffles(query?: QueryParams) {
+  try {
+    // authenticatedClient handles token injection via interceptor
+    const response = await authenticatedClient.get('/me/raffles', {
+      params: query,
+    });
+
+    return response.data;
+  } catch (error) {
+    return { error: 'Failed to fetch raffles' };
+  }
+}
+```
+
+#### Quick Reference
+
+| Endpoint Type | Authentication | Use Cache? | Client Type |
+|---------------|----------------|------------|-------------|
+| GET (public) | None | ✅ Yes | `baseClient` |
+| GET (authenticated) | Required | ❌ No | `authenticatedClient` |
+| POST/PUT/DELETE | Any | ❌ No | `baseClient` or `authenticatedClient` |
+
+**Rationale:**
+- Keeps architecture simple and predictable
+- Avoids complex wrapper patterns
+- Clear separation: public data can be cached, authenticated data cannot
+- No risk of cache-related authentication bugs
+
 ## Component Development
 
 ### 1. Logic Extraction from JSX
@@ -144,6 +229,71 @@ export function OptimizedComponent({ data }) {
 }
 ```
 
+### 5. Function Declaration Style
+
+**Prefer `function` declarations over arrow functions** for regular functions, unless there's a specific need for arrow functions.
+
+Use `function` declarations for:
+- Regular utility functions
+- Helper functions
+- Component functions
+- Service functions
+- Any standalone function
+
+❌ **Avoid:**
+```tsx
+const formatParticipantCount = (count: number): string => {
+  return count.toLocaleString();
+};
+
+const getUserDisplayName = (user: User) => {
+  return user.name || user.email;
+};
+```
+
+✅ **Prefer:**
+```tsx
+function formatParticipantCount(count: number): string {
+  return count.toLocaleString();
+}
+
+function getUserDisplayName(user: User) {
+  return user.name || user.email;
+}
+```
+
+**When to use arrow functions:**
+- Inside `useCallback` hooks (required for proper memoization)
+- Inside `useMemo` hooks
+- Other React hooks that require function references
+- Edge cases where lexical `this` binding is needed
+
+Example of appropriate arrow function usage:
+```tsx
+'use client';
+
+export function Component() {
+  // Arrow function required for useCallback
+  const handleClick = useCallback(() => {
+    // handle logic
+  }, []);
+
+  // Arrow function required for useMemo
+  const processedData = useMemo(() => {
+    return heavyProcessing();
+  }, []);
+
+  return <div onClick={handleClick}>{processedData}</div>;
+}
+```
+
+**Benefits of function declarations:**
+- More readable and conventional
+- Hoisted, allowing flexible code organization
+- Clearer intent and function purpose
+- Consistent with React component syntax
+- Better stack traces in debugging
+
 ## Backend Integration
 
 ### Understand Before Building
@@ -182,6 +332,92 @@ export interface Raffle {
   updatedAt: Date;
 }
 ```
+
+---
+
+## Code Formatting and Standards
+
+### 1. Numeric Literals
+
+**Use underscores (_) as separators for large numbers** to improve readability.
+
+❌ **Avoid:**
+```tsx
+const MAX_SIZE = 5242880; // 5MB
+const TIMEOUT = 30000; // 30 seconds
+const PRICE = 1500000; // 1.5 million
+```
+
+✅ **Prefer:**
+```tsx
+const MAX_SIZE = 5_242_880; // 5MB
+const TIMEOUT = 30_000; // 30 seconds
+const PRICE = 1_500_000; // 1.5 million
+```
+
+**Benefits:**
+- Easier to read large numbers at a glance
+- Reduces errors when working with large values
+- Standard practice in modern TypeScript/JavaScript
+
+### 2. Package Manager
+
+**Always use Bun for package management and script execution** instead of npm, yarn, or pnpm.
+
+❌ **Avoid:**
+```bash
+npm install
+npm run dev
+npm test
+```
+
+✅ **Prefer:**
+```bash
+bun install
+bun run dev
+bun test
+```
+
+**Common Bun commands:**
+- `bun add <package>` - Install package
+- `bun remove <package>` - Remove package
+- `bun install` - Install all dependencies
+- `bun run <script>` - Run package.json script
+- `bun test` - Run tests
+
+### 3. Language and Localization
+
+**All code, comments, documentation, and user-facing text must be written in English.**
+
+This includes:
+- Variable and function names
+- Comments and JSDoc documentation
+- Error messages
+- User interface text
+- Console logs
+- Git commit messages
+
+❌ **Avoid (non-English example):**
+```tsx
+// Comment in another language
+function functionNameInAnotherLanguage() {
+  return { error: 'Error message in another language' };
+}
+```
+
+✅ **Prefer (English):**
+```tsx
+// Validates if the user is authenticated
+function validateUser() {
+  return { error: 'You must be signed in' };
+}
+```
+
+**Rationale:**
+- Maintains consistency across the codebase
+- Enables international collaboration
+- Standard practice in professional development
+- Easier code review and maintenance
 
 ---
 

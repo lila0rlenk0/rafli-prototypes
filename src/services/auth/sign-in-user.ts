@@ -1,37 +1,30 @@
 'use server';
 
-import { env } from '@/env/client';
+import { AxiosError } from 'axios';
+
+import { baseClient } from '@/lib/api/client';
 import { setAuthCookies } from '@/lib/auth/session';
 import type { SignInInput } from '@/types/auth';
 
 export async function signInUser(input: SignInInput) {
 	try {
-		const response = await fetch(
-			`${env.NEXT_PUBLIC_BACKEND_URL}/api/auth/sign-in/email`,
-			{
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(input),
-			},
-		);
+		const response = await baseClient.post('/api/auth/sign-in/email', input);
 
-		if (!response.ok) {
-			const error = await response.json();
-			return { error: error.message || 'Invalid credentials' };
-		}
-
-		const data = await response.json();
+		const { token, user } = response.data;
 
 		// Sign-in should return both token and user
-		if (data.token && data.user) {
-			await setAuthCookies(data.token, data.user);
+		if (token && user) {
+			await setAuthCookies(token, user);
 			return { success: true };
 		}
 
 		return { error: 'Invalid response from server' };
-	} catch {
+	} catch (error) {
+		if (error instanceof AxiosError) {
+			return {
+				error: error.response?.data?.message || 'Invalid credentials',
+			};
+		}
 		return { error: 'Network error. Please try again.' };
 	}
 }

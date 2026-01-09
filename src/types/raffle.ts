@@ -1,20 +1,72 @@
 import { z } from 'zod';
 
-export enum RaffleStatus {
-	Cancelled = 'cancelled',
-	Completed = 'completed',
-	Draft = 'draft',
-	Ended = 'ended',
-	Live = 'live',
-	Queued = 'queued',
-}
+// ==========================================
+// Constants
+// ==========================================
 
-export enum RaffleSortOption {
-	EndingSoon = 'ending_soon',
-	LowestPrice = 'lowest_price',
-	Newest = 'newest',
-	Trending = 'trending',
-}
+export const RAFFLE_STATUS = {
+	CANCELLED: 'cancelled',
+	COMPLETED: 'completed',
+	DRAFT: 'draft',
+	ENDED: 'ended',
+	LIVE: 'live',
+	QUEUED: 'queued',
+} as const;
+
+export const RAFFLE_SORT_OPTION = {
+	ENDING_SOON: 'ending_soon',
+	LOWEST_PRICE: 'lowest_price',
+	NEWEST: 'newest',
+	TRENDING: 'trending',
+} as const;
+
+// ==========================================
+// Types
+// ==========================================
+
+/**
+ * Represents the status of a raffle.
+ */
+export type RaffleStatus = (typeof RAFFLE_STATUS)[keyof typeof RAFFLE_STATUS];
+
+/**
+ * Represents the sorting options for raffles.
+ */
+export type RaffleSortOption =
+	(typeof RAFFLE_SORT_OPTION)[keyof typeof RAFFLE_SORT_OPTION];
+
+// ==========================================
+// Schemas
+// ==========================================
+
+/**
+ * Zod schema for RaffleStatus
+ */
+export const raffleStatusSchema = z.enum([
+	RAFFLE_STATUS.CANCELLED,
+	RAFFLE_STATUS.COMPLETED,
+	RAFFLE_STATUS.DRAFT,
+	RAFFLE_STATUS.ENDED,
+	RAFFLE_STATUS.LIVE,
+	RAFFLE_STATUS.QUEUED,
+]);
+
+/**
+ * Zod schema for RaffleSortOption
+ */
+export const raffleSortOptionSchema = z.enum([
+	RAFFLE_SORT_OPTION.ENDING_SOON,
+	RAFFLE_SORT_OPTION.LOWEST_PRICE,
+	RAFFLE_SORT_OPTION.NEWEST,
+	RAFFLE_SORT_OPTION.TRENDING,
+]);
+
+const hostSchema = z.object({
+	id: z.uuid(),
+	name: z.string().nullable(),
+	link: z.url().nullable(),
+	avatar: z.url().nullable(),
+});
 
 /**
  * Schema for the raffle response from the backend
@@ -38,14 +90,7 @@ export const raffleSchema = z.object({
 	minParticipants: z.number(),
 	maxParticipants: z.number(),
 	deliveryIncluded: z.boolean(),
-	status: z.enum([
-		'cancelled',
-		'completed',
-		'draft',
-		'ended',
-		'live',
-		'queued',
-	]),
+	status: raffleStatusSchema,
 	publicSlugOrCode: z.string(),
 	participantsCount: z.number(),
 	ticketsSoldCount: z.number(),
@@ -55,8 +100,12 @@ export const raffleSchema = z.object({
 	raffleNumber: z.number().optional(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
+	host: hostSchema.optional(),
 });
 
+/**
+ * Schema for creating a raffle (input form)
+ */
 export const createRaffleInputSchema = z.object({
 	title: z.string(),
 	description: z.string(),
@@ -71,6 +120,9 @@ export const createRaffleInputSchema = z.object({
 	timezone: z.string(),
 });
 
+/**
+ * Schema for the payload sent to create a raffle
+ */
 export const createRafflePayloadSchema = z.object({
 	categoryId: z.uuid(),
 	coverMediaUrl: z.string().max(500),
@@ -91,10 +143,6 @@ export const createRafflePayloadSchema = z.object({
 	title: z.string().min(3).max(200),
 });
 
-export type Raffle = z.infer<typeof raffleSchema>;
-export type CreateRaffleInput = z.infer<typeof createRaffleInputSchema>;
-export type CreateRafflePayload = z.infer<typeof createRafflePayloadSchema>;
-
 export const uploadCoverResponseSchema = z.object({
 	coverMediaUrl: z.string(),
 });
@@ -103,8 +151,19 @@ export const uploadGalleryResponseSchema = z.object({
 	galleryMediaUrls: z.array(z.string()),
 });
 
+// ==========================================
+// Inferred Types
+// ==========================================
+
+export type Raffle = z.infer<typeof raffleSchema>;
+export type CreateRaffleInput = z.infer<typeof createRaffleInputSchema>;
+export type CreateRafflePayload = z.infer<typeof createRafflePayloadSchema>;
 export type UploadCoverResponse = z.infer<typeof uploadCoverResponseSchema>;
 export type UploadGalleryResponse = z.infer<typeof uploadGalleryResponseSchema>;
+
+// ==========================================
+// Query Interfaces
+// ==========================================
 
 export interface MyRafflesQuery {
 	category?: string;

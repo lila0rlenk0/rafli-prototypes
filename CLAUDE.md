@@ -110,30 +110,61 @@ export async function getMyRaffles(query?: QueryParams) {
 
 ### 1. Logic Extraction from JSX
 
-**Avoid inline logic in JSX.** Extract calculations, transformations, and data formatting into dedicated functions.
+**Avoid inline logic in JSX.** Extract calculations, transformations, and data formatting into dedicated functions **defined inside the component**.
 
 ❌ **Bad Practice:**
 ```tsx
-<div>{user.name}</div>
-<div>{raffle.maxParticipants.toLocaleString()}</div>
+export function RaffleCard({ raffle, user }: Props) {
+  return (
+    <div>{user.name}</div>
+    <div>{raffle.maxParticipants.toLocaleString()}</div>
+  );
+}
 ```
 
 ✅ **Good Practice:**
 ```tsx
-const userName = getUserDisplayName(user);
-const formattedMaxParticipants = formatParticipantCount(raffle.maxParticipants);
+export function RaffleCard({ raffle, user }: Props) {
+  /**
+   * Gets the display name for the user
+   * @param user - The user object
+   * @returns The formatted user name
+   */
+  function getUserDisplayName(user: User): string {
+    return user.name || user.email;
+  }
 
-return (
-  <div>{userName}</div>
-  <div>{formattedMaxParticipants}</div>
-);
+  /**
+   * Formats a participant count with proper locale string formatting
+   * @param count - The number of participants
+   * @returns Formatted string with locale-appropriate number formatting
+   */
+  function formatParticipantCount(count: number): string {
+    return count.toLocaleString();
+  }
+
+  const userName = getUserDisplayName(user);
+  const formattedMaxParticipants = formatParticipantCount(raffle.maxParticipants);
+
+  return (
+    <div>{userName}</div>
+    <div>{formattedMaxParticipants}</div>
+  );
+}
 ```
+
+**Important:** Functions should be defined **inside the component** to:
+- Keep related logic close to where it's used
+- Access component props and state directly without passing many parameters
+- Maintain component encapsulation
+- Make the component self-contained and easier to understand
 
 **Benefits:**
 - Easier maintenance and debugging
 - Simpler testing of logic in isolation
 - Better readability and code reusability
 - Facilitates future modifications
+- Clear separation between logic and presentation
 
 ### 2. Documentation Requirements
 
@@ -196,6 +227,93 @@ export function InteractiveButton() {
   // client component implementation
 }
 ```
+
+#### Loading States for Async Server Components
+
+**When creating async Server Components, always consider the loading state.** Next.js provides two main approaches:
+
+**Option 1: Using Suspense (Recommended for granular loading)**
+```tsx
+// app/raffles/page.tsx
+import { Suspense } from 'react';
+import { RaffleList } from '@/components/raffle-list';
+import { RaffleListSkeleton } from '@/components/raffle-list-skeleton';
+
+export default function RafflesPage() {
+  return (
+    <div>
+      <h1>Raffles</h1>
+      <Suspense fallback={<RaffleListSkeleton />}>
+        <RaffleList />
+      </Suspense>
+    </div>
+  );
+}
+
+// components/raffle-list.tsx
+export async function RaffleList() {
+  const raffles = await getRaffles();
+
+  return (
+    <div>
+      {raffles.map(raffle => (
+        <RaffleCard key={raffle.id} raffle={raffle} />
+      ))}
+    </div>
+  );
+}
+```
+
+**Option 2: Using loading.tsx (Page-level loading)**
+```tsx
+// app/raffles/loading.tsx
+import { RaffleListSkeleton } from '@/components/raffle-list-skeleton';
+
+export default function Loading() {
+  return (
+    <div>
+      <h1>Raffles</h1>
+      <RaffleListSkeleton />
+    </div>
+  );
+}
+
+// app/raffles/page.tsx
+export default async function RafflesPage() {
+  const raffles = await getRaffles();
+
+  return (
+    <div>
+      <h1>Raffles</h1>
+      <div>
+        {raffles.map(raffle => (
+          <RaffleCard key={raffle.id} raffle={raffle} />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+**When to use each approach:**
+
+Use **Suspense** when:
+- You need granular loading states for specific components
+- Multiple independent data sources load at different times
+- You want to show partial content while other parts load
+- You need nested loading boundaries
+
+Use **loading.tsx** when:
+- The entire page should show a loading state
+- All data loads together
+- You want a simpler, more straightforward loading pattern
+- The page is a single cohesive unit
+
+**Best Practices:**
+- Always provide a meaningful loading skeleton that matches the content structure
+- Never let async components render without a loading boundary
+- Keep skeleton components visually similar to the actual content
+- Consider using the Skeleton component from your UI library for consistency
 
 ### 4. Performance Optimization
 

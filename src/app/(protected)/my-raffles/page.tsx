@@ -1,7 +1,7 @@
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import { Button } from '@/components/ui/button';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
-import { RaffleStatus } from '@/types/raffle';
+import { RAFFLE_STATUS, RaffleStatus } from '@/types/raffle';
 import Link from 'next/link';
 
 interface PageProps {
@@ -13,7 +13,7 @@ interface PageProps {
 
 export default async function MyRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
-	const status = (params.status as RaffleStatus) || RaffleStatus.Draft;
+	const status = (params.status as RaffleStatus) || RAFFLE_STATUS.DRAFT;
 	const page = params.page ? parseInt(params.page) : 1;
 
 	const response = await getMyRaffles({

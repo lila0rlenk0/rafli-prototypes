@@ -7,8 +7,8 @@ import { authenticatedClient } from '@/lib/api/client';
 import {
 	type ListRafflesResponse,
 	type MyRafflesQuery,
+	RAFFLE_STATUS,
 	raffleSchema,
-	RaffleStatus,
 } from '@/types/raffle';
 
 /**
@@ -23,7 +23,7 @@ export async function getMyRaffles(
 	try {
 		// Build query params
 		const params: Record<string, string> = {
-			status: query?.status || RaffleStatus.Draft,
+			status: query?.status || RAFFLE_STATUS.DRAFT,
 		};
 
 		if (query?.category) params.category = query.category;

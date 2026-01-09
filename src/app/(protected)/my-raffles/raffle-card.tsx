@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Raffle, RaffleStatus } from '@/types/raffle';
+import { Raffle, RAFFLE_STATUS, RaffleStatus } from '@/types/raffle';
 import {
 	CheckCircle2,
 	Clock,
@@ -103,7 +103,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 
 	const getStatusBadge = (status: RaffleStatus) => {
 		switch (status) {
-			case RaffleStatus.Live:
+			case RAFFLE_STATUS.LIVE:
 				return (
 					<Badge
 						variant="secondary"
@@ -113,8 +113,8 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 						Active
 					</Badge>
 				);
-			case RaffleStatus.Ended:
-			case RaffleStatus.Completed:
+			case RAFFLE_STATUS.ENDED:
+			case RAFFLE_STATUS.COMPLETED:
 				return (
 					<Badge
 						variant="secondary"
@@ -124,7 +124,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 						Ended
 					</Badge>
 				);
-			case RaffleStatus.Draft:
+			case RAFFLE_STATUS.DRAFT:
 				return (
 					<Badge
 						variant="outline"
@@ -140,7 +140,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 
 	return (
 		<div className="group flex flex-col overflow-hidden rounded-[24px] bg-white">
-			<div className="spect-4/3 relative mb-4 max-h-[215px] w-full overflow-hidden rounded-2xl bg-gray-100">
+			<div className="relative mb-4 aspect-4/3 max-h-53 w-full overflow-hidden rounded-2xl bg-gray-100">
 				{raffle.coverMediaUrl ? (
 					<Image
 						src={raffle.coverMediaUrl}

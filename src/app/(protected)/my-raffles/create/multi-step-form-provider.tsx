@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import React, { createContext, useContext, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { createRaffle } from '@/services/raffle/create-raffle';
@@ -24,7 +25,6 @@ interface MultiStepFormContextType {
 	onSubmit: (data: RaffleFormData) => void;
 	isCreating: boolean;
 	createdRaffleId: string | null;
-	createError: string | null;
 }
 
 const MultiStepFormContext = createContext<
@@ -41,7 +41,6 @@ export function MultiStepFormProvider({
 	const [currentStep, setCurrentStep] = useState(0);
 	const [isCreating, setIsCreating] = useState(false);
 	const [createdRaffleId, setCreatedRaffleId] = useState<string | null>(null);
-	const [createError, setCreateError] = useState<string | null>(null);
 	const router = useRouter();
 
 	const totalSteps = STEPS.length;
@@ -85,9 +84,14 @@ export function MultiStepFormProvider({
 	const isFirstStep = currentStep === 0;
 	const isLastStep = currentStep === totalSteps - 1;
 
+	/**
+	 * Handles raffle creation by calling the server action
+	 * Shows toast notifications for success and error states
+	 *
+	 * @param data - The validated raffle form data
+	 */
 	const handleCreateRaffle = async (data: RaffleFormData) => {
 		setIsCreating(true);
-		setCreateError(null);
 
 		try {
 			const result = await createRaffle({
@@ -104,17 +108,18 @@ export function MultiStepFormProvider({
 			});
 
 			if (result.error || !result.raffle) {
-				setCreateError(result.error || 'Failed to create raffle');
+				toast.error(result.error || 'Failed to create raffle');
 				return;
 			}
 
 			const raffleId = result.raffle.id;
 			setCreatedRaffleId(raffleId);
 
+			toast.success('Raffle created successfully!');
 			router.push(`/my-raffles`);
 		} catch (error) {
 			console.error('Create raffle error:', error);
-			setCreateError('Something went wrong. Please try again');
+			toast.error('Something went wrong. Please try again');
 		} finally {
 			setIsCreating(false);
 		}
@@ -142,7 +147,6 @@ export function MultiStepFormProvider({
 				onSubmit: handleSubmit,
 				isCreating,
 				createdRaffleId,
-				createError,
 			}}
 		>
 			{children}

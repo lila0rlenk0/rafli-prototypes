@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useMultiStepForm } from '../multi-step-form-provider';
 
 export function ReviewStep() {
-	const { form, isCreating, createError } = useMultiStepForm();
+	const { form, isCreating } = useMultiStepForm();
 
 	const formValues = form.watch();
 	const {
@@ -203,12 +203,6 @@ export function ReviewStep() {
 						<Clock className="size-6 text-[#2870BD]" />
 						<span className="text-xs">The raffle will start now.</span>
 					</div>
-				</div>
-			)}
-
-			{createError && (
-				<div className="rounded-lg bg-red-50 p-4">
-					<p className="text-sm text-red-600">{createError}</p>
 				</div>
 			)}
 

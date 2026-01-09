@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useMultiStepForm } from '../multi-step-form-provider';
 
 export function ReviewStep() {
-	const { form } = useMultiStepForm();
+	const { form, isCreating, createError } = useMultiStepForm();
 
 	const formValues = form.watch();
 	const {
@@ -206,9 +206,15 @@ export function ReviewStep() {
 				</div>
 			)}
 
+			{createError && (
+				<div className="rounded-lg bg-red-50 p-4">
+					<p className="text-sm text-red-600">{createError}</p>
+				</div>
+			)}
+
 			<div className="flex items-center gap-2">
-				<Button type="submit" className="cursor-pointer">
-					Create
+				<Button type="submit" disabled={isCreating} className="cursor-pointer">
+					{isCreating ? 'Creating...' : 'Create'}
 				</Button>
 			</div>
 		</div>

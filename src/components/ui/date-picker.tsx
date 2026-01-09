@@ -77,7 +77,7 @@ export function DatePicker({
 					variant="outline"
 					disabled={disabled}
 					className={cn(
-						'w-full justify-start rounded-md border-[#E5E5E5] bg-white text-left font-normal',
+						'w-full cursor-pointer justify-start rounded-md border-[#E5E5E5] bg-white text-left font-normal',
 						!selectedDate && 'text-muted-foreground',
 						className,
 					)}

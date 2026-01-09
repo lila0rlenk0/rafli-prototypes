@@ -24,11 +24,11 @@ export const raffleFormSchema = z
 		title: z
 			.string()
 			.min(3, 'Title must be at least 3 characters')
-			.max(100, 'Title must be less than 100 characters'),
+			.max(200, 'Title must be less than 200 characters'),
 		description: z
 			.string()
 			.min(10, 'Description must be at least 10 characters')
-			.max(500, 'Description must be less than 500 characters'),
+			.max(5_000, 'Description must be less than 5000 characters'),
 		price: z
 			.number()
 			.or(z.nan())
@@ -49,21 +49,32 @@ export const raffleFormSchema = z
 			.number()
 			.or(z.nan())
 			.transform(val => (isNaN(val) ? 0 : val))
-			.pipe(z.number().min(1, 'Number of winners must be at least 1')),
+			.pipe(
+				z
+					.number()
+					.int()
+					.min(1, 'Number of winners must be at least 1')
+					.max(100, 'Number of winners cannot exceed 100'),
+			),
 		minParticipants: z
 			.number()
 			.or(z.nan())
 			.transform(val => (isNaN(val) ? 0 : val))
-			.pipe(z.number().min(1, 'Min participants must be at least 1')),
+			.pipe(z.number().int().min(0, 'Min participants cannot be negative')),
 		maxParticipants: z
 			.number()
 			.or(z.nan())
 			.transform(val => (isNaN(val) ? 0 : val))
-			.pipe(z.number().min(1, 'Max participants must be at least 1')),
+			.pipe(
+				z
+					.number()
+					.int()
+					.min(1, 'Max participants must be at least 1')
+					.max(1_000_000, 'Max participants cannot exceed 1,000,000'),
+			),
 	})
 	.refine(
 		data => {
-			// Only validate if both dates are provided
 			if (!data.startDate || !data.endDate) return true;
 
 			const start = new Date(data.startDate);
@@ -73,7 +84,18 @@ export const raffleFormSchema = z
 		},
 		{
 			message: 'End date must be after start date',
-			path: ['endDate'], // This will show the error on the endDate field
+			path: ['endDate'],
+		},
+	)
+	.refine(
+		data => {
+			if (data.minParticipants === 0 || data.maxParticipants === 0) return true;
+
+			return data.minParticipants <= data.maxParticipants;
+		},
+		{
+			message: 'Min participants cannot be greater than max participants',
+			path: ['minParticipants'],
 		},
 	);
 

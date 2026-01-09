@@ -9,10 +9,18 @@ interface ProtectedLayoutProps {
 	children: ReactNode;
 }
 
+/**
+ * Protected Layout
+ *
+ * Server-side layout that ensures user is authenticated before rendering protected routes.
+ * Uses JWT validation to verify authentication and redirects to sign-in if not authenticated.
+ */
 export default async function ProtectedLayout({
 	children,
 }: ProtectedLayoutProps) {
 	const session = await getSession();
+
+	// Redirect to sign-in if no valid session
 	if (!session) {
 		redirect('/sign-in');
 	}

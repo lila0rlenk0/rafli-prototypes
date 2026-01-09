@@ -3,9 +3,8 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import 'server-only';
 
-import { env } from '@/env/client';
 import { AUTH_COOKIES, COOKIE_OPTIONS } from './config';
-import { decodeJwt } from './jwt';
+import { decodeJwt, isJwtExpired } from './jwt';
 
 // Set authentication cookies
 export async function setAuthCookies(
@@ -30,33 +29,24 @@ export async function getAuthToken(): Promise<string | null> {
 	return cookieStore.get(AUTH_COOKIES.TOKEN)?.value ?? null;
 }
 
-// Get current session
+/**
+ * Get current session from JWT token
+ * Validates token expiration and decodes user data
+ *
+ * @returns AuthSession with user data and token, or null if invalid/expired
+ */
 export const getSession = cache(async (): Promise<AuthSession | null> => {
 	const token = await getAuthToken();
 	if (!token) return null;
 
 	try {
-		// Validate session and get fresh JWT token from backend
-		const response = await fetch(
-			`${env.NEXT_PUBLIC_BACKEND_URL}/api/auth/token`,
-			{
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${token}`,
-				},
-				cache: 'no-store',
-			},
-		);
-
-		if (!response.ok) {
+		// Check if token is expired
+		if (isJwtExpired(token)) {
 			return null;
 		}
 
-		const data = await response.json();
-		const jwtToken = data.token;
-
 		// Decode JWT to extract user data
-		const payload = decodeJwt(jwtToken);
+		const payload = decodeJwt(token);
 
 		return {
 			user: {
@@ -66,7 +56,7 @@ export const getSession = cache(async (): Promise<AuthSession | null> => {
 				name: payload.name,
 				image: null, // JWT doesn't include image, fetch separately if needed
 			},
-			token: jwtToken,
+			token,
 			expiresAt: new Date(payload.exp * 1000).toISOString(),
 		};
 	} catch {

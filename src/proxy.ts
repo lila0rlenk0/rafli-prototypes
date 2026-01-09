@@ -1,13 +1,30 @@
-import { AUTH_COOKIES } from '@/lib/auth/config';
 import { NextRequest, NextResponse } from 'next/server';
+import { AUTH_COOKIES } from './lib/auth/config';
+import { isJwtExpired } from './lib/auth/jwt';
 
-// Define route patterns
-const protectedRoutes = ['/browse', '/my-raffles/create', '/profile'];
+/**
+ * Protected routes that require authentication
+ */
+const protectedRoutes = ['/browse', '/my-raffles', '/profile'];
+
+/**
+ * Auth routes that should redirect to /browse if user is already authenticated
+ */
 const authRoutes = ['/sign-in', '/sign-up', '/forgot-password'];
 
-export function proxy(request: NextRequest) {
+/**
+ * Proxy function for route protection and authentication flows
+ * Implements JWT-based authentication and route protection for Next.js 16
+ *
+ * @param request - NextRequest object from Next.js
+ * @returns NextResponse with appropriate redirect or continuation
+ */
+export default function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl;
-	const hasToken = request.cookies.get(AUTH_COOKIES.TOKEN);
+	const token = request.cookies.get(AUTH_COOKIES.TOKEN)?.value;
+
+	// Check if token exists and is valid (not expired)
+	const hasValidToken = token && !isJwtExpired(token);
 
 	// Check if route is protected
 	const isProtectedRoute = protectedRoutes.some(route =>
@@ -17,14 +34,14 @@ export function proxy(request: NextRequest) {
 	// Check if route is an auth route (sign-in, sign-up, etc)
 	const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
 
-	// Redirect to sign-in if accessing protected route without token
-	if (isProtectedRoute && !hasToken) {
+	// Redirect to sign-in if accessing protected route without valid token
+	if (isProtectedRoute && !hasValidToken) {
 		return NextResponse.redirect(new URL('/sign-in', request.url));
 	}
 
-	// Redirect to dashboard if accessing auth route WITH token
+	// Redirect to browse if accessing auth route WITH valid token
 	// This prevents authenticated users from seeing sign-in/sign-up pages
-	if (isAuthRoute && hasToken) {
+	if (isAuthRoute && hasValidToken) {
 		return NextResponse.redirect(new URL('/browse', request.url));
 	}
 

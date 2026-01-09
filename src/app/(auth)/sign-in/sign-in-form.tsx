@@ -106,8 +106,10 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 						{isPending ? 'Signing in...' : 'Sign In'}
 					</Button>
 				</Field>
-				<FieldSeparator>or do it via other accounts</FieldSeparator>
-				<Field className="flex flex-col">
+				<FieldSeparator className="my-2">
+					or do it via other accounts
+				</FieldSeparator>
+				<Field className="flex flex-col space-y-2">
 					<div className="flex w-full items-center justify-center">
 						<Button variant="outline" type="button" className="size-12! w-fit">
 							<FaGoogle className="size-6" />

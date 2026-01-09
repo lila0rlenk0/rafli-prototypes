@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
 
-import { env } from '@/env/client';
+import { env } from '@/env/server';
 import { getAuthToken } from '@/lib/auth/session';
 
 /**
@@ -8,7 +8,7 @@ import { getAuthToken } from '@/lib/auth/session';
  * Used for public endpoints
  */
 const baseClient: AxiosInstance = axios.create({
-	baseURL: env.NEXT_PUBLIC_BACKEND_URL,
+	baseURL: env.BACKEND_URL,
 	timeout: 10_000, // 10 seconds
 	headers: {
 		'Content-Type': 'application/json',
@@ -21,7 +21,7 @@ const baseClient: AxiosInstance = axios.create({
  * The interceptor automatically injects the authentication token
  */
 const authenticatedClient: AxiosInstance = axios.create({
-	baseURL: env.NEXT_PUBLIC_BACKEND_URL,
+	baseURL: env.BACKEND_URL,
 	timeout: 12_500, // 12.5 seconds for authenticated operations
 	headers: {
 		'Content-Type': 'application/json',

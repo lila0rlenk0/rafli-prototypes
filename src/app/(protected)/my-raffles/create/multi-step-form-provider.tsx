@@ -26,7 +26,6 @@ interface MultiStepFormContextType {
 	isLastStep: boolean;
 	onSubmit: (data: RaffleFormData) => void;
 	isCreating: boolean;
-
 }
 
 const MultiStepFormContext = createContext<
@@ -95,6 +94,8 @@ export function MultiStepFormProvider({
 		setIsCreating(true);
 
 		try {
+			const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 			const result = await createRaffle({
 				title: data.title,
 				description: data.description,
@@ -106,6 +107,7 @@ export function MultiStepFormProvider({
 				numberOfWinners: data.numberOfWinners,
 				minParticipants: data.minParticipants,
 				maxParticipants: data.maxParticipants,
+				timezone: userTimezone,
 			});
 
 			if (result.error || !result.raffle) {
@@ -116,10 +118,7 @@ export function MultiStepFormProvider({
 			const raffleId = result.raffle.id;
 
 			if (data.coverImage && data.coverImage.length > 0) {
-				const coverResult = await uploadCover(
-					raffleId,
-					data.coverImage[0],
-				);
+				const coverResult = await uploadCover(raffleId, data.coverImage[0]);
 				if (coverResult.error) {
 					console.error('Cover upload failed:', coverResult.error);
 					toast.error('Raffle created but cover upload failed.');
@@ -128,15 +127,9 @@ export function MultiStepFormProvider({
 
 			if (data.coverImage && data.coverImage.length > 1) {
 				const galleryFiles = data.coverImage.slice(1);
-				const galleryResult = await uploadGalleryImages(
-					raffleId,
-					galleryFiles,
-				);
+				const galleryResult = await uploadGalleryImages(raffleId, galleryFiles);
 				if (galleryResult.error) {
-					console.error(
-						'Gallery upload failed:',
-						galleryResult.error,
-					);
+					console.error('Gallery upload failed:', galleryResult.error);
 					toast.error('Raffle created but gallery upload failed.');
 				}
 			}

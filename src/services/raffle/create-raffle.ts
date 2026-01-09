@@ -7,10 +7,10 @@ import { createRafflePayloadSchema, raffleSchema } from '@/types/raffle';
 
 // TODO: Change to backend categories
 const CATEGORY_ID_MAP: Record<string, string> = {
-	electronics: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
-	wearables: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
-	accessories: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
-	'home-appliances': 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
+	electronics: '019ba0f7-020c-7000-8071-1e7aa7e6ad91',
+	wearables: '019ba0f7-4282-7000-a420-10b30004144e',
+	accessories: '019ba0f7-58c7-7000-9522-f4241d527bf3',
+	'home-appliances': '019ba0f7-7461-7000-b4ce-a6a0f35f1865',
 };
 
 export async function createRaffle(input: CreateRaffleInput) {
@@ -42,7 +42,7 @@ export async function createRaffle(input: CreateRaffleInput) {
 			deliveryIncluded: false,
 			coverMediaUrl: '',
 			galleryMediaUrls: [],
-			timezone: 'America/Sao_Paulo',
+			timezone: input.timezone,
 		};
 
 		const validationResult = createRafflePayloadSchema.safeParse(payload);

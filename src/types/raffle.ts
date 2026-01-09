@@ -1,5 +1,21 @@
 import { z } from 'zod';
 
+export enum RaffleStatus {
+	Cancelled = 'cancelled',
+	Completed = 'completed',
+	Draft = 'draft',
+	Ended = 'ended',
+	Live = 'live',
+	Queued = 'queued',
+}
+
+export enum RaffleSortOption {
+	EndingSoon = 'ending_soon',
+	LowestPrice = 'lowest_price',
+	Newest = 'newest',
+	Trending = 'trending',
+}
+
 /**
  * Schema for the raffle response from the backend
  * Represents the complete raffle object as returned by the API
@@ -52,6 +68,7 @@ export const createRaffleInputSchema = z.object({
 	numberOfWinners: z.number(),
 	minParticipants: z.number(),
 	maxParticipants: z.number(),
+	timezone: z.string(),
 });
 
 export const createRafflePayloadSchema = z.object({
@@ -88,3 +105,19 @@ export const uploadGalleryResponseSchema = z.object({
 
 export type UploadCoverResponse = z.infer<typeof uploadCoverResponseSchema>;
 export type UploadGalleryResponse = z.infer<typeof uploadGalleryResponseSchema>;
+
+export interface MyRafflesQuery {
+	category?: string;
+	limit?: number;
+	page?: number;
+	sort?: RaffleSortOption;
+	status?: RaffleStatus;
+}
+
+export interface ListRafflesResponse {
+	limit: number;
+	page: number;
+	raffles: Raffle[];
+	total: number;
+	totalPages: number;
+}

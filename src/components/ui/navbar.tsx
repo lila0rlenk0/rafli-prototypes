@@ -21,7 +21,7 @@ export function Navbar({ children }: NavbarProps) {
 					</Link>
 
 					<Link href="/my-raffles" className="text-sm font-semibold">
-						My Raffles (2)
+						My Raffles
 					</Link>
 				</div>
 				<div className="flex items-center gap-8">

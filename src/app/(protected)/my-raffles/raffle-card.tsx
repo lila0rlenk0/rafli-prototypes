@@ -41,6 +41,7 @@ function Badge({
 
 interface RaffleCardProps {
 	raffle: Raffle;
+	detailsPath?: string;
 }
 
 /**
@@ -49,7 +50,7 @@ interface RaffleCardProps {
  * Displays a summary card for a raffle, including its cover image, status,
  * progress bar, and action buttons.
  */
-export function RaffleCard({ raffle }: RaffleCardProps) {
+export function RaffleCard({ raffle, detailsPath }: RaffleCardProps) {
 	/**
 	 * Calculates the percentage of filled spots in a raffle
 	 * @param current - Current number of participants
@@ -204,7 +205,10 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 					</span>
 				</div>
 
-				<Link href={`/my-raffles/${raffle.id}`} className="mt-4 block">
+				<Link
+					href={detailsPath || `/my-raffles/${raffle.id}`}
+					className="mt-4 block"
+				>
 					<Button className="w-full rounded-full bg-black py-6 text-base font-medium text-white hover:bg-gray-800">
 						Details
 					</Button>

@@ -412,6 +412,247 @@ export function Component() {
 - Consistent with React component syntax
 - Better stack traces in debugging
 
+## Type Definitions and Schemas
+
+### Schema-First Approach with Zod
+
+**Always define schemas using Zod first, then infer TypeScript types from them.** This ensures runtime validation matches compile-time types.
+
+❌ **Avoid:**
+```tsx
+// Defining interfaces manually
+export interface MyQuery {
+  status?: string;
+  limit?: number;
+  page?: number;
+}
+
+export interface MyResponse {
+  data: Item[];
+  total: number;
+}
+```
+
+✅ **Prefer:**
+```tsx
+// Define Zod schemas first
+export const myQuerySchema = z.object({
+  status: z.string().optional(),
+  limit: z.number().optional(),
+  page: z.number().optional(),
+});
+
+export const myResponseSchema = z.object({
+  data: z.array(itemSchema),
+  total: z.number(),
+});
+
+// Infer types from schemas
+export type MyQuery = z.infer<typeof myQuerySchema>;
+export type MyResponse = z.infer<typeof myResponseSchema>;
+```
+
+**Benefits:**
+- Single source of truth for types and validation
+- Runtime type safety with validation
+- Automatic TypeScript inference
+- Easier to maintain and update
+- No type/validation drift
+
+### File Organization
+
+Type definition files should follow this structure (see `src/types/raffle.ts` as reference):
+
+```tsx
+import { z } from 'zod';
+
+// ==========================================
+// Constants
+// ==========================================
+
+export const MY_STATUS = {
+  ACTIVE: 'active',
+  INACTIVE: 'inactive',
+} as const;
+
+// ==========================================
+// Types from Constants
+// ==========================================
+
+/**
+ * Represents the status of...
+ */
+export type MyStatus = (typeof MY_STATUS)[keyof typeof MY_STATUS];
+
+// ==========================================
+// Schemas
+// ==========================================
+
+/**
+ * Zod schema for MyStatus
+ */
+export const myStatusSchema = z.enum([
+  MY_STATUS.ACTIVE,
+  MY_STATUS.INACTIVE,
+]);
+
+/**
+ * Schema for the main entity
+ */
+export const myEntitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: myStatusSchema,
+  createdAt: z.string(),
+});
+
+// ==========================================
+// Inferred Types
+// ==========================================
+
+export type MyEntity = z.infer<typeof myEntitySchema>;
+
+// ==========================================
+// Query Schemas
+// ==========================================
+
+/**
+ * Schema for querying entities
+ */
+export const myQuerySchema = z.object({
+  status: myStatusSchema.optional(),
+  limit: z.number().optional(),
+});
+
+/**
+ * Schema for list response
+ */
+export const myListResponseSchema = z.object({
+  items: z.array(myEntitySchema),
+  total: z.number(),
+  page: z.number(),
+});
+
+// ==========================================
+// Query Types
+// ==========================================
+
+export type MyQuery = z.infer<typeof myQuerySchema>;
+export type MyListResponse = z.infer<typeof myListResponseSchema>;
+```
+
+### Reusable Schemas
+
+**Create reusable schema patterns for common structures.** For example, pagination is used across multiple endpoints.
+
+Example of a reusable pagination schema (see `src/types/pagination.ts`):
+
+```tsx
+import { z } from 'zod';
+
+/**
+ * Schema for pagination metadata
+ * Used for paginated API responses
+ */
+export const paginationMetadataSchema = z.object({
+  limit: z.number(),
+  page: z.number(),
+  total: z.number(),
+  totalPages: z.number(),
+});
+
+/**
+ * Schema for pagination query parameters
+ */
+export const paginationQuerySchema = z.object({
+  limit: z.number().optional(),
+  page: z.number().optional(),
+});
+
+export type PaginationMetadata = z.infer<typeof paginationMetadataSchema>;
+export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
+```
+
+**Using reusable schemas with `.extend()`**:
+
+```tsx
+import { paginationMetadataSchema, paginationQuerySchema } from './pagination';
+
+// Extend pagination query with additional filters
+export const myQuerySchema = paginationQuerySchema.extend({
+  status: myStatusSchema.optional(),
+  category: z.string().optional(),
+});
+
+// Extend pagination metadata with data array
+export const myListResponseSchema = paginationMetadataSchema.extend({
+  items: z.array(myEntitySchema),
+});
+
+export type MyQuery = z.infer<typeof myQuerySchema>;
+export type MyListResponse = z.infer<typeof myListResponseSchema>;
+```
+
+### Using Schemas in Service Functions
+
+**Always use schemas to validate API responses** in service functions:
+
+```tsx
+'use server';
+
+import { myListResponseSchema, type MyListResponse } from '@/types/my-entity';
+
+export async function getMyEntities(
+  query?: MyQuery,
+): Promise<MyListResponse | { error: string }> {
+  try {
+    const response = await baseClient.get('/entities', {
+      params: buildQueryParams(query),
+    });
+
+    // Validate response with schema
+    return myListResponseSchema.parse(response.data);
+  } catch (error) {
+    return { error: 'Failed to fetch entities' };
+  }
+}
+```
+
+### Documentation Requirements
+
+All schemas and types must be documented:
+
+```tsx
+/**
+ * Schema for creating a raffle
+ *
+ * Validates all required fields before sending to the API
+ */
+export const createRaffleSchema = z.object({
+  title: z.string().min(3).max(200),
+  description: z.string().min(10),
+  price: z.number().positive(),
+});
+
+/**
+ * Represents a raffle entity
+ *
+ * Contains all raffle information including metadata,
+ * pricing, and participation details
+ */
+export type Raffle = z.infer<typeof raffleSchema>;
+```
+
+### Key Principles
+
+1. **Schema First**: Always define Zod schemas before TypeScript types
+2. **Inference**: Use `z.infer<typeof schema>` to get TypeScript types
+3. **Validation**: Use schemas to validate API responses and user inputs
+4. **Reusability**: Extract common patterns into shared schema utilities
+5. **Documentation**: Document all schemas and types with JSDoc comments
+6. **Organization**: Follow the structured file organization pattern
+7. **Constants**: Use `as const` objects for enums and derive types from them
+
 ## Backend Integration
 
 ### Understand Before Building

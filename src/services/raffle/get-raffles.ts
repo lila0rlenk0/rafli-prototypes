@@ -2,32 +2,27 @@
 
 import { AxiosError } from 'axios';
 
-import { authenticatedClient } from '@/lib/api/client';
+import { baseClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
 import {
 	type ListRafflesResponse,
 	listRafflesResponseSchema,
 	type MyRafflesQuery,
-	RAFFLE_STATUS,
 } from '@/types/raffle';
 
 /**
- * Fetches the current user's raffles with optional filtering
+ * Fetches all raffles with optional filtering (public/browsing)
  *
  * @param query - Optional query parameters for filtering raffles
  * @returns List of raffles or error message
  */
-export async function getMyRaffles(
+export async function getRaffles(
 	query?: MyRafflesQuery,
 ): Promise<ListRafflesResponse | { error: string }> {
 	try {
-		// Build query params with default status (edge case: custom default value)
-		const params = buildQueryParams({
-			...query,
-			status: query?.status || RAFFLE_STATUS.DRAFT,
-		});
+		const params = buildQueryParams(query);
 
-		const response = await authenticatedClient.get('/me/raffles', {
+		const response = await baseClient.get('/raffles', {
 			params,
 		});
 
@@ -39,7 +34,7 @@ export async function getMyRaffles(
 				error: error.response?.data?.message || 'Failed to fetch raffles',
 			};
 		}
-		console.error('Get my raffles error:', error);
+		console.error('Get raffles error:', error);
 		return { error: 'Something went wrong while fetching raffles' };
 	}
 }

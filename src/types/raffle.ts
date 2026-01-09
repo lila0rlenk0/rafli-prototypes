@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { paginationMetadataSchema, paginationQuerySchema } from './pagination';
+
 // ==========================================
 // Constants
 // ==========================================
@@ -122,6 +124,8 @@ export const createRaffleInputSchema = z.object({
 
 /**
  * Schema for the payload sent to create a raffle
+ *
+ * This is a copy of BE schema to avoid conflicts
  */
 export const createRafflePayloadSchema = z.object({
 	categoryId: z.uuid(),
@@ -162,21 +166,28 @@ export type UploadCoverResponse = z.infer<typeof uploadCoverResponseSchema>;
 export type UploadGalleryResponse = z.infer<typeof uploadGalleryResponseSchema>;
 
 // ==========================================
-// Query Interfaces
+// Query Schemas
 // ==========================================
 
-export interface MyRafflesQuery {
-	category?: string;
-	limit?: number;
-	page?: number;
-	sort?: RaffleSortOption;
-	status?: RaffleStatus;
-}
+/**
+ * Schema for querying raffles with filters and pagination
+ */
+export const myRafflesQuerySchema = paginationQuerySchema.extend({
+	category: z.string().optional(),
+	sort: raffleSortOptionSchema.optional(),
+	status: raffleStatusSchema.optional(),
+});
 
-export interface ListRafflesResponse {
-	limit: number;
-	page: number;
-	raffles: Raffle[];
-	total: number;
-	totalPages: number;
-}
+/**
+ * Schema for list raffles response (paginated raffles)
+ */
+export const listRafflesResponseSchema = paginationMetadataSchema.extend({
+	raffles: z.array(raffleSchema),
+});
+
+// ==========================================
+// Query Types
+// ==========================================
+
+export type MyRafflesQuery = z.infer<typeof myRafflesQuerySchema>;
+export type ListRafflesResponse = z.infer<typeof listRafflesResponseSchema>;

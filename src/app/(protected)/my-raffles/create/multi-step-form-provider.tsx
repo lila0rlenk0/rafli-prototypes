@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { createRaffle } from '@/services/raffle/create-raffle';
+import { uploadCover } from '@/services/raffle/upload-cover';
+import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
 import { useRouter } from 'next/navigation';
 import { raffleFormSchema } from './schema';
 import { STEPS } from './steps';
@@ -24,7 +26,7 @@ interface MultiStepFormContextType {
 	isLastStep: boolean;
 	onSubmit: (data: RaffleFormData) => void;
 	isCreating: boolean;
-	createdRaffleId: string | null;
+
 }
 
 const MultiStepFormContext = createContext<
@@ -40,7 +42,6 @@ export function MultiStepFormProvider({
 }: MultiStepFormProviderProps) {
 	const [currentStep, setCurrentStep] = useState(0);
 	const [isCreating, setIsCreating] = useState(false);
-	const [createdRaffleId, setCreatedRaffleId] = useState<string | null>(null);
 	const router = useRouter();
 
 	const totalSteps = STEPS.length;
@@ -113,7 +114,32 @@ export function MultiStepFormProvider({
 			}
 
 			const raffleId = result.raffle.id;
-			setCreatedRaffleId(raffleId);
+
+			if (data.coverImage && data.coverImage.length > 0) {
+				const coverResult = await uploadCover(
+					raffleId,
+					data.coverImage[0],
+				);
+				if (coverResult.error) {
+					console.error('Cover upload failed:', coverResult.error);
+					toast.error('Raffle created but cover upload failed.');
+				}
+			}
+
+			if (data.coverImage && data.coverImage.length > 1) {
+				const galleryFiles = data.coverImage.slice(1);
+				const galleryResult = await uploadGalleryImages(
+					raffleId,
+					galleryFiles,
+				);
+				if (galleryResult.error) {
+					console.error(
+						'Gallery upload failed:',
+						galleryResult.error,
+					);
+					toast.error('Raffle created but gallery upload failed.');
+				}
+			}
 
 			toast.success('Raffle created successfully!');
 			router.push(`/my-raffles`);
@@ -146,7 +172,6 @@ export function MultiStepFormProvider({
 				isLastStep,
 				onSubmit: handleSubmit,
 				isCreating,
-				createdRaffleId,
 			}}
 		>
 			{children}

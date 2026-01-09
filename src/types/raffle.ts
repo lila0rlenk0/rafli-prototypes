@@ -77,3 +77,14 @@ export const createRafflePayloadSchema = z.object({
 export type Raffle = z.infer<typeof raffleSchema>;
 export type CreateRaffleInput = z.infer<typeof createRaffleInputSchema>;
 export type CreateRafflePayload = z.infer<typeof createRafflePayloadSchema>;
+
+export const uploadCoverResponseSchema = z.object({
+	coverMediaUrl: z.string(),
+});
+
+export const uploadGalleryResponseSchema = z.object({
+	galleryMediaUrls: z.array(z.string()),
+});
+
+export type UploadCoverResponse = z.infer<typeof uploadCoverResponseSchema>;
+export type UploadGalleryResponse = z.infer<typeof uploadGalleryResponseSchema>;

@@ -11,6 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { registerUser } from '@/services/auth/register-user';
+import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -26,6 +27,29 @@ const formSchema = z.object({
 });
 
 type FormType = z.infer<typeof formSchema>;
+
+/**
+ * Maps error codes to user-friendly messages
+ */
+function getErrorMessage(errorCode: AuthErrorCode): string {
+	switch (errorCode) {
+		// Backend auth errors
+		case AUTH_ERROR_CODES.USER_ALREADY_EXISTS:
+			return 'An account with this email already exists.';
+		case AUTH_ERROR_CODES.SIGNUP_FAILED:
+			return 'Registration failed. Please try again.';
+
+		// Common fallback errors
+		case 'network_error':
+			return 'Network error. Please check your connection.';
+		case 'timeout_error':
+			return 'Request timed out. Please try again.';
+		case 'internal_server_error':
+			return 'Server error. Please try again later.';
+		default:
+			return 'An unexpected error occurred. Please try again.';
+	}
+}
 
 export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 	const {
@@ -43,8 +67,10 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 		startTransition(async () => {
 			const result = await registerUser(data);
 
-			if (result.error) {
-				setError('root', { message: result.error });
+			// Type-safe response handling
+			if (!result.success) {
+				const message = getErrorMessage(result.error);
+				setError('root', { message });
 				return;
 			}
 

@@ -21,21 +21,20 @@ export default async function RafflePage({ params }: PageProps) {
 	const { raffleId } = await params;
 	const response = await getRaffle(raffleId);
 
-	if ('error' in response) {
+	if (!response.success) {
 		return (
 			<div className="flex h-[50vh] w-full items-center justify-center">
 				<div className="text-center">
 					<h3 className="text-lg font-medium text-red-600">
 						Error loading raffle
 					</h3>
-					<p className="mt-2 text-gray-500">{response.error}</p>
+					<p className="mt-2 text-gray-500">Failed to load raffle details</p>
 				</div>
 			</div>
 		);
 	}
 
-	const raffle = response;
-	const hostData = raffle.host;
+	const raffle = response.data;
 
 	/**
 	 * Gets the host display name from closure
@@ -43,10 +42,9 @@ export default async function RafflePage({ params }: PageProps) {
 	 * @returns The host's name or default
 	 */
 	function getHostName(): string {
-		if (hostData?.name) {
-			return hostData.name;
-		}
-		return 'Raffle Host';
+		if (!raffle.host || !raffle.host.name) return 'Raffle Host';
+
+		return raffle.host.name;
 	}
 
 	/**
@@ -56,6 +54,7 @@ export default async function RafflePage({ params }: PageProps) {
 	function getHostInitial(): string {
 		const name = getHostName();
 		if (!name) return '';
+
 		return name.charAt(0);
 	}
 

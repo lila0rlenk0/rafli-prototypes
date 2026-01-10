@@ -140,16 +140,16 @@ export function MultiStepFormProvider({
 					timezone: userTimezone,
 				});
 
-				if (result.error || !result.raffle) {
-					toast.error(result.error || 'Failed to create raffle');
+				if (!result.success) {
+					toast.error('Failed to create raffle');
 					return;
 				}
 
-				const raffleId = result.raffle.id;
+				const raffleId = result.data.id;
 
 				if (data.coverImage && data.coverImage.length > 0) {
 					const coverResult = await uploadCover(raffleId, data.coverImage[0]);
-					if (coverResult.error) {
+					if (!coverResult.success) {
 						console.error('Cover upload failed:', coverResult.error);
 						toast.error('Raffle created but cover upload failed.');
 					}
@@ -161,7 +161,7 @@ export function MultiStepFormProvider({
 						raffleId,
 						galleryFiles,
 					);
-					if (galleryResult.error) {
+					if (!galleryResult.success) {
 						console.error('Gallery upload failed:', galleryResult.error);
 						toast.error('Raffle created but gallery upload failed.');
 					}

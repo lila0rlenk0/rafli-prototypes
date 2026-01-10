@@ -22,20 +22,20 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 		limit: 10,
 	});
 
-	if ('error' in response) {
+	if (!response.success) {
 		return (
 			<div className="flex h-[50vh] w-full items-center justify-center">
 				<div className="text-center">
 					<h3 className="text-lg font-medium text-red-600">
 						Error loading raffles
 					</h3>
-					<p className="mt-2 text-gray-500">{response.error}</p>
+					<p className="mt-2 text-gray-500">Failed to load raffles</p>
 				</div>
 			</div>
 		);
 	}
 
-	const { raffles } = response;
+	const { raffles } = response.data;
 
 	return (
 		<div className="container mx-auto max-w-7xl px-4 py-8">

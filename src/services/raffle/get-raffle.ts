@@ -1,30 +1,40 @@
 'use server';
 
-import { AxiosError } from 'axios';
-
 import { baseClient } from '@/lib/api/client';
+import { failure, success } from '@/lib/errors';
+import { mapRaffleError } from '@/lib/errors';
+import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { type Raffle, raffleSchema } from '@/types/raffle';
+import type { ServiceResponse } from '@/types/service-response';
+import { ZodError } from 'zod';
+
+/**
+ * Response type for fetching a single raffle
+ */
+type GetRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
 
 /**
  * Fetches a single raffle by ID
  *
  * @param id - The ID of the raffle to fetch
- * @returns The raffle object or an error
+ * @returns ServiceResponse with raffle on success, RaffleErrorCode on failure
  */
-export async function getRaffle(
-	id: string,
-): Promise<Raffle | { error: string }> {
+export async function getRaffle(id: string): Promise<GetRaffleResponse> {
 	try {
 		const response = await baseClient.get(`/raffles/${id}`);
 
-		return raffleSchema.parse(response.data);
+		// Validate response data structure
+		const validatedData = raffleSchema.parse(response.data);
+
+		return success(validatedData);
 	} catch (error) {
-		if (error instanceof AxiosError) {
-			return {
-				error: error.response?.data?.message || 'Failed to fetch raffle',
-			};
+		// Handle validation errors separately
+		if (error instanceof ZodError) {
+			console.error('Raffle response validation failed:', error);
+			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
-		console.error('Get raffle error:', error);
-		return { error: 'Something went wrong while fetching the raffle' };
+
+		const errorCode = mapRaffleError(error);
+		return failure(errorCode);
 	}
 }

@@ -1,11 +1,18 @@
 'use server';
 
-import { AxiosError } from 'axios';
-
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
-import type { CreateRaffleInput } from '@/types/raffle';
+import { failure, success } from '@/lib/errors';
+import { mapRaffleError } from '@/lib/errors';
+import {
+	CLIENT_ERROR_CODES,
+	RAFFLE_ERROR_CODES,
+	type RaffleErrorCode,
+} from '@/types/errors';
+import type { CreateRaffleInput, Raffle } from '@/types/raffle';
 import { createRafflePayloadSchema, raffleSchema } from '@/types/raffle';
+import type { ServiceResponse } from '@/types/service-response';
+import { ZodError } from 'zod';
 
 // TODO: Change to backend categories
 const CATEGORY_ID_MAP: Record<string, string> = {
@@ -15,11 +22,24 @@ const CATEGORY_ID_MAP: Record<string, string> = {
 	'home-appliances': '019ba0f7-7461-7000-b4ce-a6a0f35f1865',
 };
 
-export async function createRaffle(input: CreateRaffleInput) {
+/**
+ * Response type for raffle creation
+ */
+type CreateRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
+
+/**
+ * Creates a new raffle
+ *
+ * @param input - Raffle creation data
+ * @returns ServiceResponse with created raffle on success, RaffleErrorCode on failure
+ */
+export async function createRaffle(
+	input: CreateRaffleInput,
+): Promise<CreateRaffleResponse> {
 	try {
 		const categoryId = CATEGORY_ID_MAP[input.category];
 		if (!categoryId) {
-			return { error: 'Invalid category' };
+			return failure(CLIENT_ERROR_CODES.RAFFLE_INVALID_CATEGORY);
 		}
 
 		const payload = {
@@ -41,9 +61,11 @@ export async function createRaffle(input: CreateRaffleInput) {
 			timezone: input.timezone,
 		};
 
+		// Validate payload before sending
 		const validationResult = createRafflePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			return { error: 'Invalid raffle data' };
+			console.error('Payload validation failed:', validationResult.error);
+			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
 		const response = await authenticatedClient.post(
@@ -52,22 +74,18 @@ export async function createRaffle(input: CreateRaffleInput) {
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
+		// Validate response structure
 		const raffle = raffleSchema.parse(response.data);
 
-		return {
-			success: true,
-			raffle,
-		};
+		return success(raffle);
 	} catch (error) {
-		if (error instanceof AxiosError) {
-			if (error.code === 'ECONNABORTED') {
-				return { error: 'Request timeout. Please try again.' };
-			}
-			return {
-				error: error.response?.data?.message || 'Failed to create raffle',
-			};
+		// Handle validation errors
+		if (error instanceof ZodError) {
+			console.error('Raffle response validation failed:', error);
+			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
-		console.error(error);
-		return { error: 'Network error' };
+
+		const errorCode = mapRaffleError(error);
+		return failure(errorCode);
 	}
 }

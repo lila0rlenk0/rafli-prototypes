@@ -11,6 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
+import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -25,6 +26,33 @@ const formSchema = z.object({
 });
 
 type FormType = z.infer<typeof formSchema>;
+
+/**
+ * Maps error codes to user-friendly messages
+ * This is where error messages are defined (not in services)
+ */
+function getErrorMessage(errorCode: AuthErrorCode): string {
+	switch (errorCode) {
+		// Backend auth errors
+		case AUTH_ERROR_CODES.INVALID_CREDENTIALS:
+			return 'Invalid email or password.';
+		case AUTH_ERROR_CODES.TOKEN_EXPIRED:
+			return 'Your session has expired.';
+
+		// Common fallback errors
+		case 'global:auth:unauthenticated':
+		case 'unauthorized':
+			return 'Authentication failed.';
+		case 'network_error':
+			return 'Network error. Please check your connection.';
+		case 'timeout_error':
+			return 'Request timed out.';
+		case 'internal_server_error':
+			return 'Server error.';
+		default:
+			return 'An unexpected error occurred.';
+	}
+}
 
 export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	const {
@@ -42,8 +70,10 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 		startTransition(async () => {
 			const result = await signInUser(data);
 
-			if (result.error) {
-				setError('root', { message: result.error });
+			// Type-safe response handling
+			if (!result.success) {
+				const message = getErrorMessage(result.error);
+				setError('root', { message });
 				return;
 			}
 

@@ -1,24 +1,31 @@
 'use server';
 
-import { AxiosError } from 'axios';
-
 import { baseClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
+import { failure, mapRaffleError, success } from '@/lib/errors';
+import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
 	type ListRafflesResponse,
 	listRafflesResponseSchema,
 	type MyRafflesQuery,
 } from '@/types/raffle';
+import type { ServiceResponse } from '@/types/service-response';
+import { ZodError } from 'zod';
+
+/**
+ * Response type for fetching raffles list
+ */
+type GetRafflesResponse = ServiceResponse<ListRafflesResponse, RaffleErrorCode>;
 
 /**
  * Fetches all raffles with optional filtering (public/browsing)
  *
  * @param query - Optional query parameters for filtering raffles
- * @returns List of raffles or error message
+ * @returns ServiceResponse with raffle list on success, RaffleErrorCode on failure
  */
 export async function getRaffles(
 	query?: MyRafflesQuery,
-): Promise<ListRafflesResponse | { error: string }> {
+): Promise<GetRafflesResponse> {
 	try {
 		const params = buildQueryParams(query);
 
@@ -27,14 +34,17 @@ export async function getRaffles(
 		});
 
 		// Validate response data structure
-		return listRafflesResponseSchema.parse(response.data);
+		const validatedData = listRafflesResponseSchema.parse(response.data);
+
+		return success(validatedData);
 	} catch (error) {
-		if (error instanceof AxiosError) {
-			return {
-				error: error.response?.data?.message || 'Failed to fetch raffles',
-			};
+		// Handle validation errors separately
+		if (error instanceof ZodError) {
+			console.error('Raffle response validation failed:', error);
+			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
-		console.error('Get raffles error:', error);
-		return { error: 'Something went wrong while fetching raffles' };
+
+		const errorCode = mapRaffleError(error);
+		return failure(errorCode);
 	}
 }

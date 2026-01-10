@@ -1,7 +1,7 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { Raffle, RAFFLE_STATUS, RaffleStatus } from '@/types/raffle';
 import {
 	CheckCircle2,
@@ -14,34 +14,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
-function Badge({
-	className,
-	variant = 'default',
-	...props
-}: React.HTMLAttributes<HTMLDivElement> & {
-	variant?: 'default' | 'secondary' | 'outline';
-}) {
-	return (
-		<div
-			className={cn(
-				'focus:ring-ring inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none',
-				{
-					'bg-primary text-primary-foreground hover:bg-primary/80 border-transparent':
-						variant === 'default',
-					'bg-secondary text-secondary-foreground hover:bg-secondary/80 border-transparent':
-						variant === 'secondary',
-					'text-foreground': variant === 'outline',
-				},
-				className,
-			)}
-			{...props}
-		/>
-	);
-}
-
 interface RaffleCardProps {
 	raffle: Raffle;
-	detailsPath?: string;
 }
 
 /**
@@ -50,7 +24,7 @@ interface RaffleCardProps {
  * Displays a summary card for a raffle, including its cover image, status,
  * progress bar, and action buttons.
  */
-export function RaffleCard({ raffle, detailsPath }: RaffleCardProps) {
+export function RaffleCard({ raffle }: RaffleCardProps) {
 	/**
 	 * Calculates the percentage of filled spots in a raffle
 	 * @param current - Current number of participants
@@ -205,10 +179,7 @@ export function RaffleCard({ raffle, detailsPath }: RaffleCardProps) {
 					</span>
 				</div>
 
-				<Link
-					href={detailsPath || `/my-raffles/${raffle.id}`}
-					className="mt-4 block"
-				>
+				<Link href={`/browse/${raffle.id}`} className="mt-4 block">
 					<Button className="w-full rounded-full bg-black py-6 text-base font-medium text-white hover:bg-gray-800">
 						Details
 					</Button>

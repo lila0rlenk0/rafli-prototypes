@@ -1,37 +1,61 @@
 'use server';
 
-import { AxiosError } from 'axios';
-
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
-import { uploadGalleryResponseSchema } from '@/types/raffle';
+import { failure, mapRaffleError, success } from '@/lib/errors';
+import {
+	CLIENT_ERROR_CODES,
+	RAFFLE_ERROR_CODES,
+	type RaffleErrorCode,
+} from '@/types/errors';
+import {
+	type UploadGalleryResponse,
+	uploadGalleryResponseSchema,
+} from '@/types/raffle';
+import type { ServiceResponse } from '@/types/service-response';
+import { ZodError } from 'zod';
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES = 10;
 
-export async function uploadGalleryImages(raffleId: string, files: File[]) {
+/**
+ * Response type for gallery upload
+ */
+type UploadGalleryServiceResponse = ServiceResponse<
+	UploadGalleryResponse,
+	RaffleErrorCode
+>;
+
+/**
+ * Uploads gallery images for a raffle
+ *
+ * @param raffleId - The ID of the raffle
+ * @param files - Array of image files to upload
+ * @returns ServiceResponse with gallery URLs on success, RaffleErrorCode on failure
+ */
+export async function uploadGalleryImages(
+	raffleId: string,
+	files: File[],
+): Promise<UploadGalleryServiceResponse> {
 	try {
+		// Client-side validation
 		if (files.length === 0) {
-			return { error: 'Please select at least one file' };
+			return failure(CLIENT_ERROR_CODES.UPLOAD_INVALID_TYPE);
 		}
 
 		if (files.length > MAX_IMAGES) {
-			return { error: `Maximum ${MAX_IMAGES} images allowed` };
+			return failure(CLIENT_ERROR_CODES.UPLOAD_TOO_MANY_FILES);
 		}
 
 		// Validate each file
 		for (const file of files) {
 			if (!ACCEPTED_TYPES.includes(file.type)) {
-				return {
-					error: `Invalid file: ${file.name}. Use PNG, JPEG or WebP`,
-				};
+				return failure(CLIENT_ERROR_CODES.UPLOAD_INVALID_TYPE);
 			}
 
 			if (file.size > MAX_SIZE) {
-				return {
-					error: `File too large: ${file.name}. Maximum 5MB per file`,
-				};
+				return failure(CLIENT_ERROR_CODES.UPLOAD_TOO_LARGE);
 			}
 		}
 
@@ -53,22 +77,18 @@ export async function uploadGalleryImages(raffleId: string, files: File[]) {
 			},
 		);
 
+		// Validate response structure
 		const parsed = uploadGalleryResponseSchema.parse(response.data);
 
-		return {
-			success: true,
-			galleryMediaUrls: parsed.galleryMediaUrls,
-		};
+		return success(parsed);
 	} catch (error) {
-		if (error instanceof AxiosError) {
-			if (error.code === 'ECONNABORTED') {
-				return { error: 'Upload timeout. Files may be too large.' };
-			}
-			return {
-				error: error.response?.data?.message || 'Failed to upload images',
-			};
+		// Handle validation errors
+		if (error instanceof ZodError) {
+			console.error('Gallery upload response validation failed:', error);
+			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
-		console.error('Upload gallery error:', error);
-		return { error: 'Something went wrong while uploading' };
+
+		const errorCode = mapRaffleError(error);
+		return failure(errorCode);
 	}
 }

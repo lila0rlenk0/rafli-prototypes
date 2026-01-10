@@ -2,14 +2,12 @@
 
 import { authenticatedClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
-import { failure, success } from '@/lib/errors';
-import { mapRaffleError } from '@/lib/errors';
+import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
 	type ListRafflesResponse,
 	listRafflesResponseSchema,
 	type MyRafflesQuery,
-	RAFFLE_STATUS,
 } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
 import { ZodError } from 'zod';
@@ -33,10 +31,7 @@ export async function getMyRaffles(
 ): Promise<GetMyRafflesResponse> {
 	try {
 		// Build query params with default status (edge case: custom default value)
-		const params = buildQueryParams({
-			...query,
-			status: query?.status || RAFFLE_STATUS.DRAFT,
-		});
+		const params = buildQueryParams(query);
 
 		const response = await authenticatedClient.get('/me/raffles', {
 			params,

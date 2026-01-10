@@ -1,6 +1,6 @@
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import { getRaffles } from '@/services/raffle/get-raffles';
-import { RAFFLE_STATUS, RaffleStatus } from '@/types/raffle';
+import { RaffleStatus } from '@/types/raffle';
 
 interface PageProps {
 	searchParams: Promise<{
@@ -12,7 +12,7 @@ interface PageProps {
 
 export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
-	const status = (params.status as RaffleStatus) || RAFFLE_STATUS.DRAFT;
+	const status = params.status as RaffleStatus;
 	const page = params.page ? parseInt(params.page) : 1;
 	const category = params.category;
 

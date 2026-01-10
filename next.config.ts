@@ -4,6 +4,7 @@ import type { NextConfig } from 'next';
 type Protocol = 'https' | 'http';
 
 const storageUrl = new URL(env.STORAGE_MEDIA_URL);
+const isLocal = storageUrl.hostname.includes('127.0.0.1');
 
 const nextConfig: NextConfig = {
 	experimental: {
@@ -13,7 +14,7 @@ const nextConfig: NextConfig = {
 	},
 	images: {
 		// Allow loading images from local network (fixes private IP error)
-		unoptimized: process.env.NODE_ENV === 'development',
+		unoptimized: isLocal,
 		remotePatterns: [
 			{
 				protocol: storageUrl.protocol.replace(':', '') as Protocol,

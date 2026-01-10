@@ -80,6 +80,16 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
 				<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
 
+				<div className="flex items-center gap-4">
+					<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xl font-semibold">
+						{getHostInitial()}
+					</div>
+					<div className="flex min-w-0 flex-col font-medium">
+						<span className="truncate text-sm">by {getHostName()}</span>
+						<span className="text-xs">{getHostRafflesCount()}</span>
+					</div>
+				</div>
+
 				<div className="flex flex-col gap-4">
 					<div className="relative flex aspect-video max-h-96 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
 						{raffle.coverMediaUrl ? (
@@ -111,16 +121,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							))}
 						</div>
 					)}
-				</div>
-
-				<div className="flex items-center gap-4">
-					<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xl font-semibold">
-						{getHostInitial()}
-					</div>
-					<div className="flex min-w-0 flex-col font-medium">
-						<span className="truncate text-sm">by {getHostName()}</span>
-						<span className="text-xs">{getHostRafflesCount()}</span>
-					</div>
 				</div>
 
 				<div className="flex min-w-0 flex-col gap-2">

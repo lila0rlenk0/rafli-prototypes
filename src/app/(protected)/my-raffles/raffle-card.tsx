@@ -3,15 +3,10 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Raffle, RAFFLE_STATUS, RaffleStatus } from '@/types/raffle';
-import {
-	CheckCircle2,
-	Clock,
-	Copy,
-	Image as ImageIcon,
-	Share2,
-} from 'lucide-react';
+import { CheckCircle2, Clock, Copy, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { FaXTwitter } from 'react-icons/fa6';
 import { toast } from 'sonner';
 
 interface RaffleCardProps {
@@ -122,6 +117,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 						alt={raffle.title}
 						fill
 						className="object-cover"
+						loading="eager"
 					/>
 				) : (
 					<div className="flex h-full w-full items-center justify-center text-gray-300">
@@ -190,7 +186,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 						onClick={() => handleShare(raffle.title, raffle.publicSlugOrCode)}
 						className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
 					>
-						<Share2 className="h-4 w-4" />
+						<FaXTwitter className="h-4 w-4" />
 						Share on X
 					</button>
 					<button

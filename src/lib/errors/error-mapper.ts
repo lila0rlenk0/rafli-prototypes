@@ -3,6 +3,8 @@ import { AxiosError } from 'axios';
 import {
 	type AuthErrorCode,
 	COMMON_ERROR_CODES,
+	type OrderErrorCode,
+	type PaymentErrorCode,
 	type RaffleErrorCode,
 } from '@/types/errors';
 
@@ -45,18 +47,18 @@ function extractErrorCode(error: unknown): string | null {
 		}
 	}
 
-	// 2. Fallback to 'code' field (simple format)
-	if (data.code && typeof data.code === 'string') {
-		return data.code; // Returns "unauthenticated"
-	}
-
-	// 3. Fallback to 'message' field (if it's a code-like string)
+	// 2. Fallback to 'message' field (if it's a code-like string)
 	if (
 		data.message &&
 		typeof data.message === 'string' &&
 		data.message.includes(':')
 	) {
 		return data.message; // Returns "auth:user:invalid-credentials"
+	}
+
+	// 3. Fallback to 'code' field (simple format)
+	if (data.code && typeof data.code === 'string') {
+		return data.code; // Returns "unauthenticated"
 	}
 
 	return null;
@@ -101,10 +103,14 @@ function mapCommonError(
 	if (error.code === 'ERR_NETWORK') {
 		return COMMON_ERROR_CODES.NETWORK_ERROR;
 	}
+	if (error.code === 'ERR_BAD_REQUEST') {
+		return COMMON_ERROR_CODES.VALIDATION_ERROR;
+	}
 
 	// HTTP status codes (when no specific error code from backend)
 	if (error.response) {
 		const status = error.response.status;
+		if (status === 400) return COMMON_ERROR_CODES.VALIDATION_ERROR;
 		if (status === 401) return COMMON_ERROR_CODES.UNAUTHORIZED;
 		if (status === 403) return COMMON_ERROR_CODES.FORBIDDEN;
 		if (status === 500) return COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR;
@@ -235,6 +241,88 @@ export function mapRaffleError(error: unknown): RaffleErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as RaffleErrorCode;
+		}
+	}
+
+	// Fallback to common errors (network, timeout, HTTP status)
+	return mapCommonError(error);
+}
+
+/**
+ * Maps order-related backend errors to frontend error codes
+ * Handles both full codes (core:order:*, global:*) and simple codes
+ *
+ * @param error - The caught error (usually AxiosError)
+ * @returns The mapped order error code
+ *
+ * @example
+ * try {
+ *   await authenticatedClient.post('/orders', data);
+ * } catch (error) {
+ *   return failure(mapOrderError(error));
+ * }
+ */
+export function mapOrderError(error: unknown): OrderErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// If full code with prefix (core:order:*, global:*), use directly
+		if (
+			extractedCode.startsWith('core:order:') ||
+			extractedCode.startsWith('core:raffle:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as OrderErrorCode;
+		}
+
+		// If simple code, map it
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (
+			mappedCode.startsWith('core:order:') ||
+			extractedCode.startsWith('core:raffle:') ||
+			mappedCode.startsWith('global:')
+		) {
+			return mappedCode as OrderErrorCode;
+		}
+	}
+
+	// Fallback to common errors (network, timeout, HTTP status)
+	return mapCommonError(error);
+}
+
+/**
+ * Maps payment-related backend errors to frontend error codes
+ * Handles both full codes (payments:*, global:*) and simple codes
+ *
+ * @param error - The caught error (usually AxiosError)
+ * @returns The mapped payment error code
+ *
+ * @example
+ * try {
+ *   await authenticatedClient.post('/payments/checkout', data);
+ * } catch (error) {
+ *   return failure(mapPaymentError(error));
+ * }
+ */
+export function mapPaymentError(error: unknown): PaymentErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// If full code with prefix (payments:*, global:*), use directly
+		if (
+			extractedCode.startsWith('payments:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as PaymentErrorCode;
+		}
+
+		// If simple code, map it
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (
+			mappedCode.startsWith('payments:') ||
+			mappedCode.startsWith('global:')
+		) {
+			return mappedCode as PaymentErrorCode;
 		}
 	}
 

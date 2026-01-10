@@ -2,10 +2,14 @@ import { getRaffle } from '@/services/raffle/get-raffle';
 import { Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { BuyButton } from './buy-button';
+import { PaymentModalWrapper } from './payment-modal-wrapper';
 
 interface PageProps {
 	params: Promise<{
 		raffleId: string;
+	}>;
+	searchParams: Promise<{
+		session_id?: string;
 	}>;
 }
 
@@ -16,8 +20,9 @@ interface PageProps {
  * description, and category. Allows users to purchase tickets.
  *
  * Fetches data server-side using the getRaffle service.
+ * Handles payment status modal after Stripe redirect.
  */
-export default async function RafflePage({ params }: PageProps) {
+export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { raffleId } = await params;
 	const response = await getRaffle(raffleId);
 
@@ -131,9 +136,11 @@ export default async function RafflePage({ params }: PageProps) {
 				</div>
 
 				<div className="flex items-center gap-2">
-					<BuyButton />
+					<BuyButton raffleId={raffleId} />
 				</div>
 			</div>
+
+			<PaymentModalWrapper raffleId={raffleId} searchParams={searchParams} />
 		</div>
 	);
 }

@@ -1,11 +1,11 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import React, {
+import {
 	createContext,
+	ReactNode,
 	useCallback,
 	useContext,
-	useMemo,
 	useState,
 } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
@@ -39,7 +39,7 @@ const MultiStepFormContext = createContext<
 >(undefined);
 
 interface MultiStepFormProviderProps {
-	children: React.ReactNode;
+	children: ReactNode;
 }
 
 /**
@@ -196,35 +196,21 @@ export function MultiStepFormProvider({
 		[isLastStep, handleCreateRaffle, nextStep],
 	);
 
-	const contextValue = useMemo(
-		() => ({
-			currentStep,
-			totalSteps,
-			form,
-			nextStep,
-			previousStep,
-			goToStep,
-			isFirstStep,
-			isLastStep,
-			onSubmit: handleSubmit,
-			isCreating,
-		}),
-		[
-			currentStep,
-			totalSteps,
-			form,
-			nextStep,
-			previousStep,
-			goToStep,
-			isFirstStep,
-			isLastStep,
-			handleSubmit,
-			isCreating,
-		],
-	);
-
 	return (
-		<MultiStepFormContext.Provider value={contextValue}>
+		<MultiStepFormContext.Provider
+			value={{
+				currentStep,
+				totalSteps,
+				form,
+				nextStep,
+				previousStep,
+				goToStep,
+				isFirstStep,
+				isLastStep,
+				onSubmit: handleSubmit,
+				isCreating,
+			}}
+		>
 			{children}
 		</MultiStepFormContext.Provider>
 	);

@@ -9,11 +9,11 @@ import {
 } from '@/components/ui/dropzone';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { DollarSign, Image as ImageIcon, X } from 'lucide-react';
-import Image from 'next/image';
+import { DollarSign, X } from 'lucide-react';
 import { STEPS } from '.';
 import { useMultiStepForm } from '../multi-step-form-provider';
 import { MAX_FILE_SIZE, RAFFLE_CATEGORIES } from '../schema';
+import { ImagePreview } from './image-preview';
 
 export function BasicInfoStep() {
 	const { form, currentStep: stepIndex, nextStep } = useMultiStepForm();
@@ -117,16 +117,11 @@ export function BasicInfoStep() {
 								key={index}
 								className="relative flex aspect-square max-h-28 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
 							>
-								{file ? (
-									<Image
-										src={URL.createObjectURL(file)}
-										alt={`Preview ${index + 1}`}
-										fill
-										className="object-contain"
-									/>
-								) : (
-									<ImageIcon className="size-6 text-gray-400" />
-								)}
+								<ImagePreview
+									file={file}
+									alt={`Preview ${index + 1}`}
+									className="object-contain"
+								/>
 							</div>
 						);
 					})}

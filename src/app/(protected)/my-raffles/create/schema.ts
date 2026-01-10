@@ -3,13 +3,6 @@ import { z } from 'zod';
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'audio/mp3'];
 
-export const RAFFLE_CATEGORIES = [
-	{ value: 'electronics', label: 'Electronics' },
-	{ value: 'wearables', label: 'Wearables' },
-	{ value: 'accessories', label: 'Accessories' },
-	{ value: 'home-appliances', label: 'Home Appliances' },
-] as const;
-
 const fileSchema = z
 	.instanceof(File)
 	.refine(file => file.size <= MAX_FILE_SIZE, 'File size must be less than 5MB')

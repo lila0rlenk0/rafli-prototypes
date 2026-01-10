@@ -1,3 +1,4 @@
+import { getCategoryLabel } from '@/constants/categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -131,7 +132,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 				<div className="flex flex-wrap gap-2">
 					<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
-						<span className="text-sm capitalize">{raffle.categoryId}</span>
+						<span className="text-sm capitalize">
+							{getCategoryLabel(raffle.categoryId)}
+						</span>
 					</div>
 				</div>
 

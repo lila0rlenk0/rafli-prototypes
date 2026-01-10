@@ -9,10 +9,11 @@ import {
 } from '@/components/ui/dropzone';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { RAFFLE_CATEGORIES } from '@/constants/categories';
 import { DollarSign, X } from 'lucide-react';
 import { STEPS } from '.';
 import { useMultiStepForm } from '../multi-step-form-provider';
-import { MAX_FILE_SIZE, RAFFLE_CATEGORIES } from '../schema';
+import { MAX_FILE_SIZE } from '../schema';
 import { ImagePreview } from './image-preview';
 
 export function BasicInfoStep() {

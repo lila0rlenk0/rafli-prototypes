@@ -46,10 +46,20 @@ To keep the architecture simple and maintainable:
 ```tsx
 'use server';
 
+import { baseClient } from '@/lib/api/client';
+import { failure, success } from '@/lib/errors';
+import { mapRaffleError } from '@/lib/errors';
+import { type RaffleErrorCode } from '@/types/errors';
+import type { ServiceResponse } from '@/types/service-response';
+
+type GetPublicRafflesResponse = ServiceResponse<Raffle[], RaffleErrorCode>;
+
 /**
  * Fetches public raffles with caching
  */
-export async function getPublicRaffles(params?: QueryParams) {
+export async function getPublicRaffles(
+  params?: QueryParams
+): Promise<GetPublicRafflesResponse> {
   'use cache';
 
   try {
@@ -62,9 +72,10 @@ export async function getPublicRaffles(params?: QueryParams) {
       },
     });
 
-    return response.data;
+    return success(response.data);
   } catch (error) {
-    return { error: 'Failed to fetch raffles' };
+    const errorCode = mapRaffleError(error);
+    return failure(errorCode);
   }
 }
 ```
@@ -74,20 +85,42 @@ export async function getPublicRaffles(params?: QueryParams) {
 ```tsx
 'use server';
 
+import { authenticatedClient } from '@/lib/api/client';
+import { failure, success } from '@/lib/errors';
+import { mapRaffleError } from '@/lib/errors';
+import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
+import { listRafflesResponseSchema, type ListRafflesResponse } from '@/types/raffle';
+import type { ServiceResponse } from '@/types/service-response';
+import { ZodError } from 'zod';
+
+type GetMyRafflesResponse = ServiceResponse<ListRafflesResponse, RaffleErrorCode>;
+
 /**
  * Fetches user's raffles
  * No caching because it requires authentication (cookies)
  */
-export async function getMyRaffles(query?: QueryParams) {
+export async function getMyRaffles(
+  query?: QueryParams
+): Promise<GetMyRafflesResponse> {
   try {
     // authenticatedClient handles token injection via interceptor
     const response = await authenticatedClient.get('/me/raffles', {
       params: query,
     });
 
-    return response.data;
+    // Validate response with Zod schema
+    const validatedData = listRafflesResponseSchema.parse(response.data);
+
+    return success(validatedData);
   } catch (error) {
-    return { error: 'Failed to fetch raffles' };
+    // Handle validation errors separately
+    if (error instanceof ZodError) {
+      console.error('Response validation failed:', error);
+      return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
+    }
+
+    const errorCode = mapRaffleError(error);
+    return failure(errorCode);
   }
 }
 ```
@@ -105,6 +138,215 @@ export async function getMyRaffles(query?: QueryParams) {
 - Avoids complex wrapper patterns
 - Clear separation: public data can be cached, authenticated data cannot
 - No risk of cache-related authentication bugs
+
+### Creating New Server Actions
+
+**All server actions must follow the typed error response pattern** using `success()` and `failure()` helpers.
+
+#### Step-by-Step Guide
+
+**1. Define imports:**
+```tsx
+'use server';
+
+import { baseClient } from '@/lib/api/client'; // or authenticatedClient
+import { failure, success } from '@/lib/errors';
+import { mapAuthError } from '@/lib/errors'; // or mapRaffleError
+import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import type { ServiceResponse } from '@/types/service-response';
+```
+
+**2. Define response type:**
+```tsx
+// For GET requests returning data
+type GetUserResponse = ServiceResponse<User, AuthErrorCode>;
+
+// For POST/PUT/DELETE returning data
+type CreateUserResponse = ServiceResponse<User, AuthErrorCode>;
+
+// For operations with no return data (e.g., sign-out, delete)
+type DeleteUserResponse = ServiceResponse<void, AuthErrorCode>;
+```
+
+**3. Implement function with proper error handling:**
+```tsx
+/**
+ * JSDoc describing what the function does
+ *
+ * @param input - Description of parameters
+ * @returns ServiceResponse with data on success, ErrorCode on failure
+ */
+export async function myServiceAction(
+  input: MyInput
+): Promise<MyServiceResponse> {
+  try {
+    // Step 1: Client-side validation (if needed)
+    if (!isValid(input)) {
+      return failure(MY_ERROR_CODES.INVALID_INPUT);
+    }
+
+    // Step 2: Make API request
+    const response = await baseClient.post('/endpoint', input);
+
+    // Step 3: Validate response structure (with Zod if available)
+    const validatedData = mySchema.parse(response.data);
+
+    // Step 4: Return success with data
+    return success(validatedData);
+  } catch (error) {
+    // Handle Zod validation errors separately
+    if (error instanceof ZodError) {
+      console.error('Response validation failed:', error);
+      return failure(MY_ERROR_CODES.VALIDATION_FAILED);
+    }
+
+    // Map backend errors to frontend error codes
+    const errorCode = mapMyError(error);
+    return failure(errorCode);
+  }
+}
+```
+
+#### Common Patterns
+
+**Pattern 1: Simple GET request**
+```tsx
+export async function getItem(id: string): Promise<ServiceResponse<Item, ItemErrorCode>> {
+  try {
+    const response = await baseClient.get(`/items/${id}`);
+    const validated = itemSchema.parse(response.data);
+    return success(validated);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return failure(ITEM_ERROR_CODES.FETCH_FAILED);
+    }
+    return failure(mapItemError(error));
+  }
+}
+```
+
+**Pattern 2: POST with validation**
+```tsx
+export async function createItem(
+  input: CreateItemInput
+): Promise<ServiceResponse<Item, ItemErrorCode>> {
+  try {
+    // Validate input payload
+    const validationResult = createItemPayloadSchema.safeParse(input);
+    if (!validationResult.success) {
+      console.error('Payload validation failed:', validationResult.error);
+      return failure(ITEM_ERROR_CODES.INVALID_DATA);
+    }
+
+    const response = await authenticatedClient.post('/items', validationResult.data);
+    const item = itemSchema.parse(response.data);
+    return success(item);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return failure(ITEM_ERROR_CODES.CREATE_FAILED);
+    }
+    return failure(mapItemError(error));
+  }
+}
+```
+
+**Pattern 3: DELETE with no return data**
+```tsx
+export async function deleteItem(id: string): Promise<ServiceResponse<void, ItemErrorCode>> {
+  try {
+    await authenticatedClient.delete(`/items/${id}`);
+    return success(undefined);
+  } catch (error) {
+    return failure(mapItemError(error));
+  }
+}
+```
+
+**Pattern 4: File upload**
+```tsx
+export async function uploadFile(
+  file: File
+): Promise<ServiceResponse<UploadResponse, ItemErrorCode>> {
+  try {
+    // Client-side validation
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      return failure(ITEM_ERROR_CODES.INVALID_FILE_TYPE);
+    }
+    if (file.size > MAX_SIZE) {
+      return failure(ITEM_ERROR_CODES.FILE_TOO_LARGE);
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await authenticatedClient.post('/upload', formData, {
+      timeout: API_TIMEOUTS.UPLOAD,
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    const validated = uploadResponseSchema.parse(response.data);
+    return success(validated);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return failure(ITEM_ERROR_CODES.UPLOAD_FAILED);
+    }
+    return failure(mapItemError(error));
+  }
+}
+```
+
+#### Key Rules
+
+1. **Always return `ServiceResponse<TData, TErrorCode>`**
+2. **Use `success(data)` for successful operations**
+3. **Use `failure(errorCode)` for all error cases**
+4. **Never return raw error strings** - always use typed error codes
+5. **Validate responses with Zod schemas when available**
+6. **Handle `ZodError` separately** from API errors
+7. **Use appropriate error mapper** (`mapAuthError`, `mapRaffleError`, etc.)
+8. **Log validation failures** with `console.error()` for debugging
+9. **Return early** for client-side validation failures
+10. **Document functions** with JSDoc including `@returns` description
+
+#### Error Code Selection
+
+Choose the appropriate error code based on the failure type:
+
+```tsx
+// Client-side validation
+if (file.size > MAX_SIZE) {
+  return failure(SERVICE_ERROR_CODES.FILE_TOO_LARGE);
+}
+
+// Zod validation failure
+if (error instanceof ZodError) {
+  return failure(SERVICE_ERROR_CODES.VALIDATION_FAILED);
+}
+
+// Backend/network errors
+const errorCode = mapServiceError(error); // Auto-maps backend codes
+return failure(errorCode);
+```
+
+#### Quick Reference: success() vs failure()
+
+```tsx
+// ✅ SUCCESS CASES
+return success(data);              // With data
+return success(undefined);         // No data (void)
+return success(validatedData);     // After Zod validation
+return success(response.data);     // Direct API response
+
+// ❌ FAILURE CASES
+return failure(ERROR_CODES.NOT_FOUND);           // Specific error
+return failure(mapServiceError(error));          // Mapped backend error
+return failure(ERROR_CODES.VALIDATION_FAILED);   // Zod validation failed
+return failure(ERROR_CODES.INVALID_INPUT);       // Client validation failed
+```
+
+**When to use each:**
+- **`success(data)`**: When operation completes successfully with or without data
+- **`failure(code)`**: For ANY error - validation, backend, network, or business logic
 
 ## Component Development
 
@@ -652,6 +894,175 @@ export type Raffle = z.infer<typeof raffleSchema>;
 5. **Documentation**: Document all schemas and types with JSDoc comments
 6. **Organization**: Follow the structured file organization pattern
 7. **Constants**: Use `as const` objects for enums and derive types from them
+
+---
+
+## Error Handling
+
+### Typed Error Response System
+
+All server actions use a typed error handling system for type-safe, predictable error handling.
+
+#### Core Pattern
+
+Every service function returns `ServiceResponse<TData, TErrorCode>`:
+
+```typescript
+type ServiceResponse<TData, TErrorCode> =
+  | { success: true; data: TData }
+  | { success: false; error: TErrorCode };
+```
+
+#### Service Implementation
+
+**1. Import error utilities and types:**
+```typescript
+import { failure, success } from '@/lib/errors';
+import { mapAuthError } from '@/lib/errors';
+import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import type { ServiceResponse } from '@/types/service-response';
+```
+
+**2. Define response type:**
+```typescript
+type SignInResponse = ServiceResponse<void, AuthErrorCode>;
+```
+
+**3. Return typed responses:**
+```typescript
+export async function signInUser(input: SignInInput): Promise<SignInResponse> {
+  try {
+    const response = await baseClient.post('/api/auth/sign-in/email', input);
+
+    if (!response.data.token) {
+      return failure(AUTH_ERROR_CODES.INVALID_RESPONSE);
+    }
+
+    await setAuthCookies(response.data.token, response.data.user);
+    return success(undefined);
+  } catch (error) {
+    const errorCode = mapAuthError(error);
+    return failure(errorCode);
+  }
+}
+```
+
+#### Component Consumption
+
+**1. Create error message mapper:**
+```typescript
+import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+
+function getErrorMessage(errorCode: AuthErrorCode): string {
+  switch (errorCode) {
+    case AUTH_ERROR_CODES.INVALID_CREDENTIALS:
+      return 'Invalid email or password.';
+    case AUTH_ERROR_CODES.ACCOUNT_LOCKED:
+      return 'Your account has been locked.';
+    case 'network_error':
+      return 'Network error. Please check your connection.';
+    case 'timeout_error':
+      return 'Request timed out. Please try again.';
+    default:
+      return 'An unexpected error occurred.';
+  }
+}
+```
+
+**2. Handle response with type narrowing:**
+```typescript
+const result = await signInUser(data);
+
+if (!result.success) {
+  const message = getErrorMessage(result.error);
+  setError('root', { message });
+  return;
+}
+
+// TypeScript knows result.data exists here
+router.push('/dashboard');
+```
+
+#### Error Code Organization
+
+- **CommonErrorCode**: Network, timeout, server errors (shared across all services)
+- **AuthErrorCode**: Authentication-specific errors (sign-in, sign-up, token errors)
+- **RaffleErrorCode**: Raffle operation errors (create, fetch, upload)
+
+Error codes follow the naming convention: `<service>:<operation>:<specific>`
+
+Examples:
+- `auth:sign-in:invalid-credentials`
+- `raffle:create:permission`
+- `raffle:upload:too-large`
+
+#### Backend Error Mapping
+
+The `mapAuthError()` and `mapRaffleError()` functions automatically map backend error codes to frontend codes:
+
+```typescript
+// Backend returns: { code: 'invalid_credentials' }
+// Frontend receives: 'auth:sign-in:invalid-credentials'
+```
+
+Fallback handling:
+- HTTP 401 → `unauthorized`
+- HTTP 403 → `forbidden`
+- HTTP 500 → `internal_server_error`
+- `ECONNABORTED` → `timeout_error`
+- `ERR_NETWORK` → `network_error`
+- Unknown → `unknown_error`
+
+#### Client-side Validation
+
+Return error codes early for client-side validation:
+
+```typescript
+// File size validation
+if (file.size > MAX_SIZE) {
+  return failure(RAFFLE_ERROR_CODES.UPLOAD_FILE_TOO_LARGE);
+}
+
+// Invalid category
+if (!CATEGORY_ID_MAP[input.category]) {
+  return failure(RAFFLE_ERROR_CODES.CREATE_INVALID_CATEGORY);
+}
+```
+
+#### Multiple Operations
+
+For sequential operations, handle each error separately:
+
+```typescript
+// Step 1: Create raffle
+const createResult = await createRaffle(data);
+if (!createResult.success) {
+  toast.error(getErrorMessage(createResult.error));
+  return;
+}
+
+// Step 2: Upload cover (optional)
+const uploadResult = await uploadCover(createResult.data.id, file);
+if (!uploadResult.success) {
+  toast.error(getErrorMessage(uploadResult.error));
+  // Raffle created but upload failed - partial success
+  router.push('/my-raffles');
+  return;
+}
+
+toast.success('Raffle created successfully!');
+router.push('/my-raffles');
+```
+
+#### Key Benefits
+
+1. **Type Safety**: TypeScript enforces handling all error cases
+2. **Separation of Concerns**: Error codes in services, messages in components
+3. **Exhaustive Checking**: Switch statements must handle all error codes
+4. **Backend Integration**: Automatic mapping from backend error codes
+5. **Predictable**: Same pattern across all services
+
+---
 
 ## Backend Integration
 

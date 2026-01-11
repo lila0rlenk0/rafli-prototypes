@@ -1,6 +1,12 @@
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from '@/components/ui/accordion';
 import { getCategoryLabel } from '@/constants/categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { Image as ImageIcon, InfoIcon } from 'lucide-react';
@@ -127,66 +133,102 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	);
 
 	return (
-		<div className="container mx-auto flex max-w-4xl gap-8 px-4 py-8">
-			<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
-				<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
+		<div className="container mx-auto flex max-w-6xl gap-8 px-4 py-8">
+			<div className="w-full space-y-4">
+				<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
+					<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
 
-				<div className="flex items-center gap-4">
-					<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xl font-semibold">
-						{getHostInitial()}
-					</div>
-					<div className="flex min-w-0 flex-col font-medium">
-						<span className="truncate text-sm">by {getHostName()}</span>
-						<span className="text-xs">{getHostRafflesCount()}</span>
-					</div>
-				</div>
-
-				<div className="flex flex-col gap-4">
-					<div className="relative flex aspect-video max-h-96 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
-						{raffle.coverMediaUrl ? (
-							<Image
-								src={raffle.coverMediaUrl}
-								alt={raffle.title}
-								fill
-								className="object-cover"
-							/>
-						) : (
-							<ImageIcon className="size-12 text-gray-400" />
-						)}
-					</div>
-
-					{raffle.galleryMediaUrls.length > 0 && (
-						<div className="grid grid-cols-3 gap-4">
-							{raffle.galleryMediaUrls.slice(0, 3).map((url, index) => (
-								<div
-									key={index}
-									className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
-								>
-									<Image
-										src={url}
-										alt={`Gallery ${index + 1}`}
-										fill
-										className="object-cover"
-									/>
-								</div>
-							))}
+					<div className="flex items-center gap-4">
+						<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xl font-semibold">
+							{getHostInitial()}
 						</div>
-					)}
-				</div>
-
-				<div className="flex min-w-0 flex-col gap-2">
-					<label className="text-sm text-[#B4B4B4]">Description</label>
-					<p className="max-w-full text-sm wrap-anywhere">
-						{raffle.description}
-					</p>
-				</div>
-
-				<div className="flex flex-wrap gap-2">
-					<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
-						<span className="text-sm capitalize">
-							{getCategoryLabel(raffle.categoryId)}
-						</span>
+						<div className="flex min-w-0 flex-col font-medium">
+							<span className="truncate text-sm">by {getHostName()}</span>
+							<span className="text-xs">{getHostRafflesCount()}</span>
+						</div>
 					</div>
+
+					<div className="flex flex-col gap-4">
+						<div className="relative flex aspect-video max-h-96 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
+							{raffle.coverMediaUrl ? (
+								<Image
+									src={raffle.coverMediaUrl}
+									alt={raffle.title}
+									fill
+									className="object-cover"
+								/>
+							) : (
+								<ImageIcon className="size-12 text-gray-400" />
+							)}
+						</div>
+
+						<div className="grid grid-cols-3 gap-4">
+							{Array.from({ length: 3 }).map((_, index) => {
+								const imageUrl = raffle.galleryMediaUrls[index];
+								return (
+									<div
+										key={index}
+										className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
+									>
+										{imageUrl ? (
+											<Image
+												src={imageUrl}
+												alt={`Gallery ${index + 1}`}
+												fill
+												className="object-cover"
+											/>
+										) : (
+											<ImageIcon className="size-6 text-gray-400" />
+										)}
+									</div>
+								);
+							})}
+						</div>
+					</div>
+
+					<div className="flex min-w-0 flex-col gap-2">
+						<label className="text-sm text-[#B4B4B4]">Description</label>
+						<p className="max-w-full text-sm wrap-anywhere">
+							{raffle.description}
+						</p>
+					</div>
+
+					<div className="flex flex-wrap gap-2">
+						<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
+							<span className="text-sm capitalize">
+								{getCategoryLabel(raffle.categoryId)}
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<div className="flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6">
+					<h2 className="text-xl font-semibold">FAQ</h2>
+					<Accordion type="single" collapsible className="w-full space-y-4">
+						<AccordionItem value="how-it-works" className="border-none">
+							<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 hover:no-underline">
+								How it works?
+							</AccordionTrigger>
+							<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
+								The raffle is a simple and fair way to win prizes. You can
+								purchase tickets to increase your chances of winning. The winner
+								will be randomly selected when the raffle ends.
+							</AccordionContent>
+						</AccordionItem>
+
+						<AccordionItem value="rules-eligibility" className="border-none">
+							<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 hover:no-underline">
+								Rules and Eligibility
+							</AccordionTrigger>
+							<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
+								Participants must be 18 years or older to enter. You can
+								purchase multiple tickets to increase your chances of winning.
+								Winners will be notified via email and must complete KYC
+								verification to claim their prize. All sales are final and
+								non-refundable.
+							</AccordionContent>
+						</AccordionItem>
+					</Accordion>
 				</div>
 			</div>
 

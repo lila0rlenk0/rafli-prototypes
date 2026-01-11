@@ -88,7 +88,7 @@ export function TicketPurchaseCard({
 		<div className="space-y-4">
 			{/* Price per ticket */}
 			<div className="flex items-center justify-between">
-				<div className="flex items-baseline gap-1">
+				<div className="-mb-4 flex items-baseline gap-1">
 					<p className="font-clash-display text-3xl font-semibold">
 						{formattedPrice}
 					</p>

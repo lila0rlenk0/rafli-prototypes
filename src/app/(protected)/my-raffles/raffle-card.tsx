@@ -1,13 +1,12 @@
 'use client';
 
+import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Raffle, RAFFLE_STATUS, RaffleStatus } from '@/types/raffle';
-import { CheckCircle2, Clock, Copy, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle2, Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaXTwitter } from 'react-icons/fa6';
-import { toast } from 'sonner';
 
 interface RaffleCardProps {
 	raffle: Raffle;
@@ -41,28 +40,6 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 		const end = new Date(endDateStr);
 		const diffTime = Math.max(0, end.getTime() - now.getTime());
 		return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-	};
-
-	/**
-	 * Copies the raffle link to the clipboard
-	 * @param slug - The public slug or code of the raffle
-	 */
-	const handleCopyLink = (slug: string) => {
-		const link = `${window.location.origin}/raffles/${slug}`;
-		navigator.clipboard.writeText(link);
-		toast.success('Raffle link copied to clipboard!');
-	};
-
-	/**
-	 * Opens a Twitter/X share intent in a new tab
-	 * @param title - The title of the raffle
-	 * @param slug - The public slug or code of the raffle
-	 */
-	const handleShare = (title: string, slug: string) => {
-		const text = `Check out this raffle: ${title}`;
-		const link = `${window.location.origin}/raffles/${slug}`;
-		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
-		window.open(url, '_blank');
 	};
 
 	const progress = calculateProgress(
@@ -181,22 +158,10 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 					</Button>
 				</Link>
 
-				<div className="mt-6 flex items-center justify-between px-2">
-					<button
-						onClick={() => handleShare(raffle.title, raffle.publicSlugOrCode)}
-						className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
-					>
-						<FaXTwitter className="h-4 w-4" />
-						Share on X
-					</button>
-					<button
-						onClick={() => handleCopyLink(raffle.publicSlugOrCode)}
-						className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
-					>
-						<Copy className="h-4 w-4" />
-						Copy Raffle link
-					</button>
-				</div>
+				<RaffleShareButtons
+					title={raffle.title}
+					publicSlugOrCode={raffle.publicSlugOrCode}
+				/>
 			</div>
 		</div>
 	);

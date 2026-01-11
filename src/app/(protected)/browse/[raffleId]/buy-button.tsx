@@ -11,6 +11,7 @@ import type { OrderErrorCode, PaymentErrorCode } from '@/types/errors';
 
 interface BuyButtonProps {
 	raffleId: string;
+	ticketQuantity: number;
 }
 
 /**
@@ -22,8 +23,11 @@ interface BuyButtonProps {
  * 3. Redirects to Stripe checkout page
  *
  * Shows loading states and error messages during the process.
+ *
+ * @param raffleId - The raffle ID to purchase tickets for
+ * @param ticketQuantity - Number of tickets to purchase
  */
-export function BuyButton({ raffleId }: BuyButtonProps) {
+export function BuyButton({ raffleId, ticketQuantity }: BuyButtonProps) {
 	const [isLoading, setIsLoading] = useState(false);
 
 	/**
@@ -86,7 +90,7 @@ export function BuyButton({ raffleId }: BuyButtonProps) {
 			// Step 1: Create order
 			const orderResult = await createOrder({
 				raffleId,
-				ticketQuantity: 1, // Initially fixed at 1, parameterized later
+				ticketQuantity,
 			});
 
 			if (!orderResult.success) {
@@ -121,20 +125,22 @@ export function BuyButton({ raffleId }: BuyButtonProps) {
 		}
 	}
 
+	function getButtonText() {
+		if (isLoading) {
+			return 'Processing...';
+		}
+
+		return `Buy ticket${ticketQuantity > 1 ? 's' : ''}`;
+	}
+
 	return (
 		<Button
 			onClick={handleBuyClick}
 			disabled={isLoading}
 			className="w-full bg-black"
 		>
-			{isLoading ? (
-				<>
-					<Loader2Icon className="mr-2 size-4 animate-spin" />
-					Processing...
-				</>
-			) : (
-				'Buy Ticket'
-			)}
+			{isLoading && <Loader2Icon className="mr-2 size-4 animate-spin" />}
+			{getButtonText()}
 		</Button>
 	);
 }

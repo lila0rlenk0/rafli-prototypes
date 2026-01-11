@@ -1191,6 +1191,236 @@ function validateUser() {
 
 ---
 
+## Post-Implementation Verification
+
+**CRITICAL: After every feature implementation or modification, you MUST perform the following verification steps before considering the task complete.**
+
+### 1. Lint Verification (Required)
+
+Always run the lint command to catch errors, unused variables, and code quality issues:
+
+```bash
+bun run lint
+```
+
+**What to check:**
+- ✅ No ESLint errors or warnings
+- ✅ No unused variables, imports, or props
+- ✅ No React Hooks violations
+- ✅ All imports resolve correctly
+
+**If lint fails:**
+- Review the error messages carefully
+- Fix all errors before proceeding
+- Run lint again to confirm fixes
+
+### 2. Build Verification (Optional/Manual)
+
+The build can be run manually when needed or before deployment:
+
+```bash
+bun run build
+```
+
+**When to run build:**
+- Before creating a pull request
+- Before deploying to production
+- When making significant changes to types or configurations
+- If you want to verify the production build
+
+**What to check:**
+- ✅ Build completes successfully without errors
+- ✅ No TypeScript type errors
+- ✅ No missing dependencies
+
+### 3. ESLint and React Hooks Validation
+
+Common errors to watch for and fix:
+
+#### A. React Hooks Errors
+
+**Error: `setState` in `useEffect`**
+```typescript
+// ❌ BAD - Causes cascading renders
+useEffect(() => {
+  updateState(); // Calls setState synchronously
+  const interval = setInterval(updateState, 1000);
+  return () => clearInterval(interval);
+}, [updateState]);
+
+// ✅ GOOD - Only set up subscription
+useEffect(() => {
+  const interval = setInterval(updateState, 1000);
+  return () => clearInterval(interval);
+}, [updateState]);
+```
+
+**Error: Variable accessed before declaration**
+```typescript
+// ❌ BAD - Function used before declaration in useState
+const [state, setState] = useState(() => calculateValue());
+
+function calculateValue() {
+  return someValue;
+}
+
+// ✅ GOOD - Move function before useState
+function calculateValue() {
+  return someValue;
+}
+
+const [state, setState] = useState(() => calculateValue());
+```
+
+#### B. Unused Variables and Imports
+
+**Always remove:**
+- Unused imports
+- Unused function parameters
+- Unused variables
+- Unused props in interfaces
+
+**Example cleanup:**
+```typescript
+// ❌ BAD - Unused imports and props
+import { useState, useEffect, useMemo } from 'react'; // useMemo not used
+
+interface Props {
+  name: string;
+  age: number;    // age not used
+  email: string;
+}
+
+function Component({ name, age, email }: Props) {
+  return <div>{name}</div>; // Only name is used
+}
+
+// ✅ GOOD - Only what's needed
+import { useState } from 'react';
+
+interface Props {
+  name: string;
+}
+
+function Component({ name }: Props) {
+  return <div>{name}</div>;
+}
+```
+
+### 4. Verification Checklist
+
+Before marking a task as complete, verify:
+
+**Code Quality (Required):**
+- [ ] `bun run lint` passes without errors or warnings
+- [ ] No unused variables, imports, or props
+- [ ] No TypeScript `any` types (unless absolutely necessary)
+- [ ] All functions have JSDoc documentation
+- [ ] Logic extracted from JSX into helper functions
+
+**React Best Practices:**
+- [ ] No `setState` called directly in `useEffect` body
+- [ ] All hooks follow Rules of Hooks
+- [ ] Dependencies arrays are correct and complete
+- [ ] No infinite render loops
+
+**Runtime:**
+- [ ] No console errors when running `bun run dev`
+- [ ] All imports resolve correctly
+- [ ] Feature works as expected manually
+
+**Performance:**
+- [ ] Expensive calculations wrapped in `useMemo`
+- [ ] Callbacks wrapped in `useCallback` when needed
+- [ ] Components don't re-render unnecessarily
+
+### 5. Quick Verification Commands
+
+```bash
+# Run linter (REQUIRED after every change)
+bun run lint
+
+# Run development server to check for runtime errors
+bun run dev
+
+# Build the project (optional - use when needed)
+bun run build
+
+# Run type checking (optional)
+bun run type-check  # or: tsc --noEmit
+```
+
+### 6. Common Fixes
+
+**Fix unused props:**
+```typescript
+// Before
+interface Props {
+  id: string;
+  name: string;
+  age: number;  // Not used
+}
+
+// After
+interface Props {
+  id: string;
+  name: string;
+}
+```
+
+**Fix unused imports:**
+```typescript
+// Before
+import { useState, useEffect, useMemo } from 'react';
+
+// After (if only useState is used)
+import { useState } from 'react';
+```
+
+**Fix function declaration order:**
+```typescript
+// Before - Error: cannot access before declaration
+export function Component() {
+  const value = calculateValue(); // Used here
+  // ...
+}
+
+function calculateValue() {  // Declared after use
+  return 10;
+}
+
+// After - Move helper function outside or before use
+function calculateValue() {
+  return 10;
+}
+
+export function Component() {
+  const value = calculateValue();
+  // ...
+}
+```
+
+### 7. Integration with Development Workflow
+
+**After implementing a feature:**
+1. Write the code following all guidelines
+2. Run `bun run lint` to verify code quality
+3. Review ESLint errors/warnings
+4. Remove all unused code
+5. Fix all React Hooks violations
+6. Run lint again to confirm all issues resolved
+7. Test the feature manually with `bun run dev`
+8. (Optional) Run `bun run build` if preparing for PR or deployment
+9. Only then consider the task complete
+
+**Never skip lint verification.** Catching errors early prevents:
+- Runtime errors
+- Code review delays
+- Technical debt accumulation
+- Unused code cluttering the codebase
+
+---
+
 ## Summary
 
 Following these guidelines ensures:

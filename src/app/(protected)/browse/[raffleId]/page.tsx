@@ -1,10 +1,10 @@
-import { Separator } from '@/components/ui/separator';
+import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
+import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
+import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
 import { getCategoryLabel } from '@/constants/categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
-import { Copy, Image as ImageIcon, InfoIcon, Minus, Plus } from 'lucide-react';
+import { Image as ImageIcon, InfoIcon } from 'lucide-react';
 import Image from 'next/image';
-import { FaXTwitter } from 'react-icons/fa6';
-import { BuyButton } from './buy-button';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 
 interface PageProps {
@@ -77,6 +77,55 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		return `${count} Raffles`;
 	}
 
+	/**
+	 * Parses the ticket price from string to number
+	 * @param priceString - Price as string from API
+	 * @returns Parsed price as number
+	 */
+	function parseTicketPrice(priceString: string): number {
+		return parseFloat(priceString);
+	}
+
+	/**
+	 * Calculates the fill percentage for the raffle
+	 * @param participantsCount - Current number of participants
+	 * @param maxParticipants - Maximum number of participants
+	 * @returns Rounded percentage as number
+	 */
+	function calculateFillPercentage(
+		participantsCount: number,
+		maxParticipants: number,
+	): number {
+		if (maxParticipants === 0) return 0;
+		return Math.round((participantsCount / maxParticipants) * 100);
+	}
+
+	/**
+	 * Gets the progress bar width as a percentage string
+	 * @param participantsCount - Current number of participants
+	 * @param maxParticipants - Maximum number of participants
+	 * @returns Percentage string for width style (e.g., "50%")
+	 */
+	function getProgressBarWidth(
+		participantsCount: number,
+		maxParticipants: number,
+	): string {
+		if (maxParticipants === 0) return '0%';
+		const percentage = (participantsCount / maxParticipants) * 100;
+		return `${percentage}%`;
+	}
+
+	// Calculate values before return
+	const ticketPrice = parseTicketPrice(raffle.ticketPriceAmount);
+	const fillPercentage = calculateFillPercentage(
+		raffle.participantsCount,
+		raffle.maxParticipants,
+	);
+	const progressWidth = getProgressBarWidth(
+		raffle.participantsCount,
+		raffle.maxParticipants,
+	);
+
 	return (
 		<div className="container mx-auto flex max-w-4xl gap-8 px-4 py-8">
 			<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
@@ -142,109 +191,49 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			</div>
 
 			<div className="space-y-2">
-				<div className="h-fit space-y-4 rounded-2xl border border-black bg-white p-4">
+				<div className="h-fit space-y-4 rounded-2xl border border-black bg-white px-4 py-8">
 					<h2 className="font-clash-display text-center text-xl font-semibold text-nowrap">
 						The raffle is active!
 					</h2>
 
-					<div className="flex items-center justify-center gap-4 rounded-2xl bg-[#DFFFED] p-4">
-						<div className="flex flex-col items-center gap-2">
-							<p className="font-clash-display text-4xl font-semibold">03</p>
-							<p className="text-sm text-[#7B7B7B]">Days</p>
-						</div>
-						<div className="flex flex-col items-center gap-2">
-							<p className="font-clash-display text-4xl font-semibold">04</p>
-							<p className="text-sm text-[#7B7B7B]">Hours</p>
-						</div>
-						<div className="flex flex-col items-center gap-2">
-							<p className="font-clash-display text-4xl font-semibold">03</p>
-							<p className="text-sm text-[#7B7B7B]">Minutes</p>
-						</div>
-						<div className="flex flex-col items-center gap-2">
-							<p className="font-clash-display text-4xl font-semibold">03</p>
-							<p className="text-sm text-[#7B7B7B]">Seconds</p>
-						</div>
-					</div>
+					<RaffleCountdown endAt={raffle.endAt} />
 
-					<div>
-						<div className="flex items-center justify-between">
-							<div className="flex items-baseline gap-1">
-								<p className="font-clash-display text-3xl font-semibold">$5</p>
-								<p className="text-sm text-[#7B7B7B]">per ticket</p>
-							</div>
-						</div>
-						<div className="flex items-center justify-between">
-							<p className="text-sm text-[#7B7B7B]">Number of tickets</p>
-
-							<div className="flex items-center justify-center gap-6 rounded-full border border-black px-4 py-1">
-								<Minus className="size-4" />
-								<p className="text-lg">1</p>
-								<Plus className="size-4" />
-							</div>
-						</div>
-					</div>
-					<div className="flex items-center justify-between gap-2">
-						<button className="flex w-full items-center justify-center rounded-full border border-black py-2">
-							<p className="text-sm">3 Tickets</p>
-						</button>
-						<button className="flex w-full items-center justify-center rounded-full border border-black py-2">
-							<p className="text-sm">6 Tickets</p>
-						</button>
-						<button className="flex w-full items-center justify-center rounded-full border border-black py-2">
-							<p className="text-sm">9 Tickets</p>
-						</button>
-					</div>
-
-					<Separator className="my-4 bg-[#B4B4B4]" />
-
-					<div className="flex items-center justify-between">
-						<p className="text-sm text-[#7B7B7B]">Total</p>
-						<p className="font-clash-display text-3xl font-semibold">$15</p>
-					</div>
-
-					<BuyButton raffleId={raffleId} />
+					<TicketPurchaseCard
+						raffleId={raffleId}
+						price={ticketPrice}
+						currency={raffle.ticketPriceCurrency}
+						maxParticipants={raffle.maxParticipants}
+						participantsCount={raffle.participantsCount}
+					/>
 
 					<div className="space-y-2">
 						<div className="flex items-center justify-between text-sm">
-							<span className="text-gray-500">
+							<span className="text-[#7B7B7B]">
 								{raffle.participantsCount}/{raffle.maxParticipants}
 							</span>
-							<span className="font-medium text-gray-900">
-								{Math.round(0)}% filled
+							<span className="font-medium text-[#7B7B7B]">
+								{fillPercentage}% filled
 							</span>
 						</div>
 
 						<div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
 							<div
 								className="h-full bg-green-400 transition-all duration-300 ease-out"
-								style={{ width: `${0}%` }}
+								style={{ width: progressWidth }}
 							/>
 						</div>
-
-						<div className="flex items-center justify-between">
-							<span className="text-sm font-medium text-gray-500">
-								2 days left
-							</span>
-							<p>{raffle.status}</p>
-						</div>
 					</div>
 
-					<div className="mt-6 flex items-center justify-between px-2">
-						<button className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black">
-							<FaXTwitter className="h-4 w-4" />
-							Share on X
-						</button>
-						<button className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black">
-							<Copy className="h-4 w-4" />
-							Copy Raffle link
-						</button>
-					</div>
+					<RaffleShareButtons
+						title={raffle.title}
+						publicSlugOrCode={raffle.publicSlugOrCode}
+					/>
 				</div>
 
 				<div className="flex items-center justify-center gap-2">
 					<InfoIcon className="size-4 text-[#7B7B7B]" />
 					<p className="text-sm text-[#7B7B7B]">
-						Youll only need KYC if you win
+						You&apos;ll only need KYC if you win
 					</p>
 				</div>
 			</div>

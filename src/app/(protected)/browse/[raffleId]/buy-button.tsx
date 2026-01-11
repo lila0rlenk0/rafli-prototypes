@@ -122,7 +122,11 @@ export function BuyButton({ raffleId }: BuyButtonProps) {
 	}
 
 	return (
-		<Button onClick={handleBuyClick} disabled={isLoading} className="w-full">
+		<Button
+			onClick={handleBuyClick}
+			disabled={isLoading}
+			className="w-full bg-black"
+		>
 			{isLoading ? (
 				<>
 					<Loader2Icon className="mr-2 size-4 animate-spin" />

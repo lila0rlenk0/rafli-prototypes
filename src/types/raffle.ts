@@ -68,6 +68,7 @@ const hostSchema = z.object({
 	name: z.string().nullable(),
 	link: z.url().nullable(),
 	avatar: z.url().nullable(),
+	totalRaffles: z.number().optional(), // TODO: change to non optional once PR is merged
 });
 
 /**

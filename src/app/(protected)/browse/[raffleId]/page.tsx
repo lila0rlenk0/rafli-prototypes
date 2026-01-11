@@ -77,9 +77,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	 * @returns Formatted string with label
 	 */
 	function getHostRafflesCount(): string {
-		// TODO: fetching real count if available in hostData
-		// For now using 0 as per previous mock, or could be passed in raffle.host if updated
-		const count = 0;
+		let count = 0;
+		if (raffle.host?.totalRaffles) {
+			count = raffle.host.totalRaffles;
+		}
 		return `${count} Raffles`;
 	}
 

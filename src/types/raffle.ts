@@ -63,6 +63,15 @@ export const raffleSortOptionSchema = z.enum([
 	RAFFLE_SORT_OPTION.TRENDING,
 ]);
 
+/**
+ * Schema for media URL with expiration
+ * Represents a presigned URL that expires at a specific time
+ */
+const mediaUrlSchema = z.object({
+	url: z.string(),
+	expiresAt: z.string(),
+});
+
 const hostSchema = z.object({
 	id: z.uuid(),
 	name: z.string().nullable(),
@@ -80,7 +89,7 @@ export const raffleSchema = z.object({
 	title: z.string(),
 	description: z.string(),
 	categoryId: z.string(),
-	coverMediaUrl: z.string(),
+	coverMediaUrl: mediaUrlSchema,
 	galleryMediaUrls: z.array(z.string()),
 	declaredValueAmount: z.string(),
 	declaredValueCurrency: z.string(),

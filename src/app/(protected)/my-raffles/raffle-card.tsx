@@ -88,9 +88,9 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 	return (
 		<div className="group flex flex-col overflow-hidden rounded-[24px] bg-white">
 			<div className="relative mb-4 aspect-4/3 max-h-53 w-full overflow-hidden rounded-2xl bg-gray-100">
-				{raffle.coverMediaUrl ? (
+				{raffle.coverMediaUrl.url ? (
 					<Image
-						src={raffle.coverMediaUrl}
+						src={raffle.coverMediaUrl.url}
 						alt={raffle.title}
 						fill
 						className="object-cover"

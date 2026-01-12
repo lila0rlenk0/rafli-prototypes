@@ -1,8 +1,7 @@
+import { CreateRaffleButton } from '@/app/(protected)/my-raffles/create-raffle-button';
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
-import { Button } from '@/components/ui/button';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { RaffleStatus } from '@/types/raffle';
-import Link from 'next/link';
 
 interface PageProps {
 	searchParams: Promise<{
@@ -44,9 +43,7 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 				<h1 className="mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
 					My Raffles!
 				</h1>
-				<Link href="/my-raffles/create">
-					<Button>Create new Raffle</Button>
-				</Link>
+				<CreateRaffleButton />
 			</div>
 
 			{/* Filter and Action Section */}

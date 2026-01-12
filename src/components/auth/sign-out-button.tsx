@@ -1,5 +1,6 @@
 'use client';
 
+import { useUserStore } from '@/providers/user-store-provider';
 import { signOutUser } from '@/services/auth/sign-out-user';
 import { useState } from 'react';
 
@@ -13,10 +14,13 @@ export function SignOutButton({
 	variant = 'default',
 }: SignOutButtonProps) {
 	const [isLoading, setIsLoading] = useState(false);
+	const reset = useUserStore(state => state.reset);
 
 	const handleSignOut = async () => {
 		setIsLoading(true);
 		try {
+			// Clear user store before signing out
+			reset();
 			await signOutUser();
 		} catch (error) {
 			// Error is logged in signOutUser, cookies are cleared anyway

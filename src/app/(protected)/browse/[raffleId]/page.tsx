@@ -1,3 +1,4 @@
+import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
@@ -8,7 +9,9 @@ import {
 	AccordionTrigger,
 } from '@/components/ui/accordion';
 import { getCategoryLabel } from '@/constants/categories';
+import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
+import { RAFFLE_STATUS } from '@/types/raffle';
 import { Image as ImageIcon, InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
@@ -49,6 +52,44 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	const raffle = response.data;
+
+	// Get session (cached - no extra request)
+	const session = await getSession();
+	const currentUserId = session?.user?.id;
+
+	/**
+	 * Check if current user owns this raffle
+	 */
+	function isOwnRaffle(): boolean {
+		return currentUserId === raffle.hostId;
+	}
+
+	/**
+	 * Check if edit button should be shown
+	 * Only for own raffles with draft/queued status
+	 */
+	function shouldShowEditButton(): boolean {
+		const isOwner = isOwnRaffle();
+		const isEditable =
+			raffle.status === RAFFLE_STATUS.DRAFT ||
+			raffle.status === RAFFLE_STATUS.QUEUED;
+
+		return isOwner && isEditable;
+	}
+
+	/**
+	 * Check if purchase should be disabled
+	 * Disabled for own live raffles
+	 */
+	function isPurchaseDisabled(): boolean {
+		const isOwner = isOwnRaffle();
+		const isLive = raffle.status === RAFFLE_STATUS.LIVE;
+
+		return isOwner && isLive;
+	}
+
+	const showEditButton = shouldShowEditButton();
+	const disablePurchase = isPurchaseDisabled();
 
 	/**
 	 * Gets the host display name from closure
@@ -241,13 +282,24 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 					<RaffleCountdown endAt={raffle.endAt} />
 
-					<TicketPurchaseCard
-						raffleId={raffleId}
-						price={ticketPrice}
-						currency={raffle.ticketPriceCurrency}
-						maxParticipants={raffle.maxParticipants}
-						participantsCount={raffle.participantsCount}
-					/>
+					{showEditButton ? (
+						<EditRaffleButton raffleId={raffleId} />
+					) : (
+						<TicketPurchaseCard
+							raffleId={raffleId}
+							price={ticketPrice}
+							currency={raffle.ticketPriceCurrency}
+							maxParticipants={raffle.maxParticipants}
+							participantsCount={raffle.participantsCount}
+							disabled={disablePurchase}
+						/>
+					)}
+
+					{disablePurchase && !showEditButton && (
+						<p className="mt-2 text-center text-sm text-gray-500">
+							You cannot purchase tickets for your own raffle
+						</p>
+					)}
 
 					<div className="space-y-2">
 						<div className="flex items-center justify-between text-sm">

@@ -557,6 +557,125 @@ Use **loading.tsx** when:
 - Keep skeleton components visually similar to the actual content
 - Consider using the Skeleton component from your UI library for consistency
 
+#### Runtime Data and Suspense (CRITICAL)
+
+**ALWAYS wrap components that access runtime data in Suspense boundaries.**
+
+Runtime data includes:
+- `cookies()` - Server-side cookies access
+- `headers()` - Request headers access
+- `searchParams` - URL search parameters in server components
+- Any function that internally calls these (e.g., `getSession()`, `getAuthToken()`)
+
+**Why this is critical:**
+Accessing runtime data outside of Suspense blocks the entire page from rendering, resulting in slow user experience. Next.js requires Suspense boundaries to enable streaming and instant page loads.
+
+**Warning you'll see:**
+```
+Runtime data was accessed outside of <Suspense>
+This delays the entire page from rendering, resulting in a slow user experience.
+```
+
+**❌ Bad Practice - Blocking the entire page:**
+```tsx
+// Layout or Page component
+export default async function ProtectedLayout({ children }: Props) {
+  // This blocks the entire page! ❌
+  const session = await getSession(); // Calls cookies() internally
+  const permissions = session?.user?.permissions || [];
+
+  return (
+    <div>
+      <UserStoreProvider permissions={permissions}>
+        <Navbar>{children}</Navbar>
+      </UserStoreProvider>
+    </div>
+  );
+}
+```
+
+**✅ Good Practice - Extract to separate component:**
+```tsx
+// Internal component that accesses runtime data
+async function ProtectedLayoutContent({ children }: Props) {
+  // Now this is wrapped in Suspense ✅
+  const session = await getSession(); // Calls cookies() internally
+  const permissions = session?.user?.permissions || [];
+
+  return (
+    <AuthGuard>
+      <UserStoreProvider permissions={permissions}>
+        <Navbar>{children}</Navbar>
+      </UserStoreProvider>
+    </AuthGuard>
+  );
+}
+
+// Main layout component (no async, no runtime data)
+export default function ProtectedLayout({ children }: Props) {
+  return (
+    <div className="relative min-h-screen">
+      <Suspense
+        fallback={
+          <div className="flex h-screen w-full items-center justify-center">
+            <Spinner />
+          </div>
+        }
+      >
+        <ProtectedLayoutContent>{children}</ProtectedLayoutContent>
+      </Suspense>
+      <BackgroundElements />
+    </div>
+  );
+}
+```
+
+**Pattern: Extract Runtime Data Access**
+
+1. **Identify runtime data access:**
+   - Find calls to `cookies()`, `headers()`, `searchParams`
+   - Find custom functions that use these internally (`getSession()`, `getAuthToken()`)
+
+2. **Extract to separate async component:**
+   ```tsx
+   async function ComponentWithRuntimeData({ children }) {
+     const session = await getSession(); // Runtime data
+     const data = await fetchData(session.token);
+
+     return <YourComponent data={data}>{children}</YourComponent>;
+   }
+   ```
+
+3. **Wrap in Suspense with appropriate fallback:**
+   ```tsx
+   export default function ParentComponent({ children }) {
+     return (
+       <Suspense fallback={<LoadingSkeleton />}>
+         <ComponentWithRuntimeData>{children}</ComponentWithRuntimeData>
+       </Suspense>
+     );
+   }
+   ```
+
+**Benefits of this pattern:**
+- ✅ Enables Next.js streaming and instant page loads
+- ✅ Provides granular loading states
+- ✅ Prevents blocking the entire page
+- ✅ Better user experience with progressive rendering
+- ✅ Allows pre-rendering of static parts while loading dynamic data
+
+**Common scenarios:**
+
+| Scenario | Solution |
+|----------|----------|
+| Layout needs user session | Extract session access to `LayoutContent` component |
+| Page needs search params | Extract to `PageContent` component |
+| Component needs cookies | Extract to `DataWrapper` component |
+| Multiple runtime data sources | Use nested Suspense boundaries for each |
+
+**Rule of thumb:**
+If you see the "Runtime data accessed outside Suspense" warning, immediately extract the runtime data access to a separate async component and wrap it in Suspense.
+
 ### 4. Performance Optimization
 
 When creating client-side interactions, always prioritize performance:

@@ -4,6 +4,7 @@ export interface AuthUser {
 	emailVerified: boolean;
 	name: string;
 	image?: string | null;
+	permissions?: string[];
 }
 
 export interface AuthSession {

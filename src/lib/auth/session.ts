@@ -55,6 +55,7 @@ export const getSession = cache(async (): Promise<AuthSession | null> => {
 				emailVerified: payload.emailVerified,
 				name: payload.name,
 				image: null, // JWT doesn't include image, fetch separately if needed
+				permissions: payload.permissions,
 			},
 			token,
 			expiresAt: new Date(payload.exp * 1000).toISOString(),

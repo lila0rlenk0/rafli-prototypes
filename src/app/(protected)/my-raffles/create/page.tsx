@@ -1,6 +1,9 @@
 import { Copy } from 'lucide-react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
+import { getSession } from '@/lib/auth/session';
+import { hasHostPermission } from '@/lib/permissions';
 import { FormHeader } from './form-header';
 import { FormStepComponent } from './form-step-component';
 import { MultiStepFormProvider } from './multi-step-form-provider';
@@ -28,7 +31,23 @@ const LEFT_PANEL_LINKS = [
 	},
 ];
 
-export default function RafflesCreatePage() {
+/**
+ * Raffles Create Page
+ *
+ * Multi-step form for creating a new raffle.
+ * Server-side protected - only accessible with raffle:create permission.
+ * Redirects to /my-raffles if user doesn't have permission.
+ */
+export default async function RafflesCreatePage() {
+	// Server-side permission check
+	const session = await getSession();
+	const permissions = session?.user?.permissions || [];
+
+	// Redirect if user doesn't have raffle:create permission
+	if (!hasHostPermission(permissions)) {
+		redirect('/my-raffles');
+	}
+
 	return (
 		<div className="flex w-full gap-4">
 			<div className="flex h-fit min-w-fit flex-col space-y-8 rounded-2xl bg-white px-6 py-12">

@@ -12,6 +12,7 @@ interface TicketPurchaseCardProps {
 	currency: string;
 	maxParticipants: number;
 	participantsCount: number;
+	disabled?: boolean;
 }
 
 /**
@@ -35,6 +36,7 @@ export function TicketPurchaseCard({
 	currency,
 	maxParticipants,
 	participantsCount,
+	disabled = false,
 }: TicketPurchaseCardProps) {
 	const [ticketQuantity, setTicketQuantity] = useState(1);
 
@@ -113,7 +115,11 @@ export function TicketPurchaseCard({
 			</div>
 
 			{/* Buy button */}
-			<BuyButton raffleId={raffleId} ticketQuantity={ticketQuantity} />
+			<BuyButton
+				raffleId={raffleId}
+				ticketQuantity={ticketQuantity}
+				disabled={disabled}
+			/>
 		</div>
 	);
 }

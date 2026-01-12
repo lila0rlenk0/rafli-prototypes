@@ -12,6 +12,7 @@ import type { OrderErrorCode, PaymentErrorCode } from '@/types/errors';
 interface BuyButtonProps {
 	raffleId: string;
 	ticketQuantity: number;
+	disabled?: boolean;
 }
 
 /**
@@ -27,7 +28,11 @@ interface BuyButtonProps {
  * @param raffleId - The raffle ID to purchase tickets for
  * @param ticketQuantity - Number of tickets to purchase
  */
-export function BuyButton({ raffleId, ticketQuantity }: BuyButtonProps) {
+export function BuyButton({
+	raffleId,
+	ticketQuantity,
+	disabled = false,
+}: BuyButtonProps) {
 	const [isLoading, setIsLoading] = useState(false);
 
 	/**
@@ -136,7 +141,7 @@ export function BuyButton({ raffleId, ticketQuantity }: BuyButtonProps) {
 	return (
 		<Button
 			onClick={handleBuyClick}
-			disabled={isLoading}
+			disabled={isLoading || disabled}
 			className="w-full bg-black"
 		>
 			{isLoading && <Loader2Icon className="mr-2 size-4 animate-spin" />}

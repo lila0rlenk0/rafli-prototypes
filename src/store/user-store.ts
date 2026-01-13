@@ -1,4 +1,4 @@
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 
 import { PERMISSIONS } from '@/lib/permissions';
@@ -96,9 +96,21 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 			}),
 			{
 				name: 'raffly-user-store',
-				partialize: state => ({
-					mode: state.mode, // Only persist mode preference
+				storage: createJSONStorage(() => {
+					// Return a no-op storage during SSR
+					if (typeof window === 'undefined') {
+						return {
+							getItem: () => null,
+							setItem: () => {},
+							removeItem: () => {},
+						};
+					}
+					return localStorage;
 				}),
+				partialize: state =>
+					({
+						mode: state.mode, // Only persist mode preference
+					}) as UserStore,
 			},
 		),
 	);

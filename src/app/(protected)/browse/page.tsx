@@ -1,12 +1,14 @@
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
+import { FilterBar } from '@/components/filters';
 import { getRaffles } from '@/services/raffle/get-raffles';
-import { RaffleStatus } from '@/types/raffle';
+import { type RaffleSortOption, RaffleStatus } from '@/types/raffle';
 
 interface PageProps {
 	searchParams: Promise<{
 		status?: string;
 		page?: string;
 		category?: string;
+		sort?: string;
 	}>;
 }
 
@@ -15,11 +17,13 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const status = params.status as RaffleStatus;
 	const page = params.page ? parseInt(params.page) : 1;
 	const category = params.category;
+	const sort = params.sort as RaffleSortOption;
 
 	const response = await getRaffles({
 		status,
 		page,
 		category,
+		sort,
 		limit: 12,
 	});
 
@@ -48,6 +52,13 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				<p className="text-muted-foreground text-lg">
 					Discover amazing raffles and win big!
 				</p>
+			</div>
+
+			{/* Filter Bar */}
+			<div className="mb-8 flex w-full">
+				<div className="ml-auto">
+					<FilterBar />
+				</div>
 			</div>
 
 			{/* Grid Section */}

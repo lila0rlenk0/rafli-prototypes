@@ -206,15 +206,15 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 						<div className="grid grid-cols-3 gap-4">
 							{Array.from({ length: 3 }).map((_, index) => {
-								const imageUrl = raffle.galleryMediaUrls[index];
+								const image = raffle.galleryMediaUrls[index];
 								return (
 									<div
 										key={index}
 										className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
 									>
-										{imageUrl ? (
+										{image?.url ? (
 											<Image
-												src={imageUrl}
+												src={image.url}
 												alt={`Gallery ${index + 1}`}
 												fill
 												className="object-cover"

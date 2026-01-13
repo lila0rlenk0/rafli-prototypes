@@ -90,7 +90,7 @@ export const raffleSchema = z.object({
 	description: z.string(),
 	categoryId: z.string(),
 	coverMediaUrl: mediaUrlSchema,
-	galleryMediaUrls: z.array(z.string()),
+	galleryMediaUrls: z.array(mediaUrlSchema),
 	declaredValueAmount: z.string(),
 	declaredValueCurrency: z.string(),
 	ticketPriceAmount: z.string(),
@@ -113,6 +113,24 @@ export const raffleSchema = z.object({
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	host: hostSchema.optional(),
+});
+
+/**
+ * Schema for raffle cover image response
+ * Returned by GET /raffles/:id/cover
+ */
+export const raffleCoverResponseSchema = z.object({
+	raffleId: z.string(),
+	cover: mediaUrlSchema.nullable(),
+});
+
+/**
+ * Schema for raffle gallery response
+ * Returned by GET /raffles/:id/gallery
+ */
+export const raffleGalleryResponseSchema = paginationMetadataSchema.extend({
+	raffleId: z.string(),
+	gallery: z.array(mediaUrlSchema),
 });
 
 /**
@@ -169,7 +187,10 @@ export const uploadGalleryResponseSchema = z.object({
 // Inferred Types
 // ==========================================
 
+export type SignedMediaUrl = z.infer<typeof mediaUrlSchema>;
 export type Raffle = z.infer<typeof raffleSchema>;
+export type RaffleCoverResponse = z.infer<typeof raffleCoverResponseSchema>;
+export type RaffleGalleryResponse = z.infer<typeof raffleGalleryResponseSchema>;
 export type CreateRaffleInput = z.infer<typeof createRaffleInputSchema>;
 export type CreateRafflePayload = z.infer<typeof createRafflePayloadSchema>;
 export type UploadCoverResponse = z.infer<typeof uploadCoverResponseSchema>;

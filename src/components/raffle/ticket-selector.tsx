@@ -32,14 +32,14 @@ export function TicketSelector({
 	 * Handles incrementing the ticket quantity by 1
 	 */
 	const handleIncrement = useCallback(() => {
-		setQuantity((prev) => Math.min(prev + 1, maxTickets));
+		setQuantity(prev => Math.min(prev + 1, maxTickets));
 	}, [maxTickets]);
 
 	/**
 	 * Handles decrementing the ticket quantity by 1
 	 */
 	const handleDecrement = useCallback(() => {
-		setQuantity((prev) => Math.max(prev - 1, 1));
+		setQuantity(prev => Math.max(prev - 1, 1));
 	}, []);
 
 	/**
@@ -49,9 +49,9 @@ export function TicketSelector({
 	 */
 	const handleBundle = useCallback(
 		(bundleSize: number) => {
-			setQuantity((prev) => Math.min(prev + bundleSize, maxTickets));
+			setQuantity(prev => Math.min(prev + bundleSize, maxTickets));
 		},
-		[maxTickets]
+		[maxTickets],
 	);
 
 	/**
@@ -113,17 +113,17 @@ export function TicketSelector({
 						disabled={decrementDisabled}
 						aria-label="Decrease ticket quantity"
 						aria-disabled={decrementDisabled}
-						className="disabled:cursor-not-allowed disabled:opacity-30"
+						className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
 					>
 						<Minus className="size-4" />
 					</button>
-					<p className="text-lg">{quantity}</p>
+					<p className="w-4 text-lg select-none">{quantity}</p>
 					<button
 						onClick={handleIncrement}
 						disabled={incrementDisabled}
 						aria-label="Increase ticket quantity"
 						aria-disabled={incrementDisabled}
-						className="disabled:cursor-not-allowed disabled:opacity-30"
+						className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
 					>
 						<Plus className="size-4" />
 					</button>
@@ -135,21 +135,21 @@ export function TicketSelector({
 				<button
 					onClick={() => handleBundle(3)}
 					disabled={bundleDisabled}
-					className="flex w-full items-center justify-center rounded-full border border-black py-2 disabled:cursor-not-allowed disabled:opacity-30"
+					className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 disabled:cursor-not-allowed disabled:opacity-30"
 				>
 					<p className="text-sm">3 Tickets</p>
 				</button>
 				<button
 					onClick={() => handleBundle(6)}
 					disabled={bundleDisabled}
-					className="flex w-full items-center justify-center rounded-full border border-black py-2 disabled:cursor-not-allowed disabled:opacity-30"
+					className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 disabled:cursor-not-allowed disabled:opacity-30"
 				>
 					<p className="text-sm">6 Tickets</p>
 				</button>
 				<button
 					onClick={() => handleBundle(9)}
 					disabled={bundleDisabled}
-					className="flex w-full items-center justify-center rounded-full border border-black py-2 disabled:cursor-not-allowed disabled:opacity-30"
+					className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 disabled:cursor-not-allowed disabled:opacity-30"
 				>
 					<p className="text-sm">9 Tickets</p>
 				</button>

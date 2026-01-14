@@ -29,3 +29,24 @@ export interface UpdateProfileInput {
 	bio?: string;
 	username?: string;
 }
+
+/**
+ * Supported social login providers
+ */
+export type SocialProvider = 'google';
+
+/**
+ * Input for initiating social sign-in
+ */
+export interface SocialSignInInput {
+	provider: SocialProvider;
+	callbackURL?: string;
+}
+
+/**
+ * Response from social sign-in initiation
+ */
+export interface SocialSignInResponse {
+	redirect: boolean;
+	url: string;
+}

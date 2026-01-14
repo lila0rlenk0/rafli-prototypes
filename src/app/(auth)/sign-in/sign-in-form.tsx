@@ -9,20 +9,24 @@ import {
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { clientEnv } from '@/env/client';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
 import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ComponentProps, useTransition } from 'react';
+import { ComponentProps, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
 import z from 'zod';
 
 const formSchema = z.object({
-	email: z.string().email('Invalid email address'),
-	password: z.string().min(8, 'Password must be at least 8 characters').max(50),
+	email: z.email('Invalid email address'),
+	password: z
+		.string()
+		.min(12, 'Password must be at least 8 characters')
+		.max(50),
 });
 
 type FormType = z.infer<typeof formSchema>;
@@ -38,6 +42,11 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 			return 'Invalid email or password.';
 		case AUTH_ERROR_CODES.TOKEN_EXPIRED:
 			return 'Your session has expired.';
+		case AUTH_ERROR_CODES.SOCIAL_LOGIN_FAILED:
+		case AUTH_ERROR_CODES.SOCIAL_PROVIDER_ERROR:
+		case AUTH_ERROR_CODES.SOCIAL_CALLBACK_FAILED:
+		case AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED:
+			return 'Google sign in failed. Please try again.';
 
 		// Common fallback errors
 		case 'global:auth:unauthenticated':
@@ -64,6 +73,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 		resolver: zodResolver(formSchema),
 	});
 	const [isPending, startTransition] = useTransition();
+	const [isSocialPending, setIsSocialPending] = useState(false);
 	const router = useRouter();
 
 	async function handleSignIn(data: FormType) {
@@ -81,6 +91,51 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 			router.push('/browse');
 			router.refresh();
 		});
+	}
+
+	/**
+	 * Handles Google sign-in button click
+	 * Initiates OAuth flow by redirecting to Google
+	 *
+	 * IMPORTANT: This request MUST be made directly from the browser (not via server action)
+	 * because better-auth sets a state cookie that needs to be stored in the browser.
+	 * Using a server action would store the cookie on the Next.js server instead.
+	 */
+	async function handleGoogleSignIn() {
+		setIsSocialPending(true);
+		try {
+			const callbackURL = `${window.location.origin}/auth/callback`;
+
+			// Make request directly from browser to receive state cookies
+			const response = await fetch(
+				`${clientEnv.NEXT_PUBLIC_BACKEND_URL}/api/auth/sign-in/social`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						provider: 'google',
+						callbackURL,
+					}),
+					credentials: 'include',
+				},
+			);
+
+			const data = await response.json();
+
+			if (!data || !data.url) {
+				setError('root', { message: 'Failed to initiate Google sign in.' });
+				setIsSocialPending(false);
+				return;
+			}
+
+			// Redirect to OAuth provider (Google)
+			window.location.href = data.url;
+		} catch {
+			setError('root', { message: 'Failed to initiate Google sign in.' });
+			setIsSocialPending(false);
+		}
 	}
 
 	return (
@@ -141,8 +196,18 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 				</FieldSeparator>
 				<Field className="flex flex-col space-y-2">
 					<div className="flex w-full items-center justify-center">
-						<Button variant="outline" type="button" className="size-12! w-fit">
-							<FaGoogle className="size-6" />
+						<Button
+							variant="outline"
+							type="button"
+							className="size-12! w-fit"
+							onClick={handleGoogleSignIn}
+							disabled={isPending || isSocialPending}
+						>
+							{isSocialPending ? (
+								<div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+							) : (
+								<FaGoogle className="size-6" />
+							)}
 							<span className="sr-only">Login with Google</span>
 						</Button>
 					</div>

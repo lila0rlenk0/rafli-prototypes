@@ -30,6 +30,16 @@ export const AUTH_ERROR_CODES = {
 	INVALID_TOKEN: 'auth:token:invalid',
 	/** Authentication token has expired */
 	TOKEN_EXPIRED: 'auth:token:expired',
+
+	// Social login errors
+	/** Generic social login failure */
+	SOCIAL_LOGIN_FAILED: 'auth:social:failed',
+	/** Error from social provider */
+	SOCIAL_PROVIDER_ERROR: 'auth:social:provider-error',
+	/** OAuth callback failed */
+	SOCIAL_CALLBACK_FAILED: 'auth:social:callback-failed',
+	/** Failed to exchange social token for JWT */
+	SOCIAL_TOKEN_EXCHANGE_FAILED: 'auth:social:token-exchange-failed',
 } as const;
 
 /**

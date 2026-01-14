@@ -32,6 +32,9 @@ interface MultiStepFormContextType {
 	isLastStep: boolean;
 	onSubmit: (data: RaffleFormData) => void;
 	isCreating: boolean;
+	isRaffleCreated: boolean;
+	userName: string;
+	totalRaffles: number;
 }
 
 const MultiStepFormContext = createContext<
@@ -40,6 +43,8 @@ const MultiStepFormContext = createContext<
 
 interface MultiStepFormProviderProps {
 	children: ReactNode;
+	userName: string;
+	totalRaffles: number;
 }
 
 /**
@@ -52,6 +57,8 @@ interface MultiStepFormProviderProps {
  */
 export function MultiStepFormProvider({
 	children,
+	userName,
+	totalRaffles,
 }: MultiStepFormProviderProps) {
 	const [currentStep, setCurrentStep] = useState(0);
 	const [isCreating, setIsCreating] = useState(false);
@@ -211,6 +218,9 @@ export function MultiStepFormProvider({
 				isLastStep,
 				onSubmit: handleSubmit,
 				isCreating,
+				isRaffleCreated: createdRaffle !== null,
+				userName,
+				totalRaffles,
 			}}
 		>
 			{children}

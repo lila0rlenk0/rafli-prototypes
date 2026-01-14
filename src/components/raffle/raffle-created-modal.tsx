@@ -1,7 +1,7 @@
 'use client';
 
 import { Copy } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ComponentProps } from 'react';
 import { FaXTwitter } from 'react-icons/fa6';
 import { toast } from 'sonner';
@@ -34,6 +34,7 @@ export function RaffleCreatedModal({
 	open,
 	onOpenChange,
 }: RaffleCreatedModalProps) {
+	const router = useRouter();
 	/**
 	 * Checks if the start date is today
 	 * Normalizes both dates to local midnight to avoid timezone issues
@@ -100,6 +101,14 @@ export function RaffleCreatedModal({
 
 	function handleOpenChange(newOpen: boolean) {
 		onOpenChange(newOpen);
+		if (!newOpen) {
+			// Redirect to /my-raffles when modal is closed
+			router.push('/my-raffles');
+		}
+	}
+
+	function handleViewMyRaffles() {
+		router.push('/my-raffles');
 	}
 
 	return (
@@ -133,12 +142,12 @@ export function RaffleCreatedModal({
 					</DialogDescription>
 
 					<div className="my-6">
-						<Link
-							href="/my-raffles"
+						<button
+							onClick={handleViewMyRaffles}
 							className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
 						>
 							View my raffles
-						</Link>
+						</button>
 					</div>
 				</DialogHeader>
 				{isStartDateToday && (

@@ -6,7 +6,8 @@ import Image from 'next/image';
 import { useMultiStepForm } from '../multi-step-form-provider';
 
 export function ReviewStep() {
-	const { form, isCreating } = useMultiStepForm();
+	const { form, isCreating, isRaffleCreated, userName, totalRaffles } =
+		useMultiStepForm();
 
 	const formValues = form.watch();
 	const {
@@ -21,22 +22,19 @@ export function ReviewStep() {
 		maxParticipants,
 	} = formValues;
 
-	// Mock user data
-	const user = { name: 'John Doe' };
-	const totalRaffles = 5;
-
 	/**
 	 * Gets the first letter of the user's name
 	 */
 	function getUserInitial() {
-		return user.name.charAt(0);
+		if (!userName) return '';
+		return userName.charAt(0);
 	}
 
 	/**
 	 * Gets the user's full name
 	 */
 	function getUserName() {
-		return user.name;
+		return userName || 'Raffle Host';
 	}
 
 	/**
@@ -207,7 +205,11 @@ export function ReviewStep() {
 			)}
 
 			<div className="flex items-center gap-2">
-				<Button type="submit" disabled={isCreating} className="cursor-pointer">
+				<Button
+					type="submit"
+					disabled={isCreating || isRaffleCreated}
+					className="cursor-pointer"
+				>
 					{isCreating ? 'Creating...' : 'Create'}
 				</Button>
 			</div>

@@ -42,11 +42,11 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 			return 'An account with this email already exists.';
 		case AUTH_ERROR_CODES.SIGNUP_FAILED:
 			return 'Registration failed. Please try again.';
-		case AUTH_ERROR_CODES.SOCIAL_LOGIN_FAILED:
-		case AUTH_ERROR_CODES.SOCIAL_PROVIDER_ERROR:
-		case AUTH_ERROR_CODES.SOCIAL_CALLBACK_FAILED:
-		case AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED:
-			return 'Google sign in failed. Please try again.';
+		// case AUTH_ERROR_CODES.SOCIAL_LOGIN_FAILED:
+		// case AUTH_ERROR_CODES.SOCIAL_PROVIDER_ERROR:
+		// case AUTH_ERROR_CODES.SOCIAL_CALLBACK_FAILED:
+		// case AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED:
+		// 	return 'Google sign in failed. Please try again.';
 
 		// Common fallback errors
 		case 'network_error':

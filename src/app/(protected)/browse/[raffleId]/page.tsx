@@ -198,7 +198,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 					<div className="flex flex-col gap-4">
 						<div className="relative flex aspect-video max-h-96 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
-							{raffle.coverMediaUrl.url ? (
+							{raffle.coverMediaUrl?.url ? (
 								<Image
 									src={raffle.coverMediaUrl.url}
 									alt={raffle.title}

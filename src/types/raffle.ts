@@ -89,7 +89,7 @@ export const raffleSchema = z.object({
 	title: z.string(),
 	description: z.string(),
 	categoryId: z.string(),
-	coverMediaUrl: mediaUrlSchema,
+	coverMediaUrl: mediaUrlSchema.nullable(),
 	galleryMediaUrls: z.array(mediaUrlSchema),
 	declaredValueAmount: z.string(),
 	declaredValueCurrency: z.string(),

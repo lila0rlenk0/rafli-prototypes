@@ -12,10 +12,10 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
 import { createRaffle } from '@/services/raffle/create-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
-import { useRouter } from 'next/navigation';
 import { raffleFormSchema } from './schema';
 import { STEPS } from './steps';
 
@@ -55,7 +55,14 @@ export function MultiStepFormProvider({
 }: MultiStepFormProviderProps) {
 	const [currentStep, setCurrentStep] = useState(0);
 	const [isCreating, setIsCreating] = useState(false);
-	const router = useRouter();
+	const [isModalOpen, setIsModalOpen] = useState(true);
+	const [createdRaffle, setCreatedRaffle] = useState<{
+		raffleId: string;
+		raffleStartDate: string;
+	} | null>({
+		raffleId: '0x123',
+		raffleStartDate: '2026-01-14',
+	});
 
 	const totalSteps = STEPS.length;
 
@@ -115,69 +122,67 @@ export function MultiStepFormProvider({
 
 	/**
 	 * Handles raffle creation by calling the server action
-	 * Shows toast notifications for success and error states
+	 * Shows modal on success instead of redirecting immediately
 	 *
 	 * @param data - The validated raffle form data
 	 */
-	const handleCreateRaffle = useCallback(
-		async (data: RaffleFormData) => {
-			setIsCreating(true);
+	const handleCreateRaffle = useCallback(async (data: RaffleFormData) => {
+		setIsCreating(true);
 
-			try {
-				const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		try {
+			const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-				const result = await createRaffle({
-					title: data.title,
-					description: data.description,
-					price: data.price,
-					category: data.category,
-					startDate: data.startDate,
-					endDate: data.endDate,
-					pricePerTicket: data.pricePerTicket,
-					numberOfWinners: data.numberOfWinners,
-					minParticipants: data.minParticipants,
-					maxParticipants: data.maxParticipants,
-					timezone: userTimezone,
-				});
+			const result = await createRaffle({
+				title: data.title,
+				description: data.description,
+				price: data.price,
+				category: data.category,
+				startDate: data.startDate,
+				endDate: data.endDate,
+				pricePerTicket: data.pricePerTicket,
+				numberOfWinners: data.numberOfWinners,
+				minParticipants: data.minParticipants,
+				maxParticipants: data.maxParticipants,
+				timezone: userTimezone,
+			});
 
-				if (!result.success) {
-					toast.error('Failed to create raffle');
-					return;
-				}
-
-				const raffleId = result.data.id;
-
-				if (data.coverImage && data.coverImage.length > 0) {
-					const coverResult = await uploadCover(raffleId, data.coverImage[0]);
-					if (!coverResult.success) {
-						console.error('Cover upload failed:', coverResult.error);
-						toast.error('Raffle created but cover upload failed.');
-					}
-				}
-
-				if (data.coverImage && data.coverImage.length > 1) {
-					const galleryFiles = data.coverImage.slice(1);
-					const galleryResult = await uploadGalleryImages(
-						raffleId,
-						galleryFiles,
-					);
-					if (!galleryResult.success) {
-						console.error('Gallery upload failed:', galleryResult.error);
-						toast.error('Raffle created but gallery upload failed.');
-					}
-				}
-
-				toast.success('Raffle created successfully!');
-				router.push('/my-raffles');
-			} catch (error) {
-				console.error('Create raffle error:', error);
-				toast.error('Something went wrong. Please try again');
-			} finally {
-				setIsCreating(false);
+			if (!result.success) {
+				toast.error('Failed to create raffle');
+				return;
 			}
-		},
-		[router],
-	);
+
+			const raffleId = result.data.id;
+
+			if (data.coverImage && data.coverImage.length > 0) {
+				const coverResult = await uploadCover(raffleId, data.coverImage[0]);
+				if (!coverResult.success) {
+					console.error('Cover upload failed:', coverResult.error);
+					toast.error('Raffle created but cover upload failed.');
+				}
+			}
+
+			if (data.coverImage && data.coverImage.length > 1) {
+				const galleryFiles = data.coverImage.slice(1);
+				const galleryResult = await uploadGalleryImages(raffleId, galleryFiles);
+				if (!galleryResult.success) {
+					console.error('Gallery upload failed:', galleryResult.error);
+					toast.error('Raffle created but gallery upload failed.');
+				}
+			}
+
+			// Open success modal instead of redirecting
+			setCreatedRaffle({
+				raffleId,
+				raffleStartDate: data.startDate,
+			});
+			setIsModalOpen(true);
+		} catch (error) {
+			console.error('Create raffle error:', error);
+			toast.error('Something went wrong. Please try again');
+		} finally {
+			setIsCreating(false);
+		}
+	}, []);
 
 	/**
 	 * Handles form submission
@@ -212,6 +217,14 @@ export function MultiStepFormProvider({
 			}}
 		>
 			{children}
+			{createdRaffle && (
+				<RaffleCreatedModal
+					raffleId={createdRaffle.raffleId}
+					raffleStartDate={createdRaffle.raffleStartDate}
+					open={isModalOpen}
+					onOpenChange={setIsModalOpen}
+				/>
+			)}
 		</MultiStepFormContext.Provider>
 	);
 }

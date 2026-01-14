@@ -55,14 +55,11 @@ export function MultiStepFormProvider({
 }: MultiStepFormProviderProps) {
 	const [currentStep, setCurrentStep] = useState(0);
 	const [isCreating, setIsCreating] = useState(false);
-	const [isModalOpen, setIsModalOpen] = useState(true);
+	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [createdRaffle, setCreatedRaffle] = useState<{
 		raffleId: string;
 		raffleStartDate: string;
-	} | null>({
-		raffleId: '0x123',
-		raffleStartDate: '2026-01-14',
-	});
+	} | null>(null);
 
 	const totalSteps = STEPS.length;
 

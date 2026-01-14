@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useUserStore } from '@/providers/user-store-provider';
+import { USER_MODE } from '@/types/user-mode';
 
 const BECOME_HOST_FORM_URL = 'https://forms.google.com/placeholder';
 
@@ -38,8 +39,17 @@ export function ModeSwitchButton() {
 		);
 	}
 
+	/**
+	 * Gets the opposite mode to display in the button text
+	 */
+	function getOppositeMode(): string {
+		return mode === USER_MODE.HOST ? USER_MODE.PARTICIPANT : USER_MODE.HOST;
+	}
+
 	function getButtonText() {
-		const capitalizedMode = mode.charAt(0).toUpperCase() + mode.slice(1);
+		const oppositeMode = getOppositeMode();
+		const capitalizedMode =
+			oppositeMode.charAt(0).toUpperCase() + oppositeMode.slice(1);
 
 		return `Switch to ${capitalizedMode} Mode`;
 	}
@@ -50,7 +60,7 @@ export function ModeSwitchButton() {
 			onClick={handleModeSwitch}
 			variant="outline"
 			size="sm"
-			className="flex cursor-pointer items-center gap-2 border-black text-black data-[mode=host]:bg-black data-[mode=host]:text-white"
+			className="flex cursor-pointer items-center gap-2 border-black text-black data-[mode=participant]:bg-black data-[mode=participant]:text-white"
 		>
 			<span className="hidden sm:inline">{getButtonText()}</span>
 			<span className="sm:hidden">Switch Mode</span>

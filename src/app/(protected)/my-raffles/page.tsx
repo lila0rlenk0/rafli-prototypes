@@ -1,7 +1,7 @@
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import { StatusTabs } from '@/app/(protected)/my-raffles/status-tabs';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
-import { type RaffleStatus } from '@/types/raffle';
+import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
 import { CreateRaffleButton } from './create-raffle-button';
 
 interface PageProps {
@@ -37,6 +37,32 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 	}
 
 	const { raffles } = response.data;
+	const currentStatus = status || RAFFLE_STATUS.LIVE;
+
+	// Determine message based on status
+	function getEmptyMessage() {
+		if (currentStatus === RAFFLE_STATUS.QUEUED) {
+			return {
+				title: 'No scheduled raffles',
+				description: "You don't have any scheduled raffles yet.",
+			};
+		}
+		if (
+			currentStatus === RAFFLE_STATUS.ENDED ||
+			currentStatus === RAFFLE_STATUS.COMPLETED
+		) {
+			return {
+				title: 'No ended raffles',
+				description: "You don't have any completed raffles yet.",
+			};
+		}
+		return {
+			title: 'No active raffles',
+			description: 'Create your first raffle to get started!',
+		};
+	}
+
+	const emptyMessage = getEmptyMessage();
 
 	return (
 		<div className="container mx-auto max-w-7xl px-4 py-8">
@@ -56,11 +82,18 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 			</div>
 
 			{/* Grid Section */}
-			{raffles && raffles.length > 0 && (
+			{raffles && raffles.length > 0 ? (
 				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 					{raffles.map(raffle => (
 						<RaffleCard key={raffle.id} raffle={raffle} />
 					))}
+				</div>
+			) : (
+				<div className="flex flex-col items-center justify-center py-20 text-center">
+					<h3 className="text-xl font-semibold text-gray-900">
+						{emptyMessage.title}
+					</h3>
+					<p className="mt-2 text-gray-500">{emptyMessage.description}</p>
 				</div>
 			)}
 		</div>

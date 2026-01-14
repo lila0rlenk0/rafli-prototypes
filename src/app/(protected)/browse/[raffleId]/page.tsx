@@ -143,9 +143,15 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	function calculateFillPercentage(
 		participantsCount: number,
 		maxParticipants: number,
-	): number {
-		if (maxParticipants === 0) return 0;
-		return Math.round((participantsCount / maxParticipants) * 100);
+	) {
+		if (maxParticipants === 0) return '0%';
+		return ((participantsCount / maxParticipants) * 100).toLocaleString(
+			'en-US',
+			{
+				minimumFractionDigits: 0,
+				maximumFractionDigits: 2,
+			},
+		);
 	}
 
 	/**

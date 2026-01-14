@@ -67,7 +67,43 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 	const daysLeft = calculateDaysLeft(raffle.endAt);
 	const showEditButton = shouldShowEditButton();
 
-	const getStatusBadge = (status: RaffleStatus) => {
+	/**
+	 * Formats the progress percentage for display
+	 * @param progressValue - The progress value (0-100)
+	 * @returns Formatted percentage string rounded to nearest integer
+	 */
+	function formatProgressPercentage(progressValue: number): string {
+		return `${progressValue.toLocaleString('en-US', {
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 2,
+		})}%`;
+	}
+
+	/**
+	 * Formats the participant count display (current/max)
+	 * @param current - Current number of participants
+	 * @param max - Maximum number of participants
+	 * @returns Formatted string in "current/max" format
+	 */
+	function formatParticipantCount(current: number, max: number): string {
+		return `${current}/${max}`;
+	}
+
+	/**
+	 * Formats the days remaining text for display
+	 * @param days - Number of days remaining
+	 * @returns Formatted string with "days left" suffix
+	 */
+	function formatDaysLeft(days: number): string {
+		return `${days} days left`;
+	}
+
+	/**
+	 * Gets the status badge component for a raffle
+	 * @param status - The raffle status
+	 * @returns Badge component or null if status doesn't have a badge
+	 */
+	function getStatusBadge(status: RaffleStatus) {
 		switch (status) {
 			case RAFFLE_STATUS.LIVE:
 				return (
@@ -102,7 +138,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 			default:
 				return null;
 		}
-	};
+	}
 
 	return (
 		<div className="group flex flex-col overflow-hidden rounded-[24px] bg-white">
@@ -141,17 +177,20 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 
 				<div className="mb-4 flex items-center justify-between">
 					<span className="text-sm font-medium text-gray-500">
-						{daysLeft} days left
+						{formatDaysLeft(daysLeft)}
 					</span>
 					{getStatusBadge(raffle.status as RaffleStatus)}
 				</div>
 
 				<div className="mb-2 flex items-center justify-between text-sm">
 					<span className="text-gray-500">
-						{raffle.participantsCount}/{raffle.maxParticipants}
+						{formatParticipantCount(
+							raffle.participantsCount,
+							raffle.maxParticipants,
+						)}
 					</span>
 					<span className="font-medium text-gray-900">
-						{Math.round(progress)}% filled
+						{formatProgressPercentage(progress)} filled
 					</span>
 				</div>
 

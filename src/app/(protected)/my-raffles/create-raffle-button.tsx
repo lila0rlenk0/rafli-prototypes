@@ -13,8 +13,8 @@ import { USER_MODE } from '@/types/user-mode';
  * Conditionally renders based on user's current mode.
  */
 export function CreateRaffleButton() {
-	const mode = useUserStore((state) => state.mode);
-	const canSwitchMode = useUserStore((state) => state.canSwitchMode);
+	const mode = useUserStore(state => state.mode);
+	const canSwitchMode = useUserStore(state => state.canSwitchMode);
 
 	const shouldShowButton = canSwitchMode() && mode === USER_MODE.HOST;
 
@@ -24,7 +24,9 @@ export function CreateRaffleButton() {
 
 	return (
 		<Link href="/my-raffles/create">
-			<Button>Create new Raffle</Button>
+			<Button className="font-clash-display bg-black px-8 font-semibold">
+				Create new Raffle
+			</Button>
 		</Link>
 	);
 }

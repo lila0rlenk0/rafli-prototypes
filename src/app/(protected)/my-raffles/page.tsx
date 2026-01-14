@@ -1,7 +1,8 @@
-import { CreateRaffleButton } from '@/app/(protected)/my-raffles/create-raffle-button';
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
+import { StatusTabs } from '@/app/(protected)/my-raffles/status-tabs';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
-import { RaffleStatus } from '@/types/raffle';
+import { type RaffleStatus } from '@/types/raffle';
+import { CreateRaffleButton } from './create-raffle-button';
 
 interface PageProps {
 	searchParams: Promise<{
@@ -15,6 +16,7 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 	const status = params.status as RaffleStatus;
 	const page = params.page ? parseInt(params.page) : 1;
 
+	// Fetch raffles for current status
 	const response = await getMyRaffles({
 		status,
 		page,
@@ -43,11 +45,15 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 				<h1 className="mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
 					My Raffles!
 				</h1>
-				<CreateRaffleButton />
 			</div>
 
-			{/* Filter and Action Section */}
-			<div className="mb-8 flex flex-col items-center justify-between gap-6 sm:flex-row"></div>
+			<div className="relative mb-8 flex w-full items-center justify-center">
+				<StatusTabs />
+
+				<div className="absolute right-0">
+					<CreateRaffleButton />
+				</div>
+			</div>
 
 			{/* Grid Section */}
 			{raffles && raffles.length > 0 && (

@@ -9,14 +9,14 @@ import {
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { clientEnv } from '@/env/client';
+// import { clientEnv } from '@/env/client';
 import { cn } from '@/lib/utils';
 import { registerUser } from '@/services/auth/register-user';
 import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ComponentProps, useState, useTransition } from 'react';
+import { ComponentProps, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
 import z from 'zod';
@@ -70,7 +70,7 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 		resolver: zodResolver(formSchema),
 	});
 	const [isPending, startTransition] = useTransition();
-	const [isSocialPending, setIsSocialPending] = useState(false);
+	// const [isSocialPending, setIsSocialPending] = useState(false);
 	const router = useRouter();
 
 	async function handleSignUp(data: FormType) {
@@ -96,42 +96,42 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 	 * because better-auth sets a state cookie that needs to be stored in the browser.
 	 * Using a server action would store the cookie on the Next.js server instead.
 	 */
-	async function handleGoogleSignIn() {
-		setIsSocialPending(true);
-		try {
-			const callbackURL = `${window.location.origin}/auth/callback`;
+	// async function handleGoogleSignIn() {
+	// 	setIsSocialPending(true);
+	// 	try {
+	// 		const callbackURL = `${window.location.origin}/auth/callback`;
 
-			// Make request directly from browser to receive state cookies
-			const response = await fetch(
-				`${clientEnv.NEXT_PUBLIC_BACKEND_URL}/api/auth/sign-in/social`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						provider: 'google',
-						callbackURL,
-					}),
-					credentials: 'include', // CRITICAL: allows browser to receive/send cookies
-				},
-			);
+	// 		// Make request directly from browser to receive state cookies
+	// 		const response = await fetch(
+	// 			`${clientEnv.NEXT_PUBLIC_BACKEND_URL}/api/auth/sign-in/social`,
+	// 			{
+	// 				method: 'POST',
+	// 				headers: {
+	// 					'Content-Type': 'application/json',
+	// 				},
+	// 				body: JSON.stringify({
+	// 					provider: 'google',
+	// 					callbackURL,
+	// 				}),
+	// 				credentials: 'include', // CRITICAL: allows browser to receive/send cookies
+	// 			},
+	// 		);
 
-			const data = await response.json();
+	// 		const data = await response.json();
 
-			if (!data || !data.url) {
-				setError('root', { message: 'Failed to initiate Google sign in.' });
-				setIsSocialPending(false);
-				return;
-			}
+	// 		if (!data || !data.url) {
+	// 			setError('root', { message: 'Failed to initiate Google sign in.' });
+	// 			setIsSocialPending(false);
+	// 			return;
+	// 		}
 
-			// Redirect to OAuth provider (Google)
-			window.location.href = data.url;
-		} catch {
-			setError('root', { message: 'Failed to initiate Google sign in.' });
-			setIsSocialPending(false);
-		}
-	}
+	// 		// Redirect to OAuth provider (Google)
+	// 		window.location.href = data.url;
+	// 	} catch {
+	// 		setError('root', { message: 'Failed to initiate Google sign in.' });
+	// 		setIsSocialPending(false);
+	// 	}
+	// }
 
 	return (
 		<form
@@ -199,14 +199,14 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 							variant="outline"
 							type="button"
 							className="size-12! w-fit"
-							onClick={handleGoogleSignIn}
-							disabled={isPending || isSocialPending}
+							// onClick={handleGoogleSignIn}
+							// disabled={isPending || isSocialPending}
 						>
-							{isSocialPending ? (
+							{/* {isSocialPending ? (
 								<div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
 							) : (
-								<FaGoogle className="size-6" />
-							)}
+							)} */}
+							<FaGoogle className="size-6" />
 							<span className="sr-only">Login with Google</span>
 						</Button>
 					</div>

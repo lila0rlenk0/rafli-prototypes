@@ -35,6 +35,35 @@ export function TicketsStep() {
 		(maxParticipants && maxParticipants > 0),
 	);
 
+	/**
+	 * Checks if the start date is today
+	 * Normalizes both dates to local midnight to avoid timezone issues
+	 * @param dateString - The start date string (format: YYYY-MM-DD)
+	 * @returns true if start date is today, false otherwise
+	 */
+	function checkIfStartDateIsToday(dateString: string): boolean {
+		if (!dateString) return false;
+
+		// Parse the date string and normalize to local midnight
+		const [year, month, day] = dateString.split('-').map(Number);
+		const start = new Date(year, month - 1, day);
+
+		// Get today's date normalized to local midnight
+		const today = new Date();
+		const todayNormalized = new Date(
+			today.getFullYear(),
+			today.getMonth(),
+			today.getDate(),
+		);
+
+		// Compare year, month, and day only (both normalized to local midnight)
+		return (
+			start.getFullYear() === todayNormalized.getFullYear() &&
+			start.getMonth() === todayNormalized.getMonth() &&
+			start.getDate() === todayNormalized.getDate()
+		);
+	}
+
 	// Check if end date is after start date
 	const isDateRangeValid = useMemo(() => {
 		if (!startDate || !endDate) return true; // Don't validate if dates are not set
@@ -43,15 +72,42 @@ export function TicketsStep() {
 		return end > start;
 	}, [startDate, endDate]);
 
+	// Check if there's at least 30 days between start and end
+	// TODO: Temporary rule - remove when no longer needed
+	const hasMinimum30DaysGap = useMemo(() => {
+		if (!startDate || !endDate) return true; // Don't validate if dates are not set
+		const start = new Date(startDate);
+		const end = new Date(endDate);
+		const diffTime = end.getTime() - start.getTime();
+		const diffDays = diffTime / (1000 * 60 * 60 * 24);
+		return diffDays >= 30;
+	}, [startDate, endDate]);
+
+	// Check if start date is today
+	const isStartDateToday = checkIfStartDateIsToday(startDate);
+
+	/**
+	 * Gets today's date normalized to local midnight
+	 * Used to disable past dates in the calendar
+	 * @returns Date object representing today at midnight
+	 */
+	function getTodayDate(): Date {
+		const today = new Date();
+		return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+	}
+
+	const todayDate = getTodayDate();
+
 	// Check if all fields in this step are filled and valid
 	const isCurrentStepValid =
 		Boolean(startDate) &&
 		Boolean(endDate) &&
-		Boolean(pricePerTicket && pricePerTicket > 0) &&
+		Boolean(pricePerTicket && pricePerTicket >= 0.5) &&
 		Boolean(numberOfWinners && numberOfWinners > 0) &&
 		Boolean(minParticipants && minParticipants > 0) &&
 		Boolean(maxParticipants && maxParticipants > 0) &&
 		isDateRangeValid &&
+		hasMinimum30DaysGap &&
 		!errors.startDate &&
 		!errors.endDate &&
 		!errors.pricePerTicket &&
@@ -101,6 +157,7 @@ export function TicketsStep() {
 							value={startDate}
 							onValueChange={value => setValue('startDate', value)}
 							placeholder="Select start date"
+							minDate={todayDate}
 						/>
 						{touchedFields.startDate && errors.startDate && (
 							<span className="text-sm text-red-500">
@@ -117,6 +174,7 @@ export function TicketsStep() {
 							value={endDate}
 							onValueChange={value => setValue('endDate', value)}
 							placeholder="Select end date"
+							minDate={todayDate}
 						/>
 						{touchedFields.endDate && errors.endDate && (
 							<span className="text-sm text-red-500">
@@ -128,22 +186,32 @@ export function TicketsStep() {
 								End date must be after start date
 							</span>
 						)}
+						{startDate &&
+							endDate &&
+							isDateRangeValid &&
+							!hasMinimum30DaysGap && (
+								<span className="text-sm text-red-500">
+									There must be at least 30 days between start and end date
+								</span>
+							)}
 					</div>
 				</div>
 
-				<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
-					<div className="flex items-center gap-2">
-						<Clock className="size-6 text-[#2870BD]" />
-						<span className="text-xs">
-							Raffle have a later start date. You cant change date later.
-						</span>
-					</div>
+				{!isStartDateToday && (
+					<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
+						<div className="flex items-center gap-2">
+							<Clock className="size-6 text-[#2870BD]" />
+							<span className="text-xs">
+								Raffle have a later start date. You cant change date later.
+							</span>
+						</div>
 
-					<div className="flex items-center gap-2 rounded-2xl bg-[#C2E6FF] px-2 py-1">
-						<CircleDashed className="size-4 stroke-[3.5] text-[#01A1FF]" />
-						<span className="text-sm">Draft</span>
+						<div className="flex items-center gap-2 rounded-2xl bg-[#C2E6FF] px-2 py-1">
+							<CircleDashed className="size-4 stroke-[3.5] text-[#01A1FF]" />
+							<span className="text-sm">Draft</span>
+						</div>
 					</div>
-				</div>
+				)}
 			</div>
 
 			{/* Tickets section */}
@@ -160,8 +228,8 @@ export function TicketsStep() {
 							<Input
 								id="pricePerTicket"
 								step="0.01"
-								min="0"
-								placeholder="0.00"
+								min="0.5"
+								placeholder="0.50"
 								type="number"
 								className="border-[#E5E5E5] pl-9"
 								{...register('pricePerTicket', { valueAsNumber: true })}

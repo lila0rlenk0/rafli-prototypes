@@ -1,5 +1,6 @@
 import { getSession } from '@/lib/auth/session';
 
+import { SignOutButton } from '@/components/auth/sign-out-button';
 import { ProfileSidebar } from './profile-sidebar';
 import { PersonalInformationSection } from './sections';
 
@@ -29,11 +30,6 @@ export default async function ProfilePage() {
 
 	return (
 		<div className="flex flex-col gap-8 px-4">
-			{/* Page Title */}
-			<h1 className="font-clash-display text-3xl font-semibold text-black">
-				My Profile
-			</h1>
-
 			{/* Main Content Layout */}
 			<div className="flex w-full flex-col gap-4 md:flex-row">
 				{/* Left Sidebar */}
@@ -41,6 +37,14 @@ export default async function ProfilePage() {
 
 				{/* Right Content Sections */}
 				<div className="flex w-full max-w-195 flex-col gap-4">
+					<div className="flex items-center justify-between">
+						<h1 className="font-clash-display text-3xl font-semibold text-black">
+							My Profile
+						</h1>
+
+						<SignOutButton />
+					</div>
+
 					{/* Personal Information */}
 					<PersonalInformationSection user={user} />
 				</div>

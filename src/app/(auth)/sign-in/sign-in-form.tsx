@@ -9,7 +9,7 @@ import {
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { clientEnv } from '@/env/client';
+import { browserClient } from '@/lib/api/client-browser';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
 import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
@@ -107,31 +107,19 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 			const callbackURL = `${window.location.origin}/auth/callback`;
 
 			// Make request directly from browser to receive state cookies
-			const response = await fetch(
-				`${clientEnv.NEXT_PUBLIC_BACKEND_URL}/api/auth/sign-in/social`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						provider: 'google',
-						callbackURL,
-					}),
-					credentials: 'include',
-				},
+			const response = await browserClient.post<{ url?: string }>(
+				'/api/auth/sign-in/social',
+				{ provider: 'google', callbackURL },
 			);
 
-			const data = await response.json();
-
-			if (!data || !data.url) {
+			if (!response.data.url) {
 				setError('root', { message: 'Failed to initiate Google sign in.' });
 				setIsSocialPending(false);
 				return;
 			}
 
 			// Redirect to OAuth provider (Google)
-			window.location.href = data.url;
+			window.location.href = response.data.url;
 		} catch {
 			setError('root', { message: 'Failed to initiate Google sign in.' });
 			setIsSocialPending(false);

@@ -1,7 +1,9 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { exchangeSocialToken } from '@/services/auth/exchange-social-token';
+import { browserClient } from '@/lib/api/client-browser';
+import { setAuthCookiesClient } from '@/lib/auth/session-client';
+import { AxiosError } from 'axios';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -9,9 +11,16 @@ import { useEffect, useState } from 'react';
 /**
  * Handles OAuth callback processing
  *
- * After OAuth, the backend redirects to this page with better-auth cookies
- * set automatically. This handler exchanges those cookies for JWT token
- * and sets raffly cookies, then redirects to /browse.
+ * After OAuth, the backend redirects here. The browser has the better-auth
+ * session cookie (set by backend). This handler:
+ * 1. Calls backend /api/auth/token with credentials to get JWT
+ * 2. Sets raffly auth cookies
+ * 3. Redirects to /browse
+ *
+ * IMPORTANT: Token exchange MUST be client-side because:
+ * - The better-auth.session_token cookie is set on the backend domain
+ * - Only the browser can send cross-origin cookies with credentials: 'include'
+ * - Server actions run on frontend domain and cannot see backend cookies
  */
 export function CallbackHandler() {
 	const router = useRouter();
@@ -22,30 +31,46 @@ export function CallbackHandler() {
 	useEffect(() => {
 		async function handleCallback() {
 			try {
-				// Check for OAuth error in URL params first
+				// Step 1: Check for OAuth error in URL params
 				const oauthError = searchParams.get('error');
 				if (oauthError) {
-					setError('Google sign in was cancelled or failed. Please try again.');
+					setError(
+						'Google sign in was cancelled or failed. Please try again.',
+					);
 					setIsProcessing(false);
 					return;
 				}
 
-				// Exchange better-auth cookies for JWT token
-				// The server action reads better-auth.session_data and better-auth.state
-				// cookies that were set automatically by the backend
-				const result = await exchangeSocialToken();
+				// Step 2: Exchange session cookie for JWT token
+				// browserClient sends cookies automatically via withCredentials
+				const response = await browserClient.get<{ token?: string }>(
+					'/api/auth/token',
+				);
 
-				if (!result.success) {
+				if (!response.data.token) {
 					setError('Failed to complete sign in. Please try signing in again.');
 					setIsProcessing(false);
 					return;
 				}
 
-				// Success - redirect to /browse
+				// Step 3: Set raffly auth cookies via server action
+				const cookieResult = await setAuthCookiesClient(response.data.token);
+
+				if (!cookieResult.success) {
+					setError('Failed to complete sign in. Please try signing in again.');
+					setIsProcessing(false);
+					return;
+				}
+
+				// Step 4: Redirect to browse
 				router.push('/browse');
 				router.refresh();
 			} catch (err) {
-				console.error('Callback error:', err);
+				if (err instanceof AxiosError) {
+					console.error('Token exchange failed:', err.response?.status);
+				} else {
+					console.error('Callback error:', err);
+				}
 				setError('An unexpected error occurred. Please try again.');
 				setIsProcessing(false);
 			}

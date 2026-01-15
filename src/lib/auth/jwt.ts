@@ -7,6 +7,8 @@
  * These utilities are compatible with both Node.js and Edge Runtime (middleware).
  */
 
+import type { AuthUser } from '@/types/auth';
+
 /**
  * JWT Payload structure from backend
  */
@@ -91,4 +93,24 @@ export function isJwtExpired(token: string): boolean {
 	} catch {
 		return true;
 	}
+}
+
+/**
+ * Convert JWT payload to AuthUser object
+ *
+ * Extracts user data from decoded JWT claims.
+ * Used by session management to create consistent user objects.
+ *
+ * @param payload - Decoded JWT payload
+ * @returns AuthUser object for session/cookie storage
+ */
+export function jwtPayloadToUser(payload: JwtPayload): AuthUser {
+	return {
+		id: payload.sub || payload.id,
+		email: payload.email,
+		emailVerified: payload.emailVerified,
+		name: payload.name,
+		image: null,
+		permissions: payload.permissions,
+	};
 }

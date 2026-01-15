@@ -212,17 +212,23 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 
 				{showEditButton ? (
 					<div className="mt-4">
-						<EditRaffleButton raffleId={raffle.id} />
+						<EditRaffleButton publicSlug={raffle.publicSlugOrCode} />
 					</div>
 				) : (
-					<Link href={`/browse/${raffle.id}`} className="mt-4 block">
+					<Link
+						href={`/browse/${raffle.publicSlugOrCode}`}
+						className="mt-4 block"
+					>
 						<Button className="w-full rounded-full bg-black py-6 text-base font-medium text-white hover:bg-gray-800">
 							Details
 						</Button>
 					</Link>
 				)}
 
-				<RaffleShareButtons title={raffle.title} raffleId={raffle.id} />
+				<RaffleShareButtons
+					title={raffle.title}
+					publicSlug={raffle.publicSlugOrCode}
+				/>
 			</div>
 		</div>
 	);

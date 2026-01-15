@@ -10,7 +10,7 @@ import { createCheckoutSession } from '@/services/payment/create-checkout-sessio
 import type { OrderErrorCode, PaymentErrorCode } from '@/types/errors';
 
 interface BuyButtonProps {
-	raffleId: string;
+	publicSlug: string;
 	ticketQuantity: number;
 	disabled?: boolean;
 }
@@ -25,11 +25,11 @@ interface BuyButtonProps {
  *
  * Shows loading states and error messages during the process.
  *
- * @param raffleId - The raffle ID to purchase tickets for
+ * @param publicSlug - The public slug of the raffle (used for API calls and URLs)
  * @param ticketQuantity - Number of tickets to purchase
  */
 export function BuyButton({
-	raffleId,
+	publicSlug,
 	ticketQuantity,
 	disabled = false,
 }: BuyButtonProps) {
@@ -92,9 +92,9 @@ export function BuyButton({
 		setIsLoading(true);
 
 		try {
-			// Step 1: Create order
+			// Step 1: Create order (backend accepts publicSlug in place of raffleId)
 			const orderResult = await createOrder({
-				raffleId,
+				raffleId: publicSlug,
 				ticketQuantity,
 			});
 
@@ -106,10 +106,10 @@ export function BuyButton({
 
 			const order = orderResult.data;
 
-			// Step 2: Create checkout session
+			// Step 2: Create checkout session (backend accepts publicSlug in place of raffleId)
 			const checkoutResult = await createCheckoutSession({
 				orderId: order.id,
-				raffleId,
+				raffleId: publicSlug,
 			});
 
 			if (!checkoutResult.success) {

@@ -14,14 +14,14 @@ import { ZodError } from 'zod';
 type GetRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
 
 /**
- * Fetches a single raffle by ID
+ * Fetches a single raffle by public slug
  *
- * @param id - The ID of the raffle to fetch
+ * @param publicSlug - The public slug of the raffle to fetch
  * @returns ServiceResponse with raffle on success, RaffleErrorCode on failure
  */
-export async function getRaffle(id: string): Promise<GetRaffleResponse> {
+export async function getRaffle(publicSlug: string): Promise<GetRaffleResponse> {
 	try {
-		const response = await baseClient.get(`/raffles/${id}`);
+		const response = await baseClient.get(`/raffles/${publicSlug}`);
 
 		// Validate response data structure
 		const validatedData = raffleSchema.parse(response.data);

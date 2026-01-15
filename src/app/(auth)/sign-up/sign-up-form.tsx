@@ -26,7 +26,7 @@ const formSchema = z.object({
 	email: z.email('Invalid email address'),
 	password: z
 		.string()
-		.min(12, 'Password must be at least 8 characters')
+		.min(12, 'Password must be at least 12 characters')
 		.max(50),
 });
 
@@ -211,7 +211,7 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 						</Button>
 					</div>
 					<FieldDescription className="text-center">
-						Don&apos;t have an account?{' '}
+						Already have an account?{' '}
 						<Link href="/sign-in" className="underline underline-offset-4">
 							Sign in
 						</Link>

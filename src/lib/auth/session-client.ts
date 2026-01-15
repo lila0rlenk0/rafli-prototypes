@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 
 import { AUTH_COOKIES, COOKIE_OPTIONS } from './config';
-import { decodeJwt } from './jwt';
+import { decodeJwt, jwtPayloadToUser } from './jwt';
 
 /**
  * Server action to set auth cookies from JWT token
@@ -18,19 +18,8 @@ export async function setAuthCookiesClient(
 	token: string,
 ): Promise<{ success: boolean }> {
 	try {
-		// Step 1: Decode JWT to extract user data
 		const payload = decodeJwt(token);
-
-		const user = {
-			id: payload.sub || payload.id,
-			email: payload.email,
-			emailVerified: payload.emailVerified,
-			name: payload.name,
-			image: null,
-			permissions: payload.permissions,
-		};
-
-		// Step 2: Set auth cookies
+		const user = jwtPayloadToUser(payload);
 		const cookieStore = await cookies();
 
 		// Store token in httpOnly cookie

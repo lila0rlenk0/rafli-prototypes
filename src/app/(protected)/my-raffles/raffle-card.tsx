@@ -222,10 +222,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 					</Link>
 				)}
 
-				<RaffleShareButtons
-					title={raffle.title}
-					publicSlugOrCode={raffle.publicSlugOrCode}
-				/>
+				<RaffleShareButtons title={raffle.title} raffleId={raffle.id} />
 			</div>
 		</div>
 	);

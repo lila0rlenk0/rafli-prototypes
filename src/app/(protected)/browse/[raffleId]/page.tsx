@@ -336,7 +336,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 					<RaffleShareButtons
 						title={raffle.title}
-						publicSlugOrCode={raffle.publicSlugOrCode}
+						raffleId={raffle.id}
 					/>
 				</div>
 

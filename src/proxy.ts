@@ -10,7 +10,13 @@ const protectedRoutes = ['/browse', '/my-raffles', '/profile'];
 /**
  * Auth routes that should redirect to /browse if user is already authenticated
  */
-const authRoutes = ['/sign-in', '/sign-up', '/forgot-password'];
+const authRoutes = [
+	'/sign-in',
+	'/sign-up',
+	'/forgot-password',
+	'/forgot-password',
+	'/reset-password',
+];
 
 /**
  * Proxy function for route protection and authentication flows

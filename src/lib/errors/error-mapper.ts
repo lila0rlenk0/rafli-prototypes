@@ -11,71 +11,85 @@ import {
 /**
  * Error Mapper Utilities
  *
- * Maps backend error codes and HTTP status codes to frontend error codes.
- * Handles both RFC 7807 URN format and simple code format from backend.
- * Provides service-specific mapping functions for different API domains.
+ * Maps backend error codes to frontend error codes with proper fallbacks.
+ *
+ * Backend errors come in RFC 7807 ProblemDetails format:
+ * - `type`: URN like "urn:raffles:problem:auth:user:invalid-credentials"
+ * - Extracted code: "auth:user:invalid-credentials"
+ *
+ * Error code prefixes indicate source:
+ * - `global:*`   → Backend cross-cutting middleware (rate limit, auth guard, uploads)
+ * - `auth:*`     → Backend authentication service
+ * - `core:*`     → Backend core business logic
+ * - `payments:*` → Backend payments service
+ * - `snake_case` → Frontend-only (network errors, HTTP status fallbacks)
  */
 
 /**
- * Extracts error code from backend response
- * Handles both RFC 7807 (with URN) and simple format (code + message)
+ * Extracts error code from backend RFC 7807 response
  *
- * @param error - The caught error (usually AxiosError)
- * @returns The extracted error code or null if not found
+ * Handles multiple response formats:
+ * 1. RFC 7807 `type` field (URN) → extracts code after "urn:raffles:problem:"
+ * 2. `message` field containing colon-separated code
+ * 3. Simple `code` field
  *
- * @example
- * // RFC 7807 format
- * // { type: "urn:raffles:problem:auth:user:invalid-credentials", ... }
- * // Returns: "auth:user:invalid-credentials"
- *
- * // Simple format
- * // { code: "unauthenticated", message: "Invalid credentials" }
- * // Returns: "unauthenticated"
+ * @param error - Axios error with response data
+ * @returns Extracted error code or null
  */
 function extractErrorCode(error: unknown): string | null {
+	// Only process AxiosErrors with response data
 	if (!(error instanceof AxiosError) || !error.response?.data) {
 		return null;
 	}
 
 	const data = error.response.data;
 
-	// 1. Try RFC 7807 'type' field (URN format) - PREFERRED
+	// Priority 1: RFC 7807 'type' field (URN format)
+	// Example: "urn:raffles:problem:auth:user:invalid-credentials"
+	// Returns: "auth:user:invalid-credentials"
 	if (data.type && typeof data.type === 'string') {
 		const urnMatch = data.type.match(/^urn:raffles:problem:(.+)$/);
 		if (urnMatch) {
-			return urnMatch[1]; // Returns "auth:user:invalid-credentials"
+			return urnMatch[1];
 		}
 	}
 
-	// 2. Fallback to 'message' field (if it's a code-like string)
+	// Priority 2: 'message' field with colon-separated code
+	// Example: "auth:user:invalid-credentials"
+	// (Some endpoints return code in message field)
 	if (
 		data.message &&
 		typeof data.message === 'string' &&
 		data.message.includes(':')
 	) {
-		return data.message; // Returns "auth:user:invalid-credentials"
+		return data.message;
 	}
 
-	// 3. Fallback to 'code' field (simple format)
+	// Priority 3: Simple 'code' field
+	// Example: "unauthenticated"
+	// (Legacy format or simple error codes)
 	if (data.code && typeof data.code === 'string') {
-		return data.code; // Returns "unauthenticated"
+		return data.code;
 	}
 
 	return null;
 }
 
 /**
- * Maps simple backend codes to our full error codes
- * Example: "unauthenticated" → "global:auth:unauthenticated"
+ * Maps simple backend codes to full error codes
  *
- * @param code - The simple code from backend
- * @returns The full error code or the original code if no mapping exists
+ * Some endpoints return simple codes like "unauthenticated" instead of
+ * full codes like "global:auth:unauthenticated". This normalizes them.
+ *
+ * @param code - Simple code from backend
+ * @returns Full error code or original if no mapping
  */
 function mapSimpleCode(code: string): string {
 	const SIMPLE_CODE_MAP: Record<string, string> = {
+		// Simple code → Full backend code
 		unauthenticated: 'global:auth:unauthenticated',
 		permission_denied: 'forbidden',
-		not_found: 'not_found', // Keep as is, will be contextualized by service
+		not_found: 'not_found',
 		invalid_argument: 'validation_error',
 	};
 
@@ -83,53 +97,70 @@ function mapSimpleCode(code: string): string {
 }
 
 /**
- * Fallback mapping for network errors and HTTP status codes
- * Used when we cannot extract a specific error code from the backend response
+ * Maps network/HTTP errors to frontend-only error codes
  *
- * @param error - The caught error (usually AxiosError)
- * @returns A common error code representing the error type
+ * Called when:
+ * 1. No backend error code could be extracted
+ * 2. Request failed before reaching backend (network error)
+ * 3. Backend returned HTTP status without specific error code
+ *
+ * These are frontend-only codes (snake_case) - never from backend.
+ *
+ * @param error - Axios error
+ * @returns Frontend-only CommonErrorCode
  */
 function mapCommonError(
 	error: unknown,
 ): (typeof COMMON_ERROR_CODES)[keyof typeof COMMON_ERROR_CODES] {
 	if (!(error instanceof AxiosError)) {
+		// Not an axios error - unknown source
 		return COMMON_ERROR_CODES.UNKNOWN_ERROR;
 	}
 
-	// Network/timeout errors
+	// -----------------------------------------------------------------
+	// Network errors - request never reached backend
+	// Detected via axios error.code property
+	// -----------------------------------------------------------------
+
 	if (error.code === 'ECONNABORTED') {
+		// Request timeout - axios aborted after timeout period
 		return COMMON_ERROR_CODES.TIMEOUT_ERROR;
 	}
 	if (error.code === 'ERR_NETWORK') {
+		// No network - device offline or server unreachable
 		return COMMON_ERROR_CODES.NETWORK_ERROR;
 	}
 	if (error.code === 'ERR_BAD_REQUEST') {
+		// Malformed request - axios couldn't send it
 		return COMMON_ERROR_CODES.VALIDATION_ERROR;
 	}
 
-	// HTTP status codes (when no specific error code from backend)
+	// -----------------------------------------------------------------
+	// HTTP status fallbacks - backend returned status without error code
+	// Used when extractErrorCode() returned null
+	// -----------------------------------------------------------------
+
 	if (error.response) {
 		const status = error.response.status;
+
+		// Client errors (4xx)
 		if (status === 400) return COMMON_ERROR_CODES.VALIDATION_ERROR;
 		if (status === 401) return COMMON_ERROR_CODES.UNAUTHORIZED;
 		if (status === 403) return COMMON_ERROR_CODES.FORBIDDEN;
+
+		// Server errors (5xx)
 		if (status === 500) return COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR;
 		if (status === 503) return COMMON_ERROR_CODES.SERVICE_UNAVAILABLE;
 	}
 
+	// Catch-all for unhandled cases
 	return COMMON_ERROR_CODES.UNKNOWN_ERROR;
 }
 
 /**
- * Generic error mapper for any service error code type
- * Maps backend error codes to frontend error codes with fallbacks
+ * Generic error mapper (deprecated)
  *
- * @param error - The caught error (usually AxiosError)
- * @param errorCodeMap - Mapping of backend codes to frontend codes
- * @param defaultErrorCode - Fallback error code when no mapping exists
- * @returns The mapped frontend error code
- *
- * @deprecated Use extractErrorCode() + mapSimpleCode() + mapCommonError() instead
+ * @deprecated Use service-specific mappers: mapAuthError, mapRaffleError, etc.
  */
 export function mapBackendError<TErrorCode extends string>(
 	error: unknown,
@@ -140,15 +171,12 @@ export function mapBackendError<TErrorCode extends string>(
 		return defaultErrorCode;
 	}
 
-	// Extract backend error code
 	const backendCode = error.response?.data?.message as string | undefined;
 
-	// Map to frontend error code
 	if (backendCode && backendCode in errorCodeMap) {
 		return errorCodeMap[backendCode];
 	}
 
-	// Handle common HTTP status codes
 	const status = error.response?.status;
 	if (status === 401) {
 		return COMMON_ERROR_CODES.UNAUTHORIZED as TErrorCode;
@@ -163,7 +191,6 @@ export function mapBackendError<TErrorCode extends string>(
 		return COMMON_ERROR_CODES.SERVICE_UNAVAILABLE as TErrorCode;
 	}
 
-	// Handle network errors
 	if (error.code === 'ECONNABORTED') {
 		return COMMON_ERROR_CODES.TIMEOUT_ERROR as TErrorCode;
 	}
@@ -175,24 +202,23 @@ export function mapBackendError<TErrorCode extends string>(
 }
 
 /**
- * Maps auth-related backend errors to frontend error codes
- * Handles both full codes (auth:*, global:*) and simple codes (unauthenticated)
+ * Maps authentication errors to AuthErrorCode
  *
- * @param error - The caught error (usually AxiosError)
- * @returns The mapped auth error code
+ * Flow:
+ * 1. Extract backend code from RFC 7807 response
+ * 2. If code starts with `auth:` or `global:` → use as-is (backend code)
+ * 3. If simple code → map to full code
+ * 4. If no code found → fallback to frontend-only error (network/HTTP status)
  *
- * @example
- * try {
- *   await baseClient.post('/auth/sign-in', data);
- * } catch (error) {
- *   return failure(mapAuthError(error));
- * }
+ * @param error - Caught error (usually AxiosError)
+ * @returns AuthErrorCode (either backend code or frontend fallback)
  */
 export function mapAuthError(error: unknown): AuthErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// If full code with prefix (auth:*, global:*), use directly
+		// Backend code with known prefix - use directly
+		// Examples: "auth:user:invalid-credentials", "global:ratelimit:exceeded"
 		if (
 			extractedCode.startsWith('auth:') ||
 			extractedCode.startsWith('global:')
@@ -200,36 +226,32 @@ export function mapAuthError(error: unknown): AuthErrorCode {
 			return extractedCode as AuthErrorCode;
 		}
 
-		// If simple code (unauthenticated), map it
+		// Simple code - try to map to full code
+		// Example: "unauthenticated" → "global:auth:unauthenticated"
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('auth:') || mappedCode.startsWith('global:')) {
 			return mappedCode as AuthErrorCode;
 		}
 	}
 
-	// Fallback to common errors (network, timeout, HTTP status)
+	// No backend code - use frontend-only fallback (network error or HTTP status)
 	return mapCommonError(error);
 }
 
 /**
- * Maps raffle/core related backend errors to frontend error codes
- * Handles both full codes (core:*, global:*) and simple codes
+ * Maps raffle/core errors to RaffleErrorCode
  *
- * @param error - The caught error (usually AxiosError)
- * @returns The mapped raffle error code
+ * Same flow as mapAuthError but accepts `core:*` prefix for raffle operations.
  *
- * @example
- * try {
- *   await authenticatedClient.post('/raffles', data);
- * } catch (error) {
- *   return failure(mapRaffleError(error));
- * }
+ * @param error - Caught error (usually AxiosError)
+ * @returns RaffleErrorCode (either backend code or frontend fallback)
  */
 export function mapRaffleError(error: unknown): RaffleErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// If full code with prefix (core:*, global:*), use directly
+		// Backend code with known prefix - use directly
+		// Examples: "core:raffle:not-found", "global:upload:file-too-large"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -237,36 +259,30 @@ export function mapRaffleError(error: unknown): RaffleErrorCode {
 			return extractedCode as RaffleErrorCode;
 		}
 
-		// If simple code, map it
+		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as RaffleErrorCode;
 		}
 	}
 
-	// Fallback to common errors (network, timeout, HTTP status)
+	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
 /**
- * Maps order-related backend errors to frontend error codes
- * Handles both full codes (core:order:*, global:*) and simple codes
+ * Maps order errors to OrderErrorCode
  *
- * @param error - The caught error (usually AxiosError)
- * @returns The mapped order error code
+ * Accepts `core:order:*`, `core:raffle:*`, and `global:*` prefixes.
  *
- * @example
- * try {
- *   await authenticatedClient.post('/orders', data);
- * } catch (error) {
- *   return failure(mapOrderError(error));
- * }
+ * @param error - Caught error (usually AxiosError)
+ * @returns OrderErrorCode (either backend code or frontend fallback)
  */
 export function mapOrderError(error: unknown): OrderErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// If full code with prefix (core:order:*, global:*), use directly
+		// Backend code with known prefix - use directly
 		if (
 			extractedCode.startsWith('core:order:') ||
 			extractedCode.startsWith('core:raffle:') ||
@@ -275,7 +291,7 @@ export function mapOrderError(error: unknown): OrderErrorCode {
 			return extractedCode as OrderErrorCode;
 		}
 
-		// If simple code, map it
+		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('core:order:') ||
@@ -286,29 +302,24 @@ export function mapOrderError(error: unknown): OrderErrorCode {
 		}
 	}
 
-	// Fallback to common errors (network, timeout, HTTP status)
+	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
 /**
- * Maps payment-related backend errors to frontend error codes
- * Handles both full codes (payments:*, global:*) and simple codes
+ * Maps payment errors to PaymentErrorCode
  *
- * @param error - The caught error (usually AxiosError)
- * @returns The mapped payment error code
+ * Accepts `payments:*` and `global:*` prefixes.
  *
- * @example
- * try {
- *   await authenticatedClient.post('/payments/checkout', data);
- * } catch (error) {
- *   return failure(mapPaymentError(error));
- * }
+ * @param error - Caught error (usually AxiosError)
+ * @returns PaymentErrorCode (either backend code or frontend fallback)
  */
 export function mapPaymentError(error: unknown): PaymentErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// If full code with prefix (payments:*, global:*), use directly
+		// Backend code with known prefix - use directly
+		// Examples: "payments:checkout:failed", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('payments:') ||
 			extractedCode.startsWith('global:')
@@ -316,7 +327,7 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 			return extractedCode as PaymentErrorCode;
 		}
 
-		// If simple code, map it
+		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('payments:') ||
@@ -326,6 +337,6 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 		}
 	}
 
-	// Fallback to common errors (network, timeout, HTTP status)
+	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }

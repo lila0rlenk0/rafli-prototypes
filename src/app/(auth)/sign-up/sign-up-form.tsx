@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { browserClient } from '@/lib/api/client-browser';
 import { cn } from '@/lib/utils';
 import { registerUser } from '@/services/auth/register-user';
-import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -39,9 +39,9 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
 		// Backend auth errors
 		case AUTH_ERROR_CODES.USER_ALREADY_EXISTS:
-			return 'An account with this email already exists.';
 		case AUTH_ERROR_CODES.SIGNUP_FAILED:
-			return 'Registration failed. Please try again.';
+			// Generic message to prevent user enumeration
+			return 'Unable to create account. Please try again or sign in.';
 		case AUTH_ERROR_CODES.SOCIAL_LOGIN_FAILED:
 		case AUTH_ERROR_CODES.SOCIAL_PROVIDER_ERROR:
 		case AUTH_ERROR_CODES.SOCIAL_CALLBACK_FAILED:
@@ -49,11 +49,13 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 			return 'Google sign in failed. Please try again.';
 
 		// Common fallback errors
-		case 'network_error':
+		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
+			return 'Too many attempts. Please wait a moment.';
+		case COMMON_ERROR_CODES.NETWORK_ERROR:
 			return 'Network error. Please check your connection.';
-		case 'timeout_error':
+		case COMMON_ERROR_CODES.TIMEOUT_ERROR:
 			return 'Request timed out. Please try again.';
-		case 'internal_server_error':
+		case COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR:
 			return 'Server error. Please try again later.';
 		default:
 			return 'An unexpected error occurred. Please try again.';

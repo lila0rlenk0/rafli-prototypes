@@ -5,7 +5,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { requestPasswordReset } from '@/services/auth/request-password-reset';
-import type { AuthErrorCode } from '@/types/errors';
+import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { ComponentProps, useState, useTransition } from 'react';
@@ -23,11 +23,13 @@ type FormType = z.infer<typeof formSchema>;
  */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
-		case 'network_error':
+		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
+			return 'Too many attempts. Please wait a moment.';
+		case COMMON_ERROR_CODES.NETWORK_ERROR:
 			return 'Network error. Please check your connection.';
-		case 'timeout_error':
+		case COMMON_ERROR_CODES.TIMEOUT_ERROR:
 			return 'Request timed out. Please try again.';
-		case 'internal_server_error':
+		case COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR:
 			return 'Server error. Please try again later.';
 		default:
 			return 'An unexpected error occurred.';

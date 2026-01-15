@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { browserClient } from '@/lib/api/client-browser';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
-import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -49,14 +49,16 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 			return 'Google sign in failed. Please try again.';
 
 		// Common fallback errors
-		case 'global:auth:unauthenticated':
-		case 'unauthorized':
+		case COMMON_ERROR_CODES.GLOBAL_AUTH_UNAUTHENTICATED:
+		case COMMON_ERROR_CODES.UNAUTHORIZED:
 			return 'Authentication failed.';
-		case 'network_error':
+		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
+			return 'Too many attempts. Please wait a moment.';
+		case COMMON_ERROR_CODES.NETWORK_ERROR:
 			return 'Network error. Please check your connection.';
-		case 'timeout_error':
+		case COMMON_ERROR_CODES.TIMEOUT_ERROR:
 			return 'Request timed out.';
-		case 'internal_server_error':
+		case COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR:
 			return 'Server error.';
 		default:
 			return 'An unexpected error occurred.';

@@ -1,8 +1,9 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { clientEnv } from '@/env/client';
+import { browserClient } from '@/lib/api/client-browser';
 import { setAuthCookiesClient } from '@/lib/auth/session-client';
+import { AxiosError } from 'axios';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -40,33 +41,20 @@ export function CallbackHandler() {
 					return;
 				}
 
-				// Step 2: Exchange session cookie for JWT token (client-side request)
-				// Browser sends better-auth.session_token cookie automatically
-				const response = await fetch(
-					`${clientEnv.NEXT_PUBLIC_BACKEND_URL}/api/auth/token`,
-					{
-						method: 'GET',
-						credentials: 'include',
-					},
+				// Step 2: Exchange session cookie for JWT token
+				// browserClient sends cookies automatically via withCredentials
+				const response = await browserClient.get<{ token?: string }>(
+					'/api/auth/token',
 				);
 
-				if (!response.ok) {
-					console.error('Token exchange failed:', response.status);
-					setError('Failed to complete sign in. Please try signing in again.');
-					setIsProcessing(false);
-					return;
-				}
-
-				const data = await response.json();
-
-				if (!data.token) {
+				if (!response.data.token) {
 					setError('Failed to complete sign in. Please try signing in again.');
 					setIsProcessing(false);
 					return;
 				}
 
 				// Step 3: Set raffly auth cookies via server action
-				const cookieResult = await setAuthCookiesClient(data.token);
+				const cookieResult = await setAuthCookiesClient(response.data.token);
 
 				if (!cookieResult.success) {
 					setError('Failed to complete sign in. Please try signing in again.');
@@ -78,7 +66,11 @@ export function CallbackHandler() {
 				router.push('/browse');
 				router.refresh();
 			} catch (err) {
-				console.error('Callback error:', err);
+				if (err instanceof AxiosError) {
+					console.error('Token exchange failed:', err.response?.status);
+				} else {
+					console.error('Callback error:', err);
+				}
 				setError('An unexpected error occurred. Please try again.');
 				setIsProcessing(false);
 			}

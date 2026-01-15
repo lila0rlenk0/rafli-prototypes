@@ -11,35 +11,68 @@ interface TicketSelectorProps {
 /**
  * TicketSelector Component
  *
- * Manages ticket quantity selection with increment/decrement controls and
- * bundle purchase shortcuts. Enforces minimum (1) and maximum (available tickets)
- * constraints.
+ * Manages ticket quantity selection with increment/decrement controls,
+ * bundle purchase shortcuts, and an editable input field. Enforces minimum (1)
+ * and maximum (available tickets) constraints.
  *
  * Features:
  * - +/- controls for precise quantity selection
+ * - Editable input field for direct quantity entry
  * - Bundle buttons for quick selection (3, 6, 9 tickets)
  * - Smart overflow handling (bundles respect max limit)
  * - Disabled states when at limits
  * - Real-time total price calculation
+ * - Input validation with automatic correction
  */
 export function TicketSelector({
 	maxTickets,
 	onQuantityChange,
 }: TicketSelectorProps) {
 	const [quantity, setQuantity] = useState(1);
+	const [inputValue, setInputValue] = useState('1');
+
+	/**
+	 * Validates and normalizes a quantity value
+	 * Ensures the value is within valid bounds (1 to maxTickets)
+	 * @param value - The quantity value to validate
+	 * @returns Validated quantity value
+	 */
+	function validateQuantity(value: number): number {
+		if (isNaN(value) || value < 1) return 1;
+		if (value > maxTickets) return maxTickets;
+		return Math.floor(value);
+	}
+
+	/**
+	 * Updates quantity and input value synchronously
+	 * @param newQuantity - The new quantity value
+	 */
+	function updateQuantity(newQuantity: number) {
+		const validated = validateQuantity(newQuantity);
+		setQuantity(validated);
+		setInputValue(validated.toString());
+	}
 
 	/**
 	 * Handles incrementing the ticket quantity by 1
 	 */
 	const handleIncrement = useCallback(() => {
-		setQuantity(prev => Math.min(prev + 1, maxTickets));
+		setQuantity(prev => {
+			const newValue = Math.min(prev + 1, maxTickets);
+			setInputValue(newValue.toString());
+			return newValue;
+		});
 	}, [maxTickets]);
 
 	/**
 	 * Handles decrementing the ticket quantity by 1
 	 */
 	const handleDecrement = useCallback(() => {
-		setQuantity(prev => Math.max(prev - 1, 1));
+		setQuantity(prev => {
+			const newValue = Math.max(prev - 1, 1);
+			setInputValue(newValue.toString());
+			return newValue;
+		});
 	}, []);
 
 	/**
@@ -49,10 +82,56 @@ export function TicketSelector({
 	 */
 	const handleBundle = useCallback(
 		(bundleSize: number) => {
-			setQuantity(prev => Math.min(prev + bundleSize, maxTickets));
+			setQuantity(prev => {
+				const newValue = Math.min(prev + bundleSize, maxTickets);
+				setInputValue(newValue.toString());
+				return newValue;
+			});
 		},
 		[maxTickets],
 	);
+
+	/**
+	 * Handles input change while user is typing
+	 * Allows temporary invalid values during typing
+	 * @param event - Input change event
+	 */
+	function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
+		const value = event.target.value;
+		setInputValue(value);
+
+		// Only update quantity if value is a valid number
+		const numValue = parseInt(value, 10);
+		if (!isNaN(numValue) && numValue >= 1 && numValue <= maxTickets) {
+			setQuantity(numValue);
+		}
+	}
+
+	/**
+	 * Handles input blur (when user finishes typing)
+	 * Validates and corrects the value if needed
+	 */
+	function handleInputBlur() {
+		const numValue = parseInt(inputValue, 10);
+		if (isNaN(numValue) || numValue < 1) {
+			updateQuantity(1);
+		} else if (numValue > maxTickets) {
+			updateQuantity(maxTickets);
+		} else {
+			updateQuantity(numValue);
+		}
+	}
+
+	/**
+	 * Handles Enter key press in input
+	 * Validates and applies the value
+	 * @param event - Keyboard event
+	 */
+	function handleInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+		if (event.key === 'Enter') {
+			event.currentTarget.blur();
+		}
+	}
 
 	/**
 	 * Checks if a bundle button should be disabled
@@ -83,6 +162,11 @@ export function TicketSelector({
 		return currentQty <= 1;
 	}
 
+	// Sync input value when quantity changes (from buttons/bundles)
+	useEffect(() => {
+		setInputValue(quantity.toString());
+	}, [quantity]);
+
 	// Notify parent component when quantity changes
 	useEffect(() => {
 		onQuantityChange(quantity);
@@ -107,7 +191,7 @@ export function TicketSelector({
 			<div className="flex items-center justify-between">
 				<p className="text-sm text-[#7B7B7B]">Number of tickets</p>
 
-				<div className="flex items-center justify-center gap-6 rounded-full border border-black px-4 py-1">
+				<div className="flex items-center justify-center gap-2 rounded-full border border-black px-4 py-1">
 					<button
 						onClick={handleDecrement}
 						disabled={decrementDisabled}
@@ -117,7 +201,17 @@ export function TicketSelector({
 					>
 						<Minus className="size-4" />
 					</button>
-					<p className="w-4 text-lg select-none">{quantity}</p>
+					<input
+						type="number"
+						min={1}
+						max={maxTickets}
+						value={inputValue}
+						onChange={handleInputChange}
+						onBlur={handleInputBlur}
+						onKeyDown={handleInputKeyDown}
+						className="w-8 [appearance:textfield] border-none bg-transparent text-center text-lg outline-none focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+						aria-label="Ticket quantity"
+					/>
 					<button
 						onClick={handleIncrement}
 						disabled={incrementDisabled}

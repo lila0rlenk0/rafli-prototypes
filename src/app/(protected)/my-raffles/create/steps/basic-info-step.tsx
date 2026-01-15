@@ -39,7 +39,7 @@ export function BasicInfoStep() {
 	const hasFilledFields = Boolean(
 		title ||
 		description ||
-		(price && price > 0) ||
+		(price && price >= 0.5) ||
 		category ||
 		(coverImage && coverImage.length > 0),
 	);
@@ -48,7 +48,7 @@ export function BasicInfoStep() {
 	const isCurrentStepValid =
 		Boolean(title) &&
 		Boolean(description) &&
-		Boolean(price && price > 0) &&
+		Boolean(price && price >= 0.5) &&
 		Boolean(category) &&
 		!errors.title &&
 		!errors.description &&
@@ -175,8 +175,9 @@ export function BasicInfoStep() {
 							id="price"
 							type="number"
 							step="0.01"
+							min="0.5"
 							className="border-[#E5E5E5] pl-9"
-							placeholder="0.00"
+							placeholder="0.50"
 							{...register('price', { valueAsNumber: true })}
 						/>
 					</div>

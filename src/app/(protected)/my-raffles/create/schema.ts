@@ -26,7 +26,7 @@ export const raffleFormSchema = z
 			.number()
 			.or(z.nan())
 			.transform(val => (isNaN(val) ? 0 : val))
-			.pipe(z.number().min(0.01, 'Price must be greater than 0')),
+			.pipe(z.number().min(0.5, 'Declared value must be at least 0.5')),
 		category: z.string().min(1, 'Category is required'),
 		coverImage: z.array(fileSchema).optional(),
 
@@ -37,7 +37,7 @@ export const raffleFormSchema = z
 			.number()
 			.or(z.nan())
 			.transform(val => (isNaN(val) ? 0 : val))
-			.pipe(z.number().min(0.01, 'Price per ticket must be greater than 0')),
+			.pipe(z.number().min(0.5, 'Price per ticket must be at least 0.5')),
 		numberOfWinners: z
 			.number()
 			.or(z.nan())
@@ -68,6 +68,54 @@ export const raffleFormSchema = z
 	})
 	.refine(
 		data => {
+			if (!data.startDate) return true;
+
+			// Parse the date string and normalize to local midnight
+			const [year, month, day] = data.startDate.split('-').map(Number);
+			const start = new Date(year, month - 1, day);
+
+			// Get today's date normalized to local midnight
+			const today = new Date();
+			const todayNormalized = new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate(),
+			);
+
+			// Start date must be today or later
+			return start >= todayNormalized;
+		},
+		{
+			message: 'Start date cannot be before today',
+			path: ['startDate'],
+		},
+	)
+	.refine(
+		data => {
+			if (!data.endDate) return true;
+
+			// Parse the date string and normalize to local midnight
+			const [year, month, day] = data.endDate.split('-').map(Number);
+			const end = new Date(year, month - 1, day);
+
+			// Get today's date normalized to local midnight
+			const today = new Date();
+			const todayNormalized = new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate(),
+			);
+
+			// End date must be today or later
+			return end >= todayNormalized;
+		},
+		{
+			message: 'End date cannot be before today',
+			path: ['endDate'],
+		},
+	)
+	.refine(
+		data => {
 			if (!data.startDate || !data.endDate) return true;
 
 			const start = new Date(data.startDate);
@@ -89,6 +137,24 @@ export const raffleFormSchema = z
 		{
 			message: 'Min participants cannot be greater than max participants',
 			path: ['minParticipants'],
+		},
+	)
+	// TODO: Temporary rule - minimum 30 days gap between start and end
+	// Remove this validation when no longer needed
+	.refine(
+		data => {
+			if (!data.startDate || !data.endDate) return true;
+
+			const start = new Date(data.startDate);
+			const end = new Date(data.endDate);
+			const diffTime = end.getTime() - start.getTime();
+			const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+			return diffDays >= 30;
+		},
+		{
+			message: 'There must be at least 30 days between start and end date',
+			path: ['endDate'],
 		},
 	);
 

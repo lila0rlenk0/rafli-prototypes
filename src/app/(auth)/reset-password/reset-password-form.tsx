@@ -9,10 +9,10 @@ import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/type
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ComponentProps, useTransition } from 'react';
+import { type ComponentProps, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import z from 'zod';
+import { z } from 'zod';
 
 const formSchema = z
 	.object({
@@ -39,6 +39,7 @@ interface ResetPasswordFormProps extends ComponentProps<'form'> {
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
 		case AUTH_ERROR_CODES.INVALID_TOKEN:
+		case AUTH_ERROR_CODES.TOKEN_EXPIRED:
 			return 'This reset link is invalid or has expired. Please request a new one.';
 		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
 			return 'Too many attempts. Please wait a moment.';

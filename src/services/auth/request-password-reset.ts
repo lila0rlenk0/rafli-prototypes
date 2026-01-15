@@ -4,7 +4,7 @@ import { baseClient } from '@/lib/api/client';
 import { failure, success } from '@/lib/errors';
 import { mapAuthError } from '@/lib/errors';
 import type { RequestPasswordResetInput } from '@/types/auth';
-import type { AuthErrorCode } from '@/types/errors';
+import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
@@ -30,12 +30,13 @@ export async function requestPasswordReset(
 	} catch (error) {
 		const errorCode = mapAuthError(error);
 
-		// For network/server errors, return failure
-		// For user-related errors (not found), return success
+		// For infrastructure errors, return failure (user should know)
+		// For user-related errors (not found), return success to prevent enumeration
 		if (
-			errorCode === 'network_error' ||
-			errorCode === 'timeout_error' ||
-			errorCode === 'internal_server_error'
+			errorCode === COMMON_ERROR_CODES.NETWORK_ERROR ||
+			errorCode === COMMON_ERROR_CODES.TIMEOUT_ERROR ||
+			errorCode === COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR ||
+			errorCode === COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED
 		) {
 			return failure(errorCode);
 		}

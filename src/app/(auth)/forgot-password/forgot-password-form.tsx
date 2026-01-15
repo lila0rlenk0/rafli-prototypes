@@ -8,9 +8,9 @@ import { requestPasswordReset } from '@/services/auth/request-password-reset';
 import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { ComponentProps, useState, useTransition } from 'react';
+import { type ComponentProps, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
-import z from 'zod';
+import { z } from 'zod';
 
 const formSchema = z.object({
 	email: z.email('Invalid email address'),

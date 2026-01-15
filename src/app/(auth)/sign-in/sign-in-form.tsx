@@ -16,10 +16,10 @@ import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/type
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ComponentProps, useState, useTransition } from 'react';
+import { type ComponentProps, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
-import z from 'zod';
+import { z } from 'zod';
 
 const formSchema = z.object({
 	email: z.email('Invalid email address'),

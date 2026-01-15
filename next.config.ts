@@ -6,6 +6,15 @@ type Protocol = 'https' | 'http';
 const storageUrl = new URL(env.STORAGE_MEDIA_URL);
 const isLocal = storageUrl.hostname.includes('127.0.0.1');
 
+const userAvatarStorageUrl = new URL(env.STORAGE_MEDIA_URL_USER_AVATARS);
+
+const remotePatterns = [storageUrl, userAvatarStorageUrl].map(url => ({
+	protocol: url.protocol.replace(':', '') as Protocol,
+	hostname: url.hostname,
+	pathname: '/**',
+	...(url.port ? { port: url.port } : {}),
+}));
+
 const nextConfig: NextConfig = {
 	experimental: {
 		serverActions: {
@@ -15,14 +24,7 @@ const nextConfig: NextConfig = {
 	images: {
 		// Allow loading images from local network (fixes private IP error)
 		unoptimized: isLocal,
-		remotePatterns: [
-			{
-				protocol: storageUrl.protocol.replace(':', '') as Protocol,
-				hostname: storageUrl.hostname,
-				pathname: '/**',
-				...(storageUrl.port ? { port: storageUrl.port } : {}),
-			},
-		],
+		remotePatterns: remotePatterns,
 	},
 	cacheComponents: true,
 };

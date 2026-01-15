@@ -187,8 +187,17 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
 
 					<div className="flex items-center gap-4">
-						<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xl font-semibold">
-							{getHostInitial()}
+						<div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
+							{raffle.host?.avatar?.url ? (
+								<Image
+									src={raffle.host.avatar.url}
+									alt={getHostName()}
+									fill
+									className="object-cover"
+								/>
+							) : (
+								getHostInitial()
+							)}
 						</div>
 						<div className="flex min-w-0 flex-col font-medium">
 							<span className="truncate text-sm">by {getHostName()}</span>

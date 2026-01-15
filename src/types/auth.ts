@@ -50,3 +50,19 @@ export interface SocialSignInResponse {
 	redirect: boolean;
 	url: string;
 }
+
+/**
+ * Input for requesting password reset email
+ */
+export interface RequestPasswordResetInput {
+	email: string;
+	redirectTo?: string;
+}
+
+/**
+ * Input for resetting password with token
+ */
+export interface ResetPasswordInput {
+	token: string;
+	newPassword: string;
+}

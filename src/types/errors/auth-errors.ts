@@ -40,6 +40,10 @@ export const AUTH_ERROR_CODES = {
 	SOCIAL_CALLBACK_FAILED: 'auth:social:callback-failed',
 	/** Failed to exchange social token for JWT */
 	SOCIAL_TOKEN_EXCHANGE_FAILED: 'auth:social:token-exchange-failed',
+
+	// Password reset errors
+	/** Password reset request or completion failed */
+	PASSWORD_RESET_FAILED: 'auth:password-reset:failed',
 } as const;
 
 /**

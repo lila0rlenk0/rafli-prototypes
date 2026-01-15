@@ -8,7 +8,14 @@ interface ResetPasswordPageProps {
 	searchParams: Promise<{ token?: string }>;
 }
 
-export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
+/**
+ * Reset Password Page
+ *
+ * Displays password reset form with token validation.
+ */
+export default async function ResetPasswordPage({
+	searchParams,
+}: ResetPasswordPageProps) {
 	const { token } = await searchParams;
 
 	if (!token) {

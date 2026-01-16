@@ -1,8 +1,13 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { getCategoryId } from '@/constants/categories';
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import {
 	CLIENT_ERROR_CODES,
@@ -12,7 +17,6 @@ import {
 import type { CreateRaffleInput, Raffle } from '@/types/raffle';
 import { createRafflePayloadSchema, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
 
 /**
  * Response type for raffle creation
@@ -28,6 +32,9 @@ type CreateRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
 export async function createRaffle(
 	input: CreateRaffleInput,
 ): Promise<CreateRaffleResponse> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const categoryId = getCategoryId(input.category);
 		if (!categoryId) {
@@ -69,6 +76,18 @@ export async function createRaffle(
 		// Validate response structure
 		const raffle = raffleSchema.parse(response.data);
 
+		// Track raffle created (awaited to ensure completion in serverless)
+		await trackServer(
+			RAFFLE_EVENTS.CREATED,
+			{
+				raffle_id: raffle.id,
+				category: input.category,
+				ticket_price: input.pricePerTicket,
+				max_participants: input.maxParticipants,
+			},
+			{ userId },
+		);
+
 		return success(raffle);
 	} catch (error) {
 		// Handle validation errors
@@ -78,6 +97,14 @@ export async function createRaffle(
 		}
 
 		const errorCode = mapRaffleError(error);
+
+		// Track raffle creation failed (awaited to ensure completion in serverless)
+		await trackServer(
+			RAFFLE_EVENTS.CREATE_FAILED,
+			{ error_code: errorCode },
+			{ userId },
+		);
+
 		return failure(errorCode);
 	}
 }

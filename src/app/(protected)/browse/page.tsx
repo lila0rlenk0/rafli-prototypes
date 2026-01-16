@@ -1,7 +1,7 @@
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import { FilterBar } from '@/components/filters';
 import { getRaffles } from '@/services/raffle/get-raffles';
-import { type RaffleSortOption, RaffleStatus } from '@/types/raffle';
+import { raffleSortOptionSchema, raffleStatusSchema } from '@/types/raffle';
 
 interface PageProps {
 	searchParams: Promise<{
@@ -12,12 +12,20 @@ interface PageProps {
 	}>;
 }
 
+/**
+ * Browse Raffles Page
+ *
+ * Public-facing page displaying all available raffles with filtering and sorting.
+ * Supports URL-based filtering by status, category, sort order, and pagination.
+ */
 export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
-	const status = params.status as RaffleStatus;
+	const statusResult = raffleStatusSchema.safeParse(params.status);
+	const sortResult = raffleSortOptionSchema.safeParse(params.sort);
+	const status = statusResult.success ? statusResult.data : undefined;
+	const sort = sortResult.success ? sortResult.data : undefined;
 	const page = params.page ? parseInt(params.page) : 1;
 	const category = params.category;
-	const sort = params.sort as RaffleSortOption;
 
 	const response = await getRaffles({
 		status,

@@ -1,7 +1,7 @@
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import { StatusTabs } from '@/app/(protected)/my-raffles/status-tabs';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
-import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
+import { RAFFLE_STATUS, raffleStatusSchema } from '@/types/raffle';
 import { CreateRaffleButton } from './create-raffle-button';
 
 interface PageProps {
@@ -11,9 +11,16 @@ interface PageProps {
 	}>;
 }
 
+/**
+ * My Raffles Page
+ *
+ * Host dashboard showing user's own raffles filtered by status.
+ * Displays live, queued, and ended raffles with creation controls.
+ */
 export default async function MyRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
-	const status = params.status as RaffleStatus;
+	const statusResult = raffleStatusSchema.safeParse(params.status);
+	const status = statusResult.success ? statusResult.data : undefined;
 	const page = params.page ? parseInt(params.page) : 1;
 
 	// Fetch raffles for current status

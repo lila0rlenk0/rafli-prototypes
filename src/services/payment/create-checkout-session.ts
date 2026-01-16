@@ -47,6 +47,7 @@ export async function createCheckoutSession(
 
 		const { orderId, raffleId } = validationResult.data;
 
+		// raffleId can be either ID or publicSlug - backend accepts both
 		const baseUrl = new URL(`/browse/${raffleId}`, env.APP_URL);
 
 		const response = await authenticatedClient.post(

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 
 interface RaffleCreatedModalProps {
-	raffleId: string;
+	publicSlug: string;
 	raffleStartDate: string;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -29,7 +29,7 @@ interface RaffleCreatedModalProps {
  * When start date is today, includes share functionality.
  */
 export function RaffleCreatedModal({
-	raffleId,
+	publicSlug,
 	raffleStartDate,
 	open,
 	onOpenChange,
@@ -84,7 +84,7 @@ export function RaffleCreatedModal({
 	 * Copies the raffle link to the clipboard
 	 */
 	function handleCopyLink() {
-		const link = `${window.location.origin}/browse/${raffleId}`;
+		const link = `${window.location.origin}/browse/${publicSlug}`;
 		navigator.clipboard.writeText(link);
 		toast.success('Raffle link copied to clipboard!');
 	}
@@ -94,7 +94,7 @@ export function RaffleCreatedModal({
 	 */
 	function handleShare() {
 		const text = 'Check out this raffle';
-		const link = `${window.location.origin}/browse/${raffleId}`;
+		const link = `${window.location.origin}/browse/${publicSlug}`;
 		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
 		window.open(url, '_blank');
 	}

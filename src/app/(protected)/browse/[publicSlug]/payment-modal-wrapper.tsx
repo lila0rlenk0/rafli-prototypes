@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { PaymentStatusModal } from '@/components/payment/payment-status-modal';
 
 interface PaymentModalWrapperProps {
-	raffleId: string;
+	publicSlug: string;
 	searchParams: Promise<{ session_id?: string }>;
 }
 
@@ -16,7 +16,7 @@ interface PaymentModalWrapperProps {
  * Manages modal state based on URL flags (?payment=success&orderId=xxx).
  */
 export function PaymentModalWrapper({
-	raffleId,
+	publicSlug,
 	searchParams,
 }: PaymentModalWrapperProps) {
 	const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,7 +47,7 @@ export function PaymentModalWrapper({
 	return (
 		<PaymentStatusModal
 			sessionId={sessionId}
-			raffleId={raffleId}
+			raffleId={publicSlug}
 			open={isModalOpen}
 			onOpenChange={setIsModalOpen}
 		/>

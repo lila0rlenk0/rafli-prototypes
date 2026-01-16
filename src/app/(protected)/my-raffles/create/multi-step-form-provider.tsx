@@ -64,7 +64,7 @@ export function MultiStepFormProvider({
 	const [isCreating, setIsCreating] = useState(false);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [createdRaffle, setCreatedRaffle] = useState<{
-		raffleId: string;
+		publicSlug: string;
 		raffleStartDate: string;
 	} | null>(null);
 
@@ -176,7 +176,7 @@ export function MultiStepFormProvider({
 
 			// Open success modal instead of redirecting
 			setCreatedRaffle({
-				raffleId,
+				publicSlug: result.data.publicSlugOrCode,
 				raffleStartDate: data.startDate,
 			});
 			setIsModalOpen(true);
@@ -226,7 +226,7 @@ export function MultiStepFormProvider({
 			{children}
 			{createdRaffle && (
 				<RaffleCreatedModal
-					raffleId={createdRaffle.raffleId}
+					publicSlug={createdRaffle.publicSlug}
 					raffleStartDate={createdRaffle.raffleStartDate}
 					open={isModalOpen}
 					onOpenChange={setIsModalOpen}

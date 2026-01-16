@@ -20,7 +20,7 @@ import { PaymentModalWrapper } from './payment-modal-wrapper';
 
 interface PageProps {
 	params: Promise<{
-		raffleId: string;
+		publicSlug: string;
 	}>;
 	searchParams: Promise<{
 		session_id?: string;
@@ -37,8 +37,8 @@ interface PageProps {
  * Handles payment status modal after Stripe redirect.
  */
 export default async function RafflePage({ params, searchParams }: PageProps) {
-	const { raffleId } = await params;
-	const response = await getRaffle(raffleId);
+	const { publicSlug } = await params;
+	const response = await getRaffle(publicSlug);
 
 	if (!response.success) {
 		return (
@@ -307,10 +307,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						<RaffleCountdown endAt={raffle.endAt} />
 
 						{showEditButton ? (
-							<EditRaffleButton raffleId={raffleId} />
+							<EditRaffleButton publicSlug={publicSlug} />
 						) : (
 							<TicketPurchaseCard
-								raffleId={raffleId}
+								publicSlug={publicSlug}
 								price={ticketPrice}
 								currency={raffle.ticketPriceCurrency}
 								maxParticipants={raffle.maxParticipants}
@@ -343,7 +343,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</div>
 						</div>
 
-						<RaffleShareButtons title={raffle.title} raffleId={raffle.id} />
+						<RaffleShareButtons
+							title={raffle.title}
+							publicSlug={raffle.publicSlugOrCode}
+						/>
 					</div>
 
 					<div className="flex items-center justify-center gap-2">
@@ -354,7 +357,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					</div>
 				</div>
 			</div>
-			<PaymentModalWrapper raffleId={raffleId} searchParams={searchParams} />
+			<PaymentModalWrapper
+				publicSlug={publicSlug}
+				searchParams={searchParams}
+			/>
 		</div>
 	);
 }

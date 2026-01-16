@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 
-import { BuyButton } from '@/app/(protected)/browse/[raffleId]/buy-button';
+import { BuyButton } from '@/app/(protected)/browse/[publicSlug]/buy-button';
 import { Separator } from '@/components/ui/separator';
 import { TicketSelector } from './ticket-selector';
 
 interface TicketPurchaseCardProps {
-	raffleId: string;
+	publicSlug: string;
 	price: number;
 	currency: string;
 	maxParticipants: number;
@@ -31,7 +31,7 @@ interface TicketPurchaseCardProps {
  * the selector (for display) and buy button (for order creation).
  */
 export function TicketPurchaseCard({
-	raffleId,
+	publicSlug,
 	price,
 	currency,
 	maxParticipants,
@@ -116,7 +116,7 @@ export function TicketPurchaseCard({
 
 			{/* Buy button */}
 			<BuyButton
-				raffleId={raffleId}
+				publicSlug={publicSlug}
 				ticketQuantity={ticketQuantity}
 				disabled={disabled}
 			/>

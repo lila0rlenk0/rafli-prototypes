@@ -9,10 +9,12 @@ import {
 } from '@/components/ui/dropzone';
 import { Input } from '@/components/ui/input';
 import { RAFFLE_CATEGORIES } from '@/constants/categories';
+import { generateSlugPreview } from '@/lib/utils/slug-preview';
 import { DollarSign, X } from 'lucide-react';
+import { useMemo } from 'react';
 import { STEPS } from '.';
-import { useMultiStepForm } from '../multi-step-form-provider';
 import { DescriptionEditor } from '../description-editor';
+import { useMultiStepForm } from '../multi-step-form-provider';
 import { MAX_FILE_SIZE } from '../schema';
 import { ImagePreview } from './image-preview';
 
@@ -34,6 +36,17 @@ export function BasicInfoStep() {
 	const price = watch('price');
 	const category = watch('category');
 	const coverImage = watch('coverImage');
+
+	// Generate slug preview
+	const previewSlugPath = useMemo(() => {
+		if (!title || title.trim().length === 0) {
+			return null;
+		}
+
+		const slugPreview = generateSlugPreview(title);
+
+		return `/browse/${slugPreview}`;
+	}, [title]);
 
 	// Check if any field in this step is filled
 	const hasFilledFields = Boolean(
@@ -145,6 +158,9 @@ export function BasicInfoStep() {
 				{touchedFields.title && errors.title && (
 					<span className="text-sm text-red-500">{errors.title.message}</span>
 				)}
+				<p className="text-muted-foreground min-h-[20px] text-sm">
+					{previewSlugPath && `Your raffle page: ${previewSlugPath}`}
+				</p>
 			</div>
 
 			<DescriptionEditor control={form.control} trigger={trigger} />

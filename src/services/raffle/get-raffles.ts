@@ -5,7 +5,7 @@ import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
-import { calculateMinRevalidateTime } from '@/lib/cache/calculate-revalidate';
+import { calculateMinCacheLife } from '@/lib/cache/calculate-revalidate';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
@@ -45,6 +45,7 @@ export async function getRaffles(
 		const validatedData = listRafflesResponseSchema.parse(response.data);
 
 		// Calculate cache duration from images
+		// IMPORTANT: stale must be 0 for pre-signed URLs - they cannot be served stale
 		if (validatedData.raffles.length > 0) {
 			const allExpirations: string[] = [];
 
@@ -57,11 +58,11 @@ export async function getRaffles(
 				});
 			});
 
-			const revalidateSeconds = calculateMinRevalidateTime(allExpirations);
-			cacheLife({ revalidate: revalidateSeconds });
+			const cacheConfig = calculateMinCacheLife(allExpirations);
+			cacheLife(cacheConfig);
 		} else {
-			// No raffles - cache for 5 minutes
-			cacheLife({ revalidate: 300 });
+			// No raffles - cache for 5 minutes, stale: 0 for consistency
+			cacheLife({ stale: 0, revalidate: 300, expire: 360 });
 		}
 
 		return success(validatedData);

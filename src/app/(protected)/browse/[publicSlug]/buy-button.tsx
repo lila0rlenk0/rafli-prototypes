@@ -11,6 +11,7 @@ import type { OrderErrorCode, PaymentErrorCode } from '@/types/errors';
 
 interface BuyButtonProps {
 	raffleId: string;
+	publicSlug: string;
 	ticketQuantity: number;
 	disabled?: boolean;
 }
@@ -25,11 +26,13 @@ interface BuyButtonProps {
  *
  * Shows loading states and error messages during the process.
  *
- * @param raffleId - The raffle ID to purchase tickets for
+ * @param raffleId - The UUID of the raffle (used for API calls)
+ * @param publicSlug - The public slug of the raffle (used for redirect URLs)
  * @param ticketQuantity - Number of tickets to purchase
  */
 export function BuyButton({
 	raffleId,
+	publicSlug,
 	ticketQuantity,
 	disabled = false,
 }: BuyButtonProps) {
@@ -110,6 +113,7 @@ export function BuyButton({
 			const checkoutResult = await createCheckoutSession({
 				orderId: order.id,
 				raffleId,
+				publicSlug,
 			});
 
 			if (!checkoutResult.success) {

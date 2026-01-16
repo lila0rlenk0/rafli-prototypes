@@ -70,6 +70,7 @@ export const checkoutSessionResponseSchema = z.object({
 export const createCheckoutPayloadSchema = z.object({
 	orderId: z.uuid(),
 	raffleId: z.uuid(),
+	publicSlug: z.string().min(1),
 });
 
 // ==========================================

@@ -24,6 +24,7 @@ interface DatePickerProps {
 	placeholder?: string;
 	className?: string;
 	disabled?: boolean;
+	minDate?: Date;
 }
 
 export function DatePicker({
@@ -32,6 +33,7 @@ export function DatePicker({
 	placeholder = 'Select date',
 	className,
 	disabled = false,
+	minDate,
 }: DatePickerProps) {
 	const [open, setOpen] = React.useState(false);
 	const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
@@ -70,6 +72,29 @@ export function DatePicker({
 		});
 	};
 
+	/**
+	 * Normalizes a date to local midnight for comparison
+	 * @param date - The date to normalize
+	 * @returns Date object normalized to local midnight
+	 */
+	function normalizeDate(date: Date): Date {
+		return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+	}
+
+	/**
+	 * Checks if a date should be disabled based on minDate
+	 * @param date - The date to check
+	 * @returns true if date should be disabled, false otherwise
+	 */
+	function isDateDisabled(date: Date): boolean {
+		if (!minDate) return false;
+
+		const normalizedDate = normalizeDate(date);
+		const normalizedMinDate = normalizeDate(minDate);
+
+		return normalizedDate < normalizedMinDate;
+	}
+
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
@@ -92,6 +117,7 @@ export function DatePicker({
 					defaultMonth={selectedDate}
 					selected={selectedDate}
 					onSelect={handleSelect}
+					disabled={minDate ? isDateDisabled : undefined}
 					className="rounded-md"
 				/>
 			</PopoverContent>

@@ -76,6 +76,22 @@ export const socialSignInResponseSchema = z.object({
 	url: z.url(),
 });
 
+/**
+ * Schema for requesting password reset email
+ */
+export const requestPasswordResetInputSchema = z.object({
+	email: z.email(),
+	redirectTo: z.string().optional(),
+});
+
+/**
+ * Schema for resetting password with token
+ */
+export const resetPasswordInputSchema = z.object({
+	token: z.string(),
+	newPassword: z.string().min(8),
+});
+
 // ==========================================
 // Inferred Types
 // ==========================================
@@ -87,3 +103,5 @@ export type SignUpInput = z.infer<typeof signUpInputSchema>;
 export type SocialProvider = z.infer<typeof socialProviderSchema>;
 export type SocialSignInInput = z.infer<typeof socialSignInInputSchema>;
 export type SocialSignInResponse = z.infer<typeof socialSignInResponseSchema>;
+export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetInputSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>;

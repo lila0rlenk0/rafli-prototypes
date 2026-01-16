@@ -1,0 +1,387 @@
+import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
+import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
+import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
+import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from '@/components/ui/accordion';
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { getCategoryLabel } from '@/constants/categories';
+import { getSession } from '@/lib/auth/session';
+import { getRaffle } from '@/services/raffle/get-raffle';
+import { RAFFLE_STATUS } from '@/types/raffle';
+import { ArrowLeft, Image as ImageIcon, InfoIcon } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ComponentProps } from 'react';
+import { PaymentModalWrapper } from './payment-modal-wrapper';
+
+interface PageProps {
+	params: Promise<{
+		publicSlug: string;
+	}>;
+	searchParams: Promise<{
+		session_id?: string;
+	}>;
+}
+
+/**
+ * Raffle Detail Page
+ *
+ * Displays full details of a specific raffle including cover image, gallery,
+ * description, and category. Allows users to purchase tickets.
+ *
+ * Fetches data server-side using the getRaffle service.
+ * Handles payment status modal after Stripe redirect.
+ */
+export default async function RafflePage({ params, searchParams }: PageProps) {
+	const { publicSlug } = await params;
+	const response = await getRaffle(publicSlug);
+
+	if (!response.success) {
+		return (
+			<div className="flex h-[50vh] w-full items-center justify-center">
+				<div className="text-center">
+					<h3 className="text-lg font-medium text-red-600">
+						Error loading raffle
+					</h3>
+					<p className="mt-2 text-gray-500">Failed to load raffle details</p>
+				</div>
+			</div>
+		);
+	}
+
+	const raffle = response.data;
+
+	// Get session (cached - no extra request)
+	const session = await getSession();
+	const currentUserId = session?.user?.id;
+
+	/**
+	 * Check if current user owns this raffle
+	 */
+	function isOwnRaffle(): boolean {
+		return currentUserId === raffle.hostId;
+	}
+
+	/**
+	 * Check if edit button should be shown
+	 * Only for own raffles with draft/queued status
+	 */
+	function shouldShowEditButton(): boolean {
+		const isOwner = isOwnRaffle();
+		const isEditable =
+			raffle.status === RAFFLE_STATUS.DRAFT ||
+			raffle.status === RAFFLE_STATUS.QUEUED;
+
+		return isOwner && isEditable;
+	}
+
+	/**
+	 * Check if purchase should be disabled
+	 * Disabled for own live raffles
+	 */
+	function isPurchaseDisabled(): boolean {
+		const isOwner = isOwnRaffle();
+		const isLive = raffle.status === RAFFLE_STATUS.LIVE;
+
+		return isOwner && isLive;
+	}
+
+	const showEditButton = shouldShowEditButton();
+	const disablePurchase = isPurchaseDisabled();
+
+	/**
+	 * Gets the host display name from closure
+	 * Handles missing host data seamlessly
+	 * @returns The host's name or default
+	 */
+	function getHostName(): string {
+		if (!raffle.host || !raffle.host.name) return 'Raffle Host';
+
+		return raffle.host.name;
+	}
+
+	/**
+	 * Gets the first initial of the host's name from closure
+	 * @returns The first character of the name or empty string
+	 */
+	function getHostInitial(): string {
+		const name = getHostName();
+		if (!name) return '';
+
+		return name.charAt(0);
+	}
+
+	/**
+	 * Gets the formatted raffle count for the host from closure
+	 * @returns Formatted string with label
+	 */
+	function getHostRafflesCount(): string {
+		let count = 0;
+		if (raffle.host?.totalRaffles) {
+			count = raffle.host.totalRaffles;
+		}
+		return `${count} Raffles`;
+	}
+
+	/**
+	 * Parses the ticket price from string to number
+	 * @param priceString - Price as string from API
+	 * @returns Parsed price as number
+	 */
+	function parseTicketPrice(priceString: string): number {
+		return parseFloat(priceString);
+	}
+
+	/**
+	 * Calculates the fill percentage for the raffle
+	 * @param participantsCount - Current number of participants
+	 * @param maxParticipants - Maximum number of participants
+	 * @returns Rounded percentage as number
+	 */
+	function calculateFillPercentage(
+		participantsCount: number,
+		maxParticipants: number,
+	) {
+		if (maxParticipants === 0) return '0%';
+		return ((participantsCount / maxParticipants) * 100).toLocaleString(
+			'en-US',
+			{
+				minimumFractionDigits: 0,
+				maximumFractionDigits: 2,
+			},
+		);
+	}
+
+	/**
+	 * Gets the progress bar width as a percentage string
+	 * @param participantsCount - Current number of participants
+	 * @param maxParticipants - Maximum number of participants
+	 * @returns Percentage string for width style (e.g., "50%")
+	 */
+	function getProgressBarWidth(
+		participantsCount: number,
+		maxParticipants: number,
+	): string {
+		if (maxParticipants === 0) return '0%';
+		const percentage = (participantsCount / maxParticipants) * 100;
+		return `${percentage}%`;
+	}
+
+	// Calculate values before return
+	const ticketPrice = parseTicketPrice(raffle.ticketPriceAmount);
+	const fillPercentage = calculateFillPercentage(
+		raffle.participantsCount,
+		raffle.maxParticipants,
+	);
+	const progressWidth = getProgressBarWidth(
+		raffle.participantsCount,
+		raffle.maxParticipants,
+	);
+
+	return (
+		<div className="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
+			<Link href="/browse" className="flex items-center gap-2">
+				<ArrowLeft className="size-4" />
+				<span className="font-semibold">Back to Raffle Browse</span>
+			</Link>
+
+			<div className="flex w-full gap-8">
+				<div className="w-full space-y-4">
+					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
+						<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
+
+						<div className="flex items-center gap-4">
+							<div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
+								{raffle.host?.avatar?.url ? (
+									<Image
+										src={raffle.host.avatar.url}
+										alt={getHostName()}
+										fill
+										className="object-cover"
+									/>
+								) : (
+									getHostInitial()
+								)}
+							</div>
+							<div className="flex min-w-0 flex-col font-medium">
+								<span className="truncate text-sm">by {getHostName()}</span>
+								<span className="text-xs">{getHostRafflesCount()}</span>
+							</div>
+						</div>
+
+						<div className="flex flex-col gap-4">
+							<div className="relative flex aspect-video max-h-96 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
+								{raffle.coverMediaUrl?.url ? (
+									<Image
+										src={raffle.coverMediaUrl.url}
+										alt={raffle.title}
+										fill
+										className="object-cover"
+									/>
+								) : (
+									<ImageIcon className="size-12 text-gray-400" />
+								)}
+							</div>
+
+							<div className="grid grid-cols-3 gap-4">
+								{Array.from({ length: 3 }).map((_, index) => {
+									const image = raffle.galleryMediaUrls[index];
+									return (
+										<div
+											key={index}
+											className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
+										>
+											{image?.url ? (
+												<Image
+													src={image.url}
+													alt={`Gallery ${index + 1}`}
+													fill
+													className="object-cover"
+												/>
+											) : (
+												<ImageIcon className="size-6 text-gray-400" />
+											)}
+										</div>
+									);
+								})}
+							</div>
+						</div>
+
+						<div className="flex min-w-0 flex-col gap-2">
+							<label className="text-sm text-[#B4B4B4]">Description</label>
+							<MarkdownRenderer
+								content={raffle.description || ''}
+								className="text-sm"
+							/>
+						</div>
+
+						<div className="flex flex-wrap gap-2">
+							<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
+								<span className="text-sm capitalize">
+									{getCategoryLabel(raffle.categoryId)}
+								</span>
+							</div>
+						</div>
+					</div>
+
+					<div className="flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6">
+						<h2 className="text-xl font-semibold">FAQ</h2>
+						<Accordion type="single" collapsible className="w-full space-y-4">
+							<AccordionItem value="how-it-works" className="border-none">
+								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 hover:no-underline">
+									How it works?
+								</AccordionTrigger>
+								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
+									The raffle is a simple and fair way to win prizes. You can
+									purchase tickets to increase your chances of winning. The
+									winner will be randomly selected when the raffle ends.
+								</AccordionContent>
+							</AccordionItem>
+
+							<AccordionItem value="rules-eligibility" className="border-none">
+								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 hover:no-underline">
+									Rules and Eligibility
+								</AccordionTrigger>
+								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
+									Participants must be 18 years or older to enter. You can
+									purchase multiple tickets to increase your chances of winning.
+									Winners will be notified via email and must complete KYC
+									verification to claim their prize. All sales are final and
+									non-refundable.
+								</AccordionContent>
+							</AccordionItem>
+						</Accordion>
+					</div>
+				</div>
+				<div className="space-y-2">
+					<div className="h-fit space-y-4 rounded-2xl border border-black bg-white px-4 py-8">
+						<RaffleFireIcon className="mx-auto size-12" />
+
+						<h2 className="font-clash-display text-center text-xl font-semibold text-nowrap">
+							The raffle is active!
+						</h2>
+
+						<RaffleCountdown endAt={raffle.endAt} />
+
+						{showEditButton ? (
+							<EditRaffleButton publicSlug={publicSlug} />
+						) : (
+							<TicketPurchaseCard
+								raffleId={raffle.id}
+								publicSlug={publicSlug}
+								price={ticketPrice}
+								currency={raffle.ticketPriceCurrency}
+								maxParticipants={raffle.maxParticipants}
+								participantsCount={raffle.participantsCount}
+								disabled={disablePurchase}
+							/>
+						)}
+
+						{disablePurchase && !showEditButton && (
+							<p className="mt-2 text-center text-sm text-gray-500">
+								You cannot purchase tickets for your own raffle
+							</p>
+						)}
+
+						<div className="space-y-2">
+							<div className="flex items-center justify-between text-sm">
+								<span className="text-[#7B7B7B]">
+									{raffle.participantsCount}/{raffle.maxParticipants}
+								</span>
+								<span className="font-medium text-[#7B7B7B]">
+									{fillPercentage}% filled
+								</span>
+							</div>
+
+							<div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+								<div
+									className="h-full bg-green-400 transition-all duration-300 ease-out"
+									style={{ width: progressWidth }}
+								/>
+							</div>
+						</div>
+
+						<RaffleShareButtons
+							title={raffle.title}
+							publicSlug={raffle.publicSlugOrCode}
+						/>
+					</div>
+
+					<div className="flex items-center justify-center gap-2">
+						<InfoIcon className="size-4 text-[#7B7B7B]" />
+						<p className="text-sm text-[#7B7B7B]">
+							You&apos;ll only need KYC if you win
+						</p>
+					</div>
+				</div>
+			</div>
+			<PaymentModalWrapper
+				publicSlug={publicSlug}
+				searchParams={searchParams}
+			/>
+		</div>
+	);
+}
+
+function RaffleFireIcon(props: ComponentProps<'svg'>) {
+	return (
+		<svg
+			width="47"
+			height="56"
+			viewBox="0 0 47 56"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
+			{...props}
+		>
+			<path
+				d="M4.375 32.0833C4.375 35.1458 5.06771 38.026 6.45313 40.724C7.83854 43.4219 9.77083 45.6702 12.25 47.4688C12.0556 46.8854 11.9098 46.29 11.8125 45.6823C11.7152 45.0746 11.6667 44.4792 11.6667 43.8958C11.6667 42.3402 11.9583 40.8819 12.5417 39.5208C13.125 38.1598 13.9756 36.9202 15.0938 35.8021L23.3333 27.7083L31.5729 35.8021C32.691 36.9202 33.5417 38.1598 34.125 39.5208C34.7083 40.8819 35 42.3402 35 43.8958C35 44.4792 34.9514 45.0746 34.8542 45.6823C34.7569 46.29 34.6111 46.8854 34.4167 47.4688C36.8958 45.6702 38.8281 43.4219 40.2135 40.724C41.599 38.026 42.2917 35.1458 42.2917 32.0833C42.2917 29.4583 41.7327 26.8941 40.6146 24.3906C39.4965 21.8871 37.8923 19.5902 35.8021 17.5C34.7812 18.2292 33.7119 18.8004 32.5938 19.2135C31.4756 19.6267 30.3577 19.8333 29.2396 19.8333C26.2744 19.8333 23.8194 18.8246 21.875 16.8073C19.9306 14.79 18.9583 12.25 18.9583 9.1875V7.72917C16.7223 9.33333 14.7048 11.1077 12.9062 13.0521C11.1077 14.9965 9.57644 17.026 8.3125 19.1406C7.04856 21.2552 6.07644 23.4184 5.39583 25.6302C4.71523 27.8421 4.375 29.9931 4.375 32.0833ZM23.3333 33.8333L18.1562 38.9375C17.4756 39.6181 16.9531 40.3715 16.5885 41.1979C16.224 42.0244 16.0417 42.9236 16.0417 43.8958C16.0417 45.8889 16.7465 47.5781 18.1562 48.9635C19.566 50.349 21.2917 51.0417 23.3333 51.0417C25.375 51.0417 27.1006 50.349 28.5104 48.9635C29.9202 47.5781 30.625 45.8889 30.625 43.8958C30.625 42.9236 30.4427 42.0244 30.0781 41.1979C29.7135 40.3715 29.191 39.6181 28.5104 38.9375L23.3333 33.8333ZM23.3333 0V9.625C23.3333 11.2777 23.9046 12.6631 25.0469 13.7813C26.1892 14.8994 27.5869 15.4583 29.2396 15.4583C30.1146 15.4583 30.9288 15.276 31.6823 14.9115C32.4358 14.5469 33.1042 14 33.6875 13.2708L35 11.6667C38.5973 13.7083 41.441 16.5521 43.5312 20.1979C45.6215 23.8438 46.6667 27.8056 46.6667 32.0833C46.6667 38.5973 44.4062 44.1146 39.8854 48.6354C35.3646 53.1563 29.8473 55.4167 23.3333 55.4167C16.8194 55.4167 11.3021 53.1563 6.78125 48.6354C2.26042 44.1146 0 38.5973 0 32.0833C0 25.8611 2.09027 19.8698 6.27083 14.1094C10.4514 8.34896 16.1389 3.64583 23.3333 0Z"
+				fill="black"
+			/>
+		</svg>
+	);
+}

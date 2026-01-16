@@ -4,7 +4,7 @@ import { cacheLife } from 'next/cache';
 import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
-import { calculateMinRevalidateTime } from '@/lib/cache/calculate-revalidate';
+import { calculateMinCacheLife } from '@/lib/cache/calculate-revalidate';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
@@ -55,13 +55,14 @@ export async function getRaffleGallery(
 		const validatedData = raffleGalleryResponseSchema.parse(response.data);
 
 		// Set cache based on earliest expiring image
+		// IMPORTANT: stale must be 0 for pre-signed URLs - they cannot be served stale
 		if (validatedData.gallery.length > 0) {
 			const expiresAtDates = validatedData.gallery.map(img => img.expiresAt);
-			const revalidateSeconds = calculateMinRevalidateTime(expiresAtDates);
-			cacheLife({ revalidate: revalidateSeconds });
+			const cacheConfig = calculateMinCacheLife(expiresAtDates);
+			cacheLife(cacheConfig);
 		} else {
-			// No gallery images - cache for 5 minutes
-			cacheLife({ revalidate: 300 });
+			// No gallery images - cache for 5 minutes, stale: 0 for consistency
+			cacheLife({ stale: 0, revalidate: 300, expire: 360 });
 		}
 
 		return success(validatedData);

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 interface RaffleShareButtonsProps {
 	title: string;
-	publicSlugOrCode: string;
+	publicSlug: string;
 }
 
 /**
@@ -18,14 +18,14 @@ interface RaffleShareButtonsProps {
  */
 export function RaffleShareButtons({
 	title,
-	publicSlugOrCode,
+	publicSlug,
 }: RaffleShareButtonsProps) {
 	/**
 	 * Copies the raffle link to the clipboard
 	 * Shows a success toast notification when copied
 	 */
 	function handleCopyLink() {
-		const link = `${window.location.origin}/raffles/${publicSlugOrCode}`;
+		const link = `${window.location.origin}/browse/${publicSlug}`;
 		navigator.clipboard.writeText(link);
 		toast.success('Raffle link copied to clipboard!');
 	}
@@ -36,7 +36,7 @@ export function RaffleShareButtons({
 	 */
 	function handleShareOnX() {
 		const text = `Check out this raffle: ${title}`;
-		const link = `${window.location.origin}/raffles/${publicSlugOrCode}`;
+		const link = `${window.location.origin}/browse/${publicSlug}`;
 		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
 		window.open(url, '_blank');
 	}

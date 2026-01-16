@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 
 interface PaymentStatusModalProps {
 	sessionId: string;
-	raffleId: string;
+	raffleId: string; // Can be publicSlug or raffleId - used for URL construction
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }

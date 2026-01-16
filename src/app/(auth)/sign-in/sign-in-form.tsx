@@ -12,14 +12,14 @@ import { Input } from '@/components/ui/input';
 import { initiateSocialSignIn } from '@/lib/auth/social-auth';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
-import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ComponentProps, useState, useTransition } from 'react';
+import { type ComponentProps, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
-import z from 'zod';
+import { z } from 'zod';
 
 const formSchema = z.object({
 	email: z.email('Invalid email address'),
@@ -49,14 +49,16 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 			return 'Google sign in failed. Please try again.';
 
 		// Common fallback errors
-		case 'global:auth:unauthenticated':
-		case 'unauthorized':
+		case COMMON_ERROR_CODES.GLOBAL_AUTH_UNAUTHENTICATED:
+		case COMMON_ERROR_CODES.UNAUTHORIZED:
 			return 'Authentication failed.';
-		case 'network_error':
+		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
+			return 'Too many attempts. Please wait a moment.';
+		case COMMON_ERROR_CODES.NETWORK_ERROR:
 			return 'Network error. Please check your connection.';
-		case 'timeout_error':
+		case COMMON_ERROR_CODES.TIMEOUT_ERROR:
 			return 'Request timed out.';
-		case 'internal_server_error':
+		case COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR:
 			return 'Server error.';
 		default:
 			return 'An unexpected error occurred.';
@@ -141,12 +143,12 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 				<Field>
 					<div className="flex items-center">
 						<FieldLabel htmlFor="password">Password</FieldLabel>
-						<a
-							href="#"
+						<Link
+							href="/forgot-password"
 							className="ml-auto text-sm underline-offset-4 hover:underline"
 						>
 							Forgot your password?
-						</a>
+						</Link>
 					</div>
 					<Input
 						id="password"

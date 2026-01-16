@@ -207,11 +207,13 @@ export type UploadGalleryResponse = z.infer<typeof uploadGalleryResponseSchema>;
 
 /**
  * Schema for querying raffles with filters and pagination
+ * Status can be a single status or multiple statuses separated by comma (e.g., "draft,queued" or "cancelled,completed,ended")
+ * The API accepts comma-separated statuses, so we accept string here and let the API validate
  */
 export const myRafflesQuerySchema = paginationQuerySchema.extend({
 	category: z.string().optional(),
 	sort: raffleSortOptionSchema.optional(),
-	status: raffleStatusSchema.optional(),
+	status: z.string().optional(), // Accepts single status or comma-separated statuses (validated by API)
 });
 
 /**

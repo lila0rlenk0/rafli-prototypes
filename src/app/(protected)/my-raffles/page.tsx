@@ -1,7 +1,7 @@
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import { StatusTabs } from '@/app/(protected)/my-raffles/status-tabs';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
-import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
+import { RAFFLE_STATUS } from '@/types/raffle';
 import { CreateRaffleButton } from './create-raffle-button';
 
 interface PageProps {
@@ -13,7 +13,7 @@ interface PageProps {
 
 export default async function MyRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
-	const status = params.status as RaffleStatus;
+	const status = params.status; // Can be single status or comma-separated statuses
 	const page = params.page ? parseInt(params.page) : 1;
 
 	// Fetch raffles for current status
@@ -37,19 +37,25 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 	}
 
 	const { raffles } = response.data;
-	const currentStatus = status || RAFFLE_STATUS.LIVE;
+	const statusList = status ? status.split(',') : [];
 
 	// Determine message based on status
 	function getEmptyMessage() {
-		if (currentStatus === RAFFLE_STATUS.QUEUED) {
+		// Check if any status in the list is scheduled (draft or queued)
+		if (
+			statusList.includes(RAFFLE_STATUS.DRAFT) ||
+			statusList.includes(RAFFLE_STATUS.QUEUED)
+		) {
 			return {
 				title: 'No scheduled raffles',
 				description: "You don't have any scheduled raffles yet.",
 			};
 		}
+		// Check if any status in the list is ended (cancelled, completed, or ended)
 		if (
-			currentStatus === RAFFLE_STATUS.ENDED ||
-			currentStatus === RAFFLE_STATUS.COMPLETED
+			statusList.includes(RAFFLE_STATUS.CANCELLED) ||
+			statusList.includes(RAFFLE_STATUS.COMPLETED) ||
+			statusList.includes(RAFFLE_STATUS.ENDED)
 		) {
 			return {
 				title: 'No ended raffles',

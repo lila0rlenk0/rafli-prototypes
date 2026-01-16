@@ -8,6 +8,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from '@/components/ui/accordion';
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getCategoryLabel } from '@/constants/categories';
 import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
@@ -253,9 +254,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 						<div className="flex min-w-0 flex-col gap-2">
 							<label className="text-sm text-[#B4B4B4]">Description</label>
-							<p className="max-w-full text-sm wrap-anywhere">
-								{raffle.description}
-							</p>
+							<MarkdownRenderer
+								content={raffle.description || ''}
+								className="text-sm"
+							/>
 						</div>
 
 						<div className="flex flex-wrap gap-2">

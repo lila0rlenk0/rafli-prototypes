@@ -8,11 +8,11 @@ import {
 	DropzoneEmptyState,
 } from '@/components/ui/dropzone';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { RAFFLE_CATEGORIES } from '@/constants/categories';
 import { DollarSign, X } from 'lucide-react';
 import { STEPS } from '.';
 import { useMultiStepForm } from '../multi-step-form-provider';
+import { DescriptionEditor } from '../description-editor';
 import { MAX_FILE_SIZE } from '../schema';
 import { ImagePreview } from './image-preview';
 
@@ -147,22 +147,7 @@ export function BasicInfoStep() {
 				)}
 			</div>
 
-			<div className="flex flex-col gap-2">
-				<label htmlFor="description" className="font-medium">
-					Description
-				</label>
-				<Textarea
-					id="description"
-					rows={5}
-					placeholder="Enter raffle description"
-					{...register('description')}
-				/>
-				{touchedFields.description && errors.description && (
-					<span className="text-sm text-red-500">
-						{errors.description.message}
-					</span>
-				)}
-			</div>
+			<DescriptionEditor control={form.control} trigger={trigger} />
 
 			<div className="grid grid-cols-2 gap-4">
 				<div className="flex flex-col gap-2">

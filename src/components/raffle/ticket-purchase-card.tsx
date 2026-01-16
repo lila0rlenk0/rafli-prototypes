@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { TicketSelector } from './ticket-selector';
 
 interface TicketPurchaseCardProps {
+	raffleId: string;
 	publicSlug: string;
 	price: number;
 	currency: string;
@@ -31,6 +32,7 @@ interface TicketPurchaseCardProps {
  * the selector (for display) and buy button (for order creation).
  */
 export function TicketPurchaseCard({
+	raffleId,
 	publicSlug,
 	price,
 	currency,
@@ -116,6 +118,7 @@ export function TicketPurchaseCard({
 
 			{/* Buy button */}
 			<BuyButton
+				raffleId={raffleId}
 				publicSlug={publicSlug}
 				ticketQuantity={ticketQuantity}
 				disabled={disabled}

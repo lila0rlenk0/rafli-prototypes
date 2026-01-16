@@ -310,6 +310,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							<EditRaffleButton publicSlug={publicSlug} />
 						) : (
 							<TicketPurchaseCard
+								raffleId={raffle.id}
 								publicSlug={publicSlug}
 								price={ticketPrice}
 								currency={raffle.ticketPriceCurrency}

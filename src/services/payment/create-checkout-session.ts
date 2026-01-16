@@ -45,10 +45,10 @@ export async function createCheckoutSession(
 			return failure(PAYMENT_ERROR_CODES.CHECKOUT_FAILED);
 		}
 
-		const { orderId, raffleId } = validationResult.data;
+		const { orderId, raffleId, publicSlug } = validationResult.data;
 
-		// raffleId can be either ID or publicSlug - backend accepts both
-		const baseUrl = new URL(`/browse/${raffleId}`, env.APP_URL);
+		// Use publicSlug for URL construction (matches the page route)
+		const baseUrl = new URL(`/browse/${publicSlug}`, env.APP_URL);
 
 		const response = await authenticatedClient.post(
 			'/payments/checkout',

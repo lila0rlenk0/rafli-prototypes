@@ -94,4 +94,6 @@ export const PURCHASE_EVENTS = {
 export const PROFILE_EVENTS = {
 	/** User viewed their profile */
 	VIEWED: 'profile_viewed',
+	/** User switched between host and participant mode */
+	MODE_SWITCHED: 'mode_switched',
 } as const;

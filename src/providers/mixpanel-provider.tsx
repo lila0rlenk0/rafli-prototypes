@@ -11,9 +11,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 import { identify, initMixpanel, reset } from '@/lib/analytics/mixpanel-client';
+import { AUTH_COOKIES } from '@/lib/auth/config';
 import { authUserSchema, type AuthUser } from '@/types/auth';
-
-const SESSION_COOKIE = 'raffly-session';
 
 /**
  * Parse user from session cookie with validation
@@ -23,7 +22,7 @@ function getUserFromCookie(): AuthUser | null {
 
 	const cookie = document.cookie
 		.split('; ')
-		.find(c => c.startsWith(`${SESSION_COOKIE}=`));
+		.find(c => c.startsWith(`${AUTH_COOKIES.SESSION}=`));
 
 	if (!cookie) return null;
 

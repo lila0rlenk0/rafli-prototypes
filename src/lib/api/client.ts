@@ -108,7 +108,12 @@ const authenticatedClient: AxiosInstance = axios.create({
  */
 authenticatedClient.interceptors.request.use(
 	async config => {
-		const [token, clientIp] = await Promise.all([getAuthToken(), getClientIp()]);
+		const results = await Promise.allSettled([getAuthToken(), getClientIp()]);
+
+		const token =
+			results[0].status === 'fulfilled' ? results[0].value : null;
+		const clientIp =
+			results[1].status === 'fulfilled' ? results[1].value : null;
 
 		// Validates token presence - if not present, rejects the request
 		if (!token) {

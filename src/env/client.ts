@@ -1,3 +1,6 @@
+import { createEnv } from '@t3-oss/env-nextjs';
+import z from 'zod';
+
 /**
  * Client Environment Variables
  *
@@ -6,13 +9,10 @@
  *
  * SECURITY: Never put secrets here - they will be bundled into client JS.
  */
-
-import { createEnv } from '@t3-oss/env-nextjs';
-import z from 'zod';
 export const clientEnv = createEnv({
 	client: {
 		NEXT_PUBLIC_BACKEND_URL: z.url().default('http://localhost:4000'),
-		NEXT_PUBLIC_MIXPANEL_TOKEN: z.string().optional(),
+		NEXT_PUBLIC_MIXPANEL_TOKEN: z.string(),
 	},
 	runtimeEnv: {
 		NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,

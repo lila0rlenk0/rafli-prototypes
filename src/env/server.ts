@@ -1,3 +1,6 @@
+import { createEnv } from '@t3-oss/env-nextjs';
+import z from 'zod';
+
 /**
  * Server Environment Variables
  *
@@ -7,9 +10,6 @@
  * SECURITY: S2S_SECRET is used to authenticate server-to-server calls.
  * Backend MUST validate this before trusting X-Client-IP header.
  */
-
-import { createEnv } from '@t3-oss/env-nextjs';
-import z from 'zod';
 export const env = createEnv({
 	server: {
 		BACKEND_URL: z.url().default('http://localhost:4000'),
@@ -18,7 +18,7 @@ export const env = createEnv({
 		STORAGE_MEDIA_URL_USER_AVATARS: z.string().default('http://127.0.0.1:9800'),
 		// Server-to-server secret: backend validates this before trusting X-Client-IP
 		S2S_SECRET: z.string().min(32),
-		MIXPANEL_TOKEN: z.string().optional(),
+		MIXPANEL_TOKEN: z.string(),
 	},
 	runtimeEnv: {
 		BACKEND_URL: process.env.BACKEND_URL,

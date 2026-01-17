@@ -1,7 +1,11 @@
+import {
+	parsePage,
+	parseRaffleStatus,
+} from '@/app/(protected)/lib/parse-search-params';
 import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import { StatusTabs } from '@/app/(protected)/my-raffles/status-tabs';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
-import { RAFFLE_STATUS, raffleStatusSchema } from '@/types/raffle';
+import { RAFFLE_STATUS } from '@/types/raffle';
 import { CreateRaffleButton } from './create-raffle-button';
 
 interface PageProps {
@@ -19,11 +23,9 @@ interface PageProps {
  */
 export default async function MyRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
-	const statusResult = raffleStatusSchema.safeParse(params.status);
-	const status = statusResult.success ? statusResult.data : undefined;
-	const page = params.page ? parseInt(params.page) : 1;
+	const status = parseRaffleStatus(params.status);
+	const page = parsePage(params.page);
 
-	// Fetch raffles for current status
 	const response = await getMyRaffles({
 		status,
 		page,

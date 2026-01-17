@@ -9,7 +9,7 @@ import {
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { initiateSocialSignIn } from '@/lib/auth/social-auth';
+import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
 import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
@@ -102,16 +102,17 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	async function handleGoogleSignIn() {
 		setIsSocialPending(true);
 
-		const callbackURL = `${window.location.origin}/auth/callback`;
-		const result = await initiateSocialSignIn('google', callbackURL);
+		const result = await initiateSocialSignIn({
+			provider: 'google',
+			callbackURL: `${window.location.origin}/auth/callback`,
+		});
 
 		if (!result.success) {
-			setError('root', { message: 'Failed to initiate Google sign in.' });
+			setError('root', { message: getErrorMessage(result.error) });
 			setIsSocialPending(false);
 			return;
 		}
 
-		// Redirect to OAuth provider (Google)
 		window.location.href = result.data.url;
 	}
 

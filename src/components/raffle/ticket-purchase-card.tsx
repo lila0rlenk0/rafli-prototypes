@@ -11,8 +11,7 @@ interface TicketPurchaseCardProps {
 	publicSlug: string;
 	price: number;
 	currency: string;
-	maxParticipants: number;
-	participantsCount: number;
+	availableTickets: number;
 	disabled?: boolean;
 }
 
@@ -36,21 +35,10 @@ export function TicketPurchaseCard({
 	publicSlug,
 	price,
 	currency,
-	maxParticipants,
-	participantsCount,
+	availableTickets,
 	disabled = false,
 }: TicketPurchaseCardProps) {
 	const [ticketQuantity, setTicketQuantity] = useState(1);
-
-	/**
-	 * Calculates the maximum number of available tickets
-	 * @param max - Maximum participants allowed
-	 * @param current - Current number of participants
-	 * @returns Number of available tickets
-	 */
-	function calculateAvailableTickets(max: number, current: number): number {
-		return Math.max(0, max - current);
-	}
 
 	/**
 	 * Formats a price value with currency symbol
@@ -80,16 +68,13 @@ export function TicketPurchaseCard({
 		return quantity * pricePerTicket;
 	}
 
-	const maxTickets = calculateAvailableTickets(
-		maxParticipants,
-		participantsCount,
-	);
+	const maxTickets = availableTickets;
 	const formattedPrice = formatPrice(price, currency);
 	const totalPrice = calculateTotalPrice(ticketQuantity, price);
 	const formattedTotal = formatPrice(totalPrice, currency);
 
 	return (
-		<div className="space-y-4">
+		<div className="mt-6 space-y-4">
 			{/* Price per ticket */}
 			<div className="flex items-center justify-between">
 				<div className="-mb-4 flex items-baseline gap-1">

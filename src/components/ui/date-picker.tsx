@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDate } from '@/lib/utils/date-format';
 import { CalendarIcon } from 'lucide-react';
 import * as React from 'react';
 
@@ -62,14 +63,6 @@ export function DatePicker({
 			onValueChange?.('');
 		}
 		setOpen(false);
-	};
-
-	const formatDate = (date: Date) => {
-		return date.toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
-		});
 	};
 
 	/**

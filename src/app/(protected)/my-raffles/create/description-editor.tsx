@@ -9,10 +9,11 @@ import {
 	TEXT_FORMAT_TRANSFORMERS,
 	TEXT_MATCH_TRANSFORMERS,
 } from '@lexical/markdown';
+import { CodeNode } from '@lexical/code';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { $getRoot } from 'lexical';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useController, type Control } from 'react-hook-form';
 
 import { Editor } from '@/components/ui/blocks/editor-md/editor';
@@ -24,59 +25,64 @@ type DescriptionEditorProps = {
 	trigger?: (name: 'description') => Promise<boolean>;
 };
 
+// Helper function to check if transformer depends on CodeNode
+function hasCodeNodeDependency(transformer: {
+	dependencies?: unknown[];
+	regExp?: RegExp;
+}): boolean {
+	// Check dependencies array
+	if (transformer.dependencies && transformer.dependencies.length > 0) {
+		const hasCodeNode = transformer.dependencies.some(
+			dep => dep === CodeNode || dep === 'CodeNode',
+		);
+		if (hasCodeNode) {
+			return true;
+		}
+		// Also check by name as fallback
+		const depNames = transformer.dependencies.map(
+			dep => {
+				if (typeof dep === 'function') {
+					return dep.name || dep.constructor?.name;
+				}
+				return String(dep);
+			},
+		);
+		if (
+			depNames.some(
+				name =>
+					name &&
+					(name.includes('CodeNode') ||
+						(name.includes('Code') && !name.includes('CodeHighlight'))),
+			)
+		) {
+			return true;
+		}
+	}
+	// Check regex pattern for code blocks
+	if ('regExp' in transformer && transformer.regExp) {
+		const regexStr = transformer.regExp.toString();
+		if (
+			regexStr.includes('```') ||
+			(regexStr.includes('`') && regexStr.includes('code'))
+		) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // Same transformers used in the editor plugins
 const MARKDOWN_TRANSFORMERS = [
 	CHECK_LIST,
-	...ELEMENT_TRANSFORMERS.filter(transformer => {
-		if ('regExp' in transformer && transformer.regExp) {
-			const regexStr = transformer.regExp.toString();
-			if (
-				regexStr.includes('```') ||
-				(regexStr.includes('`') && regexStr.includes('code'))
-			) {
-				return false;
-			}
-		}
-		if (transformer.dependencies && transformer.dependencies.length > 0) {
-			const depNames = transformer.dependencies.map(
-				dep => dep.name || dep.constructor?.name || String(dep),
-			);
-			if (
-				depNames.some(
-					name => name.includes('Code') && !name.includes('CodeHighlight'),
-				)
-			) {
-				return false;
-			}
-		}
-		return true;
-	}),
-	...MULTILINE_ELEMENT_TRANSFORMERS.filter(transformer => {
-		if ('regExp' in transformer && transformer.regExp) {
-			const regexStr = transformer.regExp.toString();
-			if (
-				regexStr.includes('```') ||
-				(regexStr.includes('`') && regexStr.includes('code'))
-			) {
-				return false;
-			}
-		}
-		if (transformer.dependencies && transformer.dependencies.length > 0) {
-			const depNames = transformer.dependencies.map(
-				dep => dep.name || dep.constructor?.name || String(dep),
-			);
-			if (
-				depNames.some(
-					name => name.includes('Code') && !name.includes('CodeHighlight'),
-				)
-			) {
-				return false;
-			}
-		}
-		return true;
-	}),
+	...ELEMENT_TRANSFORMERS.filter(
+		transformer => !hasCodeNodeDependency(transformer),
+	),
+	...MULTILINE_ELEMENT_TRANSFORMERS.filter(
+		transformer => !hasCodeNodeDependency(transformer),
+	),
 	...TEXT_FORMAT_TRANSFORMERS,
 	...TEXT_MATCH_TRANSFORMERS.filter(transformer => {
+		// Remove link transformer: [text](url)
 		if (transformer.type === 'text-match' && transformer.regExp) {
 			const regexStr = transformer.regExp.toString();
 			if (
@@ -173,10 +179,20 @@ export function DescriptionEditor({
 	name = 'description',
 	trigger,
 }: DescriptionEditorProps) {
+	const [mounted, setMounted] = useState(false);
+
 	const { field, fieldState } = useController({
 		control,
 		name,
 	});
+
+	useEffect(() => {
+		if (mounted) return;
+
+		setTimeout(() => {
+			setMounted(true);
+		}, 0);
+	}, [mounted]);
 
 	const handleMarkdownChange = (markdown: string) => {
 		field.onChange(markdown);
@@ -185,6 +201,17 @@ export function DescriptionEditor({
 			trigger(name);
 		}
 	};
+
+	if (!mounted) {
+		return (
+			<div className="flex flex-col gap-2">
+				<label htmlFor="description" className="font-medium">
+					Description
+				</label>
+				<div className="h-[185px] w-full animate-pulse rounded-lg bg-gray-50" />
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-col gap-2">

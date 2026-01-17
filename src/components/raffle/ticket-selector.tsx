@@ -209,7 +209,7 @@ export function TicketSelector({
 						onChange={handleInputChange}
 						onBlur={handleInputBlur}
 						onKeyDown={handleInputKeyDown}
-						className="w-8 [appearance:textfield] border-none bg-transparent text-center text-lg outline-none focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+						className="w-8 [appearance:textfield] border-none bg-transparent text-center outline-none focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 						aria-label="Ticket quantity"
 					/>
 					<button
@@ -229,21 +229,21 @@ export function TicketSelector({
 				<button
 					onClick={() => handleBundle(3)}
 					disabled={bundleDisabled}
-					className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 disabled:cursor-not-allowed disabled:opacity-30"
+					className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30"
 				>
 					<p className="text-sm">3 Tickets</p>
 				</button>
 				<button
 					onClick={() => handleBundle(6)}
 					disabled={bundleDisabled}
-					className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 disabled:cursor-not-allowed disabled:opacity-30"
+					className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30"
 				>
 					<p className="text-sm">6 Tickets</p>
 				</button>
 				<button
 					onClick={() => handleBundle(9)}
 					disabled={bundleDisabled}
-					className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 disabled:cursor-not-allowed disabled:opacity-30"
+					className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30"
 				>
 					<p className="text-sm">9 Tickets</p>
 				</button>

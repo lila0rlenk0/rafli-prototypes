@@ -1,5 +1,6 @@
 import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
+import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
 import {
@@ -12,7 +13,9 @@ import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getCategoryLabel } from '@/constants/categories';
 import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
+import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import { RAFFLE_STATUS } from '@/types/raffle';
+import { TicketCode } from '@/types/ticket';
 import { ArrowLeft, Image as ImageIcon, InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -59,6 +62,16 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	// Get session (cached - no extra request)
 	const session = await getSession();
 	const currentUserId = session?.user?.id;
+
+	// Fetch user's ticket codes for this raffle
+	const ticketCodesResponse = await getMyTicketCodes({ raffleId: raffle.id });
+	let myTicketCodes: TicketCode[] = [];
+	let myTicketsTotal = 0;
+
+	if (ticketCodesResponse.success) {
+		myTicketCodes = ticketCodesResponse.data.tickets;
+		myTicketsTotal = ticketCodesResponse.data.total;
+	}
 
 	/**
 	 * Check if current user owns this raffle
@@ -138,49 +151,23 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	/**
-	 * Calculates the fill percentage for the raffle
-	 * @param participantsCount - Current number of participants
+	 * Calculates the available tickets for purchase
 	 * @param maxParticipants - Maximum number of participants
-	 * @returns Rounded percentage as number
-	 */
-	function calculateFillPercentage(
-		participantsCount: number,
-		maxParticipants: number,
-	) {
-		if (maxParticipants === 0) return '0%';
-		return ((participantsCount / maxParticipants) * 100).toLocaleString(
-			'en-US',
-			{
-				minimumFractionDigits: 0,
-				maximumFractionDigits: 2,
-			},
-		);
-	}
-
-	/**
-	 * Gets the progress bar width as a percentage string
 	 * @param participantsCount - Current number of participants
-	 * @param maxParticipants - Maximum number of participants
-	 * @returns Percentage string for width style (e.g., "50%")
+	 * @returns Number of available tickets
 	 */
-	function getProgressBarWidth(
-		participantsCount: number,
+	function calculateAvailableTickets(
 		maxParticipants: number,
-	): string {
-		if (maxParticipants === 0) return '0%';
-		const percentage = (participantsCount / maxParticipants) * 100;
-		return `${percentage}%`;
+		participantsCount: number,
+	): number {
+		return Math.max(0, maxParticipants - participantsCount);
 	}
 
 	// Calculate values before return
 	const ticketPrice = parseTicketPrice(raffle.ticketPriceAmount);
-	const fillPercentage = calculateFillPercentage(
-		raffle.participantsCount,
+	const availableTickets = calculateAvailableTickets(
 		raffle.maxParticipants,
-	);
-	const progressWidth = getProgressBarWidth(
 		raffle.participantsCount,
-		raffle.maxParticipants,
 	);
 
 	return (
@@ -190,7 +177,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				<span className="font-semibold">Back to Raffle Browse</span>
 			</Link>
 
-			<div className="flex w-full gap-8">
+			<div className="flex w-full flex-col gap-8 lg:flex-row">
 				<div className="w-full space-y-4">
 					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
 						<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
@@ -299,10 +286,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					</div>
 				</div>
 				<div className="space-y-2">
-					<div className="h-fit space-y-4 rounded-2xl border border-black bg-white px-4 py-8">
+					<div className="h-fit rounded-2xl border border-black bg-white px-4 py-8">
 						<RaffleFireIcon className="mx-auto size-12" />
 
-						<h2 className="font-clash-display text-center text-xl font-semibold text-nowrap">
+						<h2 className="font-clash-display my-8 text-center text-xl font-semibold text-nowrap">
 							The raffle is active!
 						</h2>
 
@@ -316,8 +303,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								publicSlug={publicSlug}
 								price={ticketPrice}
 								currency={raffle.ticketPriceCurrency}
-								maxParticipants={raffle.maxParticipants}
-								participantsCount={raffle.participantsCount}
+								availableTickets={availableTickets}
 								disabled={disablePurchase}
 							/>
 						)}
@@ -328,29 +314,17 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</p>
 						)}
 
-						<div className="space-y-2">
-							<div className="flex items-center justify-between text-sm">
-								<span className="text-[#7B7B7B]">
-									{raffle.participantsCount}/{raffle.maxParticipants}
-								</span>
-								<span className="font-medium text-[#7B7B7B]">
-									{fillPercentage}% filled
-								</span>
-							</div>
-
-							<div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-								<div
-									className="h-full bg-green-400 transition-all duration-300 ease-out"
-									style={{ width: progressWidth }}
-								/>
-							</div>
-						</div>
-
 						<RaffleShareButtons
 							title={raffle.title}
 							publicSlug={raffle.publicSlugOrCode}
 						/>
 					</div>
+
+					<RaffleInfoCard
+						raffle={raffle}
+						myTicketCodes={myTicketCodes}
+						myTicketsTotal={myTicketsTotal}
+					/>
 
 					<div className="flex items-center justify-center gap-2">
 						<InfoIcon className="size-4 text-[#7B7B7B]" />

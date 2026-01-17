@@ -1,7 +1,7 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
 import { differenceInSeconds, intervalToDuration } from 'date-fns';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 
 interface RaffleCountdownProps {
@@ -61,9 +61,18 @@ function calculateTimeRemaining(endDateString: string): TimeRemaining {
  * - Automatic cleanup on component unmount
  */
 export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
+	const [mounted, setMounted] = useState(false);
 	const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() =>
-		calculateTimeRemaining(endAt)
+		calculateTimeRemaining(endAt),
 	);
+
+	useEffect(() => {
+		if (mounted) return;
+
+		setTimeout(() => {
+			setMounted(true);
+		}, 0);
+	}, [mounted]);
 
 	/**
 	 * Updates the countdown timer state
@@ -81,24 +90,14 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 		return () => clearInterval(interval);
 	}, [updateCountdown]);
 
+	if (!mounted) return null;
+
 	return (
 		<div className="flex items-center justify-center gap-4 rounded-2xl bg-[#DFFFED] p-4">
-			<CountdownUnit
-				value={timeRemaining.days}
-				label="Days"
-			/>
-			<CountdownUnit
-				value={timeRemaining.hours}
-				label="Hours"
-			/>
-			<CountdownUnit
-				value={timeRemaining.minutes}
-				label="Minutes"
-			/>
-			<CountdownUnit
-				value={timeRemaining.seconds}
-				label="Seconds"
-			/>
+			<CountdownUnit value={timeRemaining.days} label="Days" />
+			<CountdownUnit value={timeRemaining.hours} label="Hours" />
+			<CountdownUnit value={timeRemaining.minutes} label="Minutes" />
+			<CountdownUnit value={timeRemaining.seconds} label="Seconds" />
 		</div>
 	);
 }

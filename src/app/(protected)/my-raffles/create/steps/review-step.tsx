@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { formatDate } from '@/lib/utils/date-format';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useMultiStepForm } from '../multi-step-form-provider';
@@ -78,19 +79,6 @@ export function ReviewStep() {
 	 */
 	function getPricePerTicket() {
 		return `$${pricePerTicket?.toFixed(2)}`;
-	}
-
-	/**
-	 * Formats a date string to a readable format
-	 */
-	function formatDate(dateString: string) {
-		if (!dateString) return '';
-		const date = new Date(dateString);
-		return date.toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
-		});
 	}
 
 	/**

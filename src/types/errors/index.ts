@@ -10,3 +10,4 @@ export * from './raffle-errors';
 export * from './client-errors';
 export * from './order-errors';
 export * from './payment-errors';
+export * from './ticket-errors';

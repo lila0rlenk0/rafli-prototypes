@@ -5,6 +5,7 @@ import {
 	TEXT_FORMAT_TRANSFORMERS,
 	TEXT_MATCH_TRANSFORMERS,
 } from '@lexical/markdown';
+import { CodeNode } from '@lexical/code';
 import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
@@ -34,6 +35,52 @@ type PluginsProps = {
 };
 
 const defaultPlaceholder = 'Press / for commands...';
+
+// Helper function to check if transformer depends on CodeNode
+function hasCodeNodeDependency(transformer: {
+	dependencies?: unknown[];
+	regExp?: RegExp;
+}): boolean {
+	// Check dependencies array
+	if (transformer.dependencies && transformer.dependencies.length > 0) {
+		const hasCodeNode = transformer.dependencies.some(
+			dep => dep === CodeNode || dep === 'CodeNode',
+		);
+		if (hasCodeNode) {
+			return true;
+		}
+		// Also check by name as fallback
+		const depNames = transformer.dependencies.map(
+			dep => {
+				if (typeof dep === 'function') {
+					return dep.name || dep.constructor?.name;
+				}
+				return String(dep);
+			},
+		);
+		if (
+			depNames.some(
+				name =>
+					name &&
+					(name.includes('CodeNode') ||
+						(name.includes('Code') && !name.includes('CodeHighlight'))),
+			)
+		) {
+			return true;
+		}
+	}
+	// Check regex pattern for code blocks
+	if ('regExp' in transformer && transformer.regExp) {
+		const regexStr = transformer.regExp.toString();
+		if (
+			regexStr.includes('```') ||
+			(regexStr.includes('`') && regexStr.includes('code'))
+		) {
+			return true;
+		}
+	}
+	return false;
+}
 
 export function Plugins({
 	placeholder,
@@ -89,67 +136,12 @@ export function Plugins({
 				<MarkdownShortcutPlugin
 					transformers={[
 						CHECK_LIST,
-						...ELEMENT_TRANSFORMERS.filter(transformer => {
-							// Remove code block transformer - requires CodeNode
-							// Code blocks typically have regex matching ``` or `
-							if ('regExp' in transformer && transformer.regExp) {
-								const regexStr = transformer.regExp.toString();
-								// Pattern for code blocks: ``` or `
-								if (
-									regexStr.includes('```') ||
-									(regexStr.includes('`') && regexStr.includes('code'))
-								) {
-									return false;
-								}
-							}
-							// Also check dependencies if available
-							if (
-								transformer.dependencies &&
-								transformer.dependencies.length > 0
-							) {
-								const depNames = transformer.dependencies.map(
-									dep => dep.name || dep.constructor?.name || String(dep),
-								);
-								if (
-									depNames.some(
-										name =>
-											name.includes('Code') && !name.includes('CodeHighlight'),
-									)
-								) {
-									return false;
-								}
-							}
-							return true;
-						}),
-						...MULTILINE_ELEMENT_TRANSFORMERS.filter(transformer => {
-							// Remove code block transformer - requires CodeNode
-							if ('regExp' in transformer && transformer.regExp) {
-								const regexStr = transformer.regExp.toString();
-								if (
-									regexStr.includes('```') ||
-									(regexStr.includes('`') && regexStr.includes('code'))
-								) {
-									return false;
-								}
-							}
-							if (
-								transformer.dependencies &&
-								transformer.dependencies.length > 0
-							) {
-								const depNames = transformer.dependencies.map(
-									dep => dep.name || dep.constructor?.name || String(dep),
-								);
-								if (
-									depNames.some(
-										name =>
-											name.includes('Code') && !name.includes('CodeHighlight'),
-									)
-								) {
-									return false;
-								}
-							}
-							return true;
-						}),
+						...ELEMENT_TRANSFORMERS.filter(
+							transformer => !hasCodeNodeDependency(transformer),
+						),
+						...MULTILINE_ELEMENT_TRANSFORMERS.filter(
+							transformer => !hasCodeNodeDependency(transformer),
+						),
 						...TEXT_FORMAT_TRANSFORMERS,
 						...TEXT_MATCH_TRANSFORMERS.filter(transformer => {
 							// Remove link transformer: [text](url)

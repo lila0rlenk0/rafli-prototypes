@@ -10,7 +10,11 @@
  * - Token validation checks expiration (signature verified by backend)
  */
 
-import { authSessionSchema, type AuthSession, type AuthUser } from '@/types/auth';
+import {
+	authSessionSchema,
+	type AuthSession,
+	type AuthUser,
+} from '@/types/auth';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import 'server-only';
@@ -59,7 +63,7 @@ export async function getAuthToken(): Promise<string | null> {
  *
  * @returns AuthSession with user data and token, or null if invalid/expired
  */
-export const getSession = cache(async (): Promise<AuthSession | null> => {
+export async function getSession(): Promise<AuthSession | null> {
 	const token = await getAuthToken();
 	if (!token) return null;
 
@@ -83,7 +87,7 @@ export const getSession = cache(async (): Promise<AuthSession | null> => {
 	} catch {
 		return null;
 	}
-});
+}
 
 /**
  * Gets current authenticated user (cached per-request)

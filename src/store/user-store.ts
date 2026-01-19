@@ -5,7 +5,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 import { USER_MODE, type Permission, type UserMode } from '@/types/user-mode';
 
 export interface UserStoreState {
-	mode: UserMode;
+	mode: UserMode | null; // null = not yet initialized
 	permissions: Permission[];
 }
 
@@ -14,13 +14,14 @@ export interface UserStoreActions {
 	hasPermission: (permission: Permission) => boolean;
 	canSwitchMode: () => boolean;
 	setPermissions: (permissions: Permission[]) => void;
+	initializeMode: () => void;
 	reset: () => void;
 }
 
 export type UserStore = UserStoreState & UserStoreActions;
 
 export const defaultInitState: UserStoreState = {
-	mode: USER_MODE.PARTICIPANT,
+	mode: null, // null means not yet initialized
 	permissions: [],
 };
 
@@ -38,12 +39,12 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 
 				/**
 				 * Toggle between participant and host mode
-				 * Only works if user has raffle:create permission
+				 * Only works if user has raffle:create permission and mode is initialized
 				 */
 				switchMode: () => {
 					const { canSwitchMode, mode } = get();
 
-					if (!canSwitchMode()) {
+					if (!canSwitchMode() || mode === null) {
 						return;
 					}
 
@@ -87,11 +88,31 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 				},
 
 				/**
+				 * Initialize mode based on permissions and persisted preference
+				 * Called after permissions are set to validate/set the mode
+				 */
+				initializeMode: () => {
+					const { mode, canSwitchMode } = get();
+
+					// If mode is HOST but user lost permission, reset to PARTICIPANT
+					if (mode === USER_MODE.HOST && !canSwitchMode()) {
+						set({ mode: USER_MODE.PARTICIPANT });
+						return;
+					}
+
+					// If mode is null (not initialized), default to PARTICIPANT
+					if (mode === null) {
+						set({ mode: USER_MODE.PARTICIPANT });
+					}
+					// Otherwise keep current mode (valid persisted preference)
+				},
+
+				/**
 				 * Reset store to default state
 				 * Should be called on sign out to clear persisted data
 				 */
 				reset: () => {
-					set(defaultInitState);
+					set({ mode: null, permissions: [] });
 				},
 			}),
 			{

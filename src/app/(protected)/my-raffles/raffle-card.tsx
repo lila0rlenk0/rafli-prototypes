@@ -50,8 +50,13 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 	/**
 	 * Determines if edit button should be shown
 	 * Only for draft/queued raffles in host mode
+	 * Returns false if mode is not yet initialized
 	 */
 	function shouldShowEditButton(): boolean {
+		if (mode === null) {
+			return false;
+		}
+
 		const isHostMode = mode === USER_MODE.HOST;
 		const isEditable =
 			raffle.status === RAFFLE_STATUS.DRAFT ||

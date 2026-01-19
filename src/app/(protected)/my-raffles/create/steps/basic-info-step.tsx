@@ -8,10 +8,12 @@ import {
 	DropzoneEmptyState,
 } from '@/components/ui/dropzone';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { RAFFLE_CATEGORIES } from '@/constants/categories';
+import { generateSlugPreview } from '@/lib/utils/slug-preview';
 import { DollarSign, X } from 'lucide-react';
+import { useMemo } from 'react';
 import { STEPS } from '.';
+import { DescriptionEditor } from '../description-editor';
 import { useMultiStepForm } from '../multi-step-form-provider';
 import { MAX_FILE_SIZE } from '../schema';
 import { ImagePreview } from './image-preview';
@@ -34,6 +36,17 @@ export function BasicInfoStep() {
 	const price = watch('price');
 	const category = watch('category');
 	const coverImage = watch('coverImage');
+
+	// Generate slug preview
+	const previewSlugPath = useMemo(() => {
+		if (!title || title.trim().length === 0) {
+			return null;
+		}
+
+		const slugPreview = generateSlugPreview(title);
+
+		return `/browse/${slugPreview}`;
+	}, [title]);
 
 	// Check if any field in this step is filled
 	const hasFilledFields = Boolean(
@@ -145,24 +158,12 @@ export function BasicInfoStep() {
 				{touchedFields.title && errors.title && (
 					<span className="text-sm text-red-500">{errors.title.message}</span>
 				)}
+				<p className="text-muted-foreground min-h-[20px] text-sm">
+					{previewSlugPath && `Your raffle page: ${previewSlugPath}`}
+				</p>
 			</div>
 
-			<div className="flex flex-col gap-2">
-				<label htmlFor="description" className="font-medium">
-					Description
-				</label>
-				<Textarea
-					id="description"
-					rows={5}
-					placeholder="Enter raffle description"
-					{...register('description')}
-				/>
-				{touchedFields.description && errors.description && (
-					<span className="text-sm text-red-500">
-						{errors.description.message}
-					</span>
-				)}
-			</div>
+			<DescriptionEditor control={form.control} trigger={trigger} />
 
 			<div className="grid grid-cols-2 gap-4">
 				<div className="flex flex-col gap-2">

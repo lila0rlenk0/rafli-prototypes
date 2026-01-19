@@ -1,14 +1,12 @@
 'use server';
 
+import { AUTH_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { setAuthCookies } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapAuthError } from '@/lib/errors';
-import type { SignInInput } from '@/types/auth';
-import {
-	COMMON_ERROR_CODES,
-	type AuthErrorCode,
-} from '@/types/errors';
+import { failure, mapAuthError, success } from '@/lib/errors';
+import { signInInputSchema, type SignInInput } from '@/types/auth';
+import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
@@ -26,7 +24,16 @@ type SignInResponse = ServiceResponse<void, AuthErrorCode>;
  */
 export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 	try {
-		const response = await baseClient.post('/api/auth/sign-in/email', input);
+		// Validate input payload
+		const validationResult = signInInputSchema.safeParse(input);
+		if (!validationResult.success) {
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+
+		const response = await baseClient.post(
+			'/api/auth/sign-in/email',
+			validationResult.data,
+		);
 
 		const { token, user } = response.data;
 
@@ -38,9 +45,23 @@ export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 		// Set authentication cookies
 		await setAuthCookies(token, user);
 
+		// Track successful sign-in (awaited to ensure completion in serverless)
+		await trackServer(
+			AUTH_EVENTS.SIGN_IN_COMPLETED,
+			{ method: 'email' },
+			{ userId: user.id },
+		);
+
 		return success(undefined);
 	} catch (error) {
 		const errorCode = mapAuthError(error);
+
+		// Track failed sign-in (awaited to ensure completion in serverless)
+		await trackServer(AUTH_EVENTS.SIGN_IN_FAILED, {
+			method: 'email',
+			error_code: errorCode,
+		});
+
 		return failure(errorCode);
 	}
 }

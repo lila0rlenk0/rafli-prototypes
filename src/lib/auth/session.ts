@@ -1,4 +1,16 @@
-import type { AuthSession, AuthUser } from '@/types/auth';
+/**
+ * Server-side Session Management
+ *
+ * Handles authentication state via secure HTTP-only cookies.
+ * All functions are cached per-request using React's cache().
+ *
+ * SECURITY:
+ * - JWT token stored in httpOnly cookie (not accessible via JS)
+ * - User session data in readable cookie for client hydration
+ * - Token validation checks expiration (signature verified by backend)
+ */
+
+import { authSessionSchema, type AuthSession, type AuthUser } from '@/types/auth';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import 'server-only';
@@ -6,7 +18,15 @@ import 'server-only';
 import { AUTH_COOKIES, COOKIE_OPTIONS } from './config';
 import { decodeJwt, isJwtExpired, jwtPayloadToUser } from './jwt';
 
-// Set authentication cookies
+/**
+ * Sets authentication cookies after successful login
+ *
+ * Stores JWT token in httpOnly cookie (secure) and user data
+ * in readable cookie (for client-side access if needed).
+ *
+ * @param token - JWT token from backend
+ * @param user - User data to store in session cookie
+ */
 export async function setAuthCookies(
 	token: string,
 	user: AuthUser,
@@ -23,7 +43,11 @@ export async function setAuthCookies(
 	});
 }
 
-// Get authentication token
+/**
+ * Retrieves the JWT authentication token from cookies
+ *
+ * @returns JWT token string or null if not authenticated
+ */
 export async function getAuthToken(): Promise<string | null> {
 	const cookieStore = await cookies();
 	return cookieStore.get(AUTH_COOKIES.TOKEN)?.value ?? null;
@@ -48,23 +72,37 @@ export const getSession = cache(async (): Promise<AuthSession | null> => {
 		// Decode JWT to extract user data
 		const payload = decodeJwt(token);
 
-		return {
+		const session = {
 			user: jwtPayloadToUser(payload),
 			token,
 			expiresAt: new Date(payload.exp * 1000).toISOString(),
 		};
+
+		// Validate session structure
+		return authSessionSchema.parse(session);
 	} catch {
 		return null;
 	}
 });
 
-// Get current user (cached)
+/**
+ * Gets current authenticated user (cached per-request)
+ *
+ * @returns AuthUser object or null if not authenticated
+ */
 export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
 	const session = await getSession();
 	return session?.user ?? null;
 });
 
-// Require authentication (throws if not authenticated)
+/**
+ * Requires authentication or throws error
+ *
+ * Use in server components/actions that require authenticated user.
+ *
+ * @returns AuthSession with user data
+ * @throws Error if not authenticated
+ */
 export async function requireAuth(): Promise<AuthSession> {
 	const session = await getSession();
 	if (!session) {
@@ -73,7 +111,14 @@ export async function requireAuth(): Promise<AuthSession> {
 	return session;
 }
 
-// Require email verification
+/**
+ * Requires email verification or throws error
+ *
+ * Use in server components/actions that require verified email.
+ *
+ * @returns AuthSession with verified user data
+ * @throws Error if not authenticated or email not verified
+ */
 export async function requireEmailVerification(): Promise<AuthSession> {
 	const session = await requireAuth();
 	if (!session.user.emailVerified) {

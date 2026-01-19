@@ -4,11 +4,11 @@ import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ImageCarousel } from '@/components/ui/image-carousel';
 import { useUserStore } from '@/providers/user-store-provider';
-import { Raffle, RAFFLE_STATUS, RaffleStatus } from '@/types/raffle';
+import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
-import { CheckCircle2, Clock, Image as ImageIcon } from 'lucide-react';
-import Image from 'next/image';
+import { CheckCircle2, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 interface RaffleCardProps {
@@ -142,33 +142,12 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 
 	return (
 		<div className="group flex flex-col overflow-hidden rounded-[24px] bg-white">
-			<div className="relative mb-4 aspect-4/3 max-h-53 w-full overflow-hidden rounded-2xl bg-gray-100">
-				{raffle.coverMediaUrl?.url ? (
-					<Image
-						src={raffle.coverMediaUrl.url}
-						alt={raffle.title}
-						fill
-						className="object-cover"
-						loading="eager"
-					/>
-				) : (
-					<div className="flex h-full w-full items-center justify-center text-gray-300">
-						<ImageIcon className="h-12 w-12" />
-					</div>
-				)}
-
-				{/* Navigation arrows (mock for carousel) */}
-				{raffle.galleryMediaUrls.length > 0 && (
-					<>
-						<div className="absolute top-1/2 left-4 -translate-y-1/2 cursor-pointer text-white/80 transition-colors hover:text-white">
-							{/* Left Arrow Icon */}
-						</div>
-						<div className="absolute top-1/2 right-4 -translate-y-1/2 cursor-pointer text-white/80 transition-colors hover:text-white">
-							{/* Right Arrow Icon */}
-						</div>
-					</>
-				)}
-			</div>
+			<ImageCarousel
+				coverImage={raffle.coverMediaUrl}
+				galleryImages={raffle.galleryMediaUrls}
+				alt={raffle.title}
+				className="mb-4"
+			/>
 
 			<div className="flex flex-1 flex-col p-4">
 				<h3 className="mb-2 text-xl font-bold tracking-tight text-gray-900">
@@ -179,7 +158,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 					<span className="text-sm font-medium text-gray-500">
 						{formatDaysLeft(daysLeft)}
 					</span>
-					{getStatusBadge(raffle.status as RaffleStatus)}
+					{getStatusBadge(raffle.status)}
 				</div>
 
 				<div className="mb-2 flex items-center justify-between text-sm">

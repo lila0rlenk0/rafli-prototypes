@@ -1,11 +1,9 @@
 'use server';
 
-import { cacheLife } from 'next/cache';
 import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
-import { calculateMinRevalidateTime } from '@/lib/cache/calculate-revalidate';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
@@ -23,17 +21,12 @@ type GetRafflesResponse = ServiceResponse<ListRafflesResponse, RaffleErrorCode>;
 /**
  * Fetches all raffles with optional filtering (public/browsing)
  *
- * Uses Next.js 16 'use cache' directive with dynamic cache duration
- * based on the earliest expiring image URL across all raffles.
- *
  * @param query - Optional query parameters for filtering raffles
  * @returns ServiceResponse with raffle list on success, RaffleErrorCode on failure
  */
 export async function getRaffles(
 	query?: MyRafflesQuery,
 ): Promise<GetRafflesResponse> {
-	'use cache';
-
 	try {
 		const params = buildQueryParams(query);
 
@@ -44,25 +37,6 @@ export async function getRaffles(
 		// Validate response data structure
 		const validatedData = listRafflesResponseSchema.parse(response.data);
 
-		// Calculate cache duration from images
-		if (validatedData.raffles.length > 0) {
-			const allExpirations: string[] = [];
-
-			validatedData.raffles.forEach(raffle => {
-				if (raffle.coverMediaUrl) {
-					allExpirations.push(raffle.coverMediaUrl.expiresAt);
-				}
-				raffle.galleryMediaUrls.forEach(img => {
-					allExpirations.push(img.expiresAt);
-				});
-			});
-
-			const revalidateSeconds = calculateMinRevalidateTime(allExpirations);
-			cacheLife({ revalidate: revalidateSeconds });
-		} else {
-			// No raffles - cache for 5 minutes
-			cacheLife({ revalidate: 300 });
-		}
 
 		return success(validatedData);
 	} catch (error) {

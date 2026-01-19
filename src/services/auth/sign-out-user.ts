@@ -2,20 +2,36 @@
 
 import { redirect } from 'next/navigation';
 
+import { AUTH_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
+
 import { clearAuthCookies } from './clear-auth';
 
-export async function signOutUser() {
+/**
+ * Signs out the current user
+ *
+ * Clears backend session, removes auth cookies, tracks the event,
+ * and redirects to sign-in page.
+ *
+ * @returns Never returns - always redirects to /sign-in
+ */
+export async function signOutUser(): Promise<never> {
+	const session = await getSession();
+
+	// Track sign out BEFORE clearing cookies (redirect() throws, so tracking after would never execute)
+	if (session?.user) {
+		await trackServer(AUTH_EVENTS.SIGN_OUT, {}, { userId: session.user.id });
+	}
+
 	try {
 		await authenticatedClient.post('/api/auth/sign-out');
 	} catch (error) {
-		// Ignore errors and clear cookies anyway
 		console.error('Sign out error:', error);
 	} finally {
-		// Always clear auth cookies regardless of backend response
 		await clearAuthCookies();
 	}
 
-	// Redirect to sign-in page
 	redirect('/sign-in');
 }

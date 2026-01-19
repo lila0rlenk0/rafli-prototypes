@@ -28,7 +28,7 @@ export function FormHeader() {
 						onClick={handlePreviousStep}
 						disabled={shouldDisablePreviousStep}
 					>
-						Preview Page
+						Previous page
 					</Button>
 					<X className="size-4" />
 				</div>

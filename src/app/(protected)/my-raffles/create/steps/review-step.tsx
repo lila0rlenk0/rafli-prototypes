@@ -1,6 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { formatDate } from '@/lib/utils/date-format';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useMultiStepForm } from '../multi-step-form-provider';
@@ -80,19 +82,6 @@ export function ReviewStep() {
 	}
 
 	/**
-	 * Formats a date string to a readable format
-	 */
-	function formatDate(dateString: string) {
-		if (!dateString) return '';
-		const date = new Date(dateString);
-		return date.toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
-		});
-	}
-
-	/**
 	 * Gets the active time period as a formatted date range
 	 */
 	function getActivePeriod() {
@@ -158,7 +147,10 @@ export function ReviewStep() {
 
 			<div className="flex min-w-0 flex-col gap-2">
 				<label className="text-sm text-[#B4B4B4]">Description</label>
-				<p className="max-w-full text-sm wrap-anywhere">{getDescription()}</p>
+				<MarkdownRenderer
+					content={getDescription() || ''}
+					className="text-sm"
+				/>
 			</div>
 
 			<div className="flex flex-wrap gap-2">

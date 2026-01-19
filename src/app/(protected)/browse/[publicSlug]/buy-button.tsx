@@ -149,7 +149,7 @@ export function BuyButton({
 			className="w-full bg-black"
 		>
 			{isLoading && <Loader2Icon className="mr-2 size-4 animate-spin" />}
-			{getButtonText()}
+			<p className="font-semibold">{getButtonText()}</p>
 		</Button>
 	);
 }

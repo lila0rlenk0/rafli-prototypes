@@ -6,6 +6,7 @@ import {
 	type OrderErrorCode,
 	type PaymentErrorCode,
 	type RaffleErrorCode,
+	type TicketErrorCode,
 } from '@/types/errors';
 
 /**
@@ -334,6 +335,38 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 			mappedCode.startsWith('global:')
 		) {
 			return mappedCode as PaymentErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps ticket errors to TicketErrorCode
+ *
+ * Accepts `core:ticket:*` and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns TicketErrorCode (either backend code or frontend fallback)
+ */
+export function mapTicketError(error: unknown): TicketErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "core:ticket:no-tickets", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('core:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as TicketErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
+			return mappedCode as TicketErrorCode;
 		}
 	}
 

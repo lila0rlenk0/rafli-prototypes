@@ -9,6 +9,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from '@/components/ui/accordion';
+import { ImageCarousel } from '@/components/ui/image-carousel';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getCategoryLabel } from '@/constants/categories';
 import { getSession } from '@/lib/auth/session';
@@ -16,7 +17,7 @@ import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import { TicketCode } from '@/types/ticket';
-import { ArrowLeft, Image as ImageIcon, InfoIcon } from 'lucide-react';
+import { ArrowLeft, ImageIcon, InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ComponentProps } from 'react';
@@ -201,42 +202,36 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</div>
 						</div>
 
-						<div className="flex flex-col gap-4">
-							<div className="relative flex aspect-video max-h-96 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
-								{raffle.coverMediaUrl?.url ? (
-									<Image
-										src={raffle.coverMediaUrl.url}
-										alt={raffle.title}
-										fill
-										className="object-cover"
-									/>
-								) : (
-									<ImageIcon className="size-12 text-gray-400" />
-								)}
-							</div>
+						<ImageCarousel
+							coverImage={raffle.coverMediaUrl}
+							galleryImages={raffle.galleryMediaUrls}
+							alt={raffle.title}
+							aspectRatio="aspect-video"
+							maxHeight="max-h-96"
+							className="border border-[#E5E5E5]"
+						/>
 
-							<div className="grid grid-cols-3 gap-4">
-								{Array.from({ length: 3 }).map((_, index) => {
-									const image = raffle.galleryMediaUrls[index];
-									return (
-										<div
-											key={index}
-											className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
-										>
-											{image?.url ? (
-												<Image
-													src={image.url}
-													alt={`Gallery ${index + 1}`}
-													fill
-													className="object-cover"
-												/>
-											) : (
-												<ImageIcon className="size-6 text-gray-400" />
-											)}
-										</div>
-									);
-								})}
-							</div>
+						<div className="grid grid-cols-3 gap-4">
+							{Array.from({ length: 3 }).map((_, index) => {
+								const image = raffle.galleryMediaUrls[index];
+								return (
+									<div
+										key={index}
+										className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
+									>
+										{image?.url ? (
+											<Image
+												src={image.url}
+												alt={`Gallery ${index + 1}`}
+												fill
+												className="object-cover"
+											/>
+										) : (
+											<ImageIcon className="size-6 text-gray-400" />
+										)}
+									</div>
+								);
+							})}
 						</div>
 
 						<div className="flex min-w-0 flex-col gap-2">

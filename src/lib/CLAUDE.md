@@ -72,7 +72,7 @@ Examples:
 
 ## API Clients
 
-- `baseClient` - no auth, supports caching
-- `authenticatedClient` - injects token from cookies
+- `baseClient` - no auth, injects S2S secret + client IP
+- `authenticatedClient` - injects token from cookies + S2S secret + client IP
 
 Located in `@/lib/api/client`.

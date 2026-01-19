@@ -12,16 +12,17 @@ ALWAYS: Use `success()` and `failure()` helpers
 
 ## Clients
 
-- `baseClient` - public endpoints, supports caching
-- `authenticatedClient` - auth endpoints, no caching (uses cookies)
+- `baseClient` - public endpoints (injects S2S secret + client IP)
+- `authenticatedClient` - auth endpoints (injects token + S2S secret + client IP)
 
-## Caching
+## Usage Guide
 
-| Endpoint | Auth | Cache | Client |
-|----------|------|-------|--------|
-| GET public | None | Yes | baseClient |
-| GET auth | Required | No | authenticatedClient |
-| POST/PUT/DELETE | Any | No | Either |
+| Endpoint | Auth | Client |
+|----------|------|--------|
+| GET public | None | baseClient |
+| GET auth | Required | authenticatedClient |
+| POST/PUT/DELETE public | None | baseClient |
+| POST/PUT/DELETE auth | Required | authenticatedClient |
 
 ## Pattern: Authenticated Endpoint
 
@@ -57,20 +58,18 @@ export async function getMyData(): Promise<GetMyDataResponse> {
 }
 ```
 
-## Pattern: Public Cached Endpoint
+## Pattern: Public Endpoint
 
 ```tsx
 'use server';
 
 import { baseClient } from '@/lib/api/client';
+import { failure, success } from '@/lib/errors';
+import { mapRaffleError } from '@/lib/errors';
 
 export async function getPublicData(): Promise<GetPublicDataResponse> {
-  'use cache';
-
   try {
-    const response = await baseClient.get('/public/data', {
-      next: { tags: ['public-data'], revalidate: 60 },
-    });
+    const response = await baseClient.get('/public/data');
     return success(response.data);
   } catch (error) {
     return failure(mapRaffleError(error));

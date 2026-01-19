@@ -23,13 +23,12 @@
  */
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
 import { headers } from 'next/headers';
-import { cache } from 'react';
 
 import { env } from '@/env/server';
 import { getAuthToken } from '@/lib/auth/session';
 
 /**
- * Gets client IP from Next.js request headers (tamper-proof, cached per-request)
+ * Gets client IP from Next.js request headers (tamper-proof)
  *
  * SECURITY: Vercel overwrites x-forwarded-for and x-real-ip headers,
  * making them tamper-proof. Clients cannot spoof these values.
@@ -41,7 +40,7 @@ import { getAuthToken } from '@/lib/auth/session';
  *
  * @see https://vercel.com/docs/headers/request-headers
  */
-const getClientIp = cache(async (): Promise<string | null> => {
+async function getClientIp(): Promise<string | null> {
 	const h = await headers();
 
 	return (
@@ -50,7 +49,7 @@ const getClientIp = cache(async (): Promise<string | null> => {
 		h.get('x-real-ip') ||
 		null
 	);
-});
+}
 
 /**
  * Base client without authentication

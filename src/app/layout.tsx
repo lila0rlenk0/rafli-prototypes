@@ -4,9 +4,9 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 
 import { Toaster } from '@/components/ui/sonner';
-import { MixpanelProvider } from '@/providers/mixpanel-provider';
 
 import './globals.css';
+import { Providers } from './providers';
 
 const clashDisplay = localFont({
 	src: '../../public/fonts/ClashDisplay-Variable.ttf',
@@ -35,8 +35,10 @@ export default function RootLayout({
 			<body
 				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} antialiased`}
 			>
-				<MixpanelProvider>{children}</MixpanelProvider>
-				<Toaster />
+				<Providers>
+					{children}
+				  <Toaster />
+				</Providers>
 			</body>
 		</html>
 	);

@@ -7,7 +7,6 @@
  * Autocapture handles: page views, clicks, scrolls, forms (configured in mixpanel-client)
  */
 
-import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 import { identify, initMixpanel, reset } from '@/lib/analytics/mixpanel-client';
@@ -40,9 +39,9 @@ interface MixpanelProviderProps {
 }
 
 export function MixpanelProvider({ children }: MixpanelProviderProps) {
-	const pathname = usePathname();
 	const initialized = useRef(false);
 	const identifiedUserId = useRef<string | null>(null);
+	const lastPathnameRef = useRef<string | null>(null);
 
 	// Initialize once
 	useEffect(() => {
@@ -52,8 +51,15 @@ export function MixpanelProvider({ children }: MixpanelProviderProps) {
 	}, []);
 
 	// Handle user identification based on session cookie
+	// Use window.location.pathname directly to avoid SSR issues with usePathname()
 	useEffect(() => {
-		if (!initialized.current) return;
+		if (!initialized.current || typeof window === 'undefined') return;
+
+		const currentPathname = window.location.pathname;
+		
+		// Skip if pathname hasn't changed (prevents unnecessary re-runs)
+		if (lastPathnameRef.current === currentPathname) return;
+		lastPathnameRef.current = currentPathname;
 
 		const user = getUserFromCookie();
 
@@ -68,7 +74,7 @@ export function MixpanelProvider({ children }: MixpanelProviderProps) {
 			reset();
 			identifiedUserId.current = null;
 		}
-	}, [pathname]);
+	});
 
 	return <>{children}</>;
 }

@@ -33,7 +33,7 @@ import {
 	SELECTION_CHANGE_COMMAND,
 	TextNode,
 } from 'lexical';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { JSX, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 import { ContentEditable } from '@/components/ui/editor/editor-ui/content-editable';
@@ -48,7 +48,7 @@ export const RIGHT_CLICK_IMAGE_COMMAND: LexicalCommand<MouseEvent> =
 function useSuspenseImage(src: string) {
 	if (!imageCache.has(src)) {
 		throw new Promise(resolve => {
-			const img = new Image();
+			const img = document.createElement('img');
 			img.src = src;
 			img.onload = () => {
 				imageCache.add(src);
@@ -102,7 +102,7 @@ function LazyImage({
 					minHeight: 100,
 				}}
 			>
-				<Image
+				<NextImage
 					className={className || undefined}
 					src={src}
 					alt={altText}
@@ -126,7 +126,7 @@ function LazyImage({
 			}}
 			style={{ maxWidth }}
 		>
-			<Image
+			<NextImage
 				className={className || undefined}
 				src={src}
 				alt={altText}

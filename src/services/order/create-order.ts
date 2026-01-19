@@ -1,14 +1,18 @@
 'use server';
 
+import { ZodError } from 'zod';
+
+import { PURCHASE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapOrderError } from '@/lib/errors/error-mapper';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import type { CreateOrderPayload, Order } from '@/types/order';
 import { createOrderPayloadSchema, orderSchema } from '@/types/order';
 import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
 
 /**
  * Response type for order creation
@@ -24,6 +28,9 @@ type CreateOrderResponse = ServiceResponse<Order, OrderErrorCode>;
 export async function createOrder(
 	payload: CreateOrderPayload,
 ): Promise<CreateOrderResponse> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		// Validate payload before sending
 		const validationResult = createOrderPayloadSchema.safeParse(payload);
@@ -41,6 +48,17 @@ export async function createOrder(
 		// Validate response structure
 		const order = orderSchema.parse(response.data);
 
+		// Track order created (awaited to ensure completion in serverless)
+		await trackServer(
+			PURCHASE_EVENTS.ORDER_CREATED,
+			{
+				order_id: order.id,
+				raffle_id: payload.raffleId,
+				quantity: payload.ticketQuantity,
+			},
+			{ userId },
+		);
+
 		return success(order);
 	} catch (error) {
 		// Handle validation errors
@@ -50,6 +68,14 @@ export async function createOrder(
 		}
 
 		const errorCode = mapOrderError(error);
+
+		// Track order failed (awaited to ensure completion in serverless)
+		await trackServer(
+			PURCHASE_EVENTS.ORDER_FAILED,
+			{ raffle_id: payload.raffleId, error_code: errorCode },
+			{ userId },
+		);
+
 		return failure(errorCode);
 	}
 }

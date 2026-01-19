@@ -7,21 +7,33 @@
  * These utilities are compatible with both Node.js and Edge Runtime (middleware).
  */
 
+import { z } from 'zod';
+
 import type { AuthUser } from '@/types/auth';
+
+/**
+ * JWT Payload schema for validation
+ * Requires at least one of sub or id to be present
+ */
+const jwtPayloadSchema = z
+	.object({
+		sub: z.string().optional(),
+		id: z.string().optional(),
+		email: z.string(),
+		emailVerified: z.boolean(),
+		name: z.string(),
+		permissions: z.array(z.string()).optional(),
+		exp: z.number(),
+		iat: z.number(),
+	})
+	.refine(data => data.sub || data.id, {
+		message: 'JWT must contain either sub or id claim',
+	});
 
 /**
  * JWT Payload structure from backend
  */
-export interface JwtPayload {
-	sub: string; // User ID
-	id: string; // User ID (alternative)
-	email: string;
-	emailVerified: boolean;
-	name: string;
-	permissions?: string[];
-	exp: number; // Expiration timestamp (seconds)
-	iat: number; // Issued at timestamp (seconds)
-}
+export type JwtPayload = z.infer<typeof jwtPayloadSchema>;
 
 /**
  * Base64 URL decode - works in both Node.js and Edge Runtime
@@ -71,7 +83,8 @@ export function decodeJwt(token: string): JwtPayload {
 		}
 
 		const payloadJson = base64UrlDecode(payloadBase64);
-		return JSON.parse(payloadJson) as JwtPayload;
+		const parsed: unknown = JSON.parse(payloadJson);
+		return jwtPayloadSchema.parse(parsed);
 	} catch (error) {
 		const message =
 			error instanceof Error ? error.message : 'Unknown error';
@@ -105,8 +118,14 @@ export function isJwtExpired(token: string): boolean {
  * @returns AuthUser object for session/cookie storage
  */
 export function jwtPayloadToUser(payload: JwtPayload): AuthUser {
+	// Schema refinement guarantees at least one exists
+	const userId = payload.sub ?? payload.id;
+	if (!userId) {
+		throw new Error('JWT payload missing user id');
+	}
+
 	return {
-		id: payload.sub || payload.id,
+		id: userId,
 		email: payload.email,
 		emailVerified: payload.emailVerified,
 		name: payload.name,

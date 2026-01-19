@@ -33,9 +33,9 @@ import {
 	SELECTION_CHANGE_COMMAND,
 	TextNode,
 } from 'lexical';
+import Image from 'next/image';
 import { JSX, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
-// import brokenImage from '@/registry/new-york-v4/editor/images/image-broken.svg';
 import { ContentEditable } from '@/components/ui/editor/editor-ui/content-editable';
 import { ImageResizer } from '@/components/ui/editor/editor-ui/image-resizer';
 import { $isImageNode } from '@/components/ui/editor/nodes/image-node';
@@ -81,34 +81,93 @@ function LazyImage({
 	onError: () => void;
 }): JSX.Element {
 	useSuspenseImage(src);
+
+	const numericWidth = typeof width === 'number' ? width : 0;
+	const numericHeight = typeof height === 'number' ? height : 0;
+	const usesFill = width === 'inherit' || height === 'inherit';
+
+	if (usesFill) {
+		return (
+			<div
+				ref={node => {
+					if (imageRef) {
+						imageRef.current = node?.querySelector('img') ?? null;
+					}
+				}}
+				className="relative"
+				style={{
+					width: width === 'inherit' ? '100%' : width,
+					height: height === 'inherit' ? 'auto' : height,
+					maxWidth,
+					minHeight: 100,
+				}}
+			>
+				<Image
+					className={className || undefined}
+					src={src}
+					alt={altText}
+					fill
+					sizes={`(max-width: ${maxWidth}px) 100vw, ${maxWidth}px`}
+					style={{ objectFit: 'contain' }}
+					onError={onError}
+					draggable={false}
+					unoptimized
+				/>
+			</div>
+		);
+	}
+
 	return (
-		<img
-			className={className || undefined}
-			src={src}
-			alt={altText}
-			ref={imageRef}
-			style={{
-				height,
-				maxWidth,
-				width,
+		<div
+			ref={node => {
+				if (imageRef) {
+					imageRef.current = node?.querySelector('img') ?? null;
+				}
 			}}
-			onError={onError}
-			draggable="false"
-		/>
+			style={{ maxWidth }}
+		>
+			<Image
+				className={className || undefined}
+				src={src}
+				alt={altText}
+				width={numericWidth}
+				height={numericHeight}
+				style={{
+					width: numericWidth,
+					height: numericHeight,
+					maxWidth,
+				}}
+				onError={onError}
+				draggable={false}
+				unoptimized
+			/>
+		</div>
 	);
 }
 
 function BrokenImage(): JSX.Element {
 	return (
-		<img
-			src={''}
-			style={{
-				height: 200,
-				opacity: 0.2,
-				width: 200,
-			}}
-			draggable="false"
-		/>
+		<div
+			role="img"
+			aria-label="Broken image"
+			className="flex h-[200px] w-[200px] items-center justify-center bg-muted opacity-20"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="48"
+				height="48"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			>
+				<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+				<circle cx="9" cy="9" r="2" />
+				<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+			</svg>
+		</div>
 	);
 }
 
@@ -140,7 +199,7 @@ export default function ImageComponent({
 	const [isSelected, setSelected, clearSelection] =
 		useLexicalNodeSelection(nodeKey);
 	const [isResizing, setIsResizing] = useState<boolean>(false);
-	const { isCollabActive } = useCollaborationContext();
+	useCollaborationContext();
 	const [editor] = useLexicalComposerContext();
 	const [selection, setSelection] = useState<BaseSelection | null>(null);
 	const activeEditorRef = useRef<LexicalEditor | null>(null);

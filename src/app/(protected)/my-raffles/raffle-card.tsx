@@ -5,7 +5,7 @@ import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useUserStore } from '@/providers/user-store-provider';
-import { Raffle, RAFFLE_STATUS, RaffleStatus } from '@/types/raffle';
+import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
 import { CheckCircle2, Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -179,7 +179,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 					<span className="text-sm font-medium text-gray-500">
 						{formatDaysLeft(daysLeft)}
 					</span>
-					{getStatusBadge(raffle.status as RaffleStatus)}
+					{getStatusBadge(raffle.status)}
 				</div>
 
 				<div className="mb-2 flex items-center justify-between text-sm">

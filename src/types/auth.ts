@@ -1,68 +1,107 @@
-export interface AuthUser {
-	id: string;
-	email: string;
-	emailVerified: boolean;
-	name: string;
-	image?: string | null;
-	permissions?: string[];
-}
+import { z } from 'zod';
 
-export interface AuthSession {
-	user: AuthUser;
-	token: string;
-	expiresAt: string;
-}
-
-export interface SignInInput {
-	email: string;
-	password: string;
-}
-
-export interface SignUpInput {
-	email: string;
-	password: string;
-	name: string;
-}
-
-export interface UpdateProfileInput {
-	name?: string;
-	bio?: string;
-	username?: string;
-}
+// ==========================================
+// Constants
+// ==========================================
 
 /**
  * Supported social login providers
  */
-export type SocialProvider = 'google';
+export const SOCIAL_PROVIDERS = {
+	GOOGLE: 'google',
+} as const;
+
+// ==========================================
+// Schemas
+// ==========================================
 
 /**
- * Input for initiating social sign-in
+ * Schema for authenticated user data
+ * Stored in session cookies after authentication
  */
-export interface SocialSignInInput {
-	provider: SocialProvider;
-	callbackURL?: string;
-}
+export const authUserSchema = z.object({
+	id: z.string(),
+	email: z.string(),
+	emailVerified: z.boolean(),
+	name: z.string(),
+	image: z.string().nullable().optional(),
+	permissions: z.array(z.string()).optional(),
+});
 
 /**
- * Response from social sign-in initiation
+ * Schema for authentication session
+ * Contains user data, JWT token, and expiration
  */
-export interface SocialSignInResponse {
-	redirect: boolean;
-	url: string;
-}
+export const authSessionSchema = z.object({
+	user: authUserSchema,
+	token: z.string(),
+	expiresAt: z.string(),
+});
 
 /**
- * Input for requesting password reset email
+ * Schema for sign-in credentials
  */
-export interface RequestPasswordResetInput {
-	email: string;
-	redirectTo?: string;
-}
+export const signInInputSchema = z.object({
+	email: z.email(),
+	password: z.string().min(1),
+});
 
 /**
- * Input for resetting password with token
+ * Schema for sign-up registration data
  */
-export interface ResetPasswordInput {
-	token: string;
-	newPassword: string;
-}
+export const signUpInputSchema = z.object({
+	email: z.email(),
+	password: z.string().min(8),
+	name: z.string().min(1),
+});
+
+/**
+ * Schema for social login provider
+ */
+export const socialProviderSchema = z.enum([SOCIAL_PROVIDERS.GOOGLE]);
+
+/**
+ * Schema for social sign-in initiation request
+ */
+export const socialSignInInputSchema = z.object({
+	provider: socialProviderSchema,
+	callbackURL: z.url().optional(),
+});
+
+/**
+ * Schema for social sign-in initiation response
+ */
+export const socialSignInResponseSchema = z.object({
+	redirect: z.boolean(),
+	url: z.url(),
+});
+
+/**
+ * Schema for requesting password reset email
+ */
+export const requestPasswordResetInputSchema = z.object({
+	email: z.email(),
+	redirectTo: z.string().optional(),
+});
+
+/**
+ * Schema for resetting password with token
+ */
+export const resetPasswordInputSchema = z.object({
+	token: z.string(),
+	newPassword: z.string().min(8),
+});
+
+// ==========================================
+// Inferred Types
+// ==========================================
+
+export type AuthUser = z.infer<typeof authUserSchema>;
+export type AuthSession = z.infer<typeof authSessionSchema>;
+export type SignInInput = z.infer<typeof signInInputSchema>;
+export type SignUpInput = z.infer<typeof signUpInputSchema>;
+export type SocialProvider = z.infer<typeof socialProviderSchema>;
+export type SocialSignInInput = z.infer<typeof socialSignInInputSchema>;
+export type SocialSignInResponse = z.infer<typeof socialSignInResponseSchema>;
+export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetInputSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>;

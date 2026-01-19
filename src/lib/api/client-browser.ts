@@ -1,15 +1,29 @@
+/**
+ * Browser-side API client (OAuth flows only)
+ *
+ * SECURITY - NO S2S SECRET:
+ * ─────────────────────────
+ * DevTools network tab exposes all headers - secrets here would leak.
+ * Backend must use connection IP directly (not X-Client-IP).
+ * Only used for OAuth where cross-origin cookies are required.
+ *
+ * USAGE:
+ * ──────
+ * Only import this in 'use client' components for OAuth flows.
+ * For all other API calls, use server actions with baseClient/authenticatedClient.
+ */
+
 import axios, { type AxiosInstance } from 'axios';
 
 import { clientEnv } from '@/env/client';
 
 /**
- * Browser-side base client
- * Used for client components that need to make API requests
- * Includes credentials for cross-origin cookie support (OAuth flows)
+ * Browser-side axios instance for OAuth flows
  *
- * IMPORTANT: This client is for browser-only use cases where:
- * - Cross-origin cookies must be sent (OAuth flows)
- * - Server actions cannot access backend cookies
+ * Features:
+ * - withCredentials: Sends cookies cross-origin (required for OAuth)
+ * - No S2S secret (would be exposed in browser)
+ * - Uses public backend URL from client env
  */
 const browserClient: AxiosInstance = axios.create({
 	baseURL: clientEnv.NEXT_PUBLIC_BACKEND_URL,

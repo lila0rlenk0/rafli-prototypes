@@ -1,25 +1,21 @@
-import { useMemo, useRef } from "react"
-import { debounce } from "lodash"
+import { useEffect, useMemo } from "react"
+import { debounce, type DebouncedFunc } from "lodash"
 
-export function useDebounce<T extends (...args: never[]) => void>(
+export function useDebounce<T extends (...args: Parameters<T>) => void>(
   fn: T,
   ms: number,
   maxWait?: number
-) {
-  const funcRef = useRef<T | null>(null)
-  funcRef.current = fn
-
-  return useMemo(
-    () =>
-      debounce(
-        (...args: Parameters<T>) => {
-          if (funcRef.current) {
-            funcRef.current(...args)
-          }
-        },
-        ms,
-        { maxWait }
-      ),
-    [ms, maxWait]
+): DebouncedFunc<T> {
+  const debouncedFn = useMemo(
+    () => debounce(fn, ms, { maxWait }),
+    [fn, ms, maxWait]
   )
+
+  useEffect(() => {
+    return () => {
+      debouncedFn.cancel()
+    }
+  }, [debouncedFn])
+
+  return debouncedFn
 }

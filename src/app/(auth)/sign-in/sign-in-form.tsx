@@ -9,7 +9,7 @@ import {
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { browserClient } from '@/lib/api/client-browser';
+import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
 import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
@@ -98,34 +98,22 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	/**
 	 * Handles Google sign-in button click
 	 * Initiates OAuth flow by redirecting to Google
-	 *
-	 * IMPORTANT: This request MUST be made directly from the browser (not via server action)
-	 * because better-auth sets a state cookie that needs to be stored in the browser.
-	 * Using a server action would store the cookie on the Next.js server instead.
 	 */
 	async function handleGoogleSignIn() {
 		setIsSocialPending(true);
-		try {
-			const callbackURL = `${window.location.origin}/auth/callback`;
 
-			// Make request directly from browser to receive state cookies
-			const response = await browserClient.post<{ url?: string }>(
-				'/api/auth/sign-in/social',
-				{ provider: 'google', callbackURL },
-			);
+		const result = await initiateSocialSignIn({
+			provider: 'google',
+			callbackURL: `${window.location.origin}/auth/callback`,
+		});
 
-			if (!response.data.url) {
-				setError('root', { message: 'Failed to initiate Google sign in.' });
-				setIsSocialPending(false);
-				return;
-			}
-
-			// Redirect to OAuth provider (Google)
-			window.location.href = response.data.url;
-		} catch {
-			setError('root', { message: 'Failed to initiate Google sign in.' });
+		if (!result.success) {
+			setError('root', { message: getErrorMessage(result.error) });
 			setIsSocialPending(false);
+			return;
 		}
+
+		window.location.href = result.data.url;
 	}
 
 	return (

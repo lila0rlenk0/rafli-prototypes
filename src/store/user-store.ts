@@ -107,10 +107,9 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 					}
 					return localStorage;
 				}),
-				partialize: state =>
-					({
-						mode: state.mode, // Only persist mode preference
-					}) as UserStore,
+				partialize: (state): Pick<UserStoreState, 'mode'> => ({
+					mode: state.mode, // Only persist mode preference
+				}),
 			},
 		),
 	);

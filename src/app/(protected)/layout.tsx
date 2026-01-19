@@ -1,3 +1,5 @@
+import { Suspense, type ReactNode } from 'react';
+
 import { BackgroundCubeLeft } from '@/assets/background-cubes/background-cube-left';
 import { BackgroundCubeRight } from '@/assets/background-cubes/background-cube-right';
 import { AuthGuard } from '@/components/auth/auth-guard';
@@ -5,10 +7,21 @@ import { Navbar } from '@/components/ui/navbar';
 import { Spinner } from '@/components/ui/spinner';
 import { getSession } from '@/lib/auth/session';
 import { UserStoreProvider } from '@/providers/user-store-provider';
-import { ReactNode, Suspense } from 'react';
+import { permissionSchema, type Permission } from '@/types/user-mode';
 
 interface ProtectedLayoutProps {
 	children: ReactNode;
+}
+
+/**
+ * Validates and filters permissions from session
+ * Only includes valid Permission values, discards unknown permissions
+ */
+function parsePermissions(rawPermissions: string[] | undefined): Permission[] {
+	if (!rawPermissions) return [];
+	return rawPermissions.filter(
+		(p): p is Permission => permissionSchema.safeParse(p).success,
+	);
 }
 
 /**
@@ -21,7 +34,7 @@ interface ProtectedLayoutProps {
  */
 async function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
 	const session = await getSession();
-	const permissions = session?.user?.permissions || [];
+	const permissions = parsePermissions(session?.user?.permissions);
 
 	return (
 		<AuthGuard>

@@ -20,7 +20,7 @@ export const UserStoreContext = createContext<UserStoreApi | undefined>(
 
 export interface UserStoreProviderProps {
 	children: ReactNode;
-	permissions: string[];
+	permissions: Permission[];
 }
 
 /**
@@ -37,25 +37,19 @@ export function UserStoreProvider({
 	children,
 	permissions,
 }: UserStoreProviderProps) {
-	const [store] = useState(() => {
-		const newStore = createUserStore({
-			mode: USER_MODE.PARTICIPANT, // Will be overridden by localStorage
-			permissions: permissions as Permission[], // Always from server
-		});
-
-		// Immediately set permissions from server (before any render)
-		// This ensures permissions are correct even on first render
-		newStore.getState().setPermissions(permissions as Permission[]);
-
-		return newStore;
-	});
+	const [store] = useState(() =>
+		createUserStore({
+			mode: USER_MODE.PARTICIPANT, // Will be overridden by localStorage via persist
+			permissions, // Always from server (never from localStorage)
+		}),
+	);
 
 	/**
 	 * Sync permissions from server when they change
-	 * This handles cases where user logs in with different account
+	 * Handles: user switching accounts, permissions updated server-side
 	 */
 	useEffect(() => {
-		store.getState().setPermissions(permissions as Permission[]);
+		store.getState().setPermissions(permissions);
 	}, [permissions, store]);
 
 	return (

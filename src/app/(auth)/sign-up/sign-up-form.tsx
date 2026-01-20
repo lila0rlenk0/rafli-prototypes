@@ -42,6 +42,8 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 		case AUTH_ERROR_CODES.SIGNUP_FAILED:
 			// Generic message to prevent user enumeration
 			return 'Unable to create account. Please try again or sign in.';
+		case AUTH_ERROR_CODES.PASSWORD_COMPROMISED:
+			return 'This password has appeared in data breaches. Please choose a different one.';
 		case AUTH_ERROR_CODES.SOCIAL_LOGIN_FAILED:
 		case AUTH_ERROR_CODES.SOCIAL_PROVIDER_ERROR:
 		case AUTH_ERROR_CODES.SOCIAL_CALLBACK_FAILED:

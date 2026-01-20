@@ -23,7 +23,8 @@ interface PageProps {
  */
 export default async function MyRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
-	const status = parseRaffleStatus(params.status); // Can be single status or comma-separated statuses
+	// Default to 'live' status when no status param (Live tab is active by default)
+	const status = parseRaffleStatus(params.status) ?? RAFFLE_STATUS.LIVE;
 	const page = parsePage(params.page);
 
 	const response = await getMyRaffles({

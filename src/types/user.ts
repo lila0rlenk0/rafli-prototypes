@@ -43,6 +43,33 @@ export const uploadAvatarResponseSchema = z.object({
 // Inferred Types
 // ==========================================
 
+/**
+ * Schema for updating user profile
+ * Used by PUT /me endpoint
+ */
+export const updateMePayloadSchema = z.object({
+	bio: z.string().max(500).optional(),
+});
+
+/**
+ * Schema for PUT /me response
+ * Backend returns a simplified structure compared to GET /me
+ */
+export const updateMeResponseSchema = z.object({
+	id: z.string(),
+	email: z.string(),
+	name: z.string(),
+	username: z.string().nullable(),
+	image: z.string().nullable(),
+	bio: z.string().nullable(),
+});
+
+// ==========================================
+// Inferred Types
+// ==========================================
+
 export type MeResponse = z.infer<typeof meResponseSchema>;
 export type ImageObject = z.infer<typeof imageSchema>;
 export type UploadAvatarResponse = z.infer<typeof uploadAvatarResponseSchema>;
+export type UpdateMePayload = z.infer<typeof updateMePayloadSchema>;
+export type UpdateMeResponse = z.infer<typeof updateMeResponseSchema>;

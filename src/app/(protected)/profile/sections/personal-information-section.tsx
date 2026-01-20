@@ -1,6 +1,6 @@
 import { AuthUser } from '@/types/auth';
-import { Pencil } from 'lucide-react';
 import { EditableAvatar } from './editable-avatar';
+import { EditableBio } from './editable-bio';
 
 /**
  * Props for the PersonalInformationSection component
@@ -74,15 +74,6 @@ export function PersonalInformationSection({
 	}
 
 	/**
-	 * Gets the user's bio
-	 *
-	 * @returns The user's bio or null if not available
-	 */
-	function getUserBio(): string | null {
-		return bio ?? null;
-	}
-
-	/**
 	 * Gets the user's avatar image URL
 	 *
 	 * @returns The avatar image URL or null if not available
@@ -96,10 +87,6 @@ export function PersonalInformationSection({
 			className="relative flex w-full flex-col gap-4 rounded-2xl bg-white p-8"
 			id="personal-information"
 		>
-			<div className="absolute top-8 right-8 hidden">
-				<Pencil className="size-4" />
-			</div>
-
 			<EditableAvatar
 				avatarUrl={getUserAvatarUrl()}
 				initials={getUserInitials()}
@@ -119,15 +106,7 @@ export function PersonalInformationSection({
 				</div>
 			</div>
 
-			<div className="flex flex-col gap-1">
-				<span className="text-sm">Bio</span>
-				<span
-					data-bio={!!getUserBio()}
-					className="data-[bio=false]:text-muted-foreground"
-				>
-					{getUserBio() ? getUserBio() : 'No bio yet'}
-				</span>
-			</div>
+			<EditableBio bio={bio} />
 		</div>
 	);
 }

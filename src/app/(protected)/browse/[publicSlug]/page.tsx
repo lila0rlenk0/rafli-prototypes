@@ -21,6 +21,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ComponentProps } from 'react';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
+import { BugIcon } from '@/assets/icons/bug-icon';
 
 interface PageProps {
 	params: Promise<{
@@ -46,13 +47,23 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 	if (!response.success) {
 		return (
-			<div className="flex h-[50vh] w-full items-center justify-center">
-				<div className="text-center">
-					<h3 className="text-lg font-medium text-red-600">
-						Error loading raffle
-					</h3>
-					<p className="mt-2 text-gray-500">Failed to load raffle details</p>
-				</div>
+			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 text-center">
+				<BugIcon />
+
+				<hgroup className="space-y-4">
+					<h2 className="text-xl font-semibold">Error loading raffle</h2>
+					<p className="mt-2 text-lg">
+						Something went wrong while trying to load the details for this
+						raffle.
+					</p>
+				</hgroup>
+
+				<Link
+					href="/my-raffles"
+					className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
+				>
+					My Raffles
+				</Link>
 			</div>
 		);
 	}

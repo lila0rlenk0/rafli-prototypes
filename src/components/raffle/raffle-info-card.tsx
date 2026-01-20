@@ -135,7 +135,7 @@ export function RaffleInfoCard({
 						<p>{getMyTotalTickets()}</p>
 					</div>
 
-					{myTicketCodes.length === 0 && (
+					{myTicketCodes.length > 0 && (
 						<div className="grid w-full grid-cols-1 gap-2 md:w-84 md:grid-cols-2">
 							{myTicketCodes.map(ticket => (
 								<div

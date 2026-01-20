@@ -23,7 +23,8 @@ interface PageProps {
  */
 export default async function MyRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
-	const status = parseRaffleStatus(params.status);
+	// Default to 'live' status when no status param (Live tab is active by default)
+	const status = parseRaffleStatus(params.status) ?? RAFFLE_STATUS.LIVE;
 	const page = parsePage(params.page);
 
 	const response = await getMyRaffles({
@@ -46,19 +47,25 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 	}
 
 	const { raffles } = response.data;
-	const currentStatus = status || RAFFLE_STATUS.LIVE;
+	const statusList = status ? status.split(',') : [];
 
 	// Determine message based on status
 	function getEmptyMessage() {
-		if (currentStatus === RAFFLE_STATUS.QUEUED) {
+		// Check if any status in the list is scheduled (draft or queued)
+		if (
+			statusList.includes(RAFFLE_STATUS.DRAFT) ||
+			statusList.includes(RAFFLE_STATUS.QUEUED)
+		) {
 			return {
 				title: 'No scheduled raffles',
 				description: "You don't have any scheduled raffles yet.",
 			};
 		}
+		// Check if any status in the list is ended (cancelled, completed, or ended)
 		if (
-			currentStatus === RAFFLE_STATUS.ENDED ||
-			currentStatus === RAFFLE_STATUS.COMPLETED
+			statusList.includes(RAFFLE_STATUS.CANCELLED) ||
+			statusList.includes(RAFFLE_STATUS.COMPLETED) ||
+			statusList.includes(RAFFLE_STATUS.ENDED)
 		) {
 			return {
 				title: 'No ended raffles',

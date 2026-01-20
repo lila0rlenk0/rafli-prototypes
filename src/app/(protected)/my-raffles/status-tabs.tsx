@@ -81,7 +81,7 @@ export function StatusTabs() {
 				type="button"
 				onClick={handleScheduledClick}
 				className={cn(
-					'relative px-2 text-center text-lg leading-none font-semibold',
+					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
 					'text-[rgba(15,15,15,0.95)] transition-colors',
 					'hover:text-black',
 				)}
@@ -97,7 +97,7 @@ export function StatusTabs() {
 				type="button"
 				onClick={() => handleStatusChange(RAFFLE_STATUS.LIVE)}
 				className={cn(
-					'relative px-2 text-center text-lg leading-none font-semibold',
+					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
 					'text-[rgba(15,15,15,0.95)] transition-colors',
 					'hover:text-black',
 				)}
@@ -113,7 +113,7 @@ export function StatusTabs() {
 				type="button"
 				onClick={handleEndedClick}
 				className={cn(
-					'relative px-2 text-center text-lg leading-none font-semibold',
+					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
 					'text-[rgba(15,15,15,0.95)] transition-colors',
 					'hover:text-black',
 				)}

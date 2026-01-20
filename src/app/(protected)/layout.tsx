@@ -1,7 +1,5 @@
 import { Suspense, type ReactNode } from 'react';
 
-import { BackgroundCubeLeft } from '@/assets/background-cubes/background-cube-left';
-import { BackgroundCubeRight } from '@/assets/background-cubes/background-cube-right';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { Navbar } from '@/components/ui/navbar';
 import { Spinner } from '@/components/ui/spinner';
@@ -64,8 +62,8 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
 			>
 				<ProtectedLayoutContent>{children}</ProtectedLayoutContent>
 			</Suspense>
-			<BackgroundCubeLeft className="absolute bottom-0 left-0 z-[-1] origin-bottom-left scale-[0.76]" />
-			<BackgroundCubeRight className="absolute right-0 bottom-0 z-[-1] origin-bottom-right scale-[0.76]" />
+			{/*<BackgroundCubeLeft className="absolute bottom-0 left-0 z-[-1] origin-bottom-left scale-[0.76]" />
+			<BackgroundCubeRight className="absolute right-0 bottom-0 z-[-1] origin-bottom-right scale-[0.76]" />*/}
 		</div>
 	);
 }

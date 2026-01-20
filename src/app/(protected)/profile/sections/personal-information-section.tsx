@@ -1,12 +1,14 @@
 import { AuthUser } from '@/types/auth';
 import { Pencil } from 'lucide-react';
-import Image from 'next/image';
+import { EditableAvatar } from './editable-avatar';
 
 /**
  * Props for the PersonalInformationSection component
  */
 interface PersonalInformationSectionProps {
 	user?: AuthUser;
+	avatarUrl?: string | null;
+	bio?: string | null;
 }
 
 /**
@@ -21,6 +23,8 @@ interface PersonalInformationSectionProps {
  */
 export function PersonalInformationSection({
 	user,
+	avatarUrl,
+	bio,
 }: PersonalInformationSectionProps) {
 	/**
 	 * Gets the user's display name
@@ -72,25 +76,19 @@ export function PersonalInformationSection({
 	/**
 	 * Gets the user's bio
 	 *
-	 * TODO: Get the bio from `/me` endpoint
-	 *
 	 * @returns The user's bio or null if not available
 	 */
 	function getUserBio(): string | null {
-		// TODO: Get the bio from `/me` endpoint
-		return null;
+		return bio ?? null;
 	}
 
 	/**
 	 * Gets the user's avatar image URL
 	 *
-	 * TODO: Get the avatarUrl from `/me` endpoint
-	 *
 	 * @returns The avatar image URL or null if not available
 	 */
 	function getUserAvatarUrl(): string | null {
-		// TODO: Get the avatarUrl from `/me` endpoint
-		return null;
+		return avatarUrl ?? null;
 	}
 
 	return (
@@ -102,21 +100,11 @@ export function PersonalInformationSection({
 				<Pencil className="size-4" />
 			</div>
 
-			<div className="relative h-[85px] w-[85px]">
-				{getUserAvatarUrl() ? (
-					<Image
-						src={getUserAvatarUrl() ?? ''}
-						alt="Profile avatar"
-						width={85}
-						height={85}
-						className="rounded-full object-cover"
-					/>
-				) : (
-					<div className="flex size-full items-center justify-center rounded-full bg-gray-200">
-						<span className="text-2xl font-semibold">{getUserInitials()}</span>
-					</div>
-				)}
-			</div>
+			<EditableAvatar
+				avatarUrl={getUserAvatarUrl()}
+				initials={getUserInitials()}
+				size={85}
+			/>
 
 			<div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
 				<div className="flex flex-col gap-1">

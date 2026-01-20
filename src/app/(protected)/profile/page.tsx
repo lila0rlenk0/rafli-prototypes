@@ -1,4 +1,5 @@
 import { getSession } from '@/lib/auth/session';
+import { getMe } from '@/services/user/get-me';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { ProfileSidebar } from './profile-sidebar';
@@ -28,6 +29,10 @@ export default async function ProfilePage() {
 	const session = await getSession();
 	const user = session?.user;
 
+	// Fetch full user profile data including avatar and bio
+	const meResult = await getMe();
+	const userProfile = meResult.success ? meResult.data : null;
+
 	return (
 		<div className="flex flex-col gap-8 px-4">
 			{/* Main Content Layout */}
@@ -46,7 +51,11 @@ export default async function ProfilePage() {
 					</div>
 
 					{/* Personal Information */}
-					<PersonalInformationSection user={user} />
+					<PersonalInformationSection
+						user={user}
+						avatarUrl={userProfile?.avatarUrl ?? null}
+						bio={userProfile?.bio ?? null}
+					/>
 				</div>
 			</div>
 		</div>

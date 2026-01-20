@@ -51,7 +51,7 @@ export const signInInputSchema = z.object({
  */
 export const signUpInputSchema = z.object({
 	email: z.email(),
-	password: z.string().min(8),
+	password: z.string().min(12),
 	name: z.string().min(1),
 });
 
@@ -89,7 +89,15 @@ export const requestPasswordResetInputSchema = z.object({
  */
 export const resetPasswordInputSchema = z.object({
 	token: z.string(),
-	newPassword: z.string().min(8),
+	newPassword: z.string().min(12),
+});
+
+/**
+ * Schema for changing password (authenticated users)
+ */
+export const changePasswordInputSchema = z.object({
+	currentPassword: z.string().min(1),
+	newPassword: z.string().min(12),
 });
 
 // ==========================================
@@ -105,3 +113,4 @@ export type SocialSignInInput = z.infer<typeof socialSignInInputSchema>;
 export type SocialSignInResponse = z.infer<typeof socialSignInResponseSchema>;
 export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetInputSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordInputSchema>;

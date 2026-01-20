@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { getCategoryId } from '@/constants/categories';
+import { getCheckInQuestionId } from '@/constants/check-in-questions';
 import { computeRaffleDiff, hasRaffleChanges } from '@/lib/utils/raffle-diff';
 import { updateRaffle } from '@/services/raffle/update-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
@@ -85,7 +86,8 @@ function hasFormChanges(
 		formData.pricePerTicket !== originalDefaults.pricePerTicket ||
 		formData.numberOfWinners !== originalDefaults.numberOfWinners ||
 		formData.minParticipants !== originalDefaults.minParticipants ||
-		formData.maxParticipants !== originalDefaults.maxParticipants
+		formData.maxParticipants !== originalDefaults.maxParticipants ||
+		formData.checkInQuestion !== originalDefaults.checkInQuestion
 	);
 }
 
@@ -207,8 +209,20 @@ export function EditFormProvider({
 					return;
 				}
 
+				const checkInQuestionId = getCheckInQuestionId(data.checkInQuestion);
+				if (!checkInQuestionId) {
+					toast.error('Invalid check-in question selected');
+					setIsUpdating(false);
+					return;
+				}
+
 				// Check if there are any field changes (excluding images)
-				const hasFieldChanges = hasRaffleChanges(raffle, data, categoryId);
+				const hasFieldChanges = hasRaffleChanges(
+					raffle,
+					data,
+					categoryId,
+					checkInQuestionId,
+				);
 				const hasNewImages =
 					data.coverImage && data.coverImage.length > 0;
 
@@ -220,7 +234,12 @@ export function EditFormProvider({
 				}
 
 				// Compute diff for partial update
-				const diff = computeRaffleDiff(raffle, data, categoryId);
+				const diff = computeRaffleDiff(
+					raffle,
+					data,
+					categoryId,
+					checkInQuestionId,
+				);
 
 				// Only call update if there are field changes
 				if (Object.keys(diff).length > 0) {

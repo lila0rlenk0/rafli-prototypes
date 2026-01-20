@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,6 +10,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { CHECK_IN_QUESTIONS } from '@/constants/check-in-questions';
 import {
 	CircleDashed,
 	Clock,
@@ -45,15 +47,17 @@ export function TicketsStep() {
 	const numberOfWinners = watch('numberOfWinners');
 	const minParticipants = watch('minParticipants');
 	const maxParticipants = watch('maxParticipants');
+	const checkInQuestion = watch('checkInQuestion');
 
 	// Check if any field in this step is filled
 	const hasFilledFields = Boolean(
 		startDate ||
-			endDate ||
-			(pricePerTicket && pricePerTicket > 0) ||
-			(numberOfWinners && numberOfWinners > 0) ||
-			(minParticipants && minParticipants > 0) ||
-			(maxParticipants && maxParticipants > 0),
+		endDate ||
+		(pricePerTicket && pricePerTicket > 0) ||
+		(numberOfWinners && numberOfWinners > 0) ||
+		(minParticipants && minParticipants > 0) ||
+		(maxParticipants && maxParticipants > 0) ||
+		checkInQuestion,
 	);
 
 	/**
@@ -127,6 +131,7 @@ export function TicketsStep() {
 		Boolean(numberOfWinners && numberOfWinners > 0) &&
 		Boolean(minParticipants && minParticipants > 0) &&
 		Boolean(maxParticipants && maxParticipants > 0) &&
+		Boolean(checkInQuestion) &&
 		isDateRangeValid &&
 		hasMinimum30DaysGap &&
 		!errors.startDate &&
@@ -134,7 +139,8 @@ export function TicketsStep() {
 		!errors.pricePerTicket &&
 		!errors.numberOfWinners &&
 		!errors.minParticipants &&
-		!errors.maxParticipants;
+		!errors.maxParticipants &&
+		!errors.checkInQuestion;
 
 	// Clear only this step's fields (respecting restrictions)
 	function handleClearAll() {
@@ -148,6 +154,7 @@ export function TicketsStep() {
 		setValue('numberOfWinners', 0);
 		setValue('minParticipants', 0);
 		setValue('maxParticipants', 0);
+		setValue('checkInQuestion', '');
 	}
 
 	// Handle continue with validation
@@ -160,6 +167,7 @@ export function TicketsStep() {
 			'numberOfWinners',
 			'minParticipants',
 			'maxParticipants',
+			'checkInQuestion',
 		]);
 
 		if (isValid) {
@@ -393,6 +401,39 @@ export function TicketsStep() {
 						</div>
 					</div>
 				)}
+			</div>
+
+			{/* Participant Check-in Question section */}
+			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+				<div className="flex flex-col gap-2">
+					<h2 className="text-xl font-semibold">Participant Check-in Question</h2>
+					<p className="text-sm text-gray-600">
+						Choose a simple question participants will answer before joining your
+						raffle. This helps confirm real participation and keeps entries fair.
+					</p>
+				</div>
+
+				<div className="flex flex-col gap-2 max-w-[420px]">
+					<label htmlFor="checkInQuestion" className="font-medium">
+						Question
+					</label>
+					<Combobox
+						options={CHECK_IN_QUESTIONS.map(q => ({
+							value: q.value,
+							label: q.label,
+						}))}
+						value={checkInQuestion}
+						onValueChange={value => setValue('checkInQuestion', value)}
+						placeholder="Select question"
+						searchPlaceholder="Search question..."
+						emptyText="No question found."
+					/>
+					{touchedFields.checkInQuestion && errors.checkInQuestion && (
+						<span className="text-sm text-red-500">
+							{errors.checkInQuestion.message}
+						</span>
+					)}
+				</div>
 
 				<div className="flex items-center gap-2">
 					<Button

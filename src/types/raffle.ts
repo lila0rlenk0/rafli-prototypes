@@ -115,6 +115,7 @@ export const raffleSchema = z.object({
 	hostId: z.string(),
 	drawId: z.number().optional(),
 	raffleNumber: z.number().optional(),
+	questionId: z.string().optional(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	host: hostSchema.optional(),
@@ -152,6 +153,7 @@ export const createRaffleInputSchema = z.object({
 	numberOfWinners: z.number(),
 	minParticipants: z.number(),
 	maxParticipants: z.number(),
+	checkInQuestion: z.string(),
 	timezone: z.string(),
 });
 
@@ -162,6 +164,7 @@ export const createRaffleInputSchema = z.object({
  */
 export const createRafflePayloadSchema = z.object({
 	categoryId: z.uuid(),
+	questionId: z.uuid(),
 	coverMediaUrl: z.string().max(500),
 	declaredValueAmount: z.string().regex(/^\d+(\.\d{1,4})?$/),
 	declaredValueCurrency: z.string().length(3),
@@ -197,6 +200,7 @@ export const updateRafflePayloadSchema = z.object({
 	description: z.string().min(10).max(5_000).optional(),
 	declaredValueAmount: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(),
 	categoryId: z.uuid().optional(),
+	questionId: z.uuid().optional(),
 	startAt: z.iso.datetime().optional(),
 	endAt: z.iso.datetime().optional(),
 	ticketPriceAmount: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(),

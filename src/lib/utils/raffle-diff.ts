@@ -1,3 +1,4 @@
+import { getCheckInQuestionId } from '@/constants/check-in-questions';
 import type { Raffle, UpdateRafflePayload } from '@/types/raffle';
 
 /**
@@ -14,6 +15,7 @@ interface EditFormData {
 	numberOfWinners: number;
 	minParticipants: number;
 	maxParticipants: number;
+	checkInQuestion: string;
 }
 
 /**
@@ -23,12 +25,14 @@ interface EditFormData {
  * @param original - The original raffle from the API
  * @param current - The current form data
  * @param categoryId - The category ID resolved from the category name
+ * @param checkInQuestionId - The check-in question ID resolved from the question value
  * @returns UpdateRafflePayload with only changed fields
  */
 export function computeRaffleDiff(
 	original: Raffle,
 	current: EditFormData,
 	categoryId: string,
+	checkInQuestionId: string,
 ): UpdateRafflePayload {
 	const diff: UpdateRafflePayload = {};
 
@@ -86,6 +90,12 @@ export function computeRaffleDiff(
 		diff.maxParticipants = current.maxParticipants;
 	}
 
+	// Compare check-in question
+	const originalQuestionId = original.questionId || '';
+	if (checkInQuestionId !== originalQuestionId) {
+		diff.questionId = checkInQuestionId;
+	}
+
 	return diff;
 }
 
@@ -95,13 +105,15 @@ export function computeRaffleDiff(
  * @param original - The original raffle from the API
  * @param current - The current form data
  * @param categoryId - The category ID resolved from the category name
+ * @param checkInQuestionId - The check-in question ID resolved from the question value
  * @returns true if there are changes, false otherwise
  */
 export function hasRaffleChanges(
 	original: Raffle,
 	current: EditFormData,
 	categoryId: string,
+	checkInQuestionId: string,
 ): boolean {
-	const diff = computeRaffleDiff(original, current, categoryId);
+	const diff = computeRaffleDiff(original, current, categoryId, checkInQuestionId);
 	return Object.keys(diff).length > 0;
 }

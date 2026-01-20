@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
+import { getCheckInQuestionId } from '@/constants/check-in-questions';
 import { createRaffle } from '@/services/raffle/create-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
@@ -97,6 +98,7 @@ export function MultiStepFormProvider({
 			numberOfWinners: 0,
 			minParticipants: 0,
 			maxParticipants: 0,
+			checkInQuestion: '',
 		},
 	});
 
@@ -118,6 +120,7 @@ export function MultiStepFormProvider({
 			formValues.numberOfWinners !== 0 ||
 			formValues.minParticipants !== 0 ||
 			formValues.maxParticipants !== 0 ||
+			formValues.checkInQuestion !== '' ||
 			(formValues.coverImage?.length ?? 0) > 0
 		);
 	}
@@ -144,6 +147,7 @@ export function MultiStepFormProvider({
 			numberOfWinners: draft.numberOfWinners,
 			minParticipants: draft.minParticipants,
 			maxParticipants: draft.maxParticipants,
+			checkInQuestion: draft.checkInQuestion || '',
 		});
 
 		setCurrentStep(draft.currentStep);
@@ -186,6 +190,7 @@ export function MultiStepFormProvider({
 				numberOfWinners: values.numberOfWinners,
 				minParticipants: values.minParticipants,
 				maxParticipants: values.maxParticipants,
+				checkInQuestion: values.checkInQuestion,
 				currentStep,
 			},
 			currentStep,
@@ -249,6 +254,13 @@ export function MultiStepFormProvider({
 		try {
 			const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+			const checkInQuestionId = getCheckInQuestionId(data.checkInQuestion);
+			if (!checkInQuestionId) {
+				toast.error('Invalid check-in question selected');
+				setIsCreating(false);
+				return;
+			}
+
 			const result = await createRaffle({
 				title: data.title,
 				description: data.description,
@@ -260,6 +272,7 @@ export function MultiStepFormProvider({
 				numberOfWinners: data.numberOfWinners,
 				minParticipants: data.minParticipants,
 				maxParticipants: data.maxParticipants,
+				checkInQuestion: data.checkInQuestion,
 				timezone: userTimezone,
 			});
 

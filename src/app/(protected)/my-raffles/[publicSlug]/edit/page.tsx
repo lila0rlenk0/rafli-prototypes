@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { ComponentProps } from 'react';
 
 import { getCategoryValue } from '@/constants/categories';
+import { getCheckInQuestionValue } from '@/constants/check-in-questions';
 import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleCover } from '@/services/raffle/get-raffle-cover';
@@ -59,6 +60,12 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 	// Get category value from categoryId
 	const category = getCategoryValue(raffle.categoryId) || '';
 
+	// Get check-in question value from questionId (if exists)
+	const checkInQuestion =
+		raffle.questionId
+			? getCheckInQuestionValue(raffle.questionId) || ''
+			: '';
+
 	return {
 		title: raffle.title,
 		description: raffle.description,
@@ -71,6 +78,7 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 		numberOfWinners: raffle.numberOfWinners,
 		minParticipants: raffle.minParticipants,
 		maxParticipants: raffle.maxParticipants,
+		checkInQuestion,
 	};
 }
 

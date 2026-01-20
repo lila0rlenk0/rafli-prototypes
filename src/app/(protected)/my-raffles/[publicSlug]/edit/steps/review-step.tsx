@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getCategoryValue } from '@/constants/categories';
+import { getCheckInQuestionValue } from '@/constants/check-in-questions';
 import { formatDate } from '@/lib/utils/date-format';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -36,6 +37,7 @@ export function ReviewStep() {
 		numberOfWinners,
 		minParticipants,
 		maxParticipants,
+		checkInQuestion,
 	} = formValues;
 
 	/**
@@ -65,7 +67,8 @@ export function ReviewStep() {
 			minParticipants === undefined ||
 			minParticipants === null ||
 			maxParticipants === undefined ||
-			maxParticipants === null
+			maxParticipants === null ||
+			!checkInQuestion
 		) {
 			return false;
 		}
@@ -78,6 +81,12 @@ export function ReviewStep() {
 		// Convert original categoryId to value for comparison
 		const originalCategoryValue =
 			getCategoryValue(originalRaffle.categoryId) || '';
+
+		// Convert original questionId to value for comparison
+		const originalCheckInQuestionValue =
+			originalRaffle.questionId
+				? getCheckInQuestionValue(originalRaffle.questionId) || ''
+				: '';
 
 		// Compare price values (handle floating point precision)
 		const currentPrice = parseFloat(price.toString());
@@ -102,7 +111,8 @@ export function ReviewStep() {
 			ticketPriceChanged ||
 			numberOfWinners !== originalRaffle.numberOfWinners ||
 			minParticipants !== originalRaffle.minParticipants ||
-			maxParticipants !== originalRaffle.maxParticipants
+			maxParticipants !== originalRaffle.maxParticipants ||
+			checkInQuestion !== originalCheckInQuestionValue
 		);
 	}, [
 		coverImage,
@@ -115,6 +125,7 @@ export function ReviewStep() {
 		numberOfWinners,
 		minParticipants,
 		maxParticipants,
+		checkInQuestion,
 		originalRaffle,
 	]);
 

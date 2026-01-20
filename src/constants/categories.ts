@@ -43,3 +43,11 @@ export function getCategoryId(value: string): string | undefined {
 	const category = RAFFLE_CATEGORIES.find(c => c.value === value);
 	return category?.id;
 }
+
+/**
+ * Gets the category value/slug from a category ID
+ */
+export function getCategoryValue(id: string): string | undefined {
+	const category = RAFFLE_CATEGORIES.find(c => c.id === id);
+	return category?.value;
+}

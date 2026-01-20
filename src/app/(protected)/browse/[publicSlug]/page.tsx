@@ -1,4 +1,3 @@
-import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
@@ -290,18 +289,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 						<RaffleCountdown endAt={raffle.endAt} />
 
-						{showEditButton ? (
-							<EditRaffleButton publicSlug={publicSlug} />
-						) : (
-							<TicketPurchaseCard
-								raffleId={raffle.id}
-								publicSlug={publicSlug}
-								price={ticketPrice}
-								currency={raffle.ticketPriceCurrency}
-								availableTickets={availableTickets}
-								disabled={disablePurchase}
-							/>
-						)}
+						<TicketPurchaseCard
+							raffleId={raffle.id}
+							publicSlug={publicSlug}
+							price={ticketPrice}
+							currency={raffle.ticketPriceCurrency}
+							availableTickets={availableTickets}
+							disabled={showEditButton}
+						/>
 
 						{disablePurchase && !showEditButton && (
 							<p className="mt-2 text-center text-sm text-gray-500">

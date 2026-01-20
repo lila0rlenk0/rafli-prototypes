@@ -3,18 +3,17 @@
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMultiStepForm } from './multi-step-form-provider';
+import { useEditForm } from './edit-form-provider';
 
 /**
- * FormHeader Component
+ * FormHeader Component for Edit Form
  *
- * Displays the header for the raffle creation form with navigation controls.
- * Includes progress bar, previous step button, and exit button with draft save prompt.
+ * Displays the header for the raffle edit form with navigation controls.
+ * Includes progress bar, previous step button, and exit button.
  */
 export function FormHeader() {
 	const router = useRouter();
-	const { currentStep, totalSteps, previousStep, hasUnsavedChanges, setShowExitModal } =
-		useMultiStepForm();
+	const { currentStep, totalSteps, previousStep } = useEditForm();
 
 	const progress = ((currentStep + 1) / totalSteps) * 100;
 
@@ -29,21 +28,17 @@ export function FormHeader() {
 
 	/**
 	 * Handles exit button click
-	 * Shows draft modal if there are unsaved changes, otherwise navigates directly
+	 * Navigates back to my-raffles page
 	 */
 	function handleExitClick() {
-		if (hasUnsavedChanges) {
-			setShowExitModal(true);
-		} else {
-			router.push('/my-raffles');
-		}
+		router.push('/my-raffles');
 	}
 
 	return (
 		<>
 			<div className="flex items-center justify-between">
 				<h1 className="font-clash-display text-4xl font-semibold">
-					Create a Raffle
+					Edit Raffle
 				</h1>
 
 				<div className="flex items-center gap-2">

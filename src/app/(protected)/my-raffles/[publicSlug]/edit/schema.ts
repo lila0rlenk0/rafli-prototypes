@@ -4,6 +4,17 @@ export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'audio/mp3'];
 
 /**
+ * Field restrictions for edit mode
+ * Determines which fields should be disabled based on raffle state
+ */
+export interface FieldRestrictions {
+	/** Start date locked if scheduled for future (startDate > today) */
+	startDateLocked: boolean;
+	/** Ticket price locked if any tickets have been sold (participantsCount > 0) */
+	priceLocked: boolean;
+}
+
+/**
  * Removes markdown formatting and returns plain text
  * Used for character count validation
  */
@@ -68,7 +79,11 @@ const fileSchema = z
 		'Only PNG, JPEG and MP3 files are accepted',
 	);
 
-export const raffleFormSchema = z
+/**
+ * Edit form schema
+ * Similar to create form but for editing existing raffles
+ */
+export const editFormSchema = z
 	.object({
 		// Step 1: Basic Information
 		title: z
@@ -141,54 +156,6 @@ export const raffleFormSchema = z
 	})
 	.refine(
 		data => {
-			if (!data.startDate) return true;
-
-			// Parse the date string and normalize to local midnight
-			const [year, month, day] = data.startDate.split('-').map(Number);
-			const start = new Date(year, month - 1, day);
-
-			// Get today's date normalized to local midnight
-			const today = new Date();
-			const todayNormalized = new Date(
-				today.getFullYear(),
-				today.getMonth(),
-				today.getDate(),
-			);
-
-			// Start date must be today or later
-			return start >= todayNormalized;
-		},
-		{
-			message: 'Start date cannot be before today',
-			path: ['startDate'],
-		},
-	)
-	.refine(
-		data => {
-			if (!data.endDate) return true;
-
-			// Parse the date string and normalize to local midnight
-			const [year, month, day] = data.endDate.split('-').map(Number);
-			const end = new Date(year, month - 1, day);
-
-			// Get today's date normalized to local midnight
-			const today = new Date();
-			const todayNormalized = new Date(
-				today.getFullYear(),
-				today.getMonth(),
-				today.getDate(),
-			);
-
-			// End date must be today or later
-			return end >= todayNormalized;
-		},
-		{
-			message: 'End date cannot be before today',
-			path: ['endDate'],
-		},
-	)
-	.refine(
-		data => {
 			if (!data.startDate || !data.endDate) return true;
 
 			const start = new Date(data.startDate);
@@ -231,25 +198,4 @@ export const raffleFormSchema = z
 		},
 	);
 
-export type RaffleFormData = z.infer<typeof raffleFormSchema>;
-
-/**
- * Schema for raffle draft data stored in localStorage
- * Excludes coverImage since File[] cannot be serialized
- */
-export const raffleDraftSchema = z.object({
-	title: z.string(),
-	description: z.string(),
-	price: z.number(),
-	category: z.string(),
-	startDate: z.string(),
-	endDate: z.string(),
-	pricePerTicket: z.number(),
-	numberOfWinners: z.number(),
-	minParticipants: z.number(),
-	maxParticipants: z.number(),
-	savedAt: z.string(),
-	currentStep: z.number(),
-});
-
-export type RaffleDraftData = z.infer<typeof raffleDraftSchema>;
+export type EditFormData = z.infer<typeof editFormSchema>;

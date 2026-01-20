@@ -11,10 +11,16 @@ import { USER_MODE } from '@/types/user-mode';
  *
  * Only visible in Host mode.
  * Conditionally renders based on user's current mode.
+ * Returns null while mode is initializing.
  */
 export function CreateRaffleButton() {
 	const mode = useUserStore(state => state.mode);
 	const canSwitchMode = useUserStore(state => state.canSwitchMode);
+
+	// Don't render while mode is initializing
+	if (mode === null) {
+		return null;
+	}
 
 	const shouldShowButton = canSwitchMode() && mode === USER_MODE.HOST;
 

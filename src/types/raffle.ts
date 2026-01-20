@@ -188,6 +188,23 @@ export const uploadGalleryResponseSchema = z.object({
 	galleryMediaUrls: z.array(z.string()),
 });
 
+/**
+ * Schema for the payload sent to update a raffle (partial update)
+ * All fields are optional - only changed fields should be sent
+ */
+export const updateRafflePayloadSchema = z.object({
+	title: z.string().min(3).max(200).optional(),
+	description: z.string().min(10).max(5_000).optional(),
+	declaredValueAmount: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(),
+	categoryId: z.uuid().optional(),
+	startAt: z.iso.datetime().optional(),
+	endAt: z.iso.datetime().optional(),
+	ticketPriceAmount: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(),
+	numberOfWinners: z.number().int().min(1).max(100).optional(),
+	minParticipants: z.number().int().min(0).optional(),
+	maxParticipants: z.number().int().min(0).max(1_000_000).optional(),
+});
+
 // ==========================================
 // Inferred Types
 // ==========================================
@@ -198,6 +215,7 @@ export type RaffleCoverResponse = z.infer<typeof raffleCoverResponseSchema>;
 export type RaffleGalleryResponse = z.infer<typeof raffleGalleryResponseSchema>;
 export type CreateRaffleInput = z.infer<typeof createRaffleInputSchema>;
 export type CreateRafflePayload = z.infer<typeof createRafflePayloadSchema>;
+export type UpdateRafflePayload = z.infer<typeof updateRafflePayloadSchema>;
 export type UploadCoverResponse = z.infer<typeof uploadCoverResponseSchema>;
 export type UploadGalleryResponse = z.infer<typeof uploadGalleryResponseSchema>;
 

@@ -1,11 +1,13 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import {
 	createContext,
 	ReactNode,
 	useCallback,
 	useContext,
+	useEffect,
 	useState,
 } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
@@ -16,6 +18,8 @@ import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
 import { createRaffle } from '@/services/raffle/create-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
+import { useRaffleDraft } from './hooks/use-raffle-draft';
+import { SaveDraftModal } from './save-draft-modal';
 import { raffleFormSchema } from './schema';
 import { STEPS } from './steps';
 
@@ -35,6 +39,8 @@ interface MultiStepFormContextType {
 	isRaffleCreated: boolean;
 	userName: string;
 	totalRaffles: number;
+	hasUnsavedChanges: boolean;
+	setShowExitModal: (show: boolean) => void;
 }
 
 const MultiStepFormContext = createContext<
@@ -60,13 +66,19 @@ export function MultiStepFormProvider({
 	userName,
 	totalRaffles,
 }: MultiStepFormProviderProps) {
+	const router = useRouter();
 	const [currentStep, setCurrentStep] = useState(0);
 	const [isCreating, setIsCreating] = useState(false);
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [showExitModal, setShowExitModal] = useState(false);
+	const [draftLoaded, setDraftLoaded] = useState(false);
 	const [createdRaffle, setCreatedRaffle] = useState<{
 		publicSlug: string;
 		raffleStartDate: string;
 	} | null>(null);
+
+	const { draft, hasDraft, saveDraft, clearDraft, isLoading: isDraftLoading } =
+		useRaffleDraft();
 
 	const totalSteps = STEPS.length;
 
@@ -87,6 +99,107 @@ export function MultiStepFormProvider({
 			maxParticipants: 0,
 		},
 	});
+
+	const formValues = form.watch();
+
+	/**
+	 * Checks if the form has any unsaved changes
+	 * Returns true if any field has non-default values
+	 */
+	function checkHasUnsavedChanges(): boolean {
+		return (
+			formValues.title !== '' ||
+			formValues.description !== '' ||
+			formValues.price !== 0 ||
+			formValues.category !== '' ||
+			formValues.startDate !== '' ||
+			formValues.endDate !== '' ||
+			formValues.pricePerTicket !== 0 ||
+			formValues.numberOfWinners !== 0 ||
+			formValues.minParticipants !== 0 ||
+			formValues.maxParticipants !== 0 ||
+			(formValues.coverImage?.length ?? 0) > 0
+		);
+	}
+
+	const hasUnsavedChanges = checkHasUnsavedChanges();
+
+	/**
+	 * Loads draft data into form on mount
+	 * Shows toast about re-uploading images
+	 * Draft is only cleared on successful raffle creation
+	 */
+	useEffect(() => {
+		if (isDraftLoading || draftLoaded || !hasDraft || !draft) return;
+
+		form.reset({
+			title: draft.title,
+			description: draft.description,
+			price: draft.price,
+			category: draft.category,
+			coverImage: [],
+			startDate: draft.startDate,
+			endDate: draft.endDate,
+			pricePerTicket: draft.pricePerTicket,
+			numberOfWinners: draft.numberOfWinners,
+			minParticipants: draft.minParticipants,
+			maxParticipants: draft.maxParticipants,
+		});
+
+		setCurrentStep(draft.currentStep);
+		setDraftLoaded(true);
+
+		toast.info('Draft restored. Please re-upload your images if needed.');
+	}, [isDraftLoading, draftLoaded, hasDraft, draft, form]);
+
+	/**
+	 * Adds beforeunload event listener when form has unsaved changes
+	 * Shows browser's native "Leave site?" dialog
+	 */
+	useEffect(() => {
+		if (!hasUnsavedChanges) return;
+
+		function handleBeforeUnload(event: BeforeUnloadEvent) {
+			event.preventDefault();
+		}
+
+		window.addEventListener('beforeunload', handleBeforeUnload);
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+		};
+	}, [hasUnsavedChanges]);
+
+	/**
+	 * Saves current form data as draft and navigates to my-raffles
+	 */
+	const handleSaveDraft = useCallback(() => {
+		const values = form.getValues();
+		saveDraft(
+			{
+				title: values.title,
+				description: values.description,
+				price: values.price,
+				category: values.category,
+				startDate: values.startDate,
+				endDate: values.endDate,
+				pricePerTicket: values.pricePerTicket,
+				numberOfWinners: values.numberOfWinners,
+				minParticipants: values.minParticipants,
+				maxParticipants: values.maxParticipants,
+				currentStep,
+			},
+			currentStep,
+		);
+		toast.success('Draft saved successfully!');
+		router.push('/my-raffles');
+	}, [form, saveDraft, currentStep, router]);
+
+	/**
+	 * Closes the exit modal without saving
+	 */
+	const handleStay = useCallback(() => {
+		setShowExitModal(false);
+	}, []);
 
 	/**
 	 * Advances to the next step in the form
@@ -174,6 +287,9 @@ export function MultiStepFormProvider({
 				}
 			}
 
+			// Clear any existing draft on successful creation
+			clearDraft();
+
 			// Open success modal instead of redirecting
 			setCreatedRaffle({
 				publicSlug: result.data.publicSlugOrCode,
@@ -186,7 +302,7 @@ export function MultiStepFormProvider({
 		} finally {
 			setIsCreating(false);
 		}
-	}, []);
+	}, [clearDraft]);
 
 	/**
 	 * Handles form submission
@@ -221,6 +337,8 @@ export function MultiStepFormProvider({
 				isRaffleCreated: createdRaffle !== null,
 				userName,
 				totalRaffles,
+				hasUnsavedChanges,
+				setShowExitModal,
 			}}
 		>
 			{children}
@@ -232,6 +350,12 @@ export function MultiStepFormProvider({
 					onOpenChange={setIsModalOpen}
 				/>
 			)}
+			<SaveDraftModal
+				open={showExitModal}
+				onOpenChange={setShowExitModal}
+				onStay={handleStay}
+				onSaveDraft={handleSaveDraft}
+			/>
 		</MultiStepFormContext.Provider>
 	);
 }

@@ -10,7 +10,7 @@ import {
 import { useStore } from 'zustand';
 
 import { createUserStore, type UserStore } from '@/store/user-store';
-import { USER_MODE, type Permission } from '@/types/user-mode';
+import type { Permission } from '@/types/user-mode';
 
 export type UserStoreApi = ReturnType<typeof createUserStore>;
 
@@ -27,8 +27,8 @@ export interface UserStoreProviderProps {
  * UserStoreProvider Component
  *
  * Provides the Zustand user store to all child components via Context.
- * Creates store with permissions from server (never from localStorage).
- * Mode preference is loaded from localStorage via persist middleware.
+ * Creates store with mode: null initially.
+ * After permissions are synced, initializes mode (validates against permissions).
  *
  * @param children - Child components
  * @param permissions - User permissions from server session (always fresh)
@@ -39,17 +39,19 @@ export function UserStoreProvider({
 }: UserStoreProviderProps) {
 	const [store] = useState(() =>
 		createUserStore({
-			mode: USER_MODE.PARTICIPANT, // Will be overridden by localStorage via persist
-			permissions, // Always from server (never from localStorage)
+			mode: null, // Start as null, will be initialized after permissions sync
+			permissions,
 		}),
 	);
 
 	/**
-	 * Sync permissions from server when they change
-	 * Handles: user switching accounts, permissions updated server-side
+	 * Sync permissions and initialize mode
+	 * Runs on mount and when permissions change
 	 */
 	useEffect(() => {
-		store.getState().setPermissions(permissions);
+		const state = store.getState();
+		state.setPermissions(permissions);
+		state.initializeMode();
 	}, [permissions, store]);
 
 	return (

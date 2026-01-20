@@ -9,15 +9,30 @@ const BECOME_HOST_FORM_URL = 'https://forms.google.com/placeholder';
 /**
  * ModeSwitchButton Component
  *
- * Displays different UI based on user permissions:
+ * Displays different UI based on user permissions and mode state:
+ * - Loading (mode null): Disabled button
  * - No permission: "Become a Host" external link
- * - Has permission (Participant mode): "Switch to Host Mode" button
- * - Has permission (Host mode): "Switch to Participant Mode" button
+ * - Has permission: "Switch to [opposite mode] Mode" button
  */
 export function ModeSwitchButton() {
 	const mode = useUserStore(state => state.mode);
 	const canSwitchMode = useUserStore(state => state.canSwitchMode);
 	const switchMode = useUserStore(state => state.switchMode);
+
+	// Loading state while mode initializes
+	if (mode === null) {
+		return (
+			<Button
+				variant="outline"
+				size="sm"
+				disabled
+				className="flex cursor-not-allowed items-center gap-2 border-black text-black opacity-50"
+			>
+				<span className="hidden sm:inline">Loading...</span>
+				<span className="sm:hidden">...</span>
+			</Button>
+		);
+	}
 
 	/**
 	 * Handles mode switch button click

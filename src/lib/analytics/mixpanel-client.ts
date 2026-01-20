@@ -25,16 +25,6 @@ export function initMixpanel(): void {
 	mixpanel.init(TOKEN, {
 		debug: process.env.NODE_ENV === 'development',
 		persistence: 'localStorage',
-		autocapture: {
-			pageview: 'full-url',
-			click: true,
-			submit: true,
-			scroll: true,
-			rage_click: true,
-			dead_click: true,
-			input: false,
-			capture_text_content: false,
-		},
 	});
 
 	initialized = true;

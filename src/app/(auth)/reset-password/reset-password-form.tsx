@@ -41,6 +41,8 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 		case AUTH_ERROR_CODES.INVALID_TOKEN:
 		case AUTH_ERROR_CODES.TOKEN_EXPIRED:
 			return 'This reset link is invalid or has expired. Please request a new one.';
+		case AUTH_ERROR_CODES.PASSWORD_COMPROMISED:
+			return 'This password has appeared in data breaches. Please choose a different one.';
 		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
 			return 'Too many attempts. Please wait a moment.';
 		case COMMON_ERROR_CODES.NETWORK_ERROR:

@@ -146,7 +146,7 @@ export function BuyButton({
 		<Button
 			onClick={handleBuyClick}
 			disabled={isLoading || disabled}
-			className="w-full bg-black"
+			className="hover:bg-background w-full cursor-pointer border-2 border-black bg-black hover:text-black"
 		>
 			{isLoading && <Loader2Icon className="mr-2 size-4 animate-spin" />}
 			<p className="font-semibold">{getButtonText()}</p>

@@ -2,17 +2,41 @@
 
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useMultiStepForm } from './multi-step-form-provider';
 
+/**
+ * FormHeader Component
+ *
+ * Displays the header for the raffle creation form with navigation controls.
+ * Includes progress bar, previous step button, and exit button with draft save prompt.
+ */
 export function FormHeader() {
-	const { currentStep, totalSteps, previousStep } = useMultiStepForm();
+	const router = useRouter();
+	const { currentStep, totalSteps, previousStep, hasUnsavedChanges, setShowExitModal } =
+		useMultiStepForm();
 
 	const progress = ((currentStep + 1) / totalSteps) * 100;
 
 	const shouldDisablePreviousStep = currentStep === 0;
 
+	/**
+	 * Navigates to the previous form step
+	 */
 	function handlePreviousStep() {
 		previousStep();
+	}
+
+	/**
+	 * Handles exit button click
+	 * Shows draft modal if there are unsaved changes, otherwise navigates directly
+	 */
+	function handleExitClick() {
+		if (hasUnsavedChanges) {
+			setShowExitModal(true);
+		} else {
+			router.push('/my-raffles');
+		}
 	}
 
 	return (
@@ -30,7 +54,14 @@ export function FormHeader() {
 					>
 						Previous page
 					</Button>
-					<X className="size-4" />
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={handleExitClick}
+						aria-label="Exit form"
+					>
+						<X className="size-4" />
+					</Button>
 				</div>
 			</div>
 

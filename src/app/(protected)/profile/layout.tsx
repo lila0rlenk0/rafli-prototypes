@@ -1,6 +1,6 @@
 import { ComponentProps } from 'react';
 
-export default function BrowseLayout({
+export default function ProfileLayout({
 	children,
 }: {
 	children: React.ReactNode;

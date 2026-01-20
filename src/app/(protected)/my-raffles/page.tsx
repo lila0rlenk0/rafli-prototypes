@@ -92,7 +92,7 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 	const emptyMessage = getEmptyMessage();
 
 	return (
-		<div className="container mx-auto max-w-7xl px-4 py-8">
+		<div className="container mx-auto w-full max-w-7xl px-4 py-8 lg:min-w-5xl">
 			{/* Header Section */}
 			<div className="mb-12 text-center">
 				<h1 className="mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl">

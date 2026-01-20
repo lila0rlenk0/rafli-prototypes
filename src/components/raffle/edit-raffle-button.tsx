@@ -18,7 +18,7 @@ interface EditRaffleButtonProps {
 export function EditRaffleButton({ publicSlug }: EditRaffleButtonProps) {
 	return (
 		<Link href={`/my-raffles/${publicSlug}/edit`}>
-			<Button variant="outline" className="flex w-full items-center gap-2">
+			<Button className="hover:bg-primary flex w-full cursor-pointer items-center gap-2 bg-black transition-colors duration-150">
 				<Pencil className="size-4" />
 				Edit Raffle
 			</Button>

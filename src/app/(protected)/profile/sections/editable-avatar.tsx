@@ -99,6 +99,8 @@ export function EditableAvatar({
 
 			// Invalidate /me endpoint cache to force fresh data fetch
 			await revalidateProfile();
+
+			window.location.reload();
 		} catch (error) {
 			console.error('Unexpected error during avatar upload:', error);
 			toast.error('An unexpected error occurred. Please try again');
@@ -121,7 +123,7 @@ export function EditableAvatar({
 
 	return (
 		<div
-			className="relative cursor-pointer transition-all duration-300"
+			className="relative cursor-pointer overflow-hidden rounded-full transition-all duration-300"
 			style={{ width: size, height: size }}
 			onMouseEnter={() => setIsHovered(true)}
 			onMouseLeave={() => setIsHovered(false)}
@@ -137,11 +139,12 @@ export function EditableAvatar({
 			/>
 			{avatarUrl ? (
 				<Image
+					key={avatarUrl}
 					src={avatarUrl}
 					alt="Profile avatar"
-					width={size}
-					height={size}
-					className="rounded-full object-cover transition-all duration-300"
+					fill
+					className="object-cover transition-all duration-300"
+					unoptimized
 				/>
 			) : (
 				<div className="flex size-full items-center justify-center rounded-full bg-gray-200 transition-all duration-300">

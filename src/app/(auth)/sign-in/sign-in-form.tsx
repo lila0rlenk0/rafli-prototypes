@@ -9,14 +9,18 @@ import {
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
-import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
+import {
+	AUTH_ERROR_CODES,
+	COMMON_ERROR_CODES,
+	type AuthErrorCode,
+} from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type ComponentProps, useState, useTransition } from 'react';
+import { useState, useTransition, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
 import { z } from 'zod';
@@ -118,14 +122,19 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 
 	return (
 		<form
-			className={cn('flex flex-col gap-6', className)}
+			className={cn(
+				'flex flex-col rounded-2xl border border-black px-32 py-24',
+				className,
+			)}
 			{...props}
 			onSubmit={handleSubmit(handleSignIn)}
 		>
-			<FieldGroup className="gap-3">
-				<div className="font-clash-display flex flex-col items-center gap-1 text-center">
-					<h1 className="text-2xl font-bold">Ready to sign in?</h1>
-					<p className="text-muted-foreground text-sm font-medium text-balance">
+			<FieldGroup className="mx-auto max-w-[424px]">
+				<div className="my-8 flex flex-col items-center gap-1 text-center">
+					<h1 className="font-clash-display line text-4xl font-semibold">
+						Ready to sign in?
+					</h1>
+					<p className="text-muted-foreground">
 						You one step forward to big win!
 					</p>
 				</div>
@@ -134,7 +143,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 					<Input
 						id="email"
 						type="email"
-						placeholder="m@example.com"
+						placeholder="Type your email"
 						required
 						aria-invalid={!!errors.email}
 						aria-describedby={errors.email ? 'email-error' : undefined}
@@ -164,8 +173,12 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 				{errors.root && (
 					<div className="text-sm text-red-600">{errors.root.message}</div>
 				)}
-				<Field className="mt-4">
-					<Button type="submit" disabled={isPending}>
+				<Field className="mt-4 mb-2">
+					<Button
+						type="submit"
+						disabled={isPending}
+						className="font-clash-display px-6 py-4 text-lg font-semibold"
+					>
 						{isPending ? 'Signing in...' : 'Sign In'}
 					</Button>
 				</Field>

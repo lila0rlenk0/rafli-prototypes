@@ -232,3 +232,24 @@ export const raffleFormSchema = z
 	);
 
 export type RaffleFormData = z.infer<typeof raffleFormSchema>;
+
+/**
+ * Schema for raffle draft data stored in localStorage
+ * Excludes coverImage since File[] cannot be serialized
+ */
+export const raffleDraftSchema = z.object({
+	title: z.string(),
+	description: z.string(),
+	price: z.number(),
+	category: z.string(),
+	startDate: z.string(),
+	endDate: z.string(),
+	pricePerTicket: z.number(),
+	numberOfWinners: z.number(),
+	minParticipants: z.number(),
+	maxParticipants: z.number(),
+	savedAt: z.string(),
+	currentStep: z.number(),
+});
+
+export type RaffleDraftData = z.infer<typeof raffleDraftSchema>;

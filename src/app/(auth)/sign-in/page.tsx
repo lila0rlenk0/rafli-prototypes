@@ -4,9 +4,9 @@ import { SignInForm } from './sign-in-form';
 export default function LoginPage() {
 	return (
 		<div className="bg-background relative grid min-h-svh lg:grid-cols-2">
-			<ColoredCards className="absolute origin-top-left scale-[.75]" />
+			<ColoredCards className="absolute z-0 origin-top-left scale-[.75] max-lg:scale-[.5]" />
 
-			<div className="relative hidden flex-col justify-end p-8 lg:flex">
+			<div className="relative z-1 hidden flex-col justify-end p-8 lg:flex">
 				<TicketIcon className="mb-8 size-20" />
 				<hgroup className="font-clash-display text-7xl leading-[100%] font-semibold tracking-[1%]">
 					<h1>Raffles!</h1>
@@ -15,7 +15,7 @@ export default function LoginPage() {
 					<h1>not guesswork!</h1>
 				</hgroup>
 			</div>
-			<div className="flex flex-col gap-4 p-6 md:p-10">
+			<div className="z-1 flex flex-col gap-4 p-6 md:p-10">
 				<div className="flex flex-1 items-center justify-center">
 					<SignInForm />
 				</div>

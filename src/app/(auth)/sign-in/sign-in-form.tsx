@@ -125,13 +125,13 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	return (
 		<form
 			className={cn(
-				'flex flex-col rounded-2xl border border-black bg-white px-32 py-24',
+				'flex flex-col rounded-2xl border border-black bg-white px-4 py-12 max-lg:w-full lg:px-32 lg:py-24',
 				className,
 			)}
 			{...props}
 			onSubmit={handleSubmit(handleSignIn)}
 		>
-			<FieldGroup className="mx-auto h-fit w-[424px]">
+			<FieldGroup className="mx-auto h-fit lg:w-106">
 				<LogoIcon className="mx-auto" />
 
 				<div className="my-8 flex flex-col items-center gap-1 text-center">

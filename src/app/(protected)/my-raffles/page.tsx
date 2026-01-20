@@ -7,6 +7,7 @@ import { StatusTabs } from '@/app/(protected)/my-raffles/status-tabs';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import { CreateRaffleButton } from './create-raffle-button';
+import { PageHeader } from './page-header';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import Link from 'next/link';
 
@@ -94,11 +95,7 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 	return (
 		<div className="container mx-auto w-full max-w-7xl px-4 py-8 lg:min-w-5xl">
 			{/* Header Section */}
-			<div className="mb-12 text-center">
-				<h1 className="mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
-					My Raffles!
-				</h1>
-			</div>
+			<PageHeader />
 
 			<div className="relative mb-8 flex w-full items-center justify-center">
 				<StatusTabs />

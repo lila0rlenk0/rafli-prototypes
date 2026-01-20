@@ -9,10 +9,15 @@ import {
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
-import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import {
+	AUTH_ERROR_CODES,
+	COMMON_ERROR_CODES,
+	type AuthErrorCode,
+} from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -20,6 +25,7 @@ import { type ComponentProps, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
 import { z } from 'zod';
+import { LogoIcon } from '@/assets/logo-icon';
 
 const formSchema = z.object({
 	email: z.email('Invalid email address'),
@@ -118,14 +124,21 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 
 	return (
 		<form
-			className={cn('flex flex-col gap-6', className)}
+			className={cn(
+				'flex flex-col rounded-2xl border border-black bg-white px-32 py-24',
+				className,
+			)}
 			{...props}
 			onSubmit={handleSubmit(handleSignIn)}
 		>
-			<FieldGroup className="gap-3">
-				<div className="font-clash-display flex flex-col items-center gap-1 text-center">
-					<h1 className="text-2xl font-bold">Ready to sign in?</h1>
-					<p className="text-muted-foreground text-sm font-medium text-balance">
+			<FieldGroup className="mx-auto h-fit w-[424px]">
+				<LogoIcon className="mx-auto" />
+
+				<div className="my-8 flex flex-col items-center gap-1 text-center">
+					<h1 className="font-clash-display line text-4xl font-semibold">
+						Ready to sign in?
+					</h1>
+					<p className="text-muted-foreground">
 						You one step forward to big win!
 					</p>
 				</div>
@@ -134,7 +147,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 					<Input
 						id="email"
 						type="email"
-						placeholder="m@example.com"
+						placeholder="Type your email"
 						required
 						aria-invalid={!!errors.email}
 						aria-describedby={errors.email ? 'email-error' : undefined}
@@ -164,25 +177,29 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 				{errors.root && (
 					<div className="text-sm text-red-600">{errors.root.message}</div>
 				)}
-				<Field className="mt-4">
-					<Button type="submit" disabled={isPending}>
+				<Field className="mt-4 mb-2">
+					<Button
+						type="submit"
+						disabled={isPending}
+						className="font-clash-display px-6 py-4 text-lg font-semibold"
+					>
 						{isPending ? 'Signing in...' : 'Sign In'}
 					</Button>
 				</Field>
 				<FieldSeparator className="my-2">
 					or do it via other accounts
 				</FieldSeparator>
-				<Field className="flex flex-col space-y-2">
+				<Field className="flex flex-col space-y-8">
 					<div className="flex w-full items-center justify-center">
 						<Button
 							variant="outline"
 							type="button"
-							className="size-12! w-fit"
+							className="size-12! w-fit bg-white/95"
 							onClick={handleGoogleSignIn}
 							disabled={isPending || isSocialPending}
 						>
 							{isSocialPending ? (
-								<div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+								<Spinner className="p-2" />
 							) : (
 								<FaGoogle className="size-6" />
 							)}
@@ -191,7 +208,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 					</div>
 					<FieldDescription className="text-center">
 						Don&apos;t have an account?{' '}
-						<Link href="/sign-up" className="underline underline-offset-4">
+						<Link href="/sign-up" className="text-black">
 							Sign up
 						</Link>
 					</FieldDescription>

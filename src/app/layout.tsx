@@ -33,11 +33,11 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body
-				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} antialiased`}
+				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} font-sans antialiased`}
 			>
 				<Providers>
 					{children}
-				  <Toaster />
+					<Toaster />
 				</Providers>
 			</body>
 		</html>

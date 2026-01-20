@@ -148,9 +148,9 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 				) : (
 					<Link
 						href={`/browse/${raffle.publicSlugOrCode}`}
-						className="mt-4 block"
+						className="mt-0 block"
 					>
-						<Button className="hover:bg-primary w-full cursor-pointer rounded-full bg-black py-6 text-base font-medium text-white">
+						<Button className="hover:bg-background w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:text-black">
 							Details
 						</Button>
 					</Link>

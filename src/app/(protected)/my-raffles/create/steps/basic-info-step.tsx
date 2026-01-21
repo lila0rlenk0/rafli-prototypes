@@ -7,16 +7,17 @@ import {
 	DropzoneContent,
 	DropzoneEmptyState,
 } from '@/components/ui/dropzone';
+import { ImageLightbox } from '@/components/ui/image-lightbox';
+import { ImagePreviewCard } from '@/components/ui/image-preview-card';
 import { Input } from '@/components/ui/input';
 import { RAFFLE_CATEGORIES } from '@/constants/categories';
 import { generateSlugPreview } from '@/lib/utils/slug-preview';
 import { DollarSign, X } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { STEPS } from '.';
 import { DescriptionEditor } from '../description-editor';
 import { useMultiStepForm } from '../multi-step-form-provider';
 import { MAX_FILE_SIZE } from '../schema';
-import { ImagePreview } from './image-preview';
 
 export function BasicInfoStep() {
 	const { form, currentStep: stepIndex, nextStep } = useMultiStepForm();
@@ -36,6 +37,9 @@ export function BasicInfoStep() {
 	const price = watch('price');
 	const category = watch('category');
 	const coverImage = watch('coverImage');
+
+	// State for lightbox preview
+	const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
 	// Generate slug preview
 	const previewSlugPath = useMemo(() => {
@@ -69,13 +73,31 @@ export function BasicInfoStep() {
 		!errors.category;
 
 	// Clear only this step's fields
-	const handleClearAll = () => {
+	function handleClearAll() {
 		setValue('title', '');
 		setValue('description', '');
 		setValue('price', 0);
 		setValue('category', '');
 		setValue('coverImage', []);
-	};
+	}
+
+	/**
+	 * Removes an image from the coverImage array at the given index
+	 * @param index - Position of the image to remove
+	 */
+	function handleRemoveImage(index: number) {
+		if (!coverImage) return;
+		const newImages = coverImage.filter((_, i) => i !== index);
+		setValue('coverImage', newImages);
+	}
+
+	/**
+	 * Opens the lightbox preview for the image at the given index
+	 * @param index - Position of the image to preview
+	 */
+	function handlePreviewImage(index: number) {
+		setPreviewIndex(index);
+	}
 
 	// Handle continue with validation
 	const handleContinue = async () => {
@@ -125,18 +147,16 @@ export function BasicInfoStep() {
 
 				<div className="grid grid-cols-4 gap-4">
 					{Array.from({ length: 4 }).map((_, index) => {
-						const file = coverImage?.[index];
+						const file = coverImage?.[index] ?? null;
 						return (
-							<div
+							<ImagePreviewCard
 								key={index}
-								className="relative flex aspect-square max-h-28 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
-							>
-								<ImagePreview
-									file={file}
-									alt={`Preview ${index + 1}`}
-									className="object-contain"
-								/>
-							</div>
+								src={file}
+								alt={`Preview ${index + 1}`}
+								index={index}
+								onRemove={file ? handleRemoveImage : undefined}
+								onPreview={file ? handlePreviewImage : undefined}
+							/>
 						);
 					})}
 				</div>
@@ -227,6 +247,17 @@ export function BasicInfoStep() {
 					<span className="text-sm font-semibold">Clear all</span>
 				</Button>
 			</div>
+
+			{/* Image Lightbox for full-screen preview */}
+			<ImageLightbox
+				images={coverImage ?? []}
+				currentIndex={previewIndex ?? 0}
+				open={previewIndex !== null}
+				onOpenChange={open => {
+					if (!open) setPreviewIndex(null);
+				}}
+				onNavigate={setPreviewIndex}
+			/>
 		</div>
 	);
 }

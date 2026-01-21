@@ -32,12 +32,15 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
+			<head>
+				<meta name="apple-mobile-web-app-title" content="Verifier" />
+			</head>
 			<body
 				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} antialiased`}
 			>
 				<Providers>
 					{children}
-				  <Toaster />
+					<Toaster />
 				</Providers>
 			</body>
 		</html>

@@ -10,6 +10,7 @@ import {
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/utils';
 import { registerUser } from '@/services/auth/register-user';
 import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
@@ -155,9 +156,8 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 				</Field>
 				<Field>
 					<FieldLabel htmlFor="password">Password</FieldLabel>
-					<Input
+					<PasswordInput
 						id="password"
-						type="password"
 						placeholder="********"
 						required
 						aria-invalid={!!errors.password}

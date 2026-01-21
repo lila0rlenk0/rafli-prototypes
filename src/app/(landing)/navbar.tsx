@@ -1,0 +1,63 @@
+import { Logo } from '@/assets/logo';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { ComponentProps } from 'react';
+
+/**
+ * Navigation bar component for the landing page
+ */
+export function Navbar() {
+	return (
+		<nav className="relative w-full border border-[#e6e8ec]">
+			<ColoredCard className="absolute right-0 z-0 origin-top-right scale-[.85]" />
+
+			<div className="z-1 mx-auto flex max-w-[1720px] items-center justify-between px-6 py-5 lg:px-[100px]">
+				<div className="flex items-center gap-8 lg:gap-[60px]">
+					<Link href="/" aria-label="Home">
+						<Logo className="h-5 w-auto" />
+					</Link>
+					<div className="hidden items-center gap-8 text-base font-bold md:flex">
+						<Link href="#participants" className="text-black hover:opacity-80">
+							For Participants
+						</Link>
+						<Link href="#hosts" className="text-[#121211] hover:opacity-80">
+							For Hosts
+						</Link>
+					</div>
+				</div>
+				<Button
+					asChild
+					className="bg-dark hover:bg-dark/90 h-12 px-6 text-base"
+				>
+					<Link href="/sign-in">Enter the App</Link>
+				</Button>
+			</div>
+		</nav>
+	);
+}
+
+function ColoredCard(props: ComponentProps<'svg'>) {
+	return (
+		<svg
+			width="854"
+			height="818"
+			viewBox="0 0 854 818"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
+			{...props}
+		>
+			<path
+				d="M1062.61 217.182C1059.18 204.379 1046.02 196.781 1033.22 200.212L583.396 320.74C570.593 324.171 562.995 337.331 566.426 350.134L686.954 799.953C690.385 812.756 703.545 820.354 716.348 816.924L1166.17 696.395C1178.97 692.964 1186.57 679.804 1183.14 667.001L1062.61 217.182Z"
+				fill="#C4EDFF"
+			/>
+			<path
+				d="M821.515 -112.338C815.809 -124.302 801.484 -129.374 789.521 -123.668L253.876 131.827C241.913 137.533 236.84 151.858 242.547 163.821L498.041 699.465C503.747 711.429 518.072 716.501 530.035 710.795L1065.68 455.301C1077.64 449.594 1082.72 435.27 1077.01 423.306L821.515 -112.338Z"
+				fill="#BEFFDB"
+			/>
+			<path
+				d="M680.929 -50.3721C687.556 -61.8511 683.623 -76.5293 672.144 -83.1567L268.847 -316C257.368 -322.628 242.69 -318.695 236.063 -307.216L3.21946 96.0811C-3.40795 107.56 0.525059 122.238 12.0041 128.866L415.301 361.709C426.78 368.337 441.458 364.403 448.085 352.924L680.929 -50.3721Z"
+				fill="#F6FF8B"
+			/>
+		</svg>
+	);
+}

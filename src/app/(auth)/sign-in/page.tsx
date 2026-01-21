@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { ComponentProps, Suspense } from 'react';
 
 import { Spinner } from '@/components/ui/spinner';
 import { SignInForm } from './sign-in-form';
@@ -11,32 +11,29 @@ import { SignInForm } from './sign-in-form';
  */
 export default function LoginPage() {
 	return (
-		<div className="bg-background relative grid min-h-svh lg:grid-cols-2">
-			<ColoredCards className="absolute z-0 origin-top-left scale-[.75] max-lg:scale-[.5]" />
+		<div className="bg-background relative grid min-h-svh overflow-hidden lg:grid-cols-2">
+			<ColoredCards className="absolute z-0 origin-top-left scale-75 max-lg:scale-50" />
 
-			<div className="relative z-1 hidden flex-col justify-end pb-16 pl-16 lg:flex">
+			<div className="relative z-1 hidden flex-col justify-end pb-16 pl-20 lg:flex">
 				<TicketIcon className="mb-8 size-20" />
-				<hgroup className="font-clash-display text-7xl leading-[100%] font-semibold tracking-[1%]">
+				<hgroup className="font-clash-display text-[80px] leading-none font-semibold tracking-[1%]">
 					<h1>Raffles!</h1>
 					<h1>Reimagined</h1>
 					<h1>for trust -</h1>
 					<h1>not guesswork!</h1>
 				</hgroup>
 			</div>
-			<div className="z-1 flex flex-col gap-4 p-6 md:p-10">
+			<div className="z-1 flex flex-col p-6 md:p-10">
 				<div className="flex flex-1 items-center justify-center">
-					<div className="w-full max-w-xs">
-						<Suspense
-							// TODO: Create a skeleton loader instead of a spinner
-							fallback={
-								<div className="flex items-center justify-center">
-									<Spinner />
-								</div>
-							}
-						>
-							<SignInForm />
-						</Suspense>
-					</div>
+					<Suspense
+						fallback={
+							<div className="flex items-center justify-center">
+								<Spinner />
+							</div>
+						}
+					>
+						<SignInForm />
+					</Suspense>
 				</div>
 			</div>
 		</div>

@@ -148,16 +148,16 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	return (
 		<form
 			className={cn(
-				'flex flex-col rounded-2xl border border-black bg-white px-4 py-12 max-lg:w-full lg:px-32 lg:py-24',
+				'flex w-full max-w-md flex-col rounded-2xl border border-black bg-white px-8 py-10 lg:px-12 lg:py-12',
 				className,
 			)}
 			{...props}
 			onSubmit={handleSubmit(handleSignIn)}
 		>
-			<FieldGroup className="mx-auto h-fit lg:w-106">
+			<FieldGroup className="mx-auto h-fit w-full max-w-80">
 				<LogoIcon className="mx-auto" />
 
-				<div className="my-8 flex flex-col items-center gap-1 text-center">
+				<div className="my-6 flex flex-col items-center gap-1 text-center">
 					<h1 className="font-clash-display line text-4xl font-semibold">
 						Ready to sign in?
 					</h1>
@@ -202,7 +202,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 						Just signed up? Check your inbox for the verification email.
 					</p>
 				)}
-				<Field className="mt-4 mb-2">
+				<Field className="mt-4">
 					<Button
 						type="submit"
 						disabled={isPending}
@@ -214,7 +214,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 				<FieldSeparator className="my-1">
 					or do it via other accounts
 				</FieldSeparator>
-				<Field className="flex flex-col space-y-8">
+				<Field className="flex flex-col space-y-4">
 					<div className="flex w-full items-center justify-center">
 						<Button
 							variant="outline"

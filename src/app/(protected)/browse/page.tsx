@@ -62,7 +62,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const { raffles } = response.data;
 
 	return (
-		<div className="z-10 container mx-auto max-w-7xl px-4 py-8">
+		<div className="z-10 container mx-auto px-4 py-8">
 			{/* Header Section */}
 			<div className="mb-20">
 				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-extrabold sm:text-5xl">

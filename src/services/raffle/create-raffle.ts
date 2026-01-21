@@ -47,6 +47,7 @@ export async function createRaffle(
 			declaredValueAmount: input.price.toString(),
 			declaredValueCurrency: 'USD',
 			categoryId,
+			questionId: input.checkInQuestion,
 			startAt: new Date(input.startDate).toISOString(),
 			endAt: new Date(input.endDate).toISOString(),
 			ticketPriceAmount: input.pricePerTicket.toString(),

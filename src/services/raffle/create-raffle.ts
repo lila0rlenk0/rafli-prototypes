@@ -91,7 +91,6 @@ export async function createRaffle(
 
 		return success(raffle);
 	} catch (error) {
-		console.log(error);
 		// Handle validation errors
 		if (error instanceof ZodError) {
 			console.error('Raffle response validation failed:', error);

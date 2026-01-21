@@ -5,6 +5,7 @@ import { ComponentProps } from 'react';
 
 import { getCategoryValue } from '@/constants/categories';
 import { getSession } from '@/lib/auth/session';
+import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { getQuestions } from '@/services/raffle/get-questions';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleCover } from '@/services/raffle/get-raffle-cover';
@@ -115,17 +116,27 @@ export default async function EditRafflePage({ params }: PageProps) {
 		redirect('/my-raffles');
 	}
 
-	// Fetch images and questions in parallel
-	const [coverResult, galleryResult, questionsResult] = await Promise.all([
-		getRaffleCover(raffle.id),
-		getRaffleGallery(raffle.id),
-		getQuestions(),
-	]);
+	// Get user information
+	const userName = session?.user?.name || 'Raffle Host';
+
+	// Fetch images, questions, and user's total raffles in parallel
+	const [coverResult, galleryResult, questionsResult, rafflesResult] =
+		await Promise.all([
+			getRaffleCover(raffle.id),
+			getRaffleGallery(raffle.id),
+			getQuestions(),
+			getMyRaffles(),
+		]);
 
 	// Filter active questions only
 	const questions = questionsResult.success
 		? questionsResult.data.questions.filter(q => q.isActive)
 		: [];
+
+	// Get total raffles count
+	const totalRaffles = rafflesResult.success
+		? rafflesResult.data.total || 0
+		: 0;
 
 	// Extract image URLs
 	// Use cover from API response, fallback to raffle.coverMediaUrl if available
@@ -170,6 +181,8 @@ export default async function EditRafflePage({ params }: PageProps) {
 				initialGalleryUrls={initialGalleryUrls}
 				defaultValues={defaultValues}
 				questions={questions}
+				userName={userName}
+				totalRaffles={totalRaffles}
 			>
 				<div className="flex w-full max-w-195 flex-col">
 					<FormHeader />

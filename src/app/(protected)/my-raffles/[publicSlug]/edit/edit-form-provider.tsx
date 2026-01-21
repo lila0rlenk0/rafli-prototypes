@@ -44,6 +44,8 @@ interface EditFormContextType {
 	existingCoverUrl: string | null;
 	existingGalleryUrls: string[];
 	questions: Question[];
+	userName: string;
+	totalRaffles: number;
 }
 
 const EditFormContext = createContext<EditFormContextType | undefined>(
@@ -57,6 +59,8 @@ interface EditFormProviderProps {
 	initialGalleryUrls: SignedMediaUrl[];
 	defaultValues: EditFormData;
 	questions: Question[];
+	userName: string;
+	totalRaffles: number;
 }
 
 /**
@@ -128,6 +132,8 @@ export function EditFormProvider({
 	initialGalleryUrls,
 	defaultValues,
 	questions,
+	userName,
+	totalRaffles,
 }: EditFormProviderProps) {
 	const router = useRouter();
 	const [currentStep, setCurrentStep] = useState(0);
@@ -327,6 +333,8 @@ export function EditFormProvider({
 				existingCoverUrl,
 				existingGalleryUrls,
 				questions,
+				userName,
+				totalRaffles,
 			}}
 		>
 			{children}

@@ -22,6 +22,8 @@ export function ReviewStep() {
 		existingCoverUrl,
 		existingGalleryUrls,
 		originalRaffle,
+		userName,
+		totalRaffles,
 	} = useEditForm();
 
 	const formValues = form.watch();
@@ -154,6 +156,28 @@ export function ReviewStep() {
 	}
 
 	/**
+	 * Gets the first letter of the user's name
+	 */
+	function getUserInitial(): string {
+		if (!userName) return '';
+		return userName.charAt(0);
+	}
+
+	/**
+	 * Gets the user's full name
+	 */
+	function getUserName(): string {
+		return userName || 'Raffle Host';
+	}
+
+	/**
+	 * Gets the total number of raffles created by the user
+	 */
+	function getTotalRaffles(): number {
+		return totalRaffles;
+	}
+
+	/**
 	 * Gets the raffle description
 	 */
 	function getDescription() {
@@ -255,6 +279,16 @@ export function ReviewStep() {
 							</div>
 						);
 					})}
+				</div>
+			</div>
+
+			<div className="flex items-center gap-4">
+				<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xl font-semibold">
+					{getUserInitial()}
+				</div>
+				<div className="flex min-w-0 flex-col font-medium">
+					<span className="truncate text-sm">by {getUserName()}</span>
+					<span className="text-xs">{getTotalRaffles()} Raffles</span>
 				</div>
 			</div>
 

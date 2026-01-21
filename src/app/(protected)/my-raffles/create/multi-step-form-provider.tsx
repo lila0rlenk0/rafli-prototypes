@@ -15,8 +15,8 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
-import { getCheckInQuestionId } from '@/constants/check-in-questions';
 import { createRaffle } from '@/services/raffle/create-raffle';
+import type { Question } from '@/types/question';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
 import { useRaffleDraft } from './hooks/use-raffle-draft';
@@ -42,6 +42,7 @@ interface MultiStepFormContextType {
 	totalRaffles: number;
 	hasUnsavedChanges: boolean;
 	setShowExitModal: (show: boolean) => void;
+	questions: Question[];
 }
 
 const MultiStepFormContext = createContext<
@@ -52,6 +53,7 @@ interface MultiStepFormProviderProps {
 	children: ReactNode;
 	userName: string;
 	totalRaffles: number;
+	questions: Question[];
 }
 
 /**
@@ -66,6 +68,7 @@ export function MultiStepFormProvider({
 	children,
 	userName,
 	totalRaffles,
+	questions,
 }: MultiStepFormProviderProps) {
 	const router = useRouter();
 	const [currentStep, setCurrentStep] = useState(0);
@@ -78,8 +81,13 @@ export function MultiStepFormProvider({
 		raffleStartDate: string;
 	} | null>(null);
 
-	const { draft, hasDraft, saveDraft, clearDraft, isLoading: isDraftLoading } =
-		useRaffleDraft();
+	const {
+		draft,
+		hasDraft,
+		saveDraft,
+		clearDraft,
+		isLoading: isDraftLoading,
+	} = useRaffleDraft();
 
 	const totalSteps = STEPS.length;
 
@@ -248,74 +256,80 @@ export function MultiStepFormProvider({
 	 *
 	 * @param data - The validated raffle form data
 	 */
-	const handleCreateRaffle = useCallback(async (data: RaffleFormData) => {
-		setIsCreating(true);
+	const handleCreateRaffle = useCallback(
+		async (data: RaffleFormData) => {
+			setIsCreating(true);
 
-		try {
-			const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+			try {
+				const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-			const checkInQuestionId = getCheckInQuestionId(data.checkInQuestion);
-			if (!checkInQuestionId) {
-				toast.error('Invalid check-in question selected');
+				// checkInQuestion now stores the question UUID directly
+				if (!data.checkInQuestion) {
+					toast.error('Please select a check-in question');
+					setIsCreating(false);
+					return;
+				}
+
+				const result = await createRaffle({
+					title: data.title,
+					description: data.description,
+					price: data.price,
+					category: data.category,
+					startDate: data.startDate,
+					endDate: data.endDate,
+					pricePerTicket: data.pricePerTicket,
+					numberOfWinners: data.numberOfWinners,
+					minParticipants: data.minParticipants,
+					maxParticipants: data.maxParticipants,
+					checkInQuestion: data.checkInQuestion,
+					timezone: userTimezone,
+				});
+
+				if (!result.success) {
+					toast.error('Failed to create raffle');
+					return;
+				}
+
+				const raffleId = result.data.id;
+
+				if (data.coverImage && data.coverImage.length > 0) {
+					const coverResult = await uploadCover(raffleId, data.coverImage[0]);
+					if (!coverResult.success) {
+						console.error('Cover upload failed:', coverResult.error);
+						toast.error('Raffle created but cover upload failed.');
+					}
+				}
+
+				if (data.coverImage && data.coverImage.length > 1) {
+					const galleryFiles = data.coverImage.slice(1);
+					const galleryResult = await uploadGalleryImages(
+						raffleId,
+						galleryFiles,
+					);
+					if (!galleryResult.success) {
+						console.error('Gallery upload failed:', galleryResult.error);
+						toast.error('Raffle created but gallery upload failed.');
+					}
+				}
+
+				// Clear any existing draft on successful creation
+				clearDraft();
+
+				// Open success modal instead of redirecting
+				setCreatedRaffle({
+					publicSlug: result.data.publicSlugOrCode,
+					raffleStartDate: data.startDate,
+				});
+				setIsModalOpen(true);
+			} catch (error) {
+				console.error('Create raffle error:', error);
+				toast.error('Something went wrong. Please try again');
+			} finally {
 				setIsCreating(false);
-				return;
 			}
-
-			const result = await createRaffle({
-				title: data.title,
-				description: data.description,
-				price: data.price,
-				category: data.category,
-				startDate: data.startDate,
-				endDate: data.endDate,
-				pricePerTicket: data.pricePerTicket,
-				numberOfWinners: data.numberOfWinners,
-				minParticipants: data.minParticipants,
-				maxParticipants: data.maxParticipants,
-				checkInQuestion: data.checkInQuestion,
-				timezone: userTimezone,
-			});
-
-			if (!result.success) {
-				toast.error('Failed to create raffle');
-				return;
-			}
-
-			const raffleId = result.data.id;
-
-			if (data.coverImage && data.coverImage.length > 0) {
-				const coverResult = await uploadCover(raffleId, data.coverImage[0]);
-				if (!coverResult.success) {
-					console.error('Cover upload failed:', coverResult.error);
-					toast.error('Raffle created but cover upload failed.');
-				}
-			}
-
-			if (data.coverImage && data.coverImage.length > 1) {
-				const galleryFiles = data.coverImage.slice(1);
-				const galleryResult = await uploadGalleryImages(raffleId, galleryFiles);
-				if (!galleryResult.success) {
-					console.error('Gallery upload failed:', galleryResult.error);
-					toast.error('Raffle created but gallery upload failed.');
-				}
-			}
-
-			// Clear any existing draft on successful creation
-			clearDraft();
-
-			// Open success modal instead of redirecting
-			setCreatedRaffle({
-				publicSlug: result.data.publicSlugOrCode,
-				raffleStartDate: data.startDate,
-			});
-			setIsModalOpen(true);
-		} catch (error) {
-			console.error('Create raffle error:', error);
-			toast.error('Something went wrong. Please try again');
-		} finally {
-			setIsCreating(false);
-		}
-	}, [clearDraft]);
+		},
+		[clearDraft],
+	);
 
 	/**
 	 * Handles form submission
@@ -352,6 +366,7 @@ export function MultiStepFormProvider({
 				totalRaffles,
 				hasUnsavedChanges,
 				setShowExitModal,
+				questions,
 			}}
 		>
 			{children}

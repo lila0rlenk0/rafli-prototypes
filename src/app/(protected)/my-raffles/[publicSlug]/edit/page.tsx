@@ -4,8 +4,8 @@ import { notFound, redirect } from 'next/navigation';
 import { ComponentProps } from 'react';
 
 import { getCategoryValue } from '@/constants/categories';
-import { getCheckInQuestionValue } from '@/constants/check-in-questions';
 import { getSession } from '@/lib/auth/session';
+import { getQuestions } from '@/services/raffle/get-questions';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleCover } from '@/services/raffle/get-raffle-cover';
 import { getRaffleGallery } from '@/services/raffle/get-raffle-gallery';
@@ -52,7 +52,6 @@ interface PageProps {
  * @returns EditFormData with pre-filled values
  */
 function mapRaffleToFormData(raffle: Raffle): EditFormData {
-
 	// Parse dates from ISO string to YYYY-MM-DD format for DatePicker
 	const startDate = raffle.startAt.split('T')[0];
 	const endDate = raffle.endAt.split('T')[0];
@@ -60,11 +59,8 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 	// Get category value from categoryId
 	const category = getCategoryValue(raffle.categoryId) || '';
 
-	// Get check-in question value from questionId (if exists)
-	const checkInQuestion =
-		raffle.questionId
-			? getCheckInQuestionValue(raffle.questionId) || ''
-			: '';
+	// Use questionId directly (UUID)
+	const checkInQuestion = raffle.questionId || '';
 
 	return {
 		title: raffle.title,
@@ -119,11 +115,17 @@ export default async function EditRafflePage({ params }: PageProps) {
 		redirect('/my-raffles');
 	}
 
-	// Fetch images in parallel
-	const [coverResult, galleryResult] = await Promise.all([
+	// Fetch images and questions in parallel
+	const [coverResult, galleryResult, questionsResult] = await Promise.all([
 		getRaffleCover(raffle.id),
 		getRaffleGallery(raffle.id),
+		getQuestions(),
 	]);
+
+	// Filter active questions only
+	const questions = questionsResult.success
+		? questionsResult.data.questions.filter(q => q.isActive)
+		: [];
 
 	// Extract image URLs
 	// Use cover from API response, fallback to raffle.coverMediaUrl if available
@@ -167,6 +169,7 @@ export default async function EditRafflePage({ params }: PageProps) {
 				initialCoverUrl={initialCoverUrl}
 				initialGalleryUrls={initialGalleryUrls}
 				defaultValues={defaultValues}
+				questions={questions}
 			>
 				<div className="flex w-full max-w-195 flex-col">
 					<FormHeader />

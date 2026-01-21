@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/session';
 import { hasHostPermission } from '@/lib/permissions';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
+import { getQuestions } from '@/services/raffle/get-questions';
 import { ComponentProps } from 'react';
 import { FormHeader } from './form-header';
 import { FormStepComponent } from './form-step-component';
@@ -53,12 +54,20 @@ export default async function RafflesCreatePage() {
 	// Get user information
 	const userName = session?.user?.name || 'Raffle Host';
 
-	// Get total raffles count
-	let totalRaffles = 0;
-	const rafflesResponse = await getMyRaffles();
-	if (rafflesResponse.success) {
-		totalRaffles = rafflesResponse.data.total || 0;
-	}
+	// Get total raffles count and questions in parallel
+	const [rafflesResponse, questionsResponse] = await Promise.all([
+		getMyRaffles(),
+		getQuestions(),
+	]);
+
+	const totalRaffles = rafflesResponse.success
+		? rafflesResponse.data.total || 0
+		: 0;
+
+	// Filter active questions only
+	const questions = questionsResponse.success
+		? questionsResponse.data.questions.filter(q => q.isActive)
+		: [];
 
 	return (
 		<div className="flex w-full gap-4">
@@ -81,7 +90,7 @@ export default async function RafflesCreatePage() {
 				))}
 			</div>
 
-			<MultiStepFormProvider userName={userName} totalRaffles={totalRaffles}>
+			<MultiStepFormProvider userName={userName} totalRaffles={totalRaffles} questions={questions}>
 				<div className="flex w-full max-w-195 flex-col">
 					<FormHeader />
 					<FormStepComponent />

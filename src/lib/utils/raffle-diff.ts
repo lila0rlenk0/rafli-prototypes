@@ -1,4 +1,3 @@
-import { getCheckInQuestionId } from '@/constants/check-in-questions';
 import type { Raffle, UpdateRafflePayload } from '@/types/raffle';
 
 /**

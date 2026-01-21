@@ -11,7 +11,6 @@
 export const CLIENT_ERROR_CODES = {
 	// Raffle validation errors
 	RAFFLE_INVALID_CATEGORY: 'client:raffle:invalid-category',
-	RAFFLE_INVALID_CHECK_IN_QUESTION: 'client:raffle:invalid-check-in-question',
 
 	// Upload validation errors (before API call)
 	UPLOAD_INVALID_TYPE: 'client:upload:invalid-type',

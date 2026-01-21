@@ -16,8 +16,8 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { getCategoryId } from '@/constants/categories';
-import { getCheckInQuestionId } from '@/constants/check-in-questions';
 import { computeRaffleDiff, hasRaffleChanges } from '@/lib/utils/raffle-diff';
+import type { Question } from '@/types/question';
 import { updateRaffle } from '@/services/raffle/update-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
@@ -43,6 +43,7 @@ interface EditFormContextType {
 	originalRaffle: Raffle;
 	existingCoverUrl: string | null;
 	existingGalleryUrls: string[];
+	questions: Question[];
 }
 
 const EditFormContext = createContext<EditFormContextType | undefined>(
@@ -55,6 +56,7 @@ interface EditFormProviderProps {
 	initialCoverUrl: string | null;
 	initialGalleryUrls: SignedMediaUrl[];
 	defaultValues: EditFormData;
+	questions: Question[];
 }
 
 /**
@@ -125,6 +127,7 @@ export function EditFormProvider({
 	initialCoverUrl,
 	initialGalleryUrls,
 	defaultValues,
+	questions,
 }: EditFormProviderProps) {
 	const router = useRouter();
 	const [currentStep, setCurrentStep] = useState(0);
@@ -209,9 +212,9 @@ export function EditFormProvider({
 					return;
 				}
 
-				const checkInQuestionId = getCheckInQuestionId(data.checkInQuestion);
-				if (!checkInQuestionId) {
-					toast.error('Invalid check-in question selected');
+				// checkInQuestion now stores the question UUID directly
+				if (!data.checkInQuestion) {
+					toast.error('Please select a check-in question');
 					setIsUpdating(false);
 					return;
 				}
@@ -221,7 +224,7 @@ export function EditFormProvider({
 					raffle,
 					data,
 					categoryId,
-					checkInQuestionId,
+					data.checkInQuestion,
 				);
 				const hasNewImages =
 					data.coverImage && data.coverImage.length > 0;
@@ -238,7 +241,7 @@ export function EditFormProvider({
 					raffle,
 					data,
 					categoryId,
-					checkInQuestionId,
+					data.checkInQuestion,
 				);
 
 				// Only call update if there are field changes
@@ -323,6 +326,7 @@ export function EditFormProvider({
 				originalRaffle: raffle,
 				existingCoverUrl,
 				existingGalleryUrls,
+				questions,
 			}}
 		>
 			{children}

@@ -3,7 +3,6 @@
 import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getCategoryValue } from '@/constants/categories';
-import { getCheckInQuestionValue } from '@/constants/check-in-questions';
 import { formatDate } from '@/lib/utils/date-format';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -83,22 +82,18 @@ export function ReviewStep() {
 			getCategoryValue(originalRaffle.categoryId) || '';
 
 		// Convert original questionId to value for comparison
-		const originalCheckInQuestionValue =
-			originalRaffle.questionId
-				? getCheckInQuestionValue(originalRaffle.questionId) || ''
-				: '';
+		const originalCheckInQuestionValue = originalRaffle.questionId
+			? originalRaffle.questionId || ''
+			: '';
 
 		// Compare price values (handle floating point precision)
 		const currentPrice = parseFloat(price.toString());
 		const originalPrice = parseFloat(originalRaffle.declaredValueAmount);
-		const priceChanged =
-			Math.abs(currentPrice - originalPrice) > 0.0001;
+		const priceChanged = Math.abs(currentPrice - originalPrice) > 0.0001;
 
 		// Compare ticket price values (handle floating point precision)
 		const currentTicketPrice = parseFloat(pricePerTicket.toString());
-		const originalTicketPrice = parseFloat(
-			originalRaffle.ticketPriceAmount,
-		);
+		const originalTicketPrice = parseFloat(originalRaffle.ticketPriceAmount);
 		const ticketPriceChanged =
 			Math.abs(currentTicketPrice - originalTicketPrice) > 0.0001;
 

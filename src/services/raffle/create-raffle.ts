@@ -3,7 +3,6 @@
 import { ZodError } from 'zod';
 
 import { getCategoryId } from '@/constants/categories';
-import { getCheckInQuestionId } from '@/constants/check-in-questions';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
@@ -42,18 +41,13 @@ export async function createRaffle(
 			return failure(CLIENT_ERROR_CODES.RAFFLE_INVALID_CATEGORY);
 		}
 
-		const checkInQuestionId = getCheckInQuestionId(input.checkInQuestion);
-		if (!checkInQuestionId) {
-			return failure(CLIENT_ERROR_CODES.RAFFLE_INVALID_CHECK_IN_QUESTION);
-		}
-
 		const payload = {
 			title: input.title,
 			description: input.description,
 			declaredValueAmount: input.price.toString(),
 			declaredValueCurrency: 'USD',
 			categoryId,
-			questionId: checkInQuestionId,
+			questionId: input.checkInQuestion,
 			startAt: new Date(input.startDate).toISOString(),
 			endAt: new Date(input.endDate).toISOString(),
 			ticketPriceAmount: input.pricePerTicket.toString(),

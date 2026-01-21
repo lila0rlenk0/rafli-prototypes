@@ -115,7 +115,7 @@ export const raffleSchema = z.object({
 	hostId: z.string(),
 	drawId: z.number().optional(),
 	raffleNumber: z.number().optional(),
-	questionId: z.string().optional(),
+	questionId: z.string().nullable(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	host: hostSchema.optional(),
@@ -164,7 +164,8 @@ export const createRaffleInputSchema = z.object({
  */
 export const createRafflePayloadSchema = z.object({
 	categoryId: z.uuid(),
-	questionId: z.uuid(),
+	// TODO: Change to .uuid() for production since staging is using a wrong mocked uuid
+	questionId: z.string(),
 	coverMediaUrl: z.string().max(500),
 	declaredValueAmount: z.string().regex(/^\d+(\.\d{1,4})?$/),
 	declaredValueCurrency: z.string().length(3),
@@ -198,12 +199,18 @@ export const uploadGalleryResponseSchema = z.object({
 export const updateRafflePayloadSchema = z.object({
 	title: z.string().min(3).max(200).optional(),
 	description: z.string().min(10).max(5_000).optional(),
-	declaredValueAmount: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(),
+	declaredValueAmount: z
+		.string()
+		.regex(/^\d+(\.\d{1,4})?$/)
+		.optional(),
 	categoryId: z.uuid().optional(),
 	questionId: z.uuid().optional(),
 	startAt: z.iso.datetime().optional(),
 	endAt: z.iso.datetime().optional(),
-	ticketPriceAmount: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(),
+	ticketPriceAmount: z
+		.string()
+		.regex(/^\d+(\.\d{1,4})?$/)
+		.optional(),
 	numberOfWinners: z.number().int().min(1).max(100).optional(),
 	minParticipants: z.number().int().min(0).optional(),
 	maxParticipants: z.number().int().min(0).max(1_000_000).optional(),

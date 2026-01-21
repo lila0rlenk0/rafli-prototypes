@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/utils';
 import { resetPassword } from '@/services/auth/reset-password';
 import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
@@ -19,7 +19,7 @@ const formSchema = z
 		newPassword: z
 			.string()
 			.min(12, 'Password must be at least 12 characters')
-			.max(50),
+			.max(128),
 		confirmPassword: z.string(),
 	})
 	.refine(data => data.newPassword === data.confirmPassword, {
@@ -41,6 +41,8 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 		case AUTH_ERROR_CODES.INVALID_TOKEN:
 		case AUTH_ERROR_CODES.TOKEN_EXPIRED:
 			return 'This reset link is invalid or has expired. Please request a new one.';
+		case AUTH_ERROR_CODES.PASSWORD_COMPROMISED:
+			return 'This password has appeared in data breaches. Please choose a different one.';
 		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
 			return 'Too many attempts. Please wait a moment.';
 		case COMMON_ERROR_CODES.NETWORK_ERROR:
@@ -105,41 +107,27 @@ export function ResetPasswordForm({ token, className, ...props }: ResetPasswordF
 				</div>
 				<Field>
 					<FieldLabel htmlFor="newPassword">New Password</FieldLabel>
-					<Input
+					<PasswordInput
 						id="newPassword"
-						type="password"
 						placeholder="********"
 						required
 						aria-invalid={!!errors.newPassword}
-						aria-describedby={errors.newPassword ? 'newPassword-error' : undefined}
 						{...register('newPassword')}
 					/>
-					{errors.newPassword && (
-						<p id="newPassword-error" className="text-sm text-red-600">
-							{errors.newPassword.message}
-						</p>
-					)}
+					<FieldError errors={[errors.newPassword]} />
 				</Field>
 				<Field>
 					<FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
-					<Input
+					<PasswordInput
 						id="confirmPassword"
-						type="password"
 						placeholder="********"
 						required
 						aria-invalid={!!errors.confirmPassword}
-						aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
 						{...register('confirmPassword')}
 					/>
-					{errors.confirmPassword && (
-						<p id="confirmPassword-error" className="text-sm text-red-600">
-							{errors.confirmPassword.message}
-						</p>
-					)}
+					<FieldError errors={[errors.confirmPassword]} />
 				</Field>
-				{errors.root && (
-					<div className="text-sm text-red-600">{errors.root.message}</div>
-				)}
+				<FieldError errors={[errors.root]} />
 				<Field className="mt-4">
 					<Button type="submit" disabled={isPending}>
 						{isPending ? 'Resetting...' : 'Reset Password'}

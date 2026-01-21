@@ -47,6 +47,12 @@
   --radius-4xl: calc(var(--radius) + 16px);
 
   --color-green: #86FFAE;
+
+  /* Landing page accent colors */
+  --color-accent-blue: #c4edff;
+  --color-accent-green: #beffdb;
+  --color-accent-yellow: #f6ff8b;
+  --color-dark: #141416;
 }
 
 :root {
@@ -122,7 +128,9 @@
   * {
     @apply border-border outline-ring/50;
   }
-
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground;
   }

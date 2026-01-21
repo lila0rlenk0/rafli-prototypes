@@ -1,6 +1,14 @@
-import { ComponentProps } from 'react';
+import { Suspense } from 'react';
+
+import { Spinner } from '@/components/ui/spinner';
 import { SignInForm } from './sign-in-form';
 
+/**
+ * Sign In Page
+ *
+ * Displays the sign-in form with support for email/password and Google OAuth.
+ * Wraps the form in Suspense because it uses useSearchParams for returnTo handling.
+ */
 export default function LoginPage() {
 	return (
 		<div className="bg-background relative grid min-h-svh lg:grid-cols-2">
@@ -17,7 +25,18 @@ export default function LoginPage() {
 			</div>
 			<div className="z-1 flex flex-col gap-4 p-6 md:p-10">
 				<div className="flex flex-1 items-center justify-center">
-					<SignInForm />
+					<div className="w-full max-w-xs">
+						<Suspense
+							// TODO: Create a skeleton loader instead of a spinner
+							fallback={
+								<div className="flex items-center justify-center">
+									<Spinner />
+								</div>
+							}
+						>
+							<SignInForm />
+						</Suspense>
+					</div>
 				</div>
 			</div>
 		</div>

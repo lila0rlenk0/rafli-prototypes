@@ -63,7 +63,9 @@ export function Combobox({
 						className,
 					)}
 				>
-					{selectedOption ? selectedOption.label : placeholder}
+					<p className="max-w-md truncate">
+						{selectedOption ? selectedOption.label : placeholder}
+					</p>
 					<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 				</Button>
 			</PopoverTrigger>

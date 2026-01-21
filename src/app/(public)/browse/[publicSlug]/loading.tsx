@@ -86,12 +86,12 @@ export default function Loading() {
 						<Skeleton className="mx-auto size-12" />
 
 						{/* Title */}
-						<Skeleton className="my-8 h-6 w-48 mx-auto" />
+						<Skeleton className="mx-auto my-8 h-6 w-48" />
 
 						{/* Countdown */}
 						<div className="space-y-2">
-							<Skeleton className="h-8 w-32 mx-auto" />
-							<Skeleton className="h-4 w-24 mx-auto" />
+							<Skeleton className="mx-auto h-8 w-32" />
+							<Skeleton className="mx-auto h-4 w-24" />
 						</div>
 
 						{/* Price per ticket */}
@@ -132,9 +132,9 @@ export default function Loading() {
 					</div>
 
 					{/* Raffle Info Card */}
-					<div className="rounded-2xl border border-black bg-white p-6 mt-8">
+					<div className="mt-8 rounded-2xl border border-black bg-white p-6">
 						{/* Title */}
-						<Skeleton className="mb-6 h-6 w-32 mx-auto" />
+						<Skeleton className="mx-auto mb-6 h-6 w-32" />
 
 						{/* Progress Section */}
 						<div className="space-y-3">

@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { CircleDashed, Clock, DollarSign, InfoIcon, X } from 'lucide-react';
@@ -8,7 +9,7 @@ import { useMemo } from 'react';
 import { useMultiStepForm } from '../multi-step-form-provider';
 
 export function TicketsStep() {
-	const { form, nextStep } = useMultiStepForm();
+	const { form, nextStep, questions } = useMultiStepForm();
 	const {
 		register,
 		formState: { errors, touchedFields },
@@ -24,6 +25,7 @@ export function TicketsStep() {
 	const numberOfWinners = watch('numberOfWinners');
 	const minParticipants = watch('minParticipants');
 	const maxParticipants = watch('maxParticipants');
+	const checkInQuestion = watch('checkInQuestion');
 
 	// Check if any field in this step is filled
 	const hasFilledFields = Boolean(
@@ -32,8 +34,15 @@ export function TicketsStep() {
 		(pricePerTicket && pricePerTicket > 0) ||
 		(numberOfWinners && numberOfWinners > 0) ||
 		(minParticipants && minParticipants > 0) ||
-		(maxParticipants && maxParticipants > 0),
+		(maxParticipants && maxParticipants > 0) ||
+		checkInQuestion,
 	);
+
+	// Find the selected question to show options preview
+	const selectedQuestion = useMemo(() => {
+		if (!checkInQuestion) return null;
+		return questions.find(q => q.id === checkInQuestion) || null;
+	}, [checkInQuestion, questions]);
 
 	/**
 	 * Checks if the start date is today
@@ -106,6 +115,7 @@ export function TicketsStep() {
 		Boolean(numberOfWinners && numberOfWinners > 0) &&
 		Boolean(minParticipants && minParticipants > 0) &&
 		Boolean(maxParticipants && maxParticipants > 0) &&
+		Boolean(checkInQuestion) &&
 		isDateRangeValid &&
 		hasMinimum30DaysGap &&
 		!errors.startDate &&
@@ -113,7 +123,8 @@ export function TicketsStep() {
 		!errors.pricePerTicket &&
 		!errors.numberOfWinners &&
 		!errors.minParticipants &&
-		!errors.maxParticipants;
+		!errors.maxParticipants &&
+		!errors.checkInQuestion;
 
 	// Clear only this step's fields
 	const handleClearAll = () => {
@@ -123,6 +134,7 @@ export function TicketsStep() {
 		setValue('numberOfWinners', 0);
 		setValue('minParticipants', 0);
 		setValue('maxParticipants', 0);
+		setValue('checkInQuestion', '');
 	};
 
 	// Handle continue with validation
@@ -135,6 +147,7 @@ export function TicketsStep() {
 			'numberOfWinners',
 			'minParticipants',
 			'maxParticipants',
+			'checkInQuestion',
 		]);
 
 		if (isValid) {
@@ -224,7 +237,7 @@ export function TicketsStep() {
 							Price per Ticket
 						</label>
 						<div className="relative">
-							<DollarSign className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-500" />
+							<DollarSign className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-500" />
 							<Input
 								id="pricePerTicket"
 								step="0.01"
@@ -307,13 +320,63 @@ export function TicketsStep() {
 						</span>
 					</div>
 				</div>
+			</div>
+
+			{/* Participant Check-in Question section */}
+			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+				<div className="flex flex-col gap-2">
+					<h2 className="text-xl font-semibold">
+						Participant Check-in Question
+					</h2>
+					<p className="text-sm text-gray-600">
+						Choose a simple question participants will answer before joining
+						your raffle. This helps confirm real participation and keeps entries
+						fair.
+					</p>
+				</div>
+
+				<div className="flex flex-col gap-2">
+					<label htmlFor="checkInQuestion" className="font-medium">
+						Question
+					</label>
+					<Combobox
+						options={questions.map(q => ({
+							value: q.id,
+							label: q.text,
+						}))}
+						value={checkInQuestion}
+						onValueChange={value => setValue('checkInQuestion', value)}
+						placeholder="Select question"
+						searchPlaceholder="Search question..."
+						emptyText="No question found."
+						className="max-w-md"
+					/>
+					{touchedFields.checkInQuestion && errors.checkInQuestion && (
+						<span className="text-sm text-red-500">
+							{errors.checkInQuestion.message}
+						</span>
+					)}
+				</div>
+
+				{selectedQuestion && (
+					<div className="flex flex-col gap-2">
+						{selectedQuestion.options
+							.sort((a, b) => a.sortOrder - b.sortOrder)
+							.map(option => (
+								<div key={option.id} className="flex items-center gap-2">
+									<div className="h-4 w-4 rounded-full border border-gray-300" />
+									<span className="text-sm text-gray-500">{option.text}</span>
+								</div>
+							))}
+					</div>
+				)}
 
 				<div className="flex items-center gap-2">
 					<Button
 						type="button"
 						onClick={handleContinue}
 						disabled={!isCurrentStepValid}
-						className="cursor-pointer disabled:bg-black disabled:opacity-100"
+						className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
 					>
 						Continue
 					</Button>

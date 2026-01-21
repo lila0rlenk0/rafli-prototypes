@@ -17,6 +17,7 @@ import { z } from 'zod';
 
 import { getCategoryId } from '@/constants/categories';
 import { computeRaffleDiff, hasRaffleChanges } from '@/lib/utils/raffle-diff';
+import type { Question } from '@/types/question';
 import { updateRaffle } from '@/services/raffle/update-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
@@ -42,6 +43,9 @@ interface EditFormContextType {
 	originalRaffle: Raffle;
 	existingCoverUrl: string | null;
 	existingGalleryUrls: string[];
+	questions: Question[];
+	userName: string;
+	totalRaffles: number;
 }
 
 const EditFormContext = createContext<EditFormContextType | undefined>(
@@ -54,6 +58,9 @@ interface EditFormProviderProps {
 	initialCoverUrl: string | null;
 	initialGalleryUrls: SignedMediaUrl[];
 	defaultValues: EditFormData;
+	questions: Question[];
+	userName: string;
+	totalRaffles: number;
 }
 
 /**
@@ -85,7 +92,8 @@ function hasFormChanges(
 		formData.pricePerTicket !== originalDefaults.pricePerTicket ||
 		formData.numberOfWinners !== originalDefaults.numberOfWinners ||
 		formData.minParticipants !== originalDefaults.minParticipants ||
-		formData.maxParticipants !== originalDefaults.maxParticipants
+		formData.maxParticipants !== originalDefaults.maxParticipants ||
+		formData.checkInQuestion !== originalDefaults.checkInQuestion
 	);
 }
 
@@ -123,6 +131,9 @@ export function EditFormProvider({
 	initialCoverUrl,
 	initialGalleryUrls,
 	defaultValues,
+	questions,
+	userName,
+	totalRaffles,
 }: EditFormProviderProps) {
 	const router = useRouter();
 	const [currentStep, setCurrentStep] = useState(0);
@@ -207,8 +218,20 @@ export function EditFormProvider({
 					return;
 				}
 
+				// checkInQuestion now stores the question UUID directly
+				if (!data.checkInQuestion) {
+					toast.error('Please select a check-in question');
+					setIsUpdating(false);
+					return;
+				}
+
 				// Check if there are any field changes (excluding images)
-				const hasFieldChanges = hasRaffleChanges(raffle, data, categoryId);
+				const hasFieldChanges = hasRaffleChanges(
+					raffle,
+					data,
+					categoryId,
+					data.checkInQuestion,
+				);
 				const hasNewImages =
 					data.coverImage && data.coverImage.length > 0;
 
@@ -220,7 +243,12 @@ export function EditFormProvider({
 				}
 
 				// Compute diff for partial update
-				const diff = computeRaffleDiff(raffle, data, categoryId);
+				const diff = computeRaffleDiff(
+					raffle,
+					data,
+					categoryId,
+					data.checkInQuestion,
+				);
 
 				// Only call update if there are field changes
 				if (Object.keys(diff).length > 0) {
@@ -304,6 +332,9 @@ export function EditFormProvider({
 				originalRaffle: raffle,
 				existingCoverUrl,
 				existingGalleryUrls,
+				questions,
+				userName,
+				totalRaffles,
 			}}
 		>
 			{children}

@@ -1,11 +1,11 @@
-import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import {
 	parsePage,
 	parseRaffleSortOption,
 } from '@/app/(protected)/lib/parse-search-params';
-import { FilterBar } from '@/components/filters';
-import { getRaffles } from '@/services/raffle/get-raffles';
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { FilterBar } from '@/components/filters';
+import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
+import { getRaffles } from '@/services/raffle/get-raffles';
 import Link from 'next/link';
 
 interface PageProps {
@@ -50,10 +50,10 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				</hgroup>
 
 				<Link
-					href="/my-raffles"
+					href="/browse"
 					className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
 				>
-					My Raffles
+					Back to Browse
 				</Link>
 			</div>
 		);
@@ -62,29 +62,30 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const { raffles } = response.data;
 
 	return (
-		<div className="container mx-auto max-w-7xl px-4 py-8">
+		<div className="z-10 container mx-auto px-4 py-8">
 			{/* Header Section */}
-			<div className="mb-12 text-center">
-				<h1 className="mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
-					Browse Raffles
+			<div className="mb-20">
+				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-extrabold sm:text-5xl">
+					Choose a prize you&apos;ve been wanting!
 				</h1>
-				<p className="text-muted-foreground text-lg">
-					Discover amazing raffles and win big!
+				<p className="text-lg font-medium">
+					Get in, make a few clicks, and you&apos;re in the draw.
 				</p>
 			</div>
 
 			{/* Filter Bar */}
-			<div className="mb-8 flex w-full">
-				<div className="ml-auto">
-					<FilterBar />
-				</div>
+			<div className="mb-8 flex w-full justify-between">
+				<h2 className="font-clash-display text-3xl font-semibold">
+					More existing raffles!
+				</h2>
+				<FilterBar />
 			</div>
 
 			{/* Grid Section */}
 			{raffles && raffles.length > 0 ? (
-				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{raffles.map(raffle => (
-						<RaffleCard key={raffle.id} raffle={raffle} />
+						<PublicRaffleCard key={raffle.id} raffle={raffle} />
 					))}
 				</div>
 			) : (

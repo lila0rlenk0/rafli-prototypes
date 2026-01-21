@@ -62,8 +62,9 @@ export function CallbackHandler() {
 					return;
 				}
 
-				// Step 4: Redirect to browse
-				router.push('/browse');
+				// Step 4: Redirect to returnTo or default to browse
+				const returnTo = searchParams.get('returnTo') || '/browse';
+				router.push(returnTo);
 				router.refresh();
 			} catch (err) {
 				if (err instanceof AxiosError) {

@@ -7,13 +7,14 @@ import {
 	DropzoneContent,
 	DropzoneEmptyState,
 } from '@/components/ui/dropzone';
+import { ImageLightbox } from '@/components/ui/image-lightbox';
+import { ImagePreviewCard } from '@/components/ui/image-preview-card';
 import { Input } from '@/components/ui/input';
 import { RAFFLE_CATEGORIES } from '@/constants/categories';
-import { DollarSign, Image as ImageIcon, X } from 'lucide-react';
-import Image from 'next/image';
+import { DollarSign, X } from 'lucide-react';
+import { useState } from 'react';
 import { STEPS } from '.';
 import { DescriptionEditor } from '../../../create/description-editor';
-import { ImagePreview } from '../../../create/steps/image-preview';
 import { useEditForm } from '../edit-form-provider';
 import { MAX_FILE_SIZE } from '../schema';
 
@@ -47,6 +48,9 @@ export function BasicInfoStep() {
 	const price = watch('price');
 	const category = watch('category');
 	const coverImage = watch('coverImage');
+
+	// State for lightbox preview
+	const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
 	// Check if any field in this step is filled
 	const hasFilledFields = Boolean(
@@ -111,6 +115,44 @@ export function BasicInfoStep() {
 		return null;
 	}
 
+	/**
+	 * Gets the image source for a given index (File or existing URL)
+	 * Prioritizes new uploads over existing images
+	 * @param index - Position in the image array
+	 * @returns File, string URL, or null
+	 */
+	function getImageSource(index: number): File | string | null {
+		const file = coverImage?.[index];
+		if (file) return file;
+		return getExistingImageSource(index);
+	}
+
+	/**
+	 * Removes an image from the coverImage array at the given index
+	 * @param index - Position of the image to remove
+	 */
+	function handleRemoveImage(index: number) {
+		if (!coverImage) return;
+		const newImages = coverImage.filter((_, i) => i !== index);
+		setValue('coverImage', newImages);
+	}
+
+	/**
+	 * Opens the lightbox preview for the image at the given index
+	 * @param index - Position of the image to preview
+	 */
+	function handlePreviewImage(index: number) {
+		setPreviewIndex(index);
+	}
+
+	/**
+	 * Gets all images (Files and existing URLs) for the lightbox
+	 * @returns Array of File, string URL, or null for each position
+	 */
+	function getAllImages(): Array<File | string | null> {
+		return Array.from({ length: 4 }).map((_, index) => getImageSource(index));
+	}
+
 	return (
 		<div className="flex w-full flex-col gap-6 rounded-2xl bg-white p-6">
 			<h2 className="mb-6 text-xl font-semibold">{currentStep.title}</h2>
@@ -144,34 +186,17 @@ export function BasicInfoStep() {
 
 				<div className="grid grid-cols-4 gap-4">
 					{Array.from({ length: 4 }).map((_, index) => {
-						const file = coverImage?.[index];
-						const existingSrc = getExistingImageSource(index);
-						const hasNewFile = Boolean(file);
-						const hasExistingImage = Boolean(existingSrc);
-
+						const src = getImageSource(index);
+						const hasNewFile = Boolean(coverImage?.[index]);
 						return (
-							<div
+							<ImagePreviewCard
 								key={index}
-								className="relative flex aspect-square max-h-28 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
-							>
-								{hasNewFile ? (
-									<ImagePreview
-										file={file}
-										alt={`Preview ${index + 1}`}
-										className="object-contain"
-									/>
-								) : hasExistingImage && existingSrc ? (
-									<Image
-										src={existingSrc}
-										alt={`Existing ${index + 1}`}
-										fill
-										className="object-contain"
-										unoptimized
-									/>
-								) : (
-									<ImageIcon className="size-6 text-gray-400" />
-								)}
-							</div>
+								src={src}
+								alt={`Preview ${index + 1}`}
+								index={index}
+								onRemove={hasNewFile ? handleRemoveImage : undefined}
+								onPreview={src ? handlePreviewImage : undefined}
+							/>
 						);
 					})}
 				</div>
@@ -243,7 +268,7 @@ export function BasicInfoStep() {
 					type="button"
 					onClick={handleContinue}
 					disabled={!isCurrentStepValid}
-					className="cursor-pointer disabled:bg-black disabled:opacity-100"
+					className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
 				>
 					Continue
 				</Button>
@@ -259,6 +284,17 @@ export function BasicInfoStep() {
 					<span className="text-sm font-semibold">Clear all</span>
 				</Button>
 			</div>
+
+			{/* Image Lightbox for full-screen preview */}
+			<ImageLightbox
+				images={getAllImages()}
+				currentIndex={previewIndex ?? 0}
+				open={previewIndex !== null}
+				onOpenChange={open => {
+					if (!open) setPreviewIndex(null);
+				}}
+				onNavigate={setPreviewIndex}
+			/>
 		</div>
 	);
 }

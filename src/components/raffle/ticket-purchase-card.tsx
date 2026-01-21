@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 
-import { BuyButton } from '@/app/(protected)/browse/[publicSlug]/buy-button';
+import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
 import { Separator } from '@/components/ui/separator';
+import { SignInToBuyButton } from './sign-in-button';
 import { TicketSelector } from './ticket-selector';
 
 interface TicketPurchaseCardProps {
@@ -13,6 +14,8 @@ interface TicketPurchaseCardProps {
 	currency: string;
 	availableTickets: number;
 	disabled?: boolean;
+	questionId?: string | null;
+	isAuthenticated?: boolean;
 }
 
 /**
@@ -37,6 +40,8 @@ export function TicketPurchaseCard({
 	currency,
 	availableTickets,
 	disabled = false,
+	questionId,
+	isAuthenticated = true,
 }: TicketPurchaseCardProps) {
 	const [ticketQuantity, setTicketQuantity] = useState(1);
 
@@ -101,13 +106,18 @@ export function TicketPurchaseCard({
 				</p>
 			</div>
 
-			{/* Buy button */}
-			<BuyButton
-				raffleId={raffleId}
-				publicSlug={publicSlug}
-				ticketQuantity={ticketQuantity}
-				disabled={disabled}
-			/>
+			{/* Buy button or Sign In button based on auth status */}
+			{isAuthenticated ? (
+				<BuyButton
+					raffleId={raffleId}
+					publicSlug={publicSlug}
+					ticketQuantity={ticketQuantity}
+					disabled={disabled}
+					questionId={questionId}
+				/>
+			) : (
+				<SignInToBuyButton />
+			)}
 		</div>
 	);
 }

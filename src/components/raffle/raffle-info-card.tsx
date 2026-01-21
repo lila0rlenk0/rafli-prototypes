@@ -7,6 +7,7 @@ interface RaffleInfoCardProps {
 	raffle: Raffle;
 	myTicketCodes: TicketCode[];
 	myTicketsTotal: number;
+	isAuthenticated?: boolean;
 }
 
 /**
@@ -25,6 +26,7 @@ export function RaffleInfoCard({
 	raffle,
 	myTicketCodes,
 	myTicketsTotal,
+	isAuthenticated = true,
 }: RaffleInfoCardProps) {
 	/**
 	 * Calculates the fill percentage for the raffle
@@ -79,7 +81,10 @@ export function RaffleInfoCard({
 	}
 
 	return (
-		<div className="mt-8 rounded-2xl border border-black bg-white p-6">
+		<div
+			className="mt-8 rounded-2xl border border-black bg-white p-6 data-[authenticated=false]:md:w-84"
+			data-authenticated={isAuthenticated}
+		>
 			<div className="space-y-6">
 				{/* Title */}
 				<div className="flex w-full items-center justify-center">
@@ -126,26 +131,34 @@ export function RaffleInfoCard({
 					</div>
 				</div>
 
-				<Separator className="my-4 bg-[#B4B4B4]" />
+				{/* My Tickets Section - Only shown for authenticated users */}
+				{isAuthenticated && (
+					<>
+						<Separator className="my-4 bg-[#B4B4B4]" />
 
-				{/* My Tickets Section */}
-				<div className="space-y-2">
-					<div className="flex items-center justify-between">
-						<h3 className="text-sm font-medium text-[#7B7B7B]">My Tickets</h3>
-						<p>{getMyTotalTickets()}</p>
-					</div>
-
-					<div className="grid w-full grid-cols-1 gap-2 md:w-84 md:grid-cols-2">
-						{myTicketCodes.map(ticket => (
-							<div
-								key={ticket.ticketCode}
-								className="flex items-center justify-center rounded-lg bg-[#F9FFB5] px-2 py-2 text-nowrap"
-							>
-								<span className="text-xs font-medium">{ticket.ticketCode}</span>
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<h3 className="text-sm font-medium text-[#7B7B7B]">
+									My Tickets
+								</h3>
+								<p>{getMyTotalTickets()}</p>
 							</div>
-						))}
-					</div>
-				</div>
+
+							<div className="grid w-full grid-cols-1 gap-2 md:w-84 md:grid-cols-2">
+								{myTicketCodes.map(ticket => (
+									<div
+										key={ticket.ticketCode}
+										className="flex items-center justify-center rounded-lg bg-[#F9FFB5] px-2 py-2 text-nowrap"
+									>
+										<span className="text-xs font-medium">
+											{ticket.ticketCode}
+										</span>
+									</div>
+								))}
+							</div>
+						</div>
+					</>
+				)}
 			</div>
 		</div>
 	);

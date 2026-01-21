@@ -10,12 +10,14 @@ interface NavbarProps {
 
 export function Navbar({ children }: NavbarProps) {
 	return (
-		<div className="mx-auto w-full max-w-[1300px]">
-			<div className="flex h-16 items-center justify-between px-6">
+		<div className="z-10 mx-auto flex w-full max-w-[1300px] flex-col">
+			<div className="z-10 flex h-16 items-center justify-between px-6">
 				<div className="flex items-center gap-8">
-					<Link href="/browse" className="mr-12">
+					<Link href="/browse">
 						<Logo />
 					</Link>
+
+					<div className="h-8 w-px bg-[#E6E8EC]" />
 
 					<Link href="/browse" className="text-sm font-semibold">
 						Browse
@@ -34,9 +36,7 @@ export function Navbar({ children }: NavbarProps) {
 				</div>
 			</div>
 
-			<div className="mx-auto mt-10 max-w-[1200px] overflow-auto pb-10">
-				{children}
-			</div>
+			<div className="mt-10 max-w-[1400px] overflow-auto pb-10">{children}</div>
 		</div>
 	);
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { requestPasswordReset } from '@/services/auth/request-password-reset';
@@ -112,18 +112,11 @@ export function ForgotPasswordForm({ className, ...props }: ComponentProps<'form
 						placeholder="m@example.com"
 						required
 						aria-invalid={!!errors.email}
-						aria-describedby={errors.email ? 'email-error' : undefined}
 						{...register('email')}
 					/>
-					{errors.email && (
-						<p id="email-error" className="text-sm text-red-600">
-							{errors.email.message}
-						</p>
-					)}
+					<FieldError errors={[errors.email]} />
 				</Field>
-				{errors.root && (
-					<div className="text-sm text-red-600">{errors.root.message}</div>
-				)}
+				<FieldError errors={[errors.root]} />
 				<Field className="mt-4">
 					<Button type="submit" disabled={isPending}>
 						{isPending ? 'Sending...' : 'Send Reset Link'}

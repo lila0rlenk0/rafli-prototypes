@@ -44,6 +44,15 @@ export const AUTH_ERROR_CODES = {
 	// Password reset errors
 	/** Password reset request or completion failed */
 	PASSWORD_RESET_FAILED: 'auth:password-reset:failed',
+
+	// Password security errors
+	/** Password found in data breach (Have I Been Pwned) */
+	PASSWORD_COMPROMISED: 'auth:password:compromised',
+	/** OAuth-only account has no password set */
+	PASSWORD_NOT_SET: 'auth:password:not-set',
+	/** Current password is incorrect (change-password flow) */
+	PASSWORD_INVALID: 'auth:password:invalid',
+
 } as const;
 
 /**

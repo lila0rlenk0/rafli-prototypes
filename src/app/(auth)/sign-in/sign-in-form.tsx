@@ -4,24 +4,26 @@ import { Button } from '@/components/ui/button';
 import {
 	Field,
 	FieldDescription,
+	FieldError,
 	FieldGroup,
 	FieldLabel,
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
+import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
+import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import {
 	AUTH_ERROR_CODES,
 	COMMON_ERROR_CODES,
 	type AuthErrorCode,
 } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { type ComponentProps, useState, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useTransition, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
 import { z } from 'zod';
@@ -32,7 +34,7 @@ const formSchema = z.object({
 	password: z
 		.string()
 		.min(12, 'Password must be at least 12 characters')
-		.max(50),
+		.max(128),
 });
 
 type FormType = z.infer<typeof formSchema>;
@@ -77,26 +79,45 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 		handleSubmit,
 		formState: { errors },
 		setError,
+		clearErrors,
 	} = useForm<FormType>({
 		resolver: zodResolver(formSchema),
 	});
 	const [isPending, startTransition] = useTransition();
 	const [isSocialPending, setIsSocialPending] = useState(false);
+	const [hasLoginError, setHasLoginError] = useState(false);
 	const router = useRouter();
+	const searchParams = useSearchParams();
 
+	/**
+	 * Gets the returnTo URL from search params
+	 * Called at action time to ensure we get the latest value after hydration
+	 * @returns The returnTo URL or default /browse
+	 */
+	function getReturnTo(): string {
+		return searchParams.get('returnTo') || '/browse';
+	}
+
+	/**
+	 * Handles form submission
+	 */
 	async function handleSignIn(data: FormType) {
+		clearErrors('root');
+		setHasLoginError(false);
+
 		startTransition(async () => {
 			const result = await signInUser(data);
 
 			// Type-safe response handling
 			if (!result.success) {
-				const message = getErrorMessage(result.error);
-				setError('root', { message });
+				setError('root', { message: getErrorMessage(result.error) });
+				setHasLoginError(true);
 				return;
 			}
 
-			// Success - redirect to dashboard
-			router.push('/browse');
+			// Success - redirect to returnTo or default to browse
+			const returnTo = getReturnTo();
+			router.push(returnTo);
 			router.refresh();
 		});
 	}
@@ -107,10 +128,12 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	 */
 	async function handleGoogleSignIn() {
 		setIsSocialPending(true);
+		setHasLoginError(false);
 
+		const returnTo = getReturnTo();
 		const result = await initiateSocialSignIn({
 			provider: 'google',
-			callbackURL: `${window.location.origin}/auth/callback`,
+			callbackURL: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
 		});
 
 		if (!result.success) {
@@ -150,9 +173,9 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 						placeholder="Type your email"
 						required
 						aria-invalid={!!errors.email}
-						aria-describedby={errors.email ? 'email-error' : undefined}
 						{...register('email')}
 					/>
+					<FieldError errors={[errors.email]} />
 				</Field>
 				<Field>
 					<div className="flex items-center">
@@ -164,18 +187,20 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 							Forgot your password?
 						</Link>
 					</div>
-					<Input
+					<PasswordInput
 						id="password"
-						type="password"
 						placeholder="********"
 						required
 						aria-invalid={!!errors.password}
-						aria-describedby={errors.password ? 'password-error' : undefined}
 						{...register('password')}
 					/>
+					<FieldError errors={[errors.password]} />
 				</Field>
-				{errors.root && (
-					<div className="text-sm text-red-600">{errors.root.message}</div>
+				<FieldError errors={[errors.root]} />
+				{hasLoginError && (
+					<p className="text-muted-foreground text-xs">
+						Just signed up? Check your inbox for the verification email.
+					</p>
 				)}
 				<Field className="mt-4 mb-2">
 					<Button
@@ -186,7 +211,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 						{isPending ? 'Signing in...' : 'Sign In'}
 					</Button>
 				</Field>
-				<FieldSeparator className="my-2">
+				<FieldSeparator className="my-1">
 					or do it via other accounts
 				</FieldSeparator>
 				<Field className="flex flex-col space-y-8">
@@ -199,7 +224,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 							disabled={isPending || isSocialPending}
 						>
 							{isSocialPending ? (
-								<Spinner className="p-2" />
+								<Loader className="animate-spin" />
 							) : (
 								<FaGoogle className="size-6" />
 							)}

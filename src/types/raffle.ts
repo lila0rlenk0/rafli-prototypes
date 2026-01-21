@@ -174,7 +174,7 @@ export const createRafflePayloadSchema = z.object({
 	endAt: z.iso.datetime(),
 	galleryMediaUrls: z.array(z.string().max(500)).max(10),
 	hostId: z.uuid().optional(),
-	maxParticipants: z.number().int().min(1).max(1_000_000),
+	maxParticipants: z.number().int().min(0).max(1_000_000),
 	minParticipants: z.number().int().min(0),
 	numberOfWinners: z.number().int().min(1).max(100),
 	startAt: z.iso.datetime(),

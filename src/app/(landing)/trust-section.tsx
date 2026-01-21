@@ -82,7 +82,7 @@ export function TrustSection() {
 					Traditional raffles often leave users wondering what&apos;s happening
 					behind the scenes.
 					<br />
-					We built Verifair to make every step visible - from who&apos;s hosting
+					We built Rafli to make every step visible - from who&apos;s hosting
 					the raffle to how winners are selected.
 				</p>
 			</div>

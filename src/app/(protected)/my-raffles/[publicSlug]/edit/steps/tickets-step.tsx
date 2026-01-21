@@ -129,13 +129,15 @@ export function TicketsStep() {
 	const todayDate = getTodayDate();
 
 	// Check if all fields in this step are filled and valid
+	// Note: maxParticipants=0 means unlimited, so we allow it as valid
 	const isCurrentStepValid =
 		Boolean(startDate) &&
 		Boolean(endDate) &&
 		Boolean(pricePerTicket && pricePerTicket >= 0.5) &&
 		Boolean(numberOfWinners && numberOfWinners > 0) &&
 		Boolean(minParticipants && minParticipants > 0) &&
-		Boolean(maxParticipants && maxParticipants > 0) &&
+		typeof maxParticipants === 'number' &&
+		maxParticipants >= 0 &&
 		Boolean(checkInQuestion) &&
 		isDateRangeValid &&
 		hasMinimum30DaysGap &&
@@ -377,6 +379,9 @@ export function TicketsStep() {
 							placeholder="0"
 							{...register('maxParticipants', { valueAsNumber: true })}
 						/>
+						<span className="text-xs text-gray-500">
+							Set to 0 for unlimited participants
+						</span>
 						{touchedFields.maxParticipants && errors.maxParticipants && (
 							<span className="text-sm text-red-500">
 								{errors.maxParticipants.message}

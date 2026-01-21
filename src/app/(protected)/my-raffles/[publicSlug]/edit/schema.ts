@@ -153,6 +153,7 @@ export const editFormSchema = z
 					.min(1, 'Max participants must be at least 1')
 					.max(1_000_000, 'Max participants cannot exceed 1,000,000'),
 			),
+		checkInQuestion: z.string().min(1, 'Check-in question is required'),
 	})
 	.refine(
 		data => {

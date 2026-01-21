@@ -10,11 +10,17 @@ import {
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/utils';
 import { registerUser } from '@/services/auth/register-user';
 import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
-import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import {
+	AUTH_ERROR_CODES,
+	COMMON_ERROR_CODES,
+	type AuthErrorCode,
+} from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, type ComponentProps } from 'react';
@@ -90,7 +96,9 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 				return;
 			}
 
-			toast.success('Account created! Check your email to verify before signing in.');
+			toast.success(
+				'Account created! Check your email to verify before signing in.',
+			);
 			router.push('/sign-in');
 		});
 	}
@@ -155,9 +163,8 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 				</Field>
 				<Field>
 					<FieldLabel htmlFor="password">Password</FieldLabel>
-					<Input
+					<PasswordInput
 						id="password"
-						type="password"
 						placeholder="********"
 						required
 						aria-invalid={!!errors.password}
@@ -184,7 +191,7 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 							disabled={isPending || isSocialPending}
 						>
 							{isSocialPending ? (
-								<div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+								<Loader className="animate-spin" />
 							) : (
 								<FaGoogle className="size-6" />
 							)}

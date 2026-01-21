@@ -49,7 +49,7 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 				</hgroup>
 
 				<Link
-					href="/my-raffles"
+					href="/raffles"
 					className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
 				>
 					Raffles

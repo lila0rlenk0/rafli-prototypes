@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/utils';
 import { resetPassword } from '@/services/auth/reset-password';
 import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
@@ -107,9 +107,8 @@ export function ResetPasswordForm({ token, className, ...props }: ResetPasswordF
 				</div>
 				<Field>
 					<FieldLabel htmlFor="newPassword">New Password</FieldLabel>
-					<Input
+					<PasswordInput
 						id="newPassword"
-						type="password"
 						placeholder="********"
 						required
 						aria-invalid={!!errors.newPassword}
@@ -119,9 +118,8 @@ export function ResetPasswordForm({ token, className, ...props }: ResetPasswordF
 				</Field>
 				<Field>
 					<FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
-					<Input
+					<PasswordInput
 						id="confirmPassword"
-						type="password"
 						placeholder="********"
 						required
 						aria-invalid={!!errors.confirmPassword}

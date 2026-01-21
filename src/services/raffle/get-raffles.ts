@@ -37,7 +37,6 @@ export async function getRaffles(
 		// Validate response data structure
 		const validatedData = listRafflesResponseSchema.parse(response.data);
 
-
 		return success(validatedData);
 	} catch (error) {
 		// Handle validation errors separately

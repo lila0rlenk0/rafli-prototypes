@@ -138,6 +138,7 @@ export const raffleFormSchema = z
 					.min(1, 'Max participants must be at least 1')
 					.max(1_000_000, 'Max participants cannot exceed 1,000,000'),
 			),
+		checkInQuestion: z.string().min(1, 'Check-in question is required'),
 	})
 	.refine(
 		data => {
@@ -248,6 +249,7 @@ export const raffleDraftSchema = z.object({
 	numberOfWinners: z.number(),
 	minParticipants: z.number(),
 	maxParticipants: z.number(),
+	checkInQuestion: z.string(),
 	savedAt: z.string(),
 	currentStep: z.number(),
 });

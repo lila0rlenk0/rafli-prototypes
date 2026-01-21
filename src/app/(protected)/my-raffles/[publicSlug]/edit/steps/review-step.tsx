@@ -22,6 +22,8 @@ export function ReviewStep() {
 		existingCoverUrl,
 		existingGalleryUrls,
 		originalRaffle,
+		userName,
+		totalRaffles,
 	} = useEditForm();
 
 	const formValues = form.watch();
@@ -36,6 +38,7 @@ export function ReviewStep() {
 		numberOfWinners,
 		minParticipants,
 		maxParticipants,
+		checkInQuestion,
 	} = formValues;
 
 	/**
@@ -65,7 +68,8 @@ export function ReviewStep() {
 			minParticipants === undefined ||
 			minParticipants === null ||
 			maxParticipants === undefined ||
-			maxParticipants === null
+			maxParticipants === null ||
+			!checkInQuestion
 		) {
 			return false;
 		}
@@ -79,17 +83,19 @@ export function ReviewStep() {
 		const originalCategoryValue =
 			getCategoryValue(originalRaffle.categoryId) || '';
 
+		// Convert original questionId to value for comparison
+		const originalCheckInQuestionValue = originalRaffle.questionId
+			? originalRaffle.questionId || ''
+			: '';
+
 		// Compare price values (handle floating point precision)
 		const currentPrice = parseFloat(price.toString());
 		const originalPrice = parseFloat(originalRaffle.declaredValueAmount);
-		const priceChanged =
-			Math.abs(currentPrice - originalPrice) > 0.0001;
+		const priceChanged = Math.abs(currentPrice - originalPrice) > 0.0001;
 
 		// Compare ticket price values (handle floating point precision)
 		const currentTicketPrice = parseFloat(pricePerTicket.toString());
-		const originalTicketPrice = parseFloat(
-			originalRaffle.ticketPriceAmount,
-		);
+		const originalTicketPrice = parseFloat(originalRaffle.ticketPriceAmount);
 		const ticketPriceChanged =
 			Math.abs(currentTicketPrice - originalTicketPrice) > 0.0001;
 
@@ -102,7 +108,8 @@ export function ReviewStep() {
 			ticketPriceChanged ||
 			numberOfWinners !== originalRaffle.numberOfWinners ||
 			minParticipants !== originalRaffle.minParticipants ||
-			maxParticipants !== originalRaffle.maxParticipants
+			maxParticipants !== originalRaffle.maxParticipants ||
+			checkInQuestion !== originalCheckInQuestionValue
 		);
 	}, [
 		coverImage,
@@ -115,6 +122,7 @@ export function ReviewStep() {
 		numberOfWinners,
 		minParticipants,
 		maxParticipants,
+		checkInQuestion,
 		originalRaffle,
 	]);
 
@@ -145,6 +153,28 @@ export function ReviewStep() {
 			return existingGalleryUrls[index];
 		}
 		return null;
+	}
+
+	/**
+	 * Gets the first letter of the user's name
+	 */
+	function getUserInitial(): string {
+		if (!userName) return '';
+		return userName.charAt(0);
+	}
+
+	/**
+	 * Gets the user's full name
+	 */
+	function getUserName(): string {
+		return userName || 'Raffle Host';
+	}
+
+	/**
+	 * Gets the total number of raffles created by the user
+	 */
+	function getTotalRaffles(): number {
+		return totalRaffles;
 	}
 
 	/**
@@ -249,6 +279,16 @@ export function ReviewStep() {
 							</div>
 						);
 					})}
+				</div>
+			</div>
+
+			<div className="flex items-center gap-4">
+				<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xl font-semibold">
+					{getUserInitial()}
+				</div>
+				<div className="flex min-w-0 flex-col font-medium">
+					<span className="truncate text-sm">by {getUserName()}</span>
+					<span className="text-xs">{getTotalRaffles()} Raffles</span>
 				</div>
 			</div>
 

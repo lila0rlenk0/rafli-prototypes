@@ -5,6 +5,8 @@ import { ComponentProps } from 'react';
 
 import { getCategoryValue } from '@/constants/categories';
 import { getSession } from '@/lib/auth/session';
+import { getMyRaffles } from '@/services/raffle/get-my-raffles';
+import { getQuestions } from '@/services/raffle/get-questions';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleCover } from '@/services/raffle/get-raffle-cover';
 import { getRaffleGallery } from '@/services/raffle/get-raffle-gallery';
@@ -51,13 +53,15 @@ interface PageProps {
  * @returns EditFormData with pre-filled values
  */
 function mapRaffleToFormData(raffle: Raffle): EditFormData {
-
 	// Parse dates from ISO string to YYYY-MM-DD format for DatePicker
 	const startDate = raffle.startAt.split('T')[0];
 	const endDate = raffle.endAt.split('T')[0];
 
 	// Get category value from categoryId
 	const category = getCategoryValue(raffle.categoryId) || '';
+
+	// Use questionId directly (UUID)
+	const checkInQuestion = raffle.questionId || '';
 
 	return {
 		title: raffle.title,
@@ -71,6 +75,7 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 		numberOfWinners: raffle.numberOfWinners,
 		minParticipants: raffle.minParticipants,
 		maxParticipants: raffle.maxParticipants,
+		checkInQuestion,
 	};
 }
 
@@ -111,11 +116,27 @@ export default async function EditRafflePage({ params }: PageProps) {
 		redirect('/my-raffles');
 	}
 
-	// Fetch images in parallel
-	const [coverResult, galleryResult] = await Promise.all([
-		getRaffleCover(raffle.id),
-		getRaffleGallery(raffle.id),
-	]);
+	// Get user information
+	const userName = session?.user?.name || 'Raffle Host';
+
+	// Fetch images, questions, and user's total raffles in parallel
+	const [coverResult, galleryResult, questionsResult, rafflesResult] =
+		await Promise.all([
+			getRaffleCover(raffle.id),
+			getRaffleGallery(raffle.id),
+			getQuestions(),
+			getMyRaffles(),
+		]);
+
+	// Filter active questions only
+	const questions = questionsResult.success
+		? questionsResult.data.questions.filter(q => q.isActive)
+		: [];
+
+	// Get total raffles count
+	const totalRaffles = rafflesResult.success
+		? rafflesResult.data.total || 0
+		: 0;
 
 	// Extract image URLs
 	// Use cover from API response, fallback to raffle.coverMediaUrl if available
@@ -159,6 +180,9 @@ export default async function EditRafflePage({ params }: PageProps) {
 				initialCoverUrl={initialCoverUrl}
 				initialGalleryUrls={initialGalleryUrls}
 				defaultValues={defaultValues}
+				questions={questions}
+				userName={userName}
+				totalRaffles={totalRaffles}
 			>
 				<div className="flex w-full max-w-195 flex-col">
 					<FormHeader />

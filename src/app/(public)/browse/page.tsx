@@ -83,7 +83,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 
 			{/* Grid Section */}
 			{raffles && raffles.length > 0 ? (
-				<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{raffles.map(raffle => (
 						<PublicRaffleCard key={raffle.id} raffle={raffle} />
 					))}

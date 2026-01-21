@@ -68,6 +68,17 @@ useEffect(() => {
 }, [updateState]);
 ```
 
+## Cleanup
+
+**Playwright MCP screenshots:**
+After completing tasks that used Playwright MCP for screenshots/browser testing, delete the generated folder:
+
+```bash
+rm -rf .playwright-mcp
+```
+
+ALWAYS: Clean up `.playwright-mcp` folder after visual debugging tasks are complete.
+
 ## Optional: Build
 
 ```bash

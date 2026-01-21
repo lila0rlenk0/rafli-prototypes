@@ -14,8 +14,13 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
 import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
-import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import {
+	AUTH_ERROR_CODES,
+	COMMON_ERROR_CODES,
+	type AuthErrorCode,
+} from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, type ComponentProps } from 'react';
@@ -25,7 +30,10 @@ import { z } from 'zod';
 
 const formSchema = z.object({
 	email: z.email('Invalid email address'),
-	password: z.string().min(12, 'Password must be at least 12 characters').max(128),
+	password: z
+		.string()
+		.min(12, 'Password must be at least 12 characters')
+		.max(128),
 });
 
 type FormType = z.infer<typeof formSchema>;
@@ -179,7 +187,9 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 						{isPending ? 'Signing in...' : 'Sign In'}
 					</Button>
 				</Field>
-				<FieldSeparator className="my-2">or do it via other accounts</FieldSeparator>
+				<FieldSeparator className="my-2">
+					or do it via other accounts
+				</FieldSeparator>
 				<Field className="flex flex-col space-y-2">
 					<div className="flex w-full items-center justify-center">
 						<Button
@@ -190,7 +200,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 							disabled={isPending || isSocialPending}
 						>
 							{isSocialPending ? (
-								<div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+								<Loader className="animate-spin" />
 							) : (
 								<FaGoogle className="size-6" />
 							)}

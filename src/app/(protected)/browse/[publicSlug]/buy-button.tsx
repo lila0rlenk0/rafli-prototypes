@@ -4,6 +4,7 @@ import { Loader2Icon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { createOrder } from '@/services/order/create-order';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
@@ -14,6 +15,7 @@ interface BuyButtonProps {
 	publicSlug: string;
 	ticketQuantity: number;
 	disabled?: boolean;
+	questionId?: string | null;
 }
 
 /**
@@ -35,8 +37,10 @@ export function BuyButton({
 	publicSlug,
 	ticketQuantity,
 	disabled = false,
+	questionId,
 }: BuyButtonProps) {
 	const [isLoading, setIsLoading] = useState(false);
+	const [showQuestionModal, setShowQuestionModal] = useState(false);
 
 	/**
 	 * Gets user-friendly error message for order errors
@@ -89,9 +93,28 @@ export function BuyButton({
 
 	/**
 	 * Handles the buy button click
+	 * Shows question modal if raffle has a question, otherwise proceeds to checkout
+	 */
+	function handleBuyClick() {
+		if (questionId) {
+			setShowQuestionModal(true);
+		} else {
+			proceedToCheckout();
+		}
+	}
+
+	/**
+	 * Handles correct answer from question modal
+	 * Proceeds to checkout after user answers correctly
+	 */
+	function handleCorrectAnswer() {
+		proceedToCheckout();
+	}
+
+	/**
 	 * Creates order and checkout session, then redirects to Stripe
 	 */
-	async function handleBuyClick() {
+	async function proceedToCheckout() {
 		setIsLoading(true);
 
 		try {
@@ -143,13 +166,24 @@ export function BuyButton({
 	}
 
 	return (
-		<Button
-			onClick={handleBuyClick}
-			disabled={isLoading || disabled}
-			className="hover:bg-background w-full cursor-pointer border-2 border-black bg-black hover:text-black"
-		>
-			{isLoading && <Loader2Icon className="mr-2 size-4 animate-spin" />}
-			<p className="font-semibold">{getButtonText()}</p>
-		</Button>
+		<>
+			<Button
+				onClick={handleBuyClick}
+				disabled={isLoading || disabled}
+				className="hover:bg-background w-full cursor-pointer border-2 border-black bg-black hover:text-black"
+			>
+				{isLoading && <Loader2Icon className="mr-2 size-4 animate-spin" />}
+				<p className="font-semibold">{getButtonText()}</p>
+			</Button>
+
+			{questionId && (
+				<RaffleQuestionModal
+					open={showQuestionModal}
+					onOpenChange={setShowQuestionModal}
+					raffleId={raffleId}
+					onCorrectAnswer={handleCorrectAnswer}
+				/>
+			)}
+		</>
 	);
 }

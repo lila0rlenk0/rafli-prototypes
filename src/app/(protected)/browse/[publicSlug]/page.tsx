@@ -309,6 +309,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							currency={raffle.ticketPriceCurrency}
 							availableTickets={availableTickets}
 							disabled={showEditButton}
+							questionId={raffle.questionId}
 						/>
 
 						{disablePurchase && !showEditButton && (

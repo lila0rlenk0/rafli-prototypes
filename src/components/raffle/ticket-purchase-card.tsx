@@ -13,6 +13,7 @@ interface TicketPurchaseCardProps {
 	currency: string;
 	availableTickets: number;
 	disabled?: boolean;
+	questionId?: string | null;
 }
 
 /**
@@ -37,6 +38,7 @@ export function TicketPurchaseCard({
 	currency,
 	availableTickets,
 	disabled = false,
+	questionId,
 }: TicketPurchaseCardProps) {
 	const [ticketQuantity, setTicketQuantity] = useState(1);
 
@@ -107,6 +109,7 @@ export function TicketPurchaseCard({
 				publicSlug={publicSlug}
 				ticketQuantity={ticketQuantity}
 				disabled={disabled}
+				questionId={questionId}
 			/>
 		</div>
 	);

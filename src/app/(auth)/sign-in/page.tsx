@@ -6,7 +6,7 @@ export default function LoginPage() {
 		<div className="bg-background relative grid min-h-svh lg:grid-cols-2">
 			<ColoredCards className="absolute z-0 origin-top-left scale-[.75] max-lg:scale-[.5]" />
 
-			<div className="relative z-1 hidden flex-col justify-end p-8 lg:flex">
+			<div className="relative z-1 hidden flex-col justify-end pb-16 pl-16 lg:flex">
 				<TicketIcon className="mb-8 size-20" />
 				<hgroup className="font-clash-display text-7xl leading-[100%] font-semibold tracking-[1%]">
 					<h1>Raffles!</h1>

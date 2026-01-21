@@ -27,9 +27,9 @@ export function Footer() {
 					</Link>
 				</div>
 				<p className="text-lg leading-8 font-medium tracking-wide text-[#7b7b7b]">
-					Verifair is a subsidiary of the EARN&apos;M Foundation
+					Rafli is a subsidiary of the EARN&apos;M Foundation
 					<br />
-					Copyright ©2026 — Verifair, Inc — All rights reserved.
+					Copyright ©2026 — Rafli, Inc — All rights reserved.
 				</p>
 			</div>
 		</footer>

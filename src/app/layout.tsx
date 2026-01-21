@@ -16,7 +16,7 @@ const clashDisplay = localFont({
 });
 
 export const metadata: Metadata = {
-	title: 'Verifair',
+	title: 'Rafli',
 };
 
 /**
@@ -33,7 +33,7 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<head>
-				<meta name="apple-mobile-web-app-title" content="Verifair" />
+				<meta name="apple-mobile-web-app-title" content="Rafli" />
 			</head>
 			<body
 				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} font-sans antialiased`}

@@ -36,7 +36,7 @@ export default function RootLayout({
 				<meta name="apple-mobile-web-app-title" content="Verifair" />
 			</head>
 			<body
-				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} antialiased`}
+				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} font-sans antialiased`}
 			>
 				<Providers>
 					{children}

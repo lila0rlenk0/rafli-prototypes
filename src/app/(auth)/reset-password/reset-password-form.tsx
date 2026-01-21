@@ -1,11 +1,22 @@
 'use client';
 
+import { LogoIcon } from '@/assets/logo-icon';
 import { Button } from '@/components/ui/button';
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from '@/components/ui/field';
 import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/utils';
 import { resetPassword } from '@/services/auth/reset-password';
-import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import {
+	AUTH_ERROR_CODES,
+	COMMON_ERROR_CODES,
+	type AuthErrorCode,
+} from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -94,14 +105,20 @@ export function ResetPasswordForm({ token, className, ...props }: ResetPasswordF
 
 	return (
 		<form
-			className={cn('flex flex-col gap-6', className)}
+			className={cn(
+				'flex w-full max-w-md flex-col rounded-2xl border border-black bg-white px-8 py-10 lg:px-12 lg:py-12',
+				className,
+			)}
 			{...props}
 			onSubmit={handleSubmit(handleResetPassword)}
 		>
-			<FieldGroup className="gap-3">
-				<div className="font-clash-display flex flex-col items-center gap-1 text-center">
-					<h1 className="text-2xl font-bold">Reset your password</h1>
-					<p className="text-muted-foreground text-sm font-medium text-balance">
+			<FieldGroup className="mx-auto h-fit w-full max-w-80">
+				<LogoIcon className="mx-auto" />
+				<div className="my-6 flex flex-col items-center gap-1 text-center">
+					<h1 className="font-clash-display text-4xl font-semibold">
+						Reset your password
+					</h1>
+					<p className="text-muted-foreground">
 						Enter your new password below.
 					</p>
 				</div>
@@ -129,13 +146,17 @@ export function ResetPasswordForm({ token, className, ...props }: ResetPasswordF
 				</Field>
 				<FieldError errors={[errors.root]} />
 				<Field className="mt-4">
-					<Button type="submit" disabled={isPending}>
+					<Button
+						type="submit"
+						disabled={isPending}
+						className="font-clash-display px-6 py-4 text-lg font-semibold"
+					>
 						{isPending ? 'Resetting...' : 'Reset Password'}
 					</Button>
 				</Field>
 				<FieldDescription className="text-center">
 					Remember your password?{' '}
-					<Link href="/sign-in" className="underline underline-offset-4">
+					<Link href="/sign-in" className="text-black">
 						Sign in
 					</Link>
 				</FieldDescription>

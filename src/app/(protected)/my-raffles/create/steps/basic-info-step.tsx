@@ -231,7 +231,7 @@ export function BasicInfoStep() {
 					type="button"
 					onClick={handleContinue}
 					disabled={!isCurrentStepValid}
-					className="cursor-pointer disabled:bg-black disabled:opacity-100"
+					className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
 				>
 					Continue
 				</Button>

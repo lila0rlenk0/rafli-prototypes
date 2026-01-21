@@ -15,11 +15,11 @@ import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import { RAFFLE_STATUS } from '@/types/raffle';
-import { TicketCode } from '@/types/ticket';
+import type { TicketCode } from '@/types/ticket';
 import { ArrowLeft, ImageIcon, InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { BugIcon } from '@/assets/icons/bug-icon';
 
@@ -36,7 +36,8 @@ interface PageProps {
  * Raffle Detail Page
  *
  * Displays full details of a specific raffle including cover image, gallery,
- * description, and category. Allows users to purchase tickets.
+ * description, and category. Allows authenticated users to purchase tickets.
+ * Non-authenticated users can view all details but must sign in to purchase.
  *
  * Fetches data server-side using the getRaffle service.
  * Handles payment status modal after Stripe redirect.
@@ -59,10 +60,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				</hgroup>
 
 				<Link
-					href="/my-raffles"
+					href="/browse"
 					className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
 				>
-					My Raffles
+					Back to Browse
 				</Link>
 			</div>
 		);
@@ -70,18 +71,21 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 	const raffle = response.data;
 
-	// Get session (cached - no extra request)
+	// Get session to check authentication status
 	const session = await getSession();
-	const currentUserId = session?.user?.id;
+	const isAuthenticated = !!session;
+	const currentUserId = session?.user?.id ?? null;
 
-	// Fetch user's ticket codes for this raffle
-	const ticketCodesResponse = await getMyTicketCodes({ raffleId: raffle.id });
+	// Only fetch user's ticket codes if authenticated
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
 
-	if (ticketCodesResponse.success) {
-		myTicketCodes = ticketCodesResponse.data.tickets;
-		myTicketsTotal = ticketCodesResponse.data.total;
+	if (isAuthenticated) {
+		const ticketCodesResponse = await getMyTicketCodes({ raffleId: raffle.id });
+		if (ticketCodesResponse.success) {
+			myTicketCodes = ticketCodesResponse.data.tickets;
+			myTicketsTotal = ticketCodesResponse.data.total;
+		}
 	}
 
 	/**
@@ -310,6 +314,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							availableTickets={availableTickets}
 							disabled={showEditButton || disablePurchase}
 							questionId={raffle.questionId}
+							isAuthenticated={isAuthenticated}
 						/>
 
 						{disablePurchase && !showEditButton && (
@@ -328,6 +333,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						raffle={raffle}
 						myTicketCodes={myTicketCodes}
 						myTicketsTotal={myTicketsTotal}
+						isAuthenticated={isAuthenticated}
 					/>
 
 					<div className="flex items-center justify-center gap-2">
@@ -346,6 +352,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	);
 }
 
+/**
+ * RaffleFireIcon Component
+ *
+ * Decorative fire icon for the raffle active state.
+ */
 function RaffleFireIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg

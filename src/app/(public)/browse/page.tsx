@@ -1,11 +1,11 @@
-import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import {
 	parsePage,
 	parseRaffleSortOption,
 } from '@/app/(protected)/lib/parse-search-params';
-import { FilterBar } from '@/components/filters';
-import { getRaffles } from '@/services/raffle/get-raffles';
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { FilterBar } from '@/components/filters';
+import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
+import { getRaffles } from '@/services/raffle/get-raffles';
 import Link from 'next/link';
 
 interface PageProps {
@@ -50,10 +50,10 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				</hgroup>
 
 				<Link
-					href="/my-raffles"
+					href="/browse"
 					className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
 				>
-					My Raffles
+					Back to Browse
 				</Link>
 			</div>
 		);
@@ -66,10 +66,10 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			{/* Header Section */}
 			<div className="mb-20">
 				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-extrabold sm:text-5xl">
-					Choose a prize you’ve been wanting!
+					Choose a prize you&apos;ve been wanting!
 				</h1>
 				<p className="text-lg font-medium">
-					Get in, make a few clicks, and you’re in the draw.
+					Get in, make a few clicks, and you&apos;re in the draw.
 				</p>
 			</div>
 
@@ -85,7 +85,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			{raffles && raffles.length > 0 ? (
 				<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 lg:grid-cols-4">
 					{raffles.map(raffle => (
-						<RaffleCard key={raffle.id} raffle={raffle} />
+						<PublicRaffleCard key={raffle.id} raffle={raffle} />
 					))}
 				</div>
 			) : (

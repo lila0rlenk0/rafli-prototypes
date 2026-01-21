@@ -22,7 +22,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
@@ -86,6 +86,16 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	const [isSocialPending, setIsSocialPending] = useState(false);
 	const [hasLoginError, setHasLoginError] = useState(false);
 	const router = useRouter();
+	const searchParams = useSearchParams();
+
+	/**
+	 * Gets the returnTo URL from search params
+	 * Called at action time to ensure we get the latest value after hydration
+	 * @returns The returnTo URL or default /browse
+	 */
+	function getReturnTo(): string {
+		return searchParams.get('returnTo') || '/browse';
+	}
 
 	/**
 	 * Handles form submission
@@ -104,8 +114,9 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 				return;
 			}
 
-			// Success - redirect to dashboard
-			router.push('/browse');
+			// Success - redirect to returnTo or default to browse
+			const returnTo = getReturnTo();
+			router.push(returnTo);
 			router.refresh();
 		});
 	}
@@ -118,9 +129,10 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 		setIsSocialPending(true);
 		setHasLoginError(false);
 
+		const returnTo = getReturnTo();
 		const result = await initiateSocialSignIn({
 			provider: 'google',
-			callbackURL: `${window.location.origin}/auth/callback`,
+			callbackURL: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
 		});
 
 		if (!result.success) {

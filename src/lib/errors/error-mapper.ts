@@ -92,6 +92,8 @@ function mapSimpleCode(code: string): string {
 		permission_denied: 'forbidden',
 		not_found: 'not_found',
 		invalid_argument: 'validation_error',
+		// better-auth plugin codes
+		PASSWORD_COMPROMISED: 'auth:password:compromised',
 	};
 
 	return SIMPLE_CODE_MAP[code] || code;

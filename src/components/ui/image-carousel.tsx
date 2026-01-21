@@ -60,7 +60,11 @@ export function ImageCarousel({
 	 * @param total - Total number of images
 	 * @returns The wrapped index
 	 */
-	function getWrappedIndex(current: number, delta: number, total: number): number {
+	function getWrappedIndex(
+		current: number,
+		delta: number,
+		total: number,
+	): number {
 		return (current + delta + total) % total;
 	}
 
@@ -131,7 +135,7 @@ export function ImageCarousel({
 							src={currentImage.url}
 							alt={`${alt} - Image ${currentIndex + 1}`}
 							fill
-							className="object-cover rounded-2xl"
+							className="rounded-2xl object-cover"
 							loading="eager"
 						/>
 					</motion.div>
@@ -145,7 +149,7 @@ export function ImageCarousel({
 			<button
 				type="button"
 				onClick={handlePrevious}
-				className="absolute top-1/2 left-3 z-10 -translate-y-1/2 rounded-full p-2 text-white/90 transition-colors hover:bg-black/50 hover:text-background cursor-pointer disabled:cursor-not-allowed disabled:opacity-80 disabled:hover:bg-transparent"
+				className="hover:text-background absolute top-1/2 left-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-80 disabled:hover:bg-black/50"
 				aria-label="Previous image"
 				disabled={!showNavigation}
 			>
@@ -154,7 +158,7 @@ export function ImageCarousel({
 			<button
 				type="button"
 				onClick={handleNext}
-				className="absolute top-1/2 right-3 z-10 -translate-y-1/2 rounded-full p-2 text-white/90 transition-colors hover:bg-black/50 hover:text-background cursor-pointer disabled:cursor-not-allowed disabled:opacity-80 disabled:hover:bg-transparent"
+				className="hover:text-background absolute top-1/2 right-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-80 disabled:hover:bg-black/50"
 				aria-label="Next image"
 				disabled={!showNavigation}
 			>
@@ -166,8 +170,9 @@ export function ImageCarousel({
 					{images.map((_, index) => (
 						<div
 							key={index}
-							className={`h-1.5 w-1.5 rounded-full transition-colors ${index === currentIndex ? 'bg-background' : 'bg-background/50'
-								}`}
+							className={`h-1.5 w-1.5 rounded-full transition-colors ${
+								index === currentIndex ? 'bg-background' : 'bg-background/50'
+							}`}
 						/>
 					))}
 				</div>

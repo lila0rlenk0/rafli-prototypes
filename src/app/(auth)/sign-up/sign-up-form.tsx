@@ -4,21 +4,23 @@ import { Button } from '@/components/ui/button';
 import {
 	Field,
 	FieldDescription,
+	FieldError,
 	FieldGroup,
 	FieldLabel,
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import { cn } from '@/lib/utils';
 import { registerUser } from '@/services/auth/register-user';
+import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type ComponentProps, useState, useTransition } from 'react';
+import { useState, useTransition, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 const formSchema = z.object({
@@ -27,7 +29,7 @@ const formSchema = z.object({
 	password: z
 		.string()
 		.min(12, 'Password must be at least 12 characters')
-		.max(50),
+		.max(128),
 });
 
 type FormType = z.infer<typeof formSchema>;
@@ -42,6 +44,8 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 		case AUTH_ERROR_CODES.SIGNUP_FAILED:
 			// Generic message to prevent user enumeration
 			return 'Unable to create account. Please try again or sign in.';
+		case AUTH_ERROR_CODES.PASSWORD_COMPROMISED:
+			return 'This password has appeared in data breaches. Please choose a different one.';
 		case AUTH_ERROR_CODES.SOCIAL_LOGIN_FAILED:
 		case AUTH_ERROR_CODES.SOCIAL_PROVIDER_ERROR:
 		case AUTH_ERROR_CODES.SOCIAL_CALLBACK_FAILED:
@@ -86,6 +90,7 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 				return;
 			}
 
+			toast.success('Account created! Check your email to verify before signing in.');
 			router.push('/sign-in');
 		});
 	}
@@ -132,9 +137,9 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 						placeholder="John Doe"
 						required
 						aria-invalid={!!errors.name}
-						aria-describedby={errors.name ? 'name-error' : undefined}
 						{...register('name')}
 					/>
+					<FieldError errors={[errors.name]} />
 				</Field>
 				<Field>
 					<FieldLabel htmlFor="email">Email</FieldLabel>
@@ -144,9 +149,9 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 						placeholder="m@example.com"
 						required
 						aria-invalid={!!errors.email}
-						aria-describedby={errors.email ? 'email-error' : undefined}
 						{...register('email')}
 					/>
+					<FieldError errors={[errors.email]} />
 				</Field>
 				<Field>
 					<FieldLabel htmlFor="password">Password</FieldLabel>
@@ -156,13 +161,11 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 						placeholder="********"
 						required
 						aria-invalid={!!errors.password}
-						aria-describedby={errors.password ? 'password-error' : undefined}
 						{...register('password')}
 					/>
+					<FieldError errors={[errors.password]} />
 				</Field>
-				{errors.root && (
-					<div className="text-sm text-red-600">{errors.root.message}</div>
-				)}
+				<FieldError errors={[errors.root]} />
 				<Field className="mt-4">
 					<Button type="submit" disabled={isPending}>
 						{isPending ? 'Creating account...' : 'Sign Up'}

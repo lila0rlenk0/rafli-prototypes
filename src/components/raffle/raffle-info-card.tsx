@@ -135,20 +135,16 @@ export function RaffleInfoCard({
 						<p>{getMyTotalTickets()}</p>
 					</div>
 
-					{myTicketCodes.length === 0 && (
-						<div className="grid w-full grid-cols-1 gap-2 md:w-84 md:grid-cols-2">
-							{myTicketCodes.map(ticket => (
-								<div
-									key={ticket.ticketCode}
-									className="flex items-center justify-center rounded-lg bg-[#F9FFB5] px-2 py-2 text-nowrap"
-								>
-									<span className="text-xs font-medium">
-										{ticket.ticketCode}
-									</span>
-								</div>
-							))}
-						</div>
-					)}
+					<div className="grid w-full grid-cols-1 gap-2 md:w-84 md:grid-cols-2">
+						{myTicketCodes.map(ticket => (
+							<div
+								key={ticket.ticketCode}
+								className="flex items-center justify-center rounded-lg bg-[#F9FFB5] px-2 py-2 text-nowrap"
+							>
+								<span className="text-xs font-medium">{ticket.ticketCode}</span>
+							</div>
+						))}
+					</div>
 				</div>
 			</div>
 		</div>

@@ -2,10 +2,11 @@ import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
 import {
 	parsePage,
 	parseRaffleSortOption,
-	parseRaffleStatus,
 } from '@/app/(protected)/lib/parse-search-params';
 import { FilterBar } from '@/components/filters';
 import { getRaffles } from '@/services/raffle/get-raffles';
+import { BugIcon } from '@/assets/icons/bug-icon';
+import Link from 'next/link';
 
 interface PageProps {
 	searchParams: Promise<{
@@ -24,13 +25,12 @@ interface PageProps {
  */
 export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
-	const status = parseRaffleStatus(params.status);
 	const sort = parseRaffleSortOption(params.sort);
 	const page = parsePage(params.page);
 	const category = params.category;
 
 	const response = await getRaffles({
-		status,
+		status: 'live',
 		page,
 		category,
 		sort,
@@ -39,13 +39,22 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 
 	if (!response.success) {
 		return (
-			<div className="flex h-[50vh] w-full items-center justify-center">
-				<div className="text-center">
-					<h3 className="text-lg font-medium text-red-600">
-						Error loading raffles
-					</h3>
-					<p className="mt-2 text-gray-500">Failed to load raffles</p>
-				</div>
+			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 text-center">
+				<BugIcon />
+
+				<hgroup className="space-y-4">
+					<h2 className="text-xl font-semibold">Error loading raffles</h2>
+					<p className="mt-2 text-lg">
+						Something went wrong while trying to load the raffles.
+					</p>
+				</hgroup>
+
+				<Link
+					href="/my-raffles"
+					className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
+				>
+					My Raffles
+				</Link>
 			</div>
 		);
 	}
@@ -53,27 +62,28 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const { raffles } = response.data;
 
 	return (
-		<div className="container mx-auto max-w-7xl px-4 py-8">
+		<div className="z-10 container mx-auto max-w-7xl px-4 py-8">
 			{/* Header Section */}
-			<div className="mb-12 text-center">
-				<h1 className="mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
-					Browse Raffles
+			<div className="mb-20">
+				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-extrabold sm:text-5xl">
+					Choose a prize you’ve been wanting!
 				</h1>
-				<p className="text-muted-foreground text-lg">
-					Discover amazing raffles and win big!
+				<p className="text-lg font-medium">
+					Get in, make a few clicks, and you’re in the draw.
 				</p>
 			</div>
 
 			{/* Filter Bar */}
-			<div className="mb-8 flex w-full">
-				<div className="ml-auto">
-					<FilterBar />
-				</div>
+			<div className="mb-8 flex w-full justify-between">
+				<h2 className="font-clash-display text-3xl font-semibold">
+					More existing raffles!
+				</h2>
+				<FilterBar />
 			</div>
 
 			{/* Grid Section */}
 			{raffles && raffles.length > 0 ? (
-				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 lg:grid-cols-4">
 					{raffles.map(raffle => (
 						<RaffleCard key={raffle.id} raffle={raffle} />
 					))}

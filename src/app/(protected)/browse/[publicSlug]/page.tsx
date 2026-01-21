@@ -21,6 +21,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ComponentProps } from 'react';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
+import { BugIcon } from '@/assets/icons/bug-icon';
 
 interface PageProps {
 	params: Promise<{
@@ -46,13 +47,23 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 	if (!response.success) {
 		return (
-			<div className="flex h-[50vh] w-full items-center justify-center">
-				<div className="text-center">
-					<h3 className="text-lg font-medium text-red-600">
-						Error loading raffle
-					</h3>
-					<p className="mt-2 text-gray-500">Failed to load raffle details</p>
-				</div>
+			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 text-center">
+				<BugIcon />
+
+				<hgroup className="space-y-4">
+					<h2 className="text-xl font-semibold">Error loading raffle</h2>
+					<p className="mt-2 text-lg">
+						Something went wrong while trying to load the details for this
+						raffle.
+					</p>
+				</hgroup>
+
+				<Link
+					href="/my-raffles"
+					className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
+				>
+					My Raffles
+				</Link>
 			</div>
 		);
 	}
@@ -251,10 +262,12 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					</div>
 
 					<div className="flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6">
-						<h2 className="text-xl font-semibold">FAQ</h2>
+						<h2 className="font-clash-display text-3xl font-semibold">
+							Have a question?
+						</h2>
 						<Accordion type="single" collapsible className="w-full space-y-4">
 							<AccordionItem value="how-it-works" className="border-none">
-								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 hover:no-underline">
+								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
 									How it works?
 								</AccordionTrigger>
 								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
@@ -265,7 +278,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</AccordionItem>
 
 							<AccordionItem value="rules-eligibility" className="border-none">
-								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 hover:no-underline">
+								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
 									Rules and Eligibility
 								</AccordionTrigger>
 								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">

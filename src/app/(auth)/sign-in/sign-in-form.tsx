@@ -4,29 +4,27 @@ import { Button } from '@/components/ui/button';
 import {
 	Field,
 	FieldDescription,
+	FieldError,
 	FieldGroup,
 	FieldLabel,
 	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import { cn } from '@/lib/utils';
 import { signInUser } from '@/services/auth/sign-in-user';
+import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type ComponentProps, useState, useTransition } from 'react';
+import { useState, useTransition, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
 import { z } from 'zod';
 
 const formSchema = z.object({
 	email: z.email('Invalid email address'),
-	password: z
-		.string()
-		.min(12, 'Password must be at least 12 characters')
-		.max(50),
+	password: z.string().min(12, 'Password must be at least 12 characters').max(128),
 });
 
 type FormType = z.infer<typeof formSchema>;
@@ -71,21 +69,29 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 		handleSubmit,
 		formState: { errors },
 		setError,
+		clearErrors,
 	} = useForm<FormType>({
 		resolver: zodResolver(formSchema),
 	});
 	const [isPending, startTransition] = useTransition();
 	const [isSocialPending, setIsSocialPending] = useState(false);
+	const [hasLoginError, setHasLoginError] = useState(false);
 	const router = useRouter();
 
+	/**
+	 * Handles form submission
+	 */
 	async function handleSignIn(data: FormType) {
+		clearErrors('root');
+		setHasLoginError(false);
+
 		startTransition(async () => {
 			const result = await signInUser(data);
 
 			// Type-safe response handling
 			if (!result.success) {
-				const message = getErrorMessage(result.error);
-				setError('root', { message });
+				setError('root', { message: getErrorMessage(result.error) });
+				setHasLoginError(true);
 				return;
 			}
 
@@ -101,6 +107,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	 */
 	async function handleGoogleSignIn() {
 		setIsSocialPending(true);
+		setHasLoginError(false);
 
 		const result = await initiateSocialSignIn({
 			provider: 'google',
@@ -137,9 +144,9 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 						placeholder="m@example.com"
 						required
 						aria-invalid={!!errors.email}
-						aria-describedby={errors.email ? 'email-error' : undefined}
 						{...register('email')}
 					/>
+					<FieldError errors={[errors.email]} />
 				</Field>
 				<Field>
 					<div className="flex items-center">
@@ -157,21 +164,22 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 						placeholder="********"
 						required
 						aria-invalid={!!errors.password}
-						aria-describedby={errors.password ? 'password-error' : undefined}
 						{...register('password')}
 					/>
+					<FieldError errors={[errors.password]} />
 				</Field>
-				{errors.root && (
-					<div className="text-sm text-red-600">{errors.root.message}</div>
+				<FieldError errors={[errors.root]} />
+				{hasLoginError && (
+					<p className="text-muted-foreground text-xs">
+						Just signed up? Check your inbox for the verification email.
+					</p>
 				)}
 				<Field className="mt-4">
 					<Button type="submit" disabled={isPending}>
 						{isPending ? 'Signing in...' : 'Sign In'}
 					</Button>
 				</Field>
-				<FieldSeparator className="my-2">
-					or do it via other accounts
-				</FieldSeparator>
+				<FieldSeparator className="my-2">or do it via other accounts</FieldSeparator>
 				<Field className="flex flex-col space-y-2">
 					<div className="flex w-full items-center justify-center">
 						<Button

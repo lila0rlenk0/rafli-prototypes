@@ -30,7 +30,7 @@ export function CreateRaffleButton() {
 
 	return (
 		<Link href="/my-raffles/create">
-			<Button className="font-clash-display bg-black px-8 font-semibold">
+			<Button className="font-clash-display hover:bg-background cursor-pointer border-2 border-black bg-black px-8 font-semibold hover:text-black">
 				Create new Raffle
 			</Button>
 		</Link>

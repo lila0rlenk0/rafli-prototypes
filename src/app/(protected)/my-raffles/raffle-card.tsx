@@ -2,13 +2,11 @@
 
 import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { useUserStore } from '@/providers/user-store-provider';
-import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
+import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
-import { CheckCircle2, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 interface RaffleCardProps {
@@ -36,18 +34,6 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 	}
 
 	/**
-	 * Calculates the number of days remaining until the raffle ends
-	 * @param endDateStr - ISO string of the end date
-	 * @returns Number of days remaining (0 if ended)
-	 */
-	function calculateDaysLeft(endDateStr: string): number {
-		const now = new Date();
-		const end = new Date(endDateStr);
-		const diffTime = Math.max(0, end.getTime() - now.getTime());
-		return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-	}
-
-	/**
 	 * Determines if edit button should be shown
 	 * Only for draft/queued raffles in host mode
 	 * Returns false if mode is not yet initialized
@@ -69,7 +55,6 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 		raffle.participantsCount,
 		raffle.maxParticipants,
 	);
-	const daysLeft = calculateDaysLeft(raffle.endAt);
 	const showEditButton = shouldShowEditButton();
 
 	/**
@@ -91,62 +76,29 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 	 * @returns Formatted string in "current/max" format
 	 */
 	function formatParticipantCount(current: number, max: number): string {
-		return `${current}/${max}`;
+		const formatter = new Intl.NumberFormat('en-US');
+
+		return `${formatter.format(current)}/${formatter.format(max)}`;
 	}
 
-	/**
-	 * Formats the days remaining text for display
-	 * @param days - Number of days remaining
-	 * @returns Formatted string with "days left" suffix
-	 */
-	function formatDaysLeft(days: number): string {
-		return `${days} days left`;
+	function getTicketPrice() {
+		const value = Number(raffle.ticketPriceAmount);
+		return value.toLocaleString('en-US', {
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 2,
+		});
 	}
 
-	/**
-	 * Gets the status badge component for a raffle
-	 * @param status - The raffle status
-	 * @returns Badge component or null if status doesn't have a badge
-	 */
-	function getStatusBadge(status: RaffleStatus) {
-		switch (status) {
-			case RAFFLE_STATUS.LIVE:
-				return (
-					<Badge
-						variant="secondary"
-						className="flex items-center gap-1 bg-green-100 text-green-700 hover:bg-green-100"
-					>
-						<CheckCircle2 className="h-3 w-3" />
-						Active
-					</Badge>
-				);
-			case RAFFLE_STATUS.ENDED:
-			case RAFFLE_STATUS.COMPLETED:
-				return (
-					<Badge
-						variant="secondary"
-						className="flex items-center gap-1 bg-gray-100 text-gray-700 hover:bg-gray-100"
-					>
-						<Clock className="h-3 w-3" />
-						Ended
-					</Badge>
-				);
-			case RAFFLE_STATUS.DRAFT:
-				return (
-					<Badge
-						variant="outline"
-						className="flex items-center gap-1 border-gray-200 text-gray-500"
-					>
-						Draft
-					</Badge>
-				);
-			default:
-				return null;
-		}
+	function getPrizeValue() {
+		const prizeValue = Number(raffle.declaredValueAmount);
+		return prizeValue.toLocaleString('en-US', {
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 2,
+		});
 	}
 
 	return (
-		<div className="group flex flex-col overflow-hidden rounded-[24px] bg-white">
+		<div className="group flex flex-col overflow-hidden rounded-[24px] border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
 			<ImageCarousel
 				coverImage={raffle.coverMediaUrl}
 				galleryImages={raffle.galleryMediaUrls}
@@ -155,43 +107,38 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 			/>
 
 			<div className="flex flex-1 flex-col p-4">
-				<h3 className="mb-2 text-xl font-bold tracking-tight text-gray-900">
+				<h3 className="mb-2 h-16 text-xl font-bold tracking-tight text-gray-900">
 					{raffle.title}
 				</h3>
 
-				<div className="mb-4 flex items-center justify-between">
-					<span className="text-sm font-medium text-gray-500">
-						{formatDaysLeft(daysLeft)}
-					</span>
-					{getStatusBadge(raffle.status)}
+				<div className="mb-4 flex flex-col">
+					<div className="flex items-center justify-between">
+						<p className="text-muted-foreground">Ticket prize</p>
+						<p className="text-xl font-semibold">${getTicketPrice()}</p>
+					</div>
+					<div className="flex items-center justify-between">
+						<p className="text-muted-foreground">Prize value</p>
+						<p className="text-xl font-semibold">${getPrizeValue()}</p>
+					</div>
 				</div>
 
 				<div className="mb-2 flex items-center justify-between text-sm">
-					<span className="text-gray-500">
+					<span className="text-[#7B7B7B]">
 						{formatParticipantCount(
 							raffle.participantsCount,
 							raffle.maxParticipants,
 						)}
 					</span>
-					<span className="font-medium text-gray-900">
+					<span className="text-[#7B7B7B]">
 						{formatProgressPercentage(progress)} filled
 					</span>
 				</div>
 
-				<div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+				<div className="mb-6 h-[11px] w-full overflow-hidden rounded-full bg-gray-100">
 					<div
-						className="h-full bg-green-400 transition-all duration-300 ease-out"
+						className="bg-primary h-full transition-all duration-300 ease-out"
 						style={{ width: `${progress}%` }}
 					/>
-				</div>
-
-				<div className="mt-auto flex items-center justify-between gap-4">
-					<span className="text-sm font-medium text-gray-500">
-						Participants
-					</span>
-					<span className="text-lg font-bold text-gray-900">
-						{raffle.participantsCount}
-					</span>
 				</div>
 
 				{showEditButton ? (
@@ -201,9 +148,9 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 				) : (
 					<Link
 						href={`/browse/${raffle.publicSlugOrCode}`}
-						className="mt-4 block"
+						className="mt-0 block"
 					>
-						<Button className="w-full rounded-full bg-black py-6 text-base font-medium text-white hover:bg-gray-800">
+						<Button className="hover:bg-background w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:text-black">
 							Details
 						</Button>
 					</Link>

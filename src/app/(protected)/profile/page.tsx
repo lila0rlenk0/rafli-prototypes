@@ -1,8 +1,9 @@
 import { getSession } from '@/lib/auth/session';
+import { getMe } from '@/services/user/get-me';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { ProfileSidebar } from './profile-sidebar';
-import { PersonalInformationSection } from './sections';
+import { PersonalInformationSection, SecuritySection } from './sections';
 
 /**
  * Sidebar items configuration
@@ -14,6 +15,10 @@ const SIDEBAR_ITEMS = [
 	{
 		label: 'Personal Information',
 		sectionId: 'personal-information',
+	},
+	{
+		label: 'Security',
+		sectionId: 'security',
 	},
 ];
 
@@ -27,6 +32,10 @@ const SIDEBAR_ITEMS = [
 export default async function ProfilePage() {
 	const session = await getSession();
 	const user = session?.user;
+
+	// Fetch full user profile data including avatar and bio
+	const meResult = await getMe();
+	const userProfile = meResult.success ? meResult.data : null;
 
 	return (
 		<div className="flex flex-col gap-8 px-4">
@@ -46,7 +55,14 @@ export default async function ProfilePage() {
 					</div>
 
 					{/* Personal Information */}
-					<PersonalInformationSection user={user} />
+					<PersonalInformationSection
+						user={user}
+						avatarUrl={userProfile?.avatarUrl ?? null}
+						bio={userProfile?.bio ?? null}
+					/>
+
+					{/* Security */}
+					<SecuritySection />
 				</div>
 			</div>
 		</div>

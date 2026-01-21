@@ -1,7 +1,14 @@
 'use client';
 
+import { LogoIcon } from '@/assets/logo-icon';
 import { Button } from '@/components/ui/button';
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { requestPasswordReset } from '@/services/auth/request-password-reset';
@@ -73,16 +80,28 @@ export function ForgotPasswordForm({ className, ...props }: ComponentProps<'form
 
 	if (isSuccess) {
 		return (
-			<div className={cn('flex flex-col gap-6', className)}>
-				<FieldGroup className="gap-3">
-					<div className="font-clash-display flex flex-col items-center gap-1 text-center">
-						<h1 className="text-2xl font-bold">Check your email</h1>
-						<p className="text-muted-foreground text-sm font-medium text-balance">
-							If an account exists with that email, we&apos;ve sent password reset instructions.
+			<div
+				className={cn(
+					'flex w-full max-w-md flex-col rounded-2xl border border-black bg-white px-8 py-10 lg:px-12 lg:py-12',
+					className,
+				)}
+			>
+				<FieldGroup className="mx-auto h-fit w-full max-w-80">
+					<LogoIcon className="mx-auto" />
+					<div className="my-6 flex flex-col items-center gap-1 text-center">
+						<h1 className="font-clash-display text-4xl font-semibold">
+							Check your email
+						</h1>
+						<p className="text-muted-foreground">
+							If an account exists with that email, we&apos;ve sent password
+							reset instructions.
 						</p>
 					</div>
 					<Field className="mt-4">
-						<Button asChild>
+						<Button
+							asChild
+							className="font-clash-display px-6 py-4 text-lg font-semibold"
+						>
 							<Link href="/sign-in">Back to Sign In</Link>
 						</Button>
 					</Field>
@@ -93,14 +112,20 @@ export function ForgotPasswordForm({ className, ...props }: ComponentProps<'form
 
 	return (
 		<form
-			className={cn('flex flex-col gap-6', className)}
+			className={cn(
+				'flex w-full max-w-md flex-col rounded-2xl border border-black bg-white px-8 py-10 lg:px-12 lg:py-12',
+				className,
+			)}
 			{...props}
 			onSubmit={handleSubmit(handleRequestReset)}
 		>
-			<FieldGroup className="gap-3">
-				<div className="font-clash-display flex flex-col items-center gap-1 text-center">
-					<h1 className="text-2xl font-bold">Forgot your password?</h1>
-					<p className="text-muted-foreground text-sm font-medium text-balance">
+			<FieldGroup className="mx-auto h-fit w-full max-w-80">
+				<LogoIcon className="mx-auto" />
+				<div className="my-6 flex flex-col items-center gap-1 text-center">
+					<h1 className="font-clash-display text-4xl font-semibold">
+						Forgot your password?
+					</h1>
+					<p className="text-muted-foreground">
 						Enter your email and we&apos;ll send you reset instructions.
 					</p>
 				</div>
@@ -109,7 +134,7 @@ export function ForgotPasswordForm({ className, ...props }: ComponentProps<'form
 					<Input
 						id="email"
 						type="email"
-						placeholder="m@example.com"
+						placeholder="Type your email"
 						required
 						aria-invalid={!!errors.email}
 						{...register('email')}
@@ -118,13 +143,17 @@ export function ForgotPasswordForm({ className, ...props }: ComponentProps<'form
 				</Field>
 				<FieldError errors={[errors.root]} />
 				<Field className="mt-4">
-					<Button type="submit" disabled={isPending}>
+					<Button
+						type="submit"
+						disabled={isPending}
+						className="font-clash-display px-6 py-4 text-lg font-semibold"
+					>
 						{isPending ? 'Sending...' : 'Send Reset Link'}
 					</Button>
 				</Field>
 				<FieldDescription className="text-center">
 					Remember your password?{' '}
-					<Link href="/sign-in" className="underline underline-offset-4">
+					<Link href="/sign-in" className="text-black">
 						Sign in
 					</Link>
 				</FieldDescription>

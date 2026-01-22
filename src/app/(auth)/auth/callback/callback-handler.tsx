@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
  *
  * After OAuth, the backend redirects here. The browser has the better-auth
  * session cookie (set by backend). This handler:
- * 1. Calls backend /api/auth/token with credentials to get JWT
+ * 1. Calls backend /auth/token with credentials to get JWT
  * 2. Sets raffly auth cookies
  * 3. Redirects to /browse
  *
@@ -44,7 +44,7 @@ export function CallbackHandler() {
 				// Step 2: Exchange session cookie for JWT token
 				// browserClient sends cookies automatically via withCredentials
 				const response = await browserClient.get<{ token?: string }>(
-					'/api/auth/token',
+					'/auth/token',
 				);
 
 				if (!response.data.token) {

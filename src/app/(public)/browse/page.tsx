@@ -5,6 +5,7 @@ import {
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { FilterBar } from '@/components/filters';
 import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
+import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffles } from '@/services/raffle/get-raffles';
 import Link from 'next/link';
 
@@ -29,13 +30,22 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const page = parsePage(params.page);
 	const category = params.category;
 
-	const response = await getRaffles({
-		status: 'live',
-		page,
-		category,
-		sort,
-		limit: 12,
-	});
+	// Fetch raffles and categories in parallel
+	const [response, categoriesResponse] = await Promise.all([
+		getRaffles({
+			status: 'live',
+			page,
+			category,
+			sort,
+			limit: 12,
+		}),
+		getCategories(),
+	]);
+
+	// Filter active categories only
+	const categories = categoriesResponse.success
+		? categoriesResponse.data.categories.filter(c => c.isActive)
+		: [];
 
 	if (!response.success) {
 		return (
@@ -78,7 +88,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				<h2 className="font-clash-display text-3xl font-semibold">
 					More existing raffles!
 				</h2>
-				<FilterBar />
+				<FilterBar categories={categories} />
 			</div>
 
 			{/* Grid Section */}

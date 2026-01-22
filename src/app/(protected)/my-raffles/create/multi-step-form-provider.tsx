@@ -16,6 +16,7 @@ import { z } from 'zod';
 
 import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
 import { createRaffle } from '@/services/raffle/create-raffle';
+import type { Category } from '@/types/category';
 import type { Question } from '@/types/question';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
@@ -43,6 +44,7 @@ interface MultiStepFormContextType {
 	hasUnsavedChanges: boolean;
 	setShowExitModal: (show: boolean) => void;
 	questions: Question[];
+	categories: Category[];
 }
 
 const MultiStepFormContext = createContext<
@@ -54,6 +56,7 @@ interface MultiStepFormProviderProps {
 	userName: string;
 	totalRaffles: number;
 	questions: Question[];
+	categories: Category[];
 }
 
 /**
@@ -69,6 +72,7 @@ export function MultiStepFormProvider({
 	userName,
 	totalRaffles,
 	questions,
+	categories,
 }: MultiStepFormProviderProps) {
 	const router = useRouter();
 	const [currentStep, setCurrentStep] = useState(0);
@@ -367,6 +371,7 @@ export function MultiStepFormProvider({
 				hasUnsavedChanges,
 				setShowExitModal,
 				questions,
+				categories,
 			}}
 		>
 			{children}

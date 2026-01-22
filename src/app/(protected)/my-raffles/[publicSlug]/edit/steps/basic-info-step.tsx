@@ -10,9 +10,8 @@ import {
 import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { ImagePreviewCard } from '@/components/ui/image-preview-card';
 import { Input } from '@/components/ui/input';
-import { RAFFLE_CATEGORIES } from '@/constants/categories';
 import { DollarSign, X } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { STEPS } from '.';
 import { DescriptionEditor } from '../../../create/description-editor';
 import { useEditForm } from '../edit-form-provider';
@@ -31,6 +30,7 @@ export function BasicInfoStep() {
 		nextStep,
 		existingCoverUrl,
 		existingGalleryUrls,
+		categories,
 	} = useEditForm();
 	const {
 		register,
@@ -51,6 +51,19 @@ export function BasicInfoStep() {
 
 	// State for lightbox preview
 	const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+
+	/**
+	 * Transforms categories into combobox options format
+	 * Uses category id as value (backend UUID)
+	 */
+	const categoryOptions = useMemo(
+		() =>
+			categories.map(cat => ({
+				value: cat.id,
+				label: cat.name,
+			})),
+		[categories],
+	);
 
 	// Check if any field in this step is filled
 	const hasFilledFields = Boolean(
@@ -248,7 +261,7 @@ export function BasicInfoStep() {
 						Category
 					</label>
 					<Combobox
-						options={RAFFLE_CATEGORIES}
+						options={categoryOptions}
 						value={category}
 						onValueChange={value => setValue('category', value)}
 						placeholder="Select category"

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { getSession } from '@/lib/auth/session';
 import { hasHostPermission } from '@/lib/permissions';
+import { getCategories } from '@/services/raffle/get-categories';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { getQuestions } from '@/services/raffle/get-questions';
 import { ComponentProps } from 'react';
@@ -54,11 +55,9 @@ export default async function RafflesCreatePage() {
 	// Get user information
 	const userName = session?.user?.name || 'Raffle Host';
 
-	// Get total raffles count and questions in parallel
-	const [rafflesResponse, questionsResponse] = await Promise.all([
-		getMyRaffles(),
-		getQuestions(),
-	]);
+	// Get total raffles count, questions, and categories in parallel
+	const [rafflesResponse, questionsResponse, categoriesResponse] =
+		await Promise.all([getMyRaffles(), getQuestions(), getCategories()]);
 
 	const totalRaffles = rafflesResponse.success
 		? rafflesResponse.data.total || 0
@@ -67,6 +66,11 @@ export default async function RafflesCreatePage() {
 	// Filter active questions only
 	const questions = questionsResponse.success
 		? questionsResponse.data.questions.filter(q => q.isActive)
+		: [];
+
+	// Filter active categories only
+	const categories = categoriesResponse.success
+		? categoriesResponse.data.categories.filter(c => c.isActive)
 		: [];
 
 	return (
@@ -90,7 +94,12 @@ export default async function RafflesCreatePage() {
 				))}
 			</div>
 
-			<MultiStepFormProvider userName={userName} totalRaffles={totalRaffles} questions={questions}>
+			<MultiStepFormProvider
+				userName={userName}
+				totalRaffles={totalRaffles}
+				questions={questions}
+				categories={categories}
+			>
 				<div className="flex w-full max-w-195 flex-col">
 					<FormHeader />
 					<FormStepComponent />

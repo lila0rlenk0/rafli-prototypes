@@ -2,18 +2,13 @@
 
 import { ZodError } from 'zod';
 
-import { getCategoryId } from '@/constants/categories';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
-import {
-	CLIENT_ERROR_CODES,
-	RAFFLE_ERROR_CODES,
-	type RaffleErrorCode,
-} from '@/types/errors';
+import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { CreateRaffleInput, Raffle } from '@/types/raffle';
 import { createRafflePayloadSchema, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
@@ -36,17 +31,12 @@ export async function createRaffle(
 	const userId = session?.user?.id;
 
 	try {
-		const categoryId = getCategoryId(input.category);
-		if (!categoryId) {
-			return failure(CLIENT_ERROR_CODES.RAFFLE_INVALID_CATEGORY);
-		}
-
 		const payload = {
 			title: input.title,
 			description: input.description,
 			declaredValueAmount: input.price.toString(),
 			declaredValueCurrency: 'USD',
-			categoryId,
+			categoryId: input.category,
 			questionId: input.checkInQuestion,
 			startAt: new Date(input.startDate).toISOString(),
 			endAt: new Date(input.endDate).toISOString(),

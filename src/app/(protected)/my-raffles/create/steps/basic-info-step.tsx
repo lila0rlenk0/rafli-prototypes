@@ -10,7 +10,6 @@ import {
 import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { ImagePreviewCard } from '@/components/ui/image-preview-card';
 import { Input } from '@/components/ui/input';
-import { RAFFLE_CATEGORIES } from '@/constants/categories';
 import { generateSlugPreview } from '@/lib/utils/slug-preview';
 import { DollarSign, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -20,7 +19,8 @@ import { useMultiStepForm } from '../multi-step-form-provider';
 import { MAX_FILE_SIZE } from '../schema';
 
 export function BasicInfoStep() {
-	const { form, currentStep: stepIndex, nextStep } = useMultiStepForm();
+	const { form, currentStep: stepIndex, nextStep, categories } =
+		useMultiStepForm();
 	const {
 		register,
 		formState: { errors, touchedFields },
@@ -51,6 +51,19 @@ export function BasicInfoStep() {
 
 		return `/browse/${slugPreview}`;
 	}, [title]);
+
+	/**
+	 * Transforms categories into combobox options format
+	 * Uses category id as value (backend UUID)
+	 */
+	const categoryOptions = useMemo(
+		() =>
+			categories.map(cat => ({
+				value: cat.id,
+				label: cat.name,
+			})),
+		[categories],
+	);
 
 	// Check if any field in this step is filled
 	const hasFilledFields = Boolean(
@@ -211,7 +224,7 @@ export function BasicInfoStep() {
 						Category
 					</label>
 					<Combobox
-						options={RAFFLE_CATEGORIES}
+						options={categoryOptions}
 						value={category}
 						onValueChange={value => setValue('category', value)}
 						placeholder="Select category"

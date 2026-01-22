@@ -26,7 +26,7 @@ export async function signOutUser(): Promise<never> {
 	}
 
 	try {
-		await authenticatedClient.post('/api/auth/sign-out');
+		await authenticatedClient.post('/auth/sign-out');
 	} catch (error) {
 		console.error('Sign out error:', error);
 	} finally {

@@ -35,7 +35,7 @@ export async function registerUser(
 		}
 
 		const response = await baseClient.post(
-			'/api/auth/sign-up/email',
+			'/auth/sign-up/email',
 			validationResult.data,
 		);
 

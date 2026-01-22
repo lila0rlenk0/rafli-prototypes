@@ -23,7 +23,7 @@ export async function resetPassword(
 	input: ResetPasswordInput,
 ): Promise<ResetPasswordResponse> {
 	try {
-		await baseClient.post('/api/auth/reset-password', input);
+		await baseClient.post('/auth/reset-password', input);
 
 		return success(undefined);
 	} catch (error) {

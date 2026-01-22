@@ -23,7 +23,7 @@ export async function changePassword(
 	input: ChangePasswordInput,
 ): Promise<ChangePasswordResponse> {
 	try {
-		await authenticatedClient.post('/api/auth/change-password', input);
+		await authenticatedClient.post('/auth/change-password', input);
 
 		return success(undefined);
 	} catch (error) {

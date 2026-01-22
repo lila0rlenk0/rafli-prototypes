@@ -24,7 +24,7 @@ export async function requestPasswordReset(
 	input: RequestPasswordResetInput,
 ): Promise<RequestPasswordResetResponse> {
 	try {
-		await baseClient.post('/api/auth/forget-password', input);
+		await baseClient.post('/auth/forget-password', input);
 
 		return success(undefined);
 	} catch (error) {

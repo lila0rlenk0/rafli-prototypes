@@ -50,7 +50,7 @@ export async function initiateSocialSignIn(
 
 	try {
 		const response = await browserClient.post<unknown>(
-			'/api/auth/sign-in/social',
+			'/auth/sign-in/social',
 			validation.data,
 		);
 

@@ -31,7 +31,7 @@ export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 		}
 
 		const response = await baseClient.post(
-			'/api/auth/sign-in/email',
+			'/auth/sign-in/email',
 			validationResult.data,
 		);
 

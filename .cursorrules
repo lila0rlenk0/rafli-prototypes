@@ -1,0 +1,389 @@
+# Raffly - Cursor Rules
+
+Next.js 16 raffle platform with Clean Architecture.
+
+## Documentation Structure
+
+This project uses layered documentation. ALWAYS read the relevant CLAUDE.md files for detailed patterns:
+
+- `CLAUDE.md` - Project overview and critical rules
+- `src/services/CLAUDE.md` - Server actions patterns
+- `src/components/CLAUDE.md` - UI components guidelines
+- `src/types/CLAUDE.md` - Zod schema-first type definitions
+- `src/lib/CLAUDE.md` - Utilities and error handling
+- `docs/verification.md` - Post-implementation checklist
+
+## Commands
+
+- `bun run dev` - dev server
+- `bun run lint` - lint (REQUIRED after changes)
+- `bun run build` - production build
+
+## Project Structure
+
+- src/app/ - Next.js App Router
+- src/components/ - UI components
+- src/services/ - server actions
+- src/types/ - Zod schemas & types
+- src/lib/ - utilities, error handling
+
+---
+
+## Critical Rules
+
+ALWAYS: Write code and comments in English
+ALWAYS: Use Bun, never npm/yarn/pnpm
+ALWAYS: Use underscores in large numbers (1_000_000)
+ALWAYS: Run `bun run lint` before completing tasks
+NEVER: Skip lint verification
+NEVER: Use `any` types without justification
+
+---
+
+## Services Layer
+
+Server actions for all API requests. Organized by domain (auth, raffle).
+
+### Golden Rules
+
+- CRITICAL: All API requests MUST be server actions
+- NEVER: Expose API keys or tokens to client
+- ALWAYS: Return `ServiceResponse<TData, TErrorCode>`
+- ALWAYS: Validate responses with Zod schemas
+- ALWAYS: Use `success()` and `failure()` helpers
+
+### Clients
+
+- `baseClient` - public endpoints (injects S2S secret + client IP)
+- `authenticatedClient` - auth endpoints (injects token + S2S secret + client IP)
+
+### Pattern: Authenticated Endpoint
+
+```tsx
+'use server';
+
+import { authenticatedClient } from '@/lib/api/client';
+import { failure, success } from '@/lib/errors';
+import { mapRaffleError } from '@/lib/errors';
+import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
+import { mySchema, type MyResponse } from '@/types/my-entity';
+import type { ServiceResponse } from '@/types/service-response';
+import { ZodError } from 'zod';
+
+type GetMyDataResponse = ServiceResponse<MyResponse, RaffleErrorCode>;
+
+/**
+ * Fetches user data (JSDoc required)
+ * @returns ServiceResponse with data or error code
+ */
+export async function getMyData(): Promise<GetMyDataResponse> {
+  try {
+    const response = await authenticatedClient.get('/me/data');
+    const validated = mySchema.parse(response.data);
+    return success(validated);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      console.error('Validation failed:', error);
+      return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
+    }
+    return failure(mapRaffleError(error));
+  }
+}
+```
+
+### Pattern: Public Endpoint
+
+```tsx
+'use server';
+
+import { baseClient } from '@/lib/api/client';
+import { failure, success } from '@/lib/errors';
+import { mapRaffleError } from '@/lib/errors';
+
+export async function getPublicData(): Promise<GetPublicDataResponse> {
+  try {
+    const response = await baseClient.get('/public/data');
+    return success(response.data);
+  } catch (error) {
+    return failure(mapRaffleError(error));
+  }
+}
+```
+
+### Services Checklist
+
+- [ ] 'use server' at top
+- [ ] JSDoc with @returns
+- [ ] Response type defined
+- [ ] Zod validation on response
+- [ ] ZodError handled separately
+- [ ] Appropriate error mapper used
+
+---
+
+## Components Layer
+
+UI components following Server Components First architecture.
+
+### Golden Rules
+
+- CRITICAL: Server Components by default
+- CRITICAL: Wrap runtime data access in Suspense
+- ALWAYS: Extract logic from JSX into functions
+- ALWAYS: Use `function` declarations, not arrow functions
+- ALWAYS: JSDoc on all functions and components
+- NEVER: 'use client' without interactivity requirement
+
+### Server vs Client
+
+**Server Components:**
+- Static content, data fetching, SEO-critical
+- No browser APIs, no event handlers
+
+**Client Components:**
+- Interactive UI (clicks, forms, state)
+- Browser APIs (localStorage, geolocation)
+- Mark with `'use client'` at top
+
+### Runtime Data + Suspense (CRITICAL)
+
+Runtime data (`cookies()`, `headers()`, `searchParams`, `getSession()`) MUST be in Suspense.
+
+```tsx
+// BAD - blocks entire page
+export default async function Layout({ children }) {
+  const session = await getSession(); // cookies() inside
+  return <Nav user={session.user}>{children}</Nav>;
+}
+
+// GOOD - extract and wrap
+async function LayoutContent({ children }) {
+  const session = await getSession();
+  return <Nav user={session.user}>{children}</Nav>;
+}
+
+export default function Layout({ children }) {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <LayoutContent>{children}</LayoutContent>
+    </Suspense>
+  );
+}
+```
+
+### Logic Extraction
+
+```tsx
+// BAD
+<div>{user.name || user.email}</div>
+<div>{count.toLocaleString()}</div>
+
+// GOOD
+export function UserCard({ user, count }: Props) {
+  /**
+   * Gets display name for user
+   * @param user - User object
+   * @returns Display name string
+   */
+  function getDisplayName(user: User): string {
+    return user.name || user.email;
+  }
+
+  function formatCount(count: number): string {
+    return count.toLocaleString();
+  }
+
+  return (
+    <div>{getDisplayName(user)}</div>
+    <div>{formatCount(count)}</div>
+  );
+}
+```
+
+### Function Style
+
+```tsx
+// BAD
+const handleClick = () => { ... };
+const formatValue = (v: number) => v.toLocaleString();
+
+// GOOD
+function handleClick() { ... }
+function formatValue(v: number) { return v.toLocaleString(); }
+
+// Arrow functions ONLY in hooks:
+const memoizedFn = useCallback(() => { ... }, []);
+const computed = useMemo(() => expensive(data), [data]);
+```
+
+### Performance
+
+- `useMemo` for expensive calculations
+- `useCallback` for callback stability
+- Debounce frequent events (scroll, input)
+- Use Next.js `Image` component
+- Code split heavy components with `dynamic()`
+
+---
+
+## Types Layer
+
+Zod schema-first type definitions.
+
+### Golden Rules
+
+- CRITICAL: Define Zod schemas FIRST, then infer types
+- NEVER: Define interfaces manually without schema
+- ALWAYS: Validate API responses with schemas
+- ALWAYS: Document schemas with JSDoc
+
+### File Organization
+
+```tsx
+import { z } from 'zod';
+
+// ==========================================
+// Constants
+// ==========================================
+
+export const MY_STATUS = {
+  ACTIVE: 'active',
+  INACTIVE: 'inactive',
+} as const;
+
+// ==========================================
+// Types from Constants
+// ==========================================
+
+export type MyStatus = (typeof MY_STATUS)[keyof typeof MY_STATUS];
+
+// ==========================================
+// Schemas
+// ==========================================
+
+export const myStatusSchema = z.enum([
+  MY_STATUS.ACTIVE,
+  MY_STATUS.INACTIVE,
+]);
+
+/**
+ * Schema for main entity
+ */
+export const myEntitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: myStatusSchema,
+  createdAt: z.string(),
+});
+
+// ==========================================
+// Inferred Types
+// ==========================================
+
+export type MyEntity = z.infer<typeof myEntitySchema>;
+```
+
+### Anti-Patterns
+
+```tsx
+// BAD - manual interface
+export interface MyQuery {
+  status?: string;
+  limit?: number;
+}
+
+// GOOD - schema first
+export const myQuerySchema = z.object({
+  status: z.string().optional(),
+  limit: z.number().optional(),
+});
+export type MyQuery = z.infer<typeof myQuerySchema>;
+```
+
+---
+
+## Lib Layer
+
+Utilities, error handling, and API client configuration.
+
+### Error Handling System
+
+All services return typed `ServiceResponse<TData, TErrorCode>`:
+
+```typescript
+type ServiceResponse<T, E> =
+  | { success: true; data: T }
+  | { success: false; error: E };
+```
+
+### Helpers
+
+```typescript
+import { success, failure } from '@/lib/errors';
+
+// Success cases
+return success(data);           // with data
+return success(undefined);      // void operations
+
+// Failure cases
+return failure(ERROR_CODES.NOT_FOUND);
+return failure(mapAuthError(error));
+```
+
+### Error Mappers
+
+- `mapAuthError(error)` - auth service errors
+- `mapRaffleError(error)` - raffle service errors
+
+### Error Code Naming
+
+Format: `<service>:<operation>:<specific>`
+
+Examples:
+- `auth:sign-in:invalid-credentials`
+- `raffle:create:permission`
+- `raffle:upload:too-large`
+
+### API Clients
+
+- `baseClient` - no auth, injects S2S secret + client IP
+- `authenticatedClient` - injects token from cookies + S2S secret + client IP
+
+Located in `@/lib/api/client`.
+
+---
+
+## Post-Implementation Verification
+
+CRITICAL: Run these checks after EVERY implementation.
+
+### Required: Lint
+
+```bash
+bun run lint
+```
+
+Must pass:
+- No ESLint errors/warnings
+- No unused variables/imports
+- No React Hooks violations
+- All imports resolve
+
+### Checklist
+
+**Code Quality:**
+- [ ] `bun run lint` passes
+- [ ] No unused code
+- [ ] No `any` types
+- [ ] JSDoc on functions
+- [ ] Logic extracted from JSX
+
+**React:**
+- [ ] No setState in useEffect body
+- [ ] Correct dependency arrays
+- [ ] No infinite loops
+- [ ] Runtime data in Suspense
+
+**Runtime:**
+- [ ] `bun run dev` has no errors
+- [ ] Feature works manually

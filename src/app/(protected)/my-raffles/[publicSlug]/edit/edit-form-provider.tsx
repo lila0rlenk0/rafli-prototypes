@@ -15,8 +15,8 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { getCategoryId } from '@/constants/categories';
 import { computeRaffleDiff, hasRaffleChanges } from '@/lib/utils/raffle-diff';
+import type { Category } from '@/types/category';
 import type { Question } from '@/types/question';
 import { updateRaffle } from '@/services/raffle/update-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
@@ -44,6 +44,7 @@ interface EditFormContextType {
 	existingCoverUrl: string | null;
 	existingGalleryUrls: string[];
 	questions: Question[];
+	categories: Category[];
 	userName: string;
 	totalRaffles: number;
 }
@@ -59,6 +60,7 @@ interface EditFormProviderProps {
 	initialGalleryUrls: SignedMediaUrl[];
 	defaultValues: EditFormData;
 	questions: Question[];
+	categories: Category[];
 	userName: string;
 	totalRaffles: number;
 }
@@ -132,6 +134,7 @@ export function EditFormProvider({
 	initialGalleryUrls,
 	defaultValues,
 	questions,
+	categories,
 	userName,
 	totalRaffles,
 }: EditFormProviderProps) {
@@ -211,8 +214,8 @@ export function EditFormProvider({
 					return;
 				}
 
-				const categoryId = getCategoryId(data.category);
-				if (!categoryId) {
+				// Category is now stored as UUID directly from the backend
+				if (!data.category) {
 					toast.error('Invalid category selected');
 					setIsUpdating(false);
 					return;
@@ -229,11 +232,10 @@ export function EditFormProvider({
 				const hasFieldChanges = hasRaffleChanges(
 					raffle,
 					data,
-					categoryId,
+					data.category,
 					data.checkInQuestion,
 				);
-				const hasNewImages =
-					data.coverImage && data.coverImage.length > 0;
+				const hasNewImages = data.coverImage && data.coverImage.length > 0;
 
 				// If no field changes and no new images, nothing to save
 				// Button should be disabled if no changes, but double-check here as safety
@@ -246,7 +248,7 @@ export function EditFormProvider({
 				const diff = computeRaffleDiff(
 					raffle,
 					data,
-					categoryId,
+					data.category,
 					data.checkInQuestion,
 				);
 
@@ -333,6 +335,7 @@ export function EditFormProvider({
 				existingCoverUrl,
 				existingGalleryUrls,
 				questions,
+				categories,
 				userName,
 				totalRaffles,
 			}}

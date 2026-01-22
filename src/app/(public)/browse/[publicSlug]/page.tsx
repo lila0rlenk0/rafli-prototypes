@@ -10,10 +10,11 @@ import {
 } from '@/components/ui/accordion';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
-import { getCategoryLabel } from '@/constants/categories';
 import { getSession } from '@/lib/auth/session';
+import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
+import type { Category } from '@/types/category';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
 import { ArrowLeft, ImageIcon, InfoIcon } from 'lucide-react';
@@ -33,6 +34,22 @@ interface PageProps {
 }
 
 /**
+ * Gets the category name from a list of categories by ID
+ *
+ * @param categories - List of available categories
+ * @param categoryId - The category ID to look up
+ * @returns The category name or 'Other' if not found
+ */
+function getCategoryName(
+	categories: Category[],
+	categoryId: string | undefined,
+): string {
+	if (!categoryId) return 'Other';
+	const category = categories.find(c => c.id === categoryId);
+	return category?.name || 'Other';
+}
+
+/**
  * Raffle Detail Page
  *
  * Displays full details of a specific raffle including cover image, gallery,
@@ -44,7 +61,17 @@ interface PageProps {
  */
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;
-	const response = await getRaffle(publicSlug);
+
+	// Fetch raffle and categories in parallel
+	const [response, categoriesResponse] = await Promise.all([
+		getRaffle(publicSlug),
+		getCategories(),
+	]);
+
+	// Filter active categories only
+	const categories = categoriesResponse.success
+		? categoriesResponse.data.categories.filter(c => c.isActive)
+		: [];
 
 	if (!response.success) {
 		return (
@@ -259,7 +286,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						<div className="flex flex-wrap gap-2">
 							<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
 								<span className="text-sm capitalize">
-									{getCategoryLabel(raffle.categoryId)}
+									{getCategoryName(categories, raffle.categoryId)}
 								</span>
 							</div>
 						</div>

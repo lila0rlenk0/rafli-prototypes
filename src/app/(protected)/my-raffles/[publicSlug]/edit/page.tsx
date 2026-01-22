@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { ComponentProps } from 'react';
 
-import { getCategoryValue } from '@/constants/categories';
 import { getSession } from '@/lib/auth/session';
+import { getCategories } from '@/services/raffle/get-categories';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { getQuestions } from '@/services/raffle/get-questions';
 import { getRaffle } from '@/services/raffle/get-raffle';
@@ -57,8 +57,8 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 	const startDate = raffle.startAt.split('T')[0];
 	const endDate = raffle.endAt.split('T')[0];
 
-	// Get category value from categoryId
-	const category = getCategoryValue(raffle.categoryId) || '';
+	// Use categoryId directly (UUID) instead of converting to slug
+	const category = raffle.categoryId || '';
 
 	// Use questionId directly (UUID)
 	const checkInQuestion = raffle.questionId || '';
@@ -119,18 +119,29 @@ export default async function EditRafflePage({ params }: PageProps) {
 	// Get user information
 	const userName = session?.user?.name || 'Raffle Host';
 
-	// Fetch images, questions, and user's total raffles in parallel
-	const [coverResult, galleryResult, questionsResult, rafflesResult] =
-		await Promise.all([
-			getRaffleCover(raffle.id),
-			getRaffleGallery(raffle.id),
-			getQuestions(),
-			getMyRaffles(),
-		]);
+	// Fetch images, questions, categories, and user's total raffles in parallel
+	const [
+		coverResult,
+		galleryResult,
+		questionsResult,
+		categoriesResult,
+		rafflesResult,
+	] = await Promise.all([
+		getRaffleCover(raffle.id),
+		getRaffleGallery(raffle.id),
+		getQuestions(),
+		getCategories(),
+		getMyRaffles(),
+	]);
 
 	// Filter active questions only
 	const questions = questionsResult.success
 		? questionsResult.data.questions.filter(q => q.isActive)
+		: [];
+
+	// Filter active categories only
+	const categories = categoriesResult.success
+		? categoriesResult.data.categories.filter(c => c.isActive)
 		: [];
 
 	// Get total raffles count
@@ -181,6 +192,7 @@ export default async function EditRafflePage({ params }: PageProps) {
 				initialGalleryUrls={initialGalleryUrls}
 				defaultValues={defaultValues}
 				questions={questions}
+				categories={categories}
 				userName={userName}
 				totalRaffles={totalRaffles}
 			>

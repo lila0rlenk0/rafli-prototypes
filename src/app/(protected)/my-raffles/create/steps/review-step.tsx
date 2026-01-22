@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { useMultiStepForm } from '../multi-step-form-provider';
 
 export function ReviewStep() {
-	const { form, isCreating, isRaffleCreated, userName, totalRaffles } =
+	const { form, isCreating, isRaffleCreated, userName, totalRaffles, categories } =
 		useMultiStepForm();
 
 	const formValues = form.watch();
@@ -54,10 +54,13 @@ export function ReviewStep() {
 	}
 
 	/**
-	 * Gets the raffle category
+	 * Gets the raffle category display name
+	 * Looks up category name from the ID
 	 */
-	function getCategory() {
-		return category;
+	function getCategoryName(): string {
+		if (!category) return '';
+		const cat = categories.find(c => c.id === category);
+		return cat?.name || '';
 	}
 
 	/**
@@ -154,9 +157,9 @@ export function ReviewStep() {
 			</div>
 
 			<div className="flex flex-wrap gap-2">
-				{getCategory() && (
+				{getCategoryName() && (
 					<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
-						<span className="text-sm capitalize">{getCategory()}</span>
+						<span className="text-sm capitalize">{getCategoryName()}</span>
 					</div>
 				)}
 			</div>

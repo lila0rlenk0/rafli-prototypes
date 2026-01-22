@@ -1,23 +1,15 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useMemo } from 'react';
 
-import { FilterSelect, type FilterOption } from './filter-select';
-
-import { RAFFLE_CATEGORIES } from '@/constants/categories';
+import type { Category } from '@/types/category';
 import { RAFFLE_SORT_OPTION } from '@/types/raffle';
+import { FilterSelect, type FilterOption } from './filter-select';
 
 // ==========================================
 // Filter Options
 // ==========================================
-
-const CATEGORY_OPTIONS: readonly FilterOption[] = [
-	{ value: '', label: 'All Categories' },
-	...RAFFLE_CATEGORIES.map(category => ({
-		value: category.id,
-		label: category.label,
-	})),
-] as const;
 
 const SORT_OPTIONS: readonly FilterOption[] = [
 	{ value: RAFFLE_SORT_OPTION.NEWEST, label: 'Newest' },
@@ -25,19 +17,40 @@ const SORT_OPTIONS: readonly FilterOption[] = [
 	{ value: RAFFLE_SORT_OPTION.LOWEST_PRICE, label: 'Lowest Price' },
 ] as const;
 
+interface FilterBarProps {
+	categories: Category[];
+}
+
 /**
  * FilterBar Component
  *
  * Displays filter controls for browsing raffles including category
  * and sort options. Updates URL search params when filters change.
+ *
+ * @param categories - List of available categories from the backend
  */
-export function FilterBar() {
+export function FilterBar({ categories }: FilterBarProps) {
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
 	const category = searchParams.get('category') ?? '';
 	const sort = searchParams.get('sort') ?? RAFFLE_SORT_OPTION.NEWEST;
+
+	/**
+	 * Transforms categories into filter options format
+	 * Includes "All Categories" as the first option
+	 */
+	const categoryOptions = useMemo(
+		(): FilterOption[] => [
+			{ value: '', label: 'All Categories' },
+			...categories.map(cat => ({
+				value: cat.id,
+				label: cat.name,
+			})),
+		],
+		[categories],
+	);
 
 	/**
 	 * Updates the URL with new filter parameters
@@ -78,7 +91,7 @@ export function FilterBar() {
 
 			{/* Category Filter */}
 			<FilterSelect
-				options={CATEGORY_OPTIONS}
+				options={categoryOptions}
 				value={category}
 				onValueChange={handleCategoryChange}
 				placeholder="All Categories"

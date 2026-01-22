@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
-import { getCategoryValue } from '@/constants/categories';
 import { formatDate } from '@/lib/utils/date-format';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -22,6 +21,7 @@ export function ReviewStep() {
 		existingCoverUrl,
 		existingGalleryUrls,
 		originalRaffle,
+		categories,
 		userName,
 		totalRaffles,
 	} = useEditForm();
@@ -79,14 +79,11 @@ export function ReviewStep() {
 		const originalStartDate = originalRaffle.startAt.split('T')[0];
 		const originalEndDate = originalRaffle.endAt.split('T')[0];
 
-		// Convert original categoryId to value for comparison
-		const originalCategoryValue =
-			getCategoryValue(originalRaffle.categoryId) || '';
+		// Category is now stored as UUID directly
+		const originalCategoryId = originalRaffle.categoryId || '';
 
-		// Convert original questionId to value for comparison
-		const originalCheckInQuestionValue = originalRaffle.questionId
-			? originalRaffle.questionId || ''
-			: '';
+		// Question ID is also stored as UUID directly
+		const originalCheckInQuestionId = originalRaffle.questionId || '';
 
 		// Compare price values (handle floating point precision)
 		const currentPrice = parseFloat(price.toString());
@@ -102,14 +99,14 @@ export function ReviewStep() {
 		return (
 			description !== originalRaffle.description ||
 			priceChanged ||
-			category !== originalCategoryValue ||
+			category !== originalCategoryId ||
 			startDate !== originalStartDate ||
 			endDate !== originalEndDate ||
 			ticketPriceChanged ||
 			numberOfWinners !== originalRaffle.numberOfWinners ||
 			minParticipants !== originalRaffle.minParticipants ||
 			maxParticipants !== originalRaffle.maxParticipants ||
-			checkInQuestion !== originalCheckInQuestionValue
+			checkInQuestion !== originalCheckInQuestionId
 		);
 	}, [
 		coverImage,
@@ -185,10 +182,13 @@ export function ReviewStep() {
 	}
 
 	/**
-	 * Gets the raffle category
+	 * Gets the raffle category display name
+	 * Looks up category name from the ID
 	 */
-	function getCategory() {
-		return category;
+	function getCategoryName(): string {
+		if (!category) return '';
+		const cat = categories.find(c => c.id === category);
+		return cat?.name || '';
 	}
 
 	/**
@@ -301,9 +301,9 @@ export function ReviewStep() {
 			</div>
 
 			<div className="flex flex-wrap gap-2">
-				{getCategory() && (
+				{getCategoryName() && (
 					<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
-						<span className="text-sm capitalize">{getCategory()}</span>
+						<span className="text-sm capitalize">{getCategoryName()}</span>
 					</div>
 				)}
 			</div>

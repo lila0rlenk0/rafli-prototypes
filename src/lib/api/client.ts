@@ -28,6 +28,12 @@ import { env } from '@/env/server';
 import { getAuthToken } from '@/lib/auth/session';
 
 /**
+ * API base URL with versioned path
+ * All backend endpoints use /api/v1 prefix
+ */
+const API_BASE_URL = `${env.BACKEND_URL}/api/v1`;
+
+/**
  * Gets client IP from Next.js request headers (tamper-proof)
  *
  * SECURITY: Vercel overwrites x-forwarded-for and x-real-ip headers,
@@ -56,7 +62,7 @@ async function getClientIp(): Promise<string | null> {
  * Used for public endpoints
  */
 const baseClient: AxiosInstance = axios.create({
-	baseURL: env.BACKEND_URL,
+	baseURL: API_BASE_URL,
 	timeout: 10_000, // 10 seconds
 	headers: {
 		'Content-Type': 'application/json',
@@ -89,7 +95,7 @@ baseClient.interceptors.request.use(
  * The interceptor automatically injects the authentication token
  */
 const authenticatedClient: AxiosInstance = axios.create({
-	baseURL: env.BACKEND_URL,
+	baseURL: API_BASE_URL,
 	timeout: 12_500, // 12.5 seconds for authenticated operations
 	headers: {
 		'Content-Type': 'application/json',

@@ -18,6 +18,12 @@ import axios, { type AxiosInstance } from 'axios';
 import { clientEnv } from '@/env/client';
 
 /**
+ * API base URL with versioned path
+ * All backend endpoints use /api/v1 prefix
+ */
+const API_BASE_URL = `${clientEnv.NEXT_PUBLIC_BACKEND_URL}/api/v1`;
+
+/**
  * Browser-side axios instance for OAuth flows
  *
  * Features:
@@ -26,7 +32,7 @@ import { clientEnv } from '@/env/client';
  * - Uses public backend URL from client env
  */
 const browserClient: AxiosInstance = axios.create({
-	baseURL: clientEnv.NEXT_PUBLIC_BACKEND_URL,
+	baseURL: API_BASE_URL,
 	timeout: 10_000, // 10 seconds
 	withCredentials: true,
 	headers: {

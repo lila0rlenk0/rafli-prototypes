@@ -3,6 +3,7 @@ import { AxiosError } from 'axios';
 import {
 	type AuthErrorCode,
 	COMMON_ERROR_CODES,
+	type HostErrorCode,
 	type OrderErrorCode,
 	type PaymentErrorCode,
 	type RaffleErrorCode,
@@ -369,6 +370,38 @@ export function mapTicketError(error: unknown): TicketErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as TicketErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps host errors to HostErrorCode
+ *
+ * Accepts `core:user:*` and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns HostErrorCode (either backend code or frontend fallback)
+ */
+export function mapHostError(error: unknown): HostErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "core:user:not-found", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('core:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as HostErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
+			return mappedCode as HostErrorCode;
 		}
 	}
 

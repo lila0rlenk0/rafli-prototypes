@@ -9,7 +9,9 @@ CRITICAL: Wrap runtime data access in Suspense
 ALWAYS: Extract logic from JSX into functions
 ALWAYS: Use `function` declarations, not arrow functions
 ALWAYS: JSDoc on all functions and components
+ALWAYS: Import directly from component files (e.g., `@/components/host/host-profile-card`)
 NEVER: 'use client' without interactivity requirement
+NEVER: Create barrel exports (index.ts) in component folders
 
 ## Server vs Client
 

@@ -1,5 +1,6 @@
 import { BugIcon } from '@/assets/icons/bug-icon';
-import { HostProfileCard, HostStatusTabs } from '@/components/host';
+import { HostProfileCard } from '@/components/host/host-profile-card';
+import { HostStatusTabs } from '@/components/host/host-status-tabs';
 import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
 import { getHostProfile } from '@/services/host/get-host-profile';
 import { getHostRaffles } from '@/services/host/get-host-raffles';

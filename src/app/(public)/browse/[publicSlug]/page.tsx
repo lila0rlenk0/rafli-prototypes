@@ -1,7 +1,10 @@
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
+import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
+import { RaffleWonCard } from '@/components/raffle/raffle-won-card';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
+import { WinnersList } from '@/components/raffle/winners-list';
 import {
 	Accordion,
 	AccordionContent,
@@ -14,6 +17,8 @@ import { getSession } from '@/lib/auth/session';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
+import { getMe } from '@/services/user/get-me';
+import { getMyWinnings } from '@/services/winning/get-my-winnings';
 import type { Category } from '@/types/category';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
@@ -106,6 +111,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	// Only fetch user's ticket codes if authenticated
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
+	let didUserWin = false;
+	let myWinningTicketCode: string | null = null;
+	let myUserName: string | null = null;
+	let myUserAvatarUrl: string | null = null;
 
 	if (isAuthenticated) {
 		const ticketCodesResponse = await getMyTicketCodes({ raffleId: raffle.id });
@@ -113,6 +122,47 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			myTicketCodes = ticketCodesResponse.data.tickets;
 			myTicketsTotal = ticketCodesResponse.data.total;
 		}
+
+		// Check if user won this raffle (only relevant for concluded raffles)
+		const winningsResponse = await getMyWinnings();
+		if (winningsResponse.success) {
+			didUserWin = winningsResponse.data.winnings.some(
+				winning => winning.raffleId === raffle.id,
+			);
+		}
+
+		// Get winning ticket code from raffle.winners if user won
+		if (didUserWin && raffle.winners) {
+			const myWinnerEntry = raffle.winners.find(
+				winner => winner.userId === currentUserId,
+			);
+			myWinningTicketCode = myWinnerEntry?.ticketCode ?? null;
+		}
+
+		// Get user profile with avatar URL
+		const meResponse = await getMe();
+		if (meResponse.success) {
+			myUserName = meResponse.data.name;
+			myUserAvatarUrl = meResponse.data.avatarUrl;
+		}
+	}
+
+	/**
+	 * List of statuses that indicate a raffle has concluded
+	 */
+	const CONCLUDED_STATUSES = [
+		RAFFLE_STATUS.ENDED,
+		RAFFLE_STATUS.COMPLETED,
+		RAFFLE_STATUS.FULFILLING,
+	] as const;
+
+	/**
+	 * Check if raffle is concluded (ended, completed, or fulfilling)
+	 */
+	function isRaffleConcluded(): boolean {
+		return CONCLUDED_STATUSES.includes(
+			raffle.status as (typeof CONCLUDED_STATUSES)[number],
+		);
 	}
 
 	/**
@@ -148,6 +198,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 	const showEditButton = shouldShowEditButton();
 	const disablePurchase = isPurchaseDisabled();
+	const isConcluded = isRaffleConcluded();
+	// const showWonCard = isConcluded && didUserWin;
+	const showWonCard = true;
+	const showNotWonCard = isConcluded && !didUserWin;
 
 	/**
 	 * Gets the host display name from closure
@@ -346,51 +400,69 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					</div>
 				</div>
 				<div className="space-y-2">
-					<div className="h-fit rounded-2xl border border-black bg-white px-4 py-8">
-						<RaffleFireIcon className="mx-auto size-12" />
+					{showWonCard ? (
+						<RaffleWonCard
+							userName={myUserName ?? 'Winner'}
+							userAvatar={myUserAvatarUrl}
+							ticketCode={myWinningTicketCode}
+						/>
+					) : showNotWonCard ? (
+						<RaffleNotWonCard />
+					) : (
+						<div className="h-fit rounded-2xl border border-black bg-white px-4 py-8">
+							<RaffleFireIcon className="mx-auto size-12" />
 
-						<h2 className="font-clash-display my-8 text-center text-xl font-semibold text-nowrap">
-							The raffle is active!
-						</h2>
+							<h2 className="font-clash-display my-8 text-center text-xl font-semibold text-nowrap">
+								The raffle is active!
+							</h2>
 
-						<RaffleCountdown endAt={raffle.endAt} />
+							<RaffleCountdown endAt={raffle.endAt} />
 
-						<TicketPurchaseCard
-							raffleId={raffle.id}
-							publicSlug={publicSlug}
-							price={ticketPrice}
-							currency={raffle.ticketPriceCurrency}
-							availableTickets={availableTickets}
-							disabled={showEditButton || disablePurchase}
-							questionId={raffle.questionId}
+							<TicketPurchaseCard
+								raffleId={raffle.id}
+								publicSlug={publicSlug}
+								price={ticketPrice}
+								currency={raffle.ticketPriceCurrency}
+								availableTickets={availableTickets}
+								disabled={showEditButton || disablePurchase}
+								questionId={raffle.questionId}
+								isAuthenticated={isAuthenticated}
+							/>
+
+							{disablePurchase && !showEditButton && (
+								<p className="mt-2 text-center text-sm text-gray-500">
+									You cannot purchase tickets for your own raffle
+								</p>
+							)}
+
+							<RaffleShareButtons
+								title={raffle.title}
+								publicSlug={raffle.publicSlugOrCode}
+							/>
+						</div>
+					)}
+
+					{isConcluded && raffle.winners && raffle.winners.length > 0 && (
+						<WinnersList winners={raffle.winners} />
+					)}
+
+					{!isConcluded && (
+						<RaffleInfoCard
+							raffle={raffle}
+							myTicketCodes={myTicketCodes}
+							myTicketsTotal={myTicketsTotal}
 							isAuthenticated={isAuthenticated}
 						/>
+					)}
 
-						{disablePurchase && !showEditButton && (
-							<p className="mt-2 text-center text-sm text-gray-500">
-								You cannot purchase tickets for your own raffle
+					{!isConcluded && (
+						<div className="flex items-center justify-center gap-2">
+							<InfoIcon className="size-4 text-[#7B7B7B]" />
+							<p className="text-sm text-[#7B7B7B]">
+								You&apos;ll only need KYC if you win
 							</p>
-						)}
-
-						<RaffleShareButtons
-							title={raffle.title}
-							publicSlug={raffle.publicSlugOrCode}
-						/>
-					</div>
-
-					<RaffleInfoCard
-						raffle={raffle}
-						myTicketCodes={myTicketCodes}
-						myTicketsTotal={myTicketsTotal}
-						isAuthenticated={isAuthenticated}
-					/>
-
-					<div className="flex items-center justify-center gap-2">
-						<InfoIcon className="size-4 text-[#7B7B7B]" />
-						<p className="text-sm text-[#7B7B7B]">
-							You&apos;ll only need KYC if you win
-						</p>
-					</div>
+						</div>
+					)}
 				</div>
 			</div>
 			<PaymentModalWrapper

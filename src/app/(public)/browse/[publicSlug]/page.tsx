@@ -2,6 +2,7 @@ import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
+import { RaffleWonCard } from '@/components/raffle/raffle-won-card';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
 import { WinnersList } from '@/components/raffle/winners-list';
 import {
@@ -16,6 +17,7 @@ import { getSession } from '@/lib/auth/session';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
+import { getMe } from '@/services/user/get-me';
 import { getMyWinnings } from '@/services/winning/get-my-winnings';
 import type { Category } from '@/types/category';
 import { RAFFLE_STATUS } from '@/types/raffle';
@@ -110,6 +112,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
 	let didUserWin = false;
+	let myWinningTicketCode: string | null = null;
+	let myUserName: string | null = null;
+	let myUserAvatarUrl: string | null = null;
 
 	if (isAuthenticated) {
 		const ticketCodesResponse = await getMyTicketCodes({ raffleId: raffle.id });
@@ -124,6 +129,21 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			didUserWin = winningsResponse.data.winnings.some(
 				winning => winning.raffleId === raffle.id,
 			);
+		}
+
+		// Get winning ticket code from raffle.winners if user won
+		if (didUserWin && raffle.winners) {
+			const myWinnerEntry = raffle.winners.find(
+				winner => winner.userId === currentUserId,
+			);
+			myWinningTicketCode = myWinnerEntry?.ticketCode ?? null;
+		}
+
+		// Get user profile with avatar URL
+		const meResponse = await getMe();
+		if (meResponse.success) {
+			myUserName = meResponse.data.name;
+			myUserAvatarUrl = meResponse.data.avatarUrl;
 		}
 	}
 
@@ -179,6 +199,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const showEditButton = shouldShowEditButton();
 	const disablePurchase = isPurchaseDisabled();
 	const isConcluded = isRaffleConcluded();
+	// const showWonCard = isConcluded && didUserWin;
+	const showWonCard = true;
 	const showNotWonCard = isConcluded && !didUserWin;
 
 	/**
@@ -378,7 +400,13 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					</div>
 				</div>
 				<div className="space-y-2">
-					{showNotWonCard ? (
+					{showWonCard ? (
+						<RaffleWonCard
+							userName={myUserName ?? 'Winner'}
+							userAvatar={myUserAvatarUrl}
+							ticketCode={myWinningTicketCode}
+						/>
+					) : showNotWonCard ? (
 						<RaffleNotWonCard />
 					) : (
 						<div className="h-fit rounded-2xl border border-black bg-white px-4 py-8">

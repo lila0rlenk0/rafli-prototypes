@@ -3,6 +3,7 @@ import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
+import { WinnersList } from '@/components/raffle/winners-list';
 import {
 	Accordion,
 	AccordionContent,
@@ -411,6 +412,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								publicSlug={raffle.publicSlugOrCode}
 							/>
 						</div>
+					)}
+
+					{isConcluded && raffle.winners && raffle.winners.length > 0 && (
+						<WinnersList winners={raffle.winners} />
 					)}
 
 					{!isConcluded && (

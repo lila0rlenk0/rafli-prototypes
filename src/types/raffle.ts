@@ -88,6 +88,20 @@ const hostSchema = z.object({
 });
 
 /**
+ * Schema for raffle winner info
+ * Represents a winner entry returned by the API
+ */
+export const raffleWinnerSchema = z.object({
+	id: z.string(),
+	oddsId: z.number().optional(),
+	ticketCode: z.string(),
+	userId: z.string(),
+	name: z.string().nullable(),
+	position: z.number(),
+	status: z.string(),
+});
+
+/**
  * Schema for the raffle response from the backend
  * Represents the complete raffle object as returned by the API
  */
@@ -121,6 +135,7 @@ export const raffleSchema = z.object({
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	host: hostSchema.optional(),
+	winners: z.array(raffleWinnerSchema).optional(),
 });
 
 /**
@@ -223,6 +238,7 @@ export const updateRafflePayloadSchema = z.object({
 // ==========================================
 
 export type SignedMediaUrl = z.infer<typeof mediaUrlSchema>;
+export type RaffleWinner = z.infer<typeof raffleWinnerSchema>;
 export type Raffle = z.infer<typeof raffleSchema>;
 export type RaffleCoverResponse = z.infer<typeof raffleCoverResponseSchema>;
 export type RaffleGalleryResponse = z.infer<typeof raffleGalleryResponseSchema>;

@@ -11,6 +11,7 @@ export const RAFFLE_STATUS = {
 	COMPLETED: 'completed',
 	DRAFT: 'draft',
 	ENDED: 'ended',
+	FULFILLING: 'fulfilling',
 	LIVE: 'live',
 	QUEUED: 'queued',
 } as const;
@@ -49,6 +50,7 @@ export const raffleStatusSchema = z.enum([
 	RAFFLE_STATUS.COMPLETED,
 	RAFFLE_STATUS.DRAFT,
 	RAFFLE_STATUS.ENDED,
+	RAFFLE_STATUS.FULFILLING,
 	RAFFLE_STATUS.LIVE,
 	RAFFLE_STATUS.QUEUED,
 ]);

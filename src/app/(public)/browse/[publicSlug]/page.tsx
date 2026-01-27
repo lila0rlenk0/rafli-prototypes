@@ -184,6 +184,23 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	/**
+	 * Builds the host profile URL
+	 * Uses username if available in host.link, otherwise falls back to hostId
+	 * @returns The profile URL path
+	 */
+	function getHostProfileUrl(): string {
+		// If host.link exists, extract username from it (format: /users/{username})
+		if (raffle.host?.link) {
+			const username = raffle.host.link.replace('/users/', '');
+			if (username && username !== raffle.host.id) {
+				return `/host/${username}`;
+			}
+		}
+		// Fallback to hostId
+		return `/host/${raffle.host?.id ?? raffle.hostId}`;
+	}
+
+	/**
 	 * Parses the ticket price from string to number
 	 * @param priceString - Price as string from API
 	 * @returns Parsed price as number
@@ -224,7 +241,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
 						<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
 
-						<div className="flex items-center gap-4">
+						<Link
+							href={getHostProfileUrl()}
+							className="group flex items-center gap-4"
+						>
 							<div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
 								{raffle.host?.avatar?.url ? (
 									<Image
@@ -238,10 +258,12 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								)}
 							</div>
 							<div className="flex min-w-0 flex-col font-medium">
-								<span className="truncate text-sm">by {getHostName()}</span>
+								<span className="truncate text-sm group-hover:underline">
+									by {getHostName()}
+								</span>
 								<span className="text-xs">{getHostRafflesCount()}</span>
 							</div>
-						</div>
+						</Link>
 
 						<ImageCarousel
 							coverImage={raffle.coverMediaUrl}

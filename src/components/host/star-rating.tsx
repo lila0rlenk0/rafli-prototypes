@@ -33,13 +33,13 @@ export function StarRating({
 	}
 
 	return (
-		<div className={`flex items-center gap-0.5 ${className}`}>
+		<div className={`flex items-center gap-2 ${className}`}>
 			{Array.from({ length: maxStars }).map((_, index) => {
 				const fillState = getStarFillState(index);
 				return (
 					<Star
 						key={index}
-						className={`size-4 ${
+						className={`size-8 ${
 							fillState === 'full'
 								? 'fill-yellow-400 text-yellow-400'
 								: fillState === 'half'

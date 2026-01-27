@@ -1,15 +1,15 @@
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { HostProfileCard } from '@/components/host/host-profile-card';
-import { HostStatusTabs } from '@/components/host/host-status-tabs';
 import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
 import { getHostProfile } from '@/services/host/get-host-profile';
 import { getHostRaffles } from '@/services/host/get-host-raffles';
 import { HOST_ERROR_CODES } from '@/types/errors';
 import { RAFFLE_STATUS } from '@/types/raffle';
-import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
+import { PageHeader } from './page-header';
+import { StatusTabs } from './status-tabs';
 
 interface PageProps {
 	params: Promise<{
@@ -44,7 +44,7 @@ export default async function HostProfilePage({
 	const { status: statusParam } = await searchParams;
 
 	// Determine if identifier is a UUID or username
-	const isUUID = z.string().uuid().safeParse(identifier).success;
+	const isUUID = z.uuid().safeParse(identifier).success;
 
 	// Determine status filter from URL param (default to active)
 	const isEnded = statusParam === 'ended';
@@ -90,44 +90,29 @@ export default async function HostProfilePage({
 
 	const host = profileResponse.data;
 
-	// Get raffle counts for both tabs
-	// We need to fetch counts separately for accurate tab labels
-	const [activeRafflesCount, endedRafflesCount] = await getTabCounts(
-		isUUID ? { hostId: identifier } : { username: identifier },
-	);
-
 	// Handle raffles fetch error
 	if (!rafflesResponse.success) {
 		return (
-			<div className="container mx-auto px-4 py-8">
-				<Link href="/browse" className="mb-8 flex items-center gap-2">
-					<ArrowLeft className="size-4" />
-					<span className="font-semibold">Back to Raffle Browse</span>
-				</Link>
+			<div className="container mx-auto w-full max-w-7xl px-4 py-8 lg:min-w-5xl">
+				{/* Header Section */}
+				<PageHeader />
 
-				<div className="flex gap-8">
-					<aside className="hidden w-80 shrink-0 lg:block">
-						<HostProfileCard host={host} className="sticky top-24" />
+				<div className="relative mb-8 flex w-full items-center justify-center">
+					<StatusTabs />
+				</div>
+
+				{/* Content Section */}
+				<div className="flex flex-col gap-8 lg:flex-row">
+					<aside className="w-full shrink-0 lg:w-80">
+						<HostProfileCard host={host} className="lg:sticky lg:top-24" />
 					</aside>
 
 					<main className="flex-1">
-						<div className="mb-6">
-							<h1 className="font-clash-display mb-4 text-3xl font-bold">
-								{getHostDisplayName(host.name, host.username)} Raffles
-							</h1>
-							<HostStatusTabs
-								activeCount={activeRafflesCount}
-								endedCount={endedRafflesCount}
-							/>
-						</div>
-
 						<div className="flex flex-col items-center justify-center py-20 text-center">
 							<h3 className="text-xl font-semibold text-gray-900">
 								Error loading raffles
 							</h3>
-							<p className="mt-2 text-gray-500">
-								Please try again later.
-							</p>
+							<p className="mt-2 text-gray-500">Please try again later.</p>
 						</div>
 					</main>
 				</div>
@@ -137,13 +122,34 @@ export default async function HostProfilePage({
 
 	const { raffles } = rafflesResponse.data;
 
-	return (
-		<div className="container mx-auto px-4 py-8">
-			<Link href="/browse" className="mb-8 flex items-center gap-2">
-				<ArrowLeft className="size-4" />
-				<span className="font-semibold">Back to Raffle Browse</span>
-			</Link>
+	/**
+	 * Gets the empty state message based on current status filter
+	 */
+	function getEmptyMessage() {
+		if (isEnded) {
+			return {
+				title: 'No ended raffles',
+				description: 'This host has no ended raffles yet.',
+			};
+		}
+		return {
+			title: 'No active raffles',
+			description: 'This host has no active raffles right now.',
+		};
+	}
 
+	const emptyMessage = getEmptyMessage();
+
+	return (
+		<div className="container mx-auto w-full max-w-7xl px-4 py-8 lg:min-w-5xl">
+			{/* Header Section */}
+			<PageHeader />
+
+			<div className="relative mb-8 flex w-full items-center justify-center">
+				<StatusTabs />
+			</div>
+
+			{/* Content Section */}
 			<div className="flex flex-col gap-8 lg:flex-row">
 				{/* Sidebar - Host Profile Card */}
 				<aside className="w-full shrink-0 lg:w-80">
@@ -152,18 +158,6 @@ export default async function HostProfilePage({
 
 				{/* Main Content - Raffle Grid */}
 				<main className="flex-1">
-					{/* Header with Tabs */}
-					<div className="mb-6">
-						<h1 className="font-clash-display mb-4 text-3xl font-bold">
-							{getHostDisplayName(host.name, host.username)} Raffles
-						</h1>
-						<HostStatusTabs
-							activeCount={activeRafflesCount}
-							endedCount={endedRafflesCount}
-						/>
-					</div>
-
-					{/* Raffle Grid */}
 					{raffles && raffles.length > 0 ? (
 						<div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 							{raffles.map(raffle => (
@@ -173,62 +167,13 @@ export default async function HostProfilePage({
 					) : (
 						<div className="flex flex-col items-center justify-center py-20 text-center">
 							<h3 className="text-xl font-semibold text-gray-900">
-								{isEnded ? 'No ended raffles' : 'No active raffles'}
+								{emptyMessage.title}
 							</h3>
-							<p className="mt-2 text-gray-500">
-								{isEnded
-									? 'This host has no ended raffles yet.'
-									: 'This host has no active raffles right now.'}
-							</p>
+							<p className="mt-2 text-gray-500">{emptyMessage.description}</p>
 						</div>
 					)}
 				</main>
 			</div>
 		</div>
 	);
-}
-
-/**
- * Gets the display name for the host
- * @param name - Host's name
- * @param username - Host's username
- * @returns Display name with possessive formatting
- */
-function getHostDisplayName(
-	name: string | null,
-	username: string | null,
-): string {
-	const displayName = name || username || 'Host';
-	// Add possessive 's or just ' if name ends in s
-	if (displayName.endsWith('s')) {
-		return `${displayName}'`;
-	}
-	return `${displayName}'s`;
-}
-
-/**
- * Fetches raffle counts for both active and ended tabs
- * @param params - Query params with either hostId or username
- * @returns Tuple of [activeCount, endedCount]
- */
-async function getTabCounts(
-	params: { hostId: string } | { username: string },
-): Promise<[number, number]> {
-	const [activeResponse, endedResponse] = await Promise.all([
-		getHostRaffles({
-			...params,
-			status: STATUS_FILTERS.active,
-			limit: 1,
-		}),
-		getHostRaffles({
-			...params,
-			status: STATUS_FILTERS.ended,
-			limit: 1,
-		}),
-	]);
-
-	const activeCount = activeResponse.success ? activeResponse.data.total : 0;
-	const endedCount = endedResponse.success ? endedResponse.data.total : 0;
-
-	return [activeCount, endedCount];
 }

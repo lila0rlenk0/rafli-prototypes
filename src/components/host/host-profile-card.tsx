@@ -16,7 +16,10 @@ interface HostProfileCardProps {
  * Displays host profile information in a sidebar card.
  * Server component - no client-side interactivity needed.
  */
-export function HostProfileCard({ host, className = '' }: HostProfileCardProps) {
+export function HostProfileCard({
+	host,
+	className = '',
+}: HostProfileCardProps) {
 	/**
 	 * Gets the display name for the host
 	 * @returns Host name or fallback username
@@ -35,23 +38,14 @@ export function HostProfileCard({ host, className = '' }: HostProfileCardProps) 
 	}
 
 	/**
-	 * Formats the rating for display
-	 * @returns Formatted rating string or 'No reviews'
+	 * Formats the rating label for display
+	 * @returns Formatted rating string or 'No reviews yet'
 	 */
-	function formatRating(): string {
+	function formatRatingLabel(): string {
 		if (host.averageRating === null || host.totalReviews === 0) {
 			return 'No reviews yet';
 		}
-		return `${host.averageRating.toFixed(1)} (${host.totalReviews} reviews)`;
-	}
-
-	/**
-	 * Formats the total raffles count
-	 * @returns Formatted string with label
-	 */
-	function formatRafflesCount(): string {
-		const count = host.totalRafflesHosted;
-		return `${count} ${count === 1 ? 'Raffle' : 'Raffles'} hosted`;
+		return `${host.averageRating} (${host.totalReviews} ${host.totalReviews === 1 ? 'Review' : 'Reviews'})`;
 	}
 
 	return (
@@ -59,7 +53,7 @@ export function HostProfileCard({ host, className = '' }: HostProfileCardProps) 
 			className={`flex flex-col overflow-hidden rounded-2xl bg-white p-6 ${className}`}
 		>
 			{/* Profile Image */}
-			<div className="relative mx-auto mb-4 flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-3xl font-semibold">
+			<div className="relative mx-auto mb-4 flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-3xl font-semibold">
 				{host.image?.url ? (
 					<Image
 						src={host.image.url}
@@ -73,27 +67,27 @@ export function HostProfileCard({ host, className = '' }: HostProfileCardProps) 
 			</div>
 
 			{/* Rating */}
-			<div className="mb-2 flex flex-col items-center gap-1">
-				{host.averageRating !== null && host.totalReviews > 0 && (
-					<StarRating rating={host.averageRating} />
-				)}
-				<span className="text-sm text-gray-500">{formatRating()}</span>
+			<div className="mb-2 flex flex-col items-center gap-2">
+				<p className="text-[#7B7B7B]">Rating</p>
+				<StarRating rating={host.averageRating ?? 0} />
+				<span className="text-sm">{formatRatingLabel()}</span>
 			</div>
 
-			{/* Name */}
-			<h2 className="mb-1 text-center text-xl font-bold">{getDisplayName()}</h2>
-
-			{/* Raffles Count */}
-			<p className="mb-4 text-center text-sm text-gray-500">
-				{formatRafflesCount()}
-			</p>
-
-			{/* Bio */}
-			{host.bio && (
-				<div className="border-t border-gray-100 pt-4">
-					<p className="text-sm text-gray-600">{host.bio}</p>
+			<div className="mt-4 flex flex-col gap-4">
+				{/* Name */}
+				<div className="flex flex-col items-center">
+					<p className="text-[#7B7B7B]">Name</p>
+					<p className="mb-1 text-center text-xl font-semibold">
+						{getDisplayName()}
+					</p>
 				</div>
-			)}
+
+				{/* Bio */}
+				<div className="flex flex-col items-center">
+					<p className="text-[#7B7B7B]">Bio</p>
+					<p className="text-sm">{host.bio ?? 'No bio yet'}</p>
+				</div>
+			</div>
 		</div>
 	);
 }

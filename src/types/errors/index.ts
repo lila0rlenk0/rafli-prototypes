@@ -12,3 +12,4 @@ export * from './order-errors';
 export * from './payment-errors';
 export * from './ticket-errors';
 export * from './host-errors';
+export * from './winning-errors';

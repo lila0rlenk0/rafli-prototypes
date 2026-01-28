@@ -8,6 +8,7 @@ import {
 	type PaymentErrorCode,
 	type RaffleErrorCode,
 	type TicketErrorCode,
+	type UpdateErrorCode,
 	type WinningErrorCode,
 } from '@/types/errors';
 
@@ -435,6 +436,38 @@ export function mapWinningError(error: unknown): WinningErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as WinningErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps update errors to UpdateErrorCode
+ *
+ * Accepts `core:update:*`, `core:raffle:*`, and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns UpdateErrorCode (either backend code or frontend fallback)
+ */
+export function mapUpdateError(error: unknown): UpdateErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "core:update:not-found", "core:raffle:not-live", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('core:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as UpdateErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
+			return mappedCode as UpdateErrorCode;
 		}
 	}
 

@@ -1,15 +1,36 @@
 # Types Layer
 
-Zod schema-first type definitions. Reference: `raffle.ts`, `pagination.ts`.
+Zod schema-first type definitions. Single source of truth for data contracts.
+
+## Directory Structure
+
+```
+types/
+├── errors/              # Error code definitions by domain
+├── service-response.ts  # Generic response wrapper
+├── pagination.ts        # Reusable pagination schema
+└── [domain].ts          # Entity schemas (raffle.ts, user.ts, etc.)
+```
 
 ## Golden Rules
 
 CRITICAL: Define Zod schemas FIRST, then infer types
-NEVER: Define interfaces manually without schema
+NEVER: Define interfaces manually without backing schema
 ALWAYS: Validate API responses with schemas
-ALWAYS: Document schemas with JSDoc
+ALWAYS: JSDoc on all exported schemas
+ALWAYS: Use `as const` for constant objects
 
-## File Organization
+## Conventions
+
+**Error code format**: `<domain>:<operation>:<specific>`
+
+- `auth:sign-in:invalid-credentials`
+- `raffle:create:permission-denied`
+- `payment:checkout:insufficient-funds`
+
+## How To: Define Entity Types
+
+Follow this file structure:
 
 ```tsx
 import { z } from 'zod';
@@ -19,8 +40,8 @@ import { z } from 'zod';
 // ==========================================
 
 export const MY_STATUS = {
-  ACTIVE: 'active',
-  INACTIVE: 'inactive',
+	ACTIVE: 'active',
+	INACTIVE: 'inactive',
 } as const;
 
 // ==========================================
@@ -33,19 +54,16 @@ export type MyStatus = (typeof MY_STATUS)[keyof typeof MY_STATUS];
 // Schemas
 // ==========================================
 
-export const myStatusSchema = z.enum([
-  MY_STATUS.ACTIVE,
-  MY_STATUS.INACTIVE,
-]);
+export const myStatusSchema = z.enum([MY_STATUS.ACTIVE, MY_STATUS.INACTIVE]);
 
 /**
  * Schema for main entity
  */
 export const myEntitySchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  status: myStatusSchema,
-  createdAt: z.string(),
+	id: z.string(),
+	name: z.string(),
+	status: myStatusSchema,
+	createdAt: z.string(),
 });
 
 // ==========================================
@@ -59,14 +77,14 @@ export type MyEntity = z.infer<typeof myEntitySchema>;
 // ==========================================
 
 export const myQuerySchema = z.object({
-  status: myStatusSchema.optional(),
-  limit: z.number().optional(),
+	status: myStatusSchema.optional(),
+	limit: z.number().optional(),
 });
 
 export type MyQuery = z.infer<typeof myQuerySchema>;
 ```
 
-## Reusable Schemas
+## How To: Compose Schemas
 
 Use `.extend()` for composition:
 
@@ -74,7 +92,7 @@ Use `.extend()` for composition:
 import { paginationMetadataSchema } from './pagination';
 
 export const myListResponseSchema = paginationMetadataSchema.extend({
-  items: z.array(myEntitySchema),
+	items: z.array(myEntitySchema),
 });
 
 export type MyListResponse = z.infer<typeof myListResponseSchema>;
@@ -83,23 +101,22 @@ export type MyListResponse = z.infer<typeof myListResponseSchema>;
 ## Anti-Patterns
 
 ```tsx
-// BAD - manual interface
+// BAD - manual interface without schema
 export interface MyQuery {
-  status?: string;
-  limit?: number;
+	status?: string;
+	limit?: number;
 }
 
 // GOOD - schema first
 export const myQuerySchema = z.object({
-  status: z.string().optional(),
-  limit: z.number().optional(),
+	status: z.string().optional(),
+	limit: z.number().optional(),
 });
 export type MyQuery = z.infer<typeof myQuerySchema>;
 ```
 
 ## Key Files
 
-- `raffle.ts` - raffle entity schemas
-- `pagination.ts` - reusable pagination
-- `errors.ts` - error code types
-- `service-response.ts` - ServiceResponse type
+- `service-response.ts` - ServiceResponse<T, E> type
+- `pagination.ts` - Reusable pagination schema
+- `errors/` - Domain error code constants

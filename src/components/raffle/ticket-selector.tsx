@@ -15,6 +15,8 @@ interface TicketSelectorProps {
  * bundle purchase shortcuts, and an editable input field. Enforces minimum (1)
  * and maximum (available tickets) constraints.
  *
+ * When maxTickets is 0, it means unlimited - no upper bound is enforced.
+ *
  * Features:
  * - +/- controls for precise quantity selection
  * - Editable input field for direct quantity entry
@@ -31,15 +33,20 @@ export function TicketSelector({
 	const [quantity, setQuantity] = useState(1);
 	const [inputValue, setInputValue] = useState('1');
 
+	// 0 means unlimited participants
+	const isUnlimited = maxTickets === 0;
+	// Use a high number for unlimited, otherwise use maxTickets
+	const effectiveMax = isUnlimited ? Number.MAX_SAFE_INTEGER : maxTickets;
+
 	/**
 	 * Validates and normalizes a quantity value
-	 * Ensures the value is within valid bounds (1 to maxTickets)
+	 * Ensures the value is within valid bounds (1 to effectiveMax)
 	 * @param value - The quantity value to validate
 	 * @returns Validated quantity value
 	 */
 	function validateQuantity(value: number): number {
 		if (isNaN(value) || value < 1) return 1;
-		if (value > maxTickets) return maxTickets;
+		if (value > effectiveMax) return effectiveMax;
 		return Math.floor(value);
 	}
 
@@ -58,11 +65,11 @@ export function TicketSelector({
 	 */
 	const handleIncrement = useCallback(() => {
 		setQuantity(prev => {
-			const newValue = Math.min(prev + 1, maxTickets);
+			const newValue = Math.min(prev + 1, effectiveMax);
 			setInputValue(newValue.toString());
 			return newValue;
 		});
-	}, [maxTickets]);
+	}, [effectiveMax]);
 
 	/**
 	 * Handles decrementing the ticket quantity by 1
@@ -83,12 +90,12 @@ export function TicketSelector({
 	const handleBundle = useCallback(
 		(bundleSize: number) => {
 			setQuantity(prev => {
-				const newValue = Math.min(prev + bundleSize, maxTickets);
+				const newValue = Math.min(prev + bundleSize, effectiveMax);
 				setInputValue(newValue.toString());
 				return newValue;
 			});
 		},
-		[maxTickets],
+		[effectiveMax],
 	);
 
 	/**
@@ -102,7 +109,7 @@ export function TicketSelector({
 
 		// Only update quantity if value is a valid number
 		const numValue = parseInt(value, 10);
-		if (!isNaN(numValue) && numValue >= 1 && numValue <= maxTickets) {
+		if (!isNaN(numValue) && numValue >= 1 && numValue <= effectiveMax) {
 			setQuantity(numValue);
 		}
 	}
@@ -115,8 +122,8 @@ export function TicketSelector({
 		const numValue = parseInt(inputValue, 10);
 		if (isNaN(numValue) || numValue < 1) {
 			updateQuantity(1);
-		} else if (numValue > maxTickets) {
-			updateQuantity(maxTickets);
+		} else if (numValue > effectiveMax) {
+			updateQuantity(effectiveMax);
 		} else {
 			updateQuantity(numValue);
 		}
@@ -135,22 +142,24 @@ export function TicketSelector({
 
 	/**
 	 * Checks if a bundle button should be disabled
+	 * Never disabled for unlimited raffles
 	 * @param currentQty - Current ticket quantity
-	 * @param max - Maximum allowed tickets
 	 * @returns True if button should be disabled
 	 */
-	function isBundleDisabled(currentQty: number, max: number): boolean {
-		return currentQty >= max;
+	function isBundleDisabled(currentQty: number): boolean {
+		if (isUnlimited) return false;
+		return currentQty >= maxTickets;
 	}
 
 	/**
 	 * Checks if increment button should be disabled
+	 * Never disabled for unlimited raffles
 	 * @param currentQty - Current ticket quantity
-	 * @param max - Maximum allowed tickets
 	 * @returns True if button should be disabled
 	 */
-	function isIncrementDisabled(currentQty: number, max: number): boolean {
-		return currentQty >= max;
+	function isIncrementDisabled(currentQty: number): boolean {
+		if (isUnlimited) return false;
+		return currentQty >= maxTickets;
 	}
 
 	/**
@@ -172,9 +181,9 @@ export function TicketSelector({
 		onQuantityChange(quantity);
 	}, [quantity, onQuantityChange]);
 
-	const incrementDisabled = isIncrementDisabled(quantity, maxTickets);
+	const incrementDisabled = isIncrementDisabled(quantity);
 	const decrementDisabled = isDecrementDisabled(quantity);
-	const bundleDisabled = isBundleDisabled(quantity, maxTickets);
+	const bundleDisabled = isBundleDisabled(quantity);
 
 	return (
 		<div className="space-y-4">
@@ -195,7 +204,7 @@ export function TicketSelector({
 					<input
 						type="number"
 						min={1}
-						max={maxTickets}
+						max={isUnlimited ? undefined : maxTickets}
 						value={inputValue}
 						onChange={handleInputChange}
 						onBlur={handleInputBlur}

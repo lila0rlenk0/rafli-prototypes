@@ -28,12 +28,14 @@ export function RaffleInfoCard({
 	myTicketsTotal,
 	isAuthenticated = true,
 }: RaffleInfoCardProps) {
+	const isUnlimited = raffle.maxParticipants === 0;
+
 	/**
-	 * Calculates the fill percentage for the raffle
-	 * @returns Formatted percentage string
+	 * Gets the fill status text for the raffle
+	 * @returns "Unlimited" for unlimited raffles, otherwise percentage string
 	 */
-	function calculateFillPercentage(): string {
-		if (raffle.maxParticipants === 0) return '0%';
+	function getFillStatus(): string {
+		if (isUnlimited) return 'Unlimited';
 		return (
 			(
 				(raffle.participantsCount / raffle.maxParticipants) *
@@ -41,8 +43,19 @@ export function RaffleInfoCard({
 			).toLocaleString('en-US', {
 				minimumFractionDigits: 0,
 				maximumFractionDigits: 2,
-			}) + '%'
+			}) + '% filled'
 		);
+	}
+
+	/**
+	 * Gets the participants count display text
+	 * @returns Only current count for unlimited, otherwise "current/max Participants"
+	 */
+	function getParticipantsDisplay(): string {
+		if (isUnlimited) {
+			return `${raffle.participantsCount.toLocaleString()} Participants`;
+		}
+		return `${raffle.participantsCount.toLocaleString()}/${raffle.maxParticipants.toLocaleString()} Participants`;
 	}
 
 	/**
@@ -50,7 +63,7 @@ export function RaffleInfoCard({
 	 * @returns Percentage string for width style
 	 */
 	function getProgressBarWidth(): string {
-		if (raffle.maxParticipants === 0) return '0%';
+		if (isUnlimited) return '0%';
 		const percentage =
 			(raffle.participantsCount / raffle.maxParticipants) * 100;
 		return `${percentage}%`;
@@ -96,11 +109,10 @@ export function RaffleInfoCard({
 					<div className="space-y-2">
 						<div className="flex items-center justify-between text-sm">
 							<span className="text-[#7B7B7B]">
-								{raffle.participantsCount.toLocaleString()}/
-								{raffle.maxParticipants.toLocaleString()} Participants
+								{getParticipantsDisplay()}
 							</span>
 							<span className="font-medium text-[#7B7B7B]">
-								{calculateFillPercentage()} filled
+								{getFillStatus()}
 							</span>
 						</div>
 

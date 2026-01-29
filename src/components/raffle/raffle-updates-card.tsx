@@ -33,21 +33,7 @@ export async function RaffleUpdatesCard({
 	const response = await getUpdates(raffleId);
 
 	const updates: Update[] = response.success ? response.data.items : [];
-
-	/**
-	 * Sorts updates by date (newest first)
-	 * @param updates - Array of updates
-	 * @returns Sorted array of updates
-	 */
-	function sortByNewest(updates: Update[]): Update[] {
-		return [...updates].sort(
-			(a, b) =>
-				new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-		);
-	}
-
-	const sortedUpdates = sortByNewest(updates);
-	const hasUpdates = sortedUpdates.length > 0;
+	const hasUpdates = updates.length > 0;
 
 	return (
 		<div className="w-full overflow-hidden rounded-2xl bg-white">
@@ -61,7 +47,7 @@ export async function RaffleUpdatesCard({
 								</h2>
 								{hasUpdates && (
 									<span className="rounded-full bg-black px-2 py-0.5 text-xs text-white">
-										{sortedUpdates.length}
+										{updates.length}
 									</span>
 								)}
 							</div>
@@ -71,10 +57,10 @@ export async function RaffleUpdatesCard({
 					<AccordionContent className="px-6 pb-6">
 						{hasUpdates ? (
 							<div className="pt-2">
-								{sortedUpdates.map((update, index) => (
+								{updates.map((update, index) => (
 									<div key={update.id}>
 										<UpdateTimelineItem update={update} />
-										{index < sortedUpdates.length - 1 && (
+										{index < updates.length - 1 && (
 											<div className="mb-6 h-px w-full bg-[#e5e5e5]" />
 										)}
 									</div>

@@ -1,78 +1,110 @@
 # Lib Layer
 
-Utilities, error handling, and API client configuration.
+Infrastructure utilities: API clients, error handling, auth, caching, analytics.
 
-## Error Handling System
+## Directory Structure
 
-All services return typed `ServiceResponse<TData, TErrorCode>`:
+```
+lib/
+├── api/        # HTTP clients (baseClient, authenticatedClient)
+├── auth/       # Session management, JWT utilities
+├── cache/      # Revalidation helpers
+├── errors/     # Error types, mappers, helpers
+├── analytics/  # Mixpanel integration
+├── utils/      # General utilities (date formatting, etc.)
+└── utils.ts    # Tailwind cn() helper
+```
+
+## Golden Rules
+
+ALWAYS: Use `ServiceResponse<T, E>` for service returns
+ALWAYS: Map errors through domain-specific mappers
+ALWAYS: Use typed error codes, never throw raw errors
+NEVER: Expose implementation details to consuming layers
+
+## ServiceResponse Pattern
+
+All services return discriminated unions for type-safe error handling:
 
 ```typescript
 type ServiceResponse<T, E> =
-  | { success: true; data: T }
-  | { success: false; error: E };
+	| { success: true; data: T }
+	| { success: false; error: E };
 ```
 
-## Helpers
+## How To: Return from Services
 
 ```typescript
 import { success, failure } from '@/lib/errors';
 
-// Success cases
-return success(data);           // with data
-return success(undefined);      // void operations
+// Success with data
+return success(data);
 
-// Failure cases
+// Success without data (void operations)
+return success(undefined);
+
+// Failure with typed error
 return failure(ERROR_CODES.NOT_FOUND);
 return failure(mapAuthError(error));
 ```
 
+## How To: Handle Errors in Components
+
+```typescript
+function getErrorMessage(code: AuthErrorCode): string {
+	switch (code) {
+		case AUTH_ERROR_CODES.INVALID_CREDENTIALS:
+			return 'Invalid email or password.';
+		case 'network_error':
+			return 'Network error. Check connection.';
+		default:
+			return 'An unexpected error occurred.';
+	}
+}
+
+// Usage
+const result = await signIn(data);
+if (!result.success) {
+	setError('root', { message: getErrorMessage(result.error) });
+	return;
+}
+// TypeScript knows result.data exists
+```
+
 ## Error Mappers
 
-- `mapAuthError(error)` - auth service errors
-- `mapRaffleError(error)` - raffle service errors
+Domain-specific mappers convert API errors to typed codes:
 
-Auto-maps backend codes and HTTP status:
+| Mapper           | Domain                  |
+| ---------------- | ----------------------- |
+| `mapAuthError`   | Authentication services |
+| `mapRaffleError` | Raffle services         |
+
+Auto-maps HTTP status and network errors:
+
 - 401 → `unauthorized`
 - 403 → `forbidden`
 - 500 → `internal_server_error`
 - `ECONNABORTED` → `timeout_error`
 - `ERR_NETWORK` → `network_error`
 
-## Component Error Handling
-
-```typescript
-function getErrorMessage(code: AuthErrorCode): string {
-  switch (code) {
-    case AUTH_ERROR_CODES.INVALID_CREDENTIALS:
-      return 'Invalid email or password.';
-    case 'network_error':
-      return 'Network error. Check connection.';
-    default:
-      return 'An unexpected error occurred.';
-  }
-}
-
-// Usage
-const result = await signIn(data);
-if (!result.success) {
-  setError('root', { message: getErrorMessage(result.error) });
-  return;
-}
-// TypeScript knows result.data exists
-```
-
 ## Error Code Naming
 
 Format: `<service>:<operation>:<specific>`
 
 Examples:
+
 - `auth:sign-in:invalid-credentials`
 - `raffle:create:permission`
 - `raffle:upload:too-large`
 
 ## API Clients
 
-- `baseClient` - no auth, injects S2S secret + client IP
-- `authenticatedClient` - injects token from cookies + S2S secret + client IP
+| Client                | Use Case                                       |
+| --------------------- | ---------------------------------------------- |
+| `baseClient`          | Public endpoints (no auth)                     |
+| `authenticatedClient` | Protected endpoints (reads token from cookies) |
+
+Both auto-inject: S2S secret header, client IP forwarding.
 
 Located in `@/lib/api/client`.

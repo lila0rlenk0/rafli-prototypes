@@ -1,63 +1,67 @@
 # Components Layer
 
-UI components following Server Components First architecture.
+UI components organized by domain. Server Components first architecture.
+
+## Directory Structure
+
+```
+components/
+├── ui/       # Base primitives (Button, Input, Card)
+├── auth/     # Authentication flows
+├── raffle/   # Raffle display and interaction
+├── host/     # Host profiles and management
+├── payment/  # Checkout and payment UI
+├── filters/  # Search and filtering
+└── mode/     # User mode switching
+```
 
 ## Golden Rules
 
 CRITICAL: Server Components by default
 CRITICAL: Wrap runtime data access in Suspense
-ALWAYS: Extract logic from JSX into functions
+ALWAYS: Extract logic from JSX into named functions
 ALWAYS: Use `function` declarations, not arrow functions
-ALWAYS: JSDoc on all functions and components
+ALWAYS: JSDoc on all components and exported functions
 ALWAYS: Import directly from component files (e.g., `@/components/host/host-profile-card`)
-NEVER: 'use client' without interactivity requirement
+NEVER: `'use client'` without interactivity requirement
 NEVER: Create barrel exports (index.ts) in component folders
 
-## Server vs Client
+## Conventions
 
-**Server Components:**
-- Static content, data fetching, SEO-critical
-- No browser APIs, no event handlers
+**Server Components** - Static content, data fetching, SEO-critical, no browser APIs
+**Client Components** - Interactive UI, React hooks, browser APIs, mark with `'use client'`
 
-**Client Components:**
-- Interactive UI (clicks, forms, state)
-- Browser APIs (localStorage, geolocation)
-- Mark with `'use client'` at top
+## How To: Layout with Runtime Data (CRITICAL)
 
-## Runtime Data + Suspense (CRITICAL)
-
-Runtime data (`cookies()`, `headers()`, `searchParams`, `getSession()`) MUST be in Suspense.
+Runtime data (`cookies()`, `headers()`, `searchParams`, `getSession()`) blocks streaming. Extract and wrap in Suspense.
 
 ```tsx
-// BAD - blocks entire page
+// BAD - blocks entire route tree
 export default async function Layout({ children }) {
-  const session = await getSession(); // cookies() inside
-  return <Nav user={session.user}>{children}</Nav>;
+	const session = await getSession(); // cookies() inside
+	return <Nav user={session.user}>{children}</Nav>;
 }
 
-// GOOD - extract and wrap
+// GOOD - enables streaming
 async function LayoutContent({ children }) {
-  const session = await getSession();
-  return <Nav user={session.user}>{children}</Nav>;
+	const session = await getSession();
+	return <Nav user={session.user}>{children}</Nav>;
 }
 
 export default function Layout({ children }) {
-  return (
-    <Suspense fallback={<Spinner />}>
-      <LayoutContent>{children}</LayoutContent>
-    </Suspense>
-  );
+	return (
+		<Suspense fallback={<Spinner />}>
+			<LayoutContent>{children}</LayoutContent>
+		</Suspense>
+	);
 }
 ```
 
-## Logic Extraction
+## How To: Extract Logic with JSDoc
+
+Keep JSX clean. Define helpers inside component with JSDoc.
 
 ```tsx
-// BAD
-<div>{user.name || user.email}</div>
-<div>{count.toLocaleString()}</div>
-
-// GOOD
 export function UserCard({ user, count }: Props) {
   /**
    * Gets display name for user
@@ -79,14 +83,14 @@ export function UserCard({ user, count }: Props) {
 }
 ```
 
-## Function Style
+## How To: Function Style
 
 ```tsx
-// BAD
+// BAD - arrow functions
 const handleClick = () => { ... };
 const formatValue = (v: number) => v.toLocaleString();
 
-// GOOD
+// GOOD - function declarations
 function handleClick() { ... }
 function formatValue(v: number) { return v.toLocaleString(); }
 
@@ -95,21 +99,23 @@ const memoizedFn = useCallback(() => { ... }, []);
 const computed = useMemo(() => expensive(data), [data]);
 ```
 
-## Loading States
+## How To: Loading States
 
-**Suspense (granular):**
-```tsx
-<Suspense fallback={<Skeleton />}>
-  <AsyncComponent />
-</Suspense>
-```
+**Page-level** - Create `loading.tsx` sibling to `page.tsx`:
 
-**loading.tsx (page-level):**
 ```tsx
 // app/raffles/loading.tsx
 export default function Loading() {
-  return <PageSkeleton />;
+	return <PageSkeleton />;
 }
+```
+
+**Component-level** - Wrap async children in Suspense:
+
+```tsx
+<Suspense fallback={<Skeleton />}>
+	<AsyncComponent />
+</Suspense>
 ```
 
 ## Performance
@@ -117,5 +123,6 @@ export default function Loading() {
 - `useMemo` for expensive calculations
 - `useCallback` for callback stability
 - Debounce frequent events (scroll, input)
-- Use Next.js `Image` component
-- Code split heavy components with `dynamic()`
+- Use `next/image` for images
+- Use `next/dynamic` for heavy client components
+- Avoid prop drilling - prefer composition

@@ -228,6 +228,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		return name.charAt(0);
 	}
 
+	// TODO: The backend GET /raffles/{slug} endpoint intentionally excludes totalRaffles
+	// from the host object for performance reasons. To display the correct count, either:
+	// 1. Fetch host profile separately via getHostProfile(hostId)
+	// 2. Request backend team to add totalRaffles to the HostInfo interface
+	// See: raffles-core-backend/src/core/raffles/dto/raffle.dto.ts (HostInfo interface)
 	/**
 	 * Gets the formatted raffle count for the host from closure
 	 * @returns Formatted string with label

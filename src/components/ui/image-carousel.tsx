@@ -6,9 +6,16 @@ import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
+/**
+ * Image input type - supports both SignedMediaUrl objects and plain string URLs
+ */
+type ImageInput = SignedMediaUrl | string;
+
 interface ImageCarouselProps {
-	coverImage: SignedMediaUrl | null;
-	galleryImages: SignedMediaUrl[];
+	coverImage?: ImageInput | null;
+	galleryImages?: ImageInput[];
+	/** Array of image URLs (alternative to coverImage + galleryImages) */
+	images?: ImageInput[];
 	alt: string;
 	aspectRatio?: string;
 	maxHeight?: string;
@@ -20,9 +27,11 @@ interface ImageCarouselProps {
  *
  * Displays a carousel of images combining cover and gallery images.
  * Features infinite loop navigation with smooth slide animations.
+ * Supports both SignedMediaUrl objects and plain string URLs.
  *
  * @param coverImage - The main cover image (shown first)
  * @param galleryImages - Array of gallery images
+ * @param images - Alternative: array of all images (takes precedence)
  * @param alt - Alt text for accessibility
  * @param aspectRatio - Tailwind aspect ratio class (e.g., 'aspect-4/3')
  * @param maxHeight - Tailwind max height class (e.g., 'max-h-53')
@@ -30,7 +39,8 @@ interface ImageCarouselProps {
  */
 export function ImageCarousel({
 	coverImage,
-	galleryImages,
+	galleryImages = [],
+	images: imagesProp,
 	alt,
 	aspectRatio = 'aspect-4/3',
 	maxHeight = 'max-h-53',
@@ -40,17 +50,32 @@ export function ImageCarousel({
 	const [direction, setDirection] = useState(0);
 
 	/**
-	 * Builds a single array from cover and gallery images
-	 * @returns Array of all images with cover first
+	 * Extracts URL from an image input (handles both string and SignedMediaUrl)
+	 * @param image - Image input (string or SignedMediaUrl)
+	 * @returns The URL string
 	 */
-	function buildImageArray(): SignedMediaUrl[] {
-		const images: SignedMediaUrl[] = [];
+	function getImageUrl(image: ImageInput): string {
+		return typeof image === 'string' ? image : image.url;
+	}
 
-		if (coverImage) {
-			images.push(coverImage);
+	/**
+	 * Builds a single array from cover and gallery images
+	 * @returns Array of all image URLs
+	 */
+	function buildImageArray(): string[] {
+		// If images prop is provided, use it directly
+		if (imagesProp && imagesProp.length > 0) {
+			return imagesProp.map(getImageUrl);
 		}
 
-		return [...images, ...galleryImages];
+		// Otherwise build from cover + gallery
+		const urls: string[] = [];
+
+		if (coverImage) {
+			urls.push(getImageUrl(coverImage));
+		}
+
+		return [...urls, ...galleryImages.map(getImageUrl)];
 	}
 
 	/**
@@ -95,7 +120,7 @@ export function ImageCarousel({
 
 	const images = buildImageArray();
 	const showNavigation = shouldShowNavigation(images.length);
-	const currentImage = images[currentIndex];
+	const currentImageUrl = images[currentIndex];
 
 	const slideVariants = {
 		enter: (dir: number) => ({
@@ -116,7 +141,7 @@ export function ImageCarousel({
 		<div
 			className={`relative ${aspectRatio} ${maxHeight} w-full overflow-hidden rounded-2xl bg-gray-100 ${className}`}
 		>
-			{currentImage?.url ? (
+			{currentImageUrl ? (
 				<AnimatePresence initial={false} custom={direction} mode="popLayout">
 					<motion.div
 						key={currentIndex}
@@ -132,7 +157,7 @@ export function ImageCarousel({
 						className="absolute inset-0"
 					>
 						<Image
-							src={currentImage.url}
+							src={currentImageUrl}
 							alt={`${alt} - Image ${currentIndex + 1}`}
 							fill
 							className="rounded-2xl object-cover"

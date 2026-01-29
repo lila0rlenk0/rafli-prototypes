@@ -6,9 +6,16 @@ import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
+/**
+ * Image input type - supports both SignedMediaUrl objects and plain string URLs
+ */
+type ImageInput = SignedMediaUrl | string;
+
 interface ImageCarouselProps {
-	coverImage: SignedMediaUrl | null;
-	galleryImages: SignedMediaUrl[];
+	coverImage?: ImageInput | null;
+	galleryImages?: ImageInput[];
+	/** Array of image URLs (alternative to coverImage + galleryImages) */
+	images?: ImageInput[];
 	alt: string;
 	aspectRatio?: string;
 	maxHeight?: string;
@@ -20,9 +27,11 @@ interface ImageCarouselProps {
  *
  * Displays a carousel of images combining cover and gallery images.
  * Features infinite loop navigation with smooth slide animations.
+ * Supports both SignedMediaUrl objects and plain string URLs.
  *
  * @param coverImage - The main cover image (shown first)
  * @param galleryImages - Array of gallery images
+ * @param images - Alternative: array of all images (takes precedence)
  * @param alt - Alt text for accessibility
  * @param aspectRatio - Tailwind aspect ratio class (e.g., 'aspect-4/3')
  * @param maxHeight - Tailwind max height class (e.g., 'max-h-53')
@@ -30,7 +39,8 @@ interface ImageCarouselProps {
  */
 export function ImageCarousel({
 	coverImage,
-	galleryImages,
+	galleryImages = [],
+	images: imagesProp,
 	alt,
 	aspectRatio = 'aspect-4/3',
 	maxHeight = 'max-h-53',
@@ -40,17 +50,32 @@ export function ImageCarousel({
 	const [direction, setDirection] = useState(0);
 
 	/**
-	 * Builds a single array from cover and gallery images
-	 * @returns Array of all images with cover first
+	 * Extracts URL from an image input (handles both string and SignedMediaUrl)
+	 * @param image - Image input (string or SignedMediaUrl)
+	 * @returns The URL string
 	 */
-	function buildImageArray(): SignedMediaUrl[] {
-		const images: SignedMediaUrl[] = [];
+	function getImageUrl(image: ImageInput): string {
+		return typeof image === 'string' ? image : image.url;
+	}
 
-		if (coverImage) {
-			images.push(coverImage);
+	/**
+	 * Builds a single array from cover and gallery images
+	 * @returns Array of all image URLs
+	 */
+	function buildImageArray(): string[] {
+		// If images prop is provided, use it directly
+		if (imagesProp && imagesProp.length > 0) {
+			return imagesProp.map(getImageUrl);
 		}
 
-		return [...images, ...galleryImages];
+		// Otherwise build from cover + gallery
+		const urls: string[] = [];
+
+		if (coverImage) {
+			urls.push(getImageUrl(coverImage));
+		}
+
+		return [...urls, ...galleryImages.map(getImageUrl)];
 	}
 
 	/**
@@ -95,7 +120,7 @@ export function ImageCarousel({
 
 	const images = buildImageArray();
 	const showNavigation = shouldShowNavigation(images.length);
-	const currentImage = images[currentIndex];
+	const currentImageUrl = images[currentIndex];
 
 	const slideVariants = {
 		enter: (dir: number) => ({
@@ -116,7 +141,7 @@ export function ImageCarousel({
 		<div
 			className={`relative ${aspectRatio} ${maxHeight} w-full overflow-hidden rounded-2xl bg-gray-100 ${className}`}
 		>
-			{currentImage?.url ? (
+			{currentImageUrl ? (
 				<AnimatePresence initial={false} custom={direction} mode="popLayout">
 					<motion.div
 						key={currentIndex}
@@ -132,7 +157,7 @@ export function ImageCarousel({
 						className="absolute inset-0"
 					>
 						<Image
-							src={currentImage.url}
+							src={currentImageUrl}
 							alt={`${alt} - Image ${currentIndex + 1}`}
 							fill
 							className="rounded-2xl object-cover"
@@ -146,24 +171,26 @@ export function ImageCarousel({
 				</div>
 			)}
 
-			<button
-				type="button"
-				onClick={handlePrevious}
-				className="hover:text-background absolute top-1/2 left-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-80 disabled:hover:bg-black/50"
-				aria-label="Previous image"
-				disabled={!showNavigation}
-			>
-				<ChevronLeft className="h-5 w-5" />
-			</button>
-			<button
-				type="button"
-				onClick={handleNext}
-				className="hover:text-background absolute top-1/2 right-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-80 disabled:hover:bg-black/50"
-				aria-label="Next image"
-				disabled={!showNavigation}
-			>
-				<ChevronRight className="h-5 w-5" />
-			</button>
+			{showNavigation && (
+				<>
+					<button
+						type="button"
+						onClick={handlePrevious}
+						className="hover:text-background absolute top-1/2 left-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70"
+						aria-label="Previous image"
+					>
+						<ChevronLeft className="h-5 w-5" />
+					</button>
+					<button
+						type="button"
+						onClick={handleNext}
+						className="hover:text-background absolute top-1/2 right-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70"
+						aria-label="Next image"
+					>
+						<ChevronRight className="h-5 w-5" />
+					</button>
+				</>
+			)}
 
 			{showNavigation && (
 				<div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">

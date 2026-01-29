@@ -13,3 +13,4 @@ export * from './payment-errors';
 export * from './ticket-errors';
 export * from './host-errors';
 export * from './winning-errors';
+export * from './update-errors';

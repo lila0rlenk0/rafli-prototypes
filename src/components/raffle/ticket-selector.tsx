@@ -172,15 +172,6 @@ export function TicketSelector({
 		onQuantityChange(quantity);
 	}, [quantity, onQuantityChange]);
 
-	// Handle sold out state
-	if (maxTickets === 0) {
-		return (
-			<div className="flex items-center justify-center rounded-2xl border border-black bg-gray-100 p-4">
-				<p className="text-lg font-semibold text-gray-600">Sold Out</p>
-			</div>
-		);
-	}
-
 	const incrementDisabled = isIncrementDisabled(quantity, maxTickets);
 	const decrementDisabled = isDecrementDisabled(quantity);
 	const bundleDisabled = isBundleDisabled(quantity, maxTickets);

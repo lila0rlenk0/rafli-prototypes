@@ -2,6 +2,7 @@ import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
+import { RaffleUpdatesCard } from '@/components/raffle/raffle-updates-card';
 import { RaffleWonCard } from '@/components/raffle/raffle-won-card';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
 import { WinnersList } from '@/components/raffle/winners-list';
@@ -26,8 +27,9 @@ import { ArrowLeft, ImageIcon, InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ComponentProps } from 'react';
-import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { PaymentModalWrapper } from './payment-modal-wrapper';
+import { PostUpdateButton } from './post-update-button';
 
 interface PageProps {
 	params: Promise<{
@@ -199,8 +201,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const showEditButton = shouldShowEditButton();
 	const disablePurchase = isPurchaseDisabled();
 	const isConcluded = isRaffleConcluded();
-	// const showWonCard = isConcluded && didUserWin;
-	const showWonCard = true;
+	const isOwner = isOwnRaffle();
+	const isLive = raffle.status === RAFFLE_STATUS.LIVE;
+	const showWonCard = isConcluded && didUserWin;
 	const showNotWonCard = isConcluded && !didUserWin;
 
 	/**
@@ -367,6 +370,18 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</div>
 						</div>
 					</div>
+
+					{/* Updates from host */}
+					<RaffleUpdatesCard
+						raffleId={raffle.id}
+						actionSlot={
+							<PostUpdateButton
+								publicSlug={publicSlug}
+								isOwner={isOwner}
+								isLive={isLive}
+							/>
+						}
+					/>
 
 					<div className="flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6">
 						<h2 className="font-clash-display text-3xl font-semibold">

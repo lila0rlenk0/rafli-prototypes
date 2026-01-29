@@ -22,6 +22,8 @@ interface RaffleCardProps {
 export function RaffleCard({ raffle }: RaffleCardProps) {
 	const mode = useUserStore(state => state.mode);
 
+	const isUnlimited = raffle.maxParticipants === 0;
+
 	/**
 	 * Calculates the percentage of filled spots in a raffle
 	 * @param current - Current number of participants
@@ -58,27 +60,27 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 	const showEditButton = shouldShowEditButton();
 
 	/**
-	 * Formats the progress percentage for display
-	 * @param progressValue - The progress value (0-100)
-	 * @returns Formatted percentage string rounded to nearest integer
+	 * Gets the fill status text
+	 * @returns "Unlimited" for unlimited raffles, otherwise percentage
 	 */
-	function formatProgressPercentage(progressValue: number): string {
-		return `${progressValue.toLocaleString('en-US', {
+	function getFillStatus(): string {
+		if (isUnlimited) return 'Unlimited';
+		return `${progress.toLocaleString('en-US', {
 			minimumFractionDigits: 0,
 			maximumFractionDigits: 2,
-		})}%`;
+		})}% filled`;
 	}
 
 	/**
-	 * Formats the participant count display (current/max)
-	 * @param current - Current number of participants
-	 * @param max - Maximum number of participants
-	 * @returns Formatted string in "current/max" format
+	 * Gets the participants display text
+	 * @returns Only current count for unlimited, otherwise "current/max"
 	 */
-	function formatParticipantCount(current: number, max: number): string {
+	function getParticipantsDisplay(): string {
 		const formatter = new Intl.NumberFormat('en-US');
-
-		return `${formatter.format(current)}/${formatter.format(max)}`;
+		if (isUnlimited) {
+			return formatter.format(raffle.participantsCount);
+		}
+		return `${formatter.format(raffle.participantsCount)}/${formatter.format(raffle.maxParticipants)}`;
 	}
 
 	function getTicketPrice() {
@@ -123,15 +125,8 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 				</div>
 
 				<div className="mb-2 flex items-center justify-between text-sm">
-					<span className="text-[#7B7B7B]">
-						{formatParticipantCount(
-							raffle.participantsCount,
-							raffle.maxParticipants,
-						)}
-					</span>
-					<span className="text-[#7B7B7B]">
-						{formatProgressPercentage(progress)} filled
-					</span>
+					<span className="text-[#7B7B7B]">{getParticipantsDisplay()}</span>
+					<span className="text-[#7B7B7B]">{getFillStatus()}</span>
 				</div>
 
 				<div className="mb-6 h-[11px] w-full overflow-hidden rounded-full bg-gray-100">
@@ -150,7 +145,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 						href={`/browse/${raffle.publicSlugOrCode}`}
 						className="mt-0 block"
 					>
-						<Button className="hover:bg-background w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:text-black">
+						<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
 							Details
 						</Button>
 					</Link>

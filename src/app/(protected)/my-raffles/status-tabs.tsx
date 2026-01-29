@@ -2,18 +2,25 @@
 
 import { cn } from '@/lib/utils';
 import { RAFFLE_STATUS } from '@/types/raffle';
+import { USER_MODE, type UserMode } from '@/types/user-mode';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
+interface StatusTabsProps {
+	mode?: UserMode | null;
+}
 
 /**
  * StatusTabs Component
  *
  * Displays tabs for filtering raffles by status:
- * - Scheduled: Draft ou Queued
+ * - Scheduled: Draft ou Queued (Host mode only)
  * - Live: Live
  * - Ended: Cancelled, Completed ou Ended
  * with an indicator line below the active tab.
+ *
+ * @param mode - User mode to determine which tabs to show
  */
-export function StatusTabs() {
+export function StatusTabs({ mode }: StatusTabsProps) {
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -60,8 +67,10 @@ export function StatusTabs() {
 		handleStatusChange(endedStatuses);
 	}
 
+	const isHost = mode === USER_MODE.HOST;
+
 	// Determine which tab is active by checking if current status is in the group
-	// Scheduled: Draft ou Queued
+	// Scheduled: Draft ou Queued (Host only)
 	const statusList = statusParam ? statusParam.split(',') : [];
 	const isScheduled =
 		statusList.includes(RAFFLE_STATUS.DRAFT) ||
@@ -76,21 +85,23 @@ export function StatusTabs() {
 
 	return (
 		<div className="relative flex items-start justify-center gap-6 pb-1">
-			{/* Scheduled Tab */}
-			<button
-				type="button"
-				onClick={handleScheduledClick}
-				className={cn(
-					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
-					'text-[rgba(15,15,15,0.95)] transition-colors',
-					'hover:text-black',
-				)}
-			>
-				Scheduled
-				{isScheduled && (
-					<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
-				)}
-			</button>
+			{/* Scheduled Tab - Host only */}
+			{isHost && (
+				<button
+					type="button"
+					onClick={handleScheduledClick}
+					className={cn(
+						'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
+						'text-[rgba(15,15,15,0.95)] transition-colors',
+						'hover:text-black',
+					)}
+				>
+					Scheduled
+					{isScheduled && (
+						<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
+					)}
+				</button>
+			)}
 
 			{/* Live Tab */}
 			<button

@@ -1,6 +1,7 @@
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 
+import { setUserModeCookie } from '@/lib/mode/cookies';
 import { PERMISSIONS } from '@/lib/permissions';
 import { USER_MODE, type Permission, type UserMode } from '@/types/user-mode';
 
@@ -40,6 +41,7 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 				/**
 				 * Toggle between participant and host mode
 				 * Only works if user has raffle:create permission and mode is initialized
+				 * Syncs mode to cookie for server-side access
 				 */
 				switchMode: () => {
 					const { canSwitchMode, mode } = get();
@@ -54,6 +56,9 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 							: USER_MODE.PARTICIPANT;
 
 					set({ mode: newMode });
+
+					// Sync to cookie (fire-and-forget, non-blocking)
+					setUserModeCookie(newMode).catch(console.error);
 				},
 
 				/**
@@ -90,6 +95,7 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 				/**
 				 * Initialize mode based on permissions and persisted preference
 				 * Called after permissions are set to validate/set the mode
+				 * Only syncs to cookie when mode actually changes to avoid infinite loops
 				 */
 				initializeMode: () => {
 					const { mode, canSwitchMode } = get();
@@ -97,14 +103,17 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 					// If mode is HOST but user lost permission, reset to PARTICIPANT
 					if (mode === USER_MODE.HOST && !canSwitchMode()) {
 						set({ mode: USER_MODE.PARTICIPANT });
+						setUserModeCookie(USER_MODE.PARTICIPANT).catch(console.error);
 						return;
 					}
 
 					// If mode is null (not initialized), default to PARTICIPANT
 					if (mode === null) {
 						set({ mode: USER_MODE.PARTICIPANT });
+						setUserModeCookie(USER_MODE.PARTICIPANT).catch(console.error);
 					}
-					// Otherwise keep current mode (valid persisted preference)
+					// Otherwise keep current mode - no cookie sync needed
+					// Cookie will be set on next switchMode or page that reads it
 				},
 
 				/**

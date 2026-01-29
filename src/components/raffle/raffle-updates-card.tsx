@@ -32,7 +32,7 @@ export async function RaffleUpdatesCard({
 }: RaffleUpdatesCardProps) {
 	const response = await getUpdates(raffleId);
 
-	const updates: Update[] = response.success ? response.data.updates : [];
+	const updates: Update[] = response.success ? response.data.items : [];
 
 	/**
 	 * Sorts updates by date (newest first)

@@ -38,7 +38,7 @@ interface UpdateFormProviderProps {
  * UpdateFormProvider Component
  *
  * Provides form context for creating raffle updates.
- * Handles image upload and update creation flow.
+ * Uses two-phase submit: create update first, then upload images.
  *
  * @param children - Child components
  * @param raffleId - The ID of the raffle
@@ -62,9 +62,9 @@ export function UpdateFormProvider({
 	});
 
 	/**
-	 * Handles form submission
-	 * 1. Uploads images if any (gets back URLs)
-	 * 2. Creates update with text and image URLs
+	 * Handles form submission using two-phase flow:
+	 * 1. Creates update with text only
+	 * 2. Uploads images to the created update (if any)
 	 *
 	 * @param data - Validated form data
 	 */
@@ -73,31 +73,33 @@ export function UpdateFormProvider({
 			setIsSubmitting(true);
 
 			try {
-				let imageUrls: string[] = [];
-
-				// Upload images first if any
-				if (data.images && data.images.length > 0) {
-					const uploadResult = await uploadUpdateImages(raffleId, data.images);
-
-					if (!uploadResult.success) {
-						toast.error('Failed to upload images. Please try again.');
-						setIsSubmitting(false);
-						return;
-					}
-
-					imageUrls = uploadResult.data.imageUrls;
-				}
-
-				// Create the update
+				// Phase 1: Create the update with text only
 				const createResult = await createUpdate(raffleId, {
 					text: data.text,
-					imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
 				});
 
 				if (!createResult.success) {
 					toast.error('Failed to create update. Please try again.');
 					setIsSubmitting(false);
 					return;
+				}
+
+				const updateId = createResult.data.id;
+
+				// Phase 2: Upload images if any
+				if (data.images && data.images.length > 0) {
+					const uploadResult = await uploadUpdateImages(updateId, data.images);
+
+					if (!uploadResult.success) {
+						// Update was created but images failed
+						// Show warning but still redirect since update exists
+						toast.warning(
+							'Update posted, but some images failed to upload. You can try adding them later.',
+						);
+						form.reset();
+						router.push(`/browse/${publicSlug}`);
+						return;
+					}
 				}
 
 				toast.success('Update posted successfully!');

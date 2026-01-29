@@ -30,12 +30,12 @@ type UploadUpdateImagesServiceResponse = ServiceResponse<
 /**
  * Uploads images for a raffle update
  *
- * @param raffleId - The ID of the raffle
+ * @param updateId - The ID of the update to attach images to
  * @param files - Array of image files to upload (max 5)
  * @returns ServiceResponse with image URLs on success, UpdateErrorCode on failure
  */
 export async function uploadUpdateImages(
-	raffleId: string,
+	updateId: string,
 	files: File[],
 ): Promise<UploadUpdateImagesServiceResponse> {
 	try {
@@ -66,7 +66,7 @@ export async function uploadUpdateImages(
 		});
 
 		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/updates/images`,
+			`/updates/${updateId}/images`,
 			formData,
 			{
 				timeout: API_TIMEOUTS.UPLOAD,

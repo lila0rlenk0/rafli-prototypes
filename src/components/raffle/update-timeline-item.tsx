@@ -44,7 +44,22 @@ export function UpdateTimelineItem({ update }: UpdateTimelineItemProps) {
 		});
 	}
 
-	const hasImages = update.imageUrls && update.imageUrls.length > 0;
+	/**
+	 * Checks if a string is a valid URL
+	 * @param url - URL string to validate
+	 * @returns true if valid URL, false otherwise
+	 */
+	function isValidUrl(url: string): boolean {
+		try {
+			new URL(url);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	const validImageUrls = update.imageUrls?.filter(isValidUrl) ?? [];
+	const hasImages = validImageUrls.length > 0;
 	const hasText = update.text && update.text.trim().length > 0;
 
 	return (
@@ -76,7 +91,7 @@ export function UpdateTimelineItem({ update }: UpdateTimelineItemProps) {
 				{/* Images */}
 				{hasImages && (
 					<div className="flex flex-wrap gap-2">
-						{update.imageUrls.map((imageUrl, index) => (
+						{validImageUrls.map((imageUrl, index) => (
 							<div
 								key={index}
 								className="relative h-24 w-24 overflow-hidden rounded-lg border border-gray-200"

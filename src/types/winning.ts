@@ -6,11 +6,12 @@ import { z } from 'zod';
 
 export const WINNING_STATUS = {
 	PENDING: 'pending',
-	CLAIMED: 'claimed',
+	AWAITING_HOST: 'awaiting_host',
 	SENT: 'sent',
 	DELIVERED: 'delivered',
 	RECEIVED: 'received',
 	DISPUTED: 'disputed',
+	RESOLVED: 'resolved',
 } as const;
 
 // ==========================================
@@ -28,11 +29,12 @@ export type WinningStatus = (typeof WINNING_STATUS)[keyof typeof WINNING_STATUS]
  */
 export const winningStatusSchema = z.enum([
 	WINNING_STATUS.PENDING,
-	WINNING_STATUS.CLAIMED,
+	WINNING_STATUS.AWAITING_HOST,
 	WINNING_STATUS.SENT,
 	WINNING_STATUS.DELIVERED,
 	WINNING_STATUS.RECEIVED,
 	WINNING_STATUS.DISPUTED,
+	WINNING_STATUS.RESOLVED,
 ]);
 
 /**

@@ -463,7 +463,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					)}
 
 					{isConcluded && raffle.winners && raffle.winners.length > 0 && (
-						<WinnersList winners={raffle.winners} />
+						<WinnersList
+							winners={raffle.winners}
+							raffleId={raffle.id}
+							totalTickets={raffle.totalTicketsAtDraw}
+							manifestHash={raffle.manifestHash}
+							commitTxHash={raffle.commitTxHash}
+							currentUserId={currentUserId}
+						/>
 					)}
 
 					{!isConcluded && (

@@ -171,24 +171,26 @@ export function ImageCarousel({
 				</div>
 			)}
 
-			<button
-				type="button"
-				onClick={handlePrevious}
-				className="hover:text-background absolute top-1/2 left-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-80 disabled:hover:bg-black/50"
-				aria-label="Previous image"
-				disabled={!showNavigation}
-			>
-				<ChevronLeft className="h-5 w-5" />
-			</button>
-			<button
-				type="button"
-				onClick={handleNext}
-				className="hover:text-background absolute top-1/2 right-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-80 disabled:hover:bg-black/50"
-				aria-label="Next image"
-				disabled={!showNavigation}
-			>
-				<ChevronRight className="h-5 w-5" />
-			</button>
+			{showNavigation && (
+				<>
+					<button
+						type="button"
+						onClick={handlePrevious}
+						className="hover:text-background absolute top-1/2 left-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70"
+						aria-label="Previous image"
+					>
+						<ChevronLeft className="h-5 w-5" />
+					</button>
+					<button
+						type="button"
+						onClick={handleNext}
+						className="hover:text-background absolute top-1/2 right-3 z-10 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white/90 transition-colors hover:bg-black/70"
+						aria-label="Next image"
+					>
+						<ChevronRight className="h-5 w-5" />
+					</button>
+				</>
+			)}
 
 			{showNavigation && (
 				<div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">

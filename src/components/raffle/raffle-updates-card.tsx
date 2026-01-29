@@ -71,8 +71,13 @@ export async function RaffleUpdatesCard({
 					<AccordionContent className="px-6 pb-6">
 						{hasUpdates ? (
 							<div className="pt-2">
-								{sortedUpdates.map(update => (
-									<UpdateTimelineItem key={update.id} update={update} />
+								{sortedUpdates.map((update, index) => (
+									<div key={update.id}>
+										<UpdateTimelineItem update={update} />
+										{index < sortedUpdates.length - 1 && (
+											<div className="mb-6 h-px w-full bg-[#e5e5e5]" />
+										)}
+									</div>
 								))}
 							</div>
 						) : (

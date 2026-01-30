@@ -49,6 +49,8 @@ export const orderSchema = z.object({
 	status: orderStatusSchema,
 	createdAt: z.string(), // ISO datetime
 	updatedAt: z.string(), // ISO datetime
+	raffleName: z.string().optional().default('N/A'), // Optional, defaults to N/A
+	raffleSlug: z.string().optional(), // Optional slug for linking
 });
 
 /**
@@ -66,3 +68,38 @@ export const createOrderPayloadSchema = z.object({
 
 export type Order = z.infer<typeof orderSchema>;
 export type CreateOrderPayload = z.infer<typeof createOrderPayloadSchema>;
+
+// ==========================================
+// Order with Raffle Schema (for list view)
+// ==========================================
+
+/**
+ * Schema for order in list views (same as orderSchema, alias for clarity)
+ */
+export const orderWithRaffleSchema = orderSchema;
+
+export type OrderWithRaffle = z.infer<typeof orderWithRaffleSchema>;
+
+// ==========================================
+// Orders Response Schema (paginated)
+// ==========================================
+
+/**
+ * Schema for backend orders response
+ * Backend returns { total, orders } format
+ */
+export const ordersBackendResponseSchema = z.object({
+	total: z.number(),
+	orders: z.array(orderWithRaffleSchema),
+});
+
+/**
+ * Normalized orders response for UI consumption
+ */
+export interface OrdersResponse {
+	items: OrderWithRaffle[];
+	total: number;
+	page: number;
+	limit: number;
+	totalPages: number;
+}

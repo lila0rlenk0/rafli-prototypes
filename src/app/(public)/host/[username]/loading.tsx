@@ -10,7 +10,7 @@ import Link from 'next/link';
 export default function HostProfileLoading() {
 	return (
 		<div className="container mx-auto px-4 py-8">
-			<Link href="/browse" className="mb-8 flex items-center gap-2">
+			<Link href="/browse" className="flex w-fit items-center gap-2">
 				<ArrowLeft className="size-4" />
 				<span className="font-semibold">Back to Raffle Browse</span>
 			</Link>

@@ -101,7 +101,7 @@ export function EnhancedTicketChecker() {
 	return (
 		<div className="rounded-2xl border border-black bg-white p-6 shadow-sm">
 			<div className="mb-4 flex items-center gap-2">
-				<Search className="size-5 text-blue-600" />
+				<Search className="size-5 text-neutral-900" />
 				<h3 className="text-lg font-semibold">Verify Your Ticket</h3>
 			</div>
 
@@ -117,7 +117,7 @@ export function EnhancedTicketChecker() {
 							value={raffleSlug}
 							onChange={(e) => setRaffleSlug(e.target.value)}
 							placeholder="e.g., my-raffle or raffle_abc123"
-							className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
@@ -132,7 +132,7 @@ export function EnhancedTicketChecker() {
 							value={ticketCode}
 							onChange={(e) => setTicketCode(e.target.value)}
 							placeholder="e.g., TKT-1234-ABCDEF"
-							className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
@@ -143,8 +143,8 @@ export function EnhancedTicketChecker() {
 						className={cn(
 							'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors',
 							loading || !raffleSlug.trim() || !ticketCode.trim()
-								? 'cursor-not-allowed bg-neutral-300'
-								: 'bg-blue-600 hover:bg-blue-700',
+								? 'cursor-not-allowed bg-black opacity-50'
+								: 'bg-black hover:bg-neutral-800',
 						)}
 					>
 						{loading ? (

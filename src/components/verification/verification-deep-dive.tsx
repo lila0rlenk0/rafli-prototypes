@@ -23,7 +23,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from '@/components/ui/accordion';
-import { CodeBlock } from '@/components/ui/code-block';
+import { CodeSnippet } from '@/components/ui/code-snippet';
 import { CopyButton } from '@/components/ui/copy-button';
 import { cn } from '@/lib/utils';
 import {
@@ -463,7 +463,7 @@ const winningTicketId = winningIndex + 1;`;
 						The winner selection uses a deterministic formula that anyone can verify:
 					</p>
 
-					<CodeBlock code={FORMULA_CODE} language="typescript" filename="winner-selection.ts" />
+					<CodeSnippet code={FORMULA_CODE} language="typescript" />
 
 					<ul className="list-inside list-disc space-y-1 text-sm text-neutral-600">
 						<li>Random number comes from Chainlink VRF on Arbitrum blockchain</li>

@@ -81,40 +81,46 @@ export function TicketChecker() {
 	}
 
 	return (
-		<div className="rounded-xl border bg-white p-6 shadow-sm">
+		<div className="rounded-xl border border-black bg-white p-6">
 			<div className="mb-4 flex items-center gap-2">
-				<Search className="size-5 text-blue-600" />
+				<Search className="size-5 text-neutral-900" />
 				<h3 className="text-lg font-semibold">Verify Your Ticket</h3>
 			</div>
 
 			{!result ? (
 				<form onSubmit={handleVerify} className="space-y-4">
 					<div>
-						<label htmlFor="raffleSlug" className="mb-1 block text-sm font-medium text-neutral-700">
+						<label
+							htmlFor="raffleSlug"
+							className="mb-1 block text-sm font-medium text-neutral-700"
+						>
 							Raffle ID or Slug
 						</label>
 						<input
 							id="raffleSlug"
 							type="text"
 							value={raffleSlug}
-							onChange={(e) => setRaffleSlug(e.target.value)}
+							onChange={e => setRaffleSlug(e.target.value)}
 							placeholder="e.g., my-raffle or raffle_abc123"
-							className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:ring-1 focus:ring-black/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
 
 					<div>
-						<label htmlFor="ticketCode" className="mb-1 block text-sm font-medium text-neutral-700">
+						<label
+							htmlFor="ticketCode"
+							className="mb-1 block text-sm font-medium text-neutral-700"
+						>
 							Ticket Code
 						</label>
 						<input
 							id="ticketCode"
 							type="text"
 							value={ticketCode}
-							onChange={(e) => setTicketCode(e.target.value)}
+							onChange={e => setTicketCode(e.target.value)}
 							placeholder="e.g., TKT-1234-ABCDEF"
-							className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:ring-1 focus:ring-black/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
@@ -123,10 +129,10 @@ export function TicketChecker() {
 						type="submit"
 						disabled={loading || !raffleSlug.trim() || !ticketCode.trim()}
 						className={cn(
-							'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors',
+							'flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors',
 							loading || !raffleSlug.trim() || !ticketCode.trim()
-								? 'cursor-not-allowed bg-neutral-300'
-								: 'bg-blue-600 hover:bg-blue-700',
+								? 'cursor-not-allowed bg-black opacity-50'
+								: 'bg-black hover:bg-neutral-800',
 						)}
 					>
 						{loading ? (
@@ -173,8 +179,17 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 				<VerificationRow
 					label="Merkle Verified"
 					value={
-						<span className={cn('flex items-center gap-1', data.merkleVerified ? 'text-green-600' : 'text-red-600')}>
-							{data.merkleVerified ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
+						<span
+							className={cn(
+								'flex items-center gap-1',
+								data.merkleVerified ? 'text-green-600' : 'text-red-600',
+							)}
+						>
+							{data.merkleVerified ? (
+								<CheckCircle2 className="size-4" />
+							) : (
+								<XCircle className="size-4" />
+							)}
 							{data.merkleVerified ? 'Yes' : 'No'}
 						</span>
 					}
@@ -182,7 +197,9 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 				<VerificationRow
 					label="Status"
 					value={
-						<span className={cn(data.isVoided ? 'text-red-600' : 'text-green-600')}>
+						<span
+							className={cn(data.isVoided ? 'text-red-600' : 'text-green-600')}
+						>
 							{data.isVoided ? 'Voided' : 'Valid'}
 						</span>
 					}

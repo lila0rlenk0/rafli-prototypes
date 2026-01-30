@@ -33,7 +33,7 @@ export function ComparisonDiagram() {
 					<div className="relative">
 						<div className="flex size-24 items-center justify-center rounded-lg bg-neutral-800">
 							<div className="grid grid-cols-2 gap-1">
-								{[0, 1, 2, 3].map((i) => (
+								{[0, 1, 2, 3].map(i => (
 									<motion.div
 										key={i}
 										animate={{ opacity: [0.3, 0.7, 0.3] }}
@@ -48,7 +48,9 @@ export function ComparisonDiagram() {
 								))}
 							</div>
 						</div>
-						<p className="mt-2 text-center text-xs text-neutral-500">Black Box</p>
+						<p className="mt-2 text-center text-xs text-neutral-500">
+							Black Box
+						</p>
 					</div>
 				</div>
 
@@ -85,7 +87,7 @@ export function ComparisonDiagram() {
 					<div className="relative">
 						<div className="flex size-24 items-center justify-center rounded-lg border-2 border-dashed border-green-300 bg-white">
 							<div className="grid grid-cols-2 gap-1">
-								{[0, 1, 2, 3].map((i) => (
+								{[0, 1, 2, 3].map(i => (
 									<motion.div
 										key={i}
 										initial={{ scale: 0 }}

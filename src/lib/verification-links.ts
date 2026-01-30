@@ -4,16 +4,14 @@
  * Utilities for generating external blockchain explorer links.
  */
 
-const ARBISCAN_BASE = 'https://arbiscan.io';
-const VRF_CONTRACT = '0x8757b0C757fD59B01c0d217b6299b6fADD81512B';
-const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
+import { clientEnv } from '@/env/client';
 
 /**
  * Gets the Arbiscan URL for the VRF contract
  * @returns Arbiscan contract URL
  */
 export function getVrfContractUrl(): string {
-	return `${ARBISCAN_BASE}/address/${VRF_CONTRACT}`;
+	return `${clientEnv.NEXT_PUBLIC_ARBISCAN_BASE_URL}/address/${clientEnv.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS}`;
 }
 
 /**
@@ -22,7 +20,7 @@ export function getVrfContractUrl(): string {
  * @returns Arbiscan transaction URL
  */
 export function getArbiscanTxUrl(txHash: string): string {
-	return `${ARBISCAN_BASE}/tx/${txHash}`;
+	return `${clientEnv.NEXT_PUBLIC_ARBISCAN_BASE_URL}/tx/${txHash}`;
 }
 
 /**
@@ -31,5 +29,5 @@ export function getArbiscanTxUrl(txHash: string): string {
  * @returns IPFS gateway URL
  */
 export function getIpfsUrl(hash: string): string {
-	return `${IPFS_GATEWAY}${hash}`;
+	return `${clientEnv.NEXT_PUBLIC_IPFS_GATEWAY_URL}${hash}`;
 }

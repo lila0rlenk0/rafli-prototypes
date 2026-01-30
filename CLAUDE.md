@@ -1,4 +1,4 @@
-# Raffly
+# Rafli
 
 Next.js raffle platform with Clean Architecture.
 

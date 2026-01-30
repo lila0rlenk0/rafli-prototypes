@@ -51,11 +51,12 @@ export default function HowItWorksPage() {
 			<ScrollReveal>
 				<header className="mb-16 text-center">
 					<h1 className="font-clash-display mb-4 text-4xl font-bold sm:text-5xl">
-						Every Winner Verifiable
+						Every Winner Is Verifiable
 					</h1>
 					<p className="mx-auto max-w-2xl text-lg text-gray-600">
-						No trust required. Every raffle result can be independently verified
-						using cryptographic proofs.
+						All raffles on Rafli are designed so that winners can be
+						independently verified. You don&apos;t need to take our word for it
+						- the process is public and transparent!
 					</p>
 				</header>
 			</ScrollReveal>
@@ -88,8 +89,8 @@ export default function HowItWorksPage() {
 								</p>
 								<ol className="list-inside list-decimal space-y-2 text-gray-700">
 									<li>
-										Before the draw, we seal all ticket data in an envelope and
-										have it <strong>notarized</strong> (blockchain commit)
+										Before the draw, all ticket data is sealed and{' '}
+										<strong>time-stamped</strong> (via a blockchain commitment)
 									</li>
 									<li>
 										A <strong>third party</strong> generates the random number
@@ -132,7 +133,8 @@ export default function HowItWorksPage() {
 									The random number comes from an external, verifiable source
 								</li>
 								<li>
-									The winner selection formula is deterministic and public
+									The winner selection formula is predefined and publicly
+									available
 								</li>
 							</ul>
 						</div>
@@ -272,7 +274,7 @@ export default function HowItWorksPage() {
 						number={2}
 						icon={<Lock className="size-5" />}
 						title="Blockchain Commitment"
-						description="The manifest's unique fingerprint (hash) is recorded on the Arbitrum blockchain. This proves the ticket list existed at a specific time."
+						description="The manifest's unique fingerprint (hash) is recorded on the Arbitrum blockchain. This proves the ticket list existed at a specific point in time."
 					/>
 					<ProcessStep
 						number={3}
@@ -326,8 +328,8 @@ export default function HowItWorksPage() {
 						Verify Yourself
 					</h2>
 					<p className="mb-4 text-gray-600">
-						Have a ticket? Check if it&apos;s been properly committed and
-						whether you won.
+						Have a ticket? Check how it was included in the draw and see whether
+						it won.
 					</p>
 					<TicketChecker />
 				</section>
@@ -337,7 +339,7 @@ export default function HowItWorksPage() {
 			<ScrollReveal>
 				<section className="text-center">
 					<p className="mb-4 text-gray-600">
-						Every winner on Raffly can be independently verified.
+						Every winner on Rafli can be independently verified.
 					</p>
 					<Link
 						href="/browse"

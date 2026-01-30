@@ -1,4 +1,4 @@
-# Raffly
+# Rafli
 
 Raffle platform built with Next.js App Router and Clean Architecture.
 

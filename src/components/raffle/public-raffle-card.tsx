@@ -1,7 +1,8 @@
+import { ProvablyFairBadge } from '@/components/raffle/provably-fair-badge';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
-import type { Raffle } from '@/types/raffle';
+import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
 import Link from 'next/link';
 
 interface PublicRaffleCardProps {
@@ -98,6 +99,10 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 				<h3 className="mb-2 h-16 text-xl font-bold tracking-tight text-gray-900">
 					{raffle.title}
 				</h3>
+
+				{raffle.status === RAFFLE_STATUS.COMPLETED && (
+					<ProvablyFairBadge className="mb-2" />
+				)}
 
 				<div className="mb-4 flex flex-col">
 					<div className="flex items-center justify-between">

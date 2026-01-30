@@ -9,6 +9,7 @@ import {
 	type RaffleErrorCode,
 	type TicketErrorCode,
 	type UpdateErrorCode,
+	type VerificationErrorCode,
 	type WinningErrorCode,
 } from '@/types/errors';
 
@@ -468,6 +469,38 @@ export function mapUpdateError(error: unknown): UpdateErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as UpdateErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps verification errors to VerificationErrorCode
+ *
+ * Accepts `core:verification:*` and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns VerificationErrorCode (either backend code or frontend fallback)
+ */
+export function mapVerificationError(error: unknown): VerificationErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "core:verification:winner-not-found", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('core:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as VerificationErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
+			return mappedCode as VerificationErrorCode;
 		}
 	}
 

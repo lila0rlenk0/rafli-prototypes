@@ -94,9 +94,9 @@ const hostSchema = z.object({
 export const raffleWinnerSchema = z.object({
 	id: z.string(),
 	oddsId: z.number().optional(),
-	ticketCode: z.string(),
+	ticketCode: z.string().optional(),
 	userId: z.string(),
-	name: z.string().nullable(),
+	name: z.string().nullish(),
 	position: z.number(),
 	status: z.string(),
 });
@@ -136,6 +136,11 @@ export const raffleSchema = z.object({
 	updatedAt: z.string(),
 	host: hostSchema.optional(),
 	winners: z.array(raffleWinnerSchema).optional(),
+	totalTicketsAtDraw: z.number().optional(),
+	manifestHash: z.string().nullable().optional(),
+	commitTxHash: z.string().nullable().optional(),
+	vrfRequestId: z.string().nullable().optional(),
+	vrfFulfillTxHash: z.string().nullable().optional(),
 });
 
 /**

@@ -9,7 +9,7 @@ import { CTASection } from './cta-section';
 import { Footer } from './footer';
 
 /**
- * Landing page for Raffly - the raffle platform
+ * Landing page for Rafli - the raffle platform
  *
  * Showcases the platform's features, benefits for participants and hosts,
  * and provides call-to-action buttons to enter the app.

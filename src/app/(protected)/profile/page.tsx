@@ -3,7 +3,11 @@ import { getMe } from '@/services/user/get-me';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { ProfileSidebar } from './profile-sidebar';
-import { PersonalInformationSection, SecuritySection } from './sections';
+import {
+	PaymentHistorySection,
+	PersonalInformationSection,
+	SecuritySection,
+} from './sections';
 
 /**
  * Sidebar items configuration
@@ -19,6 +23,10 @@ const SIDEBAR_ITEMS = [
 	{
 		label: 'Security',
 		sectionId: 'security',
+	},
+	{
+		label: 'Payment History',
+		sectionId: 'payment-history',
 	},
 ];
 
@@ -63,6 +71,9 @@ export default async function ProfilePage() {
 
 					{/* Security */}
 					<SecuritySection />
+
+					{/* Payment History */}
+					<PaymentHistorySection />
 				</div>
 			</div>
 		</div>

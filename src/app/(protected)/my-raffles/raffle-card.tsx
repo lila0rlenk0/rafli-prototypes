@@ -5,12 +5,12 @@ import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { useUserStore } from '@/providers/user-store-provider';
-import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
+import { isEnrolledRaffle, RAFFLE_STATUS, type MyRaffleItem } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
 import Link from 'next/link';
 
 interface RaffleCardProps {
-	raffle: Raffle;
+	raffle: MyRaffleItem;
 }
 
 /**
@@ -122,6 +122,12 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 						<p className="text-muted-foreground">Prize value</p>
 						<p className="text-xl font-semibold">${getPrizeValue()}</p>
 					</div>
+					{isEnrolledRaffle(raffle) && (
+						<div className="flex items-center justify-between">
+							<p className="text-muted-foreground">My Tickets</p>
+							<p className="text-xl font-semibold">{raffle.myTicketCount}</p>
+						</div>
+					)}
 				</div>
 
 				<div className="mb-2 flex items-center justify-between text-sm">

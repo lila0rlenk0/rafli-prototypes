@@ -275,9 +275,52 @@ export const listRafflesResponseSchema = paginationMetadataSchema.extend({
 	raffles: z.array(raffleSchema),
 });
 
+/**
+ * Schema for raffle with user's ticket count (participant mode)
+ */
+export const enrolledRaffleSchema = raffleSchema.extend({
+	myTicketCount: z.number(),
+});
+
+/**
+ * Schema for enrolled raffles list response
+ */
+export const listEnrolledRafflesResponseSchema = paginationMetadataSchema.extend(
+	{
+		raffles: z.array(enrolledRaffleSchema),
+	},
+);
+
+/**
+ * Query schema for enrolled raffles (no category/question filters)
+ */
+export const enrolledRafflesQuerySchema = paginationQuerySchema.extend({
+	sort: raffleSortOptionSchema.optional(),
+	status: z.string().optional(),
+});
+
 // ==========================================
 // Query Types
 // ==========================================
 
 export type MyRafflesQuery = z.infer<typeof myRafflesQuerySchema>;
 export type ListRafflesResponse = z.infer<typeof listRafflesResponseSchema>;
+export type EnrolledRaffle = z.infer<typeof enrolledRaffleSchema>;
+export type ListEnrolledRafflesResponse = z.infer<
+	typeof listEnrolledRafflesResponseSchema
+>;
+export type EnrolledRafflesQuery = z.infer<typeof enrolledRafflesQuerySchema>;
+
+/**
+ * Union type for my-raffles page items
+ */
+export type MyRaffleItem = Raffle | EnrolledRaffle;
+
+/**
+ * Type guard for enrolled raffle
+ * @param raffle - Raffle or EnrolledRaffle to check
+ * @returns true if raffle has myTicketCount property
+ */
+export function isEnrolledRaffle(raffle: MyRaffleItem): raffle is EnrolledRaffle {
+	return 'myTicketCount' in raffle;
+}

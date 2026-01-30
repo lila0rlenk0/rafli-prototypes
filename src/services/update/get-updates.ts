@@ -8,7 +8,6 @@ import {
 	listUpdatesResponseSchema,
 	type ListUpdatesResponse,
 } from '@/types/update';
-import { env } from '@/env/server';
 import { ZodError } from 'zod';
 
 /**
@@ -25,33 +24,6 @@ type GetUpdatesServiceResponse = ServiceResponse<
 interface GetUpdatesParams {
 	limit?: number;
 	offset?: number;
-}
-
-/**
- * Builds a full media URL from a relative path
- * @param relativePath - The relative path from the backend
- * @returns Full URL with storage base URL prepended
- */
-function buildMediaUrl(relativePath: string): string {
-	const storageBaseUrl = env.STORAGE_MEDIA_URL.replace(/\/$/, '');
-	const imagePath = relativePath.startsWith('/')
-		? relativePath
-		: `/${relativePath}`;
-	return `${storageBaseUrl}${imagePath}`;
-}
-
-/**
- * Checks if a string is already a valid absolute URL
- * @param url - URL string to check
- * @returns true if already absolute URL, false if relative path
- */
-function isAbsoluteUrl(url: string): boolean {
-	try {
-		new URL(url);
-		return true;
-	} catch {
-		return false;
-	}
 }
 
 /**
@@ -74,18 +46,7 @@ export async function getUpdates(
 		});
 		const validated = listUpdatesResponseSchema.parse(response.data);
 
-		// Transform relative image paths to full URLs
-		const transformedItems = validated.items.map(item => ({
-			...item,
-			imageUrls: item.imageUrls.map(url =>
-				isAbsoluteUrl(url) ? url : buildMediaUrl(url),
-			),
-		}));
-
-		return success({
-			...validated,
-			items: transformedItems,
-		});
+		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			console.error('Updates response validation failed:', error);

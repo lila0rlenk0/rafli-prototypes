@@ -34,9 +34,13 @@ ALWAYS: Run `bun run lint` before completing tasks
 ALWAYS: Write code and comments in English
 ALWAYS: Use Bun, never npm/yarn/pnpm
 ALWAYS: Use underscores in large numbers (1_000_000)
-NEVER: Use `any` without justification
+ALWAYS: Run `bun run lint` before completing tasks
+ALWAYS: Use `@/env/server` or `@/env/client` for environment variables
 NEVER: Skip lint verification
+NEVER: Use `any` types without justification
+NEVER: Use `process.env` directly (use parsed env from `@/env/`)
 NEVER: Expose secrets to client
+
 
 ## Conventions
 
@@ -51,6 +55,7 @@ NEVER: Expose secrets to client
 @src/services/CLAUDE.md
 @src/types/CLAUDE.md
 @src/lib/CLAUDE.md
+@src/env/CLAUDE.md
 
 ## Reference
 

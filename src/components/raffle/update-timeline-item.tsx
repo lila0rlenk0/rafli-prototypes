@@ -2,7 +2,7 @@
 
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
-import type { Update } from '@/types/update';
+import type { Update, UpdateMediaUrl } from '@/types/update';
 
 interface UpdateTimelineItemProps {
 	update: Update;
@@ -38,21 +38,21 @@ export function UpdateTimelineItem({ update }: UpdateTimelineItemProps) {
 	}
 
 	/**
-	 * Checks if a string is a valid URL
-	 * @param url - URL string to validate
+	 * Checks if a media URL object has a valid URL
+	 * @param mediaUrl - Media URL object to validate
 	 * @returns true if valid URL, false otherwise
 	 */
-	function isValidUrl(url: string): boolean {
+	function hasValidUrl(mediaUrl: UpdateMediaUrl): boolean {
 		try {
-			new URL(url);
+			new URL(mediaUrl.url);
 			return true;
 		} catch {
 			return false;
 		}
 	}
 
-	const validImageUrls = update.imageUrls?.filter(isValidUrl) ?? [];
-	const hasImages = validImageUrls.length > 0;
+	const validImages = update.imageUrls?.filter(hasValidUrl) ?? [];
+	const hasImages = validImages.length > 0;
 	const hasText = update.text && update.text.trim().length > 0;
 
 	return (
@@ -68,7 +68,7 @@ export function UpdateTimelineItem({ update }: UpdateTimelineItemProps) {
 			{/* Image carousel */}
 			{hasImages && (
 				<ImageCarousel
-					images={validImageUrls}
+					images={validImages}
 					alt="Update"
 					aspectRatio="aspect-video"
 					maxHeight=""

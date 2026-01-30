@@ -3,6 +3,10 @@ import Link from 'next/link';
 
 import { OrderStatusBadge } from '@/components/order/status-badge';
 import { getOrder } from '@/services/order/get-order';
+import { getRaffle } from '@/services/raffle/get-raffle';
+import { getMyWinnings } from '@/services/winning/get-my-winnings';
+
+import { ReviewModalWrapper } from './review-modal-wrapper';
 
 /**
  * Props for OrderDetailPage
@@ -44,6 +48,22 @@ export default async function OrderDetailPage({
 	}
 
 	const order = result.data;
+
+	// Fetch raffle and winnings to determine if user can review
+	const [raffleResult, winningsResult] = await Promise.all([
+		getRaffle(order.raffleSlug ?? order.raffleId),
+		getMyWinnings(),
+	]);
+
+	// Determine if user has received prize for this raffle
+	const myWinning = winningsResult.success
+		? winningsResult.data.winnings.find(w => w.raffleId === order.raffleId)
+		: null;
+	const hasReceivedPrize = myWinning?.status === 'received';
+
+	// Get host ID from raffle data
+	const hostId = raffleResult.success ? raffleResult.data.hostId : null;
+	const publicSlug = order.raffleSlug ?? order.raffleId;
 
 	/**
 	 * Formats decimal string to currency display
@@ -128,6 +148,14 @@ export default async function OrderDetailPage({
 					</div>
 				</div>
 			</div>
+			{hasReceivedPrize && hostId && (
+				<ReviewModalWrapper
+					raffleId={order.raffleId}
+					hostId={hostId}
+					publicSlug={publicSlug}
+					hasReceivedPrize={hasReceivedPrize}
+				/>
+			)}
 		</div>
 	);
 }

@@ -30,6 +30,7 @@ import type { ComponentProps } from 'react';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
+import { ReviewModalWrapper } from './review-modal-wrapper';
 
 interface PageProps {
 	params: Promise<{
@@ -114,6 +115,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
 	let didUserWin = false;
+	let hasReceivedPrize = false;
 	let myWinningTicketCode: string | null = null;
 	let myUserName: string | null = null;
 	let myUserAvatarUrl: string | null = null;
@@ -125,12 +127,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			myTicketsTotal = ticketCodesResponse.data.total;
 		}
 
-		// Check if user won this raffle (only relevant for concluded raffles)
+		// Check if user won this raffle and get winning status
 		const winningsResponse = await getMyWinnings();
 		if (winningsResponse.success) {
-			didUserWin = winningsResponse.data.winnings.some(
+			const myWinning = winningsResponse.data.winnings.find(
 				winning => winning.raffleId === raffle.id,
 			);
+			didUserWin = !!myWinning;
+			hasReceivedPrize = myWinning?.status === 'received';
 		}
 
 		// Get winning ticket code from raffle.winners if user won
@@ -495,6 +499,13 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			<PaymentModalWrapper
 				publicSlug={publicSlug}
 				searchParams={searchParams}
+			/>
+			<ReviewModalWrapper
+				raffleId={raffle.id}
+				hostId={raffle.hostId}
+				publicSlug={publicSlug}
+				hasReceivedPrize={hasReceivedPrize}
+				isAuthenticated={isAuthenticated}
 			/>
 		</div>
 	);

@@ -5,7 +5,11 @@ import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { useUserStore } from '@/providers/user-store-provider';
-import { isEnrolledRaffle, RAFFLE_STATUS, type MyRaffleItem } from '@/types/raffle';
+import {
+	isEnrolledRaffle,
+	RAFFLE_STATUS,
+	type MyRaffleItem,
+} from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
 import Link from 'next/link';
 

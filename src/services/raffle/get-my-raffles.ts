@@ -1,7 +1,7 @@
 'use server';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { buildQueryParams } from '@/lib/api/utils';
+import { buildQueryParamsWithStatus } from '@/lib/api/utils';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
@@ -21,39 +21,6 @@ type GetMyRafflesResponse = ServiceResponse<
 >;
 
 /**
- * Builds URLSearchParams with support for repeated keys (e.g., status=draft&status=queued)
- *
- * TODO: Remove this workaround after BE supports comma-separated status filter.
- * Once BE is fixed, replace with: `params: buildQueryParams(query)`
- *
- * @param query - Query parameters for filtering raffles
- * @returns URLSearchParams with repeated status keys if comma-separated
- */
-function buildRaffleQueryParams(query?: MyRafflesQuery): URLSearchParams {
-	const searchParams = new URLSearchParams();
-
-	if (!query) return searchParams;
-
-	const { status, ...rest } = query;
-
-	// Handle status: split comma-separated values into repeated params
-	if (status) {
-		const statuses = status.split(',');
-		for (const s of statuses) {
-			searchParams.append('status', s.trim());
-		}
-	}
-
-	// Add remaining params normally
-	const otherParams = buildQueryParams(rest);
-	for (const [key, value] of Object.entries(otherParams)) {
-		searchParams.append(key, value);
-	}
-
-	return searchParams;
-}
-
-/**
  * Fetches the current user's raffles with optional filtering
  *
  * @param query - Optional query parameters for filtering raffles
@@ -63,9 +30,7 @@ export async function getMyRaffles(
 	query?: MyRafflesQuery,
 ): Promise<GetMyRafflesResponse> {
 	try {
-		// TODO: After BE supports comma-separated status, replace with:
-		// const params = buildQueryParams(query);
-		const params = buildRaffleQueryParams(query);
+		const params = buildQueryParamsWithStatus(query);
 
 		const response = await authenticatedClient.get('/me/raffles', {
 			params,

@@ -38,6 +38,18 @@ export const winningStatusSchema = z.enum([
 ]);
 
 /**
+ * Schema for shipping address information
+ */
+export const shippingInfoSchema = z.object({
+	name: z.string(),
+	address: z.string(),
+	city: z.string(),
+	zip: z.string(),
+	country: z.string(),
+	phone: z.string().nullable().optional(),
+});
+
+/**
  * Schema for a single winning entry
  */
 export const winningSchema = z.object({
@@ -50,6 +62,9 @@ export const winningSchema = z.object({
 	sentAt: z.string().nullable(),
 	deliveredAt: z.string().nullable(),
 	receivedAt: z.string().nullable(),
+	shippingInfo: shippingInfoSchema.nullable().optional(),
+	proofUrl: z.string().nullable().optional(),
+	hostNotes: z.string().nullable().optional(),
 });
 
 /**
@@ -60,8 +75,38 @@ export const listWinningsResponseSchema = z.object({
 });
 
 // ==========================================
+// Request Payload Schemas
+// ==========================================
+
+/**
+ * Schema for claim winning request payload
+ */
+export const claimWinningPayloadSchema = z.object({
+	claimType: z.literal('shipping'),
+	shippingInfo: z.object({
+		name: z.string().min(1).max(100),
+		address: z.string().min(1).max(500),
+		city: z.string().min(1).max(100),
+		zip: z.string().min(1).max(20),
+		country: z.string().min(1).max(100),
+		phone: z.string().max(30).optional(),
+	}),
+});
+
+/**
+ * Schema for mark sent request payload
+ */
+export const markSentPayloadSchema = z.object({
+	proofUrl: z.string().url().max(512),
+	hostNotes: z.string().max(2_000).optional(),
+});
+
+// ==========================================
 // Inferred Types
 // ==========================================
 
+export type ShippingInfo = z.infer<typeof shippingInfoSchema>;
 export type Winning = z.infer<typeof winningSchema>;
 export type ListWinningsResponse = z.infer<typeof listWinningsResponseSchema>;
+export type ClaimWinningPayload = z.infer<typeof claimWinningPayloadSchema>;
+export type MarkSentPayload = z.infer<typeof markSentPayloadSchema>;

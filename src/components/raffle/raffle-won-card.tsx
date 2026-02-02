@@ -1,10 +1,12 @@
 import Image from 'next/image';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 
 interface RaffleWonCardProps {
 	userName: string;
 	userAvatar?: string | null;
 	ticketCode: string | null;
+	/** Optional slot for winner actions (confirm button, etc.) */
+	actionsSlot?: ReactNode;
 }
 
 /**
@@ -17,6 +19,7 @@ export function RaffleWonCard({
 	userName,
 	userAvatar,
 	ticketCode,
+	actionsSlot,
 }: RaffleWonCardProps) {
 	/**
 	 * Gets the first initial of the user's name
@@ -56,6 +59,8 @@ export function RaffleWonCard({
 					{ticketCode && <p className="text-sm">{ticketCode}</p>}
 				</div>
 			</div>
+
+			{actionsSlot}
 		</div>
 	);
 }

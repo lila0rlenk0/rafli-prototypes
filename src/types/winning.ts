@@ -110,3 +110,34 @@ export type Winning = z.infer<typeof winningSchema>;
 export type ListWinningsResponse = z.infer<typeof listWinningsResponseSchema>;
 export type ClaimWinningPayload = z.infer<typeof claimWinningPayloadSchema>;
 export type MarkSentPayload = z.infer<typeof markSentPayloadSchema>;
+
+// ==========================================
+// Host Winner Entry (for fulfillment management)
+// ==========================================
+
+/**
+ * Schema for a winner entry in host's fulfillment list view
+ */
+export const hostWinnerEntrySchema = z.object({
+	id: z.string(),
+	position: z.number(),
+	userId: z.string(),
+	userName: z.string().nullable(),
+	status: winningStatusSchema,
+	shippingInfo: shippingInfoSchema.nullable(),
+	claimedAt: z.string().nullable(),
+	sentAt: z.string().nullable(),
+	deliveredAt: z.string().nullable(),
+});
+
+/**
+ * Schema for host's raffle winnings list response
+ */
+export const hostRaffleWinningsResponseSchema = z.object({
+	winnings: z.array(hostWinnerEntrySchema),
+});
+
+export type HostWinnerEntry = z.infer<typeof hostWinnerEntrySchema>;
+export type HostRaffleWinningsResponse = z.infer<
+	typeof hostRaffleWinningsResponseSchema
+>;

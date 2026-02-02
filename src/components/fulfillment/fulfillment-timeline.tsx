@@ -121,7 +121,7 @@ export function FulfillmentTimeline({
 				status === 'active' && !shippingInfo ? (
 					<button
 						onClick={() => setShippingModalOpen(true)}
-						className="rounded-full bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+						className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black"
 					>
 						Submit Shipping Info
 					</button>
@@ -146,7 +146,7 @@ export function FulfillmentTimeline({
 					status === 'active' && shippingInfo ? (
 						<button
 							onClick={() => setMarkSentModalOpen(true)}
-							className="rounded-full bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+							className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black"
 						>
 							Mark as Sent
 						</button>
@@ -176,7 +176,7 @@ export function FulfillmentTimeline({
 						<button
 							onClick={handleMarkDelivered}
 							disabled={isMarkingDelivered}
-							className="rounded-full bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+							className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{isMarkingDelivered ? 'Marking...' : 'Mark as Delivered'}
 						</button>
@@ -192,7 +192,7 @@ export function FulfillmentTimeline({
 					<button
 						onClick={handleConfirmReceived}
 						disabled={isConfirming}
-						className="rounded-full bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+						className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{isConfirming ? 'Confirming...' : 'I received the prize'}
 					</button>
@@ -227,14 +227,14 @@ export function FulfillmentTimeline({
 					<button
 						onClick={handleConfirmReceived}
 						disabled={isConfirming}
-						className="rounded-full bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+						className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{isConfirming ? 'Confirming...' : 'I received the prize'}
 					</button>
 				) : isReceived ? (
 					<button
 						onClick={() => setReviewModalOpen(true)}
-						className="rounded-full border border-black px-6 py-2 text-sm font-semibold transition-colors hover:bg-black hover:text-white"
+						className="cursor-pointer rounded-full border border-black px-6 py-2 text-sm font-semibold transition-colors hover:bg-black hover:text-white"
 					>
 						Leave review
 					</button>

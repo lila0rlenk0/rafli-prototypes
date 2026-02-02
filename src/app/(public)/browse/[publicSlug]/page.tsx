@@ -436,7 +436,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							/>
 						</>
 					) : showNotWonCard ? (
-						<RaffleNotWonCard />
+						<RaffleNotWonCard status={raffle.status} />
 					) : (
 						<div className="h-fit rounded-2xl border border-black bg-white px-4 py-8">
 							<RaffleFireIcon className="mx-auto size-12" />

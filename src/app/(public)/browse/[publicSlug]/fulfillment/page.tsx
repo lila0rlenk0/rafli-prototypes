@@ -47,8 +47,12 @@ export default async function FulfillmentPage({ params }: PageProps) {
 		RAFFLE_STATUS.ENDED,
 		RAFFLE_STATUS.FULFILLING,
 		RAFFLE_STATUS.COMPLETED,
-	];
-	if (!concludedStatuses.includes(raffle.status)) {
+	] as const;
+	if (
+		!concludedStatuses.includes(
+			raffle.status as (typeof concludedStatuses)[number],
+		)
+	) {
 		redirect(`/browse/${publicSlug}`);
 	}
 

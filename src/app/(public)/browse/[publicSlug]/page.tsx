@@ -429,7 +429,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							/>
 							<FulfillmentTimeline
 								winning={myWinning}
-								isHost={false}
+								isHost={isOwner}
 								raffleId={raffle.id}
 								hostId={raffle.hostId}
 								publicSlug={publicSlug}

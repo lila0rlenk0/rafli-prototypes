@@ -61,6 +61,22 @@ export function NotificationStoreProvider({
 		fetchUnreadCount();
 	}, [fetchUnreadCount]);
 
+	/**
+	 * Fetches fresh WS token for stream connection
+	 */
+	const getToken = useCallback(async () => {
+		const result = await getWsToken();
+
+		if (!result.success) {
+			if (process.env.NODE_ENV === 'development') {
+				console.error('[NotificationStream] Failed to get token:', result.error);
+			}
+			return null;
+		}
+
+		return result.data;
+	}, []);
+
 	useEffect(() => {
 		isMountedRef.current = true;
 
@@ -71,19 +87,14 @@ export function NotificationStoreProvider({
 			// Initial fetch
 			await fetchUnreadCount();
 
-			// Get WS token and connect
-			const tokenResult = await getWsToken();
+			// Create stream with token callback
+			streamRef.current = new NotificationStream({
+				onNewNotification: handleNewNotification,
+				getToken,
+			});
 
-			if (!isMountedRef.current) return;
-
-			if (tokenResult.success) {
-				streamRef.current = new NotificationStream({
-					onNewNotification: handleNewNotification,
-				});
-				streamRef.current.connect(tokenResult.data.token);
-			} else if (process.env.NODE_ENV === 'development') {
-				console.error('Failed to get WS token:', tokenResult.error);
-			}
+			// Connect (will fetch token internally)
+			streamRef.current.connect();
 		}
 
 		initialize();
@@ -93,7 +104,7 @@ export function NotificationStoreProvider({
 			streamRef.current?.disconnect();
 			streamRef.current = null;
 		};
-	}, [fetchUnreadCount, handleNewNotification]);
+	}, [fetchUnreadCount, handleNewNotification, getToken]);
 
 	return (
 		<NotificationStoreContext.Provider value={store}>

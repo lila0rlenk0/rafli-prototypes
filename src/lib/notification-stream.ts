@@ -13,11 +13,15 @@ import { notificationStreamEventSchema } from '@/types/notification';
 export interface NotificationStreamConfig {
 	/** Called when server signals new notification available */
 	onNewNotification: () => void;
+	/** Called to fetch fresh WS token (on connect and reconnect) */
+	getToken: () => Promise<{ token: string; expiresIn: number } | null>;
 }
 
 const BASE_RECONNECT_DELAY_MS = 1_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const WS_CLOSE_NORMAL = 1_000;
+/** Refresh token at 80% of expiry to avoid edge cases */
+const TOKEN_REFRESH_RATIO = 0.8;
 
 /**
  * Builds WebSocket URL from backend URL
@@ -38,12 +42,14 @@ function buildWsUrl(token: string): string {
  *
  * Manages WebSocket connection for real-time notification events.
  * Automatically reconnects with exponential backoff on disconnection.
+ * Handles token refresh before expiration.
  */
 export class NotificationStream {
 	private ws: WebSocket | null = null;
 	private reconnectAttempts = 0;
 	private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
-	private token: string | null = null;
+	private tokenRefreshTimeoutId: ReturnType<typeof setTimeout> | null = null;
+	private currentToken: string | null = null;
 	private intentionalClose = false;
 	private config: NotificationStreamConfig;
 
@@ -54,12 +60,11 @@ export class NotificationStream {
 	/**
 	 * Connects to notification stream
 	 *
-	 * @param token - WebSocket auth token from /me/ws-token
+	 * Fetches token via config callback and establishes connection.
 	 */
-	connect(token: string): void {
-		this.token = token;
+	async connect(): Promise<void> {
 		this.intentionalClose = false;
-		this.createConnection();
+		await this.fetchTokenAndConnect();
 	}
 
 	/**
@@ -70,23 +75,29 @@ export class NotificationStream {
 	disconnect(): void {
 		this.intentionalClose = true;
 		this.clearReconnectTimeout();
+		this.clearTokenRefreshTimeout();
 
 		if (this.ws) {
 			this.ws.close(WS_CLOSE_NORMAL, 'Client disconnect');
 			this.ws = null;
 		}
 
-		this.token = null;
+		this.currentToken = null;
 		this.reconnectAttempts = 0;
 	}
 
 	/**
-	 * Creates WebSocket connection
+	 * Fetches fresh token and creates WebSocket connection
 	 */
-	private createConnection(): void {
-		if (!this.token) return;
+	private async fetchTokenAndConnect(): Promise<void> {
+		const tokenData = await this.config.getToken();
 
-		const url = buildWsUrl(this.token);
+		if (!tokenData || this.intentionalClose) return;
+
+		this.currentToken = tokenData.token;
+		this.scheduleTokenRefresh(tokenData.expiresIn);
+
+		const url = buildWsUrl(this.currentToken);
 		this.ws = new WebSocket(url);
 
 		this.ws.onopen = this.handleOpen.bind(this);
@@ -128,13 +139,18 @@ export class NotificationStream {
 	 */
 	private handleClose(event: CloseEvent): void {
 		this.ws = null;
+		this.clearTokenRefreshTimeout();
+
+		// Don't reconnect if intentionally closed
+		if (this.intentionalClose) return;
+
+		// Token refresh handles its own reconnection
+		const isTokenRefresh = event.code === WS_CLOSE_NORMAL && event.reason === 'Token refresh';
+		if (isTokenRefresh) return;
 
 		if (process.env.NODE_ENV === 'development') {
 			console.warn('[NotificationStream] Closed:', event.code, event.reason);
 		}
-
-		// Don't reconnect if intentionally closed
-		if (this.intentionalClose) return;
 
 		this.scheduleReconnect();
 	}
@@ -152,6 +168,8 @@ export class NotificationStream {
 
 	/**
 	 * Schedules reconnection with exponential backoff (capped at 30s)
+	 *
+	 * Fetches fresh token on each reconnect attempt.
 	 */
 	private scheduleReconnect(): void {
 		const delay = Math.min(
@@ -165,8 +183,50 @@ export class NotificationStream {
 		}
 
 		this.reconnectTimeoutId = setTimeout(() => {
-			this.createConnection();
+			this.fetchTokenAndConnect();
 		}, delay);
+	}
+
+	/**
+	 * Schedules token refresh before expiration
+	 *
+	 * @param expiresIn - Token TTL in seconds
+	 */
+	private scheduleTokenRefresh(expiresIn: number): void {
+		this.clearTokenRefreshTimeout();
+
+		const refreshDelay = expiresIn * TOKEN_REFRESH_RATIO * 1_000;
+
+		if (process.env.NODE_ENV === 'development') {
+			console.log(
+				`[NotificationStream] Token refresh scheduled in ${Math.round(refreshDelay / 1_000)}s`,
+			);
+		}
+
+		this.tokenRefreshTimeoutId = setTimeout(() => {
+			this.refreshToken();
+		}, refreshDelay);
+	}
+
+	/**
+	 * Refreshes token and reconnects
+	 */
+	private async refreshToken(): Promise<void> {
+		if (this.intentionalClose) return;
+
+		if (process.env.NODE_ENV === 'development') {
+			console.log('[NotificationStream] Refreshing token...');
+		}
+
+		// Close current connection, fetchTokenAndConnect will establish new one
+		if (this.ws) {
+			this.ws.close(WS_CLOSE_NORMAL, 'Token refresh');
+			this.ws = null;
+		}
+
+		// Reset attempts since this is proactive refresh, not error recovery
+		this.reconnectAttempts = 0;
+		await this.fetchTokenAndConnect();
 	}
 
 	/**
@@ -176,6 +236,16 @@ export class NotificationStream {
 		if (this.reconnectTimeoutId) {
 			clearTimeout(this.reconnectTimeoutId);
 			this.reconnectTimeoutId = null;
+		}
+	}
+
+	/**
+	 * Clears pending token refresh timeout
+	 */
+	private clearTokenRefreshTimeout(): void {
+		if (this.tokenRefreshTimeoutId) {
+			clearTimeout(this.tokenRefreshTimeoutId);
+			this.tokenRefreshTimeoutId = null;
 		}
 	}
 }

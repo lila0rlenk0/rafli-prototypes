@@ -4,6 +4,7 @@ import { AuthGuard } from '@/components/auth/auth-guard';
 import { Navbar } from '@/components/ui/navbar';
 import { Spinner } from '@/components/ui/spinner';
 import { getSession } from '@/lib/auth/session';
+import { NotificationStoreProvider } from '@/providers/notification-store-provider';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 import { permissionSchema, type Permission } from '@/types/user-mode';
 
@@ -37,7 +38,9 @@ async function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
 	return (
 		<AuthGuard>
 			<UserStoreProvider permissions={permissions}>
-				<Navbar>{children}</Navbar>
+				<NotificationStoreProvider>
+					<Navbar>{children}</Navbar>
+				</NotificationStoreProvider>
 			</UserStoreProvider>
 		</AuthGuard>
 	);

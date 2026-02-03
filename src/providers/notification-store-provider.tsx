@@ -25,9 +25,6 @@ export const NotificationStoreContext = createContext<
 	NotificationStoreApi | undefined
 >(undefined);
 
-/** Polling interval when WebSocket unavailable */
-const FALLBACK_POLLING_INTERVAL_MS = 30_000;
-
 export interface NotificationStoreProviderProps {
 	children: ReactNode;
 }
@@ -36,7 +33,7 @@ export interface NotificationStoreProviderProps {
  * NotificationStoreProvider Component
  *
  * Provides the Zustand notification store to all child components via Context.
- * Uses WebSocket for real-time updates, falls back to polling on failure.
+ * Uses WebSocket for real-time updates.
  *
  * @param children - Child components
  */
@@ -45,9 +42,6 @@ export function NotificationStoreProvider({
 }: NotificationStoreProviderProps) {
 	const [store] = useState(() => createNotificationStore());
 	const streamRef = useRef<NotificationStream | null>(null);
-	const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-		null,
-	);
 	const isMountedRef = useRef(true);
 
 	/**
@@ -61,52 +55,23 @@ export function NotificationStoreProvider({
 	}, [store]);
 
 	/**
-	 * Starts polling fallback
-	 */
-	const startPolling = useCallback(() => {
-		if (pollingIntervalRef.current) return;
-
-		pollingIntervalRef.current = setInterval(
-			fetchUnreadCount,
-			FALLBACK_POLLING_INTERVAL_MS,
-		);
-	}, [fetchUnreadCount]);
-
-	/**
-	 * Stops polling
-	 */
-	const stopPolling = useCallback(() => {
-		if (pollingIntervalRef.current) {
-			clearInterval(pollingIntervalRef.current);
-			pollingIntervalRef.current = null;
-		}
-	}, []);
-
-	/**
 	 * Handles WebSocket new notification event
 	 */
 	const handleNewNotification = useCallback(() => {
 		fetchUnreadCount();
 	}, [fetchUnreadCount]);
 
-	/**
-	 * Handles WebSocket max reconnect failure
-	 */
-	const handleMaxReconnectFailed = useCallback(() => {
-		startPolling();
-	}, [startPolling]);
-
 	useEffect(() => {
 		isMountedRef.current = true;
 
 		/**
-		 * Initializes notification stream or falls back to polling
+		 * Initializes notification stream
 		 */
 		async function initialize() {
-			// Initial fetch regardless of connection method
+			// Initial fetch
 			await fetchUnreadCount();
 
-			// Try to get WS token and connect
+			// Get WS token and connect
 			const tokenResult = await getWsToken();
 
 			if (!isMountedRef.current) return;
@@ -114,12 +79,8 @@ export function NotificationStoreProvider({
 			if (tokenResult.success) {
 				streamRef.current = new NotificationStream({
 					onNewNotification: handleNewNotification,
-					onMaxReconnectFailed: handleMaxReconnectFailed,
 				});
 				streamRef.current.connect(tokenResult.data.token);
-			} else {
-				// WS token fetch failed, fall back to polling
-				startPolling();
 			}
 		}
 
@@ -129,15 +90,8 @@ export function NotificationStoreProvider({
 			isMountedRef.current = false;
 			streamRef.current?.disconnect();
 			streamRef.current = null;
-			stopPolling();
 		};
-	}, [
-		fetchUnreadCount,
-		handleNewNotification,
-		handleMaxReconnectFailed,
-		startPolling,
-		stopPolling,
-	]);
+	}, [fetchUnreadCount, handleNewNotification]);
 
 	return (
 		<NotificationStoreContext.Provider value={store}>

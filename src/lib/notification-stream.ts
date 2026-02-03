@@ -1,8 +1,7 @@
 /**
  * WebSocket client for real-time notification streaming
  *
- * Handles connection, reconnection with exponential backoff,
- * and fallback signaling when max attempts exceeded.
+ * Handles connection and reconnection with exponential backoff.
  */
 
 import { clientEnv } from '@/env/client';
@@ -14,12 +13,10 @@ import { notificationStreamEventSchema } from '@/types/notification';
 export interface NotificationStreamConfig {
 	/** Called when server signals new notification available */
 	onNewNotification: () => void;
-	/** Called when max reconnection attempts exceeded */
-	onMaxReconnectFailed: () => void;
 }
 
-const MAX_RECONNECT_ATTEMPTS = 5;
 const BASE_RECONNECT_DELAY_MS = 1_000;
+const MAX_RECONNECT_DELAY_MS = 30_000;
 const WS_CLOSE_NORMAL = 1_000;
 
 /**
@@ -103,6 +100,9 @@ export class NotificationStream {
 	 */
 	private handleOpen(): void {
 		this.reconnectAttempts = 0;
+		if (process.env.NODE_ENV === 'development') {
+			console.log('[NotificationStream] Connected');
+		}
 	}
 
 	/**
@@ -125,20 +125,16 @@ export class NotificationStream {
 
 	/**
 	 * Handles connection close
-	 *
-	 * @param event - WebSocket close event
 	 */
 	private handleClose(event: CloseEvent): void {
 		this.ws = null;
 
+		if (process.env.NODE_ENV === 'development') {
+			console.warn('[NotificationStream] Closed:', event.code, event.reason);
+		}
+
 		// Don't reconnect if intentionally closed
 		if (this.intentionalClose) return;
-
-		// Don't reconnect on auth errors (401, 403)
-		if (event.code === 4001 || event.code === 4003) {
-			this.config.onMaxReconnectFailed();
-			return;
-		}
 
 		this.scheduleReconnect();
 	}
@@ -149,20 +145,24 @@ export class NotificationStream {
 	 * Connection will close after error, handleClose will trigger reconnect.
 	 */
 	private handleError(): void {
-		// Error handling - close event follows
+		if (process.env.NODE_ENV === 'development') {
+			console.error('[NotificationStream] Error');
+		}
 	}
 
 	/**
-	 * Schedules reconnection with exponential backoff
+	 * Schedules reconnection with exponential backoff (capped at 30s)
 	 */
 	private scheduleReconnect(): void {
-		if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-			this.config.onMaxReconnectFailed();
-			return;
-		}
-
-		const delay = BASE_RECONNECT_DELAY_MS * Math.pow(2, this.reconnectAttempts);
+		const delay = Math.min(
+			BASE_RECONNECT_DELAY_MS * Math.pow(2, this.reconnectAttempts),
+			MAX_RECONNECT_DELAY_MS,
+		);
 		this.reconnectAttempts++;
+
+		if (process.env.NODE_ENV === 'development') {
+			console.log(`[NotificationStream] Reconnecting in ${delay}ms...`);
+		}
 
 		this.reconnectTimeoutId = setTimeout(() => {
 			this.createConnection();

@@ -1,9 +1,11 @@
-import { Logo } from '@/assets/logo';
-import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
-import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+
+import { Logo } from '@/assets/logo';
+import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
+import { NotificationBell } from '@/components/notifications/notification-bell';
+import { Button } from '@/components/ui/button';
 
 interface PublicNavbarProps {
 	children: ReactNode;
@@ -46,6 +48,8 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 					{isAuthenticated ? (
 						<>
 							<ModeSwitchButton />
+
+							<NotificationBell />
 
 							<Link href="/profile">
 								<User className="size-5" />

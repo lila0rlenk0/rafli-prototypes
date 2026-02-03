@@ -114,6 +114,7 @@ export const markReadResponseSchema = z.object({
  */
 export const wsTokenResponseSchema = z.object({
 	token: z.string(),
+	expiresIn: z.number(),
 });
 
 /**

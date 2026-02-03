@@ -122,14 +122,19 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	let myUserAvatarUrl: string | null = null;
 
 	if (isAuthenticated) {
-		const ticketCodesResponse = await getMyTicketCodes({ raffleId: raffle.id });
+		// Fetch user data in parallel to avoid waterfall
+		const [ticketCodesResponse, winningsResponse, meResponse] =
+			await Promise.all([
+				getMyTicketCodes({ raffleId: raffle.id }),
+				getMyWinnings(),
+				getMe(),
+			]);
+
 		if (ticketCodesResponse.success) {
 			myTicketCodes = ticketCodesResponse.data.tickets;
 			myTicketsTotal = ticketCodesResponse.data.total;
 		}
 
-		// Check if user won this raffle and get winning data
-		const winningsResponse = await getMyWinnings();
 		if (winningsResponse.success) {
 			myWinning =
 				winningsResponse.data.winnings.find(
@@ -145,8 +150,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			myWinningTicketCode = myWinnerEntry?.ticketCode ?? null;
 		}
 
-		// Get user profile with avatar URL
-		const meResponse = await getMe();
 		if (meResponse.success) {
 			myUserName = meResponse.data.name;
 			myUserAvatarUrl = meResponse.data.avatarUrl;

@@ -30,7 +30,7 @@ export async function getRaffleWinnings(
 ): Promise<GetRaffleWinningsResponse> {
 	try {
 		const response = await authenticatedClient.get(
-			`/raffles/${raffleId}/winnings`,
+			`/raffles/${raffleId}/winners`,
 		);
 
 		const validated = hostRaffleWinningsResponseSchema.parse(response.data);

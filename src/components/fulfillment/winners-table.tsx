@@ -31,18 +31,22 @@ export function WinnersTable({ winners: initialWinners }: WinnersTableProps) {
 	}
 
 	/**
-	 * Gets display name for a winner
+	 * Formats display name: max 2 names, max 20 chars
 	 */
-	function getDisplayName(winner: HostWinnerEntry): string {
-		return winner.userName ?? `Winner #${winner.position}`;
+	function formatDisplayName(name: string | null, position: number): string {
+		if (!name) return `Winner #${position}`;
+		const names = name.trim().split(/\s+/);
+		const twoNames = names.slice(0, 2).join(' ');
+		return twoNames.length > 20 ? twoNames.slice(0, 17) + '...' : twoNames;
 	}
 
 	/**
-	 * Gets shipping status text
+	 * Gets location from shipping info
 	 */
-	function getShippingStatus(winner: HostWinnerEntry): string {
+	function getLocation(winner: HostWinnerEntry): string {
 		if (!winner.shippingInfo) return 'No address';
-		return winner.shippingInfo.city;
+		const { city, country } = winner.shippingInfo;
+		return `${city}, ${country}`;
 	}
 
 	if (winners.length === 0) {
@@ -71,9 +75,11 @@ export function WinnersTable({ winners: initialWinners }: WinnersTableProps) {
 					{winners.map(winner => (
 						<tr key={winner.id} className="text-sm">
 							<td className="px-6 py-4 font-medium">{winner.position}</td>
-							<td className="px-6 py-4">{getDisplayName(winner)}</td>
+							<td className="px-6 py-4">
+								{formatDisplayName(winner.userName, winner.position)}
+							</td>
 							<td className="px-6 py-4 text-gray-500">
-								{getShippingStatus(winner)}
+								{getLocation(winner)}
 							</td>
 							<td className="px-6 py-4">
 								<WinningStatusBadge status={winner.status} />

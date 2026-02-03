@@ -56,9 +56,9 @@ export default async function FulfillmentPage({ params }: PageProps) {
 		redirect(`/browse/${publicSlug}`);
 	}
 
-	// Fetch winners
-	const winningsResult = await getRaffleWinnings(raffle.id);
-	const winners = winningsResult.success ? winningsResult.data.winnings : [];
+	// Fetch winners from dedicated endpoint
+	const winnersResult = await getRaffleWinnings(raffle.id);
+	const winners = winnersResult.success ? winnersResult.data.items : [];
 
 	return (
 		<div className="container mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8">

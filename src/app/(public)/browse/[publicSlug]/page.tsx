@@ -1,4 +1,5 @@
 import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeline';
+import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
@@ -208,8 +209,35 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const isConcluded = isRaffleConcluded();
 	const isOwner = isOwnRaffle();
 	const isLive = raffle.status === RAFFLE_STATUS.LIVE;
-	const showWonCard = isConcluded && didUserWin;
-	const showNotWonCard = isConcluded && !didUserWin;
+	const hasWinners = (raffle.winners?.length ?? 0) > 0;
+
+	/**
+	 * Checks if winner card should be shown (user won)
+	 */
+	function shouldShowWinnerCard(): boolean {
+		return isConcluded && didUserWin && !!myWinning;
+	}
+
+	/**
+	 * Checks if host fulfillment card should be shown
+	 */
+	function shouldShowHostFulfillment(): boolean {
+		return isOwner && isConcluded && hasWinners && !didUserWin;
+	}
+
+	/**
+	 * Checks if "not won" card should be shown
+	 */
+	function shouldShowNotWonCard(): boolean {
+		return isConcluded && !didUserWin && !isOwner;
+	}
+
+	/**
+	 * Checks if active raffle card should be shown
+	 */
+	function shouldShowActiveCard(): boolean {
+		return !isConcluded;
+	}
 
 	/**
 	 * Gets the host display name from closure
@@ -420,7 +448,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					</div>
 				</div>
 				<div className="space-y-2">
-					{showWonCard && myWinning ? (
+					{shouldShowWinnerCard() && myWinning && (
 						<>
 							<RaffleWonCard
 								userName={myUserName ?? 'Winner'}
@@ -435,9 +463,20 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								publicSlug={publicSlug}
 							/>
 						</>
-					) : showNotWonCard ? (
+					)}
+
+					{shouldShowHostFulfillment() && (
+						<HostFulfillmentCard
+							publicSlug={publicSlug}
+							winnersCount={raffle.winners?.length ?? 0}
+						/>
+					)}
+
+					{shouldShowNotWonCard() && (
 						<RaffleNotWonCard status={raffle.status} />
-					) : (
+					)}
+
+					{shouldShowActiveCard() && (
 						<div className="h-fit rounded-2xl border border-black bg-white px-4 py-8">
 							<RaffleFireIcon className="mx-auto size-12" />
 
@@ -471,7 +510,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</div>
 					)}
 
-					{isConcluded && raffle.winners && raffle.winners.length > 0 && (
+					{isConcluded && hasWinners && raffle.winners && (
 						<WinnersList
 							winners={raffle.winners}
 							raffleId={raffle.id}

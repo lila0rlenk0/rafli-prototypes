@@ -115,28 +115,58 @@ export type MarkSentPayload = z.infer<typeof markSentPayloadSchema>;
 // Host Winner Entry (for fulfillment management)
 // ==========================================
 
+export const CLAIM_TYPE = {
+	SHIPPING: 'shipping',
+	WALLET: 'wallet',
+} as const;
+
+export type ClaimType = (typeof CLAIM_TYPE)[keyof typeof CLAIM_TYPE];
+
+/**
+ * Schema for user avatar with expiring URL
+ */
+export const userAvatarSchema = z.object({
+	url: z.string(),
+	expiresAt: z.string(),
+});
+
 /**
  * Schema for a winner entry in host's fulfillment list view
  */
 export const hostWinnerEntrySchema = z.object({
 	id: z.string(),
 	position: z.number(),
+	raffleId: z.string(),
 	userId: z.string(),
 	userName: z.string().nullable(),
+	userAvatar: userAvatarSchema.nullable(),
 	status: winningStatusSchema,
+	claimType: z.enum([CLAIM_TYPE.SHIPPING, CLAIM_TYPE.WALLET]).nullable(),
 	shippingInfo: shippingInfoSchema.nullable(),
 	claimedAt: z.string().nullable(),
 	sentAt: z.string().nullable(),
 	deliveredAt: z.string().nullable(),
+	receivedAt: z.string().nullable(),
+	disputedAt: z.string().nullable(),
+	resolvedAt: z.string().nullable(),
+	hostNotes: z.string().nullable(),
+	proofUrl: z.string().nullable(),
+	createdAt: z.string(),
+	updatedAt: z.string(),
 });
 
 /**
- * Schema for host's raffle winnings list response
+ * Schema for host's raffle winners paginated response
  */
 export const hostRaffleWinningsResponseSchema = z.object({
-	winnings: z.array(hostWinnerEntrySchema),
+	items: z.array(hostWinnerEntrySchema),
+	limit: z.number(),
+	page: z.number(),
+	total: z.number(),
+	totalPages: z.number(),
 });
 
+export type UserAvatar = z.infer<typeof userAvatarSchema>;
 export type HostWinnerEntry = z.infer<typeof hostWinnerEntrySchema>;
 export type HostRaffleWinningsResponse = z.infer<
 	typeof hostRaffleWinningsResponseSchema

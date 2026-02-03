@@ -38,10 +38,16 @@ export function WinnerActionMenu({
 	const [isMarkingDelivered, startTransition] = useTransition();
 
 	const hasShipping = !!winner.shippingInfo;
-	const canMarkSent =
-		winner.status === 'awaiting_host' && hasShipping && !isMarkingDelivered;
-	const canMarkDelivered = winner.status === 'sent' && !isMarkingDelivered;
-	const hasActions = canMarkSent || canMarkDelivered;
+	const isAwaitingHost = winner.status === 'awaiting_host';
+	const isSent = winner.status === 'sent';
+	const isCompleted =
+		winner.status === 'delivered' ||
+		winner.status === 'received' ||
+		winner.status === 'resolved';
+
+	const canMarkSent = isAwaitingHost && hasShipping && !isMarkingDelivered;
+	const canMarkDelivered = isSent && !isMarkingDelivered;
+	const waitingForShipping = isAwaitingHost && !hasShipping;
 
 	/**
 	 * Handles mark as delivered action
@@ -76,7 +82,8 @@ export function WinnerActionMenu({
 		setMarkSentModalOpen(true);
 	}
 
-	if (!hasActions) {
+	// Hide menu for completed statuses
+	if (isCompleted) {
 		return null;
 	}
 
@@ -94,9 +101,14 @@ export function WinnerActionMenu({
 						<span className="sr-only">Open menu</span>
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent className="w-48 p-0" align="end">
+				<PopoverContent className="w-56 p-0" align="end">
 					<Command>
 						<CommandList>
+							{waitingForShipping && (
+								<div className="px-3 py-2 text-sm text-gray-500">
+									Waiting for winner to provide shipping address
+								</div>
+							)}
 							{canMarkSent && (
 								<CommandItem
 									onSelect={handleOpenMarkSent}

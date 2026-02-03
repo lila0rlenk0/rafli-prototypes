@@ -118,6 +118,46 @@ export default function Loading() {
 </Suspense>
 ```
 
+## How To: Conditional Rendering
+
+Extract complex conditions into named helper functions. Avoid nested ternaries in JSX.
+
+```tsx
+// BAD - nested ternaries, hard to read
+{showWonCard && myWinning ? (
+  <WonCard />
+) : isOwner && isConcluded && hasWinners ? (
+  <HostCard />
+) : showNotWon ? (
+  <NotWonCard />
+) : (
+  <ActiveCard />
+)}
+
+// GOOD - helper functions with clear intent
+function shouldShowWinnerCard(): boolean {
+  return isConcluded && didUserWin && !!myWinning;
+}
+
+function shouldShowHostFulfillment(): boolean {
+  return isOwner && isConcluded && hasWinners && !didUserWin;
+}
+
+function shouldShowNotWonCard(): boolean {
+  return isConcluded && !didUserWin && !isOwner;
+}
+
+function shouldShowActiveCard(): boolean {
+  return !isConcluded;
+}
+
+// In JSX - flat, readable
+{shouldShowWinnerCard() && <WonCard />}
+{shouldShowHostFulfillment() && <HostCard />}
+{shouldShowNotWonCard() && <NotWonCard />}
+{shouldShowActiveCard() && <ActiveCard />}
+```
+
 ## Performance
 
 - `useMemo` for expensive calculations

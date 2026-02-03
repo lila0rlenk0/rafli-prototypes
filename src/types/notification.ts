@@ -63,8 +63,10 @@ export const notificationTypeSchema = z.enum([
 export const notificationMetadataSchema = z
 	.object({
 		raffleId: z.string().optional(),
+		publicSlug: z.string().optional(),
 		orderId: z.string().optional(),
 		winningId: z.string().optional(),
+		disputeId: z.string().optional(),
 	})
 	.passthrough();
 

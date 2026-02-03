@@ -23,24 +23,36 @@ function getNavigationPath(notification: Notification): string | null {
 	const { type, metadata } = notification;
 
 	switch (type) {
+		// Raffle notifications - use publicSlug if available, fallback to raffleId
 		case NOTIFICATION_TYPE.RAFFLE_WON:
 		case NOTIFICATION_TYPE.RAFFLE_ENDING_SOON:
 		case NOTIFICATION_TYPE.RAFFLE_STARTED:
 		case NOTIFICATION_TYPE.RAFFLE_COMPLETED:
 		case NOTIFICATION_TYPE.RAFFLE_CANCELLED:
 		case NOTIFICATION_TYPE.NEW_RAFFLE_CREATED:
-			return metadata?.raffleId ? `/raffle/${metadata.raffleId}` : null;
+		case NOTIFICATION_TYPE.FULFILLMENT_STARTED: {
+			const slug = metadata?.publicSlug ?? metadata?.raffleId;
+			return slug ? `/browse/${slug}` : null;
+		}
 
+		// Order notifications - go to order detail in profile
 		case NOTIFICATION_TYPE.ORDER_CONFIRMED:
-			return metadata?.orderId ? `/orders/${metadata.orderId}` : null;
+			return metadata?.orderId ? `/profile/orders/${metadata.orderId}` : null;
 
+		// Winnings/fulfillment notifications - go to profile (no dedicated winnings page)
 		case NOTIFICATION_TYPE.PRIZE_SENT:
 		case NOTIFICATION_TYPE.PRIZE_DELIVERED:
 		case NOTIFICATION_TYPE.PRIZE_AUTO_CONFIRMED:
 		case NOTIFICATION_TYPE.DELIVERY_CONFIRMED:
 		case NOTIFICATION_TYPE.WINNER_CLAIMED:
-			return metadata?.winningId ? `/winnings/${metadata.winningId}` : null;
+			return '/profile';
 
+		// Dispute notifications - go to profile
+		case NOTIFICATION_TYPE.DISPUTE_OPENED:
+		case NOTIFICATION_TYPE.DISPUTE_RESOLVED:
+			return '/profile';
+
+		// Review notifications - go to profile
 		case NOTIFICATION_TYPE.REVIEW_RECEIVED:
 			return '/profile';
 

@@ -81,6 +81,8 @@ export function NotificationStoreProvider({
 					onNewNotification: handleNewNotification,
 				});
 				streamRef.current.connect(tokenResult.data.token);
+			} else if (process.env.NODE_ENV === 'development') {
+				console.error('Failed to get WS token:', tokenResult.error);
 			}
 		}
 

@@ -45,7 +45,7 @@ export async function getNotifications(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			console.error('Notification response validation failed:', error);
-			return failure(NOTIFICATION_ERROR_CODES.FETCH_FAILED);
+			return failure(NOTIFICATION_ERROR_CODES.VALIDATION_FAILED);
 		}
 		return failure(mapNotificationError(error));
 	}

@@ -13,8 +13,8 @@ import type { CommonErrorCode } from './common-errors';
 export const NOTIFICATION_ERROR_CODES = {
 	/** Notification not found */
 	NOT_FOUND: 'core:notification:not-found',
-	/** Generic fetch failure (Zod validation, etc.) */
-	FETCH_FAILED: 'fetch_failed',
+	/** Validation failure (Zod schema mismatch) */
+	VALIDATION_FAILED: 'core:notification:validation-failed',
 } as const;
 
 /**

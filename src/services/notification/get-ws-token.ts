@@ -36,7 +36,7 @@ export async function getWsToken(): Promise<GetWsTokenResponse> {
 	} catch (error) {
 		if (error instanceof ZodError) {
 			console.error('WS token response validation failed:', error);
-			return failure(NOTIFICATION_ERROR_CODES.FETCH_FAILED);
+			return failure(NOTIFICATION_ERROR_CODES.VALIDATION_FAILED);
 		}
 		return failure(mapNotificationError(error));
 	}

@@ -136,20 +136,15 @@ export type ListNotificationsResponse = z.infer<
 export type UnreadCountResponse = z.infer<typeof unreadCountResponseSchema>;
 export type MarkReadResponse = z.infer<typeof markReadResponseSchema>;
 export type WsTokenResponse = z.infer<typeof wsTokenResponseSchema>;
-export type NotificationStreamEvent = z.infer<
-	typeof notificationStreamEventSchema
->;
 
 // ==========================================
-// Query Schemas
+// Query Types
 // ==========================================
 
 /**
- * Schema for notification query parameters
+ * Query parameters for fetching notifications
  */
-export const notificationQuerySchema = z.object({
-	limit: z.number().optional(),
-	offset: z.number().optional(),
-});
-
-export type NotificationQuery = z.infer<typeof notificationQuerySchema>;
+export interface NotificationQuery {
+	limit?: number;
+	offset?: number;
+}

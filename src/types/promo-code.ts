@@ -238,16 +238,12 @@ export const validatePromoCodeResponseSchema = z.object({
 export type ValidatePromoCodeResponse = z.infer<typeof validatePromoCodeResponseSchema>;
 
 /**
- * Extended validated promo code with original code and computed value
- * Used by frontend components after validation
+ * Schema for validated promo code used by frontend components after validation
  *
  * Value interpretation by type:
  * - free_tickets: number of free tickets (e.g., "3")
  * - discount_percent: per-ticket discount amount in currency (e.g., "5.00")
  * - discount_fixed: total fixed discount amount (e.g., "10.00")
- */
-/**
- * Schema for validated promo code used by frontend components after validation
  */
 export const validatedPromoCodeSchema = z.object({
 	valid: z.literal(true),

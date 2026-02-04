@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { UserStoreContext, useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
 
+/**
+ * Props for PromoCodesButton
+ */
 interface PromoCodesButtonProps {
 	publicSlug: string;
 	isOwner: boolean;

@@ -12,6 +12,9 @@ import { createCheckoutSession } from '@/services/payment/create-checkout-sessio
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
 import type { OrderErrorCode, PaymentErrorCode, PromoCodeErrorCode } from '@/types/errors';
 
+/**
+ * Props for BuyButton
+ */
 interface BuyButtonProps {
 	raffleId: string;
 	publicSlug: string;

@@ -1,12 +1,16 @@
-import { getSession } from '@/lib/auth/session';
-import { getRaffle } from '@/services/raffle/get-raffle';
-import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
+import { getSession } from '@/lib/auth/session';
+import { getRaffle } from '@/services/raffle/get-raffle';
+import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
+
 import { PromoCodesContent } from './promo-codes-content';
 
+/**
+ * Props for PromoCodesPage
+ */
 interface PageProps {
 	params: Promise<{
 		publicSlug: string;

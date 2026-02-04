@@ -14,6 +14,9 @@ import {
 import { SignInToBuyButton } from './sign-in-button';
 import { TicketSelector } from './ticket-selector';
 
+/**
+ * Props for TicketPurchaseCard
+ */
 interface TicketPurchaseCardProps {
 	raffleId: string;
 	publicSlug: string;

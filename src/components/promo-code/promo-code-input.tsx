@@ -12,6 +12,9 @@ import {
 	type ValidatedPromoCode,
 } from '@/types/promo-code';
 
+/**
+ * Props for PromoCodeInput
+ */
 interface PromoCodeInputProps {
 	raffleId: string;
 	onValidCode: (promo: ValidatedPromoCode) => void;

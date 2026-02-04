@@ -21,6 +21,9 @@ const buttonGroupVariants = cva(
   }
 )
 
+/**
+ * Groups multiple buttons into a visually connected unit
+ */
 function ButtonGroup({
   className,
   orientation,
@@ -37,6 +40,9 @@ function ButtonGroup({
   )
 }
 
+/**
+ * Text content within a ButtonGroup
+ */
 function ButtonGroupText({
   className,
   asChild = false,
@@ -57,6 +63,9 @@ function ButtonGroupText({
   return <div ref={ref} className={sharedClassName} {...props} />
 }
 
+/**
+ * Visual separator between ButtonGroup items
+ */
 function ButtonGroupSeparator({
   className,
   orientation = "vertical",

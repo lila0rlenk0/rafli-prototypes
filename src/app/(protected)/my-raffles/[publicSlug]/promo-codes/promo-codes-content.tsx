@@ -237,11 +237,11 @@ export function PromoCodesContent({
 			</div>
 
 			{/* Content */}
-			{isLoading ? (
-				<PromoCodesTableSkeleton />
-			) : codes.length === 0 ? (
+			{isLoading && <PromoCodesTableSkeleton />}
+			{!isLoading && codes.length === 0 && (
 				<PromoCodesEmptyState isReadOnly={isReadOnly} />
-			) : (
+			)}
+			{!isLoading && codes.length > 0 && (
 				<PromoCodesTable
 					codes={codes}
 					isReadOnly={isReadOnly}

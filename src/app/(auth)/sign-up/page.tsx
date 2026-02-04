@@ -1,4 +1,4 @@
-import { ComponentProps, Suspense } from 'react';
+import { Suspense, type ComponentProps } from 'react';
 
 import { SignUpForm } from './sign-up-form';
 

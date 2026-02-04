@@ -55,6 +55,7 @@ export const promoCodeSchema = z.object({
 	id: z.string(),
 	code: z.string(),
 	raffleId: z.string(),
+	bulkId: z.string().uuid().nullable(),
 	type: promoCodeTypeSchema,
 	value: z.string(),
 	maxUses: z.number(),

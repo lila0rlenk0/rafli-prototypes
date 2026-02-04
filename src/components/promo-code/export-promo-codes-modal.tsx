@@ -2,6 +2,7 @@
 
 import { Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +13,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
 	Select,
@@ -51,14 +53,26 @@ export function ExportPromoCodesModal({
 	const [include, setInclude] = useState<IncludeFilter>('all');
 	const [status, setStatus] = useState<StatusFilter>('all');
 	const [type, setType] = useState<TypeFilter>('all');
+	const [bulkId, setBulkId] = useState('');
+
+	const trimmedBulkId = bulkId.trim();
+	const hasInvalidBulkId =
+		trimmedBulkId !== '' && !z.string().uuid().safeParse(trimmedBulkId).success;
 
 	/**
 	 * Handles export action
 	 */
 	async function handleExport() {
+		if (hasInvalidBulkId) return;
+
 		setIsExporting(true);
 		try {
-			await onExport({ include, status, type });
+			await onExport({
+				include,
+				status,
+				type,
+				...(trimmedBulkId && { bulkId: trimmedBulkId }),
+			});
 			onClose();
 		} finally {
 			setIsExporting(false);
@@ -72,6 +86,7 @@ export function ExportPromoCodesModal({
 		setInclude('all');
 		setStatus('all');
 		setType('all');
+		setBulkId('');
 		onClose();
 	}
 
@@ -86,6 +101,24 @@ export function ExportPromoCodesModal({
 				</DialogHeader>
 
 				<div className="space-y-4">
+					{/* Bulk ID Filter */}
+					<div className="space-y-2">
+						<Label htmlFor="bulkId">Batch ID (optional)</Label>
+						<Input
+							id="bulkId"
+							value={bulkId}
+							onChange={e => setBulkId(e.target.value)}
+							placeholder="e.g. 0192d4f8-7a3b-7def-8c12-abc123def456"
+							className={hasInvalidBulkId ? 'border-red-500' : ''}
+						/>
+						{hasInvalidBulkId && (
+							<p className="text-xs text-red-500">Invalid UUID format</p>
+						)}
+						<p className="text-xs text-gray-500">
+							Export only codes from a specific batch
+						</p>
+					</div>
+
 					{/* Include Filter */}
 					<div className="space-y-2">
 						<Label>Include</Label>
@@ -152,7 +185,7 @@ export function ExportPromoCodesModal({
 					>
 						Cancel
 					</Button>
-					<Button onClick={handleExport} disabled={isExporting}>
+					<Button onClick={handleExport} disabled={isExporting || hasInvalidBulkId}>
 						{isExporting ? (
 							<>
 								<Loader2 className="size-4 animate-spin" />

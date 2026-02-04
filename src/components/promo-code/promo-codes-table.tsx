@@ -1,11 +1,17 @@
 'use client';
 
-import { Link2, MoreHorizontal, Ticket, DollarSign, Percent } from 'lucide-react';
+import { Copy, Link2, MoreHorizontal, Ticket, DollarSign, Percent, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { CopyButton } from '@/components/ui/copy-button';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
@@ -95,7 +101,6 @@ export function PromoCodesTable({
 
 	/**
 	 * Copies share link with promo code to clipboard
-	 * @param code - The promo code to include in the link
 	 */
 	async function handleCopyShareLink(code: string) {
 		const origin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -105,6 +110,18 @@ export function PromoCodesTable({
 			toast.success('Share link copied');
 		} catch {
 			toast.error('Failed to copy link');
+		}
+	}
+
+	/**
+	 * Copies batch ID to clipboard
+	 */
+	async function handleCopyBatchId(bulkId: string) {
+		try {
+			await navigator.clipboard.writeText(bulkId);
+			toast.success('Batch ID copied');
+		} catch {
+			toast.error('Failed to copy batch ID');
 		}
 	}
 
@@ -132,6 +149,13 @@ export function PromoCodesTable({
 		return status === PROMO_CODE_STATUS.ACTIVE;
 	}
 
+	/**
+	 * Checks if any actions are available for a code
+	 */
+	function hasActions(code: PromoCode): boolean {
+		return canDeactivate(code) || !!code.bulkId;
+	}
+
 	if (codes.length === 0) {
 		return null;
 	}
@@ -149,7 +173,7 @@ export function PromoCodesTable({
 							<th className="pb-3 font-medium">Usage</th>
 							<th className="pb-3 font-medium">Status</th>
 							<th className="pb-3 font-medium">Expires</th>
-							{!isReadOnly && <th className="pb-3 text-right font-medium" />}
+							<th className="pb-3 text-right font-medium" />
 						</tr>
 					</thead>
 					<tbody>
@@ -193,20 +217,40 @@ export function PromoCodesTable({
 								<td className="py-4 text-gray-600">
 									{formatExpiration(code.expiresAt)}
 								</td>
-								{!isReadOnly && (
-									<td className="py-4 text-right">
-										{canDeactivate(code) && (
-											<Button
-												variant="ghost"
-												size="icon-sm"
-												onClick={() => setDeactivatingCode(code)}
-												className="text-gray-500 hover:text-gray-700"
-											>
-												<MoreHorizontal className="size-4" />
-											</Button>
-										)}
-									</td>
-								)}
+								<td className="py-4 text-right">
+									{hasActions(code) && (
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon-sm"
+													className="text-gray-500 hover:text-gray-700"
+												>
+													<MoreHorizontal className="size-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												{code.bulkId && (
+													<DropdownMenuItem
+														onClick={() => handleCopyBatchId(code.bulkId!)}
+													>
+														<Copy className="size-4" />
+														Copy Batch ID
+													</DropdownMenuItem>
+												)}
+												{canDeactivate(code) && (
+													<DropdownMenuItem
+														onClick={() => setDeactivatingCode(code)}
+														className="text-red-600 focus:text-red-600"
+													>
+														<XCircle className="size-4" />
+														Deactivate
+													</DropdownMenuItem>
+												)}
+											</DropdownMenuContent>
+										</DropdownMenu>
+									)}
+								</td>
 							</tr>
 						))}
 					</tbody>
@@ -236,15 +280,37 @@ export function PromoCodesTable({
 									</Button>
 								)}
 							</div>
-							{!isReadOnly && canDeactivate(code) && (
-								<Button
-									variant="ghost"
-									size="icon-sm"
-									onClick={() => setDeactivatingCode(code)}
-									className="text-gray-500 hover:text-gray-700"
-								>
-									<MoreHorizontal className="size-4" />
-								</Button>
+							{hasActions(code) && (
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											className="text-gray-500 hover:text-gray-700"
+										>
+											<MoreHorizontal className="size-4" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										{code.bulkId && (
+											<DropdownMenuItem
+												onClick={() => handleCopyBatchId(code.bulkId!)}
+											>
+												<Copy className="size-4" />
+												Copy Batch ID
+											</DropdownMenuItem>
+										)}
+										{canDeactivate(code) && (
+											<DropdownMenuItem
+												onClick={() => setDeactivatingCode(code)}
+												className="text-red-600 focus:text-red-600"
+											>
+												<XCircle className="size-4" />
+												Deactivate
+											</DropdownMenuItem>
+										)}
+									</DropdownMenuContent>
+								</DropdownMenu>
 							)}
 						</div>
 

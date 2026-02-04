@@ -124,19 +124,50 @@ export function PromoCodeInput({
 
 	/**
 	 * Auto-validate initialCode on mount
-	 * Uses setTimeout to defer setState calls outside effect execution
 	 */
 	useEffect(() => {
-		if (initialCode && !hasAutoValidated.current && !validatedPromo) {
-			hasAutoValidated.current = true;
-			// Defer to avoid synchronous setState in effect body
-			const timeoutId = setTimeout(() => {
-				handleValidate(initialCode.toUpperCase());
-			}, 0);
-			return () => clearTimeout(timeoutId);
+		if (!initialCode || hasAutoValidated.current || validatedPromo) return;
+		hasAutoValidated.current = true;
+
+		let cancelled = false;
+
+		const codeToValidate = initialCode;
+
+		async function autoValidate() {
+			setIsValidating(true);
+			setError(null);
+
+			const result = await validatePromoCode(raffleId, codeToValidate);
+			if (cancelled) return;
+
+			setIsValidating(false);
+
+			if (!result.success) {
+				setError(getErrorMessage(result.error));
+				return;
+			}
+
+			const value =
+				result.data.ticketsGranted !== undefined
+					? result.data.ticketsGranted.toString()
+					: result.data.discountAmount ?? '0';
+
+			const promo: ValidatedPromoCode = {
+				valid: true,
+				code: codeToValidate.toUpperCase(),
+				type: result.data.type,
+				value,
+			};
+
+			setValidatedPromo(promo);
+			onValidCode(promo);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [initialCode]);
+
+		autoValidate();
+		return () => {
+			cancelled = true;
+		};
+	}, [initialCode, raffleId, onValidCode, validatedPromo]);
 
 	/**
 	 * Handles removing the validated code

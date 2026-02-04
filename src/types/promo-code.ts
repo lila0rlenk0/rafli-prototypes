@@ -75,38 +75,6 @@ export const listPromoCodesResponseSchema = z.object({
 });
 
 /**
- * Schema for creating a promo code
- */
-export const createPromoCodeInputSchema = z
-	.object({
-		type: promoCodeTypeSchema,
-		value: z.number().positive(),
-		maxUses: z.number().int().min(0).max(10_000).default(1),
-		expiresAt: z.string().optional(),
-	})
-	.refine(
-		data => {
-			if (data.type === PROMO_CODE_TYPE.DISCOUNT_PERCENT) {
-				return data.value >= 1 && data.value <= 100;
-			}
-			return true;
-		},
-		{ message: 'Discount percent must be between 1 and 100', path: ['value'] },
-	)
-	.refine(
-		data => {
-			if (data.type === PROMO_CODE_TYPE.FREE_TICKETS) {
-				return Number.isInteger(data.value) && data.value >= 1;
-			}
-			return true;
-		},
-		{
-			message: 'Free tickets count must be a positive integer',
-			path: ['value'],
-		},
-	);
-
-/**
  * Schema for promo code string input (XXXX-XXXX format)
  * Transforms to uppercase and validates format
  */
@@ -140,7 +108,6 @@ export const exportPromoCodesQuerySchema = z.object({
 
 export type PromoCode = z.infer<typeof promoCodeSchema>;
 export type ListPromoCodesResponse = z.infer<typeof listPromoCodesResponseSchema>;
-export type CreatePromoCodeInput = z.infer<typeof createPromoCodeInputSchema>;
 export type ExportPromoCodesQuery = z.infer<typeof exportPromoCodesQuerySchema>;
 
 // ==========================================
@@ -279,12 +246,17 @@ export type ValidatePromoCodeResponse = z.infer<typeof validatePromoCodeResponse
  * - discount_percent: per-ticket discount amount in currency (e.g., "5.00")
  * - discount_fixed: total fixed discount amount (e.g., "10.00")
  */
-export interface ValidatedPromoCode {
-	valid: true;
-	code: string;
-	type: PromoCodeType;
-	value: string;
-}
+/**
+ * Schema for validated promo code used by frontend components after validation
+ */
+export const validatedPromoCodeSchema = z.object({
+	valid: z.literal(true),
+	code: z.string(),
+	type: promoCodeTypeSchema,
+	value: z.string(),
+});
+
+export type ValidatedPromoCode = z.infer<typeof validatedPromoCodeSchema>;
 
 /**
  * Gets human-readable description for a validated promo code

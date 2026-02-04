@@ -44,8 +44,6 @@ export const PROMO_CODE_ERROR_CODES = {
 
 	/** Generic fetch failure (Zod validation, etc.) */
 	FETCH_FAILED: 'fetch_failed',
-	/** Export operation failed */
-	EXPORT_FAILED: 'export_failed',
 	/** Invalid promo code format (early validation) */
 	INVALID_CODE: 'invalid_code',
 } as const;

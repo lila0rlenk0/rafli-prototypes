@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, Copy, Loader2 } from 'lucide-react';
+import { Check, Copy, Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -76,6 +76,7 @@ interface CreatePromoCodeModalProps {
 		maxUses: number;
 		expiresAt?: string;
 	}) => Promise<BulkCreatePromoCodesResponse | null>;
+	onExportBatch?: (bulkId: string) => void;
 }
 
 /**
@@ -85,9 +86,13 @@ export function CreatePromoCodeModal({
 	isOpen,
 	onClose,
 	onCreate,
+	onExportBatch,
 }: CreatePromoCodeModalProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [createdCodes, setCreatedCodes] = useState<string[] | null>(null);
+	const [createdCodes, setCreatedCodes] = useState<{
+		codes: string[];
+		bulkId?: string;
+	} | null>(null);
 	const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 	const [copiedAll, setCopiedAll] = useState(false);
 
@@ -156,7 +161,7 @@ export function CreatePromoCodeModal({
 			});
 
 			if (result) {
-				setCreatedCodes(result.codes);
+				setCreatedCodes({ codes: result.codes, bulkId: result.bulkId });
 			}
 		} finally {
 			setIsSubmitting(false);
@@ -177,7 +182,7 @@ export function CreatePromoCodeModal({
 	 */
 	async function handleCopyAll() {
 		if (!createdCodes) return;
-		await navigator.clipboard.writeText(createdCodes.join('\n'));
+		await navigator.clipboard.writeText(createdCodes.codes.join('\n'));
 		setCopiedAll(true);
 		setTimeout(() => setCopiedAll(false), 2_000);
 	}
@@ -195,10 +200,10 @@ export function CreatePromoCodeModal({
 
 	// Success state
 	if (createdCodes) {
-		const isSingle = createdCodes.length === 1;
+		const isSingle = createdCodes.codes.length === 1;
 		const maxDisplayCodes = 10;
-		const displayedCodes = createdCodes.slice(0, maxDisplayCodes);
-		const remainingCount = createdCodes.length - maxDisplayCodes;
+		const displayedCodes = createdCodes.codes.slice(0, maxDisplayCodes);
+		const remainingCount = createdCodes.codes.length - maxDisplayCodes;
 
 		return (
 			<Dialog open={isOpen} onOpenChange={open => !open && handleClose()}>
@@ -208,7 +213,7 @@ export function CreatePromoCodeModal({
 							<Check className="size-6 text-green-600" />
 						</div>
 						<DialogTitle>
-							{isSingle ? 'Promo Code Created!' : `${createdCodes.length} Codes Created!`}
+							{isSingle ? 'Promo Code Created!' : `${createdCodes.codes.length} Codes Created!`}
 						</DialogTitle>
 					</DialogHeader>
 
@@ -216,14 +221,14 @@ export function CreatePromoCodeModal({
 						{isSingle ? (
 							<button
 								type="button"
-								onClick={() => handleCopyCode(createdCodes[0], 0)}
+								onClick={() => handleCopyCode(createdCodes.codes[0], 0)}
 								className={cn(
 									'mx-auto flex items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3',
 									'hover:border-gray-400 hover:bg-gray-50 transition-colors',
 								)}
 							>
 								<span className="font-mono text-lg font-bold">
-									{createdCodes[0]}
+									{createdCodes.codes[0]}
 								</span>
 								{copiedIndex === 0 ? (
 									<Check className="size-4 text-green-600" />
@@ -255,27 +260,40 @@ export function CreatePromoCodeModal({
 								</div>
 								{remainingCount > 0 && (
 									<p className="text-xs text-gray-500">
-										+{remainingCount} more code{remainingCount !== 1 ? 's' : ''} (use Copy All)
+										+{remainingCount} more code{remainingCount !== 1 ? 's' : ''} (use Copy All or Export)
 									</p>
 								)}
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={handleCopyAll}
-									className="w-full"
-								>
-									{copiedAll ? (
-										<>
-											<Check className="size-4" />
-											Copied all {createdCodes.length}!
-										</>
-									) : (
-										<>
-											<Copy className="size-4" />
-											Copy All {createdCodes.length} Codes
-										</>
+								<div className="flex gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={handleCopyAll}
+										className="flex-1"
+									>
+										{copiedAll ? (
+											<>
+												<Check className="size-4" />
+												Copied!
+											</>
+										) : (
+											<>
+												<Copy className="size-4" />
+												Copy All
+											</>
+										)}
+									</Button>
+									{createdCodes.bulkId && onExportBatch && (
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => onExportBatch(createdCodes.bulkId!)}
+											className="flex-1"
+										>
+											<Download className="size-4" />
+											Export Batch
+										</Button>
 									)}
-								</Button>
+								</div>
 							</>
 						)}
 					</div>

@@ -2,7 +2,7 @@
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
-import { PROMO_CODE_ERROR_CODES, type PromoCodeErrorCode } from '@/types/errors';
+import type { PromoCodeErrorCode } from '@/types/errors';
 import type { ExportPromoCodesQuery } from '@/types/promo-code';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -28,6 +28,7 @@ export async function exportPromoCodes(
 			`/raffles/${raffleId}/promo-codes/export`,
 			{
 				params: {
+					...(query?.bulkId && { bulkId: query.bulkId }),
 					include: query?.include ?? 'all',
 					status: query?.status ?? 'all',
 					type: query?.type ?? 'all',
@@ -39,8 +40,6 @@ export async function exportPromoCodes(
 		return success(response.data);
 	} catch (error) {
 		console.error('Export promo codes failed:', error);
-		return failure(
-			mapPromoCodeError(error) ?? PROMO_CODE_ERROR_CODES.EXPORT_FAILED,
-		);
+		return failure(mapPromoCodeError(error));
 	}
 }

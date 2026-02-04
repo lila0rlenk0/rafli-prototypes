@@ -3,10 +3,9 @@
 import { ZodError, z } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { failure, success } from '@/lib/errors';
-import { mapPromoCodeError } from '@/lib/errors';
+import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import { PROMO_CODE_ERROR_CODES, type PromoCodeErrorCode } from '@/types/errors';
-import { promoCodeTypeSchema } from '@/types/promo-code';
+import { promoCodeStringSchema, promoCodeTypeSchema } from '@/types/promo-code';
 import type { ServiceResponse } from '@/types/service-response';
 
 // ==========================================
@@ -15,9 +14,10 @@ import type { ServiceResponse } from '@/types/service-response';
 
 /**
  * Schema for redeem request payload
+ * Uses centralized promoCodeStringSchema for format validation
  */
 const redeemPromoCodePayloadSchema = z.object({
-	code: z.string().min(1),
+	code: promoCodeStringSchema,
 	raffleId: z.string().uuid(),
 	orderId: z.string().uuid().optional(),
 });
@@ -63,10 +63,11 @@ export async function redeemPromoCode(
 			return failure(PROMO_CODE_ERROR_CODES.FETCH_FAILED);
 		}
 
+		// Schema already transforms code to uppercase
 		const response = await authenticatedClient.post(
 			'/promo-codes/redeem',
 			{
-				code: validationResult.data.code.trim().toUpperCase(),
+				code: validationResult.data.code,
 				raffleId: validationResult.data.raffleId,
 				...(validationResult.data.orderId && { orderId: validationResult.data.orderId }),
 			},

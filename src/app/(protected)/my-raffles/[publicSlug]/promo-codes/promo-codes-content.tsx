@@ -125,26 +125,45 @@ export function PromoCodesContent({
 	}
 
 	/**
+	 * Downloads CSV content as a file
+	 */
+	function downloadCsv(content: string, filename: string) {
+		const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+	}
+
+	/**
 	 * Handles exporting promo codes
 	 */
 	async function handleExport(query: ExportPromoCodesQuery): Promise<void> {
 		const result = await exportPromoCodes(raffleId, query);
 
 		if (result.success) {
-			// Create blob and trigger download
-			const blob = new Blob([result.data], { type: 'text/csv;charset=utf-8;' });
-			const url = URL.createObjectURL(blob);
-			const link = document.createElement('a');
-			link.href = url;
-			link.download = `promo-codes-${raffleId}.csv`;
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			URL.revokeObjectURL(url);
-
+			downloadCsv(result.data, `promo-codes-${raffleId}.csv`);
 			toast.success('Export downloaded');
 		} else {
 			toast.error('Failed to export promo codes');
+		}
+	}
+
+	/**
+	 * Handles exporting a specific batch of promo codes
+	 */
+	async function handleExportBatch(bulkId: string): Promise<void> {
+		const result = await exportPromoCodes(raffleId, { bulkId });
+
+		if (result.success) {
+			downloadCsv(result.data, `promo-codes-batch-${bulkId.slice(0, 8)}.csv`);
+			toast.success('Batch exported');
+		} else {
+			toast.error('Failed to export batch');
 		}
 	}
 
@@ -263,6 +282,7 @@ export function PromoCodesContent({
 				isOpen={isCreateModalOpen}
 				onClose={() => setIsCreateModalOpen(false)}
 				onCreate={handleCreate}
+				onExportBatch={handleExportBatch}
 			/>
 
 			<ExportPromoCodesModal

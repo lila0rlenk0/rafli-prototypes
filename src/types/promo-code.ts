@@ -4,6 +4,16 @@ import { z } from 'zod';
 // Constants
 // ==========================================
 
+/**
+ * Allowed characters in promo codes (excludes ambiguous O/0/I/1)
+ */
+export const PROMO_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/**
+ * Regex pattern for promo code format: XXXX-XXXX (8 chars + hyphen)
+ */
+export const PROMO_CODE_REGEX = /^[A-Z2-9]{4}-[A-Z2-9]{4}$/;
+
 export const PROMO_CODE_TYPE = {
 	FREE_TICKETS: 'free_tickets',
 	DISCOUNT_FIXED: 'discount_fixed',
@@ -97,9 +107,21 @@ export const createPromoCodeInputSchema = z
 	);
 
 /**
+ * Schema for promo code string input (XXXX-XXXX format)
+ * Transforms to uppercase and validates format
+ */
+export const promoCodeStringSchema = z
+	.string()
+	.min(9)
+	.max(9)
+	.transform(v => v.toUpperCase())
+	.refine(v => PROMO_CODE_REGEX.test(v), 'Invalid promo code format');
+
+/**
  * Schema for export promo codes query params
  */
 export const exportPromoCodesQuerySchema = z.object({
+	bulkId: z.string().uuid().optional(),
 	include: z.enum(['all', 'redeemed', 'unredeemed']).default('all'),
 	status: z.enum(['all', 'active', 'inactive']).default('all'),
 	type: z
@@ -162,6 +184,7 @@ export const bulkCreatePromoCodesInputSchema = z
  * Schema for bulk create response
  */
 export const bulkCreatePromoCodesResponseSchema = z.object({
+	bulkId: z.string().uuid(),
 	created: z.number(),
 	codes: z.array(z.string()),
 });

@@ -16,10 +16,11 @@ import { z } from 'zod';
 
 import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
 import { createRaffle } from '@/services/raffle/create-raffle';
-import type { Category } from '@/types/category';
-import type { Question } from '@/types/question';
+import { publishRaffle } from '@/services/raffle/publish-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
+import type { Category } from '@/types/category';
+import type { Question } from '@/types/question';
 import { useRaffleDraft } from './hooks/use-raffle-draft';
 import { SaveDraftModal } from './save-draft-modal';
 import { raffleFormSchema } from './schema';
@@ -313,6 +314,22 @@ export function MultiStepFormProvider({
 					if (!galleryResult.success) {
 						console.error('Gallery upload failed:', galleryResult.error);
 						toast.error('Raffle created but gallery upload failed.');
+					}
+				}
+
+				// Auto-publish if start date is today or in the past
+				const startDate = new Date(data.startDate);
+				const today = new Date();
+				today.setHours(0, 0, 0, 0);
+				startDate.setHours(0, 0, 0, 0);
+
+				if (startDate <= today) {
+					const publishResult = await publishRaffle(raffleId);
+					if (!publishResult.success) {
+						console.error('Auto-publish failed:', publishResult.error);
+						toast.warning(
+							'Raffle created as draft. Please publish it manually.',
+						);
 					}
 				}
 

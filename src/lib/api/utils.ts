@@ -18,9 +18,7 @@
  * });
  * // Returns: { status: 'active', limit: '10' }
  */
-export function buildQueryParams(
-	query?: object,
-): Record<string, string> {
+export function buildQueryParams(query?: object): Record<string, string> {
 	if (!query) return {};
 
 	const params: Record<string, string> = {};
@@ -36,4 +34,46 @@ export function buildQueryParams(
 	}
 
 	return params;
+}
+
+/**
+ * Builds URLSearchParams with support for repeated status keys
+ *
+ * Backend requires repeated params for array values (e.g., status=ended&status=fulfilling)
+ * instead of comma-separated values (status=ended,fulfilling).
+ *
+ * @param query - Query object with optional comma-separated status field
+ * @returns URLSearchParams with repeated status keys
+ *
+ * @example
+ * const params = buildQueryParamsWithStatus({
+ *   status: 'ended,fulfilling,completed',
+ *   limit: 10,
+ * });
+ * // Returns URLSearchParams: status=ended&status=fulfilling&status=completed&limit=10
+ */
+export function buildQueryParamsWithStatus<T extends { status?: string }>(
+	query?: T,
+): URLSearchParams {
+	const searchParams = new URLSearchParams();
+
+	if (!query) return searchParams;
+
+	const { status, ...rest } = query;
+
+	// Handle status: split comma-separated values into repeated params
+	if (status) {
+		const statuses = status.split(',');
+		for (const s of statuses) {
+			searchParams.append('status', s.trim());
+		}
+	}
+
+	// Add remaining params normally
+	const otherParams = buildQueryParams(rest);
+	for (const [key, value] of Object.entries(otherParams)) {
+		searchParams.append(key, value);
+	}
+
+	return searchParams;
 }

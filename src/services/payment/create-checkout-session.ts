@@ -74,7 +74,11 @@ export async function createCheckoutSession(
 		// Track checkout started (awaited to ensure completion in serverless)
 		await trackServer(
 			PURCHASE_EVENTS.CHECKOUT_STARTED,
-			{ order_id: orderId, raffle_id: raffleId, session_id: checkoutSession.id },
+			{
+				order_id: orderId,
+				raffle_id: raffleId,
+				session_id: checkoutSession.id,
+			},
 			{ userId },
 		);
 

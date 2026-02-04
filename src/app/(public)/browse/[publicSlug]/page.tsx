@@ -1,3 +1,5 @@
+import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeline';
+import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
@@ -23,7 +25,8 @@ import { getMyWinnings } from '@/services/winning/get-my-winnings';
 import type { Category } from '@/types/category';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
-import { ArrowLeft, ImageIcon, InfoIcon } from 'lucide-react';
+import type { Winning } from '@/types/winning';
+import { ArrowLeft, InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ComponentProps } from 'react';
@@ -113,41 +116,47 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	// Only fetch user's ticket codes if authenticated
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
-	let didUserWin = false;
+	let myWinning: Winning | null = null;
 	let myWinningTicketCode: string | null = null;
 	let myUserName: string | null = null;
 	let myUserAvatarUrl: string | null = null;
 
 	if (isAuthenticated) {
-		const ticketCodesResponse = await getMyTicketCodes({ raffleId: raffle.id });
+		// Fetch user data in parallel to avoid waterfall
+		const [ticketCodesResponse, winningsResponse, meResponse] =
+			await Promise.all([
+				getMyTicketCodes({ raffleId: raffle.id }),
+				getMyWinnings(),
+				getMe(),
+			]);
+
 		if (ticketCodesResponse.success) {
 			myTicketCodes = ticketCodesResponse.data.tickets;
 			myTicketsTotal = ticketCodesResponse.data.total;
 		}
 
-		// Check if user won this raffle (only relevant for concluded raffles)
-		const winningsResponse = await getMyWinnings();
 		if (winningsResponse.success) {
-			didUserWin = winningsResponse.data.winnings.some(
-				winning => winning.raffleId === raffle.id,
-			);
+			myWinning =
+				winningsResponse.data.winnings.find(
+					winning => winning.raffleId === raffle.id,
+				) ?? null;
 		}
 
 		// Get winning ticket code from raffle.winners if user won
-		if (didUserWin && raffle.winners) {
+		if (myWinning && raffle.winners) {
 			const myWinnerEntry = raffle.winners.find(
 				winner => winner.userId === currentUserId,
 			);
 			myWinningTicketCode = myWinnerEntry?.ticketCode ?? null;
 		}
 
-		// Get user profile with avatar URL
-		const meResponse = await getMe();
 		if (meResponse.success) {
 			myUserName = meResponse.data.name;
 			myUserAvatarUrl = meResponse.data.avatarUrl;
 		}
 	}
+
+	const didUserWin = !!myWinning;
 
 	/**
 	 * List of statuses that indicate a raffle has concluded
@@ -203,8 +212,35 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const isConcluded = isRaffleConcluded();
 	const isOwner = isOwnRaffle();
 	const isLive = raffle.status === RAFFLE_STATUS.LIVE;
-	const showWonCard = isConcluded && didUserWin;
-	const showNotWonCard = isConcluded && !didUserWin;
+	const hasWinners = (raffle.winners?.length ?? 0) > 0;
+
+	/**
+	 * Checks if winner card should be shown (user won)
+	 */
+	function shouldShowWinnerCard(): boolean {
+		return isConcluded && didUserWin && !!myWinning;
+	}
+
+	/**
+	 * Checks if host fulfillment card should be shown
+	 */
+	function shouldShowHostFulfillment(): boolean {
+		return isOwner && isConcluded && hasWinners && !didUserWin;
+	}
+
+	/**
+	 * Checks if "not won" card should be shown
+	 */
+	function shouldShowNotWonCard(): boolean {
+		return isConcluded && !didUserWin && !isOwner;
+	}
+
+	/**
+	 * Checks if active raffle card should be shown
+	 */
+	function shouldShowActiveCard(): boolean {
+		return !isConcluded;
+	}
 
 	/**
 	 * Gets the host display name from closure
@@ -336,28 +372,23 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							className="border border-[#E5E5E5]"
 						/>
 
-						<div className="grid grid-cols-3 gap-4">
-							{Array.from({ length: 3 }).map((_, index) => {
-								const image = raffle.galleryMediaUrls[index];
-								return (
+						{raffle.galleryMediaUrls.length > 0 && (
+							<div className="grid grid-cols-3 gap-4">
+								{raffle.galleryMediaUrls.map((image, index) => (
 									<div
 										key={index}
 										className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
 									>
-										{image?.url ? (
-											<Image
-												src={image.url}
-												alt={`Gallery ${index + 1}`}
-												fill
-												className="object-cover"
-											/>
-										) : (
-											<ImageIcon className="size-6 text-gray-400" />
-										)}
+										<Image
+											src={image.url}
+											alt={`Gallery ${index + 1}`}
+											fill
+											className="object-cover"
+										/>
 									</div>
-								);
-							})}
-						</div>
+								))}
+							</div>
+						)}
 
 						<div className="flex min-w-0 flex-col gap-2">
 							<label className="text-sm text-[#B4B4B4]">Description</label>
@@ -420,15 +451,35 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					</div>
 				</div>
 				<div className="space-y-2">
-					{showWonCard ? (
-						<RaffleWonCard
-							userName={myUserName ?? 'Winner'}
-							userAvatar={myUserAvatarUrl}
-							ticketCode={myWinningTicketCode}
+					{shouldShowWinnerCard() && myWinning && (
+						<>
+							<RaffleWonCard
+								userName={myUserName ?? 'Winner'}
+								userAvatar={myUserAvatarUrl}
+								ticketCode={myWinningTicketCode}
+							/>
+							<FulfillmentTimeline
+								winning={myWinning}
+								isHost={isOwner}
+								raffleId={raffle.id}
+								hostId={raffle.hostId}
+								publicSlug={publicSlug}
+							/>
+						</>
+					)}
+
+					{shouldShowHostFulfillment() && (
+						<HostFulfillmentCard
+							publicSlug={publicSlug}
+							winnersCount={raffle.winners?.length ?? 0}
 						/>
-					) : showNotWonCard ? (
-						<RaffleNotWonCard />
-					) : (
+					)}
+
+					{shouldShowNotWonCard() && (
+						<RaffleNotWonCard status={raffle.status} />
+					)}
+
+					{shouldShowActiveCard() && (
 						<div className="h-fit rounded-2xl border border-black bg-white px-4 py-8">
 							<RaffleFireIcon className="mx-auto size-12" />
 
@@ -462,7 +513,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</div>
 					)}
 
-					{isConcluded && raffle.winners && raffle.winners.length > 0 && (
+					{isConcluded && hasWinners && raffle.winners && (
 						<WinnersList
 							winners={raffle.winners}
 							raffleId={raffle.id}

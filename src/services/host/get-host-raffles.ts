@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
-import { buildQueryParams } from '@/lib/api/utils';
+import { buildQueryParamsWithStatus } from '@/lib/api/utils';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { HostRafflesQuery } from '@/types/host';
@@ -31,7 +31,7 @@ export async function getHostRaffles(
 	query: HostRafflesQuery,
 ): Promise<GetHostRafflesResponse> {
 	try {
-		const params = buildQueryParams(query);
+		const params = buildQueryParamsWithStatus(query);
 
 		const response = await baseClient.get('/raffles', {
 			params,

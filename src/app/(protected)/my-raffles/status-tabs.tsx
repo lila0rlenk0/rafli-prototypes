@@ -60,10 +60,10 @@ export function StatusTabs({ mode }: StatusTabsProps) {
 
 	/**
 	 * Handles Ended tab click
-	 * Sends multiple status: cancelled,completed,ended
+	 * Sends multiple status: cancelled,completed,ended,fulfilling
 	 */
 	function handleEndedClick() {
-		const endedStatuses = `${RAFFLE_STATUS.CANCELLED},${RAFFLE_STATUS.COMPLETED},${RAFFLE_STATUS.ENDED}`;
+		const endedStatuses = `${RAFFLE_STATUS.CANCELLED},${RAFFLE_STATUS.COMPLETED},${RAFFLE_STATUS.ENDED},${RAFFLE_STATUS.FULFILLING}`;
 		handleStatusChange(endedStatuses);
 	}
 
@@ -77,11 +77,12 @@ export function StatusTabs({ mode }: StatusTabsProps) {
 		statusList.includes(RAFFLE_STATUS.QUEUED);
 	// Live: Live (default when no status param)
 	const isActive = !statusParam || statusList.includes(RAFFLE_STATUS.LIVE);
-	// Ended: Cancelled, Completed ou Ended
+	// Ended: Cancelled, Completed, Ended ou Fulfilling
 	const isEnded =
 		statusList.includes(RAFFLE_STATUS.CANCELLED) ||
 		statusList.includes(RAFFLE_STATUS.COMPLETED) ||
-		statusList.includes(RAFFLE_STATUS.ENDED);
+		statusList.includes(RAFFLE_STATUS.ENDED) ||
+		statusList.includes(RAFFLE_STATUS.FULFILLING);
 
 	return (
 		<div className="relative flex items-start justify-center gap-6 pb-1">

@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapWinningError, success } from '@/lib/errors';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
@@ -8,7 +10,6 @@ import {
 	type ListWinningsResponse,
 	listWinningsResponseSchema,
 } from '@/types/winning';
-import { ZodError } from 'zod';
 
 /**
  * Response type for fetching user's winnings

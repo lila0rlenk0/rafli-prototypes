@@ -8,6 +8,7 @@ import {
 	type OrderErrorCode,
 	type PaymentErrorCode,
 	type RaffleErrorCode,
+	type ReviewErrorCode,
 	type TicketErrorCode,
 	type UpdateErrorCode,
 	type VerificationErrorCode,
@@ -534,6 +535,38 @@ export function mapNotificationError(error: unknown): NotificationErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as NotificationErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps review errors to ReviewErrorCode
+ *
+ * Accepts `core:review:*`, `core:raffle:*`, and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns ReviewErrorCode (either backend code or frontend fallback)
+ */
+export function mapReviewError(error: unknown): ReviewErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "core:review:not-eligible", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('core:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as ReviewErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
+			return mappedCode as ReviewErrorCode;
 		}
 	}
 

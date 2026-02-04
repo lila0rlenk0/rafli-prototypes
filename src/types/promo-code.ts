@@ -80,10 +80,11 @@ export const listPromoCodesResponseSchema = z.object({
  * Transforms to uppercase and validates format
  */
 export const promoCodeStringSchema = z
-	.string()
-	.min(9)
-	.max(9)
-	.transform(v => v.toUpperCase())
+	.preprocess(
+		value =>
+			typeof value === 'string' ? value.trim().toUpperCase() : value,
+		z.string().length(9),
+	)
 	.refine(v => PROMO_CODE_REGEX.test(v), 'Invalid promo code format');
 
 /**

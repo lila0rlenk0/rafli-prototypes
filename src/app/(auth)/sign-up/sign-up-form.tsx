@@ -103,7 +103,7 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 			toast.success(
 				'Account created! Check your email to verify before signing in.',
 			);
-			router.push('/sign-in');
+			router.push(`/sign-in?returnTo=${encodeURIComponent(returnTo)}`);
 		});
 	}
 

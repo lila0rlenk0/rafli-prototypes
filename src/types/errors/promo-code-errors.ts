@@ -37,6 +37,16 @@ export const PROMO_CODE_ERROR_CODES = {
 	RAFFLE_NOT_FOUND: 'core:raffle:not-found',
 	/** Raffle is not live */
 	RAFFLE_NOT_LIVE: 'core:raffle:not-live',
+	/** Order not found */
+	ORDER_NOT_FOUND: 'core:order:not-found',
+	/** Order does not belong to current user */
+	ORDER_PERMISSION_DENIED: 'core:order:permission-denied',
+	/** Order is no longer pending */
+	ORDER_NOT_PENDING: 'core:order:not-pending',
+	/** Order already has a promo code applied */
+	ORDER_ALREADY_DISCOUNTED: 'core:promo:order-already-discounted',
+	/** Invalid request payload */
+	INVALID_ARGUMENT: 'global:validation:invalid-argument',
 
 	// ==========================================
 	// Frontend-only Error Codes

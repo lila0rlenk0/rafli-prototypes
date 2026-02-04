@@ -40,7 +40,7 @@ export function PromoCodeInput({
 	initialCode,
 }: PromoCodeInputProps) {
 	const [isExpanded, setIsExpanded] = useState(!!initialCode);
-	const [code, setCode] = useState(initialCode?.toUpperCase() || '');
+	const [code, setCode] = useState(initialCode?.trim().toUpperCase() || '');
 	const [isValidating, setIsValidating] = useState(false);
 	const [validatedPromo, setValidatedPromo] = useState<ValidatedPromoCode | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -89,8 +89,8 @@ export function PromoCodeInput({
 	 * @param codeToValidate - Optional code override, defaults to current state
 	 */
 	async function handleValidate(codeToValidate?: string) {
-		const targetCode = codeToValidate ?? code;
-		if (!targetCode.trim()) return;
+		const targetCode = (codeToValidate ?? code).trim().toUpperCase();
+		if (!targetCode) return;
 
 		setIsValidating(true);
 		setError(null);
@@ -116,11 +116,12 @@ export function PromoCodeInput({
 
 		const promo: ValidatedPromoCode = {
 			valid: true,
-			code: targetCode.toUpperCase(),
+			code: targetCode,
 			type: response.type,
 			value,
 		};
 
+		setCode(targetCode);
 		setValidatedPromo(promo);
 		onValidCode(promo);
 	}
@@ -134,7 +135,7 @@ export function PromoCodeInput({
 
 		let cancelled = false;
 
-		const codeToValidate = initialCode;
+		const codeToValidate = initialCode.trim().toUpperCase();
 
 		async function autoValidate() {
 			setIsValidating(true);

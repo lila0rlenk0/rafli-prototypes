@@ -126,8 +126,19 @@ export function BuyButton({
 				return 'You cannot use codes on your own raffle';
 			case 'core:promo:question-required':
 				return 'Please answer the question first';
+			case 'core:promo:order-already-discounted':
+				return 'This order already has a promo code';
 			case 'core:raffle:not-live':
 				return 'This raffle is not currently active';
+			case 'core:order:not-found':
+				return 'Order not found';
+			case 'core:order:not-pending':
+				return 'This order can no longer be updated';
+			case 'core:order:permission-denied':
+				return 'You do not have access to this order';
+			case 'global:validation:invalid-argument':
+			case 'validation_error':
+				return 'Invalid promo code request';
 			case 'network_error':
 				return 'Network error. Please check your connection';
 			case 'timeout_error':
@@ -220,7 +231,33 @@ export function BuyButton({
 
 			const order = orderResult.data;
 
-			// Step 2: Create checkout session
+			// Step 2: Apply discount promo to pending order (free tickets handled separately)
+			if (promoCode && !isFreeTickets) {
+				const redeemResult = await redeemPromoCode({
+					code: promoCode,
+					raffleId,
+					orderId: order.id,
+				});
+
+				if (!redeemResult.success) {
+					const message = getPromoErrorMessage(redeemResult.error);
+					toast.error(message);
+					return;
+				}
+
+				const discountAmount = parseFloat(redeemResult.data.discountAmount ?? '0');
+				const orderTotal = parseFloat(order.totalAmount);
+				const remainingTotal = Math.max(0, orderTotal - discountAmount);
+
+				// Backend auto-completes $0 orders after promo redemption
+				if (remainingTotal === 0) {
+					toast.success('Promo applied. Tickets claimed successfully!');
+					router.refresh();
+					return;
+				}
+			}
+
+			// Step 3: Create checkout session
 			const checkoutResult = await createCheckoutSession({
 				orderId: order.id,
 				raffleId,
@@ -235,7 +272,7 @@ export function BuyButton({
 
 			const session = checkoutResult.data;
 
-			// Step 3: Redirect to Stripe checkout
+			// Step 4: Redirect to Stripe checkout
 			window.location.href = session.checkoutUrl;
 		} catch (error) {
 			console.error('Unexpected error during checkout:', error);

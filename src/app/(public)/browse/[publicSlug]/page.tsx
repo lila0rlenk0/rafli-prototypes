@@ -33,6 +33,7 @@ import type { ComponentProps } from 'react';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
+import { PromoCodesButton } from './promo-codes-button';
 
 interface PageProps {
 	params: Promise<{
@@ -215,6 +216,26 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const hasWinners = (raffle.winners?.length ?? 0) > 0;
 
 	/**
+	 * Statuses that allow promo code management
+	 */
+	const MANAGEABLE_STATUSES = [
+		RAFFLE_STATUS.DRAFT,
+		RAFFLE_STATUS.QUEUED,
+		RAFFLE_STATUS.LIVE,
+	] as const;
+
+	/**
+	 * Check if raffle status allows promo code management
+	 */
+	function isManageableStatus(): boolean {
+		return MANAGEABLE_STATUSES.includes(
+			raffle.status as (typeof MANAGEABLE_STATUSES)[number],
+		);
+	}
+
+	const isManageable = isManageableStatus();
+
+	/**
 	 * Checks if winner card should be shown (user won)
 	 */
 	function shouldShowWinnerCard(): boolean {
@@ -337,7 +358,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			<div className="flex w-full flex-col gap-8 lg:flex-row">
 				<div className="w-full space-y-4">
 					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
-						<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
+						<div className="flex items-start justify-between gap-4">
+							<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
+							<PromoCodesButton
+								publicSlug={publicSlug}
+								isOwner={isOwner}
+								isManageable={isManageable}
+							/>
+						</div>
 
 						<Link
 							href={getHostProfileUrl()}

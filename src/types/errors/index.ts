@@ -16,3 +16,4 @@ export * from './winning-errors';
 export * from './update-errors';
 export * from './verification-errors';
 export * from './review-errors';
+export * from './promo-code-errors';

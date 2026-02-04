@@ -1,6 +1,7 @@
 'use client';
 
 import { Loader2Icon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -8,7 +9,8 @@ import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { createOrder } from '@/services/order/create-order';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
-import type { OrderErrorCode, PaymentErrorCode } from '@/types/errors';
+import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
+import type { OrderErrorCode, PaymentErrorCode, PromoCodeErrorCode } from '@/types/errors';
 
 interface BuyButtonProps {
 	raffleId: string;
@@ -16,6 +18,8 @@ interface BuyButtonProps {
 	ticketQuantity: number;
 	disabled?: boolean;
 	questionId?: string | null;
+	promoCode?: string;
+	isFreeTickets?: boolean;
 }
 
 /**
@@ -31,6 +35,10 @@ interface BuyButtonProps {
  * @param raffleId - The UUID of the raffle (used for API calls)
  * @param publicSlug - The public slug of the raffle (used for redirect URLs)
  * @param ticketQuantity - Number of tickets to purchase
+ * @param disabled - Whether the button is disabled
+ * @param questionId - Optional question ID for skill-based raffles
+ * @param promoCode - Optional validated promo code to apply to order
+ * @param isFreeTickets - Whether this is a free tickets redemption
  */
 export function BuyButton({
 	raffleId,
@@ -38,7 +46,10 @@ export function BuyButton({
 	ticketQuantity,
 	disabled = false,
 	questionId,
+	promoCode,
+	isFreeTickets = false,
 }: BuyButtonProps) {
+	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 	const [showQuestionModal, setShowQuestionModal] = useState(false);
 
@@ -92,12 +103,46 @@ export function BuyButton({
 	}
 
 	/**
+	 * Gets user-friendly error message for promo code redemption errors
+	 * @param errorCode - The promo code error code
+	 * @returns User-friendly error message
+	 */
+	function getPromoErrorMessage(errorCode: PromoCodeErrorCode): string {
+		switch (errorCode) {
+			case 'core:promo:not-found':
+				return 'Invalid promo code';
+			case 'core:promo:expired':
+				return 'This code has expired';
+			case 'core:promo:max-uses-reached':
+				return 'This code has reached its usage limit';
+			case 'core:promo:deactivated':
+				return 'This code is no longer active';
+			case 'core:promo:already-redeemed':
+				return 'You have already used this code';
+			case 'core:promo:host-cannot-redeem':
+				return 'You cannot use codes on your own raffle';
+			case 'core:promo:question-required':
+				return 'Please answer the question first';
+			case 'core:raffle:not-live':
+				return 'This raffle is not currently active';
+			case 'network_error':
+				return 'Network error. Please check your connection';
+			case 'timeout_error':
+				return 'Request timed out. Please try again';
+			default:
+				return 'Failed to redeem code. Please try again';
+		}
+	}
+
+	/**
 	 * Handles the buy button click
-	 * Shows question modal if raffle has a question, otherwise proceeds to checkout
+	 * Routes to appropriate flow based on ticket type
 	 */
 	function handleBuyClick() {
 		if (questionId) {
 			setShowQuestionModal(true);
+		} else if (isFreeTickets && promoCode) {
+			redeemFreeTickets();
 		} else {
 			proceedToCheckout();
 		}
@@ -105,10 +150,49 @@ export function BuyButton({
 
 	/**
 	 * Handles correct answer from question modal
-	 * Proceeds to checkout after user answers correctly
+	 * Routes to appropriate flow after user answers correctly
 	 */
 	function handleCorrectAnswer() {
-		proceedToCheckout();
+		if (isFreeTickets && promoCode) {
+			redeemFreeTickets();
+		} else {
+			proceedToCheckout();
+		}
+	}
+
+	/**
+	 * Redeems free tickets promo code
+	 * Called for free_tickets type promos - skips order/checkout flow
+	 */
+	async function redeemFreeTickets() {
+		if (!promoCode) return;
+
+		setIsLoading(true);
+
+		try {
+			const result = await redeemPromoCode({
+				code: promoCode,
+				raffleId,
+			});
+
+			if (!result.success) {
+				const message = getPromoErrorMessage(result.error);
+				toast.error(message);
+				return;
+			}
+
+			const { ticketsGranted } = result.data;
+			const ticketText = ticketsGranted === 1 ? 'ticket' : 'tickets';
+			toast.success(`You received ${ticketsGranted} free ${ticketText}!`);
+
+			// Refresh page to show updated ticket count
+			router.refresh();
+		} catch (error) {
+			console.error('Unexpected error during redemption:', error);
+			toast.error('An unexpected error occurred. Please try again');
+		} finally {
+			setIsLoading(false);
+		}
 	}
 
 	/**
@@ -122,6 +206,7 @@ export function BuyButton({
 			const orderResult = await createOrder({
 				raffleId,
 				ticketQuantity,
+				...(promoCode && { promoCode }),
 			});
 
 			if (!orderResult.success) {
@@ -160,6 +245,10 @@ export function BuyButton({
 	function getButtonText() {
 		if (isLoading) {
 			return 'Processing...';
+		}
+
+		if (isFreeTickets) {
+			return `Claim free ticket${ticketQuantity > 1 ? 's' : ''}`;
 		}
 
 		return `Buy ticket${ticketQuantity > 1 ? 's' : ''}`;

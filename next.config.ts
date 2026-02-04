@@ -27,6 +27,21 @@ const nextConfig: NextConfig = {
 		remotePatterns: remotePatterns,
 	},
 	cacheComponents: true,
+	async headers() {
+		return [
+			{
+				// Apply to all routes
+				source: '/:path*',
+				headers: [
+					{
+						// Prevent leaking URLs with sensitive params (promo codes) via Referer
+						key: 'Referrer-Policy',
+						value: 'strict-origin-when-cross-origin',
+					},
+				],
+			},
+		];
+	},
 };
 
 export default nextConfig;

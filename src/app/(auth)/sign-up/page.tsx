@@ -1,4 +1,4 @@
-import { ComponentProps } from 'react';
+import { ComponentProps, Suspense } from 'react';
 
 import { SignUpForm } from './sign-up-form';
 
@@ -6,6 +6,7 @@ import { SignUpForm } from './sign-up-form';
  * Sign Up Page
  *
  * Displays the sign-up form with support for email/password and Google OAuth.
+ * Form wrapped in Suspense for useSearchParams() compatibility with static generation.
  */
 export default function SignUpPage() {
 	return (
@@ -23,7 +24,9 @@ export default function SignUpPage() {
 			</div>
 			<div className="z-1 flex flex-col p-6 md:p-10">
 				<div className="flex flex-1 items-center justify-center">
-					<SignUpForm />
+					<Suspense>
+						<SignUpForm />
+					</Suspense>
 				</div>
 			</div>
 		</div>

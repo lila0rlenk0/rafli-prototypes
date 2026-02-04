@@ -1,0 +1,41 @@
+'use server';
+
+import { ZodError } from 'zod';
+
+import { baseClient } from '@/lib/api/client';
+import { failure, success } from '@/lib/errors';
+import { mapPromoCodeError } from '@/lib/errors';
+import { PROMO_CODE_ERROR_CODES, type PromoCodeErrorCode } from '@/types/errors';
+import {
+	type ValidatePromoCodeResponse,
+	validatePromoCodeResponseSchema,
+} from '@/types/promo-code';
+import type { ServiceResponse } from '@/types/service-response';
+
+/**
+ * Validates a promo code for a specific raffle
+ *
+ * @param raffleId - The raffle ID to validate the code for
+ * @param code - The promo code string to validate
+ * @returns ServiceResponse with validation result or error code
+ */
+export async function validatePromoCode(
+	raffleId: string,
+	code: string,
+): Promise<ServiceResponse<ValidatePromoCodeResponse, PromoCodeErrorCode>> {
+	try {
+		const response = await baseClient.post('/promo-codes/validate', {
+			raffleId,
+			code: code.trim().toUpperCase(),
+		});
+
+		const validated = validatePromoCodeResponseSchema.parse(response.data);
+		return success(validated);
+	} catch (error) {
+		if (error instanceof ZodError) {
+			console.error('Promo code validation response parse error:', error);
+			return failure(PROMO_CODE_ERROR_CODES.FETCH_FAILED);
+		}
+		return failure(mapPromoCodeError(error));
+	}
+}

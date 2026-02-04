@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/utils';
+import { validateReturnTo } from '@/lib/utils/validate-return-to';
 import { signInUser } from '@/services/auth/sign-in-user';
 import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import {
@@ -90,12 +91,12 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	const searchParams = useSearchParams();
 
 	/**
-	 * Gets the returnTo URL from search params
-	 * Called at action time to ensure we get the latest value after hydration
-	 * @returns The returnTo URL or default /browse
+	 * Gets validated returnTo URL from search params
+	 * Prevents open redirect attacks by validating the path
+	 * @returns Safe returnTo URL or default /browse
 	 */
 	function getReturnTo(): string {
-		return searchParams.get('returnTo') || '/browse';
+		return validateReturnTo(searchParams.get('returnTo'));
 	}
 
 	/**
@@ -233,7 +234,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 					</div>
 					<FieldDescription className="text-center">
 						Don&apos;t have an account?{' '}
-						<Link href="/sign-up" className="text-black">
+						<Link href={`/sign-up?returnTo=${encodeURIComponent(getReturnTo())}`} className="text-black">
 							Sign up
 						</Link>
 					</FieldDescription>

@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { browserClient } from '@/lib/api/client-browser';
 import { setAuthCookiesClient } from '@/lib/auth/session-client';
+import { validateReturnTo } from '@/lib/utils/validate-return-to';
 import { AxiosError } from 'axios';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -62,8 +63,8 @@ export function CallbackHandler() {
 					return;
 				}
 
-				// Step 4: Redirect to returnTo or default to browse
-				const returnTo = searchParams.get('returnTo') || '/browse';
+				// Step 4: Redirect to validated returnTo or default to browse
+				const returnTo = validateReturnTo(searchParams.get('returnTo'));
 				router.push(returnTo);
 				router.refresh();
 			} catch (err) {

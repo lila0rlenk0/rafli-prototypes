@@ -6,6 +6,7 @@ import {
 	type HostErrorCode,
 	type OrderErrorCode,
 	type PaymentErrorCode,
+	type PromoCodeErrorCode,
 	type RaffleErrorCode,
 	type ReviewErrorCode,
 	type TicketErrorCode,
@@ -534,6 +535,38 @@ export function mapReviewError(error: unknown): ReviewErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as ReviewErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps promo code errors to PromoCodeErrorCode
+ *
+ * Accepts `core:promo:*`, `core:raffle:*`, and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns PromoCodeErrorCode (either backend code or frontend fallback)
+ */
+export function mapPromoCodeError(error: unknown): PromoCodeErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "core:promo:not-found", "core:raffle:not-found", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('core:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as PromoCodeErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
+			return mappedCode as PromoCodeErrorCode;
 		}
 	}
 

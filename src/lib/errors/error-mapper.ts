@@ -4,6 +4,7 @@ import {
 	type AuthErrorCode,
 	COMMON_ERROR_CODES,
 	type HostErrorCode,
+	type NotificationErrorCode,
 	type OrderErrorCode,
 	type PaymentErrorCode,
 	type RaffleErrorCode,
@@ -502,6 +503,38 @@ export function mapVerificationError(error: unknown): VerificationErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as VerificationErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps notification errors to NotificationErrorCode
+ *
+ * Accepts `core:notification:*` and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns NotificationErrorCode (either backend code or frontend fallback)
+ */
+export function mapNotificationError(error: unknown): NotificationErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "core:notification:not-found", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('core:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as NotificationErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
+			return mappedCode as NotificationErrorCode;
 		}
 	}
 

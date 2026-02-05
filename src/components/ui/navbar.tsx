@@ -1,8 +1,10 @@
-import { Logo } from '@/assets/logo';
-import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
 import { User } from 'lucide-react';
 import Link from 'next/link';
 import { ReactNode } from 'react';
+
+import { Logo } from '@/assets/logo';
+import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 
 interface NavbarProps {
 	children: ReactNode;
@@ -29,6 +31,8 @@ export function Navbar({ children }: NavbarProps) {
 				</div>
 				<div className="flex items-center gap-8">
 					<ModeSwitchButton />
+
+					<NotificationBell />
 
 					<Link href="/profile">
 						<User className="size-5" />

@@ -69,7 +69,7 @@ export function HostSection() {
 							<Button
 								asChild
 								variant="outline"
-								className="hover:text-background h-[60px] w-[238px] border-2 border-black text-lg text-black/95 hover:bg-black"
+								className="hover:text-background h-[60px] w-full border-2 border-black text-lg text-black/95 hover:bg-black sm:w-[238px]"
 							>
 								<Link href="/sign-up">Become a host</Link>
 							</Button>

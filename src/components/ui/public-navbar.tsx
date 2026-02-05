@@ -26,25 +26,31 @@ interface PublicNavbarProps {
 export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 	return (
 		<div className="z-10 mx-auto flex w-full max-w-[1300px] flex-col">
-			<div className="z-10 flex h-16 items-center justify-between px-6">
-				<div className="flex items-center gap-8">
+			<div className="z-10 flex h-14 items-center justify-between px-4 sm:h-16 sm:px-6">
+				<div className="flex items-center gap-3 sm:gap-8">
 					<Link href="/browse">
-						<Logo />
+						<Logo className="h-5 w-auto sm:h-6" />
 					</Link>
 
-					<div className="h-8 w-px bg-[#E6E8EC]" />
+					<div className="hidden h-8 w-px bg-[#E6E8EC] sm:block" />
 
-					<Link href="/browse" className="text-sm font-semibold">
+					<Link
+						href="/browse"
+						className="hidden text-sm font-semibold sm:block"
+					>
 						Browse
 					</Link>
 
 					{isAuthenticated && (
-						<Link href="/my-raffles" className="text-sm font-semibold">
+						<Link
+							href="/my-raffles"
+							className="hidden text-sm font-semibold sm:block"
+						>
 							My Raffles
 						</Link>
 					)}
 				</div>
-				<div className="flex items-center gap-8">
+				<div className="flex items-center gap-3 sm:gap-8">
 					{isAuthenticated ? (
 						<>
 							<ModeSwitchButton />
@@ -56,14 +62,16 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 							</Link>
 						</>
 					) : (
-						<Button asChild className="h-10 px-6">
+						<Button asChild className="h-9 px-4 text-sm sm:h-10 sm:px-6">
 							<Link href="/sign-in">Sign In</Link>
 						</Button>
 					)}
 				</div>
 			</div>
 
-			<div className="mt-10 max-w-[1400px] overflow-auto pb-10">{children}</div>
+			<div className="mt-6 max-w-[1400px] overflow-auto px-4 pb-10 sm:mt-10 sm:px-0">
+				{children}
+			</div>
 		</div>
 	);
 }

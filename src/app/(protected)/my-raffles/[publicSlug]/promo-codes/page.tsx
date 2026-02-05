@@ -93,6 +93,7 @@ export default async function PromoCodesPage({ params }: PageProps) {
 				raffleId={raffle.id}
 				publicSlug={publicSlug}
 				isReadOnly={isReadOnly}
+				allowFreeTickets={!!raffle.questionId}
 			/>
 		</div>
 	);

@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, Copy, Download, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -86,6 +86,7 @@ interface CreatePromoCodeModalProps {
 		expiresAt?: string;
 	}) => Promise<BulkCreatePromoCodesResponse | null>;
 	onExportBatch?: (bulkId: string) => void;
+	allowFreeTickets: boolean;
 }
 
 /**
@@ -96,6 +97,7 @@ export function CreatePromoCodeModal({
 	onClose,
 	onCreate,
 	onExportBatch,
+	allowFreeTickets,
 }: CreatePromoCodeModalProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [createdCodes, setCreatedCodes] = useState<{
@@ -109,7 +111,9 @@ export function CreatePromoCodeModal({
 		resolver: zodResolver(createPromoCodeFormSchema),
 		defaultValues: {
 			count: 1,
-			type: PROMO_CODE_TYPE.FREE_TICKETS,
+			type: allowFreeTickets
+				? PROMO_CODE_TYPE.FREE_TICKETS
+				: PROMO_CODE_TYPE.DISCOUNT_FIXED,
 			value: 1,
 			maxUses: 1,
 			noExpiration: true,
@@ -119,6 +123,12 @@ export function CreatePromoCodeModal({
 
 	const watchType = form.watch('type');
 	const watchNoExpiration = form.watch('noExpiration');
+
+	useEffect(() => {
+		if (!allowFreeTickets && watchType === PROMO_CODE_TYPE.FREE_TICKETS) {
+			form.setValue('type', PROMO_CODE_TYPE.DISCOUNT_FIXED);
+		}
+	}, [allowFreeTickets, watchType, form]);
 
 	/**
 	 * Returns label for value input based on type
@@ -167,7 +177,7 @@ export function CreatePromoCodeModal({
 				expiresAt:
 					data.noExpiration || !data.expiresAt
 						? undefined
-						: new Date(data.expiresAt).toISOString(),
+						: toLocalEndOfDayIso(data.expiresAt),
 			});
 
 			if (result) {
@@ -177,6 +187,15 @@ export function CreatePromoCodeModal({
 		} finally {
 			setIsSubmitting(false);
 		}
+	}
+
+	/**
+	 * Converts YYYY-MM-DD to local end-of-day ISO string
+	 */
+	function toLocalEndOfDayIso(dateString: string): string {
+		const [year, month, day] = dateString.split('-').map(Number);
+		const localEndOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
+		return localEndOfDay.toISOString();
 	}
 
 	/**
@@ -366,8 +385,15 @@ export function CreatePromoCodeModal({
 								<RadioGroupItem
 									value={PROMO_CODE_TYPE.FREE_TICKETS}
 									id="free_tickets"
+									disabled={!allowFreeTickets}
 								/>
-								<Label htmlFor="free_tickets" className="cursor-pointer">
+								<Label
+									htmlFor="free_tickets"
+									className={cn(
+										'cursor-pointer',
+										!allowFreeTickets && 'text-gray-400',
+									)}
+								>
 									Free Tickets
 								</Label>
 							</div>
@@ -390,6 +416,11 @@ export function CreatePromoCodeModal({
 								</Label>
 							</div>
 						</RadioGroup>
+						{!allowFreeTickets && (
+							<p className="text-xs text-gray-500">
+								Free tickets require a raffle question.
+							</p>
+						)}
 					</div>
 
 					{/* Value Input */}

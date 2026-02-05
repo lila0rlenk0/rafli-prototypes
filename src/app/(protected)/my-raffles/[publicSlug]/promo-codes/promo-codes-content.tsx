@@ -32,6 +32,7 @@ interface PromoCodesContentProps {
 	raffleId: string;
 	publicSlug: string;
 	isReadOnly: boolean;
+	allowFreeTickets: boolean;
 }
 
 /**
@@ -42,6 +43,7 @@ export function PromoCodesContent({
 	raffleId,
 	publicSlug,
 	isReadOnly,
+	allowFreeTickets,
 }: PromoCodesContentProps) {
 	const [codes, setCodes] = useState<PromoCode[]>([]);
 	const [total, setTotal] = useState(0);
@@ -294,6 +296,7 @@ export function PromoCodesContent({
 				onClose={() => setIsCreateModalOpen(false)}
 				onCreate={handleCreate}
 				onExportBatch={handleExportBatch}
+				allowFreeTickets={allowFreeTickets}
 			/>
 
 			<ExportPromoCodesModal

@@ -289,78 +289,90 @@ export function BuyButton({
 		setIsLoading(true);
 
 		try {
-			// Step 1: Re-validate promo just before checkout to avoid stale codes
-			if (promoCode && !isFreeTickets) {
-				const validationResult = await validatePromoCode(raffleId, promoCode);
-				if (!validationResult.success) {
-					const message = getPromoErrorMessage(validationResult.error);
-					toast.error(message);
-					if (shouldClearPromo(validationResult.error)) {
-						onPromoInvalid?.();
-					}
-					return;
-				}
-			}
-
-			// Step 2: Reuse existing pending order if possible
+			// Step 1: Reuse existing pending order if possible
 			let order = await getReusablePendingOrder(promoCode);
-			if (!order) {
-				const orderResult = await createOrder({
-					raffleId,
-					ticketQuantity,
-				});
 
-				if (!orderResult.success) {
-					const message = getOrderErrorMessage(orderResult.error);
-					toast.error(message);
-					return;
-				}
+			const promoAlreadyApplied =
+				promoCode && !isFreeTickets && order?.promoCode === promoCode;
 
-				order = orderResult.data;
-			}
-
-			// Step 3: Apply discount promo to pending order (free tickets handled separately)
-			if (promoCode && !isFreeTickets) {
-				if (order.promoCode && order.promoCode !== promoCode) {
-					toast.error(
-						'A different promo code is already applied to this order',
-					);
-					onPromoInvalid?.();
-					return;
-				}
-
-				if (order.promoCode !== promoCode) {
-					const redeemResult = await redeemPromoCode({
-						code: promoCode,
-						raffleId,
-						orderId: order.id,
-					});
-
-					if (!redeemResult.success) {
-						const message = getPromoErrorMessage(redeemResult.error);
+			if (!promoAlreadyApplied) {
+				// Step 2: Re-validate promo just before checkout to avoid stale codes
+				if (promoCode && !isFreeTickets) {
+					const validationResult = await validatePromoCode(raffleId, promoCode);
+					if (!validationResult.success) {
+						const message = getPromoErrorMessage(validationResult.error);
 						toast.error(message);
-						if (shouldClearPromo(redeemResult.error)) {
+						if (shouldClearPromo(validationResult.error)) {
 							onPromoInvalid?.();
 						}
 						return;
 					}
+				}
 
-					const discountAmount = parseFloat(
-						redeemResult.data.discountAmount ?? '0',
-					);
-					const orderTotal = parseFloat(order.totalAmount);
-					const remainingTotal = Math.max(0, orderTotal - discountAmount);
+				// Step 3: Create order if none exists
+				if (!order) {
+					const orderResult = await createOrder({
+						raffleId,
+						ticketQuantity,
+					});
 
-					// Backend auto-completes $0 orders after promo redemption
-					if (remainingTotal === 0) {
-						toast.success('Promo applied. Tickets claimed successfully!');
-						router.refresh();
+					if (!orderResult.success) {
+						const message = getOrderErrorMessage(orderResult.error);
+						toast.error(message);
 						return;
+					}
+
+					order = orderResult.data;
+				}
+
+				// Step 4: Apply discount promo to pending order (free tickets handled separately)
+				if (promoCode && !isFreeTickets) {
+					if (order.promoCode && order.promoCode !== promoCode) {
+						toast.error(
+							'A different promo code is already applied to this order',
+						);
+						onPromoInvalid?.();
+						return;
+					}
+
+					if (order.promoCode !== promoCode) {
+						const redeemResult = await redeemPromoCode({
+							code: promoCode,
+							raffleId,
+							orderId: order.id,
+						});
+
+						if (!redeemResult.success) {
+							const message = getPromoErrorMessage(redeemResult.error);
+							toast.error(message);
+							if (shouldClearPromo(redeemResult.error)) {
+								onPromoInvalid?.();
+							}
+							return;
+						}
+
+						const discountAmount = parseFloat(
+							redeemResult.data.discountAmount ?? '0',
+						);
+						const orderTotal = parseFloat(order.totalAmount);
+						const remainingTotal = Math.max(0, orderTotal - discountAmount);
+
+						// Backend auto-completes $0 orders after promo redemption
+						if (remainingTotal === 0) {
+							toast.success('Promo applied. Tickets claimed successfully!');
+							router.refresh();
+							return;
+						}
 					}
 				}
 			}
 
-			// Step 4: Create checkout session
+			if (!order) {
+				toast.error('Failed to create order. Please try again');
+				return;
+			}
+
+			// Step 5: Create checkout session
 			const checkoutResult = await createCheckoutSession({
 				orderId: order.id,
 				raffleId,
@@ -375,7 +387,7 @@ export function BuyButton({
 
 			const session = checkoutResult.data;
 
-			// Step 5: Redirect to Stripe checkout
+			// Step 6: Redirect to Stripe checkout
 			window.location.href = session.checkoutUrl;
 		} catch (error) {
 			console.error('Unexpected error during checkout:', error);

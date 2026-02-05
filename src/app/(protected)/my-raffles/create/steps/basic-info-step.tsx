@@ -19,8 +19,12 @@ import { useMultiStepForm } from '../multi-step-form-provider';
 import { MAX_FILE_SIZE } from '../schema';
 
 export function BasicInfoStep() {
-	const { form, currentStep: stepIndex, nextStep, categories } =
-		useMultiStepForm();
+	const {
+		form,
+		currentStep: stepIndex,
+		nextStep,
+		categories,
+	} = useMultiStepForm();
 	const {
 		register,
 		formState: { errors, touchedFields },

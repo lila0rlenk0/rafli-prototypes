@@ -94,22 +94,28 @@ export function WinnerLookup() {
 			{!result ? (
 				<form onSubmit={handleLookup} className="space-y-4">
 					<div>
-						<label htmlFor="raffleId" className="mb-1 block text-sm font-medium text-neutral-700">
+						<label
+							htmlFor="raffleId"
+							className="mb-1 block text-sm font-medium text-neutral-700"
+						>
 							Raffle ID
 						</label>
 						<input
 							id="raffleId"
 							type="text"
 							value={raffleId}
-							onChange={(e) => setRaffleId(e.target.value)}
+							onChange={e => setRaffleId(e.target.value)}
 							placeholder="e.g., raffle_abc123"
-							className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
 
 					<div>
-						<label htmlFor="position" className="mb-1 block text-sm font-medium text-neutral-700">
+						<label
+							htmlFor="position"
+							className="mb-1 block text-sm font-medium text-neutral-700"
+						>
 							Winner Position
 						</label>
 						<input
@@ -117,9 +123,9 @@ export function WinnerLookup() {
 							type="number"
 							min="1"
 							value={position}
-							onChange={(e) => setPosition(e.target.value)}
+							onChange={e => setPosition(e.target.value)}
 							placeholder="e.g., 1"
-							className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-colors focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
@@ -148,7 +154,11 @@ export function WinnerLookup() {
 					</button>
 				</form>
 			) : result.type === 'success' ? (
-				<WinnerSuccess data={result.data} raffleId={raffleId} onReset={handleReset} />
+				<WinnerSuccess
+					data={result.data}
+					raffleId={raffleId}
+					onReset={handleReset}
+				/>
 			) : (
 				<LookupError message={result.message} onReset={handleReset} />
 			)}
@@ -187,8 +197,17 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 				<WinnerRow
 					label="Merkle Verified"
 					value={
-						<span className={cn('flex items-center gap-1', data.merkleVerified ? 'text-green-600' : 'text-red-600')}>
-							{data.merkleVerified ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
+						<span
+							className={cn(
+								'flex items-center gap-1',
+								data.merkleVerified ? 'text-green-600' : 'text-red-600',
+							)}
+						>
+							{data.merkleVerified ? (
+								<CheckCircle2 className="size-4" />
+							) : (
+								<XCircle className="size-4" />
+							)}
 							{data.merkleVerified ? 'Yes' : 'No'}
 						</span>
 					}
@@ -196,13 +215,22 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 				<WinnerRow
 					label="Computed vs Actual"
 					value={
-						<span className={cn('flex items-center gap-1', data.computedTicketId === data.actualTicketId ? 'text-green-600' : 'text-red-600')}>
+						<span
+							className={cn(
+								'flex items-center gap-1',
+								data.computedTicketId === data.actualTicketId
+									? 'text-green-600'
+									: 'text-red-600',
+							)}
+						>
 							{data.computedTicketId === data.actualTicketId ? (
 								<CheckCircle2 className="size-4" />
 							) : (
 								<XCircle className="size-4" />
 							)}
-							{data.computedTicketId === data.actualTicketId ? 'Match' : 'Mismatch'}
+							{data.computedTicketId === data.actualTicketId
+								? 'Match'
+								: 'Mismatch'}
 						</span>
 					}
 				/>
@@ -214,7 +242,10 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 					<CopyButton value={data.randomNumber} />
 				</div>
 				<div className="rounded bg-neutral-100 px-2 py-1.5">
-					<code className="block font-mono text-[11px] break-all" title={data.randomNumber}>
+					<code
+						className="block font-mono text-[11px] break-all"
+						title={data.randomNumber}
+					>
 						{truncateHex(data.randomNumber)}
 					</code>
 				</div>

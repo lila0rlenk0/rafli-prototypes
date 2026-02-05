@@ -17,7 +17,11 @@ interface CopyButtonProps {
  * Small button to copy a value to clipboard.
  * Shows checkmark for 2s after successful copy.
  */
-export function CopyButton({ value, className, size = 'default' }: CopyButtonProps) {
+export function CopyButton({
+	value,
+	className,
+	size = 'default',
+}: CopyButtonProps) {
 	const [copied, setCopied] = useState(false);
 
 	/**

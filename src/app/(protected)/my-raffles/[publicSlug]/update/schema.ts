@@ -6,10 +6,7 @@ const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 const fileSchema = z
 	.instanceof(File)
-	.refine(
-		file => file.size <= MAX_FILE_SIZE,
-		'File size must be less than 5MB',
-	)
+	.refine(file => file.size <= MAX_FILE_SIZE, 'File size must be less than 5MB')
 	.refine(
 		file => ACCEPTED_IMAGE_TYPES.includes(file.type),
 		'Only PNG, JPEG, and WebP files are accepted',

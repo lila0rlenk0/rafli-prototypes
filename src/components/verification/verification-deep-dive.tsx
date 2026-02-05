@@ -32,7 +32,10 @@ import {
 	getVrfContractUrl,
 } from '@/lib/verification-links';
 import { getRaffleVerification } from '@/services/verification/get-raffle-verification';
-import type { RaffleVerificationData, WinnerVerification } from '@/types/verification';
+import type {
+	RaffleVerificationData,
+	WinnerVerification,
+} from '@/types/verification';
 
 interface VerificationDeepDiveProps {
 	raffleId: string;
@@ -80,7 +83,9 @@ export function VerificationDeepDive({ raffleId }: VerificationDeepDiveProps) {
 		return (
 			<div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
 				<AlertCircle className="mx-auto mb-2 size-8 text-red-600" />
-				<p className="text-red-600">{error || 'Verification data not available'}</p>
+				<p className="text-red-600">
+					{error || 'Verification data not available'}
+				</p>
 				<Link
 					href="/verify"
 					className="mt-4 inline-block text-sm text-red-700 underline hover:no-underline"
@@ -109,7 +114,7 @@ interface RaffleHeaderProps {
  * Header with raffle title and summary
  */
 function RaffleHeader({ data }: RaffleHeaderProps) {
-	const allVerified = data.winners.every((w) => w.merkleVerified);
+	const allVerified = data.winners.every(w => w.merkleVerified);
 
 	return (
 		<div className="rounded-2xl border border-black bg-white p-6">
@@ -117,13 +122,16 @@ function RaffleHeader({ data }: RaffleHeaderProps) {
 				<div>
 					<h2 className="text-xl font-semibold">{data.title}</h2>
 					<p className="mt-1 text-sm text-neutral-500">
-						{data.totalTickets.toLocaleString()} tickets &middot; {data.winners.length} winner{data.winners.length !== 1 ? 's' : ''}
+						{data.totalTickets.toLocaleString()} tickets &middot;{' '}
+						{data.winners.length} winner{data.winners.length !== 1 ? 's' : ''}
 					</p>
 				</div>
 				<div
 					className={cn(
 						'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium',
-						allVerified ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600',
+						allVerified
+							? 'bg-green-50 text-green-600'
+							: 'bg-yellow-50 text-yellow-600',
 					)}
 				>
 					{allVerified ? (
@@ -190,7 +198,11 @@ function BlockchainProofs({ data }: BlockchainProofsProps) {
 					label="VRF Fulfill Transaction"
 					description="Random number delivery proof"
 					hash={data.vrfFulfillTxHash}
-					url={data.vrfFulfillTxHash ? getArbiscanTxUrl(data.vrfFulfillTxHash) : null}
+					url={
+						data.vrfFulfillTxHash
+							? getArbiscanTxUrl(data.vrfFulfillTxHash)
+							: null
+					}
 					truncateHex={truncateHex}
 				/>
 
@@ -201,7 +213,9 @@ function BlockchainProofs({ data }: BlockchainProofsProps) {
 					</div>
 					{data.vrfRequestId ? (
 						<div className="flex items-center gap-2">
-							<code className="font-mono text-xs text-neutral-600">{data.vrfRequestId}</code>
+							<code className="font-mono text-xs text-neutral-600">
+								{data.vrfRequestId}
+							</code>
 							<CopyButton value={data.vrfRequestId} />
 						</div>
 					) : (
@@ -235,7 +249,14 @@ interface ProofLinkProps {
 /**
  * Single proof link row
  */
-function ProofLink({ icon, label, description, hash, url, truncateHex }: ProofLinkProps) {
+function ProofLink({
+	icon,
+	label,
+	description,
+	hash,
+	url,
+	truncateHex,
+}: ProofLinkProps) {
 	if (!hash) {
 		return (
 			<div className="flex items-center justify-between py-2">
@@ -261,7 +282,10 @@ function ProofLink({ icon, label, description, hash, url, truncateHex }: ProofLi
 				</div>
 			</div>
 			<div className="flex items-center gap-2">
-				<code className="rounded bg-neutral-100 px-2 py-1 font-mono text-xs" title={hash}>
+				<code
+					className="rounded bg-neutral-100 px-2 py-1 font-mono text-xs"
+					title={hash}
+				>
 					{truncateHex(hash)}
 				</code>
 				<CopyButton value={hash} />
@@ -304,13 +328,17 @@ function WinnersList({ winners, totalTickets }: WinnersListProps) {
 			<h3 className="mb-4 text-lg font-semibold">Winner Verification</h3>
 
 			<div className="space-y-3">
-				{winners.map((winner) => (
+				{winners.map(winner => (
 					<WinnerCard
 						key={winner.position}
 						winner={winner}
 						totalTickets={totalTickets}
 						isExpanded={expandedWinner === winner.position}
-						onToggle={() => setExpandedWinner(expandedWinner === winner.position ? null : winner.position)}
+						onToggle={() =>
+							setExpandedWinner(
+								expandedWinner === winner.position ? null : winner.position,
+							)
+						}
 					/>
 				))}
 			</div>
@@ -328,7 +356,12 @@ interface WinnerCardProps {
 /**
  * Individual winner verification card
  */
-function WinnerCard({ winner, totalTickets, isExpanded, onToggle }: WinnerCardProps) {
+function WinnerCard({
+	winner,
+	totalTickets,
+	isExpanded,
+	onToggle,
+}: WinnerCardProps) {
 	/**
 	 * Truncates a hex string for display
 	 */
@@ -392,15 +425,26 @@ function WinnerCard({ winner, totalTickets, isExpanded, onToggle }: WinnerCardPr
 						transition={{ duration: 0.2 }}
 						className="overflow-hidden"
 					>
-						<div className="border-t p-4 space-y-4">
+						<div className="space-y-4 border-t p-4">
 							<div className="grid gap-3 sm:grid-cols-2">
 								<div>
-									<div className="mb-1 text-xs text-neutral-500">Actual Ticket</div>
-									<div className="font-mono text-sm">#{winner.actualTicketId}</div>
+									<div className="mb-1 text-xs text-neutral-500">
+										Actual Ticket
+									</div>
+									<div className="font-mono text-sm">
+										#{winner.actualTicketId}
+									</div>
 								</div>
 								<div>
-									<div className="mb-1 text-xs text-neutral-500">Computed Ticket</div>
-									<div className={cn('font-mono text-sm', isMatch ? 'text-green-600' : 'text-red-600')}>
+									<div className="mb-1 text-xs text-neutral-500">
+										Computed Ticket
+									</div>
+									<div
+										className={cn(
+											'font-mono text-sm',
+											isMatch ? 'text-green-600' : 'text-red-600',
+										)}
+									>
 										#{winner.computedTicketId}
 										{isMatch ? ' (Match)' : ' (Mismatch!)'}
 									</div>
@@ -409,18 +453,25 @@ function WinnerCard({ winner, totalTickets, isExpanded, onToggle }: WinnerCardPr
 
 							<div className="space-y-1">
 								<div className="flex items-center justify-between">
-									<span className="text-xs text-neutral-500">Random Number</span>
+									<span className="text-xs text-neutral-500">
+										Random Number
+									</span>
 									<CopyButton value={winner.randomNumber} />
 								</div>
 								<div className="rounded bg-white px-2 py-1.5">
-									<code className="block font-mono text-[11px] break-all" title={winner.randomNumber}>
+									<code
+										className="block font-mono text-[11px] break-all"
+										title={winner.randomNumber}
+									>
 										{truncateHex(winner.randomNumber)}
 									</code>
 								</div>
 							</div>
 
 							<div className="space-y-1">
-								<span className="text-xs text-neutral-500">Selection Formula</span>
+								<span className="text-xs text-neutral-500">
+									Selection Formula
+								</span>
 								<div className="rounded bg-white px-2 py-1.5">
 									<code className="block font-mono text-[11px] break-all">
 										{winner.formula}
@@ -429,8 +480,9 @@ function WinnerCard({ winner, totalTickets, isExpanded, onToggle }: WinnerCardPr
 							</div>
 
 							<div className="rounded bg-blue-50 p-3 text-xs text-blue-700">
-								<strong>How to verify:</strong> Take the random number, apply modulo {totalTickets.toLocaleString()}, add 1.
-								The result should equal #{winner.computedTicketId}.
+								<strong>How to verify:</strong> Take the random number, apply
+								modulo {totalTickets.toLocaleString()}, add 1. The result should
+								equal #{winner.computedTicketId}.
 							</div>
 						</div>
 					</motion.div>
@@ -453,23 +505,34 @@ const winningIndex = Number(randomNumber % totalTickets);
 const winningTicketId = winningIndex + 1;`;
 
 	return (
-		<Accordion type="single" collapsible className="rounded-2xl border border-black bg-white">
+		<Accordion
+			type="single"
+			collapsible
+			className="rounded-2xl border border-black bg-white"
+		>
 			<AccordionItem value="notes" className="border-none">
 				<AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline">
 					Technical Notes
 				</AccordionTrigger>
-				<AccordionContent className="px-6 pb-6 space-y-4">
+				<AccordionContent className="space-y-4 px-6 pb-6">
 					<p className="text-sm text-neutral-600">
-						The winner selection uses a deterministic formula that anyone can verify:
+						The winner selection uses a deterministic formula that anyone can
+						verify:
 					</p>
 
 					<CodeSnippet code={FORMULA_CODE} language="typescript" />
 
 					<ul className="list-inside list-disc space-y-1 text-sm text-neutral-600">
-						<li>Random number comes from Chainlink VRF on Arbitrum blockchain</li>
-						<li>Ticket data is committed to IPFS before random number generation</li>
+						<li>
+							Random number comes from Chainlink VRF on Arbitrum blockchain
+						</li>
+						<li>
+							Ticket data is committed to IPFS before random number generation
+						</li>
 						<li>Merkle tree verifies each ticket was in the committed set</li>
-						<li>All proofs are publicly viewable and independently verifiable</li>
+						<li>
+							All proofs are publicly viewable and independently verifiable
+						</li>
 					</ul>
 
 					<Link

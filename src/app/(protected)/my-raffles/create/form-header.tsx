@@ -13,8 +13,13 @@ import { useMultiStepForm } from './multi-step-form-provider';
  */
 export function FormHeader() {
 	const router = useRouter();
-	const { currentStep, totalSteps, previousStep, hasUnsavedChanges, setShowExitModal } =
-		useMultiStepForm();
+	const {
+		currentStep,
+		totalSteps,
+		previousStep,
+		hasUnsavedChanges,
+		setShowExitModal,
+	} = useMultiStepForm();
 
 	const progress = ((currentStep + 1) / totalSteps) * 100;
 

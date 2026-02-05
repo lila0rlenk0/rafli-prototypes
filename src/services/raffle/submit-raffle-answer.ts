@@ -14,7 +14,10 @@ import { ZodError } from 'zod';
 /**
  * Response type for submitting a raffle answer
  */
-type SubmitRaffleAnswerResponse = ServiceResponse<AnswerResponse, RaffleErrorCode>;
+type SubmitRaffleAnswerResponse = ServiceResponse<
+	AnswerResponse,
+	RaffleErrorCode
+>;
 
 /**
  * Submits an answer to a raffle question

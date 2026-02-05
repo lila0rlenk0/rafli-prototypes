@@ -8,8 +8,14 @@ import Image from 'next/image';
 import { useMultiStepForm } from '../multi-step-form-provider';
 
 export function ReviewStep() {
-	const { form, isCreating, isRaffleCreated, userName, totalRaffles, categories } =
-		useMultiStepForm();
+	const {
+		form,
+		isCreating,
+		isRaffleCreated,
+		userName,
+		totalRaffles,
+		categories,
+	} = useMultiStepForm();
 
 	const formValues = form.watch();
 	const {

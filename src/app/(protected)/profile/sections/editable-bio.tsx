@@ -146,10 +146,7 @@ export function EditableBio({ bio }: EditableBioProps) {
 	return (
 		<div className="relative flex flex-col gap-1">
 			<span className="text-sm">Bio</span>
-			<span
-				data-bio={!!bio}
-				className="data-[bio=false]:text-muted-foreground"
-			>
+			<span data-bio={!!bio} className="data-[bio=false]:text-muted-foreground">
 				{bio ? bio : 'No bio yet'}
 			</span>
 			<div className="absolute top-0 right-0">

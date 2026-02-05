@@ -78,9 +78,7 @@ export function WinnersTable({ winners: initialWinners }: WinnersTableProps) {
 							<td className="px-6 py-4">
 								{formatDisplayName(winner.userName, winner.position)}
 							</td>
-							<td className="px-6 py-4 text-gray-500">
-								{getLocation(winner)}
-							</td>
+							<td className="px-6 py-4 text-gray-500">{getLocation(winner)}</td>
 							<td className="px-6 py-4">
 								<WinningStatusBadge status={winner.status} />
 							</td>

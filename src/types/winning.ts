@@ -18,7 +18,8 @@ export const WINNING_STATUS = {
 // Types from Constants
 // ==========================================
 
-export type WinningStatus = (typeof WINNING_STATUS)[keyof typeof WINNING_STATUS];
+export type WinningStatus =
+	(typeof WINNING_STATUS)[keyof typeof WINNING_STATUS];
 
 // ==========================================
 // Schemas

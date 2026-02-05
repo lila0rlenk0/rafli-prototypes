@@ -111,7 +111,14 @@ export function InsertTableDialog({
 	const isDisabled = useMemo(() => {
 		const row = Number(rows);
 		const column = Number(columns);
-		return !(row && row > 0 && row <= 500 && column && column > 0 && column <= 50);
+		return !(
+			row &&
+			row > 0 &&
+			row <= 500 &&
+			column &&
+			column > 0 &&
+			column <= 50
+		);
 	}, [rows, columns]);
 
 	const onClick = () => {

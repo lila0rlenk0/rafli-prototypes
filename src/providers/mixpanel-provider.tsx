@@ -56,7 +56,7 @@ export function MixpanelProvider({ children }: MixpanelProviderProps) {
 		if (!initialized.current || typeof window === 'undefined') return;
 
 		const currentPathname = window.location.pathname;
-		
+
 		// Skip if pathname hasn't changed (prevents unnecessary re-runs)
 		if (lastPathnameRef.current === currentPathname) return;
 		lastPathnameRef.current = currentPathname;

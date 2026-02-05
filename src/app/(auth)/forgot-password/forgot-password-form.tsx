@@ -49,7 +49,10 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
  * Displays email input to request password reset.
  * Shows success message after submission.
  */
-export function ForgotPasswordForm({ className, ...props }: ComponentProps<'form'>) {
+export function ForgotPasswordForm({
+	className,
+	...props
+}: ComponentProps<'form'>) {
 	const {
 		register,
 		handleSubmit,

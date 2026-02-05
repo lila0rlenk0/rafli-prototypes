@@ -49,7 +49,7 @@ export function ProtocolDiagram() {
 		<div ref={ref} className="py-8">
 			<div className="relative flex items-center justify-between">
 				{/* Connecting line */}
-				<div className="absolute left-0 top-1/2 h-1 w-full -translate-y-1/2 bg-neutral-200">
+				<div className="absolute top-1/2 left-0 h-1 w-full -translate-y-1/2 bg-neutral-200">
 					<motion.div
 						initial={{ width: 0 }}
 						animate={isInView ? { width: '100%' } : { width: 0 }}
@@ -101,8 +101,18 @@ export function ProtocolDiagram() {
 				className="mt-6 flex items-center justify-center gap-2 text-xs text-neutral-400"
 			>
 				<span>Time</span>
-				<svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+				<svg
+					className="size-4"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d="M17 8l4 4m0 0l-4 4m4-4H3"
+					/>
 				</svg>
 			</motion.div>
 		</div>

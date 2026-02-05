@@ -9,7 +9,10 @@ import { cn } from '@/lib/utils';
  * Password input with visibility toggle
  * Extends standard input with an eye icon button to show/hide password
  */
-function PasswordInput({ className, ...props }: Omit<React.ComponentProps<'input'>, 'type'>) {
+function PasswordInput({
+	className,
+	...props
+}: Omit<React.ComponentProps<'input'>, 'type'>) {
 	const [showPassword, setShowPassword] = React.useState(false);
 
 	/**
@@ -35,10 +38,14 @@ function PasswordInput({ className, ...props }: Omit<React.ComponentProps<'input
 			<button
 				type="button"
 				onClick={toggleVisibility}
-				className="text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+				className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
 				aria-label={showPassword ? 'Hide password' : 'Show password'}
 			>
-				{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+				{showPassword ? (
+					<EyeOff className="size-4" />
+				) : (
+					<Eye className="size-4" />
+				)}
 			</button>
 		</div>
 	);

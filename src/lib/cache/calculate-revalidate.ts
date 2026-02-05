@@ -33,7 +33,10 @@ export function calculateCacheLife(expiresAt: string): CacheLifeConfig {
 	const currentTime = Date.now();
 	const bufferMs = 5 * 60 * 1_000; // 5 minutes
 	const timeUntilExpiry = expirationTime - currentTime;
-	const revalidateSeconds = Math.max(60, Math.floor((timeUntilExpiry - bufferMs) / 1_000));
+	const revalidateSeconds = Math.max(
+		60,
+		Math.floor((timeUntilExpiry - bufferMs) / 1_000),
+	);
 
 	return {
 		stale: 0, // Pre-signed URLs cannot be served stale
@@ -64,7 +67,9 @@ export function calculateRevalidateTime(expiresAt: string): number {
  * @param expiresAtDates - Array of ISO datetime strings
  * @returns CacheLifeConfig based on earliest expiration
  */
-export function calculateMinCacheLife(expiresAtDates: string[]): CacheLifeConfig {
+export function calculateMinCacheLife(
+	expiresAtDates: string[],
+): CacheLifeConfig {
 	if (expiresAtDates.length === 0) {
 		return {
 			stale: 0,
@@ -80,7 +85,10 @@ export function calculateMinCacheLife(expiresAtDates: string[]): CacheLifeConfig
 	const currentTime = Date.now();
 	const bufferMs = 5 * 60 * 1_000;
 	const timeUntilExpiry = earliestExpiry - currentTime;
-	const revalidateSeconds = Math.max(60, Math.floor((timeUntilExpiry - bufferMs) / 1_000));
+	const revalidateSeconds = Math.max(
+		60,
+		Math.floor((timeUntilExpiry - bufferMs) / 1_000),
+	);
 
 	return {
 		stale: 0, // Pre-signed URLs cannot be served stale

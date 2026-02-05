@@ -52,7 +52,6 @@ export const AUTH_ERROR_CODES = {
 	PASSWORD_NOT_SET: 'auth:password:not-set',
 	/** Current password is incorrect (change-password flow) */
 	PASSWORD_INVALID: 'auth:password:invalid',
-
 } as const;
 
 /**

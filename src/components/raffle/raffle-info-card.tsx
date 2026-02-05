@@ -108,9 +108,7 @@ export function RaffleInfoCard({
 				<div className="space-y-3">
 					<div className="space-y-2">
 						<div className="flex items-center justify-between text-sm">
-							<span className="text-[#7B7B7B]">
-								{getParticipantsDisplay()}
-							</span>
+							<span className="text-[#7B7B7B]">{getParticipantsDisplay()}</span>
 							<span className="font-medium text-[#7B7B7B]">
 								{getFillStatus()}
 							</span>

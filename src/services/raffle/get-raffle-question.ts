@@ -14,7 +14,10 @@ import { ZodError } from 'zod';
 /**
  * Response type for fetching a raffle question
  */
-type GetRaffleQuestionResponse = ServiceResponse<RaffleQuestion, RaffleErrorCode>;
+type GetRaffleQuestionResponse = ServiceResponse<
+	RaffleQuestion,
+	RaffleErrorCode
+>;
 
 /**
  * Fetches the question for a raffle

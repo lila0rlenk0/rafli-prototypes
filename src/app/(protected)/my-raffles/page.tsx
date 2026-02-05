@@ -32,7 +32,9 @@ function filterParticipantStatus(status: string): string {
 	const invalidStatuses = [RAFFLE_STATUS.DRAFT, RAFFLE_STATUS.QUEUED];
 	const filtered = status
 		.split(',')
-		.filter(s => !invalidStatuses.includes(s as (typeof invalidStatuses)[number]));
+		.filter(
+			s => !invalidStatuses.includes(s as (typeof invalidStatuses)[number]),
+		);
 	return filtered.length > 0 ? filtered.join(',') : RAFFLE_STATUS.LIVE;
 }
 

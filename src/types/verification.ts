@@ -66,4 +66,6 @@ export const raffleVerificationDataSchema = z.object({
 export type TicketVerification = z.infer<typeof ticketVerificationSchema>;
 export type WinnerVerification = z.infer<typeof winnerVerificationSchema>;
 export type MerkleProof = z.infer<typeof merkleProofSchema>;
-export type RaffleVerificationData = z.infer<typeof raffleVerificationDataSchema>;
+export type RaffleVerificationData = z.infer<
+	typeof raffleVerificationDataSchema
+>;

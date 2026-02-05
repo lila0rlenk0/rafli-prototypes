@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/utils';
+import { validateReturnTo } from '@/lib/utils/validate-return-to';
 import { registerUser } from '@/services/auth/register-user';
 import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
 import {
@@ -22,7 +23,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
@@ -85,22 +86,27 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 	const [isPending, startTransition] = useTransition();
 	const [isSocialPending, setIsSocialPending] = useState(false);
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const returnTo = validateReturnTo(searchParams.get('returnTo'));
 
 	async function handleSignUp(data: FormType) {
 		startTransition(async () => {
+			// Step 1: Call registration service.
 			const result = await registerUser(data);
 
 			// Type-safe response handling
 			if (!result.success) {
+				// Step 2: Surface error.
 				const message = getErrorMessage(result.error);
 				setError('root', { message });
 				return;
 			}
 
+			// Step 3: Notify and redirect to sign-in with returnTo preserved.
 			toast.success(
 				'Account created! Check your email to verify before signing in.',
 			);
-			router.push('/sign-in');
+			router.push(`/sign-in?returnTo=${encodeURIComponent(returnTo)}`);
 		});
 	}
 
@@ -111,17 +117,20 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 	async function handleGoogleSignIn() {
 		setIsSocialPending(true);
 
+		// Step 1: Build callback URL with validated returnTo.
 		const result = await initiateSocialSignIn({
 			provider: 'google',
-			callbackURL: `${window.location.origin}/auth/callback`,
+			callbackURL: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
 		});
 
 		if (!result.success) {
+			// Step 2: Surface error.
 			setError('root', { message: getErrorMessage(result.error) });
 			setIsSocialPending(false);
 			return;
 		}
 
+		// Step 3: Redirect to provider.
 		window.location.href = result.data.url;
 	}
 
@@ -211,7 +220,10 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 					</div>
 					<FieldDescription className="text-center">
 						Already have an account?{' '}
-						<Link href="/sign-in" className="text-black">
+						<Link
+							href={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}
+							className="text-black"
+						>
 							Sign in
 						</Link>
 					</FieldDescription>

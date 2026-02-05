@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { browserClient } from '@/lib/api/client-browser';
 import { setAuthCookiesClient } from '@/lib/auth/session-client';
+import { validateReturnTo } from '@/lib/utils/validate-return-to';
 import { AxiosError } from 'axios';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -34,15 +35,12 @@ export function CallbackHandler() {
 				// Step 1: Check for OAuth error in URL params
 				const oauthError = searchParams.get('error');
 				if (oauthError) {
-					setError(
-						'Google sign in was cancelled or failed. Please try again.',
-					);
+					setError('Google sign in was cancelled or failed. Please try again.');
 					setIsProcessing(false);
 					return;
 				}
 
-				// Step 2: Exchange session cookie for JWT token
-				// browserClient sends cookies automatically via withCredentials
+				// Step 2: Exchange session cookie for JWT token (browserClient sends cookies).
 				const response = await browserClient.get<{ token?: string }>(
 					'/auth/token',
 				);
@@ -62,8 +60,8 @@ export function CallbackHandler() {
 					return;
 				}
 
-				// Step 4: Redirect to returnTo or default to browse
-				const returnTo = searchParams.get('returnTo') || '/browse';
+				// Step 4: Redirect to validated returnTo or default to browse
+				const returnTo = validateReturnTo(searchParams.get('returnTo'));
 				router.push(returnTo);
 				router.refresh();
 			} catch (err) {

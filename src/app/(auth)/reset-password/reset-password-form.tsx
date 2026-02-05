@@ -73,7 +73,11 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
  * Displays password reset form with new password and confirmation.
  * Requires valid token from email link.
  */
-export function ResetPasswordForm({ token, className, ...props }: ResetPasswordFormProps) {
+export function ResetPasswordForm({
+	token,
+	className,
+	...props
+}: ResetPasswordFormProps) {
 	const {
 		register,
 		handleSubmit,

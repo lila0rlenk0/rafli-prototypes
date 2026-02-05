@@ -2,10 +2,7 @@
 
 import { revalidateProfile } from '@/services/user/revalidate-profile';
 import { uploadAvatar } from '@/services/user/upload-avatar';
-import {
-	CLIENT_ERROR_CODES,
-	type RaffleErrorCode,
-} from '@/types/errors';
+import { CLIENT_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { Pencil } from 'lucide-react';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
@@ -78,9 +75,7 @@ export function EditableAvatar({
 	 *
 	 * @param event - The file input change event
 	 */
-	async function handleFileChange(
-		event: React.ChangeEvent<HTMLInputElement>,
-	) {
+	async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
 		const file = event.target.files?.[0];
 		if (!file) return;
 
@@ -154,8 +149,9 @@ export function EditableAvatar({
 			{/* Overlay with pencil icon on hover */}
 			{!isUploading && (
 				<div
-					className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-						}`}
+					className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity duration-300 ${
+						isHovered ? 'opacity-100' : 'pointer-events-none opacity-0'
+					}`}
 				>
 					<Pencil className="size-5 text-white" />
 				</div>

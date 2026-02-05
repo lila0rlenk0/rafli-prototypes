@@ -113,6 +113,11 @@ export function hasRaffleChanges(
 	categoryId: string,
 	checkInQuestionId: string,
 ): boolean {
-	const diff = computeRaffleDiff(original, current, categoryId, checkInQuestionId);
+	const diff = computeRaffleDiff(
+		original,
+		current,
+		categoryId,
+		checkInQuestionId,
+	);
 	return Object.keys(diff).length > 0;
 }

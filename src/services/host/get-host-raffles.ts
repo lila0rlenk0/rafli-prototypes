@@ -16,7 +16,10 @@ import type { ServiceResponse } from '@/types/service-response';
 /**
  * Response type for fetching host raffles
  */
-type GetHostRafflesResponse = ServiceResponse<ListRafflesResponse, RaffleErrorCode>;
+type GetHostRafflesResponse = ServiceResponse<
+	ListRafflesResponse,
+	RaffleErrorCode
+>;
 
 /**
  * Fetches raffles for a specific host

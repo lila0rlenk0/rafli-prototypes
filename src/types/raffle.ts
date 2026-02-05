@@ -285,11 +285,10 @@ export const enrolledRaffleSchema = raffleSchema.extend({
 /**
  * Schema for enrolled raffles list response
  */
-export const listEnrolledRafflesResponseSchema = paginationMetadataSchema.extend(
-	{
+export const listEnrolledRafflesResponseSchema =
+	paginationMetadataSchema.extend({
 		raffles: z.array(enrolledRaffleSchema),
-	},
-);
+	});
 
 /**
  * Query schema for enrolled raffles (no category/question filters)
@@ -321,6 +320,8 @@ export type MyRaffleItem = Raffle | EnrolledRaffle;
  * @param raffle - Raffle or EnrolledRaffle to check
  * @returns true if raffle has myTicketCount property
  */
-export function isEnrolledRaffle(raffle: MyRaffleItem): raffle is EnrolledRaffle {
+export function isEnrolledRaffle(
+	raffle: MyRaffleItem,
+): raffle is EnrolledRaffle {
 	return 'myTicketCount' in raffle;
 }

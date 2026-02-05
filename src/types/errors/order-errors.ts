@@ -13,6 +13,8 @@ export const ORDER_ERROR_CODES = {
 	NOT_ACTIVE: 'core:raffle:not-active',
 	/** Raffle is sold out */
 	SOLD_OUT: 'core:raffle:sold-out',
+	/** User reached max tickets per user (counts pending + completed) */
+	USER_TICKET_LIMIT_EXCEEDED: 'core:raffle:user-ticket-limit-exceeded',
 	/** Order not found */
 	NOT_FOUND: 'core:order:not-found',
 	/** User doesn't have permission to access this order */

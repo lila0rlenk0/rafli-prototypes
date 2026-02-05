@@ -37,8 +37,7 @@ export const metadata: Metadata = {
 	twitter: {
 		card: 'summary_large_image',
 		title: 'Verify Raffle Results',
-		description:
-			'Cryptographic verification for provably fair raffle results.',
+		description: 'Cryptographic verification for provably fair raffle results.',
 	},
 	robots: {
 		index: true,

@@ -81,9 +81,15 @@ const jsonLd = {
 	],
 	tool: [
 		{ '@type': 'HowToTool', name: 'IPFS - Decentralized storage' },
-		{ '@type': 'HowToTool', name: 'Chainlink VRF - Verifiable Random Function' },
+		{
+			'@type': 'HowToTool',
+			name: 'Chainlink VRF - Verifiable Random Function',
+		},
 		{ '@type': 'HowToTool', name: 'Arbitrum One - Ethereum L2 blockchain' },
-		{ '@type': 'HowToTool', name: 'Merkle Trees - Cryptographic data structure' },
+		{
+			'@type': 'HowToTool',
+			name: 'Merkle Trees - Cryptographic data structure',
+		},
 	],
 };
 

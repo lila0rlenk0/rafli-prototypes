@@ -49,7 +49,9 @@ const SplitText: React.FC<SplitTextProps> = ({
 
 	useEffect(() => {
 		if (document.fonts.status === 'loaded') {
-			// eslint-disable-next-line
+			// Sync state with external font loading status - this is the recommended pattern
+			// for initializing state based on external system state
+			// eslint-disable-next-line react-hooks/set-state-in-effect
 			setFontsLoaded(true);
 		} else {
 			document.fonts.ready.then(() => {

@@ -12,7 +12,9 @@ interface PageProps {
 /**
  * Generates metadata for raffle verification page
  */
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+	params,
+}: PageProps): Promise<Metadata> {
 	const { raffleId } = await params;
 
 	return {
@@ -23,7 +25,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 		},
 		openGraph: {
 			title: `Verify Raffle ${raffleId} | Raffly`,
-			description: 'Technical verification details with blockchain proofs and cryptographic data.',
+			description:
+				'Technical verification details with blockchain proofs and cryptographic data.',
 			url: `${env.APP_URL}/verify/${raffleId}`,
 			type: 'website',
 		},

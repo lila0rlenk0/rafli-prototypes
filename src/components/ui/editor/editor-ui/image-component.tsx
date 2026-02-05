@@ -150,7 +150,7 @@ function BrokenImage(): JSX.Element {
 		<div
 			role="img"
 			aria-label="Broken image"
-			className="flex h-[200px] w-[200px] items-center justify-center bg-muted opacity-20"
+			className="bg-muted flex h-[200px] w-[200px] items-center justify-center opacity-20"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"

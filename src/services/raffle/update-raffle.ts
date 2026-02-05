@@ -33,7 +33,10 @@ export async function updateRaffle(
 		// Validate payload before sending
 		const validationResult = updateRafflePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			console.error('Update payload validation failed:', validationResult.error);
+			console.error(
+				'Update payload validation failed:',
+				validationResult.error,
+			);
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
@@ -49,7 +49,6 @@ export function TicketPurchaseCard({
 	isAuthenticated = true,
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
-	const router = useRouter();
 	const pathname = usePathname();
 	// Only use code if non-empty (handles ?code= edge case)
 	const codeParam = searchParams.get('code');

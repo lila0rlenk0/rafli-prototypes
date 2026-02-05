@@ -28,6 +28,7 @@ const nextConfig: NextConfig = {
 	},
 	cacheComponents: true,
 	async headers() {
+		// Step 1: Apply security headers to all routes.
 		return [
 			{
 				// Apply to all routes

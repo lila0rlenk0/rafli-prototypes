@@ -67,12 +67,14 @@ export function ExportPromoCodesModal({
 
 		setIsExporting(true);
 		try {
+			// Step 1: Build query and export.
 			await onExport({
 				include,
 				status,
 				type,
 				...(trimmedBulkId && { bulkId: trimmedBulkId }),
 			});
+			// Step 2: Close on success.
 			onClose();
 		} finally {
 			setIsExporting(false);
@@ -83,10 +85,12 @@ export function ExportPromoCodesModal({
 	 * Resets filters and closes modal
 	 */
 	function handleClose() {
+		// Step 1: Reset local filters.
 		setInclude('all');
 		setStatus('all');
 		setType('all');
 		setBulkId('');
+		// Step 2: Close modal.
 		onClose();
 	}
 
@@ -185,7 +189,10 @@ export function ExportPromoCodesModal({
 					>
 						Cancel
 					</Button>
-					<Button onClick={handleExport} disabled={isExporting || hasInvalidBulkId}>
+					<Button
+						onClick={handleExport}
+						disabled={isExporting || hasInvalidBulkId}
+					>
 						{isExporting ? (
 							<>
 								<Loader2 className="size-4 animate-spin" />

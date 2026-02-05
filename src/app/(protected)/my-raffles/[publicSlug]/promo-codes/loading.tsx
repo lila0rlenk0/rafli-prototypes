@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  * Loading state for Promo Codes page
  */
 export default function Loading() {
+	// Step 1: Render skeleton placeholders.
 	return (
 		<div className="container mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-8">
 			{/* Header skeleton */}

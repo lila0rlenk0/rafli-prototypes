@@ -7,11 +7,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import {
-	$isCodeNode,
-	CodeNode,
-	getLanguageFriendlyName,
-} from '@lexical/code';
+import { $isCodeNode, CodeNode, getLanguageFriendlyName } from '@lexical/code';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $getNearestNodeFromDOMNode, isHTMLElement } from 'lexical';
 import { JSX, useEffect, useRef, useState } from 'react';

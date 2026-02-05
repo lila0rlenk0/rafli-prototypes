@@ -60,8 +60,13 @@ export async function uploadAvatar(
 		const parsed = uploadAvatarResponseSchema.parse(response.data);
 
 		// Build full avatar URL from relative path
-		const storageBaseUrl = env.STORAGE_MEDIA_URL_USER_AVATARS.replace(/\/$/, '');
-		const imagePath = parsed.image.startsWith('/') ? parsed.image : `/${parsed.image}`;
+		const storageBaseUrl = env.STORAGE_MEDIA_URL_USER_AVATARS.replace(
+			/\/$/,
+			'',
+		);
+		const imagePath = parsed.image.startsWith('/')
+			? parsed.image
+			: `/${parsed.image}`;
 		const avatarUrl = `${storageBaseUrl}${imagePath}`;
 
 		const result: { avatarUrl: string } = { avatarUrl };

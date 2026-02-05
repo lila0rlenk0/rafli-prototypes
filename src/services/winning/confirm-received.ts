@@ -11,7 +11,10 @@ import { type Winning, winningSchema } from '@/types/winning';
 /**
  * Response type for confirming prize received
  */
-type ConfirmReceivedServiceResponse = ServiceResponse<Winning, WinningErrorCode>;
+type ConfirmReceivedServiceResponse = ServiceResponse<
+	Winning,
+	WinningErrorCode
+>;
 
 /**
  * Confirms that the winner has received the prize

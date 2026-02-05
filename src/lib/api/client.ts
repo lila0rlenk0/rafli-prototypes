@@ -115,8 +115,7 @@ authenticatedClient.interceptors.request.use(
 	async config => {
 		const results = await Promise.allSettled([getAuthToken(), getClientIp()]);
 
-		const token =
-			results[0].status === 'fulfilled' ? results[0].value : null;
+		const token = results[0].status === 'fulfilled' ? results[0].value : null;
 		const clientIp =
 			results[1].status === 'fulfilled' ? results[1].value : null;
 

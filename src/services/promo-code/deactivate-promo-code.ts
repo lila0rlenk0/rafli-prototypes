@@ -4,7 +4,10 @@ import { z, ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
-import { PROMO_CODE_ERROR_CODES, type PromoCodeErrorCode } from '@/types/errors';
+import {
+	PROMO_CODE_ERROR_CODES,
+	type PromoCodeErrorCode,
+} from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
@@ -24,11 +27,14 @@ export async function deactivatePromoCode(
 	promoCodeId: string,
 ): Promise<ServiceResponse<void, PromoCodeErrorCode>> {
 	try {
+		// Step 1: Send deactivate request.
 		const response = await authenticatedClient.delete(
 			`/promo-codes/${promoCodeId}`,
 		);
+		// Step 2: Validate response.
 		deactivatePromoCodeResponseSchema.parse(response.data);
 
+		// Step 3: Return typed success.
 		return success(undefined);
 	} catch (error) {
 		if (error instanceof ZodError) {

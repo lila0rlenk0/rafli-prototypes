@@ -15,7 +15,10 @@ interface ProvablyFairBadgeProps {
  * Indicates the raffle used verifiable random selection.
  * Links to verification page when raffleId provided.
  */
-export function ProvablyFairBadge({ className, raffleId }: ProvablyFairBadgeProps) {
+export function ProvablyFairBadge({
+	className,
+	raffleId,
+}: ProvablyFairBadgeProps) {
 	const content = (
 		<>
 			<ShieldCheck className="size-3" />

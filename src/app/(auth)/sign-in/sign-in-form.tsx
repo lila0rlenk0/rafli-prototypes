@@ -107,16 +107,18 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 		setHasLoginError(false);
 
 		startTransition(async () => {
+			// Step 1: Call sign-in service.
 			const result = await signInUser(data);
 
 			// Type-safe response handling
 			if (!result.success) {
+				// Step 2: Surface error to UI.
 				setError('root', { message: getErrorMessage(result.error) });
 				setHasLoginError(true);
 				return;
 			}
 
-			// Success - redirect to returnTo or default to browse
+			// Step 3: Redirect to returnTo or default.
 			const returnTo = getReturnTo();
 			router.push(returnTo);
 			router.refresh();
@@ -131,6 +133,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 		setIsSocialPending(true);
 		setHasLoginError(false);
 
+		// Step 1: Build callback URL with validated returnTo.
 		const returnTo = getReturnTo();
 		const result = await initiateSocialSignIn({
 			provider: 'google',
@@ -138,11 +141,13 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 		});
 
 		if (!result.success) {
+			// Step 2: Surface error.
 			setError('root', { message: getErrorMessage(result.error) });
 			setIsSocialPending(false);
 			return;
 		}
 
+		// Step 3: Redirect to provider.
 		window.location.href = result.data.url;
 	}
 
@@ -234,7 +239,10 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 					</div>
 					<FieldDescription className="text-center">
 						Don&apos;t have an account?{' '}
-						<Link href={`/sign-up?returnTo=${encodeURIComponent(getReturnTo())}`} className="text-black">
+						<Link
+							href={`/sign-up?returnTo=${encodeURIComponent(getReturnTo())}`}
+							className="text-black"
+						>
 							Sign up
 						</Link>
 					</FieldDescription>

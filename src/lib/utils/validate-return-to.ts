@@ -11,16 +11,17 @@ export function validateReturnTo(
 	returnTo: string | null,
 	defaultPath = '/browse',
 ): string {
+	// Step 1: Handle empty input with default fallback.
 	if (!returnTo) {
 		return defaultPath;
 	}
 
-	// Must start with single slash (not //)
+	// Step 2: Require a safe relative path (single leading slash).
 	if (!returnTo.startsWith('/') || returnTo.startsWith('//')) {
 		return defaultPath;
 	}
 
-	// Block protocol-relative URLs and javascript: URLs
+	// Step 3: Reject any obvious protocol-based or scriptable URLs.
 	const lowercased = returnTo.toLowerCase();
 	if (
 		lowercased.includes('://') ||
@@ -30,7 +31,7 @@ export function validateReturnTo(
 		return defaultPath;
 	}
 
-	// Decode and re-check for encoded attacks
+	// Step 4: Decode once and re-check for encoded attacks.
 	try {
 		const decoded = decodeURIComponent(returnTo);
 		if (decoded.includes('://') || decoded.startsWith('//')) {

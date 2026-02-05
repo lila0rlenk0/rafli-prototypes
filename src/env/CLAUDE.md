@@ -39,14 +39,14 @@ const publicUrl = clientEnv.NEXT_PUBLIC_BACKEND_URL;
 ```typescript
 // Example: Adding a new server variable
 export const env = createEnv({
-  server: {
-    // ... existing
-    NEW_API_KEY: z.string().min(1),
-  },
-  runtimeEnv: {
-    // ... existing
-    NEW_API_KEY: process.env.NEW_API_KEY,
-  },
+	server: {
+		// ... existing
+		NEW_API_KEY: z.string().min(1),
+	},
+	runtimeEnv: {
+		// ... existing
+		NEW_API_KEY: process.env.NEW_API_KEY,
+	},
 });
 ```
 

@@ -17,6 +17,7 @@ export function PromoCodesEmptyState({
 	onCreateClick,
 	isReadOnly = false,
 }: PromoCodesEmptyStateProps) {
+	// Step 1: Render empty state with optional CTA.
 	return (
 		<div className="flex flex-col items-center justify-center py-12 text-center">
 			<div className="mb-4 flex size-16 items-center justify-center rounded-full bg-gray-100">

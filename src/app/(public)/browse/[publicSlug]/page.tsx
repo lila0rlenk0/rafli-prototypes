@@ -73,7 +73,7 @@ function getCategoryName(
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;
 
-	// Fetch raffle and categories in parallel
+	// Step 1: Fetch raffle + categories in parallel.
 	const [response, categoriesResponse] = await Promise.all([
 		getRaffle(publicSlug),
 		getCategories(),
@@ -109,7 +109,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 	const raffle = response.data;
 
-	// Get session to check authentication status
+	// Step 2: Load session and user-specific data if authenticated.
 	const session = await getSession();
 	const isAuthenticated = !!session;
 	const currentUserId = session?.user?.id ?? null;
@@ -341,7 +341,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		return Math.max(0, maxParticipants - participantsCount);
 	}
 
-	// Calculate values before return
+	// Step 3: Calculate derived values for render.
 	const ticketPrice = parseTicketPrice(raffle.ticketPriceAmount);
 	const availableTickets = calculateAvailableTickets(
 		raffle.maxParticipants,
@@ -359,7 +359,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				<div className="w-full space-y-4">
 					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
 						<div className="flex items-start justify-between gap-4">
-							<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
+							<h1 className="text-3xl font-bold text-gray-900">
+								{raffle.title}
+							</h1>
 							<PromoCodesButton
 								publicSlug={publicSlug}
 								isOwner={isOwner}

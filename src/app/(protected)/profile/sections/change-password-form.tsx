@@ -1,10 +1,19 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { changePassword } from '@/services/auth/change-password';
-import { AUTH_ERROR_CODES, COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import {
+	AUTH_ERROR_CODES,
+	COMMON_ERROR_CODES,
+	type AuthErrorCode,
+} from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
@@ -134,7 +143,9 @@ export function ChangePasswordForm() {
 					<FieldError errors={[errors.newPassword]} />
 				</Field>
 				<Field>
-					<FieldLabel htmlFor="confirmPassword">Confirm New Password</FieldLabel>
+					<FieldLabel htmlFor="confirmPassword">
+						Confirm New Password
+					</FieldLabel>
 					<Input
 						id="confirmPassword"
 						type="password"

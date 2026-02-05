@@ -79,7 +79,9 @@ export function ComparisonDiagram() {
 			>
 				<div className="mb-4 flex items-center gap-2">
 					<CheckCircle2 className="size-6 text-green-500" />
-					<h3 className="text-lg font-semibold text-green-700">Provably Fair</h3>
+					<h3 className="text-lg font-semibold text-green-700">
+						Provably Fair
+					</h3>
 				</div>
 
 				{/* Transparent visualization */}

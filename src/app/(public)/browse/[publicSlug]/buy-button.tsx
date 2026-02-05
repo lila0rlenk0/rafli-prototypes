@@ -12,7 +12,11 @@ import { getMyOrders } from '@/services/order/get-my-orders';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
 import { validatePromoCode } from '@/services/promo-code/validate-promo-code';
-import type { OrderErrorCode, PaymentErrorCode, PromoCodeErrorCode } from '@/types/errors';
+import type {
+	OrderErrorCode,
+	PaymentErrorCode,
+	PromoCodeErrorCode,
+} from '@/types/errors';
 import { ORDER_STATUS, type OrderWithRaffle } from '@/types/order';
 
 /**
@@ -75,7 +79,7 @@ export function BuyButton({
 			case 'core:order:invalid-quantity':
 				return 'Invalid ticket quantity';
 			case 'core:raffle:user-ticket-limit-exceeded':
-				return 'You already have pending tickets for this raffle';
+				return 'You reached the maximum tickets per user for this raffle';
 			case 'network_error':
 				return 'Network error. Please check your connection';
 			case 'timeout_error':
@@ -185,7 +189,9 @@ export function BuyButton({
 	 * Gets existing pending order for same raffle + quantity.
 	 * Reuses pending orders to avoid creating duplicates on retries.
 	 */
-	async function getReusablePendingOrder(): Promise<OrderWithRaffle | null> {
+	async function getReusablePendingOrder(
+		selectedPromoCode?: string,
+	): Promise<OrderWithRaffle | null> {
 		const ordersResult = await getMyOrders({ page: 1, limit: 100 });
 
 		if (!ordersResult.success) {
@@ -197,7 +203,10 @@ export function BuyButton({
 				order =>
 					order.status === ORDER_STATUS.PENDING &&
 					order.raffleId === raffleId &&
-					order.ticketQuantity === ticketQuantity,
+					order.ticketQuantity === ticketQuantity &&
+					(selectedPromoCode
+						? order.promoCode === null || order.promoCode === selectedPromoCode
+						: order.promoCode === null),
 			) ?? null
 		);
 	}
@@ -207,11 +216,14 @@ export function BuyButton({
 	 * Routes to appropriate flow based on ticket type
 	 */
 	function handleBuyClick() {
+		// Step 1: Route to question modal if required.
 		if (questionId) {
 			setShowQuestionModal(true);
 		} else if (isFreeTickets && promoCode) {
+			// Step 2: Redeem free tickets directly.
 			redeemFreeTickets();
 		} else {
+			// Step 3: Continue to checkout.
 			proceedToCheckout();
 		}
 	}
@@ -221,6 +233,7 @@ export function BuyButton({
 	 * Routes to appropriate flow after user answers correctly
 	 */
 	function handleCorrectAnswer() {
+		// Step 1: Continue flow after correct answer.
 		if (isFreeTickets && promoCode) {
 			redeemFreeTickets();
 		} else {
@@ -238,12 +251,14 @@ export function BuyButton({
 		setIsLoading(true);
 
 		try {
+			// Step 1: Redeem code with backend.
 			const result = await redeemPromoCode({
 				code: promoCode,
 				raffleId,
 			});
 
 			if (!result.success) {
+				// Step 2: Surface error and clear promo if needed.
 				const message = getPromoErrorMessage(result.error);
 				toast.error(message);
 				if (shouldClearPromo(result.error)) {
@@ -252,6 +267,7 @@ export function BuyButton({
 				return;
 			}
 
+			// Step 3: Notify and refresh.
 			const { ticketsGranted } = result.data;
 			const ticketText = ticketsGranted === 1 ? 'ticket' : 'tickets';
 			toast.success(`You received ${ticketsGranted} free ${ticketText}!`);
@@ -287,7 +303,7 @@ export function BuyButton({
 			}
 
 			// Step 2: Reuse existing pending order if possible
-			let order = await getReusablePendingOrder();
+			let order = await getReusablePendingOrder(promoCode);
 			if (!order) {
 				const orderResult = await createOrder({
 					raffleId,
@@ -306,7 +322,9 @@ export function BuyButton({
 			// Step 3: Apply discount promo to pending order (free tickets handled separately)
 			if (promoCode && !isFreeTickets) {
 				if (order.promoCode && order.promoCode !== promoCode) {
-					toast.error('A different promo code is already applied to this order');
+					toast.error(
+						'A different promo code is already applied to this order',
+					);
 					onPromoInvalid?.();
 					return;
 				}
@@ -327,7 +345,9 @@ export function BuyButton({
 						return;
 					}
 
-					const discountAmount = parseFloat(redeemResult.data.discountAmount ?? '0');
+					const discountAmount = parseFloat(
+						redeemResult.data.discountAmount ?? '0',
+					);
 					const orderTotal = parseFloat(order.totalAmount);
 					const remainingTotal = Math.max(0, orderTotal - discountAmount);
 

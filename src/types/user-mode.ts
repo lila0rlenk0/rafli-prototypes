@@ -30,10 +30,7 @@ export type Permission =
 // Schemas
 // ==========================================
 
-export const userModeSchema = z.enum([
-	USER_MODE.PARTICIPANT,
-	USER_MODE.HOST,
-]);
+export const userModeSchema = z.enum([USER_MODE.PARTICIPANT, USER_MODE.HOST]);
 
 export const permissionSchema = z.enum([
 	'raffle:create',

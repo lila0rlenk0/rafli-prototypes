@@ -17,7 +17,10 @@ interface MerkleProofDisplayProps {
  *
  * Collapsible display of Merkle proof path for ticket verification.
  */
-export function MerkleProofDisplay({ proof, className }: MerkleProofDisplayProps) {
+export function MerkleProofDisplay({
+	proof,
+	className,
+}: MerkleProofDisplayProps) {
 	const [expanded, setExpanded] = useState(false);
 
 	/**
@@ -62,7 +65,7 @@ export function MerkleProofDisplay({ proof, className }: MerkleProofDisplayProps
 			</button>
 
 			{expanded && (
-				<div className="border-t p-3 space-y-3">
+				<div className="space-y-3 border-t p-3">
 					<ProofRow label="Ticket ID" value={`#${proof.ticketId}`} />
 					<ProofRow label="Chunk Index" value={proof.chunkIndex.toString()} />
 
@@ -72,7 +75,10 @@ export function MerkleProofDisplay({ proof, className }: MerkleProofDisplayProps
 							<CopyButton value={proof.leafHash} />
 						</div>
 						<div className="rounded bg-neutral-100 px-2 py-1.5">
-							<code className="block font-mono text-[11px] break-all" title={proof.leafHash}>
+							<code
+								className="block font-mono text-[11px] break-all"
+								title={proof.leafHash}
+							>
 								{truncateHex(proof.leafHash)}
 							</code>
 						</div>
@@ -84,7 +90,10 @@ export function MerkleProofDisplay({ proof, className }: MerkleProofDisplayProps
 							<CopyButton value={proof.root} />
 						</div>
 						<div className="rounded bg-neutral-100 px-2 py-1.5">
-							<code className="block font-mono text-[11px] break-all" title={proof.root}>
+							<code
+								className="block font-mono text-[11px] break-all"
+								title={proof.root}
+							>
 								{truncateHex(proof.root)}
 							</code>
 						</div>
@@ -98,8 +107,13 @@ export function MerkleProofDisplay({ proof, className }: MerkleProofDisplayProps
 									key={hash}
 									className="flex items-center gap-2 rounded bg-neutral-50 px-2 py-1"
 								>
-									<span className="text-[10px] text-neutral-400 w-4">{index + 1}</span>
-									<code className="flex-1 font-mono text-[10px] truncate" title={hash}>
+									<span className="w-4 text-[10px] text-neutral-400">
+										{index + 1}
+									</span>
+									<code
+										className="flex-1 truncate font-mono text-[10px]"
+										title={hash}
+									>
 										{truncateHex(hash)}
 									</code>
 									<CopyButton value={hash} size="sm" />

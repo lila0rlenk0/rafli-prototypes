@@ -114,7 +114,7 @@ export function ImagePreviewCard({
 						<button
 							type="button"
 							onClick={handleRemove}
-							className="absolute top-1 right-1 flex size-6 items-center justify-center rounded-full bg-black/70 opacity-0 transition-opacity hover:bg-black/90 group-hover:opacity-100"
+							className="absolute top-1 right-1 flex size-6 items-center justify-center rounded-full bg-black/70 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/90"
 							aria-label={`Remove image ${index + 1}`}
 						>
 							<Trash2 className="size-3 text-white" />

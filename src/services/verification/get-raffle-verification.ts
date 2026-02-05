@@ -21,9 +21,7 @@ export async function getRaffleVerification(
 	raffleId: string,
 ): Promise<ServiceResponse<RaffleVerificationData, VerificationErrorCode>> {
 	try {
-		const response = await baseClient.get(
-			`/raffles/${raffleId}/verification`,
-		);
+		const response = await baseClient.get(`/raffles/${raffleId}/verification`);
 		const validated = raffleVerificationDataSchema.parse(response.data);
 		return success(validated);
 	} catch (error) {

@@ -44,15 +44,14 @@ import {
  * @returns Extracted error code or null
  */
 function extractErrorCode(error: unknown): string | null {
-	// Only process AxiosErrors with response data
+	// Step 1: Ensure Axios error with response data.
 	if (!(error instanceof AxiosError) || !error.response?.data) {
 		return null;
 	}
 
 	const data = error.response.data;
 
-	// Priority 1: RFC 7807 'type' field (URN format)
-	// Example: "urn:raffles:problem:auth:user:invalid-credentials"
+	// Step 2: Try RFC 7807 'type' field (e.g. "urn:raffles:problem:auth:user:invalid-credentials").
 	// Returns: "auth:user:invalid-credentials"
 	if (data.type && typeof data.type === 'string') {
 		const urnMatch = data.type.match(/^urn:raffles:problem:(.+)$/);
@@ -61,8 +60,7 @@ function extractErrorCode(error: unknown): string | null {
 		}
 	}
 
-	// Priority 2: 'message' field with colon-separated code
-	// Example: "auth:user:invalid-credentials"
+	// Step 3: Try 'message' field with colon-separated code (e.g. "auth:user:invalid-credentials").
 	// (Some endpoints return code in message field)
 	if (
 		data.message &&
@@ -72,8 +70,7 @@ function extractErrorCode(error: unknown): string | null {
 		return data.message;
 	}
 
-	// Priority 3: Simple 'code' field
-	// Example: "unauthenticated"
+	// Step 4: Try simple 'code' field (e.g. "unauthenticated").
 	// (Legacy format or simple error codes)
 	if (data.code && typeof data.code === 'string') {
 		return data.code;

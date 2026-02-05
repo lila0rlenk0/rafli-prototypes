@@ -25,7 +25,7 @@ export interface TrackOptions {
 export async function trackServer(
 	event: string,
 	properties: Record<string, unknown>,
-	options: TrackOptions = {}
+	options: TrackOptions = {},
 ): Promise<void> {
 	if (!mp) return;
 
@@ -47,7 +47,7 @@ export async function trackServer(
  */
 export function setUserProperties(
 	userId: string,
-	properties: Record<string, unknown>
+	properties: Record<string, unknown>,
 ): void {
 	if (!mp) return;
 	mp.people.set(userId, properties);
@@ -59,7 +59,7 @@ export function setUserProperties(
 export function incrementUserProperty(
 	userId: string,
 	property: string,
-	value = 1
+	value = 1,
 ): void {
 	if (!mp) return;
 	mp.people.increment(userId, property, value);

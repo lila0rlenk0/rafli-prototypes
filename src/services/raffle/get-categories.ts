@@ -14,7 +14,10 @@ import type { ServiceResponse } from '@/types/service-response';
 /**
  * Response type for fetching categories
  */
-type GetCategoriesResponse = ServiceResponse<CategoriesResponse, RaffleErrorCode>;
+type GetCategoriesResponse = ServiceResponse<
+	CategoriesResponse,
+	RaffleErrorCode
+>;
 
 /**
  * Fetches available categories from the backend (public endpoint)

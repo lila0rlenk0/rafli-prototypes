@@ -31,7 +31,8 @@ export const PROMO_CODE_STATUS = {
 // Types from Constants
 // ==========================================
 
-export type PromoCodeType = (typeof PROMO_CODE_TYPE)[keyof typeof PROMO_CODE_TYPE];
+export type PromoCodeType =
+	(typeof PROMO_CODE_TYPE)[keyof typeof PROMO_CODE_TYPE];
 export type PromoCodeStatus =
 	(typeof PROMO_CODE_STATUS)[keyof typeof PROMO_CODE_STATUS];
 
@@ -82,8 +83,7 @@ export const listPromoCodesResponseSchema = z.object({
  */
 export const promoCodeStringSchema = z
 	.preprocess(
-		value =>
-			typeof value === 'string' ? value.trim().toUpperCase() : value,
+		value => (typeof value === 'string' ? value.trim().toUpperCase() : value),
 		z.string().length(9),
 	)
 	.refine(v => PROMO_CODE_REGEX.test(v), 'Invalid promo code format');
@@ -110,7 +110,9 @@ export const exportPromoCodesQuerySchema = z.object({
 // ==========================================
 
 export type PromoCode = z.infer<typeof promoCodeSchema>;
-export type ListPromoCodesResponse = z.infer<typeof listPromoCodesResponseSchema>;
+export type ListPromoCodesResponse = z.infer<
+	typeof listPromoCodesResponseSchema
+>;
 export type ExportPromoCodesQuery = z.infer<typeof exportPromoCodesQuerySchema>;
 
 // ==========================================
@@ -159,8 +161,12 @@ export const bulkCreatePromoCodesResponseSchema = z.object({
 	codes: z.array(z.string()),
 });
 
-export type BulkCreatePromoCodesInput = z.infer<typeof bulkCreatePromoCodesInputSchema>;
-export type BulkCreatePromoCodesResponse = z.infer<typeof bulkCreatePromoCodesResponseSchema>;
+export type BulkCreatePromoCodesInput = z.infer<
+	typeof bulkCreatePromoCodesInputSchema
+>;
+export type BulkCreatePromoCodesResponse = z.infer<
+	typeof bulkCreatePromoCodesResponseSchema
+>;
 
 // ==========================================
 // Utilities
@@ -174,18 +180,22 @@ export type BulkCreatePromoCodesResponse = z.infer<typeof bulkCreatePromoCodesRe
  * @returns Computed display status
  */
 export function getPromoCodeStatus(code: PromoCode): PromoCodeStatus {
+	// Step 1: Inactive overrides all.
 	if (!code.isActive) {
 		return PROMO_CODE_STATUS.INACTIVE;
 	}
 
+	// Step 2: Expiration check.
 	if (code.expiresAt && new Date(code.expiresAt) < new Date()) {
 		return PROMO_CODE_STATUS.EXPIRED;
 	}
 
+	// Step 3: Usage exhaustion check.
 	if (code.maxUses > 0 && code.usedCount >= code.maxUses) {
 		return PROMO_CODE_STATUS.EXHAUSTED;
 	}
 
+	// Step 4: Default to active.
 	return PROMO_CODE_STATUS.ACTIVE;
 }
 
@@ -198,6 +208,7 @@ export function getPromoCodeStatus(code: PromoCode): PromoCodeStatus {
 export function formatPromoCodeValue(code: PromoCode): string {
 	const value = parseFloat(code.value);
 
+	// Step 1: Format by promo type.
 	switch (code.type) {
 		case PROMO_CODE_TYPE.FREE_TICKETS:
 			return `${Math.floor(value)} ticket${value !== 1 ? 's' : ''}`;
@@ -217,6 +228,7 @@ export function formatPromoCodeValue(code: PromoCode): string {
  * @returns Formatted usage string (e.g., "5/100" or "5/∞")
  */
 export function formatPromoCodeUsage(code: PromoCode): string {
+	// Step 1: Normalize max uses for display.
 	const maxDisplay = code.maxUses === 0 ? '∞' : code.maxUses.toString();
 	return `${code.usedCount}/${maxDisplay}`;
 }
@@ -238,7 +250,9 @@ export const validatePromoCodeResponseSchema = z.object({
 	ticketsGranted: z.number().optional(),
 });
 
-export type ValidatePromoCodeResponse = z.infer<typeof validatePromoCodeResponseSchema>;
+export type ValidatePromoCodeResponse = z.infer<
+	typeof validatePromoCodeResponseSchema
+>;
 
 /**
  * Schema for validated promo code used by frontend components after validation
@@ -269,6 +283,7 @@ export type ValidatedPromoCode = z.infer<typeof validatedPromoCodeSchema>;
 export function getPromoCodeDescription(promo: ValidatedPromoCode): string {
 	const value = parseFloat(promo.value);
 
+	// Step 1: Format description by promo type.
 	switch (promo.type) {
 		case PROMO_CODE_TYPE.FREE_TICKETS:
 			return `${Math.floor(value)} free ticket${value !== 1 ? 's' : ''}`;

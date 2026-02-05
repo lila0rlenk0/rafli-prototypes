@@ -158,6 +158,7 @@ export function CreatePromoCodeModal({
 	async function onSubmit(data: CreatePromoCodeFormData) {
 		setIsSubmitting(true);
 		try {
+			// Step 1: Normalize payload and call create.
 			const result = await onCreate({
 				count: data.count,
 				type: data.type,
@@ -170,6 +171,7 @@ export function CreatePromoCodeModal({
 			});
 
 			if (result) {
+				// Step 2: Store created codes for success state.
 				setCreatedCodes({ codes: result.codes, bulkId: result.bulkId });
 			}
 		} finally {
@@ -222,7 +224,9 @@ export function CreatePromoCodeModal({
 							<Check className="size-6 text-green-600" />
 						</div>
 						<DialogTitle>
-							{isSingle ? 'Promo Code Created!' : `${createdCodes.codes.length} Codes Created!`}
+							{isSingle
+								? 'Promo Code Created!'
+								: `${createdCodes.codes.length} Codes Created!`}
 						</DialogTitle>
 					</DialogHeader>
 
@@ -233,7 +237,7 @@ export function CreatePromoCodeModal({
 								onClick={() => handleCopyCode(createdCodes.codes[0], 0)}
 								className={cn(
 									'mx-auto flex items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3',
-									'hover:border-gray-400 hover:bg-gray-50 transition-colors',
+									'transition-colors hover:border-gray-400 hover:bg-gray-50',
 								)}
 							>
 								<span className="font-mono text-lg font-bold">
@@ -255,7 +259,7 @@ export function CreatePromoCodeModal({
 											onClick={() => handleCopyCode(code, index)}
 											className={cn(
 												'flex w-full items-center justify-between rounded px-2 py-1',
-												'hover:bg-gray-100 transition-colors',
+												'transition-colors hover:bg-gray-100',
 											)}
 										>
 											<span className="font-mono text-sm">{code}</span>
@@ -269,7 +273,8 @@ export function CreatePromoCodeModal({
 								</div>
 								{remainingCount > 0 && (
 									<p className="text-xs text-gray-500">
-										+{remainingCount} more code{remainingCount !== 1 ? 's' : ''} (use Copy All or Export)
+										+{remainingCount} more code{remainingCount !== 1 ? 's' : ''}{' '}
+										(use Copy All or Export)
 									</p>
 								)}
 								<div className="flex gap-2">
@@ -342,7 +347,9 @@ export function CreatePromoCodeModal({
 								{form.formState.errors.count.message}
 							</p>
 						)}
-						<p className="text-xs text-gray-500">Generate 1-100 codes at once</p>
+						<p className="text-xs text-gray-500">
+							Generate 1-100 codes at once
+						</p>
 					</div>
 
 					{/* Type Selection */}
@@ -393,7 +400,9 @@ export function CreatePromoCodeModal({
 							type="number"
 							step={getValueStep()}
 							min={1}
-							max={watchType === PROMO_CODE_TYPE.DISCOUNT_PERCENT ? 100 : 10_000}
+							max={
+								watchType === PROMO_CODE_TYPE.DISCOUNT_PERCENT ? 100 : 10_000
+							}
 							{...form.register('value', { valueAsNumber: true })}
 						/>
 						{form.formState.errors.value && (

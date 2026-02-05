@@ -4,7 +4,10 @@ import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
-import { PROMO_CODE_ERROR_CODES, type PromoCodeErrorCode } from '@/types/errors';
+import {
+	PROMO_CODE_ERROR_CODES,
+	type PromoCodeErrorCode,
+} from '@/types/errors';
 import {
 	listPromoCodesResponseSchema,
 	type ListPromoCodesResponse,
@@ -39,6 +42,7 @@ export async function getPromoCodes(
 	params?: GetPromoCodesParams,
 ): Promise<GetPromoCodesServiceResponse> {
 	try {
+		// Step 1: Request promo codes list.
 		const response = await authenticatedClient.get(
 			`/raffles/${raffleId}/promo-codes`,
 			{
@@ -48,8 +52,10 @@ export async function getPromoCodes(
 				},
 			},
 		);
+		// Step 2: Validate response shape.
 		const validated = listPromoCodesResponseSchema.parse(response.data);
 
+		// Step 3: Return typed success.
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {

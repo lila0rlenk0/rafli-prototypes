@@ -69,10 +69,16 @@ export function EnhancedTicketChecker() {
 		setLoading(true);
 		setResult(null);
 
-		const ticketResponse = await verifyTicket(raffleSlug.trim(), ticketCode.trim());
+		const ticketResponse = await verifyTicket(
+			raffleSlug.trim(),
+			ticketCode.trim(),
+		);
 
 		if (!ticketResponse.success) {
-			setResult({ type: 'error', message: getErrorMessage(ticketResponse.error) });
+			setResult({
+				type: 'error',
+				message: getErrorMessage(ticketResponse.error),
+			});
 			setLoading(false);
 			return;
 		}
@@ -80,7 +86,10 @@ export function EnhancedTicketChecker() {
 		const ticket = ticketResponse.data;
 		let proof: MerkleProof | null = null;
 
-		const proofResponse = await getMerkleProof(ticket.raffleId, ticket.ticketId);
+		const proofResponse = await getMerkleProof(
+			ticket.raffleId,
+			ticket.ticketId,
+		);
 		if (proofResponse.success) {
 			proof = proofResponse.data;
 		}
@@ -108,31 +117,37 @@ export function EnhancedTicketChecker() {
 			{!result ? (
 				<form onSubmit={handleVerify} className="space-y-4">
 					<div>
-						<label htmlFor="raffleSlug" className="mb-1 block text-sm font-medium text-neutral-700">
+						<label
+							htmlFor="raffleSlug"
+							className="mb-1 block text-sm font-medium text-neutral-700"
+						>
 							Raffle ID or Slug
 						</label>
 						<input
 							id="raffleSlug"
 							type="text"
 							value={raffleSlug}
-							onChange={(e) => setRaffleSlug(e.target.value)}
+							onChange={e => setRaffleSlug(e.target.value)}
 							placeholder="e.g., my-raffle or raffle_abc123"
-							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:ring-1 focus:ring-black/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
 
 					<div>
-						<label htmlFor="ticketCode" className="mb-1 block text-sm font-medium text-neutral-700">
+						<label
+							htmlFor="ticketCode"
+							className="mb-1 block text-sm font-medium text-neutral-700"
+						>
 							Ticket Code
 						</label>
 						<input
 							id="ticketCode"
 							type="text"
 							value={ticketCode}
-							onChange={(e) => setTicketCode(e.target.value)}
+							onChange={e => setTicketCode(e.target.value)}
 							placeholder="e.g., TKT-1234-ABCDEF"
-							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:outline-none focus:ring-1 focus:ring-black/20 disabled:cursor-not-allowed disabled:opacity-50"
+							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:ring-1 focus:ring-black/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
@@ -193,8 +208,17 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 				<VerificationRow
 					label="Merkle Verified"
 					value={
-						<span className={cn('flex items-center gap-1', ticket.merkleVerified ? 'text-green-600' : 'text-red-600')}>
-							{ticket.merkleVerified ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
+						<span
+							className={cn(
+								'flex items-center gap-1',
+								ticket.merkleVerified ? 'text-green-600' : 'text-red-600',
+							)}
+						>
+							{ticket.merkleVerified ? (
+								<CheckCircle2 className="size-4" />
+							) : (
+								<XCircle className="size-4" />
+							)}
 							{ticket.merkleVerified ? 'Yes' : 'No'}
 						</span>
 					}
@@ -202,7 +226,11 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 				<VerificationRow
 					label="Status"
 					value={
-						<span className={cn(ticket.isVoided ? 'text-red-600' : 'text-green-600')}>
+						<span
+							className={cn(
+								ticket.isVoided ? 'text-red-600' : 'text-green-600',
+							)}
+						>
 							{ticket.isVoided ? 'Voided' : 'Valid'}
 						</span>
 					}

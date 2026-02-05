@@ -18,7 +18,10 @@ import { revalidateProfile } from './revalidate-profile';
 /**
  * Service response type for updating current user data
  */
-type UpdateMeServiceResponse = ServiceResponse<UpdateMeResponse, RaffleErrorCode>;
+type UpdateMeServiceResponse = ServiceResponse<
+	UpdateMeResponse,
+	RaffleErrorCode
+>;
 
 /**
  * Updates the current authenticated user's profile data
@@ -33,7 +36,10 @@ export async function updateMe(
 		// Validate payload before sending
 		const validationResult = updateMePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			console.error('Update me payload validation failed:', validationResult.error);
+			console.error(
+				'Update me payload validation failed:',
+				validationResult.error,
+			);
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

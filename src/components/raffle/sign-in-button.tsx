@@ -21,6 +21,7 @@ export function SignInToBuyButton() {
 	 * @returns Full URL path with query string
 	 */
 	function getFullUrl(): string {
+		// Step 1: Build pathname + query string.
 		const search = searchParams.toString();
 		return search ? `${pathname}?${search}` : pathname;
 	}
@@ -30,6 +31,7 @@ export function SignInToBuyButton() {
 	 * @returns URL string for sign-in redirect
 	 */
 	function getSignInUrl(): string {
+		// Step 1: Encode returnTo for sign-in redirect.
 		return `/sign-in?returnTo=${encodeURIComponent(getFullUrl())}`;
 	}
 

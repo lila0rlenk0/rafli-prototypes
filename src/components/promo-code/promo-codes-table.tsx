@@ -1,6 +1,14 @@
 'use client';
 
-import { Copy, Link2, MoreHorizontal, Ticket, DollarSign, Percent, XCircle } from 'lucide-react';
+import {
+	Copy,
+	Link2,
+	MoreHorizontal,
+	Ticket,
+	DollarSign,
+	Percent,
+	XCircle,
+} from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -106,7 +114,9 @@ export function PromoCodesTable({
 		const origin = typeof window !== 'undefined' ? window.location.origin : '';
 		const shareUrl = `${origin}/browse/${publicSlug}?code=${code}`;
 		try {
+			// Step 1: Copy share URL.
 			await navigator.clipboard.writeText(shareUrl);
+			// Step 2: Notify success.
 			toast.success('Share link copied');
 		} catch {
 			toast.error('Failed to copy link');
@@ -118,7 +128,9 @@ export function PromoCodesTable({
 	 */
 	async function handleCopyBatchId(bulkId: string) {
 		try {
+			// Step 1: Copy batch ID.
 			await navigator.clipboard.writeText(bulkId);
+			// Step 2: Notify success.
 			toast.success('Batch ID copied');
 		} catch {
 			toast.error('Failed to copy batch ID');
@@ -131,10 +143,12 @@ export function PromoCodesTable({
 	async function handleDeactivate() {
 		if (!deactivatingCode || !onDeactivate) return;
 
+		// Step 1: Call deactivate handler.
 		setIsDeactivating(true);
 		try {
 			await onDeactivate(deactivatingCode.id);
 		} finally {
+			// Step 2: Reset modal state.
 			setIsDeactivating(false);
 			setDeactivatingCode(null);
 		}
@@ -326,7 +340,8 @@ export function PromoCodesTable({
 
 						<div className="mt-2 text-xs text-gray-500">
 							{formatPromoCodeUsage(code)} used
-							{code.expiresAt && ` • Expires ${formatExpiration(code.expiresAt)}`}
+							{code.expiresAt &&
+								` • Expires ${formatExpiration(code.expiresAt)}`}
 							{!code.expiresAt && ' • Never expires'}
 						</div>
 					</div>
@@ -359,7 +374,7 @@ export function PromoCodesTableSkeleton() {
 					key={i}
 					className={cn(
 						'flex items-center gap-4 rounded-lg border border-gray-200 p-4',
-						'md:border-0 md:rounded-none md:border-b md:border-gray-100',
+						'md:rounded-none md:border-0 md:border-b md:border-gray-100',
 					)}
 				>
 					<Skeleton className="h-5 w-24" />

@@ -39,14 +39,12 @@ function hasCodeNodeDependency(transformer: {
 			return true;
 		}
 		// Also check by name as fallback
-		const depNames = transformer.dependencies.map(
-			dep => {
-				if (typeof dep === 'function') {
-					return dep.name || dep.constructor?.name;
-				}
-				return String(dep);
-			},
-		);
+		const depNames = transformer.dependencies.map(dep => {
+			if (typeof dep === 'function') {
+				return dep.name || dep.constructor?.name;
+			}
+			return String(dep);
+		});
 		if (
 			depNames.some(
 				name =>

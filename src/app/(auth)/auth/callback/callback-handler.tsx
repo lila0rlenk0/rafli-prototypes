@@ -35,15 +35,12 @@ export function CallbackHandler() {
 				// Step 1: Check for OAuth error in URL params
 				const oauthError = searchParams.get('error');
 				if (oauthError) {
-					setError(
-						'Google sign in was cancelled or failed. Please try again.',
-					);
+					setError('Google sign in was cancelled or failed. Please try again.');
 					setIsProcessing(false);
 					return;
 				}
 
-				// Step 2: Exchange session cookie for JWT token
-				// browserClient sends cookies automatically via withCredentials
+				// Step 2: Exchange session cookie for JWT token (browserClient sends cookies).
 				const response = await browserClient.get<{ token?: string }>(
 					'/auth/token',
 				);

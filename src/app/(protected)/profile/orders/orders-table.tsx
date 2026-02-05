@@ -62,7 +62,10 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 				</thead>
 				<tbody>
 					{orders.map(order => (
-						<tr key={order.id} className="border-b border-gray-100 last:border-0">
+						<tr
+							key={order.id}
+							className="border-b border-gray-100 last:border-0"
+						>
 							<td className="py-4 font-medium">{order.raffleName}</td>
 							<td className="py-4 font-medium">
 								{formatAmount(order.totalAmount, order.currency)}

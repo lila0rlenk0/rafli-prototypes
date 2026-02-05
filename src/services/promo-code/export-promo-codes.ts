@@ -10,7 +10,10 @@ import type { ServiceResponse } from '@/types/service-response';
  * Response type for exporting promo codes
  * Returns CSV content as string (blob download handled client-side)
  */
-type ExportPromoCodesServiceResponse = ServiceResponse<string, PromoCodeErrorCode>;
+type ExportPromoCodesServiceResponse = ServiceResponse<
+	string,
+	PromoCodeErrorCode
+>;
 
 /**
  * Exports promo codes as CSV for a raffle (host only)
@@ -24,6 +27,7 @@ export async function exportPromoCodes(
 	query?: Partial<ExportPromoCodesQuery>,
 ): Promise<ExportPromoCodesServiceResponse> {
 	try {
+		// Step 1: Request CSV export.
 		const response = await authenticatedClient.get(
 			`/raffles/${raffleId}/promo-codes/export`,
 			{
@@ -37,6 +41,7 @@ export async function exportPromoCodes(
 			},
 		);
 
+		// Step 2: Return CSV payload.
 		return success(response.data);
 	} catch (error) {
 		console.error('Export promo codes failed:', error);

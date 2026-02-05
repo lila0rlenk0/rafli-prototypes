@@ -86,8 +86,7 @@ export function decodeJwt(token: string): JwtPayload {
 		const parsed: unknown = JSON.parse(payloadJson);
 		return jwtPayloadSchema.parse(parsed);
 	} catch (error) {
-		const message =
-			error instanceof Error ? error.message : 'Unknown error';
+		const message = error instanceof Error ? error.message : 'Unknown error';
 		throw new Error(`Failed to decode JWT: ${message}`);
 	}
 }

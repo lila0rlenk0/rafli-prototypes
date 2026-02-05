@@ -70,7 +70,8 @@ export function CodeSnippet({
 					codeTagProps={{
 						style: {
 							background: 'transparent',
-							fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+							fontFamily:
+								'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
 						},
 					}}
 				>

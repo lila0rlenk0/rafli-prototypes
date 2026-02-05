@@ -14,7 +14,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { markSent } from '@/services/winning/mark-sent';
 
@@ -128,18 +133,14 @@ export function MarkSentModal({
 							<textarea
 								id="hostNotes"
 								placeholder="Any additional information for the winner..."
-								className="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
+								className="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 								aria-invalid={!!errors.hostNotes}
 								{...register('hostNotes')}
 							/>
 							<FieldError errors={[errors.hostNotes]} />
 						</Field>
 
-						<Button
-							type="submit"
-							disabled={isPending}
-							className="mt-4 w-full"
-						>
+						<Button type="submit" disabled={isPending} className="mt-4 w-full">
 							{isPending ? 'Marking...' : 'Mark as Shipped'}
 						</Button>
 					</FieldGroup>

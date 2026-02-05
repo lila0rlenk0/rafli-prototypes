@@ -111,6 +111,8 @@ export type SignUpInput = z.infer<typeof signUpInputSchema>;
 export type SocialProvider = z.infer<typeof socialProviderSchema>;
 export type SocialSignInInput = z.infer<typeof socialSignInInputSchema>;
 export type SocialSignInResponse = z.infer<typeof socialSignInResponseSchema>;
-export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetInputSchema>;
+export type RequestPasswordResetInput = z.infer<
+	typeof requestPasswordResetInputSchema
+>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordInputSchema>;

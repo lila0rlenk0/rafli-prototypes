@@ -1,7 +1,4 @@
-import type {
-	ServiceFailure,
-	ServiceSuccess,
-} from '@/types/service-response';
+import type { ServiceFailure, ServiceSuccess } from '@/types/service-response';
 
 /**
  * Error Handler Utilities

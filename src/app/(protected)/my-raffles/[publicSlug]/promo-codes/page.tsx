@@ -42,13 +42,13 @@ function isManageableStatus(status: RaffleStatus): boolean {
 export default async function PromoCodesPage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
-	// Get session for ownership verification
+	// Step 1: Require authenticated session.
 	const session = await getSession();
 	if (!session?.user?.id) {
 		redirect('/my-raffles');
 	}
 
-	// Fetch raffle data
+	// Step 2: Fetch raffle data.
 	const raffleResult = await getRaffle(publicSlug);
 	if (!raffleResult.success) {
 		notFound();
@@ -56,7 +56,7 @@ export default async function PromoCodesPage({ params }: PageProps) {
 
 	const raffle = raffleResult.data;
 
-	// Verify ownership - only host can view promo codes
+	// Step 3: Enforce host-only access.
 	if (raffle.hostId !== session.user.id) {
 		redirect('/my-raffles');
 	}
@@ -89,7 +89,11 @@ export default async function PromoCodesPage({ params }: PageProps) {
 			)}
 
 			{/* Main content */}
-			<PromoCodesContent raffleId={raffle.id} publicSlug={publicSlug} isReadOnly={isReadOnly} />
+			<PromoCodesContent
+				raffleId={raffle.id}
+				publicSlug={publicSlug}
+				isReadOnly={isReadOnly}
+			/>
 		</div>
 	);
 }

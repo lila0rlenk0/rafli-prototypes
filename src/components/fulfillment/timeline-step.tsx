@@ -56,7 +56,7 @@ export function TimelineStep({
 				{!isLast && (
 					<div
 						className={cn(
-							'mt-1 h-full w-0.5 min-h-8',
+							'mt-1 h-full min-h-8 w-0.5',
 							status === 'completed' ? 'bg-black' : 'bg-gray-200',
 						)}
 					/>

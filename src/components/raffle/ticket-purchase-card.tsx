@@ -6,10 +6,7 @@ import { useState } from 'react';
 import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
 import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
-import {
-	PROMO_CODE_TYPE,
-	type ValidatedPromoCode,
-} from '@/types/promo-code';
+import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 
 import { SignInToBuyButton } from './sign-in-button';
 import { TicketSelector } from './ticket-selector';
@@ -57,7 +54,10 @@ export function TicketPurchaseCard({
 	const initialCode = codeParam?.trim() || undefined;
 
 	const [ticketQuantity, setTicketQuantity] = useState(1);
-	const [appliedPromo, setAppliedPromo] = useState<ValidatedPromoCode | null>(null);
+	const [appliedPromo, setAppliedPromo] = useState<ValidatedPromoCode | null>(
+		null,
+	);
+	const [promoResetSignal, setPromoResetSignal] = useState(0);
 
 	/**
 	 * Formats a price value with currency symbol
@@ -142,10 +142,12 @@ export function TicketPurchaseCard({
 	 * @param promo - The validated promo code
 	 */
 	function handleValidPromo(promo: ValidatedPromoCode) {
+		// Step 1: Store validated promo.
 		setAppliedPromo(promo);
 
 		// For free tickets, set quantity to match the promo value
 		if (promo.type === PROMO_CODE_TYPE.FREE_TICKETS) {
+			// Step 2: Sync ticket quantity for free tickets.
 			const freeCount = Math.floor(parseFloat(promo.value));
 			setTicketQuantity(freeCount);
 		}
@@ -155,6 +157,7 @@ export function TicketPurchaseCard({
 	 * Handles promo code removal
 	 */
 	function handleClearPromo() {
+		// Step 1: Clear promo and reset quantity.
 		setAppliedPromo(null);
 		setTicketQuantity(1);
 	}
@@ -164,10 +167,13 @@ export function TicketPurchaseCard({
 	 * Keeps quantity for discount promos; resets for free-ticket promos.
 	 */
 	function handlePromoInvalid() {
+		// Step 1: Clear promo and notify input to reset.
 		const wasFreeTickets = appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
 		setAppliedPromo(null);
+		setPromoResetSignal(prev => prev + 1);
 
 		if (wasFreeTickets) {
+			// Step 2: Reset quantity for free-ticket promos.
 			setTicketQuantity(1);
 		}
 	}
@@ -204,6 +210,7 @@ export function TicketPurchaseCard({
 			{/* Promo code input */}
 			{isAuthenticated ? (
 				<PromoCodeInput
+					key={`${initialCode ?? ''}:${promoResetSignal}`}
 					raffleId={raffleId}
 					onValidCode={handleValidPromo}
 					onClear={handleClearPromo}
@@ -241,7 +248,8 @@ export function TicketPurchaseCard({
 			{/* Free tickets info */}
 			{isFree && (
 				<p className="text-center text-sm text-green-600">
-					{getFreeTicketCount()} free ticket{getFreeTicketCount() !== 1 ? 's' : ''} with this code
+					{getFreeTicketCount()} free ticket
+					{getFreeTicketCount() !== 1 ? 's' : ''} with this code
 				</p>
 			)}
 

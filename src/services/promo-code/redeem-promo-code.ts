@@ -4,7 +4,10 @@ import { ZodError, z } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
-import { PROMO_CODE_ERROR_CODES, type PromoCodeErrorCode } from '@/types/errors';
+import {
+	PROMO_CODE_ERROR_CODES,
+	type PromoCodeErrorCode,
+} from '@/types/errors';
 import { promoCodeStringSchema, promoCodeTypeSchema } from '@/types/promo-code';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -36,8 +39,12 @@ const redeemPromoCodeResponseSchema = z.object({
 // Types
 // ==========================================
 
-export type RedeemPromoCodePayload = z.infer<typeof redeemPromoCodePayloadSchema>;
-export type RedeemPromoCodeResponse = z.infer<typeof redeemPromoCodeResponseSchema>;
+export type RedeemPromoCodePayload = z.infer<
+	typeof redeemPromoCodePayloadSchema
+>;
+export type RedeemPromoCodeResponse = z.infer<
+	typeof redeemPromoCodeResponseSchema
+>;
 
 // ==========================================
 // Service
@@ -56,23 +63,26 @@ export async function redeemPromoCode(
 	payload: RedeemPromoCodePayload,
 ): Promise<ServiceResponse<RedeemPromoCodeResponse, PromoCodeErrorCode>> {
 	try {
-		// Validate payload
+		// Step 1: Validate payload.
 		const validationResult = redeemPromoCodePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			console.error('Redeem payload validation failed:', validationResult.error);
+			console.error(
+				'Redeem payload validation failed:',
+				validationResult.error,
+			);
 			return failure(PROMO_CODE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		// Schema already transforms code to uppercase
-		const response = await authenticatedClient.post(
-			'/promo-codes/redeem',
-			{
-				code: validationResult.data.code,
-				raffleId: validationResult.data.raffleId,
-				...(validationResult.data.orderId && { orderId: validationResult.data.orderId }),
-			},
-		);
+		// Step 2: Send redeem request (schema uppercases code).
+		const response = await authenticatedClient.post('/promo-codes/redeem', {
+			code: validationResult.data.code,
+			raffleId: validationResult.data.raffleId,
+			...(validationResult.data.orderId && {
+				orderId: validationResult.data.orderId,
+			}),
+		});
 
+		// Step 3: Validate response and return success.
 		const validated = redeemPromoCodeResponseSchema.parse(response.data);
 		return success(validated);
 	} catch (error) {

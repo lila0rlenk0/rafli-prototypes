@@ -42,7 +42,8 @@ export function PromoCodeInput({
 	const [isExpanded, setIsExpanded] = useState(!!initialCode);
 	const [code, setCode] = useState(initialCode?.trim().toUpperCase() || '');
 	const [isValidating, setIsValidating] = useState(false);
-	const [validatedPromo, setValidatedPromo] = useState<ValidatedPromoCode | null>(null);
+	const [validatedPromo, setValidatedPromo] =
+		useState<ValidatedPromoCode | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const hasAutoValidated = useRef(false);
 
@@ -97,14 +98,17 @@ export function PromoCodeInput({
 		const targetCode = (codeToValidate ?? code).trim().toUpperCase();
 		if (!targetCode) return;
 
+		// Step 1: Enter validating state.
 		setIsValidating(true);
 		setError(null);
 
+		// Step 2: Call validation service.
 		const result = await validatePromoCode(raffleId, targetCode);
 
 		setIsValidating(false);
 
 		if (!result.success) {
+			// Step 3: Show error if invalid.
 			setError(getErrorMessage(result.error));
 			return;
 		}
@@ -117,8 +121,9 @@ export function PromoCodeInput({
 		const value =
 			response.ticketsGranted !== undefined
 				? response.ticketsGranted.toString()
-				: response.discountAmount ?? '0';
+				: (response.discountAmount ?? '0');
 
+		// Step 4: Normalize and store validated promo.
 		const promo: ValidatedPromoCode = {
 			valid: true,
 			code: targetCode,
@@ -135,18 +140,18 @@ export function PromoCodeInput({
 	 * Auto-validate initialCode on mount
 	 */
 	useEffect(() => {
-		if (!initialCode || hasAutoValidated.current || validatedPromo) return;
+		const normalized = initialCode?.trim().toUpperCase() ?? '';
+		if (!normalized || hasAutoValidated.current || validatedPromo) return;
 		hasAutoValidated.current = true;
 
 		let cancelled = false;
 
-		const codeToValidate = initialCode.trim().toUpperCase();
-
 		async function autoValidate() {
+			// Step 2: Validate initial code on mount.
 			setIsValidating(true);
 			setError(null);
 
-			const result = await validatePromoCode(raffleId, codeToValidate);
+			const result = await validatePromoCode(raffleId, normalized);
 			if (cancelled) return;
 
 			setIsValidating(false);
@@ -159,11 +164,12 @@ export function PromoCodeInput({
 			const value =
 				result.data.ticketsGranted !== undefined
 					? result.data.ticketsGranted.toString()
-					: result.data.discountAmount ?? '0';
+					: (result.data.discountAmount ?? '0');
 
+			// Step 3: Apply validated promo to state.
 			const promo: ValidatedPromoCode = {
 				valid: true,
-				code: codeToValidate.toUpperCase(),
+				code: normalized,
 				type: result.data.type,
 				value,
 			};
@@ -246,7 +252,7 @@ export function PromoCodeInput({
 			<button
 				type="button"
 				onClick={() => setIsExpanded(true)}
-				className="text-sm text-[#7B7B7B] hover:text-gray-900 transition-colors"
+				className="text-sm text-[#7B7B7B] transition-colors hover:text-gray-900"
 			>
 				Have a promo code?
 			</button>
@@ -270,7 +276,8 @@ export function PromoCodeInput({
 					maxLength={20}
 					className={cn(
 						'font-mono uppercase',
-						error && 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100',
+						error &&
+							'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100',
 					)}
 				/>
 				<Button
@@ -279,11 +286,7 @@ export function PromoCodeInput({
 					disabled={!code.trim() || isValidating}
 					className="shrink-0"
 				>
-					{isValidating ? (
-						<Loader2 className="size-4 animate-spin" />
-					) : (
-						'Apply'
-					)}
+					{isValidating ? <Loader2 className="size-4 animate-spin" /> : 'Apply'}
 				</Button>
 			</div>
 
@@ -296,7 +299,7 @@ export function PromoCodeInput({
 					<button
 						type="button"
 						onClick={handleReset}
-						className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+						className="text-xs text-gray-500 transition-colors hover:text-gray-700"
 					>
 						Cancel
 					</button>

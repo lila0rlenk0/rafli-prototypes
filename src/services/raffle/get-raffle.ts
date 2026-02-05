@@ -19,7 +19,9 @@ type GetRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
  * @param publicSlug - The public slug of the raffle to fetch
  * @returns ServiceResponse with raffle on success, RaffleErrorCode on failure
  */
-export async function getRaffle(publicSlug: string): Promise<GetRaffleResponse> {
+export async function getRaffle(
+	publicSlug: string,
+): Promise<GetRaffleResponse> {
 	try {
 		const response = await baseClient.get(`/raffles/${publicSlug}`);
 

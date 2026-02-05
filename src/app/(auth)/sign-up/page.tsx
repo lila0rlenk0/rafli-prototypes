@@ -9,6 +9,7 @@ import { SignUpForm } from './sign-up-form';
  * Form wrapped in Suspense for useSearchParams() compatibility with static generation.
  */
 export default function SignUpPage() {
+	// Step 1: Render split layout with sign-up form.
 	return (
 		<div className="bg-background relative grid min-h-svh overflow-hidden lg:grid-cols-2">
 			<ColoredCards className="absolute z-0 origin-top-left scale-75 max-lg:scale-50" />

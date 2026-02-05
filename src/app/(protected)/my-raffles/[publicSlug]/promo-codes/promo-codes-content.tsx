@@ -57,16 +57,19 @@ export function PromoCodesContent({
 	 */
 	const fetchCodes = useCallback(
 		async (showLoading = true) => {
+			// Step 1: Set loading state.
 			if (showLoading) setIsLoading(true);
 			else setIsRefreshing(true);
 
 			try {
+				// Step 2: Fetch codes for current page.
 				const result = await getPromoCodes(raffleId, {
 					limit: PAGE_SIZE,
 					offset,
 				});
 
 				if (result.success) {
+					// Step 3: Update list and totals.
 					setCodes(result.data.items);
 					setTotal(result.data.total);
 				} else {
@@ -95,9 +98,11 @@ export function PromoCodesContent({
 		maxUses: number;
 		expiresAt?: string;
 	}): Promise<BulkCreatePromoCodesResponse | null> {
+		// Step 1: Send create request.
 		const result = await bulkCreatePromoCodes(raffleId, data);
 
 		if (result.success) {
+			// Step 2: Notify and refresh list.
 			const count = result.data.created;
 			toast.success(`${count} promo code${count !== 1 ? 's' : ''} created`);
 			// Refresh list to show new codes
@@ -113,9 +118,11 @@ export function PromoCodesContent({
 	 * Handles deactivating a promo code
 	 */
 	async function handleDeactivate(codeId: string): Promise<void> {
+		// Step 1: Call deactivate endpoint.
 		const result = await deactivatePromoCode(codeId);
 
 		if (result.success) {
+			// Step 2: Notify and refresh list.
 			toast.success('Promo code deactivated');
 			// Refresh list to update status
 			await fetchCodes(false);
@@ -143,9 +150,11 @@ export function PromoCodesContent({
 	 * Handles exporting promo codes
 	 */
 	async function handleExport(query: ExportPromoCodesQuery): Promise<void> {
+		// Step 1: Request CSV from backend.
 		const result = await exportPromoCodes(raffleId, query);
 
 		if (result.success) {
+			// Step 2: Download file and notify.
 			downloadCsv(result.data, `promo-codes-${raffleId}.csv`);
 			toast.success('Export downloaded');
 		} else {
@@ -157,9 +166,11 @@ export function PromoCodesContent({
 	 * Handles exporting a specific batch of promo codes
 	 */
 	async function handleExportBatch(bulkId: string): Promise<void> {
+		// Step 1: Request CSV for batch.
 		const result = await exportPromoCodes(raffleId, { bulkId });
 
 		if (result.success) {
+			// Step 2: Download file and notify.
 			downloadCsv(result.data, `promo-codes-batch-${bulkId.slice(0, 8)}.csv`);
 			toast.success('Batch exported');
 		} else {

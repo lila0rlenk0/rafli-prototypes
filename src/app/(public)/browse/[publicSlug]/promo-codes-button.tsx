@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { useContext } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { UserStoreContext, useUserStore } from '@/providers/user-store-provider';
+import {
+	UserStoreContext,
+	useUserStore,
+} from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
 
 /**
@@ -67,10 +70,12 @@ function PromoCodesButtonContent({
 	 * Determines if the button should be shown
 	 */
 	function shouldShow(): boolean {
+		// Step 1: Require resolved mode.
 		if (mode === null) {
 			return false;
 		}
 
+		// Step 2: Show only for host owners with manageable status.
 		const isHostMode = mode === USER_MODE.HOST;
 		return isOwner && isManageable && isHostMode;
 	}
@@ -80,12 +85,7 @@ function PromoCodesButtonContent({
 	}
 
 	return (
-		<Button
-			asChild
-			variant="outline"
-			size="sm"
-			className="gap-1.5"
-		>
+		<Button asChild variant="outline" size="sm" className="gap-1.5">
 			<Link href={`/my-raffles/${publicSlug}/promo-codes`}>
 				<Ticket className="size-4" />
 				Promo Codes

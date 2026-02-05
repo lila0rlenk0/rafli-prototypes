@@ -4,7 +4,10 @@ import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
-import { PROMO_CODE_ERROR_CODES, type PromoCodeErrorCode } from '@/types/errors';
+import {
+	PROMO_CODE_ERROR_CODES,
+	type PromoCodeErrorCode,
+} from '@/types/errors';
 import {
 	PROMO_CODE_REGEX,
 	type ValidatePromoCodeResponse,
@@ -26,16 +29,18 @@ export async function validatePromoCode(
 	try {
 		const normalizedCode = code.trim().toUpperCase();
 
-		// Early validation before network call
+		// Step 1: Early format validation.
 		if (!PROMO_CODE_REGEX.test(normalizedCode)) {
 			return failure(PROMO_CODE_ERROR_CODES.INVALID_CODE);
 		}
 
+		// Step 2: Send validation request.
 		const response = await authenticatedClient.post('/promo-codes/validate', {
 			raffleId,
 			code: normalizedCode,
 		});
 
+		// Step 3: Validate response and return success.
 		const validated = validatePromoCodeResponseSchema.parse(response.data);
 		return success(validated);
 	} catch (error) {

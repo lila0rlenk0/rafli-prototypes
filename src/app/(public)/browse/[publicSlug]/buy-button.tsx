@@ -8,9 +8,12 @@ import { toast } from 'sonner';
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { createOrder } from '@/services/order/create-order';
+import { getMyOrders } from '@/services/order/get-my-orders';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
+import { validatePromoCode } from '@/services/promo-code/validate-promo-code';
 import type { OrderErrorCode, PaymentErrorCode, PromoCodeErrorCode } from '@/types/errors';
+import { ORDER_STATUS, type OrderWithRaffle } from '@/types/order';
 
 /**
  * Props for BuyButton
@@ -23,6 +26,7 @@ interface BuyButtonProps {
 	questionId?: string | null;
 	promoCode?: string;
 	isFreeTickets?: boolean;
+	onPromoInvalid?: () => void;
 }
 
 /**
@@ -51,6 +55,7 @@ export function BuyButton({
 	questionId,
 	promoCode,
 	isFreeTickets = false,
+	onPromoInvalid,
 }: BuyButtonProps) {
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +74,8 @@ export function BuyButton({
 				return 'Not enough tickets available';
 			case 'core:order:invalid-quantity':
 				return 'Invalid ticket quantity';
+			case 'core:raffle:user-ticket-limit-exceeded':
+				return 'You already have pending tickets for this raffle';
 			case 'network_error':
 				return 'Network error. Please check your connection';
 			case 'timeout_error':
@@ -137,8 +144,12 @@ export function BuyButton({
 			case 'core:order:permission-denied':
 				return 'You do not have access to this order';
 			case 'global:validation:invalid-argument':
+			case 'invalid_code':
 			case 'validation_error':
 				return 'Invalid promo code request';
+			case 'global:auth:unauthenticated':
+			case 'unauthorized':
+				return 'Please sign in to continue';
 			case 'network_error':
 				return 'Network error. Please check your connection';
 			case 'timeout_error':
@@ -146,6 +157,49 @@ export function BuyButton({
 			default:
 				return 'Failed to redeem code. Please try again';
 		}
+	}
+
+	/**
+	 * Determines if promo should be cleared from UI after an error.
+	 * Only clear for deterministic business errors, not transient network issues.
+	 */
+	function shouldClearPromo(errorCode: PromoCodeErrorCode): boolean {
+		switch (errorCode) {
+			case 'core:promo:not-found':
+			case 'core:promo:expired':
+			case 'core:promo:max-uses-reached':
+			case 'core:promo:deactivated':
+			case 'core:promo:already-redeemed':
+			case 'core:promo:host-cannot-redeem':
+			case 'core:promo:raffle-mismatch':
+			case 'core:promo:order-already-discounted':
+			case 'global:validation:invalid-argument':
+			case 'invalid_code':
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	/**
+	 * Gets existing pending order for same raffle + quantity.
+	 * Reuses pending orders to avoid creating duplicates on retries.
+	 */
+	async function getReusablePendingOrder(): Promise<OrderWithRaffle | null> {
+		const ordersResult = await getMyOrders({ page: 1, limit: 100 });
+
+		if (!ordersResult.success) {
+			return null;
+		}
+
+		return (
+			ordersResult.data.items.find(
+				order =>
+					order.status === ORDER_STATUS.PENDING &&
+					order.raffleId === raffleId &&
+					order.ticketQuantity === ticketQuantity,
+			) ?? null
+		);
 	}
 
 	/**
@@ -192,6 +246,9 @@ export function BuyButton({
 			if (!result.success) {
 				const message = getPromoErrorMessage(result.error);
 				toast.error(message);
+				if (shouldClearPromo(result.error)) {
+					onPromoInvalid?.();
+				}
 				return;
 			}
 
@@ -216,48 +273,74 @@ export function BuyButton({
 		setIsLoading(true);
 
 		try {
-			// Step 1: Create order
-			const orderResult = await createOrder({
-				raffleId,
-				ticketQuantity,
-				...(promoCode && { promoCode }),
-			});
-
-			if (!orderResult.success) {
-				const message = getOrderErrorMessage(orderResult.error);
-				toast.error(message);
-				return;
+			// Step 1: Re-validate promo just before checkout to avoid stale codes
+			if (promoCode && !isFreeTickets) {
+				const validationResult = await validatePromoCode(raffleId, promoCode);
+				if (!validationResult.success) {
+					const message = getPromoErrorMessage(validationResult.error);
+					toast.error(message);
+					if (shouldClearPromo(validationResult.error)) {
+						onPromoInvalid?.();
+					}
+					return;
+				}
 			}
 
-			const order = orderResult.data;
-
-			// Step 2: Apply discount promo to pending order (free tickets handled separately)
-			if (promoCode && !isFreeTickets) {
-				const redeemResult = await redeemPromoCode({
-					code: promoCode,
+			// Step 2: Reuse existing pending order if possible
+			let order = await getReusablePendingOrder();
+			if (!order) {
+				const orderResult = await createOrder({
 					raffleId,
-					orderId: order.id,
+					ticketQuantity,
 				});
 
-				if (!redeemResult.success) {
-					const message = getPromoErrorMessage(redeemResult.error);
+				if (!orderResult.success) {
+					const message = getOrderErrorMessage(orderResult.error);
 					toast.error(message);
 					return;
 				}
 
-				const discountAmount = parseFloat(redeemResult.data.discountAmount ?? '0');
-				const orderTotal = parseFloat(order.totalAmount);
-				const remainingTotal = Math.max(0, orderTotal - discountAmount);
+				order = orderResult.data;
+			}
 
-				// Backend auto-completes $0 orders after promo redemption
-				if (remainingTotal === 0) {
-					toast.success('Promo applied. Tickets claimed successfully!');
-					router.refresh();
+			// Step 3: Apply discount promo to pending order (free tickets handled separately)
+			if (promoCode && !isFreeTickets) {
+				if (order.promoCode && order.promoCode !== promoCode) {
+					toast.error('A different promo code is already applied to this order');
+					onPromoInvalid?.();
 					return;
+				}
+
+				if (order.promoCode !== promoCode) {
+					const redeemResult = await redeemPromoCode({
+						code: promoCode,
+						raffleId,
+						orderId: order.id,
+					});
+
+					if (!redeemResult.success) {
+						const message = getPromoErrorMessage(redeemResult.error);
+						toast.error(message);
+						if (shouldClearPromo(redeemResult.error)) {
+							onPromoInvalid?.();
+						}
+						return;
+					}
+
+					const discountAmount = parseFloat(redeemResult.data.discountAmount ?? '0');
+					const orderTotal = parseFloat(order.totalAmount);
+					const remainingTotal = Math.max(0, orderTotal - discountAmount);
+
+					// Backend auto-completes $0 orders after promo redemption
+					if (remainingTotal === 0) {
+						toast.success('Promo applied. Tickets claimed successfully!');
+						router.refresh();
+						return;
+					}
 				}
 			}
 
-			// Step 3: Create checkout session
+			// Step 4: Create checkout session
 			const checkoutResult = await createCheckoutSession({
 				orderId: order.id,
 				raffleId,
@@ -272,7 +355,7 @@ export function BuyButton({
 
 			const session = checkoutResult.data;
 
-			// Step 4: Redirect to Stripe checkout
+			// Step 5: Redirect to Stripe checkout
 			window.location.href = session.checkoutUrl;
 		} catch (error) {
 			console.error('Unexpected error during checkout:', error);

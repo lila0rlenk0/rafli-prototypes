@@ -59,6 +59,15 @@ const createPromoCodeFormSchema = z
 			return true;
 		},
 		{ message: 'Tickets must be a whole number', path: ['value'] },
+	)
+	.refine(
+		data => {
+			if (data.noExpiration) {
+				return true;
+			}
+			return !!data.expiresAt;
+		},
+		{ message: 'Expiration date is required', path: ['expiresAt'] },
 	);
 
 type CreatePromoCodeFormData = z.infer<typeof createPromoCodeFormSchema>;
@@ -422,12 +431,19 @@ export function CreatePromoCodeModal({
 							</Label>
 						</div>
 						{!watchNoExpiration && (
-							<DatePicker
-								value={form.watch('expiresAt')}
-								onValueChange={value => form.setValue('expiresAt', value)}
-								placeholder="Select expiration date"
-								minDate={new Date()}
-							/>
+							<>
+								<DatePicker
+									value={form.watch('expiresAt')}
+									onValueChange={value => form.setValue('expiresAt', value)}
+									placeholder="Select expiration date"
+									minDate={new Date()}
+								/>
+								{form.formState.errors.expiresAt && (
+									<p className="text-sm text-red-500">
+										{form.formState.errors.expiresAt.message}
+									</p>
+								)}
+							</>
 						)}
 					</div>
 

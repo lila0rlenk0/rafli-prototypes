@@ -159,6 +159,19 @@ export function TicketPurchaseCard({
 		setTicketQuantity(1);
 	}
 
+	/**
+	 * Handles promo invalidation from checkout flow.
+	 * Keeps quantity for discount promos; resets for free-ticket promos.
+	 */
+	function handlePromoInvalid() {
+		const wasFreeTickets = appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
+		setAppliedPromo(null);
+
+		if (wasFreeTickets) {
+			setTicketQuantity(1);
+		}
+	}
+
 	const maxTickets = availableTickets;
 	const subtotal = calculateSubtotal();
 	const discount = calculateDiscount();
@@ -189,13 +202,17 @@ export function TicketPurchaseCard({
 			)}
 
 			{/* Promo code input */}
-			<PromoCodeInput
-				raffleId={raffleId}
-				onValidCode={handleValidPromo}
-				onClear={handleClearPromo}
-				disabled={disabled}
-				initialCode={initialCode}
-			/>
+			{isAuthenticated ? (
+				<PromoCodeInput
+					raffleId={raffleId}
+					onValidCode={handleValidPromo}
+					onClear={handleClearPromo}
+					disabled={disabled}
+					initialCode={initialCode}
+				/>
+			) : (
+				<p className="text-sm text-[#7B7B7B]">Sign in to apply promo codes</p>
+			)}
 
 			<Separator className="my-4 bg-[#B4B4B4]" />
 
@@ -238,6 +255,7 @@ export function TicketPurchaseCard({
 					questionId={questionId}
 					promoCode={appliedPromo?.code}
 					isFreeTickets={isFree}
+					onPromoInvalid={handlePromoInvalid}
 				/>
 			) : (
 				<SignInToBuyButton />

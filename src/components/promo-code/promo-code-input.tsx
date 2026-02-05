@@ -74,6 +74,11 @@ export function PromoCodeInput({
 				return 'Raffle not found';
 			case 'core:raffle:not-live':
 				return 'This raffle is not currently active';
+			case 'invalid_code':
+				return 'Invalid promo code format';
+			case 'global:auth:unauthenticated':
+			case 'unauthorized':
+				return 'Sign in to apply promo codes';
 			case 'network_error':
 				return 'Network error. Please check your connection.';
 			case 'timeout_error':

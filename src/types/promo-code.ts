@@ -55,7 +55,8 @@ export const promoCodeSchema = z.object({
 	id: z.string(),
 	code: z.string(),
 	raffleId: z.string(),
-	bulkId: z.string().uuid().nullable(),
+	// Backend may omit bulkId for older payloads; normalize to null for UI.
+	bulkId: z.string().uuid().nullable().optional().default(null),
 	type: promoCodeTypeSchema,
 	value: z.string(),
 	maxUses: z.number(),

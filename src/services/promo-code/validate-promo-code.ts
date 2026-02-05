@@ -2,7 +2,7 @@
 
 import { ZodError } from 'zod';
 
-import { baseClient } from '@/lib/api/client';
+import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import { PROMO_CODE_ERROR_CODES, type PromoCodeErrorCode } from '@/types/errors';
 import {
@@ -31,7 +31,7 @@ export async function validatePromoCode(
 			return failure(PROMO_CODE_ERROR_CODES.INVALID_CODE);
 		}
 
-		const response = await baseClient.post('/promo-codes/validate', {
+		const response = await authenticatedClient.post('/promo-codes/validate', {
 			raffleId,
 			code: normalizedCode,
 		});

@@ -4,7 +4,10 @@ import { Download, Plus, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { CreatePromoCodeModal } from '@/components/promo-code/create-promo-code-modal';
+import {
+	CreatePromoCodeModal,
+	type CreatePromoCodeData,
+} from '@/components/promo-code/create-promo-code-modal';
 import { ExportPromoCodesModal } from '@/components/promo-code/export-promo-codes-modal';
 import { PromoCodesEmptyState } from '@/components/promo-code/promo-codes-empty-state';
 import {
@@ -20,7 +23,6 @@ import type {
 	BulkCreatePromoCodesResponse,
 	ExportPromoCodesQuery,
 	PromoCode,
-	PromoCodeType,
 } from '@/types/promo-code';
 
 const PAGE_SIZE = 20;
@@ -70,13 +72,14 @@ export function PromoCodesContent({
 					offset,
 				});
 
-				if (result.success) {
-					// Step 3: Update list and totals.
-					setCodes(result.data.items);
-					setTotal(result.data.total);
-				} else {
+				if (!result.success) {
 					toast.error('Failed to load promo codes');
+					return;
 				}
+
+				// Step 3: Update list and totals.
+				setCodes(result.data.items);
+				setTotal(result.data.total);
 			} finally {
 				setIsLoading(false);
 				setIsRefreshing(false);
@@ -93,13 +96,9 @@ export function PromoCodesContent({
 	/**
 	 * Handles creating promo codes (single or bulk)
 	 */
-	async function handleCreate(data: {
-		count: number;
-		type: PromoCodeType;
-		value: number;
-		maxUses: number;
-		expiresAt?: string;
-	}): Promise<BulkCreatePromoCodesResponse | null> {
+	async function handleCreate(
+		data: CreatePromoCodeData,
+	): Promise<BulkCreatePromoCodesResponse | null> {
 		// Step 1: Send create request.
 		const result = await bulkCreatePromoCodes(raffleId, data);
 
@@ -123,14 +122,15 @@ export function PromoCodesContent({
 		// Step 1: Call deactivate endpoint.
 		const result = await deactivatePromoCode(codeId);
 
-		if (result.success) {
-			// Step 2: Notify and refresh list.
-			toast.success('Promo code deactivated');
-			// Refresh list to update status
-			await fetchCodes(false);
-		} else {
+		if (!result.success) {
 			toast.error('Failed to deactivate promo code');
+			return;
 		}
+
+		// Step 2: Notify and refresh list.
+		toast.success('Promo code deactivated');
+		// Refresh list to update status
+		await fetchCodes(false);
 	}
 
 	/**
@@ -155,13 +155,14 @@ export function PromoCodesContent({
 		// Step 1: Request CSV from backend.
 		const result = await exportPromoCodes(raffleId, query);
 
-		if (result.success) {
-			// Step 2: Download file and notify.
-			downloadCsv(result.data, `promo-codes-${raffleId}.csv`);
-			toast.success('Export downloaded');
-		} else {
+		if (!result.success) {
 			toast.error('Failed to export promo codes');
+			return;
 		}
+
+		// Step 2: Download file and notify.
+		downloadCsv(result.data, `promo-codes-${raffleId}.csv`);
+		toast.success('Export downloaded');
 	}
 
 	/**
@@ -171,13 +172,14 @@ export function PromoCodesContent({
 		// Step 1: Request CSV for batch.
 		const result = await exportPromoCodes(raffleId, { bulkId });
 
-		if (result.success) {
-			// Step 2: Download file and notify.
-			downloadCsv(result.data, `promo-codes-batch-${bulkId.slice(0, 8)}.csv`);
-			toast.success('Batch exported');
-		} else {
+		if (!result.success) {
 			toast.error('Failed to export batch');
+			return;
 		}
+
+		// Step 2: Download file and notify.
+		downloadCsv(result.data, `promo-codes-batch-${bulkId.slice(0, 8)}.csv`);
+		toast.success('Batch exported');
 	}
 
 	/**
@@ -205,14 +207,30 @@ export function PromoCodesContent({
 	const currentPage = getCurrentPage();
 	const hasMultiplePages = totalPages > 1;
 
+	/**
+	 * Gets formatted header text showing total codes count
+	 */
+	function getHeaderText(): string {
+		if (total === 0) {
+			return 'Codes';
+		}
+		return `${total} Code${total !== 1 ? 's' : ''}`;
+	}
+
+	/**
+	 * Gets refresh icon class based on loading state
+	 */
+	function getRefreshIconClass(): string {
+		const base = 'size-4';
+		return isRefreshing ? `${base} animate-spin` : base;
+	}
+
 	return (
 		<div className="rounded-2xl bg-white p-6">
 			{/* Actions Header */}
 			<div className="mb-6 flex flex-wrap items-center justify-between gap-4">
 				<div className="flex items-center gap-2">
-					<h2 className="text-lg font-semibold">
-						{total > 0 ? `${total} Code${total !== 1 ? 's' : ''}` : 'Codes'}
-					</h2>
+					<h2 className="text-lg font-semibold">{getHeaderText()}</h2>
 					{!isLoading && (
 						<Button
 							variant="ghost"
@@ -221,9 +239,7 @@ export function PromoCodesContent({
 							disabled={isRefreshing}
 							className="text-gray-500"
 						>
-							<RefreshCw
-								className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`}
-							/>
+							<RefreshCw className={getRefreshIconClass()} />
 						</Button>
 					)}
 				</div>

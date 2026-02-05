@@ -73,18 +73,23 @@ const createPromoCodeFormSchema = z
 type CreatePromoCodeFormData = z.infer<typeof createPromoCodeFormSchema>;
 
 /**
+ * Data for creating promo codes
+ */
+export interface CreatePromoCodeData {
+	count: number;
+	type: PromoCodeType;
+	value: number;
+	maxUses: number;
+	expiresAt?: string;
+}
+
+/**
  * Props for CreatePromoCodeModal
  */
 interface CreatePromoCodeModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onCreate: (data: {
-		count: number;
-		type: PromoCodeType;
-		value: number;
-		maxUses: number;
-		expiresAt?: string;
-	}) => Promise<BulkCreatePromoCodesResponse | null>;
+	onCreate: (data: CreatePromoCodeData) => Promise<BulkCreatePromoCodesResponse | null>;
 	onExportBatch?: (bulkId: string) => void;
 	allowFreeTickets: boolean;
 }

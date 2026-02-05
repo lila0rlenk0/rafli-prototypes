@@ -6,6 +6,7 @@ Next.js raffle platform with Clean Architecture.
 
 ```bash
 bun run dev      # development server
+bun run format   # format code (Prettier)
 bun run lint     # lint (REQUIRED after changes)
 bun run build    # production build
 ```
@@ -34,13 +35,19 @@ ALWAYS: Run `bun run lint` before completing tasks
 ALWAYS: Write code and comments in English
 ALWAYS: Use Bun, never npm/yarn/pnpm
 ALWAYS: Use underscores in large numbers (1_000_000)
-ALWAYS: Run `bun run lint` before completing tasks
+ALWAYS: Run `bun run format && bun run lint` before completing tasks
 ALWAYS: Use `@/env/server` or `@/env/client` for environment variables
-NEVER: Skip lint verification
+NEVER: Skip format/lint verification
 NEVER: Use `any` types without justification
 NEVER: Use `process.env` directly (use parsed env from `@/env/`)
 NEVER: Expose secrets to client
 
+## Formatting (Prettier)
+
+- Tabs for indentation (not spaces)
+- Single quotes: `'string'` not `"string"`
+- No parens on single-param arrows: `x => x` not `(x) => x`
+- Tailwind classes auto-sorted by plugin
 
 ## Conventions
 
@@ -60,6 +67,7 @@ NEVER: Expose secrets to client
 ## Reference
 
 @docs/verification.md
+@docs/coding-standards.md
 
 ## Philosophy
 

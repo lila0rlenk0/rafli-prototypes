@@ -18,22 +18,6 @@ interface PageProps {
 }
 
 /**
- * Statuses that allow promo code management (create/deactivate)
- */
-const MANAGEABLE_STATUSES: RaffleStatus[] = [
-	RAFFLE_STATUS.DRAFT,
-	RAFFLE_STATUS.QUEUED,
-	RAFFLE_STATUS.LIVE,
-];
-
-/**
- * Checks if raffle status allows promo code management
- */
-function isManageableStatus(status: RaffleStatus): boolean {
-	return MANAGEABLE_STATUSES.includes(status);
-}
-
-/**
  * Promo Codes Page
  *
  * Allows hosts to manage promo codes for their raffles.
@@ -41,6 +25,22 @@ function isManageableStatus(status: RaffleStatus): boolean {
  */
 export default async function PromoCodesPage({ params }: PageProps) {
 	const { publicSlug } = await params;
+
+	/**
+	 * Statuses that allow promo code management (create/deactivate)
+	 */
+	const MANAGEABLE_STATUSES: RaffleStatus[] = [
+		RAFFLE_STATUS.DRAFT,
+		RAFFLE_STATUS.QUEUED,
+		RAFFLE_STATUS.LIVE,
+	];
+
+	/**
+	 * Checks if raffle status allows promo code management
+	 */
+	function isManageableStatus(status: RaffleStatus): boolean {
+		return MANAGEABLE_STATUSES.includes(status);
+	}
 
 	// Step 1: Require authenticated session.
 	const session = await getSession();

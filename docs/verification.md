@@ -2,13 +2,20 @@
 
 CRITICAL: Run these checks after EVERY implementation.
 
-## Required: Lint
+## Required: Format & Lint
 
 ```bash
-bun run lint
+bun run format && bun run lint
 ```
 
-Must pass:
+**Formatting rules (Prettier):**
+
+- Tabs for indentation (not spaces)
+- Single quotes (not double)
+- No parens on single-param arrows: `x => x` not `(x) => x`
+- Tailwind classes auto-sorted
+
+**Lint must pass:**
 
 - No ESLint errors/warnings
 - No unused variables/imports
@@ -19,7 +26,7 @@ Must pass:
 
 **Code Quality:**
 
-- [ ] `bun run lint` passes
+- [ ] `bun run format && bun run lint` passes
 - [ ] No unused code
 - [ ] No `any` types
 - [ ] JSDoc on functions

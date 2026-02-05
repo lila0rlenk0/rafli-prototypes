@@ -188,6 +188,42 @@ export function BuyButton({
 	}
 
 	/**
+	 * Checks if order matches raffle and quantity requirements
+	 */
+	function matchesRaffleAndQuantity(order: OrderWithRaffle): boolean {
+		return order.raffleId === raffleId && order.ticketQuantity === ticketQuantity;
+	}
+
+	/**
+	 * Checks if order promo code is compatible with selected code
+	 */
+	function hasCompatiblePromoCode(
+		order: OrderWithRaffle,
+		selectedPromoCode?: string,
+	): boolean {
+		if (!selectedPromoCode) {
+			return order.promoCode === null;
+		}
+		return order.promoCode === null || order.promoCode === selectedPromoCode;
+	}
+
+	/**
+	 * Checks if order can be reused for checkout
+	 */
+	function isReusableOrder(
+		order: OrderWithRaffle,
+		selectedPromoCode?: string,
+	): boolean {
+		if (order.status !== ORDER_STATUS.PENDING) {
+			return false;
+		}
+		if (!matchesRaffleAndQuantity(order)) {
+			return false;
+		}
+		return hasCompatiblePromoCode(order, selectedPromoCode);
+	}
+
+	/**
 	 * Gets existing pending order for same raffle + quantity.
 	 * Reuses pending orders to avoid creating duplicates on retries.
 	 */
@@ -200,17 +236,11 @@ export function BuyButton({
 			return null;
 		}
 
-		return (
-			ordersResult.data.items.find(
-				order =>
-					order.status === ORDER_STATUS.PENDING &&
-					order.raffleId === raffleId &&
-					order.ticketQuantity === ticketQuantity &&
-					(selectedPromoCode
-						? order.promoCode === null || order.promoCode === selectedPromoCode
-						: order.promoCode === null),
-			) ?? null
+		const reusableOrder = ordersResult.data.items.find(order =>
+			isReusableOrder(order, selectedPromoCode),
 		);
+
+		return reusableOrder ?? null;
 	}
 
 	/**

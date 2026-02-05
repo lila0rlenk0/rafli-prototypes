@@ -84,7 +84,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			</div>
 
 			{/* Filter Bar */}
-			<div className="mb-8 flex w-full justify-between">
+			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<h2 className="font-clash-display text-3xl font-semibold">
 					More existing raffles!
 				</h2>

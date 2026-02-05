@@ -66,19 +66,18 @@ export function Navbar({ children }: NavbarProps) {
 					</Link>
 				</div>
 
-				{/* Mobile: Hamburger menu button */}
-				<button
-					onClick={toggleMenu}
-					className="flex size-10 items-center justify-center sm:hidden"
-					aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
-					aria-expanded={isMenuOpen}
-				>
-					{isMenuOpen ? (
-						<X className="size-6" />
-					) : (
-						<Menu className="size-6" />
-					)}
-				</button>
+				{/* Mobile: Notification bell + Hamburger menu */}
+				<div className="flex items-center gap-2 sm:hidden">
+					<NotificationBell />
+					<button
+						onClick={toggleMenu}
+						className="flex size-10 items-center justify-center"
+						aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+						aria-expanded={isMenuOpen}
+					>
+						{isMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+					</button>
+				</div>
 			</div>
 
 			{/* Mobile menu overlay */}
@@ -111,13 +110,6 @@ export function Navbar({ children }: NavbarProps) {
 							onClick={closeMenu}
 						>
 							My raffles
-						</Link>
-						<Link
-							href="/notifications"
-							className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
-							onClick={closeMenu}
-						>
-							Notifications
 						</Link>
 						<Link
 							href="/profile"

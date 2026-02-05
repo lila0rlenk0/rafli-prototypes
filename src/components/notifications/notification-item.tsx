@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 
 import { NotificationIcon } from '@/components/notifications/notification-icon';
 import { cn } from '@/lib/utils';
+import { formatTimeAgo } from '@/lib/utils/format-time-ago';
 import { useNotificationStore } from '@/providers/notification-store-provider';
 import { markNotificationRead } from '@/services/notification/mark-notification-read';
 import { NOTIFICATION_TYPE, type Notification } from '@/types/notification';
@@ -61,26 +62,7 @@ function getNavigationPath(notification: Notification): string | null {
 	}
 }
 
-/**
- * Formats relative time from date string
- *
- * @param dateString - ISO date string
- * @returns Formatted relative time
- */
-function formatTimeAgo(dateString: string): string {
-	const date = new Date(dateString);
-	const now = new Date();
-	const diffMs = now.getTime() - date.getTime();
-	const diffMins = Math.floor(diffMs / 60_000);
-	const diffHours = Math.floor(diffMs / 3_600_000);
-	const diffDays = Math.floor(diffMs / 86_400_000);
 
-	if (diffMins < 1) return 'Just now';
-	if (diffMins < 60) return `${diffMins}m ago`;
-	if (diffHours < 24) return `${diffHours}h ago`;
-	if (diffDays < 7) return `${diffDays}d ago`;
-	return date.toLocaleDateString();
-}
 
 /**
  * Renders a single notification item

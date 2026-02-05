@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { useStore } from 'zustand';
 
+import { clientEnv } from '@/env/client';
 import { NotificationStream } from '@/lib/notification-stream';
 import { getUnreadCount } from '@/services/notification/get-unread-count';
 import { getWsToken } from '@/services/notification/get-ws-token';
@@ -68,7 +69,7 @@ export function NotificationStoreProvider({
 		const result = await getWsToken();
 
 		if (!result.success) {
-			if (process.env.NODE_ENV === 'development') {
+			if (clientEnv.NODE_ENV === 'development') {
 				console.error('[NotificationStream] Failed to get token:', result.error);
 			}
 			return null;

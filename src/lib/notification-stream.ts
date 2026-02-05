@@ -22,6 +22,7 @@ const MAX_RECONNECT_DELAY_MS = 30_000;
 const WS_CLOSE_NORMAL = 1_000;
 /** Refresh token at 80% of expiry to avoid edge cases */
 const TOKEN_REFRESH_RATIO = 0.8;
+const isDev = clientEnv.NODE_ENV === 'development';
 
 /**
  * Builds WebSocket URL from backend URL
@@ -111,7 +112,7 @@ export class NotificationStream {
 	 */
 	private handleOpen(): void {
 		this.reconnectAttempts = 0;
-		if (process.env.NODE_ENV === 'development') {
+		if (isDev) {
 			console.log('[NotificationStream] Connected');
 		}
 	}
@@ -148,7 +149,7 @@ export class NotificationStream {
 		const isTokenRefresh = event.code === WS_CLOSE_NORMAL && event.reason === 'Token refresh';
 		if (isTokenRefresh) return;
 
-		if (process.env.NODE_ENV === 'development') {
+		if (isDev) {
 			console.warn('[NotificationStream] Closed:', event.code, event.reason);
 		}
 
@@ -161,7 +162,7 @@ export class NotificationStream {
 	 * Connection will close after error, handleClose will trigger reconnect.
 	 */
 	private handleError(): void {
-		if (process.env.NODE_ENV === 'development') {
+		if (isDev) {
 			console.error('[NotificationStream] Error');
 		}
 	}
@@ -178,7 +179,7 @@ export class NotificationStream {
 		);
 		this.reconnectAttempts++;
 
-		if (process.env.NODE_ENV === 'development') {
+		if (isDev) {
 			console.log(`[NotificationStream] Reconnecting in ${delay}ms...`);
 		}
 
@@ -197,7 +198,7 @@ export class NotificationStream {
 
 		const refreshDelay = expiresIn * TOKEN_REFRESH_RATIO * 1_000;
 
-		if (process.env.NODE_ENV === 'development') {
+		if (isDev) {
 			console.log(
 				`[NotificationStream] Token refresh scheduled in ${Math.round(refreshDelay / 1_000)}s`,
 			);
@@ -214,7 +215,7 @@ export class NotificationStream {
 	private async refreshToken(): Promise<void> {
 		if (this.intentionalClose) return;
 
-		if (process.env.NODE_ENV === 'development') {
+		if (isDev) {
 			console.log('[NotificationStream] Refreshing token...');
 		}
 

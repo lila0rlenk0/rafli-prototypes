@@ -1,8 +1,8 @@
 'use server';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { failure, success } from '@/lib/errors';
-import { mapNotificationError } from '@/lib/errors';
+import { buildQueryParams } from '@/lib/api/utils';
+import { failure, mapNotificationError, success } from '@/lib/errors';
 import {
 	NOTIFICATION_ERROR_CODES,
 	type NotificationErrorCode,
@@ -33,12 +33,8 @@ export async function getNotifications(
 	query?: NotificationQuery,
 ): Promise<GetNotificationsResponse> {
 	try {
-		const params = new URLSearchParams();
-		if (query?.limit) params.set('limit', String(query.limit));
-		if (query?.offset) params.set('offset', String(query.offset));
-
-		const url = `/me/notifications${params.toString() ? `?${params}` : ''}`;
-		const response = await authenticatedClient.get(url);
+		const params = buildQueryParams(query);
+		const response = await authenticatedClient.get('/me/notifications', { params });
 
 		const validated = listNotificationsResponseSchema.parse(response.data);
 		return success(validated);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
@@ -49,6 +49,8 @@ export function TicketPurchaseCard({
 	isAuthenticated = true,
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
+	const router = useRouter();
+	const pathname = usePathname();
 	// Only use code if non-empty (handles ?code= edge case)
 	const codeParam = searchParams.get('code');
 	const initialCode = codeParam?.trim() || undefined;
@@ -178,6 +180,28 @@ export function TicketPurchaseCard({
 		}
 	}
 
+	/**
+	 * Removes promo code from URL after redemption
+	 */
+	function clearPromoCodeFromUrl() {
+		const params = new URLSearchParams(searchParams.toString());
+		params.delete('code');
+
+		const nextUrl = params.toString()
+			? `${pathname}?${params.toString()}`
+			: pathname;
+
+		window.history.replaceState(null, '', nextUrl);
+	}
+
+	/**
+	 * Handles successful promo redemption (free tickets)
+	 */
+	function handlePromoRedeemed() {
+		clearPromoCodeFromUrl();
+		handlePromoInvalid();
+	}
+
 	const maxTickets = availableTickets;
 	const subtotal = calculateSubtotal();
 	const discount = calculateDiscount();
@@ -264,6 +288,7 @@ export function TicketPurchaseCard({
 					promoCode={appliedPromo?.code}
 					isFreeTickets={isFree}
 					onPromoInvalid={handlePromoInvalid}
+					onPromoRedeemed={handlePromoRedeemed}
 				/>
 			) : (
 				<SignInToBuyButton />

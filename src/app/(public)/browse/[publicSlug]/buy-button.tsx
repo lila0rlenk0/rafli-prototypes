@@ -31,6 +31,7 @@ interface BuyButtonProps {
 	promoCode?: string;
 	isFreeTickets?: boolean;
 	onPromoInvalid?: () => void;
+	onPromoRedeemed?: () => void;
 }
 
 /**
@@ -60,6 +61,7 @@ export function BuyButton({
 	promoCode,
 	isFreeTickets = false,
 	onPromoInvalid,
+	onPromoRedeemed,
 }: BuyButtonProps) {
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
@@ -271,6 +273,8 @@ export function BuyButton({
 			const { ticketsGranted } = result.data;
 			const ticketText = ticketsGranted === 1 ? 'ticket' : 'tickets';
 			toast.success(`You received ${ticketsGranted} free ${ticketText}!`);
+
+			onPromoRedeemed?.();
 
 			// Refresh page to show updated ticket count
 			router.refresh();

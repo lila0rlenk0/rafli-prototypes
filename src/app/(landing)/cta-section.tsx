@@ -19,7 +19,7 @@ export function CTASection() {
 			</p>
 			<Button
 				asChild
-				className="hover:bg-background h-[60px] w-[234px] border-2 border-black bg-black text-lg hover:text-black"
+				className="hover:bg-background h-[60px] w-full border-2 border-black bg-black text-lg hover:text-black sm:w-[234px]"
 			>
 				<Link href="/browse">Explore raffles</Link>
 			</Button>

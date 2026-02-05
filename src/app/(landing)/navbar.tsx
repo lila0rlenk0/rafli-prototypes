@@ -1,38 +1,118 @@
+'use client';
+
 import { Logo } from '@/assets/logo';
 import { Button } from '@/components/ui/button';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
-import { ComponentProps } from 'react';
+import { ComponentProps, useState } from 'react';
 
 /**
  * Navigation bar component for the landing page
  */
 export function Navbar() {
-	return (
-		<nav className="relative w-full border border-[#e6e8ec]">
-			<ColoredCard className="absolute right-0 z-0 origin-top-right scale-[.85]" />
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-			<div className="z-1 mx-auto flex max-w-[1720px] items-center justify-between px-6 py-5 lg:px-[100px]">
-				<div className="flex items-center gap-8 lg:gap-[60px]">
-					<Link href="/" aria-label="Home">
-						<Logo className="h-5 w-auto" />
-					</Link>
-					<div className="hidden items-center gap-8 text-base font-bold md:flex">
-						<Link href="#participants" className="text-black hover:opacity-80">
+	/**
+	 * Toggles the mobile menu open/closed state
+	 */
+	function toggleMenu() {
+		setIsMenuOpen(prev => !prev);
+	}
+
+	/**
+	 * Closes the mobile menu
+	 */
+	function closeMenu() {
+		setIsMenuOpen(false);
+	}
+
+	return (
+		<>
+			<nav className="relative w-full border-b border-[#e6e8ec]">
+				<ColoredCard className="absolute top-0 right-0 z-0 origin-top-right scale-[.55] md:scale-[.85]" />
+
+				<div className="relative z-10 mx-auto flex max-w-[1720px] items-center justify-between px-6 py-4 lg:px-[100px] lg:py-5">
+					<div className="flex items-center gap-8 lg:gap-[60px]">
+						<Link href="/" aria-label="Home">
+							<Logo className="h-5 w-auto" />
+						</Link>
+						<div className="hidden items-center gap-8 text-base font-bold md:flex">
+							<Link
+								href="#participants"
+								className="text-black hover:opacity-80"
+							>
+								For Participants
+							</Link>
+							<Link href="#hosts" className="text-[#121211] hover:opacity-80">
+								For Hosts
+							</Link>
+						</div>
+					</div>
+
+					{/* Desktop: Enter the App button */}
+					<Button
+						asChild
+						className="bg-dark hover:bg-dark/90 hidden h-12 px-6 text-base md:flex"
+					>
+						<Link href="/sign-in">Enter the App</Link>
+					</Button>
+
+					{/* Mobile: Hamburger menu button */}
+					<button
+						onClick={toggleMenu}
+						className="flex size-10 items-center justify-center md:hidden"
+						aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+						aria-expanded={isMenuOpen}
+					>
+						{isMenuOpen ? (
+							<X className="size-6" />
+						) : (
+							<Menu className="size-6" />
+						)}
+					</button>
+				</div>
+			</nav>
+
+			{/* Mobile menu overlay */}
+			{isMenuOpen && (
+				<div className="fixed inset-0 z-50 bg-[#f9f8f4] md:hidden">
+					<div className="flex items-center justify-between px-6 py-4">
+						<Link href="/" aria-label="Home" onClick={closeMenu}>
+							<Logo className="h-5 w-auto" />
+						</Link>
+						<button
+							onClick={closeMenu}
+							className="flex size-10 items-center justify-center"
+							aria-label="Close menu"
+						>
+							<X className="size-6" />
+						</button>
+					</div>
+
+					<div className="flex flex-col gap-6 px-6 pt-8">
+						<Link
+							href="#participants"
+							className="text-xl font-bold text-black"
+							onClick={closeMenu}
+						>
 							For Participants
 						</Link>
-						<Link href="#hosts" className="text-[#121211] hover:opacity-80">
+						<Link
+							href="#hosts"
+							className="text-xl font-bold text-black"
+							onClick={closeMenu}
+						>
 							For Hosts
 						</Link>
+						<Button asChild className="bg-dark hover:bg-dark/90 mt-4 h-14 text-lg">
+							<Link href="/sign-in" onClick={closeMenu}>
+								Enter the App
+							</Link>
+						</Button>
 					</div>
 				</div>
-				<Button
-					asChild
-					className="bg-dark hover:bg-dark/90 h-12 px-6 text-base"
-				>
-					<Link href="/sign-in">Enter the App</Link>
-				</Button>
-			</div>
-		</nav>
+			)}
+		</>
 	);
 }
 

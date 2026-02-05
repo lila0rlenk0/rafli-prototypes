@@ -16,7 +16,7 @@ import { Footer } from './footer';
  */
 export default function LandingPage() {
 	return (
-		<div className="bg-background min-h-screen">
+		<div className="min-h-screen bg-[#f9f8f4]">
 			<Navbar />
 			<main>
 				<HeroSection />

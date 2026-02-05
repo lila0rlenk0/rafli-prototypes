@@ -35,17 +35,17 @@ export function HeroSection() {
 					Become verified hosts to run prize draws or join any raffle to win a
 					prize!
 				</p>
-				<div className="flex flex-wrap items-center gap-4 lg:gap-[34px]">
+				<div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center lg:gap-[34px]">
 					<Button
 						asChild
-						className="hover:bg-background h-[60px] w-[234px] border-2 border-black bg-black text-lg hover:text-black"
+						className="hover:bg-background h-[60px] w-full border-2 border-black bg-black text-lg hover:text-black sm:w-[234px]"
 					>
 						<Link href="/browse">Explore raffles</Link>
 					</Button>
 					<Button
 						asChild
 						variant="outline"
-						className="hover:text-background h-[60px] w-[238px] border-2 border-black text-lg text-black/95 hover:bg-black"
+						className="hover:text-background h-[60px] w-full border-2 border-black text-lg text-black/95 hover:bg-black sm:w-[238px]"
 					>
 						<Link href="/sign-up">Become a host</Link>
 					</Button>

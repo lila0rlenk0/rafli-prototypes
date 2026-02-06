@@ -247,9 +247,8 @@ export function PromoCodesContent({
 				<div className="flex items-center gap-2">
 					{total > 0 && (
 						<Button
-							variant="outline"
-							size="sm"
 							onClick={() => setIsExportModalOpen(true)}
+							className="cursor-pointer gap-1.5 rounded-full border-2 border-black bg-white px-6 font-semibold text-black hover:bg-black hover:text-white"
 						>
 							<Download className="size-4" />
 							Export
@@ -257,7 +256,10 @@ export function PromoCodesContent({
 					)}
 
 					{!isReadOnly && (
-						<Button size="sm" onClick={() => setIsCreateModalOpen(true)}>
+						<Button
+							onClick={() => setIsCreateModalOpen(true)}
+							className="font-clash-display hover:bg-background cursor-pointer border-2 border-black bg-black px-8 font-semibold hover:text-black"
+						>
 							<Plus className="size-4" />
 							Create Code
 						</Button>

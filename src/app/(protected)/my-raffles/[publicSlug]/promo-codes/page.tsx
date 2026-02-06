@@ -69,10 +69,10 @@ export default async function PromoCodesPage({ params }: PageProps) {
 			<div className="flex flex-col gap-4">
 				<Link
 					href={`/browse/${publicSlug}`}
-					className="flex w-fit items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+					className="flex w-fit items-center gap-2"
 				>
 					<ArrowLeft className="size-4" />
-					Back to Raffle
+					<span className="font-semibold">Back to Raffle</span>
 				</Link>
 
 				<div>

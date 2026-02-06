@@ -340,9 +340,14 @@ export function CreatePromoCodeModal({
 						)}
 					</div>
 
-					<Button onClick={handleClose} className="w-full">
-						Done
-					</Button>
+					<div className="flex justify-center">
+						<Button
+							onClick={handleClose}
+							className="font-clash-display hover:bg-background w-full max-w-xs cursor-pointer border-2 border-black bg-black font-semibold hover:text-black"
+						>
+							Done
+						</Button>
+					</div>
 				</DialogContent>
 			</Dialog>
 		);

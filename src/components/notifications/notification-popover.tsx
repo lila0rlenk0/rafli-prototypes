@@ -26,8 +26,8 @@ export function NotificationPopover() {
 	const [notifications, setNotifications] = useState<Notification[]>([]);
 	const [markingAllRead, setMarkingAllRead] = useState(false);
 
-	const unreadCount = useNotificationStore((s) => s.unreadCount);
-	const clearUnreadCount = useNotificationStore((s) => s.clearUnreadCount);
+	const unreadCount = useNotificationStore(s => s.unreadCount);
+	const clearUnreadCount = useNotificationStore(s => s.clearUnreadCount);
 
 	/**
 	 * Fetches notifications when popover opens
@@ -53,7 +53,7 @@ export function NotificationPopover() {
 		const result = await markAllNotificationsRead();
 		if (result.success) {
 			clearUnreadCount();
-			setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+			setNotifications(prev => prev.map(n => ({ ...n, read: true })));
 		}
 		setMarkingAllRead(false);
 	}
@@ -75,7 +75,7 @@ export function NotificationPopover() {
 				>
 					<Bell className="size-5" />
 					{unreadCount > 0 && (
-						<span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+						<span className="bg-primary text-primary-foreground absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full text-[10px] font-medium">
 							{unreadCount > 9 ? '9+' : unreadCount}
 						</span>
 					)}
@@ -102,7 +102,10 @@ export function NotificationPopover() {
 							<Spinner />
 						</div>
 					) : (
-						<NotificationList notifications={notifications} onClose={handleClose} />
+						<NotificationList
+							notifications={notifications}
+							onClose={handleClose}
+						/>
 					)}
 				</div>
 			</PopoverContent>

@@ -70,7 +70,10 @@ export function NotificationStoreProvider({
 
 		if (!result.success) {
 			if (clientEnv.NODE_ENV === 'development') {
-				console.error('[NotificationStream] Failed to get token:', result.error);
+				console.error(
+					'[NotificationStream] Failed to get token:',
+					result.error,
+				);
 			}
 			return null;
 		}

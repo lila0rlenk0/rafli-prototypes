@@ -333,8 +333,10 @@ export function MultiStepFormProvider({
 					}
 				}
 
-				// Clear any existing draft on successful creation
+				// Clear draft and reset form state for next creation
 				clearDraft();
+				form.reset();
+				setCurrentStep(0);
 
 				// Open success modal instead of redirecting
 				setCreatedRaffle({
@@ -349,7 +351,7 @@ export function MultiStepFormProvider({
 				setIsCreating(false);
 			}
 		},
-		[clearDraft],
+		[clearDraft, form],
 	);
 
 	/**

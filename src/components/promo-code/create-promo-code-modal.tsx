@@ -89,7 +89,9 @@ export interface CreatePromoCodeData {
 interface CreatePromoCodeModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onCreate: (data: CreatePromoCodeData) => Promise<BulkCreatePromoCodesResponse | null>;
+	onCreate: (
+		data: CreatePromoCodeData,
+	) => Promise<BulkCreatePromoCodesResponse | null>;
 	onExportBatch?: (bulkId: string) => void;
 	allowFreeTickets: boolean;
 }

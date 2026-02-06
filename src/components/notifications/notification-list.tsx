@@ -20,7 +20,7 @@ export function NotificationList({
 }: NotificationListProps) {
 	if (notifications.length === 0) {
 		return (
-			<div className="py-8 text-center text-sm text-muted-foreground">
+			<div className="text-muted-foreground py-8 text-center text-sm">
 				No notifications
 			</div>
 		);
@@ -28,7 +28,7 @@ export function NotificationList({
 
 	return (
 		<div className="flex flex-col">
-			{notifications.map((notification) => (
+			{notifications.map(notification => (
 				<NotificationItem
 					key={notification.id}
 					notification={notification}

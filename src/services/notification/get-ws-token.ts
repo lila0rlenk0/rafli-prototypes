@@ -18,7 +18,10 @@ import { ZodError } from 'zod';
 /**
  * Response type for fetching WebSocket token
  */
-type GetWsTokenResponse = ServiceResponse<WsTokenResponse, NotificationErrorCode>;
+type GetWsTokenResponse = ServiceResponse<
+	WsTokenResponse,
+	NotificationErrorCode
+>;
 
 /**
  * Fetches a short-lived WebSocket authentication token

@@ -62,8 +62,6 @@ function getNavigationPath(notification: Notification): string | null {
 	}
 }
 
-
-
 /**
  * Renders a single notification item
  *
@@ -76,7 +74,7 @@ export function NotificationItem({
 }: NotificationItemProps) {
 	const router = useRouter();
 	const decrementUnreadCount = useNotificationStore(
-		(s) => s.decrementUnreadCount,
+		s => s.decrementUnreadCount,
 	);
 
 	/**
@@ -103,7 +101,7 @@ export function NotificationItem({
 			type="button"
 			onClick={handleClick}
 			className={cn(
-				'flex w-full items-start gap-3 rounded-md p-3 text-left transition-colors hover:bg-accent',
+				'hover:bg-accent flex w-full items-start gap-3 rounded-md p-3 text-left transition-colors',
 				!notification.read && 'bg-accent/50',
 			)}
 		>
@@ -111,16 +109,18 @@ export function NotificationItem({
 				<NotificationIcon type={notification.type} className="size-5" />
 			</div>
 			<div className="min-w-0 flex-1">
-				<p className="text-sm font-medium leading-tight">{notification.title}</p>
-				<p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+				<p className="text-sm leading-tight font-medium">
+					{notification.title}
+				</p>
+				<p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
 					{notification.body}
 				</p>
-				<p className="mt-1 text-xs text-muted-foreground/70">
+				<p className="text-muted-foreground/70 mt-1 text-xs">
 					{formatTimeAgo(notification.createdAt)}
 				</p>
 			</div>
 			{!notification.read && (
-				<div className="mt-2 size-2 shrink-0 rounded-full bg-primary" />
+				<div className="bg-primary mt-2 size-2 shrink-0 rounded-full" />
 			)}
 		</button>
 	);

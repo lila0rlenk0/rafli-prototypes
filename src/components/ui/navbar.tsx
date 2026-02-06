@@ -75,7 +75,11 @@ export function Navbar({ children }: NavbarProps) {
 						aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
 						aria-expanded={isMenuOpen}
 					>
-						{isMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+						{isMenuOpen ? (
+							<X className="size-6" />
+						) : (
+							<Menu className="size-6" />
+						)}
 					</button>
 				</div>
 			</div>

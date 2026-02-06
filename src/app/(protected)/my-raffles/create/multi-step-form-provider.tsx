@@ -399,7 +399,10 @@ export function MultiStepFormProvider({
 					publicSlug={createdRaffle.publicSlug}
 					raffleStartDate={createdRaffle.raffleStartDate}
 					open={isModalOpen}
-					onOpenChange={setIsModalOpen}
+					onOpenChange={open => {
+						setIsModalOpen(open);
+						if (!open) setCreatedRaffle(null);
+					}}
 				/>
 			)}
 			<SaveDraftModal

@@ -82,10 +82,12 @@ function PostUpdateButtonContent({
 	return (
 		<Button
 			asChild
-			className="cursor-pointer rounded-full border border-black bg-white px-6 text-black hover:bg-black hover:text-white"
+			className="cursor-pointer rounded-full border-2 border-black bg-white px-6 text-black hover:bg-black hover:text-white"
 			onClick={e => e.stopPropagation()}
 		>
-			<Link href={`/my-raffles/${publicSlug}/update`}>Add update</Link>
+			<Link href={`/my-raffles/${publicSlug}/update`} className="font-semibold">
+				Add update
+			</Link>
 		</Button>
 	);
 }

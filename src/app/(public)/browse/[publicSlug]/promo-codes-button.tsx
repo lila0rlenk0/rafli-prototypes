@@ -85,8 +85,14 @@ function PromoCodesButtonContent({
 	}
 
 	return (
-		<Button asChild variant="outline" size="sm" className="gap-1.5">
-			<Link href={`/my-raffles/${publicSlug}/promo-codes`}>
+		<Button
+			asChild
+			className="cursor-pointer gap-1.5 rounded-full border-2 border-black bg-white px-6 text-black hover:bg-black hover:text-white"
+		>
+			<Link
+				href={`/my-raffles/${publicSlug}/promo-codes`}
+				className="font-semibold"
+			>
 				<Ticket className="size-4" />
 				Promo Codes
 			</Link>

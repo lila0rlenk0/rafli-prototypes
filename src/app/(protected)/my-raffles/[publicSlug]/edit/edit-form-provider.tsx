@@ -18,9 +18,11 @@ import { z } from 'zod';
 import { computeRaffleDiff, hasRaffleChanges } from '@/lib/utils/raffle-diff';
 import type { Category } from '@/types/category';
 import type { Question } from '@/types/question';
+import { publishRaffle } from '@/services/raffle/publish-raffle';
 import { updateRaffle } from '@/services/raffle/update-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
+import { RAFFLE_STATUS } from '@/types/raffle';
 import type { Raffle, SignedMediaUrl } from '@/types/raffle';
 
 import { editFormSchema, type FieldRestrictions } from './schema';
@@ -281,6 +283,28 @@ export function EditFormProvider({
 					if (!galleryResult.success) {
 						console.error('Gallery upload failed:', galleryResult.error);
 						toast.error('Raffle updated but gallery upload failed.');
+					}
+				}
+
+				// Auto-publish if start date changed to today or past and raffle is draft/queued
+				const isDraftOrQueued =
+					raffle.status === RAFFLE_STATUS.DRAFT ||
+					raffle.status === RAFFLE_STATUS.QUEUED;
+
+				if (isDraftOrQueued) {
+					const startDate = new Date(data.startDate);
+					const today = new Date();
+					today.setHours(0, 0, 0, 0);
+					startDate.setHours(0, 0, 0, 0);
+
+					if (startDate <= today) {
+						const publishResult = await publishRaffle(raffle.id);
+						if (!publishResult.success) {
+							console.error('Auto-publish failed:', publishResult.error);
+							toast.warning(
+								'Raffle updated but could not go live. Please publish it manually.',
+							);
+						}
 					}
 				}
 

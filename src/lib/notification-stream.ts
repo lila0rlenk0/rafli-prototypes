@@ -31,9 +31,10 @@ const isDev = clientEnv.NODE_ENV === 'development';
  * @returns WebSocket URL with token query param
  */
 function buildWsUrl(token: string): string {
-	const baseUrl = clientEnv.NEXT_PUBLIC_BACKEND_URL
-		.replace('https://', 'wss://')
-		.replace('http://', 'ws://');
+	const baseUrl = clientEnv.NEXT_PUBLIC_BACKEND_URL.replace(
+		'https://',
+		'wss://',
+	).replace('http://', 'ws://');
 
 	return `${baseUrl}/api/v1/me/notifications/stream?token=${encodeURIComponent(token)}`;
 }
@@ -146,7 +147,8 @@ export class NotificationStream {
 		if (this.intentionalClose) return;
 
 		// Token refresh handles its own reconnection
-		const isTokenRefresh = event.code === WS_CLOSE_NORMAL && event.reason === 'Token refresh';
+		const isTokenRefresh =
+			event.code === WS_CLOSE_NORMAL && event.reason === 'Token refresh';
 		if (isTokenRefresh) return;
 
 		if (isDev) {

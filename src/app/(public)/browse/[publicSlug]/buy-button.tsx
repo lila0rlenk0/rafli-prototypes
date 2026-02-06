@@ -191,7 +191,9 @@ export function BuyButton({
 	 * Checks if order matches raffle and quantity requirements
 	 */
 	function matchesRaffleAndQuantity(order: OrderWithRaffle): boolean {
-		return order.raffleId === raffleId && order.ticketQuantity === ticketQuantity;
+		return (
+			order.raffleId === raffleId && order.ticketQuantity === ticketQuantity
+		);
 	}
 
 	/**

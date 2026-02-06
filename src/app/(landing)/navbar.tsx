@@ -104,7 +104,10 @@ export function Navbar() {
 						>
 							For Hosts
 						</Link>
-						<Button asChild className="bg-dark hover:bg-dark/90 mt-4 h-14 text-lg">
+						<Button
+							asChild
+							className="bg-dark hover:bg-dark/90 mt-4 h-14 text-lg"
+						>
 							<Link href="/sign-in" onClick={closeMenu}>
 								Enter the App
 							</Link>

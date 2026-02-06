@@ -34,7 +34,9 @@ export async function getNotifications(
 ): Promise<GetNotificationsResponse> {
 	try {
 		const params = buildQueryParams(query);
-		const response = await authenticatedClient.get('/me/notifications', { params });
+		const response = await authenticatedClient.get('/me/notifications', {
+			params,
+		});
 
 		const validated = listNotificationsResponseSchema.parse(response.data);
 		return success(validated);

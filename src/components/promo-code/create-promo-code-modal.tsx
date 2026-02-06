@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, Copy, Download, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ComponentProps, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -89,7 +89,9 @@ export interface CreatePromoCodeData {
 interface CreatePromoCodeModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onCreate: (data: CreatePromoCodeData) => Promise<BulkCreatePromoCodesResponse | null>;
+	onCreate: (
+		data: CreatePromoCodeData,
+	) => Promise<BulkCreatePromoCodesResponse | null>;
 	onExportBatch?: (bulkId: string) => void;
 	allowFreeTickets: boolean;
 }
@@ -242,12 +244,14 @@ export function CreatePromoCodeModal({
 
 		return (
 			<Dialog open={isOpen} onOpenChange={open => !open && handleClose()}>
-				<DialogContent className="max-w-sm text-center">
+				<DialogContent className="max-w-sm overflow-hidden border border-[#0F0F0FF2] text-center">
+					<ColoredCards className="absolute right-0 bottom-0 -z-1 rounded-br-xl" />
+
 					<DialogHeader className="items-center">
 						<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-green-100">
 							<Check className="size-6 text-green-600" />
 						</div>
-						<DialogTitle>
+						<DialogTitle className="font-clash-display text-3xl font-semibold text-[#182135]">
 							{isSingle
 								? 'Promo Code Created!'
 								: `${createdCodes.codes.length} Codes Created!`}
@@ -336,9 +340,14 @@ export function CreatePromoCodeModal({
 						)}
 					</div>
 
-					<Button onClick={handleClose} className="w-full">
-						Done
-					</Button>
+					<div className="flex justify-center">
+						<Button
+							onClick={handleClose}
+							className="font-clash-display hover:bg-background w-full max-w-xs cursor-pointer border-2 border-black bg-black font-semibold hover:text-black"
+						>
+							Done
+						</Button>
+					</div>
 				</DialogContent>
 			</Dialog>
 		);
@@ -347,9 +356,13 @@ export function CreatePromoCodeModal({
 	// Form state
 	return (
 		<Dialog open={isOpen} onOpenChange={open => !open && handleClose()}>
-			<DialogContent className="max-w-md">
+			<DialogContent className="max-w-md overflow-hidden border border-[#0F0F0FF2]">
+				<ColoredCards className="absolute right-0 bottom-0 -z-1 rounded-br-xl" />
+
 				<DialogHeader>
-					<DialogTitle>Create Promo Codes</DialogTitle>
+					<DialogTitle className="font-clash-display text-3xl font-semibold text-[#182135]">
+						Create Promo Codes
+					</DialogTitle>
 					<DialogDescription>
 						Create promotional codes for discounts or free tickets.
 					</DialogDescription>
@@ -492,16 +505,12 @@ export function CreatePromoCodeModal({
 						)}
 					</div>
 
-					<DialogFooter className="gap-2 sm:gap-0">
+					<DialogFooter className="sm:justify-center">
 						<Button
-							type="button"
-							variant="outline"
-							onClick={handleClose}
+							type="submit"
 							disabled={isSubmitting}
+							className="font-clash-display hover:bg-background w-full max-w-xs cursor-pointer border-2 border-black bg-black font-semibold hover:text-black"
 						>
-							Cancel
-						</Button>
-						<Button type="submit" disabled={isSubmitting}>
 							{isSubmitting ? (
 								<>
 									<Loader2 className="size-4 animate-spin" />
@@ -515,5 +524,34 @@ export function CreatePromoCodeModal({
 				</form>
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+/**
+ * Colored decorative cards SVG for modal background
+ */
+function ColoredCards(props: ComponentProps<'svg'>) {
+	return (
+		<svg
+			width="393"
+			height="234"
+			viewBox="0 0 393 234"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
+			{...props}
+		>
+			<path
+				d="M412.192 347.187C408.762 359.99 395.601 367.588 382.798 364.157L225.402 321.983C212.599 318.553 205.001 305.393 208.432 292.59L250.606 135.194C254.036 122.39 267.196 114.792 280 118.223L437.396 160.397C450.199 163.828 457.797 176.988 454.366 189.791L412.192 347.187Z"
+				fill="#C4EDFF"
+			/>
+			<path
+				d="M500.086 219.272C494.38 231.235 480.056 236.308 468.092 230.601L342.882 170.878C330.918 165.171 325.846 150.847 331.552 138.883L391.276 13.6734C396.982 1.70985 411.306 -3.36259 423.27 2.34386L548.48 62.0671C560.444 67.7736 565.516 82.098 559.81 94.0616L500.086 219.272Z"
+				fill="#BEFFDB"
+			/>
+			<path
+				d="M267.381 283.914C274.008 295.393 270.075 310.071 258.596 316.698L117.479 398.172C106 404.8 91.3217 400.867 84.6943 389.388L3.2201 248.27C-3.40731 236.791 0.52568 222.113 12.0047 215.486L153.122 134.012C164.601 127.384 179.279 131.317 185.907 142.796L267.381 283.914Z"
+				fill="#F6FF8B"
+			/>
+		</svg>
 	);
 }

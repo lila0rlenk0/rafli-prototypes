@@ -1,7 +1,7 @@
 'use client';
 
 import { Download, Plus, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -15,14 +15,13 @@ import {
 	PromoCodesTableSkeleton,
 } from '@/components/promo-code/promo-codes-table';
 import { Button } from '@/components/ui/button';
-import { bulkCreatePromoCodes } from '@/services/promo-code/bulk-create-promo-codes';
-import { deactivatePromoCode } from '@/services/promo-code/deactivate-promo-code';
 import { exportPromoCodes } from '@/services/promo-code/export-promo-codes';
-import { getPromoCodes } from '@/services/promo-code/get-promo-codes';
+import { useBulkCreatePromoCodes } from '@/services/promo-code/use-bulk-create-promo-codes';
+import { useDeactivatePromoCode } from '@/services/promo-code/use-deactivate-promo-code';
+import { usePromoCodes } from '@/services/promo-code/use-promo-codes';
 import type {
 	BulkCreatePromoCodesResponse,
 	ExportPromoCodesQuery,
-	PromoCode,
 } from '@/types/promo-code';
 
 const PAGE_SIZE = 20;
@@ -47,90 +46,61 @@ export function PromoCodesContent({
 	isReadOnly,
 	allowFreeTickets,
 }: PromoCodesContentProps) {
-	const [codes, setCodes] = useState<PromoCode[]>([]);
-	const [total, setTotal] = useState(0);
 	const [offset, setOffset] = useState(0);
-	const [isLoading, setIsLoading] = useState(true);
-	const [isRefreshing, setIsRefreshing] = useState(false);
-
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-	/**
-	 * Fetches promo codes with current pagination
-	 */
-	const fetchCodes = useCallback(
-		async (showLoading = true) => {
-			// Step 1: Set loading state.
-			if (showLoading) setIsLoading(true);
-			else setIsRefreshing(true);
+	const { data, isLoading, isPlaceholderData, refetch, isRefetching } =
+		usePromoCodes(raffleId, { limit: PAGE_SIZE, offset });
 
-			try {
-				// Step 2: Fetch codes for current page.
-				const result = await getPromoCodes(raffleId, {
-					limit: PAGE_SIZE,
-					offset,
-				});
+	const bulkCreate = useBulkCreatePromoCodes();
+	const deactivate = useDeactivatePromoCode();
 
-				if (!result.success) {
-					toast.error('Failed to load promo codes');
-					return;
-				}
-
-				// Step 3: Update list and totals.
-				setCodes(result.data.items);
-				setTotal(result.data.total);
-			} finally {
-				setIsLoading(false);
-				setIsRefreshing(false);
-			}
-		},
-		[raffleId, offset],
-	);
-
-	// Initial load and when offset changes
-	useEffect(() => {
-		fetchCodes();
-	}, [fetchCodes]);
+	const codes = data?.items ?? [];
+	const total = data?.total ?? 0;
 
 	/**
 	 * Handles creating promo codes (single or bulk)
 	 */
 	async function handleCreate(
-		data: CreatePromoCodeData,
+		createData: CreatePromoCodeData,
 	): Promise<BulkCreatePromoCodesResponse | null> {
-		// Step 1: Send create request.
-		const result = await bulkCreatePromoCodes(raffleId, data);
-
-		if (result.success) {
-			// Step 2: Notify and refresh list.
-			const count = result.data.created;
-			toast.success(`${count} promo code${count !== 1 ? 's' : ''} created`);
-			// Refresh list to show new codes
-			await fetchCodes(false);
-			return result.data;
-		}
-
-		toast.error('Failed to create promo codes');
-		return null;
+		return new Promise(resolve => {
+			bulkCreate.mutate(
+				{ raffleId, data: createData },
+				{
+					onSuccess(result) {
+						const count = result.created;
+						toast.success(
+							`${count} promo code${count !== 1 ? 's' : ''} created`,
+						);
+						resolve(result);
+					},
+					onError() {
+						toast.error('Failed to create promo codes');
+						resolve(null);
+					},
+				},
+			);
+		});
 	}
 
 	/**
 	 * Handles deactivating a promo code
 	 */
 	async function handleDeactivate(codeId: string): Promise<void> {
-		// Step 1: Call deactivate endpoint.
-		const result = await deactivatePromoCode(codeId);
-
-		if (!result.success) {
-			toast.error('Failed to deactivate promo code');
-			return;
-		}
-
-		// Step 2: Notify and refresh list.
-		toast.success('Promo code deactivated');
-		// Refresh list to update status
-		await fetchCodes(false);
+		return new Promise(resolve => {
+			deactivate.mutate(codeId, {
+				onSuccess() {
+					toast.success('Promo code deactivated');
+					resolve();
+				},
+				onError() {
+					toast.error('Failed to deactivate promo code');
+					resolve();
+				},
+			});
+		});
 	}
 
 	/**
@@ -152,7 +122,6 @@ export function PromoCodesContent({
 	 * Handles exporting promo codes
 	 */
 	async function handleExport(query: ExportPromoCodesQuery): Promise<void> {
-		// Step 1: Request CSV from backend.
 		const result = await exportPromoCodes(raffleId, query);
 
 		if (!result.success) {
@@ -160,7 +129,6 @@ export function PromoCodesContent({
 			return;
 		}
 
-		// Step 2: Download file and notify.
 		downloadCsv(result.data, `promo-codes-${raffleId}.csv`);
 		toast.success('Export downloaded');
 	}
@@ -169,7 +137,6 @@ export function PromoCodesContent({
 	 * Handles exporting a specific batch of promo codes
 	 */
 	async function handleExportBatch(bulkId: string): Promise<void> {
-		// Step 1: Request CSV for batch.
 		const result = await exportPromoCodes(raffleId, { bulkId });
 
 		if (!result.success) {
@@ -177,23 +144,8 @@ export function PromoCodesContent({
 			return;
 		}
 
-		// Step 2: Download file and notify.
 		downloadCsv(result.data, `promo-codes-batch-${bulkId.slice(0, 8)}.csv`);
 		toast.success('Batch exported');
-	}
-
-	/**
-	 * Calculates total pages
-	 */
-	function getTotalPages(): number {
-		return Math.ceil(total / PAGE_SIZE);
-	}
-
-	/**
-	 * Gets current page number (1-indexed)
-	 */
-	function getCurrentPage(): number {
-		return Math.floor(offset / PAGE_SIZE) + 1;
 	}
 
 	/**
@@ -203,9 +155,10 @@ export function PromoCodesContent({
 		setOffset((page - 1) * PAGE_SIZE);
 	}
 
-	const totalPages = getTotalPages();
-	const currentPage = getCurrentPage();
+	const totalPages = Math.ceil(total / PAGE_SIZE);
+	const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 	const hasMultiplePages = totalPages > 1;
+	const isRefreshing = isRefetching && !isPlaceholderData;
 
 	/**
 	 * Gets formatted header text showing total codes count
@@ -235,7 +188,7 @@ export function PromoCodesContent({
 						<Button
 							variant="ghost"
 							size="icon-sm"
-							onClick={() => fetchCodes(false)}
+							onClick={() => refetch()}
 							disabled={isRefreshing}
 							className="text-gray-500"
 						>

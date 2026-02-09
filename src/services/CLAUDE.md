@@ -126,7 +126,116 @@ export async function uploadFile(
 }
 ```
 
-## Checklist
+## React Query Hooks (Client-Side)
+
+Hooks live alongside server actions in the same domain folder.
+They wrap server actions for client components that need caching, pagination, or mutation states.
+
+ALWAYS: `'use client'` directive at top
+ALWAYS: File name `use-<action>.ts` (e.g., `use-notifications.ts`)
+ALWAYS: JSDoc on exported hook
+ALWAYS: Use `serviceError()` from `@/lib/query/errors` to bridge errors
+ALWAYS: Query keys follow `[domain, scope, ...params]` convention
+ALWAYS: Mutations invalidate using domain prefix `['domain']`
+NEVER: Use hooks for one-off actions (form submissions with `useTransition` are fine as-is)
+NEVER: Use hooks for server-only data fetching (server components fetch directly)
+
+### How To: Query Hook
+
+```tsx
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+
+import { serviceError, type ServiceError } from '@/lib/query/errors';
+import type { MyErrorCode } from '@/types/errors';
+import type { MyResponse } from '@/types/my-domain';
+
+import { getMyData } from './get-my-data';
+
+/** Query key for my data */
+export function myDataKey(params?: { limit?: number }) {
+	return ['my-domain', 'list', params] as const;
+}
+
+/**
+ * Query hook for fetching my data
+ * @param options - Query options
+ * @returns React Query result
+ */
+export function useMyData(options?: { limit?: number; enabled?: boolean }) {
+	return useQuery<MyResponse, ServiceError<MyErrorCode>>({
+		queryKey: myDataKey({ limit: options?.limit }),
+		queryFn: async function fetchMyData() {
+			const result = await getMyData({ limit: options?.limit });
+			if (!result.success) throw serviceError(result.error);
+			return result.data;
+		},
+		enabled: options?.enabled ?? true,
+	});
+}
+```
+
+### How To: Query Hook with Pagination
+
+```tsx
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+
+export function useMyPaginatedData(params: { limit: number; offset: number }) {
+	return useQuery<MyResponse, ServiceError<MyErrorCode>>({
+		queryKey: ['my-domain', 'list', params],
+		queryFn: async function fetchData() {
+			const result = await getData(params);
+			if (!result.success) throw serviceError(result.error);
+			return result.data;
+		},
+		placeholderData: keepPreviousData,
+	});
+}
+```
+
+### How To: Mutation Hook
+
+```tsx
+'use client';
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { serviceError, type ServiceError } from '@/lib/query/errors';
+
+import { createMyData } from './create-my-data';
+
+/**
+ * Mutation hook for creating my data
+ * Invalidates all my-domain queries on success
+ * @returns React Query mutation result
+ */
+export function useCreateMyData() {
+	const queryClient = useQueryClient();
+
+	return useMutation<ResponseType, ServiceError<MyErrorCode>, PayloadType>({
+		mutationFn: async function create(payload) {
+			const result = await createMyData(payload);
+			if (!result.success) throw serviceError(result.error);
+			return result.data;
+		},
+		onSuccess() {
+			queryClient.invalidateQueries({ queryKey: ['my-domain'] });
+		},
+	});
+}
+```
+
+### When to use React Query hooks vs direct server actions
+
+| Pattern | Use Case |
+|---------|----------|
+| React Query query hook | Client component needs cached data, pagination, or on-demand fetching |
+| React Query mutation hook | Client component needs loading/error states + cache invalidation |
+| Direct server action + `useTransition` | Form submissions (react-hook-form), one-off actions |
+| Direct server action (server component) | Server-side data fetching, SSR |
+
+## Server Action Checklist
 
 - [ ] `'use server'` at top
 - [ ] JSDoc with `@returns`
@@ -135,3 +244,12 @@ export async function uploadFile(
 - [ ] ZodError handled separately
 - [ ] Appropriate client (base vs authenticated)
 - [ ] Appropriate error mapper used
+
+## React Query Hook Checklist
+
+- [ ] `'use client'` at top
+- [ ] File named `use-<action>.ts`
+- [ ] JSDoc on exported hook
+- [ ] Uses `serviceError()` for error bridging
+- [ ] Query key exported as named function
+- [ ] Mutations invalidate domain prefix

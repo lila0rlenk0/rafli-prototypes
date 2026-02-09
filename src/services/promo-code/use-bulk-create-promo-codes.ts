@@ -4,7 +4,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { serviceError, type ServiceError } from '@/lib/query/errors';
 import type { PromoCodeErrorCode } from '@/types/errors';
-import type { BulkCreatePromoCodesResponse } from '@/types/promo-code';
+import type {
+	BulkCreatePromoCodesResponse,
+	PromoCodeType,
+} from '@/types/promo-code';
 
 import { bulkCreatePromoCodes } from './bulk-create-promo-codes';
 
@@ -15,7 +18,7 @@ interface BulkCreatePayload {
 	raffleId: string;
 	data: {
 		count: number;
-		type: string;
+		type: PromoCodeType;
 		value: number;
 		maxUses?: number;
 		expiresAt?: string;

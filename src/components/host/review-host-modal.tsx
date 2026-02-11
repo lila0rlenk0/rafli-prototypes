@@ -12,7 +12,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { createReview } from '@/services/review/create-review';
+import { useCreateReview } from '@/services/review/use-create-review';
 
 import { InteractiveStarRating } from './interactive-star-rating';
 
@@ -43,34 +43,29 @@ export function ReviewHostModal({
 	publicSlug,
 }: ReviewHostModalProps) {
 	const [rating, setRating] = useState(0);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSuccess, setIsSuccess] = useState(false);
+	const reviewMutation = useCreateReview();
 
 	/**
 	 * Handles review form submission
 	 */
-	async function handleSubmit() {
+	function handleSubmit() {
 		if (rating === 0) {
 			toast.error('Please select a rating');
 			return;
 		}
 
-		setIsSubmitting(true);
-
-		const result = await createReview({
-			raffleId,
-			hostId,
-			rating,
-		});
-
-		setIsSubmitting(false);
-
-		if (!result.success) {
-			toast.error('Failed to submit review. Please try again.');
-			return;
-		}
-
-		setIsSuccess(true);
+		reviewMutation.mutate(
+			{ raffleId, hostId, rating },
+			{
+				onSuccess() {
+					setIsSuccess(true);
+				},
+				onError() {
+					toast.error('Failed to submit review. Please try again.');
+				},
+			},
+		);
 	}
 
 	/**
@@ -145,16 +140,16 @@ export function ReviewHostModal({
 								<InteractiveStarRating
 									rating={rating}
 									onChange={setRating}
-									disabled={isSubmitting}
+									disabled={reviewMutation.isPending}
 								/>
 							</div>
 
 							<button
 								onClick={handleSubmit}
-								disabled={isSubmitting || rating === 0}
+								disabled={reviewMutation.isPending || rating === 0}
 								className="rounded-full border border-black px-12 py-3 text-sm font-semibold transition-colors hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
 							>
-								{isSubmitting ? 'Submitting...' : 'Leave review'}
+								{reviewMutation.isPending ? 'Submitting...' : 'Leave review'}
 							</button>
 						</>
 					)}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import {
 	createContext,
 	useCallback,
@@ -42,6 +43,7 @@ export function NotificationStoreProvider({
 	children,
 }: NotificationStoreProviderProps) {
 	const [store] = useState(() => createNotificationStore());
+	const queryClient = useQueryClient();
 	const streamRef = useRef<NotificationStream | null>(null);
 	const isMountedRef = useRef(true);
 
@@ -60,7 +62,8 @@ export function NotificationStoreProvider({
 	 */
 	const handleNewNotification = useCallback(() => {
 		fetchUnreadCount();
-	}, [fetchUnreadCount]);
+		queryClient.invalidateQueries({ queryKey: ['notification'] });
+	}, [fetchUnreadCount, queryClient]);
 
 	/**
 	 * Fetches fresh WS token for stream connection

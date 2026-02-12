@@ -180,7 +180,7 @@ export function PromoCodesTable({
 			<div className="hidden overflow-x-auto md:block">
 				<table className="w-full min-w-[600px]">
 					<thead>
-						<tr className="border-b border-gray-200 text-left text-sm text-gray-500">
+						<tr className="border-b border-[#F1F3F5] text-left text-sm text-gray-500">
 							<th className="pb-3 font-medium">Code</th>
 							<th className="pb-3 font-medium">Type</th>
 							<th className="pb-3 font-medium">Value</th>
@@ -192,23 +192,20 @@ export function PromoCodesTable({
 					</thead>
 					<tbody>
 						{codes.map(code => (
-							<tr
-								key={code.id}
-								className="border-b border-gray-100 last:border-0"
-							>
+							<tr key={code.id} className="border-t border-b border-[#F1F3F5]">
 								<td className="py-4">
 									<div className="flex items-center gap-2">
-										<span className="font-mono font-medium">{code.code}</span>
-										<CopyButton value={code.code} size="sm" />
+										<span className="font-mono">{code.code}</span>
+										<CopyButton value={code.code} />
 										{publicSlug && (
 											<Button
 												variant="ghost"
 												size="icon-sm"
 												onClick={() => handleCopyShareLink(code.code)}
-												className="text-gray-400 hover:text-gray-600"
+												className="-ml-1 text-gray-400 hover:text-gray-600"
 												title="Copy share link"
 											>
-												<Link2 className="size-3.5" />
+												<Link2 className="size-4" />
 											</Button>
 										)}
 									</div>
@@ -222,15 +219,11 @@ export function PromoCodesTable({
 								<td className="py-4 font-medium">
 									{formatPromoCodeValue(code)}
 								</td>
-								<td className="py-4 text-gray-600">
-									{formatPromoCodeUsage(code)}
-								</td>
+								<td className="py-4">{formatPromoCodeUsage(code)}</td>
 								<td className="py-4">
 									<PromoCodeStatusBadge code={code} />
 								</td>
-								<td className="py-4 text-gray-600">
-									{formatExpiration(code.expiresAt)}
-								</td>
+								<td className="py-4">{formatExpiration(code.expiresAt)}</td>
 								<td className="py-4 text-right">
 									{hasActions(code) && (
 										<DropdownMenu>

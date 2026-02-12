@@ -482,6 +482,39 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									non-refundable.
 								</AccordionContent>
 							</AccordionItem>
+
+							<AccordionItem
+								value="partial-fulfillment"
+								className="border-none"
+							>
+								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
+									What if minimum participants aren&apos;t reached?
+								</AccordionTrigger>
+								<AccordionContent className="text-muted-foreground space-y-3 px-4 pt-4 text-sm">
+									<p>
+										Every raffle sets a minimum number of participants. If the
+										raffle ends before reaching that minimum, it concludes under{' '}
+										<strong>Partial Fulfilment</strong>.
+									</p>
+									<p>
+										When this happens, winners are still selected using the same
+										provably fair process (VRF). However, since fewer tickets
+										were sold than expected, the total revenue collected is
+										lower than originally planned. The host may adjust the prize
+										value proportionally to reflect the actual participation.
+									</p>
+									<p>
+										For example, if a raffle required 100 participants but only
+										60 joined, the prize value may be adjusted to roughly 60% of
+										the originally declared value.
+									</p>
+									<p>
+										You can always check the raffle details to see the current
+										number of participants versus the minimum required before
+										purchasing a ticket.
+									</p>
+								</AccordionContent>
+							</AccordionItem>
 						</Accordion>
 					</div>
 				</div>

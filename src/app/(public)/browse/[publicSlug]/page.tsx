@@ -236,6 +236,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const isManageable = isManageableStatus();
 
 	/**
+	 * Whether the raffle concluded with fewer participants than required
+	 */
+	const isPartialFulfillment = raffle.ticketsSoldCount < raffle.minParticipants;
+
+	/**
 	 * Checks if winner card should be shown (user won)
 	 */
 	function shouldShowWinnerCard(): boolean {
@@ -487,6 +492,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								userName={myUserName ?? 'Winner'}
 								userAvatar={myUserAvatarUrl}
 								ticketCode={myWinningTicketCode}
+								isPartialFulfillment={isPartialFulfillment}
 							/>
 							<FulfillmentTimeline
 								winning={myWinning}
@@ -502,11 +508,15 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						<HostFulfillmentCard
 							publicSlug={publicSlug}
 							winnersCount={raffle.winners?.length ?? 0}
+							isPartialFulfillment={isPartialFulfillment}
 						/>
 					)}
 
 					{shouldShowNotWonCard() && (
-						<RaffleNotWonCard status={raffle.status} />
+						<RaffleNotWonCard
+							status={raffle.status}
+							isPartialFulfillment={isPartialFulfillment}
+						/>
 					)}
 
 					{shouldShowActiveCard() && (

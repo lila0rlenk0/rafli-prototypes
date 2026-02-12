@@ -368,7 +368,13 @@ export function CreatePromoCodeModal({
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+				<form
+					onSubmit={e => {
+						e.stopPropagation();
+						form.handleSubmit(onSubmit)(e);
+					}}
+					className="space-y-4"
+				>
 					{/* Count Input */}
 					<div className="space-y-2">
 						<Label htmlFor="count">Number of codes</Label>

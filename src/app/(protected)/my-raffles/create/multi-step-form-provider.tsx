@@ -14,8 +14,10 @@ import { useForm, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import type { CreatePromoCodeData } from '@/components/promo-code/create-promo-code-modal';
 import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
 import { createRaffle } from '@/services/raffle/create-raffle';
+import { bulkCreatePromoCodes } from '@/services/promo-code/bulk-create-promo-codes';
 import { publishRaffle } from '@/services/raffle/publish-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
@@ -46,6 +48,10 @@ interface MultiStepFormContextType {
 	setShowExitModal: (show: boolean) => void;
 	questions: Question[];
 	categories: Category[];
+	pendingPromoCodes: CreatePromoCodeData[];
+	addPendingPromoCode: (data: CreatePromoCodeData) => void;
+	removePendingPromoCode: (index: number) => void;
+	clearPendingPromoCodes: () => void;
 }
 
 const MultiStepFormContext = createContext<
@@ -85,6 +91,30 @@ export function MultiStepFormProvider({
 		publicSlug: string;
 		raffleStartDate: string;
 	} | null>(null);
+	const [pendingPromoCodes, setPendingPromoCodes] = useState<
+		CreatePromoCodeData[]
+	>([]);
+
+	/**
+	 * Adds a promo code batch to the pending list
+	 */
+	const addPendingPromoCode = useCallback((data: CreatePromoCodeData) => {
+		setPendingPromoCodes(prev => [...prev, data]);
+	}, []);
+
+	/**
+	 * Removes a promo code batch from the pending list by index
+	 */
+	const removePendingPromoCode = useCallback((index: number) => {
+		setPendingPromoCodes(prev => prev.filter((_, i) => i !== index));
+	}, []);
+
+	/**
+	 * Clears all pending promo codes
+	 */
+	const clearPendingPromoCodes = useCallback(() => {
+		setPendingPromoCodes([]);
+	}, []);
 
 	const {
 		draft,
@@ -296,12 +326,15 @@ export function MultiStepFormProvider({
 				}
 
 				const raffleId = result.data.id;
+				let coverUploaded = false;
 
 				if (data.coverImage && data.coverImage.length > 0) {
 					const coverResult = await uploadCover(raffleId, data.coverImage[0]);
 					if (!coverResult.success) {
 						console.error('Cover upload failed:', coverResult.error);
 						toast.error('Raffle created but cover upload failed.');
+					} else {
+						coverUploaded = true;
 					}
 				}
 
@@ -317,13 +350,30 @@ export function MultiStepFormProvider({
 					}
 				}
 
-				// Auto-publish if start date is today or in the past
+				// Create pending promo codes
+				if (pendingPromoCodes.length > 0) {
+					let failedCount = 0;
+					for (const promoCode of pendingPromoCodes) {
+						const promoResult = await bulkCreatePromoCodes(raffleId, promoCode);
+						if (!promoResult.success) {
+							console.error('Promo code creation failed:', promoResult.error);
+							failedCount++;
+						}
+					}
+					if (failedCount > 0) {
+						toast.error(
+							`${failedCount} promo code batch${failedCount > 1 ? 'es' : ''} failed to create`,
+						);
+					}
+				}
+
+				// Auto-publish only if cover was uploaded (required for publish)
 				const startDate = new Date(data.startDate);
 				const today = new Date();
 				today.setHours(0, 0, 0, 0);
 				startDate.setHours(0, 0, 0, 0);
 
-				if (startDate <= today) {
+				if (startDate <= today && coverUploaded) {
 					const publishResult = await publishRaffle(raffleId);
 					if (!publishResult.success) {
 						console.error('Auto-publish failed:', publishResult.error);
@@ -335,8 +385,22 @@ export function MultiStepFormProvider({
 
 				// Clear draft and reset form state for next creation
 				clearDraft();
-				form.reset();
+				form.reset({
+					title: '',
+					description: '',
+					price: 0,
+					category: '',
+					coverImage: [],
+					startDate: '',
+					endDate: '',
+					pricePerTicket: 0,
+					numberOfWinners: 0,
+					minParticipants: 0,
+					maxParticipants: 0,
+					checkInQuestion: '',
+				});
 				setCurrentStep(0);
+				setPendingPromoCodes([]);
 
 				// Open success modal instead of redirecting
 				setCreatedRaffle({
@@ -351,7 +415,7 @@ export function MultiStepFormProvider({
 				setIsCreating(false);
 			}
 		},
-		[clearDraft, form],
+		[clearDraft, form, pendingPromoCodes],
 	);
 
 	/**
@@ -391,6 +455,10 @@ export function MultiStepFormProvider({
 				setShowExitModal,
 				questions,
 				categories,
+				pendingPromoCodes,
+				addPendingPromoCode,
+				removePendingPromoCode,
+				clearPendingPromoCodes,
 			}}
 		>
 			{children}

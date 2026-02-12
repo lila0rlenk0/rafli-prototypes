@@ -7,9 +7,16 @@ import { Input } from '@/components/ui/input';
 import { CircleDashed, Clock, DollarSign, InfoIcon, X } from 'lucide-react';
 import { useMemo } from 'react';
 import { useMultiStepForm } from '../multi-step-form-provider';
+import { PromoCodesSection } from '../promo-codes-section';
 
 export function TicketsStep() {
-	const { form, nextStep, questions } = useMultiStepForm();
+	const {
+		form,
+		nextStep,
+		questions,
+		pendingPromoCodes,
+		clearPendingPromoCodes,
+	} = useMultiStepForm();
 	const {
 		register,
 		formState: { errors, touchedFields },
@@ -35,7 +42,8 @@ export function TicketsStep() {
 		(numberOfWinners && numberOfWinners > 0) ||
 		(minParticipants && minParticipants > 0) ||
 		(maxParticipants && maxParticipants > 0) ||
-		checkInQuestion,
+		checkInQuestion ||
+		pendingPromoCodes.length > 0,
 	);
 
 	// Find the selected question to show options preview
@@ -137,6 +145,7 @@ export function TicketsStep() {
 		setValue('minParticipants', 0);
 		setValue('maxParticipants', 0);
 		setValue('checkInQuestion', '');
+		clearPendingPromoCodes();
 	};
 
 	// Handle continue with validation
@@ -327,6 +336,9 @@ export function TicketsStep() {
 				</div>
 			</div>
 
+			{/* Promo codes section */}
+			<PromoCodesSection />
+
 			{/* Participant Check-in Question section */}
 			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
 				<div className="flex flex-col gap-2">
@@ -375,28 +387,29 @@ export function TicketsStep() {
 							))}
 					</div>
 				)}
+			</div>
 
-				<div className="flex items-center gap-2">
-					<Button
-						type="button"
-						onClick={handleContinue}
-						disabled={!isCurrentStepValid}
-						className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
-					>
-						Continue
-					</Button>
+			{/* Continue/Clear buttons */}
+			<div className="flex items-center gap-2">
+				<Button
+					type="button"
+					onClick={handleContinue}
+					disabled={!isCurrentStepValid}
+					className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
+				>
+					Continue
+				</Button>
 
-					<Button
-						variant="ghost"
-						type="button"
-						onClick={handleClearAll}
-						disabled={!hasFilledFields}
-						className="flex cursor-pointer items-center gap-2"
-					>
-						<X className="size-4" />
-						<span className="text-sm font-semibold">Clear all</span>
-					</Button>
-				</div>
+				<Button
+					variant="ghost"
+					type="button"
+					onClick={handleClearAll}
+					disabled={!hasFilledFields}
+					className="flex cursor-pointer items-center gap-2"
+				>
+					<X className="size-4" />
+					<span className="text-sm font-semibold">Clear all</span>
+				</Button>
 			</div>
 		</div>
 	);

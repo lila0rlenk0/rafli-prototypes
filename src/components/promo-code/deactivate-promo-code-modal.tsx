@@ -37,7 +37,7 @@ export function DeactivatePromoCodeModal({
 	// Step 1: Render confirmation dialog.
 	return (
 		<Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
-			<DialogContent className="max-w-md">
+			<DialogContent className="max-w-md p-14">
 				<DialogHeader>
 					<DialogTitle>Deactivate Promo Code?</DialogTitle>
 					<DialogDescription>

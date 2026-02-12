@@ -76,8 +76,13 @@ export default async function PromoCodesPage({ params }: PageProps) {
 				</Link>
 
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900">Promo Codes</h1>
-					<p className="mt-1 text-sm text-gray-500">{raffle.title}</p>
+					<h1 className="font-clash-display text-2xl font-bold">
+						Manage promo codes
+					</h1>
+					<p className="mt-1 text-sm">
+						Create different promo code types to attract new participants or
+						reward your community.
+					</p>
 				</div>
 			</div>
 

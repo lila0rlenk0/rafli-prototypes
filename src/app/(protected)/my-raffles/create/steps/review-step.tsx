@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/date-format';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -15,6 +16,7 @@ export function ReviewStep() {
 		userName,
 		totalRaffles,
 		categories,
+		pendingPromoCodes,
 	} = useMultiStepForm();
 
 	const formValues = form.watch();
@@ -98,6 +100,20 @@ export function ReviewStep() {
 	}
 
 	/**
+	 * Gets total pending promo code count
+	 */
+	function getTotalPromoCodeCount(): number {
+		return pendingPromoCodes.reduce((sum, batch) => sum + batch.count, 0);
+	}
+
+	/**
+	 * Checks if pending promo codes should be shown in the review
+	 */
+	function hasPromoCodes(): boolean {
+		return pendingPromoCodes.length > 0;
+	}
+
+	/**
 	 * Checks if the raffle should show the start now warning
 	 */
 	function shouldShowStartNowWarning() {
@@ -170,7 +186,12 @@ export function ReviewStep() {
 				)}
 			</div>
 
-			<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+			<div
+				className={cn(
+					'grid grid-cols-2 gap-4',
+					hasPromoCodes() ? 'lg:grid-cols-3' : 'lg:grid-cols-4',
+				)}
+			>
 				<div className="flex min-w-0 flex-col gap-2">
 					<label className="text-sm text-[#B4B4B4]">Declared Value</label>
 					<p className="truncate text-sm font-medium">{getDeclaredValue()}</p>
@@ -194,6 +215,15 @@ export function ReviewStep() {
 						{getActivePeriod()}
 					</p>
 				</div>
+
+				{hasPromoCodes() && (
+					<div className="flex min-w-0 flex-col gap-2">
+						<label className="text-sm text-[#B4B4B4]">Promo Codes</label>
+						<p className="truncate text-sm font-medium">
+							{getTotalPromoCodeCount()}
+						</p>
+					</div>
+				)}
 			</div>
 
 			{shouldShowStartNowWarning() && (

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useEditForm } from '../edit-form-provider';
+import { PromoCodesSection } from '../promo-codes-section';
 
 /**
  * TicketsStep for Edit Form
@@ -411,6 +412,9 @@ export function TicketsStep() {
 				)}
 			</div>
 
+			{/* Promo codes section */}
+			<PromoCodesSection />
+
 			{/* Participant Check-in Question section */}
 			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
 				<div className="flex flex-col gap-2">
@@ -459,28 +463,29 @@ export function TicketsStep() {
 							))}
 					</div>
 				)}
+			</div>
 
-				<div className="flex items-center gap-2">
-					<Button
-						type="button"
-						onClick={handleContinue}
-						disabled={!isCurrentStepValid}
-						className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
-					>
-						Continue
-					</Button>
+			{/* Continue/Clear buttons */}
+			<div className="flex items-center gap-2">
+				<Button
+					type="button"
+					onClick={handleContinue}
+					disabled={!isCurrentStepValid}
+					className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
+				>
+					Continue
+				</Button>
 
-					<Button
-						variant="ghost"
-						type="button"
-						onClick={handleClearAll}
-						disabled={!hasFilledFields}
-						className="flex cursor-pointer items-center gap-2"
-					>
-						<X className="size-4" />
-						<span className="text-sm font-semibold">Clear all</span>
-					</Button>
-				</div>
+				<Button
+					variant="ghost"
+					type="button"
+					onClick={handleClearAll}
+					disabled={!hasFilledFields}
+					className="flex cursor-pointer items-center gap-2"
+				>
+					<X className="size-4" />
+					<span className="text-sm font-semibold">Clear all</span>
+				</Button>
 			</div>
 		</div>
 	);

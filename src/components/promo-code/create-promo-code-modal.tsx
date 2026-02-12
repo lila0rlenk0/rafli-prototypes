@@ -356,7 +356,7 @@ export function CreatePromoCodeModal({
 	// Form state
 	return (
 		<Dialog open={isOpen} onOpenChange={open => !open && handleClose()}>
-			<DialogContent className="max-w-md overflow-hidden border border-[#0F0F0FF2]">
+			<DialogContent className="max-w-md overflow-hidden border border-[#0F0F0FF2] p-14">
 				<ColoredCards className="absolute right-0 bottom-0 -z-1 rounded-br-xl" />
 
 				<DialogHeader>
@@ -368,7 +368,13 @@ export function CreatePromoCodeModal({
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+				<form
+					onSubmit={e => {
+						e.stopPropagation();
+						form.handleSubmit(onSubmit)(e);
+					}}
+					className="space-y-4"
+				>
 					{/* Count Input */}
 					<div className="space-y-2">
 						<Label htmlFor="count">Number of codes</Label>
@@ -509,7 +515,7 @@ export function CreatePromoCodeModal({
 						<Button
 							type="submit"
 							disabled={isSubmitting}
-							className="font-clash-display hover:bg-background w-full max-w-xs cursor-pointer border-2 border-black bg-black font-semibold hover:text-black"
+							className="font-clash-display hover:bg-background mt-2 w-full cursor-pointer border-2 border-black bg-black font-semibold hover:text-black"
 						>
 							{isSubmitting ? (
 								<>

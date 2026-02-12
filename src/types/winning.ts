@@ -66,6 +66,7 @@ export const winningSchema = z.object({
 	shippingInfo: shippingInfoSchema.nullable().optional(),
 	proofUrl: z.string().nullable().optional(),
 	hostNotes: z.string().nullable().optional(),
+	distributionAmount: z.string().nullable().optional(),
 });
 
 /**
@@ -154,6 +155,7 @@ export const hostWinnerEntrySchema = z.object({
 	proofUrl: z.string().nullable(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
+	distributionAmount: z.string().nullable().optional(),
 });
 
 /**

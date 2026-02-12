@@ -1,7 +1,12 @@
+'use client';
+
+import { formatCurrency } from '@/lib/utils/format-currency';
 import { formatDate } from '@/lib/utils/date-format';
 import type { Raffle } from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
+import { InfoIcon } from 'lucide-react';
 import { Separator } from '../ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 interface RaffleInfoCardProps {
 	raffle: Raffle;
@@ -93,6 +98,30 @@ export function RaffleInfoCard({
 		return myTicketsTotal.toLocaleString('en-US');
 	}
 
+	/**
+	 * Checks if current ticket sales are below minimum participants
+	 * @returns true if below minimum
+	 */
+	function isBelowMinParticipants(): boolean {
+		return (
+			raffle.minParticipants > 0 &&
+			raffle.ticketsSoldCount < raffle.minParticipants
+		);
+	}
+
+	/**
+	 * Estimates per-winner amount if raffle ends with current sales
+	 * Uses frontend estimate since backend values are null during active raffle
+	 * @returns Formatted estimated per-winner amount
+	 */
+	function getEstimatedPerWinner(): string {
+		const revenue = parseFloat(raffle.revenueAmount);
+		const feePercent = parseFloat(raffle.platformFeePercent ?? '10');
+		const net = revenue * (1 - feePercent / 100);
+		const perWinner = net / raffle.numberOfWinners;
+		return formatCurrency(perWinner, raffle.ticketPriceCurrency);
+	}
+
 	return (
 		<div
 			className="mt-8 rounded-2xl border border-black bg-white p-6 data-[authenticated=false]:md:w-84"
@@ -139,6 +168,52 @@ export function RaffleInfoCard({
 							<p className="text-sm font-medium">{getActivePeriod()}</p>
 						</div>
 					</div>
+				</div>
+
+				{/* Prize Pool Section */}
+				<Separator className="bg-[#B4B4B4]" />
+
+				<div className="space-y-2">
+					<div className="flex items-center justify-between">
+						<h3 className="text-sm font-medium text-[#7B7B7B]">
+							Declared Prize
+						</h3>
+						<p className="text-sm font-medium">
+							{formatCurrency(
+								raffle.declaredValueAmount,
+								raffle.declaredValueCurrency,
+							)}
+						</p>
+					</div>
+
+					<div className="flex items-center justify-between">
+						<h3 className="flex items-center gap-1 text-sm font-medium text-[#7B7B7B]">
+							Min. Participants
+							{isBelowMinParticipants() && (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<InfoIcon className="size-3.5 cursor-help text-[#7B7B7B]" />
+									</TooltipTrigger>
+									<TooltipContent side="top" className="max-w-56">
+										If the raffle ends below the minimum, winners receive a cash
+										share of the revenue instead of the declared prize.
+									</TooltipContent>
+								</Tooltip>
+							)}
+						</h3>
+						<p className="text-sm font-medium">
+							{raffle.minParticipants.toLocaleString()}
+						</p>
+					</div>
+
+					{isBelowMinParticipants() && (
+						<div className="flex items-center justify-between">
+							<h3 className="text-sm font-medium text-[#7B7B7B]">
+								Est. per winner
+							</h3>
+							<p className="text-sm font-medium">{getEstimatedPerWinner()}</p>
+						</div>
+					)}
 				</div>
 
 				{/* My Tickets Section - Only shown for authenticated users */}

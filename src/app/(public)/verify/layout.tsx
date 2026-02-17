@@ -3,7 +3,7 @@ import Script from 'next/script';
 import { Suspense, type ComponentProps, type ReactNode } from 'react';
 
 import { PublicNavbar } from '@/components/ui/public-navbar';
-import { Spinner } from '@/components/ui/spinner';
+import { ScreenLoader } from '@/components/ui/screen-loader';
 import { env } from '@/env/server';
 import { getSession } from '@/lib/auth/session';
 import { UserStoreProvider } from '@/providers/user-store-provider';
@@ -128,13 +128,7 @@ export default function VerifyLayout({ children }: VerifyLayoutProps) {
 			/>
 			<main className="relative min-h-screen">
 				<ColoredShapes className="fixed top-0 left-0 -z-1 origin-top-left scale-[.65]" />
-				<Suspense
-					fallback={
-						<div className="flex h-screen w-full items-center justify-center">
-							<Spinner />
-						</div>
-					}
-				>
+				<Suspense fallback={<ScreenLoader />}>
 					<VerifyLayoutContent>{children}</VerifyLayoutContent>
 				</Suspense>
 			</main>

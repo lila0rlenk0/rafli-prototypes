@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from 'react';
 
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { Navbar } from '@/components/ui/navbar';
-import { Spinner } from '@/components/ui/spinner';
+import { ScreenLoader } from '@/components/ui/screen-loader';
 import { getSession } from '@/lib/auth/session';
 import { NotificationStoreProvider } from '@/providers/notification-store-provider';
 import { UserStoreProvider } from '@/providers/user-store-provider';
@@ -56,13 +56,7 @@ async function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
 export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
 	return (
 		<div className="relative min-h-screen">
-			<Suspense
-				fallback={
-					<div className="flex h-screen w-full items-center justify-center">
-						<Spinner />
-					</div>
-				}
-			>
+			<Suspense fallback={<ScreenLoader />}>
 				<ProtectedLayoutContent>{children}</ProtectedLayoutContent>
 			</Suspense>
 			{/*<BackgroundCubeLeft className="absolute bottom-0 left-0 z-[-1] origin-bottom-left scale-[0.76]" />

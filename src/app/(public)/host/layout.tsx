@@ -1,7 +1,7 @@
 import { Suspense, type ReactNode, type ComponentProps } from 'react';
 
 import { PublicNavbar } from '@/components/ui/public-navbar';
-import { Spinner } from '@/components/ui/spinner';
+import { ScreenLoader } from '@/components/ui/screen-loader';
 import { getSession } from '@/lib/auth/session';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 import { permissionSchema, type Permission } from '@/types/user-mode';
@@ -63,13 +63,7 @@ async function PublicHostLayoutContent({ children }: PublicHostLayoutProps) {
 export default function PublicHostLayout({ children }: PublicHostLayoutProps) {
 	return (
 		<main className="relative min-h-screen">
-			<Suspense
-				fallback={
-					<div className="flex h-screen w-full items-center justify-center">
-						<Spinner />
-					</div>
-				}
-			>
+			<Suspense fallback={<ScreenLoader />}>
 				<PublicHostLayoutContent>{children}</PublicHostLayoutContent>
 			</Suspense>
 			<LeftColoredShapes className="fixed bottom-0 left-0 -z-1 origin-bottom-left scale-[.65]" />

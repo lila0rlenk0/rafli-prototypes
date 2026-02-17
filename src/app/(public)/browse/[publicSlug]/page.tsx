@@ -624,7 +624,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						<div className="flex items-center justify-center gap-2">
 							<InfoIcon className="size-4 text-[#7B7B7B]" />
 							<p className="text-sm text-[#7B7B7B]">
-								You&apos;ll only need KYC if you win
+								You&apos;ll only need to provide more details if you win
 							</p>
 						</div>
 					)}

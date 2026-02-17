@@ -13,9 +13,9 @@ interface StatusTabsProps {
  * StatusTabs Component
  *
  * Displays tabs for filtering raffles by status:
- * - Scheduled: Draft ou Queued (Host mode only)
- * - Live: Live
- * - Ended: Cancelled, Completed ou Ended
+ * - Created: Draft or Queued (Host mode only)
+ * - Participating: Live
+ * - Ended: Cancelled, Completed, Ended or Fulfilling
  * with an indicator line below the active tab.
  *
  * @param mode - User mode to determine which tabs to show
@@ -50,12 +50,12 @@ export function StatusTabs({ mode }: StatusTabsProps) {
 	}
 
 	/**
-	 * Handles Scheduled tab click
+	 * Handles Created tab click
 	 * Sends multiple status: draft,queued
 	 */
-	function handleScheduledClick() {
-		const scheduledStatuses = `${RAFFLE_STATUS.DRAFT},${RAFFLE_STATUS.QUEUED}`;
-		handleStatusChange(scheduledStatuses);
+	function handleCreatedClick() {
+		const createdStatuses = `${RAFFLE_STATUS.DRAFT},${RAFFLE_STATUS.QUEUED}`;
+		handleStatusChange(createdStatuses);
 	}
 
 	/**
@@ -70,14 +70,15 @@ export function StatusTabs({ mode }: StatusTabsProps) {
 	const isHost = mode === USER_MODE.HOST;
 
 	// Determine which tab is active by checking if current status is in the group
-	// Scheduled: Draft ou Queued (Host only)
+	// Created: Draft or Queued (Host only)
 	const statusList = statusParam ? statusParam.split(',') : [];
-	const isScheduled =
+	const isCreated =
 		statusList.includes(RAFFLE_STATUS.DRAFT) ||
 		statusList.includes(RAFFLE_STATUS.QUEUED);
-	// Live: Live (default when no status param)
-	const isActive = !statusParam || statusList.includes(RAFFLE_STATUS.LIVE);
-	// Ended: Cancelled, Completed, Ended ou Fulfilling
+	// Participating: Live (default when no status param)
+	const isParticipating =
+		!statusParam || statusList.includes(RAFFLE_STATUS.LIVE);
+	// Ended: Cancelled, Completed, Ended or Fulfilling
 	const isEnded =
 		statusList.includes(RAFFLE_STATUS.CANCELLED) ||
 		statusList.includes(RAFFLE_STATUS.COMPLETED) ||
@@ -86,25 +87,25 @@ export function StatusTabs({ mode }: StatusTabsProps) {
 
 	return (
 		<div className="relative flex items-start justify-center gap-6 pb-1">
-			{/* Scheduled Tab - Host only */}
+			{/* Created Tab - Host only */}
 			{isHost && (
 				<button
 					type="button"
-					onClick={handleScheduledClick}
+					onClick={handleCreatedClick}
 					className={cn(
 						'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
 						'text-[rgba(15,15,15,0.95)] transition-colors',
 						'hover:text-black',
 					)}
 				>
-					Scheduled
-					{isScheduled && (
+					Created
+					{isCreated && (
 						<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
 					)}
 				</button>
 			)}
 
-			{/* Live Tab */}
+			{/* Participating Tab */}
 			<button
 				type="button"
 				onClick={() => handleStatusChange(RAFFLE_STATUS.LIVE)}
@@ -114,8 +115,8 @@ export function StatusTabs({ mode }: StatusTabsProps) {
 					'hover:text-black',
 				)}
 			>
-				Live
-				{isActive && (
+				Participating
+				{isParticipating && (
 					<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
 				)}
 			</button>

@@ -1,5 +1,8 @@
 'use client';
 
+import { Eye } from 'lucide-react';
+import Link from 'next/link';
+
 import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Button } from '@/components/ui/button';
@@ -11,7 +14,6 @@ import {
 	type MyRaffleItem,
 } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
-import Link from 'next/link';
 
 interface RaffleCardProps {
 	raffle: MyRaffleItem;
@@ -147,8 +149,17 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 				</div>
 
 				{showEditButton ? (
-					<div className="mt-4">
+					<div className="mt-4 flex gap-2">
 						<EditRaffleButton publicSlug={raffle.publicSlugOrCode} />
+						<Link href={`/browse/${raffle.publicSlugOrCode}`}>
+							<Button
+								variant="outline"
+								className="cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
+							>
+								<Eye className="size-4" />
+								Preview
+							</Button>
+						</Link>
 					</div>
 				) : (
 					<Link

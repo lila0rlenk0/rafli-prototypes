@@ -1,12 +1,8 @@
-import { Spinner } from '@/components/ui/spinner';
+import { ScreenLoader } from '@/components/ui/screen-loader';
 
 /**
  * Loading state for edit raffle page
  */
 export default function EditRaffleLoading() {
-	return (
-		<div className="flex h-[60vh] w-full items-center justify-center">
-			<Spinner />
-		</div>
-	);
+	return <ScreenLoader className="h-[60vh]" />;
 }

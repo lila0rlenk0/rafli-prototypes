@@ -6,7 +6,6 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import { Logo } from '@/assets/logo';
-import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button } from '@/components/ui/button';
 
@@ -74,7 +73,6 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 				<div className="hidden items-center gap-3 sm:flex sm:gap-8">
 					{isAuthenticated ? (
 						<>
-							<ModeSwitchButton />
 							<NotificationBell />
 							<Link href="/profile">
 								<User className="size-5" />
@@ -146,9 +144,6 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 								>
 									Profile
 								</Link>
-								<div className="mt-4">
-									<ModeSwitchButton />
-								</div>
 							</>
 						) : (
 							<Button

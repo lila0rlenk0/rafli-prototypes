@@ -9,7 +9,7 @@ const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'audio/mp3'];
  * Determines which fields should be disabled based on raffle state
  */
 export interface FieldRestrictions {
-	/** Start date locked if scheduled for future (startDate > today) */
+	/** Start date locked if raffle is live or has participants */
 	startDateLocked: boolean;
 	/** Ticket price locked if any tickets have been sold (participantsCount > 0) */
 	priceLocked: boolean;

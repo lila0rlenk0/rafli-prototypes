@@ -22,8 +22,17 @@ export function FormHeader() {
 	} = useMultiStepForm();
 
 	const progress = ((currentStep + 1) / totalSteps) * 100;
+	const isLastStep = currentStep === totalSteps - 1;
 
 	const shouldDisablePreviousStep = currentStep === 0;
+
+	/**
+	 * Gets the header title based on the current step
+	 */
+	function getTitle(): string {
+		if (isLastStep) return 'Preview a Raffle';
+		return 'Create a Raffle';
+	}
 
 	/**
 	 * Navigates to the previous form step
@@ -48,7 +57,7 @@ export function FormHeader() {
 		<>
 			<div className="flex items-center justify-between">
 				<h1 className="font-clash-display text-4xl font-semibold">
-					Create a Raffle
+					{getTitle()}
 				</h1>
 
 				<div className="flex items-center gap-2">

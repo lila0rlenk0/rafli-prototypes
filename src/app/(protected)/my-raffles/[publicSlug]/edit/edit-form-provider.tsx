@@ -25,6 +25,7 @@ import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import type { Raffle, SignedMediaUrl } from '@/types/raffle';
 
+import { computeRestrictions } from './compute-restrictions';
 import { editFormSchema, type FieldRestrictions } from './schema';
 import { STEPS } from './steps';
 
@@ -99,27 +100,6 @@ function hasFormChanges(
 		formData.maxParticipants !== originalDefaults.maxParticipants ||
 		formData.checkInQuestion !== originalDefaults.checkInQuestion
 	);
-}
-
-/**
- * Computes field restrictions based on raffle state
- * - startDateLocked: if start date is in the future (scheduled)
- * - priceLocked: if any tickets have been sold
- *
- * @param raffle - The raffle to check
- * @returns FieldRestrictions object
- */
-function computeRestrictions(raffle: Raffle): FieldRestrictions {
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-
-	const startDate = new Date(raffle.startAt);
-	startDate.setHours(0, 0, 0, 0);
-
-	return {
-		startDateLocked: startDate > today,
-		priceLocked: raffle.participantsCount > 0,
-	};
 }
 
 /**

@@ -61,13 +61,14 @@ export function FulfillmentTimeline({
 	 * Determines step status based on current winning status
 	 */
 	function getStepStatus(step: number): StepStatus {
-		// Special case: awaiting_host - depends on shipping info
+		// pending: winner hasn't claimed yet
+		if (currentStatus === 'pending') {
+			if (step === 1) return 'active';
+			return 'pending';
+		}
+
+		// awaiting_host: winner claimed with shipping, host needs to ship
 		if (currentStatus === 'awaiting_host') {
-			if (!shippingInfo) {
-				if (step === 1) return 'active';
-				return 'pending';
-			}
-			// has shipping info
 			if (step === 1) return 'completed';
 			if (step === 2) return 'active';
 			return 'pending';
@@ -92,20 +93,21 @@ export function FulfillmentTimeline({
 			return 'completed';
 		}
 
-		// pending or unknown: all pending
+		// unknown: all pending
 		return 'pending';
 	}
 
 	/**
-	 * Gets step 1 (Claim) content based on role and shipping status
+	 * Gets step 1 (Claim) content based on role and status
 	 */
 	function getClaimStep() {
 		const status = getStepStatus(1);
+		const hasClaimed = currentStatus !== 'pending';
 
 		if (isHost) {
 			return {
-				title: shippingInfo ? 'Claimed' : 'Awaiting Winner',
-				description: shippingInfo
+				title: hasClaimed ? 'Claimed' : 'Awaiting Winner',
+				description: hasClaimed
 					? 'Winner has submitted shipping info'
 					: 'Waiting for winner to submit shipping address',
 				action: null,
@@ -113,12 +115,12 @@ export function FulfillmentTimeline({
 		}
 
 		return {
-			title: shippingInfo ? 'Claimed' : 'Claim Prize',
-			description: shippingInfo
+			title: hasClaimed ? 'Claimed' : 'Claim Prize',
+			description: hasClaimed
 				? 'You have submitted your shipping info'
 				: 'Submit your shipping address to receive your prize',
 			action:
-				status === 'active' && !shippingInfo ? (
+				status === 'active' ? (
 					<button
 						onClick={() => setShippingModalOpen(true)}
 						className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black"
@@ -302,6 +304,7 @@ export function FulfillmentTimeline({
 			zip: '',
 			country: '',
 		});
+		setCurrentStatus('awaiting_host');
 	}
 
 	/**

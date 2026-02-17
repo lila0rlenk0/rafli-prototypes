@@ -202,7 +202,7 @@ export function TicketsStep() {
 											<Lock className="size-4 text-gray-400" />
 										</TooltipTrigger>
 										<TooltipContent>
-											<p>Start date cannot be changed for scheduled raffles</p>
+											<p>Start date cannot be changed for live raffles</p>
 										</TooltipContent>
 									</Tooltip>
 								</TooltipProvider>
@@ -258,14 +258,13 @@ export function TicketsStep() {
 						<div className="flex items-center gap-2">
 							<Clock className="size-6 text-[#2870BD]" />
 							<span className="text-xs">
-								Raffle is scheduled for a future date. Start date cannot be
-								changed.
+								Raffle is live. Start date cannot be changed.
 							</span>
 						</div>
 
 						<div className="flex items-center gap-2 rounded-2xl bg-[#C2E6FF] px-2 py-1">
 							<CircleDashed className="size-4 stroke-[3.5] text-[#01A1FF]" />
-							<span className="text-sm">Scheduled</span>
+							<span className="text-sm">Live</span>
 						</div>
 					</div>
 				)}

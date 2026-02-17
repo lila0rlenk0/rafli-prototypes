@@ -52,3 +52,38 @@ Priority order:
 - New validator or formatter -> add test
 - Bug fix in existing logic -> add regression test
 - Refactoring critical code -> ensure tests exist first
+
+## Integration Tests
+
+Server action tests with mocked HTTP layer. Validates the full flow: HTTP call -> Zod validation -> error mapping -> `ServiceResponse`.
+
+### Location
+
+```
+tests/
+├── integration/services/{domain}/{action}.integration.test.ts
+├── helpers/mock-axios.ts    # Axios response/error factories
+├── e2e/                     # (future)
+└── fixtures/                # (future)
+```
+
+### Naming
+
+Files use `*.integration.test.ts` suffix.
+
+### Commands
+
+```bash
+bun test tests/integration/                    # all integration tests
+bun test tests/integration/services/raffle/    # domain-specific
+```
+
+### When to Write
+
+- New server action -> add integration test
+- Error mapper changes -> verify affected actions
+- Zod schema changes -> verify validation still works
+
+### Reference
+
+See `tests/integration/services/raffle/get-raffle.integration.test.ts` for the canonical example covering: success, Zod failure, RFC 7807 errors, network errors, HTTP fallbacks.

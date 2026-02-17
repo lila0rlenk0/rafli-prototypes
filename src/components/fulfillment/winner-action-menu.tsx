@@ -37,7 +37,7 @@ export function WinnerActionMenu({
 	const [markSentModalOpen, setMarkSentModalOpen] = useState(false);
 	const [isMarkingDelivered, startTransition] = useTransition();
 
-	const hasShipping = !!winner.shippingInfo;
+	const isPending = winner.status === 'pending';
 	const isAwaitingHost = winner.status === 'awaiting_host';
 	const isSent = winner.status === 'sent';
 	const isCompleted =
@@ -45,9 +45,9 @@ export function WinnerActionMenu({
 		winner.status === 'received' ||
 		winner.status === 'resolved';
 
-	const canMarkSent = isAwaitingHost && hasShipping && !isMarkingDelivered;
+	const waitingForShipping = isPending;
+	const canMarkSent = isAwaitingHost && !isMarkingDelivered;
 	const canMarkDelivered = isSent && !isMarkingDelivered;
-	const waitingForShipping = isAwaitingHost && !hasShipping;
 
 	/**
 	 * Handles mark as delivered action

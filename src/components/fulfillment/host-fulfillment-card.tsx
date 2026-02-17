@@ -1,11 +1,15 @@
 import { Users } from 'lucide-react';
 import Link from 'next/link';
 
+import { FulfillmentBadge } from '@/components/raffle/fulfillment-badge';
+
 interface HostFulfillmentCardProps {
 	/** Public slug for the raffle */
 	publicSlug: string;
 	/** Number of winners to fulfill */
 	winnersCount: number;
+	/** Whether the raffle concluded with fewer participants than the minimum */
+	isPartialFulfillment: boolean;
 }
 
 /**
@@ -17,6 +21,7 @@ interface HostFulfillmentCardProps {
 export function HostFulfillmentCard({
 	publicSlug,
 	winnersCount,
+	isPartialFulfillment,
 }: HostFulfillmentCardProps) {
 	/**
 	 * Formats the winners count message
@@ -32,6 +37,10 @@ export function HostFulfillmentCard({
 		<div className="min-w-sm rounded-2xl bg-white p-6">
 			<div className="mb-4 flex items-center justify-between">
 				<h3 className="text-lg font-semibold">Delivery status</h3>
+			</div>
+
+			<div className="mb-4">
+				<FulfillmentBadge isPartial={isPartialFulfillment} />
 			</div>
 
 			<p className="mb-6 text-sm text-gray-600">{getWinnersMessage()}</p>

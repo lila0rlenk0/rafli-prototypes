@@ -1,7 +1,9 @@
 import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeline';
 import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
+import { PrizeBreakdownCard } from '@/components/raffle/prize-breakdown-card';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
+import { RevenueBreakdownCard } from '@/components/raffle/revenue-breakdown-card';
 import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { RaffleUpdatesCard } from '@/components/raffle/raffle-updates-card';
@@ -236,6 +238,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const isManageable = isManageableStatus();
 
 	/**
+	 * Whether the raffle concluded with partial participation (revenue share)
+	 * Uses backend field when available, falls back to ticket count comparison
+	 */
+	const isPartialFulfillment =
+		raffle.isPartialParticipation ??
+		raffle.ticketsSoldCount < raffle.minParticipants;
+
+	/**
 	 * Checks if winner card should be shown (user won)
 	 */
 	function shouldShowWinnerCard(): boolean {
@@ -468,6 +478,39 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									non-refundable.
 								</AccordionContent>
 							</AccordionItem>
+
+							<AccordionItem
+								value="partial-fulfillment"
+								className="border-none"
+							>
+								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
+									What if minimum participants aren&apos;t reached?
+								</AccordionTrigger>
+								<AccordionContent className="text-muted-foreground space-y-3 px-4 pt-4 text-sm">
+									<p>
+										Every raffle sets a minimum number of participants. If the
+										raffle ends before reaching that minimum, it concludes under{' '}
+										<strong>Partial Participation</strong>.
+									</p>
+									<p>
+										When this happens, winners are still selected using the same
+										provably fair process (VRF). However, instead of receiving
+										the declared physical prize, winners receive a{' '}
+										<strong>cash distribution</strong> from the revenue.
+									</p>
+									<p>
+										The revenue is automatically split: the platform takes a
+										small fee and the remainder is distributed equally among all
+										winners. No host involvement is needed — the distribution
+										happens automatically.
+									</p>
+									<p>
+										You can always check the raffle details to see the current
+										number of participants versus the minimum required before
+										purchasing a ticket.
+									</p>
+								</AccordionContent>
+							</AccordionItem>
 						</Accordion>
 					</div>
 				</div>
@@ -478,26 +521,43 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								userName={myUserName ?? 'Winner'}
 								userAvatar={myUserAvatarUrl}
 								ticketCode={myWinningTicketCode}
+								isPartialFulfillment={isPartialFulfillment}
 							/>
-							<FulfillmentTimeline
-								winning={myWinning}
-								isHost={isOwner}
-								raffleId={raffle.id}
-								hostId={raffle.hostId}
-								publicSlug={publicSlug}
+							<PrizeBreakdownCard
+								raffle={raffle}
+								isPartialParticipation={isPartialFulfillment}
 							/>
+							{!isPartialFulfillment && (
+								<FulfillmentTimeline
+									winning={myWinning}
+									isHost={isOwner}
+									raffleId={raffle.id}
+									hostId={raffle.hostId}
+									publicSlug={publicSlug}
+								/>
+							)}
 						</>
 					)}
 
 					{shouldShowHostFulfillment() && (
-						<HostFulfillmentCard
-							publicSlug={publicSlug}
-							winnersCount={raffle.winners?.length ?? 0}
-						/>
+						<>
+							<HostFulfillmentCard
+								publicSlug={publicSlug}
+								winnersCount={raffle.winners?.length ?? 0}
+								isPartialFulfillment={isPartialFulfillment}
+							/>
+							<RevenueBreakdownCard
+								raffle={raffle}
+								isPartialParticipation={isPartialFulfillment}
+							/>
+						</>
 					)}
 
 					{shouldShowNotWonCard() && (
-						<RaffleNotWonCard status={raffle.status} />
+						<RaffleNotWonCard
+							status={raffle.status}
+							isPartialFulfillment={isPartialFulfillment}
+						/>
 					)}
 
 					{shouldShowActiveCard() && (

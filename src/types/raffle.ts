@@ -141,6 +141,11 @@ export const raffleSchema = z.object({
 	commitTxHash: z.string().nullable().optional(),
 	vrfRequestId: z.string().nullable().optional(),
 	vrfFulfillTxHash: z.string().nullable().optional(),
+	isPartialParticipation: z.boolean().optional(),
+	platformFeePercent: z.string().optional(),
+	platformFeeAmount: z.string().nullable().optional(),
+	netRevenueAmount: z.string().nullable().optional(),
+	perWinnerAmount: z.string().nullable().optional(),
 });
 
 /**

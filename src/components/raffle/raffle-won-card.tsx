@@ -1,10 +1,14 @@
 import Image from 'next/image';
 import type { ComponentProps, ReactNode } from 'react';
 
+import { FulfillmentBadge } from '@/components/raffle/fulfillment-badge';
+
 interface RaffleWonCardProps {
 	userName: string;
 	userAvatar?: string | null;
 	ticketCode: string | null;
+	/** Whether the raffle concluded with fewer participants than the minimum */
+	isPartialFulfillment: boolean;
 	/** Optional slot for winner actions (confirm button, etc.) */
 	actionsSlot?: ReactNode;
 }
@@ -19,6 +23,7 @@ export function RaffleWonCard({
 	userName,
 	userAvatar,
 	ticketCode,
+	isPartialFulfillment,
 	actionsSlot,
 }: RaffleWonCardProps) {
 	/**
@@ -38,6 +43,10 @@ export function RaffleWonCard({
 				<br />
 				you won!
 			</h2>
+
+			<div className="mt-4">
+				<FulfillmentBadge isPartial={isPartialFulfillment} />
+			</div>
 
 			<div className="mt-8 flex flex-col items-center">
 				<div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">

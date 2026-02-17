@@ -1,20 +1,26 @@
 import { Goal, ServerCrash } from 'lucide-react';
 import Link from 'next/link';
 
+import { FulfillmentBadge } from '@/components/raffle/fulfillment-badge';
 import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
 
 interface RaffleNotWonCardProps {
 	/** Current raffle status */
 	status: RaffleStatus;
+	/** Whether the raffle concluded with fewer participants than the minimum */
+	isPartialFulfillment: boolean;
 }
 
 /**
  * RaffleNotWonCard Component
  *
  * Displayed to users who participated in a concluded raffle but did not win.
- * Shows different messages based on raffle status.
+ * Shows different messages based on raffle status and fulfillment type.
  */
-export function RaffleNotWonCard({ status }: RaffleNotWonCardProps) {
+export function RaffleNotWonCard({
+	status,
+	isPartialFulfillment,
+}: RaffleNotWonCardProps) {
 	/**
 	 * Returns the appropriate message based on raffle status
 	 */
@@ -29,8 +35,15 @@ export function RaffleNotWonCard({ status }: RaffleNotWonCardProps) {
 		}
 	}
 
-	const isFulfilling = status === RAFFLE_STATUS.FULFILLING;
+	/**
+	 * Whether to show the fulfillment badge
+	 * Only shown when raffle is concluded (not during fulfilling)
+	 */
+	function shouldShowFulfillmentBadge(): boolean {
+		return status !== RAFFLE_STATUS.FULFILLING;
+	}
 
+	const isFulfilling = status === RAFFLE_STATUS.FULFILLING;
 	const Icon = isFulfilling ? ServerCrash : Goal;
 
 	return (
@@ -40,6 +53,12 @@ export function RaffleNotWonCard({ status }: RaffleNotWonCardProps) {
 			<h2 className="font-clash-display mt-8 text-center text-2xl font-semibold">
 				{getMessage()}
 			</h2>
+
+			{shouldShowFulfillmentBadge() && (
+				<div className="mt-4">
+					<FulfillmentBadge isPartial={isPartialFulfillment} />
+				</div>
+			)}
 
 			{isFulfilling && (
 				<Link

@@ -1,9 +1,17 @@
+import {
+	CheckCircle,
+	CircleDashed,
+	CircleOff,
+	Clock,
+	Trophy,
+} from 'lucide-react';
+import Link from 'next/link';
+
 import { ProvablyFairBadge } from '@/components/raffle/provably-fair-badge';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
-import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
-import Link from 'next/link';
+import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
 
 interface PublicRaffleCardProps {
 	raffle: Raffle;
@@ -86,6 +94,76 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 		});
 	}
 
+	/**
+	 * Gets human-readable time remaining until raffle ends
+	 * @returns Time remaining string (e.g. "2 days left", "3 months left")
+	 */
+	function getTimeRemaining(): string {
+		const now = new Date();
+		const end = new Date(raffle.endAt);
+		const diffMs = end.getTime() - now.getTime();
+
+		if (diffMs <= 0) return 'Ended';
+
+		const diffDays = Math.ceil(diffMs / (1_000 * 60 * 60 * 24));
+
+		if (diffDays >= 60) {
+			const months = Math.floor(diffDays / 30);
+			return `${months} months left`;
+		}
+
+		if (diffDays === 1) return '1 day left';
+		return `${diffDays} days left`;
+	}
+
+	/**
+	 * Gets status tag config based on raffle status
+	 * @returns Label, icon, and color classes for the status badge
+	 */
+	function getStatusTag(status: RaffleStatus) {
+		switch (status) {
+			case RAFFLE_STATUS.LIVE:
+				return {
+					label: 'Active',
+					icon: CheckCircle,
+					className: 'text-green-600 bg-green-50',
+				};
+			case RAFFLE_STATUS.QUEUED:
+				return {
+					label: 'Scheduled',
+					icon: Clock,
+					className: 'text-blue-600 bg-blue-50',
+				};
+			case RAFFLE_STATUS.ENDED:
+			case RAFFLE_STATUS.FULFILLING:
+				return {
+					label: 'Ended',
+					icon: CircleOff,
+					className: 'text-gray-600 bg-gray-100',
+				};
+			case RAFFLE_STATUS.COMPLETED:
+				return {
+					label: 'Completed',
+					icon: Trophy,
+					className: 'text-purple-600 bg-purple-50',
+				};
+			case RAFFLE_STATUS.CANCELLED:
+				return {
+					label: 'Cancelled',
+					icon: CircleOff,
+					className: 'text-red-600 bg-red-50',
+				};
+			default:
+				return {
+					label: 'Draft',
+					icon: CircleDashed,
+					className: 'text-gray-500 bg-gray-50',
+				};
+		}
+	}
+
+	const statusTag = getStatusTag(raffle.status);
+
 	return (
 		<div className="group flex w-full flex-col overflow-hidden rounded-[24px] border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
 			<ImageCarousel
@@ -99,6 +177,16 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 				<h3 className="mb-2 h-16 text-xl font-bold tracking-tight text-gray-900">
 					{raffle.title}
 				</h3>
+
+				<div className="mb-3 flex items-center justify-between">
+					<span className="text-sm text-[#7B7B7B]">{getTimeRemaining()}</span>
+					<span
+						className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusTag.className}`}
+					>
+						<statusTag.icon className="size-3.5" />
+						{statusTag.label}
+					</span>
+				</div>
 
 				{raffle.status === RAFFLE_STATUS.COMPLETED && (
 					<ProvablyFairBadge className="mb-2" />

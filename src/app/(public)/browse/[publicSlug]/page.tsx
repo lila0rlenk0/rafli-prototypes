@@ -511,7 +511,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</Accordion>
 					</div>
 				</div>
-				<div className="space-y-2">
+				<div className="w-full space-y-2 lg:w-sm lg:shrink-0">
 					{shouldShowWinnerCard() && myWinning && (
 						<>
 							<RaffleWonCard

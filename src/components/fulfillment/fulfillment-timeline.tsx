@@ -188,17 +188,11 @@ export function FulfillmentTimeline({
 
 		return {
 			title: 'Shipped',
-			description: 'Your prize is on the way',
-			action:
-				status === 'active' ? (
-					<button
-						onClick={handleConfirmReceived}
-						disabled={isConfirming}
-						className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{isConfirming ? 'Confirming...' : 'I received the prize'}
-					</button>
-				) : null,
+			description:
+				status === 'active'
+					? 'Waiting for host to confirm delivery'
+					: 'Your prize is on the way',
+			action: null,
 		};
 	}
 

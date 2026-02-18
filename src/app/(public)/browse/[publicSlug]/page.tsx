@@ -547,6 +547,12 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								raffle={raffle}
 								isPartialParticipation={isPartialFulfillment}
 							/>
+							<RaffleInfoCard
+								raffle={raffle}
+								myTicketCodes={myTicketCodes}
+								myTicketsTotal={myTicketsTotal}
+								isAuthenticated={isAuthenticated}
+							/>
 						</>
 					)}
 

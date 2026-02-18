@@ -6,7 +6,7 @@ import { WinnersTable } from '@/components/fulfillment/winners-table';
 import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleWinnings } from '@/services/winning/get-raffle-winnings';
-import { RAFFLE_STATUS } from '@/types/raffle';
+import { CONCLUDED_STATUSES, type ConcludedStatus } from '@/types/raffle';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,16 +45,7 @@ export default async function FulfillmentPage({ params }: PageProps) {
 	}
 
 	// Raffle must be concluded
-	const concludedStatuses = [
-		RAFFLE_STATUS.ENDED,
-		RAFFLE_STATUS.FULFILLING,
-		RAFFLE_STATUS.COMPLETED,
-	] as const;
-	if (
-		!concludedStatuses.includes(
-			raffle.status as (typeof concludedStatuses)[number],
-		)
-	) {
+	if (!CONCLUDED_STATUSES.includes(raffle.status as ConcludedStatus)) {
 		redirect(`/browse/${publicSlug}`);
 	}
 

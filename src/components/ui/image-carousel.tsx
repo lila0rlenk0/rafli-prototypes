@@ -121,6 +121,14 @@ export function ImageCarousel({
 		return total > 1;
 	}
 
+	const images = buildImageArray();
+	const hasExpiredSignedImage = (
+		imagesProp ?? [coverImage, ...galleryImages]
+	).some(image => {
+		if (!image) return false;
+		return isExpiredImage(image);
+	});
+
 	/**
 	 * Handles navigation to the next image
 	 */
@@ -136,14 +144,6 @@ export function ImageCarousel({
 		setDirection(-1);
 		setCurrentIndex(prev => getWrappedIndex(prev, -1, images.length));
 	}
-
-	const images = buildImageArray();
-	const hasExpiredSignedImage = (
-		imagesProp ?? [coverImage, ...galleryImages]
-	).some(image => {
-		if (!image) return false;
-		return isExpiredImage(image);
-	});
 
 	// Trigger exactly one refresh per mount if stale signed media is detected.
 	// Why: stale RSC payload can include expired signed URLs; refresh rehydrates fresh URLs.

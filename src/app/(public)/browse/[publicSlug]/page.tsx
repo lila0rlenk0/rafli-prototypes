@@ -27,6 +27,8 @@ import { getMe } from '@/services/user/get-me';
 import { getMyWinnings } from '@/services/winning/get-my-winnings';
 import type { Category } from '@/types/category';
 import {
+	CONCLUDED_STATUSES,
+	type ConcludedStatus,
 	RAFFLE_STATUS,
 	UPDATE_MANAGEABLE_STATUSES,
 	type UpdateManageableStatus,
@@ -167,21 +169,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const didUserWin = !!myWinning;
 
 	/**
-	 * List of statuses that indicate a raffle has concluded
-	 */
-	const CONCLUDED_STATUSES = [
-		RAFFLE_STATUS.ENDED,
-		RAFFLE_STATUS.COMPLETED,
-		RAFFLE_STATUS.FULFILLING,
-	] as const;
-
-	/**
 	 * Check if raffle is concluded (ended, completed, or fulfilling)
 	 */
 	function isRaffleConcluded(): boolean {
-		return CONCLUDED_STATUSES.includes(
-			raffle.status as (typeof CONCLUDED_STATUSES)[number],
-		);
+		return CONCLUDED_STATUSES.includes(raffle.status as ConcludedStatus);
 	}
 
 	/**

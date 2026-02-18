@@ -29,6 +29,18 @@ export const UPDATE_MANAGEABLE_STATUSES = [
 export type UpdateManageableStatus =
 	(typeof UPDATE_MANAGEABLE_STATUSES)[number];
 
+/**
+ * Statuses indicating a raffle has concluded (draw happened, lifecycle winding down).
+ * Used to gate winner cards, fulfillment UI, and "not won" messaging.
+ */
+export const CONCLUDED_STATUSES = [
+	RAFFLE_STATUS.ENDED,
+	RAFFLE_STATUS.FULFILLING,
+	RAFFLE_STATUS.COMPLETED,
+] as const;
+
+export type ConcludedStatus = (typeof CONCLUDED_STATUSES)[number];
+
 export const RAFFLE_SORT_OPTION = {
 	ENDING_SOON: 'ending_soon',
 	LOWEST_PRICE: 'lowest_price',

@@ -8,8 +8,7 @@ import type { NextConfig } from 'next';
  */
 const backendUrl = new URL(env.BACKEND_URL);
 const isLocal =
-	backendUrl.hostname === 'localhost' ||
-	backendUrl.hostname === '127.0.0.1';
+	backendUrl.hostname === 'localhost' || backendUrl.hostname === '127.0.0.1';
 
 const nextConfig: NextConfig = {
 	experimental: {

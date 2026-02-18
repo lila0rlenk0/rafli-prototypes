@@ -103,9 +103,7 @@ describe('getRaffle', () => {
 
 	describe('network errors', () => {
 		test('maps ERR_NETWORK to network_error', async () => {
-			mockGet.mockRejectedValueOnce(
-				mockAxiosError({ code: 'ERR_NETWORK' }),
-			);
+			mockGet.mockRejectedValueOnce(mockAxiosError({ code: 'ERR_NETWORK' }));
 
 			const result = await getRaffle('test-raffle');
 
@@ -116,9 +114,7 @@ describe('getRaffle', () => {
 		});
 
 		test('maps ECONNABORTED to timeout_error', async () => {
-			mockGet.mockRejectedValueOnce(
-				mockAxiosError({ code: 'ECONNABORTED' }),
-			);
+			mockGet.mockRejectedValueOnce(mockAxiosError({ code: 'ECONNABORTED' }));
 
 			const result = await getRaffle('test-raffle');
 
@@ -131,17 +127,13 @@ describe('getRaffle', () => {
 
 	describe('HTTP status fallbacks', () => {
 		test('maps 500 to internal_server_error', async () => {
-			mockGet.mockRejectedValueOnce(
-				mockAxiosError({ status: 500 }),
-			);
+			mockGet.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
 
 			const result = await getRaffle('test-raffle');
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
-				expect(result.error).toBe(
-					COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR,
-				);
+				expect(result.error).toBe(COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR);
 			}
 		});
 	});

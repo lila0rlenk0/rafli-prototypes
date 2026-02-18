@@ -16,7 +16,7 @@ export function useDeactivatePromoCode() {
 	const queryClient = useQueryClient();
 
 	return useMutation<void, ServiceError<PromoCodeErrorCode>, string>({
-		mutationFn: async function deactivate(promoCodeId) {
+		mutationFn: async function deactivate(promoCodeId: string) {
 			const result = await deactivatePromoCode(promoCodeId);
 			if (!result.success) throw serviceError(result.error);
 			return result.data;

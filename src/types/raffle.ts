@@ -74,17 +74,19 @@ const mediaUrlSchema = z.object({
 	expiresAt: z.string(),
 });
 
+// TODO: remove link fallback once backend deploys username field
 const hostSchema = z.object({
 	id: z.uuid(),
 	name: z.string().nullable(),
-	link: z.url().nullable(),
+	username: z.string().nullable().optional(),
+	link: z.string().nullable().optional(),
 	avatar: z
 		.object({
 			expiresAt: z.string(),
 			url: z.string(),
 		})
 		.nullable(),
-	totalRaffles: z.number().optional(), // TODO: change to non optional once PR is merged
+	totalRaffles: z.number().optional(),
 });
 
 /**

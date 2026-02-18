@@ -312,20 +312,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		return `${count} Raffles`;
 	}
 
-	/**
-	 * Builds the host profile URL
-	 * Uses username if available in host.link, otherwise falls back to hostId
-	 * @returns The profile URL path
-	 */
+	// TODO: remove link fallback once backend deploys username field
+	/** Builds the host profile URL from username, falls back to hostId */
 	function getHostProfileUrl(): string {
-		// If host.link exists, extract username from it (format: /users/{username})
-		if (raffle.host?.link) {
-			const username = raffle.host.link.replace('/users/', '');
-			if (username && username !== raffle.host.id) {
-				return `/host/${username}`;
-			}
+		if (raffle.host?.username) return `/host/${raffle.host.username}`;
+		if (raffle.host?.link?.startsWith('/users/')) {
+			const parsed = raffle.host.link.replace('/users/', '');
+			if (parsed) return `/host/${parsed}`;
 		}
-		// Fallback to hostId
 		return `/host/${raffle.host?.id ?? raffle.hostId}`;
 	}
 

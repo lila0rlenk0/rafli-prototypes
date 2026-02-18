@@ -74,12 +74,10 @@ const mediaUrlSchema = z.object({
 	expiresAt: z.string(),
 });
 
-// TODO: remove link fallback once backend deploys username field
 const hostSchema = z.object({
 	id: z.uuid(),
 	name: z.string().nullable(),
-	username: z.string().nullable().optional(),
-	link: z.string().nullable().optional(),
+	username: z.string().nullable(),
 	avatar: z
 		.object({
 			expiresAt: z.string(),
@@ -148,6 +146,7 @@ export const raffleSchema = z.object({
 	platformFeeAmount: z.string().nullable().optional(),
 	netRevenueAmount: z.string().nullable().optional(),
 	perWinnerAmount: z.string().nullable().optional(),
+	disputeWindowEndsAt: z.string().nullable().optional(),
 });
 
 /**
@@ -193,8 +192,7 @@ export const createRaffleInputSchema = z.object({
  */
 export const createRafflePayloadSchema = z.object({
 	categoryId: z.uuid(),
-	// TODO: Change to .uuid() for production since staging is using a wrong mocked uuid
-	questionId: z.string(),
+	questionId: z.uuid(),
 	coverMediaUrl: z.string().max(500),
 	declaredValueAmount: z.string().regex(/^\d+(\.\d{1,4})?$/),
 	declaredValueCurrency: z.string().length(3),

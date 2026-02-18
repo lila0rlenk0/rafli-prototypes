@@ -26,7 +26,11 @@ import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import { getMe } from '@/services/user/get-me';
 import { getMyWinnings } from '@/services/winning/get-my-winnings';
 import type { Category } from '@/types/category';
-import { RAFFLE_STATUS } from '@/types/raffle';
+import {
+	RAFFLE_STATUS,
+	UPDATE_MANAGEABLE_STATUSES,
+	type UpdateManageableStatus,
+} from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
 import type { Winning } from '@/types/winning';
 import { ArrowLeft, InfoIcon } from 'lucide-react';
@@ -37,8 +41,6 @@ import { BugIcon } from '@/assets/icons/bug-icon';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
-
-export const dynamic = 'force-dynamic';
 
 interface PageProps {
 	params: Promise<{
@@ -218,25 +220,18 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const isConcluded = isRaffleConcluded();
 	const isOwner = isOwnRaffle();
 	const hasWinners = (raffle.winners?.length ?? 0) > 0;
-	const UPDATE_MANAGEABLE_STATUSES = [
-		RAFFLE_STATUS.LIVE,
-		RAFFLE_STATUS.FULFILLING,
-		RAFFLE_STATUS.COMPLETED,
-	] as const;
 	const canManageUpdates = UPDATE_MANAGEABLE_STATUSES.includes(
-		raffle.status as (typeof UPDATE_MANAGEABLE_STATUSES)[number],
+		raffle.status as UpdateManageableStatus,
 	);
 
 	// Step 4: Skip rendering signed media that's already expired in the server payload.
 	// Why: stale RSC HTML can outlive signed URLs and create broken image flashes on first paint.
 	const hostAvatarUrl =
-		raffle.host?.avatar &&
-		!isSignedUrlExpired(raffle.host.avatar.expiresAt)
+		raffle.host?.avatar && !isSignedUrlExpired(raffle.host.avatar.expiresAt)
 			? raffle.host.avatar.url
 			: null;
 	const freshCoverImage =
-		raffle.coverMediaUrl &&
-		!isSignedUrlExpired(raffle.coverMediaUrl.expiresAt)
+		raffle.coverMediaUrl && !isSignedUrlExpired(raffle.coverMediaUrl.expiresAt)
 			? raffle.coverMediaUrl
 			: null;
 	const freshGalleryImages = raffle.galleryMediaUrls.filter(

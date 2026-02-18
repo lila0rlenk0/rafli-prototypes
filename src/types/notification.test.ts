@@ -34,4 +34,16 @@ describe('notificationTypeSchema', () => {
 			expect(notificationTypeSchema.parse(type)).toBe(type);
 		}
 	});
+
+	test('maps deprecated partial_raffle_* values to current equivalents', () => {
+		const deprecatedToCurrentMap = [
+			['partial_raffle_host', 'partial_participation_host'],
+			['partial_raffle_non_winner', 'partial_participation_non_winner'],
+			['partial_raffle_winner', 'partial_participation_winner'],
+		] as const;
+
+		for (const [deprecated, current] of deprecatedToCurrentMap) {
+			expect(notificationTypeSchema.parse(deprecated)).toBe(current);
+		}
+	});
 });

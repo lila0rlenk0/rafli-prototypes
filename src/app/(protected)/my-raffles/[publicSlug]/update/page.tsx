@@ -1,6 +1,9 @@
 import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
-import { RAFFLE_STATUS } from '@/types/raffle';
+import {
+	UPDATE_MANAGEABLE_STATUSES,
+	type UpdateManageableStatus,
+} from '@/types/raffle';
 import { notFound, redirect } from 'next/navigation';
 import { UpdateForm } from './update-form';
 import { UpdateFormProvider } from './update-form-provider';
@@ -43,16 +46,10 @@ export default async function CreateUpdatePage({ params }: PageProps) {
 		redirect('/my-raffles');
 	}
 
-	// Only allow updates for statuses where host communication still matters.
-	// ended is intentionally blocked because winners are still being finalized.
-	const updatableStatuses = [
-		RAFFLE_STATUS.LIVE,
-		RAFFLE_STATUS.FULFILLING,
-		RAFFLE_STATUS.COMPLETED,
-	] as const;
+	// Only allow updates for statuses where host communication still matters
 	if (
-		!updatableStatuses.includes(
-			raffle.status as (typeof updatableStatuses)[number],
+		!UPDATE_MANAGEABLE_STATUSES.includes(
+			raffle.status as UpdateManageableStatus,
 		)
 	) {
 		redirect('/my-raffles');

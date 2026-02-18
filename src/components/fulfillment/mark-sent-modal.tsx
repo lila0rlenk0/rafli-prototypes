@@ -70,10 +70,14 @@ export function MarkSentModal({
 	 */
 	function handleMarkSent(data: FormType) {
 		startTransition(async () => {
-			const result = await markSent(winningId, {
-				proofUrl: data.proofUrl,
-				hostNotes: data.hostNotes,
-			}, publicSlug);
+			const result = await markSent(
+				winningId,
+				{
+					proofUrl: data.proofUrl,
+					hostNotes: data.hostNotes,
+				},
+				publicSlug,
+			);
 
 			if (!result.success) {
 				toast.error('Failed to mark as sent. Please try again.');

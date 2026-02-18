@@ -67,7 +67,9 @@ export function ImageCarousel({
 	 * String URLs are treated as non-expiring because they have no metadata.
 	 */
 	function isExpiredImage(image: ImageInput): boolean {
-		return typeof image === 'string' ? false : isSignedUrlExpired(image.expiresAt);
+		return typeof image === 'string'
+			? false
+			: isSignedUrlExpired(image.expiresAt);
 	}
 
 	/**
@@ -77,7 +79,9 @@ export function ImageCarousel({
 	function buildImageArray(): string[] {
 		// If images prop is provided, use it directly
 		if (imagesProp && imagesProp.length > 0) {
-			return imagesProp.filter(image => !isExpiredImage(image)).map(getImageUrl);
+			return imagesProp
+				.filter(image => !isExpiredImage(image))
+				.map(getImageUrl);
 		}
 
 		// Otherwise build from cover + gallery
@@ -87,7 +91,10 @@ export function ImageCarousel({
 			urls.push(getImageUrl(coverImage));
 		}
 
-		return [...urls, ...galleryImages.filter(image => !isExpiredImage(image)).map(getImageUrl)];
+		return [
+			...urls,
+			...galleryImages.filter(image => !isExpiredImage(image)).map(getImageUrl),
+		];
 	}
 
 	/**
@@ -131,18 +138,21 @@ export function ImageCarousel({
 	}
 
 	const images = buildImageArray();
-	const hasExpiredSignedImage = (imagesProp ?? [coverImage, ...galleryImages]).some(image => {
+	const hasExpiredSignedImage = (
+		imagesProp ?? [coverImage, ...galleryImages]
+	).some(image => {
 		if (!image) return false;
 		return isExpiredImage(image);
 	});
 
+	// Trigger exactly one refresh per mount if stale signed media is detected.
+	// Why: stale RSC payload can include expired signed URLs; refresh rehydrates fresh URLs.
 	useEffect(() => {
-		// Step 1: Trigger exactly one refresh per mount if stale signed media is detected.
-		// Why: stale RSC payload can include expired signed URLs; refresh rehydrates fresh URLs.
 		if (!hasExpiredSignedImage || hasRefreshedForExpiredUrlsRef.current) return;
 		hasRefreshedForExpiredUrlsRef.current = true;
 		router.refresh();
 	}, [hasExpiredSignedImage, router]);
+
 	const showNavigation = shouldShowNavigation(images.length);
 	const currentImageUrl = images[currentIndex];
 

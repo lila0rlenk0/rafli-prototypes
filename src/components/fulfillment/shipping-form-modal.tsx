@@ -74,17 +74,21 @@ export function ShippingFormModal({
 	 */
 	function handleClaim(data: FormType) {
 		startTransition(async () => {
-			const result = await claimWinning(raffleId, {
-				claimType: 'shipping',
-				shippingInfo: {
-					name: data.name,
-					address: data.address,
-					city: data.city,
-					zip: data.zip,
-					country: data.country,
-					phone: data.phone,
+			const result = await claimWinning(
+				raffleId,
+				{
+					claimType: 'shipping',
+					shippingInfo: {
+						name: data.name,
+						address: data.address,
+						city: data.city,
+						zip: data.zip,
+						country: data.country,
+						phone: data.phone,
+					},
 				},
-			}, publicSlug);
+				publicSlug,
+			);
 
 			if (!result.success) {
 				toast.error('Failed to submit shipping info. Please try again.');

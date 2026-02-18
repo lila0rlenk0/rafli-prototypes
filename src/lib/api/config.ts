@@ -3,10 +3,19 @@
  * Values in milliseconds
  */
 export const API_TIMEOUTS = {
-	DEFAULT: 10_000, // 10 seconds - default timeout
+	DEFAULT: 20_000, // 20 seconds - accounts for serverless cold starts
+	QUERY: 20_000, // same as DEFAULT - semantic alias for read operations
+	MUTATION: 20_000, // same as DEFAULT - semantic alias for write operations
 	UPLOAD: 30_000, // 30 seconds - uploads need more time
-	MUTATION: 15_000, // 15 seconds - write operations
-	QUERY: 10_000, // 10 seconds - read operations
+} as const;
+
+/**
+ * Retry configuration for transient failures (cold starts, network blips)
+ * Only applies to idempotent methods (GET, HEAD)
+ */
+export const API_RETRY = {
+	MAX_ATTEMPTS: 1,
+	RETRYABLE_CODES: ['ECONNABORTED', 'ERR_NETWORK', 'ETIMEDOUT'],
 } as const;
 
 /**

@@ -10,7 +10,7 @@ import { useContext } from 'react';
 interface PostUpdateButtonProps {
 	publicSlug: string;
 	isOwner: boolean;
-	isLive: boolean;
+	canManageUpdates: boolean;
 }
 
 /**
@@ -19,19 +19,19 @@ interface PostUpdateButtonProps {
  * Shows the "Add update" button for hosts viewing their own live raffles.
  * Only visible when:
  * - User is the owner of the raffle
- * - Raffle is in LIVE status
+ * - Raffle is in an update-manageable status
  * - User is in HOST mode
  *
  * Uses a guard pattern to avoid using hooks outside UserStoreProvider.
  *
  * @param publicSlug - The public slug for the raffle
  * @param isOwner - Whether the current user owns this raffle
- * @param isLive - Whether the raffle is currently live
+ * @param canManageUpdates - Whether raffle status allows host updates
  */
 export function PostUpdateButton({
 	publicSlug,
 	isOwner,
-	isLive,
+	canManageUpdates,
 }: PostUpdateButtonProps) {
 	const hasProvider = useContext(UserStoreContext) !== undefined;
 
@@ -44,7 +44,7 @@ export function PostUpdateButton({
 		<PostUpdateButtonContent
 			publicSlug={publicSlug}
 			isOwner={isOwner}
-			isLive={isLive}
+			canManageUpdates={canManageUpdates}
 		/>
 	);
 }
@@ -58,7 +58,7 @@ export function PostUpdateButton({
 function PostUpdateButtonContent({
 	publicSlug,
 	isOwner,
-	isLive,
+	canManageUpdates,
 }: PostUpdateButtonProps) {
 	const mode = useUserStore(state => state.mode);
 
@@ -72,7 +72,7 @@ function PostUpdateButtonContent({
 		}
 
 		const isHostMode = mode === USER_MODE.HOST;
-		return isOwner && isLive && isHostMode;
+		return isOwner && canManageUpdates && isHostMode;
 	}
 
 	if (!shouldShow()) {

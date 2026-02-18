@@ -2,6 +2,7 @@
 
 import { Users } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -43,6 +44,7 @@ export function FulfillmentTimeline({
 	hostId,
 	publicSlug,
 }: FulfillmentTimelineProps) {
+	const router = useRouter();
 	const [currentStatus, setCurrentStatus] = useState<WinningStatus>(
 		winning.status,
 	);
@@ -244,7 +246,7 @@ export function FulfillmentTimeline({
 	async function handleConfirmReceived() {
 		setIsConfirming(true);
 
-		const result = await confirmReceived(winning.id);
+		const result = await confirmReceived(winning.id, publicSlug);
 
 		setIsConfirming(false);
 
@@ -255,6 +257,7 @@ export function FulfillmentTimeline({
 
 		setCurrentStatus('received');
 		toast.success('Prize receipt confirmed!');
+		router.refresh();
 
 		// Check if user can review and open modal
 		const reviewResult = await checkReview(raffleId);
@@ -273,7 +276,7 @@ export function FulfillmentTimeline({
 	async function handleMarkDelivered() {
 		setIsMarkingDelivered(true);
 
-		const result = await markDelivered(winning.id);
+		const result = await markDelivered(winning.id, publicSlug);
 
 		setIsMarkingDelivered(false);
 
@@ -284,6 +287,7 @@ export function FulfillmentTimeline({
 
 		setCurrentStatus('delivered');
 		toast.success('Marked as delivered!');
+		router.refresh();
 	}
 
 	/**
@@ -299,6 +303,7 @@ export function FulfillmentTimeline({
 			country: '',
 		});
 		setCurrentStatus('awaiting_host');
+		router.refresh();
 	}
 
 	/**
@@ -306,6 +311,7 @@ export function FulfillmentTimeline({
 	 */
 	function handleMarkSentSuccess() {
 		setCurrentStatus('sent');
+		router.refresh();
 	}
 
 	const claimStep = getClaimStep();
@@ -361,6 +367,7 @@ export function FulfillmentTimeline({
 				open={shippingModalOpen}
 				onOpenChange={setShippingModalOpen}
 				raffleId={raffleId}
+				publicSlug={publicSlug}
 				onSuccess={handleShippingSuccess}
 			/>
 
@@ -368,6 +375,7 @@ export function FulfillmentTimeline({
 				open={markSentModalOpen}
 				onOpenChange={setMarkSentModalOpen}
 				winningId={winning.id}
+				publicSlug={publicSlug}
 				onSuccess={handleMarkSentSuccess}
 			/>
 

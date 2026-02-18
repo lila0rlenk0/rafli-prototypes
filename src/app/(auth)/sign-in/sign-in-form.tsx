@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
+import { LogoIcon } from '@/assets/logo-icon';
+import { buildOAuthCallbackUrl } from '@/lib/auth/build-oauth-callback-url';
 import { cn } from '@/lib/utils';
 import { validateReturnTo } from '@/lib/utils/validate-return-to';
 import { signInUser } from '@/services/auth/sign-in-user';
@@ -28,7 +30,6 @@ import { useState, useTransition, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
 import { z } from 'zod';
-import { LogoIcon } from '@/assets/logo-icon';
 
 const formSchema = z.object({
 	email: z.email('Invalid email address'),
@@ -137,7 +138,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 		const returnTo = getReturnTo();
 		const result = await initiateSocialSignIn({
 			provider: 'google',
-			callbackURL: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
+			callbackURL: buildOAuthCallbackUrl(window.location.origin, returnTo),
 		});
 
 		if (!result.success) {

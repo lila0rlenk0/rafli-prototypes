@@ -8,6 +8,8 @@ import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleWinnings } from '@/services/winning/get-raffle-winnings';
 import { RAFFLE_STATUS } from '@/types/raffle';
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
 	params: Promise<{
 		publicSlug: string;
@@ -77,7 +79,7 @@ export default async function FulfillmentPage({ params }: PageProps) {
 				<p className="text-gray-500">{raffle.title}</p>
 			</div>
 
-			<WinnersTable winners={winners} />
+			<WinnersTable winners={winners} publicSlug={publicSlug} />
 		</div>
 	);
 }

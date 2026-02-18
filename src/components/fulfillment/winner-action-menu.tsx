@@ -1,6 +1,7 @@
 'use client';
 
 import { MoreHorizontal, Package, PackageCheck } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
@@ -19,6 +20,8 @@ import { MarkSentModal } from './mark-sent-modal';
 interface WinnerActionMenuProps {
 	/** The winner entry data */
 	winner: HostWinnerEntry;
+	/** Public slug used for cache revalidation after status updates */
+	publicSlug: string;
 	/** Callback when status changes */
 	onStatusChange: (winningId: string, newStatus: WinningStatus) => void;
 }
@@ -31,8 +34,10 @@ interface WinnerActionMenuProps {
  */
 export function WinnerActionMenu({
 	winner,
+	publicSlug,
 	onStatusChange,
 }: WinnerActionMenuProps) {
+	const router = useRouter();
 	const [open, setOpen] = useState(false);
 	const [markSentModalOpen, setMarkSentModalOpen] = useState(false);
 	const [isMarkingDelivered, startTransition] = useTransition();
@@ -55,7 +60,7 @@ export function WinnerActionMenu({
 	function handleMarkDelivered() {
 		setOpen(false);
 		startTransition(async () => {
-			const result = await markDelivered(winner.id);
+			const result = await markDelivered(winner.id, publicSlug);
 
 			if (!result.success) {
 				toast.error('Failed to mark as delivered. Please try again.');
@@ -64,6 +69,7 @@ export function WinnerActionMenu({
 
 			toast.success('Marked as delivered!');
 			onStatusChange(winner.id, 'delivered');
+			router.refresh();
 		});
 	}
 
@@ -72,6 +78,7 @@ export function WinnerActionMenu({
 	 */
 	function handleMarkSentSuccess() {
 		onStatusChange(winner.id, 'sent');
+		router.refresh();
 	}
 
 	/**
@@ -136,6 +143,7 @@ export function WinnerActionMenu({
 				open={markSentModalOpen}
 				onOpenChange={setMarkSentModalOpen}
 				winningId={winner.id}
+				publicSlug={publicSlug}
 				onSuccess={handleMarkSentSuccess}
 			/>
 		</>

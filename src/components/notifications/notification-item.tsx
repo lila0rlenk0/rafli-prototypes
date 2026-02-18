@@ -32,11 +32,21 @@ function getNavigationPath(notification: Notification): string | null {
 		case NOTIFICATION_TYPE.RAFFLE_CANCELLED:
 		case NOTIFICATION_TYPE.NEW_RAFFLE_CREATED:
 		case NOTIFICATION_TYPE.FULFILLMENT_STARTED:
+		case NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_COMPLETED:
 		case NOTIFICATION_TYPE.PARTIAL_RAFFLE_HOST:
 		case NOTIFICATION_TYPE.PARTIAL_RAFFLE_NON_WINNER:
 		case NOTIFICATION_TYPE.PARTIAL_RAFFLE_WINNER: {
 			const slug = metadata?.publicSlug ?? metadata?.raffleId;
 			return slug ? `/browse/${slug}` : null;
+		}
+		case NOTIFICATION_TYPE.PRIZE_CLAIM_REMINDER: {
+			const slug = metadata?.publicSlug ?? metadata?.raffleId;
+			return slug ? `/browse/${slug}` : null;
+		}
+		case NOTIFICATION_TYPE.HOST_SHIPPING_REMINDER:
+		case NOTIFICATION_TYPE.HOST_DELIVERY_CONFIRMATION_REMINDER: {
+			const slug = metadata?.publicSlug ?? metadata?.raffleId;
+			return slug ? `/browse/${slug}/fulfillment` : null;
 		}
 
 		// Order notifications - go to order detail in profile

@@ -1,10 +1,12 @@
 'use client';
 
 import type { SignedMediaUrl } from '@/types/raffle';
+import { isSignedUrlExpired } from '@/lib/utils/is-signed-url-expired';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 /**
  * Image input type - supports both SignedMediaUrl objects and plain string URLs
@@ -46,8 +48,10 @@ export function ImageCarousel({
 	maxHeight = 'max-h-53',
 	className = '',
 }: ImageCarouselProps) {
+	const router = useRouter();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [direction, setDirection] = useState(0);
+	const hasRefreshedForExpiredUrlsRef = useRef(false);
 
 	/**
 	 * Extracts URL from an image input (handles both string and SignedMediaUrl)
@@ -59,23 +63,31 @@ export function ImageCarousel({
 	}
 
 	/**
+	 * Determines if the image input is expired.
+	 * String URLs are treated as non-expiring because they have no metadata.
+	 */
+	function isExpiredImage(image: ImageInput): boolean {
+		return typeof image === 'string' ? false : isSignedUrlExpired(image.expiresAt);
+	}
+
+	/**
 	 * Builds a single array from cover and gallery images
 	 * @returns Array of all image URLs
 	 */
 	function buildImageArray(): string[] {
 		// If images prop is provided, use it directly
 		if (imagesProp && imagesProp.length > 0) {
-			return imagesProp.map(getImageUrl);
+			return imagesProp.filter(image => !isExpiredImage(image)).map(getImageUrl);
 		}
 
 		// Otherwise build from cover + gallery
 		const urls: string[] = [];
 
-		if (coverImage) {
+		if (coverImage && !isExpiredImage(coverImage)) {
 			urls.push(getImageUrl(coverImage));
 		}
 
-		return [...urls, ...galleryImages.map(getImageUrl)];
+		return [...urls, ...galleryImages.filter(image => !isExpiredImage(image)).map(getImageUrl)];
 	}
 
 	/**
@@ -119,6 +131,18 @@ export function ImageCarousel({
 	}
 
 	const images = buildImageArray();
+	const hasExpiredSignedImage = (imagesProp ?? [coverImage, ...galleryImages]).some(image => {
+		if (!image) return false;
+		return isExpiredImage(image);
+	});
+
+	useEffect(() => {
+		// Step 1: Trigger exactly one refresh per mount if stale signed media is detected.
+		// Why: stale RSC payload can include expired signed URLs; refresh rehydrates fresh URLs.
+		if (!hasExpiredSignedImage || hasRefreshedForExpiredUrlsRef.current) return;
+		hasRefreshedForExpiredUrlsRef.current = true;
+		router.refresh();
+	}, [hasExpiredSignedImage, router]);
 	const showNavigation = shouldShowNavigation(images.length);
 	const currentImageUrl = images[currentIndex];
 

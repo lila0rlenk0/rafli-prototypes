@@ -19,6 +19,7 @@ import {
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getSession } from '@/lib/auth/session';
+import { isSignedUrlExpired } from '@/lib/utils/is-signed-url-expired';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
@@ -36,6 +37,8 @@ import { BugIcon } from '@/assets/icons/bug-icon';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
 	params: Promise<{
@@ -214,8 +217,31 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const disablePurchase = isPurchaseDisabled();
 	const isConcluded = isRaffleConcluded();
 	const isOwner = isOwnRaffle();
-	const isLive = raffle.status === RAFFLE_STATUS.LIVE;
 	const hasWinners = (raffle.winners?.length ?? 0) > 0;
+	const UPDATE_MANAGEABLE_STATUSES = [
+		RAFFLE_STATUS.LIVE,
+		RAFFLE_STATUS.FULFILLING,
+		RAFFLE_STATUS.COMPLETED,
+	] as const;
+	const canManageUpdates = UPDATE_MANAGEABLE_STATUSES.includes(
+		raffle.status as (typeof UPDATE_MANAGEABLE_STATUSES)[number],
+	);
+
+	// Step 4: Skip rendering signed media that's already expired in the server payload.
+	// Why: stale RSC HTML can outlive signed URLs and create broken image flashes on first paint.
+	const hostAvatarUrl =
+		raffle.host?.avatar &&
+		!isSignedUrlExpired(raffle.host.avatar.expiresAt)
+			? raffle.host.avatar.url
+			: null;
+	const freshCoverImage =
+		raffle.coverMediaUrl &&
+		!isSignedUrlExpired(raffle.coverMediaUrl.expiresAt)
+			? raffle.coverMediaUrl
+			: null;
+	const freshGalleryImages = raffle.galleryMediaUrls.filter(
+		image => !isSignedUrlExpired(image.expiresAt),
+	);
 
 	/**
 	 * Statuses that allow promo code management
@@ -364,9 +390,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							className="group flex w-fit items-center gap-4"
 						>
 							<div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
-								{raffle.host?.avatar?.url ? (
+								{hostAvatarUrl ? (
 									<Image
-										src={raffle.host.avatar.url}
+										src={hostAvatarUrl}
 										alt={getHostName()}
 										fill
 										sizes="48px"
@@ -385,17 +411,17 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</Link>
 
 						<ImageCarousel
-							coverImage={raffle.coverMediaUrl}
-							galleryImages={raffle.galleryMediaUrls}
+							coverImage={freshCoverImage}
+							galleryImages={freshGalleryImages}
 							alt={raffle.title}
 							aspectRatio="aspect-video"
 							maxHeight="max-h-96"
 							className="border border-[#E5E5E5]"
 						/>
 
-						{raffle.galleryMediaUrls.length > 0 && (
+						{freshGalleryImages.length > 0 && (
 							<div className="grid grid-cols-3 gap-4">
-								{raffle.galleryMediaUrls.map((image, index) => (
+								{freshGalleryImages.map((image, index) => (
 									<div
 										key={index}
 										className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
@@ -437,7 +463,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							<PostUpdateButton
 								publicSlug={publicSlug}
 								isOwner={isOwner}
-								isLive={isLive}
+								canManageUpdates={canManageUpdates}
 							/>
 						}
 					/>

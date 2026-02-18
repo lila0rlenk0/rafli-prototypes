@@ -14,12 +14,12 @@ interface PageProps {
 /**
  * Create Update Page
  *
- * Allows hosts to post updates for their live raffles.
- * Server-side protected - only accessible by the raffle host when raffle is live.
+ * Allows hosts to post updates for raffles in update-manageable statuses.
+ * Server-side protected - only accessible by raffle host in allowed statuses.
  * Redirects to /my-raffles if:
  * - Raffle not found
  * - User is not the host
- * - Raffle is not live
+ * - Raffle status is blocked for updates
  */
 export default async function CreateUpdatePage({ params }: PageProps) {
 	const { publicSlug } = await params;
@@ -43,8 +43,18 @@ export default async function CreateUpdatePage({ params }: PageProps) {
 		redirect('/my-raffles');
 	}
 
-	// Only allow updates for live raffles
-	if (raffle.status !== RAFFLE_STATUS.LIVE) {
+	// Only allow updates for statuses where host communication still matters.
+	// ended is intentionally blocked because winners are still being finalized.
+	const updatableStatuses = [
+		RAFFLE_STATUS.LIVE,
+		RAFFLE_STATUS.FULFILLING,
+		RAFFLE_STATUS.COMPLETED,
+	] as const;
+	if (
+		!updatableStatuses.includes(
+			raffle.status as (typeof updatableStatuses)[number],
+		)
+	) {
 		redirect('/my-raffles');
 	}
 

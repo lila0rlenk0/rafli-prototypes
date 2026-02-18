@@ -15,6 +15,13 @@ const remotePatterns = [storageUrl, userAvatarStorageUrl].map(url => ({
 	...(url.port ? { port: url.port } : {}),
 }));
 
+// Allow any S3 bucket in us-east-1 (API returns signed URLs from multiple buckets)
+remotePatterns.push({
+	protocol: 'https' as Protocol,
+	hostname: '*.s3.us-east-1.amazonaws.com',
+	pathname: '/**',
+});
+
 const nextConfig: NextConfig = {
 	experimental: {
 		serverActions: {

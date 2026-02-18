@@ -201,36 +201,10 @@ export function RaffleQuestionModal({
 						<p className="text-center text-lg font-semibold">{question.text}</p>
 
 						{answerResult ? (
-							<div className="mx-auto max-w-40 space-y-2">
-								{getSortedOptions(question.options).map(option => {
-									/**
-									 * Gets styling classes for option based on answer result
-									 */
-									function getOptionClasses(): string {
-										if (option.id !== answerResult.selectedOptionId) {
-											return 'border-gray-200 bg-gray-50 text-gray-400';
-										}
-										return answerResult.correct
-											? 'border-green-300 bg-green-50 text-green-800'
-											: 'border-red-300 bg-red-50 text-red-800';
-									}
-
-									return (
-										<div
-											key={option.id}
-											className={`flex items-center space-x-3 rounded-lg border px-3 py-2 ${getOptionClasses()}`}
-										>
-											{option.id === answerResult.selectedOptionId &&
-												(answerResult.correct ? (
-													<CheckIcon className="size-4 shrink-0 text-green-600" />
-												) : (
-													<XIcon className="size-4 shrink-0 text-red-600" />
-												))}
-											<span className="text-base">{option.text}</span>
-										</div>
-									);
-								})}
-							</div>
+							<AnswerResultOptions
+								options={getSortedOptions(question.options)}
+								result={answerResult}
+							/>
 						) : (
 							<RadioGroup
 								value={selectedOptionId}
@@ -271,6 +245,47 @@ export function RaffleQuestionModal({
 				) : null}
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+interface AnswerResultOptionsProps {
+	options: RaffleQuestion['options'];
+	result: { correct: boolean; selectedOptionId: string };
+}
+
+/**
+ * Renders quiz options with correct/wrong visual feedback
+ */
+function AnswerResultOptions({ options, result }: AnswerResultOptionsProps) {
+	/**
+	 * Gets styling classes for an option based on answer result
+	 */
+	function getOptionClasses(optionId: string): string {
+		if (optionId !== result.selectedOptionId) {
+			return 'border-gray-200 bg-gray-50 text-gray-400';
+		}
+		return result.correct
+			? 'border-green-300 bg-green-50 text-green-800'
+			: 'border-red-300 bg-red-50 text-red-800';
+	}
+
+	return (
+		<div className="mx-auto max-w-40 space-y-2">
+			{options.map(option => (
+				<div
+					key={option.id}
+					className={`flex items-center space-x-3 rounded-lg border px-3 py-2 ${getOptionClasses(option.id)}`}
+				>
+					{option.id === result.selectedOptionId &&
+						(result.correct ? (
+							<CheckIcon className="size-4 shrink-0 text-green-600" />
+						) : (
+							<XIcon className="size-4 shrink-0 text-red-600" />
+						))}
+					<span className="text-base">{option.text}</span>
+				</div>
+			))}
+		</div>
 	);
 }
 

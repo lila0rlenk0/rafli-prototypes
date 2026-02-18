@@ -437,6 +437,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					{/* Updates from host */}
 					<RaffleUpdatesCard
 						raffleId={raffle.id}
+						hostName={raffle.host?.name ?? 'Host'}
 						actionSlot={
 							<PostUpdateButton
 								publicSlug={publicSlug}

@@ -12,6 +12,8 @@ import { UpdateTimelineItem } from './update-timeline-item';
 
 interface RaffleUpdatesCardProps {
 	raffleId: string;
+	/** Host name from raffle, used as fallback when update host returns Unknown */
+	hostName?: string;
 	/** Optional action slot rendered to the left of the accordion arrow */
 	actionSlot?: ReactNode;
 }
@@ -28,6 +30,7 @@ interface RaffleUpdatesCardProps {
  */
 export async function RaffleUpdatesCard({
 	raffleId,
+	hostName,
 	actionSlot,
 }: RaffleUpdatesCardProps) {
 	const response = await getUpdates(raffleId);
@@ -59,7 +62,7 @@ export async function RaffleUpdatesCard({
 							<div className="pt-2">
 								{updates.map((update, index) => (
 									<div key={update.id}>
-										<UpdateTimelineItem update={update} />
+										<UpdateTimelineItem update={update} hostName={hostName} />
 										{index < updates.length - 1 && (
 											<div className="mb-6 h-px w-full bg-[#e5e5e5]" />
 										)}

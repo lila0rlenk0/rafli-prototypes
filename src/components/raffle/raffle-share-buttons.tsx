@@ -45,14 +45,14 @@ export function RaffleShareButtons({
 		<div className="mt-6 flex items-center justify-between px-2">
 			<button
 				onClick={handleShareOnX}
-				className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
+				className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
 			>
 				<FaXTwitter className="h-4 w-4" />
 				Share on X
 			</button>
 			<button
 				onClick={handleCopyLink}
-				className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
+				className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
 			>
 				<Copy className="h-4 w-4" />
 				Copy Raffle link

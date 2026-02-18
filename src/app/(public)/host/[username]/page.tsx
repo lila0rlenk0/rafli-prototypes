@@ -7,6 +7,7 @@ import { HOST_ERROR_CODES } from '@/types/errors';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { z } from 'zod';
 import { PageHeader } from './page-header';
 import { StatusTabs } from './status-tabs';
@@ -98,7 +99,9 @@ export default async function HostProfilePage({
 				<PageHeader />
 
 				<div className="relative mb-8 flex w-full items-center justify-center">
-					<StatusTabs />
+					<Suspense>
+						<StatusTabs />
+					</Suspense>
 				</div>
 
 				{/* Content Section */}
@@ -146,7 +149,9 @@ export default async function HostProfilePage({
 			<PageHeader />
 
 			<div className="relative mb-8 flex w-full items-center justify-center">
-				<StatusTabs />
+				<Suspense>
+					<StatusTabs />
+				</Suspense>
 			</div>
 
 			{/* Content Section */}

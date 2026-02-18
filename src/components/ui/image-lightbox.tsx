@@ -152,6 +152,7 @@ export function ImageLightbox({
 							src={imageUrl}
 							alt={`Image ${currentIndex + 1}`}
 							fill
+							sizes="90vw"
 							className="object-contain"
 							unoptimized={typeof currentImage === 'string'}
 						/>

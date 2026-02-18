@@ -249,6 +249,7 @@ export function ReviewStep() {
 							src={coverImageSrc}
 							alt="Cover"
 							fill
+							sizes="100vw"
 							className="object-cover"
 							unoptimized={coverImage?.[0] !== undefined}
 						/>
@@ -270,6 +271,7 @@ export function ReviewStep() {
 										src={src}
 										alt={`Gallery ${index + 1}`}
 										fill
+										sizes="33vw"
 										className="object-cover"
 										unoptimized={coverImage?.[index + 1] !== undefined}
 									/>

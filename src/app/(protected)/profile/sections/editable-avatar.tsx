@@ -138,6 +138,7 @@ export function EditableAvatar({
 					src={avatarUrl}
 					alt="Profile avatar"
 					fill
+					sizes="85px"
 					className="object-cover transition-all duration-300"
 					unoptimized
 				/>

@@ -31,7 +31,7 @@ import type { Winning } from '@/types/winning';
 import { ArrowLeft, InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import type { ComponentProps } from 'react';
+import { Suspense, type ComponentProps } from 'react';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
@@ -380,6 +380,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										src={raffle.host.avatar.url}
 										alt={getHostName()}
 										fill
+										sizes="48px"
 										className="object-cover"
 									/>
 								) : (
@@ -414,6 +415,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 											src={image.url}
 											alt={`Gallery ${index + 1}`}
 											fill
+											sizes="33vw"
 											className="object-cover"
 										/>
 									</div>
@@ -570,16 +572,22 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 							<RaffleCountdown endAt={raffle.endAt} />
 
-							<TicketPurchaseCard
-								raffleId={raffle.id}
-								publicSlug={publicSlug}
-								price={ticketPrice}
-								currency={raffle.ticketPriceCurrency}
-								availableTickets={availableTickets}
-								disabled={showEditButton || disablePurchase}
-								questionId={raffle.questionId}
-								isAuthenticated={isAuthenticated}
-							/>
+							<Suspense
+								fallback={
+									<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
+								}
+							>
+								<TicketPurchaseCard
+									raffleId={raffle.id}
+									publicSlug={publicSlug}
+									price={ticketPrice}
+									currency={raffle.ticketPriceCurrency}
+									availableTickets={availableTickets}
+									disabled={showEditButton || disablePurchase}
+									questionId={raffle.questionId}
+									isAuthenticated={isAuthenticated}
+								/>
+							</Suspense>
 
 							{disablePurchase && !showEditButton && (
 								<p className="mt-2 text-center text-sm text-gray-500">

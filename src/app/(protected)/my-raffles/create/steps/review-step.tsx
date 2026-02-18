@@ -129,6 +129,7 @@ export function ReviewStep() {
 							src={URL.createObjectURL(coverImage[0])}
 							alt="Cover"
 							fill
+							sizes="100vw"
 							className="object-cover"
 						/>
 					) : (
@@ -149,6 +150,7 @@ export function ReviewStep() {
 										src={URL.createObjectURL(file)}
 										alt={`Preview ${index + 2}`}
 										fill
+										sizes="33vw"
 										className="object-cover"
 									/>
 								) : (

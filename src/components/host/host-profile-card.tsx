@@ -59,6 +59,7 @@ export function HostProfileCard({
 						src={host.image.url}
 						alt={getDisplayName()}
 						fill
+						sizes="112px"
 						className="object-cover"
 					/>
 				) : (

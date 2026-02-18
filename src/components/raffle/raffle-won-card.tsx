@@ -55,6 +55,7 @@ export function RaffleWonCard({
 							src={userAvatar}
 							alt={userName}
 							fill
+							sizes="64px"
 							className="object-cover"
 						/>
 					) : (

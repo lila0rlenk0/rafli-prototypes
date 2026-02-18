@@ -107,6 +107,7 @@ export function ImagePreviewCard({
 						src={previewUrl}
 						alt={alt}
 						fill
+						sizes="112px"
 						className="object-contain"
 						unoptimized={typeof src === 'string'}
 					/>

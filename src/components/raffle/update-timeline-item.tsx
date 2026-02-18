@@ -6,6 +6,8 @@ import type { Update, UpdateMediaUrl } from '@/types/update';
 
 interface UpdateTimelineItemProps {
 	update: Update;
+	/** Fallback host name from raffle when update host is Unknown */
+	hostName?: string;
 }
 
 /**
@@ -16,7 +18,10 @@ interface UpdateTimelineItemProps {
  *
  * @param update - The update object to display
  */
-export function UpdateTimelineItem({ update }: UpdateTimelineItemProps) {
+export function UpdateTimelineItem({
+	update,
+	hostName,
+}: UpdateTimelineItemProps) {
 	/**
 	 * Formats the update date and time
 	 * @param dateString - ISO date string
@@ -59,7 +64,12 @@ export function UpdateTimelineItem({ update }: UpdateTimelineItemProps) {
 		<div className="space-y-2 pb-6 last:pb-0">
 			{/* Host info */}
 			<div className="flex items-center gap-1">
-				<span className="font-semibold">by {update.host.name}</span>
+				<span className="font-semibold">
+					by{' '}
+					{update.host.name === 'Unknown'
+						? (hostName ?? update.host.name)
+						: update.host.name}
+				</span>
 			</div>
 
 			{/* Published date */}

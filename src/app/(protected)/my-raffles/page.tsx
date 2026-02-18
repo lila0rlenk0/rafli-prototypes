@@ -11,6 +11,7 @@ import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { CreateRaffleButton } from './create-raffle-button';
 import { PageHeader } from './page-header';
 
@@ -129,7 +130,9 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 			<PageHeader />
 
 			<div className="relative mb-8 flex w-full items-center justify-center">
-				<StatusTabs mode={mode} />
+				<Suspense>
+					<StatusTabs mode={mode} />
+				</Suspense>
 
 				{isHost && (
 					<div className="absolute right-0">

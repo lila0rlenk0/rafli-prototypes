@@ -160,6 +160,7 @@ export function ImageCarousel({
 							src={currentImageUrl}
 							alt={`${alt} - Image ${currentIndex + 1}`}
 							fill
+							sizes="100vw"
 							className="rounded-2xl object-cover"
 							loading="eager"
 						/>

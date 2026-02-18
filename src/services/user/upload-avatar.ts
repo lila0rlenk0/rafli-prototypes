@@ -2,7 +2,6 @@
 
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
-import { env } from '@/env/server';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import {
 	CLIENT_ERROR_CODES,
@@ -18,12 +17,9 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 /**
  * Response type for avatar upload
- * Returns { avatarUrl: string } - full URL constructed from backend response
+ * Returns void — caller should revalidate /me to get the presigned URL
  */
-type UploadAvatarServiceResponse = ServiceResponse<
-	{ avatarUrl: string },
-	RaffleErrorCode
->;
+type UploadAvatarServiceResponse = ServiceResponse<undefined, RaffleErrorCode>;
 
 /**
  * Uploads a user avatar image
@@ -57,20 +53,9 @@ export async function uploadAvatar(
 		});
 
 		// Validate response structure
-		const parsed = uploadAvatarResponseSchema.parse(response.data);
+		uploadAvatarResponseSchema.parse(response.data);
 
-		// Build full avatar URL from relative path
-		const storageBaseUrl = env.STORAGE_MEDIA_URL_USER_AVATARS.replace(
-			/\/$/,
-			'',
-		);
-		const imagePath = parsed.image.startsWith('/')
-			? parsed.image
-			: `/${parsed.image}`;
-		const avatarUrl = `${storageBaseUrl}${imagePath}`;
-
-		const result: { avatarUrl: string } = { avatarUrl };
-		return success(result);
+		return success(undefined);
 	} catch (error) {
 		// Handle validation errors
 		if (error instanceof ZodError) {

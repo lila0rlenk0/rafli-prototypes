@@ -1,19 +1,15 @@
 import { env } from '@/env/server';
 import type { NextConfig } from 'next';
 
-type Protocol = 'https' | 'http';
-
-const storageUrl = new URL(env.STORAGE_MEDIA_URL);
-const isLocal = storageUrl.hostname.includes('127.0.0.1');
-
-const userAvatarStorageUrl = new URL(env.STORAGE_MEDIA_URL_USER_AVATARS);
-
-const remotePatterns = [storageUrl, userAvatarStorageUrl].map(url => ({
-	protocol: url.protocol.replace(':', '') as Protocol,
-	hostname: url.hostname,
-	pathname: '/**',
-	...(url.port ? { port: url.port } : {}),
-}));
+/**
+ * Detect local development by checking if backend points to localhost.
+ * When local, images are served from MinIO (Encore local storage) and
+ * next/image optimization is disabled to avoid private IP errors.
+ */
+const backendUrl = new URL(env.BACKEND_URL);
+const isLocal =
+	backendUrl.hostname === 'localhost' ||
+	backendUrl.hostname === '127.0.0.1';
 
 const nextConfig: NextConfig = {
 	experimental: {
@@ -22,16 +18,21 @@ const nextConfig: NextConfig = {
 		},
 	},
 	images: {
-		// Allow loading images from local network (fixes private IP error)
 		unoptimized: isLocal,
-		remotePatterns: remotePatterns,
+		remotePatterns: [
+			{
+				// Encore generates dynamic S3 bucket hostnames per deploy.
+				// Wildcard covers all buckets (auth-media, raffles-media, etc.)
+				protocol: 'https',
+				hostname: '*.s3.us-east-1.amazonaws.com',
+				pathname: '/**',
+			},
+		],
 	},
 	cacheComponents: true,
 	async headers() {
-		// Step 1: Apply security headers to all routes.
 		return [
 			{
-				// Apply to all routes
 				source: '/:path*',
 				headers: [
 					{

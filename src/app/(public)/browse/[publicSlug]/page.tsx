@@ -31,7 +31,7 @@ import type { Winning } from '@/types/winning';
 import { ArrowLeft, InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import type { ComponentProps } from 'react';
+import { Suspense, type ComponentProps } from 'react';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
@@ -312,20 +312,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		return `${count} Raffles`;
 	}
 
-	/**
-	 * Builds the host profile URL
-	 * Uses username if available in host.link, otherwise falls back to hostId
-	 * @returns The profile URL path
-	 */
+	// TODO: remove link fallback once backend deploys username field
+	/** Builds the host profile URL from username, falls back to hostId */
 	function getHostProfileUrl(): string {
-		// If host.link exists, extract username from it (format: /users/{username})
-		if (raffle.host?.link) {
-			const username = raffle.host.link.replace('/users/', '');
-			if (username && username !== raffle.host.id) {
-				return `/host/${username}`;
-			}
+		if (raffle.host?.username) return `/host/${raffle.host.username}`;
+		if (raffle.host?.link?.startsWith('/users/')) {
+			const parsed = raffle.host.link.replace('/users/', '');
+			if (parsed) return `/host/${parsed}`;
 		}
-		// Fallback to hostId
 		return `/host/${raffle.host?.id ?? raffle.hostId}`;
 	}
 
@@ -380,6 +374,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										src={raffle.host.avatar.url}
 										alt={getHostName()}
 										fill
+										sizes="48px"
 										className="object-cover"
 									/>
 								) : (
@@ -414,6 +409,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 											src={image.url}
 											alt={`Gallery ${index + 1}`}
 											fill
+											sizes="33vw"
 											className="object-cover"
 										/>
 									</div>
@@ -441,6 +437,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					{/* Updates from host */}
 					<RaffleUpdatesCard
 						raffleId={raffle.id}
+						hostName={raffle.host?.name ?? 'Host'}
 						actionSlot={
 							<PostUpdateButton
 								publicSlug={publicSlug}
@@ -570,16 +567,22 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 							<RaffleCountdown endAt={raffle.endAt} />
 
-							<TicketPurchaseCard
-								raffleId={raffle.id}
-								publicSlug={publicSlug}
-								price={ticketPrice}
-								currency={raffle.ticketPriceCurrency}
-								availableTickets={availableTickets}
-								disabled={showEditButton || disablePurchase}
-								questionId={raffle.questionId}
-								isAuthenticated={isAuthenticated}
-							/>
+							<Suspense
+								fallback={
+									<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
+								}
+							>
+								<TicketPurchaseCard
+									raffleId={raffle.id}
+									publicSlug={publicSlug}
+									price={ticketPrice}
+									currency={raffle.ticketPriceCurrency}
+									availableTickets={availableTickets}
+									disabled={showEditButton || disablePurchase}
+									questionId={raffle.questionId}
+									isAuthenticated={isAuthenticated}
+								/>
+							</Suspense>
 
 							{disablePurchase && !showEditButton && (
 								<p className="mt-2 text-center text-sm text-gray-500">

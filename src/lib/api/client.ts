@@ -21,11 +21,16 @@
  * @see https://vercel.com/docs/headers/request-headers
  * @see https://developers.cloudflare.com/fundamentals/reference/http-headers/
  */
-import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
+import axios, {
+	type AxiosError,
+	type AxiosInstance,
+	type AxiosRequestConfig,
+} from 'axios';
 import { headers } from 'next/headers';
 
 import { env } from '@/env/server';
 import { getAuthToken } from '@/lib/auth/session';
+import { API_RETRY, API_TIMEOUTS } from './config';
 
 /**
  * API base URL with versioned path
@@ -57,13 +62,61 @@ async function getClientIp(): Promise<string | null> {
 	);
 }
 
+/** Axios config extended with retry tracking */
+interface RetryableConfig extends AxiosRequestConfig {
+	__retryCount?: number;
+}
+
+/** Set of error codes eligible for retry */
+const RETRYABLE_CODES = new Set<string>(API_RETRY.RETRYABLE_CODES);
+
+/** Idempotent HTTP methods safe to retry */
+const IDEMPOTENT_METHODS = new Set(['GET', 'HEAD']);
+
+/**
+ * Checks if a failed request should be retried
+ * Only retries idempotent methods with transient error codes
+ *
+ * @param error - Axios error from failed request
+ * @returns Whether the request should be retried
+ */
+function shouldRetry(error: AxiosError): boolean {
+	const config = error.config as RetryableConfig | undefined;
+	if (!config) return false;
+
+	const retryCount = config.__retryCount ?? 0;
+	if (retryCount >= API_RETRY.MAX_ATTEMPTS) return false;
+
+	const method = config.method?.toUpperCase() ?? '';
+	if (!IDEMPOTENT_METHODS.has(method)) return false;
+
+	return !!error.code && RETRYABLE_CODES.has(error.code);
+}
+
+/**
+ * Adds retry-on-timeout response interceptor to an axios instance
+ * Retries once on cold-start timeouts (ECONNABORTED, ERR_NETWORK, ETIMEDOUT)
+ *
+ * @param client - Axios instance to attach retry interceptor
+ */
+function addRetryInterceptor(client: AxiosInstance): void {
+	client.interceptors.response.use(undefined, async (error: AxiosError) => {
+		if (!shouldRetry(error)) return Promise.reject(error);
+
+		const config = error.config as RetryableConfig;
+		config.__retryCount = (config.__retryCount ?? 0) + 1;
+
+		return client.request(config);
+	});
+}
+
 /**
  * Base client without authentication
  * Used for public endpoints
  */
 const baseClient: AxiosInstance = axios.create({
 	baseURL: API_BASE_URL,
-	timeout: 10_000, // 10 seconds
+	timeout: API_TIMEOUTS.DEFAULT,
 	headers: {
 		'Content-Type': 'application/json',
 	},
@@ -96,7 +149,7 @@ baseClient.interceptors.request.use(
  */
 const authenticatedClient: AxiosInstance = axios.create({
 	baseURL: API_BASE_URL,
-	timeout: 12_500, // 12.5 seconds for authenticated operations
+	timeout: API_TIMEOUTS.DEFAULT,
 	headers: {
 		'Content-Type': 'application/json',
 	},
@@ -146,6 +199,10 @@ authenticatedClient.interceptors.request.use(
 	},
 	error => Promise.reject(error),
 );
+
+// Attach retry interceptors (must be after request interceptors)
+addRetryInterceptor(baseClient);
+addRetryInterceptor(authenticatedClient);
 
 /**
  * Helper to create request with custom timeout

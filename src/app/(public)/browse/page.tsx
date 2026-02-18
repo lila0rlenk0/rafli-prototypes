@@ -8,6 +8,7 @@ import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffles } from '@/services/raffle/get-raffles';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 interface PageProps {
 	searchParams: Promise<{
@@ -88,7 +89,9 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				<h2 className="font-clash-display text-3xl font-semibold">
 					More existing raffles!
 				</h2>
-				<FilterBar categories={categories} />
+				<Suspense>
+					<FilterBar categories={categories} />
+				</Suspense>
 			</div>
 
 			{/* Grid Section */}

@@ -7,6 +7,8 @@ import { WINNING_STATUS, type WinningStatus } from '@/types/winning';
 interface WinningStatusBadgeProps {
 	status: WinningStatus;
 	className?: string;
+	/** Whether the raffle had partial participation (revenue share) */
+	isPartial?: boolean;
 }
 
 /**
@@ -16,18 +18,23 @@ interface WinningStatusBadgeProps {
  * - awaiting_host → yellow
  * - sent → blue
  * - delivered → purple
- * - received → green
+ * - received → green (or "Awaiting Platform" if partial)
  * - disputed → red
  * - resolved → green
  */
 export function WinningStatusBadge({
 	status,
 	className,
+	isPartial,
 }: WinningStatusBadgeProps) {
 	/**
 	 * Returns Tailwind classes for status color
 	 */
 	function getStatusClasses(): string {
+		if (status === WINNING_STATUS.RECEIVED && isPartial) {
+			return 'bg-yellow-100 text-yellow-700';
+		}
+
 		switch (status) {
 			case WINNING_STATUS.PENDING:
 				return 'bg-gray-100 text-gray-700';
@@ -52,6 +59,10 @@ export function WinningStatusBadge({
 	 * Returns display label for status
 	 */
 	function getStatusLabel(): string {
+		if (status === WINNING_STATUS.RECEIVED && isPartial) {
+			return 'Awaiting Platform';
+		}
+
 		switch (status) {
 			case WINNING_STATUS.PENDING:
 				return 'Pending';

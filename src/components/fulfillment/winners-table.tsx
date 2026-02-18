@@ -10,6 +10,8 @@ import { WinningStatusBadge } from './winning-status-badge';
 interface WinnersTableProps {
 	/** Initial list of winners */
 	winners: HostWinnerEntry[];
+	/** Whether the raffle concluded with partial participation */
+	isPartial?: boolean;
 }
 
 /**
@@ -18,7 +20,10 @@ interface WinnersTableProps {
  * Displays all winners in a table format for host fulfillment management.
  * Supports inline status updates via action menu.
  */
-export function WinnersTable({ winners: initialWinners }: WinnersTableProps) {
+export function WinnersTable({
+	winners: initialWinners,
+	isPartial,
+}: WinnersTableProps) {
 	const [winners, setWinners] = useState(initialWinners);
 
 	/**
@@ -74,13 +79,16 @@ export function WinnersTable({ winners: initialWinners }: WinnersTableProps) {
 				<tbody className="divide-y divide-gray-100">
 					{winners.map(winner => (
 						<tr key={winner.id} className="text-sm">
-							<td className="px-6 py-4 font-medium">{winner.position}</td>
+							<td className="px-6 py-4 font-medium">{winner.position + 1}</td>
 							<td className="px-6 py-4">
-								{formatDisplayName(winner.userName, winner.position)}
+								{formatDisplayName(winner.userName, winner.position + 1)}
 							</td>
 							<td className="px-6 py-4 text-gray-500">{getLocation(winner)}</td>
 							<td className="px-6 py-4">
-								<WinningStatusBadge status={winner.status} />
+								<WinningStatusBadge
+									status={winner.status}
+									isPartial={isPartial}
+								/>
 							</td>
 							<td className="px-6 py-4 text-right">
 								<WinnerActionMenu

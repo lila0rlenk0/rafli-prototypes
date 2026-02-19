@@ -11,18 +11,18 @@ import {
 	type LucideIcon,
 } from 'lucide-react';
 
-import { NOTIFICATION_TYPE, type NotificationType } from '@/types/notification';
+import { NOTIFICATION_TYPE } from '@/types/notification';
 
-const NOTIFICATION_ICON_MAP: Record<NotificationType, LucideIcon> = {
+const NOTIFICATION_ICON_MAP: Record<string, LucideIcon> = {
 	[NOTIFICATION_TYPE.DELIVERY_CONFIRMED]: CheckCircle,
 	[NOTIFICATION_TYPE.DISPUTE_OPENED]: AlertCircle,
 	[NOTIFICATION_TYPE.DISPUTE_RESOLVED]: CheckCircle,
 	[NOTIFICATION_TYPE.FULFILLMENT_STARTED]: Package,
 	[NOTIFICATION_TYPE.NEW_RAFFLE_CREATED]: Gift,
 	[NOTIFICATION_TYPE.ORDER_CONFIRMED]: ShoppingCart,
-	[NOTIFICATION_TYPE.PARTIAL_RAFFLE_HOST]: AlertCircle,
-	[NOTIFICATION_TYPE.PARTIAL_RAFFLE_NON_WINNER]: AlertCircle,
-	[NOTIFICATION_TYPE.PARTIAL_RAFFLE_WINNER]: Trophy,
+	[NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_HOST]: AlertCircle,
+	[NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_NON_WINNER]: AlertCircle,
+	[NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_WINNER]: Trophy,
 	[NOTIFICATION_TYPE.PRIZE_AUTO_CONFIRMED]: CheckCircle,
 	[NOTIFICATION_TYPE.PRIZE_DELIVERED]: Package,
 	[NOTIFICATION_TYPE.PRIZE_SENT]: Package,
@@ -36,7 +36,7 @@ const NOTIFICATION_ICON_MAP: Record<NotificationType, LucideIcon> = {
 };
 
 interface NotificationIconProps {
-	type: NotificationType;
+	type: string;
 	className?: string;
 }
 

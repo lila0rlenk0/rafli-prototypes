@@ -11,9 +11,9 @@ export const NOTIFICATION_TYPE = {
 	FULFILLMENT_STARTED: 'fulfillment_started',
 	NEW_RAFFLE_CREATED: 'new_raffle_created',
 	ORDER_CONFIRMED: 'order_confirmed',
-	PARTIAL_RAFFLE_HOST: 'partial_raffle_host',
-	PARTIAL_RAFFLE_NON_WINNER: 'partial_raffle_non_winner',
-	PARTIAL_RAFFLE_WINNER: 'partial_raffle_winner',
+	PARTIAL_PARTICIPATION_HOST: 'partial_participation_host',
+	PARTIAL_PARTICIPATION_NON_WINNER: 'partial_participation_non_winner',
+	PARTIAL_PARTICIPATION_WINNER: 'partial_participation_winner',
 	PRIZE_AUTO_CONFIRMED: 'prize_auto_confirmed',
 	PRIZE_DELIVERED: 'prize_delivered',
 	PRIZE_SENT: 'prize_sent',
@@ -47,9 +47,9 @@ export const notificationTypeSchema = z.enum([
 	NOTIFICATION_TYPE.FULFILLMENT_STARTED,
 	NOTIFICATION_TYPE.NEW_RAFFLE_CREATED,
 	NOTIFICATION_TYPE.ORDER_CONFIRMED,
-	NOTIFICATION_TYPE.PARTIAL_RAFFLE_HOST,
-	NOTIFICATION_TYPE.PARTIAL_RAFFLE_NON_WINNER,
-	NOTIFICATION_TYPE.PARTIAL_RAFFLE_WINNER,
+	NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_HOST,
+	NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_NON_WINNER,
+	NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_WINNER,
 	NOTIFICATION_TYPE.PRIZE_AUTO_CONFIRMED,
 	NOTIFICATION_TYPE.PRIZE_DELIVERED,
 	NOTIFICATION_TYPE.PRIZE_SENT,
@@ -78,11 +78,12 @@ export const notificationMetadataSchema = z
 
 /**
  * Schema for a single notification
+ * Type uses z.string() to tolerate deprecated/new BE types without breaking the list
  */
 export const notificationSchema = z.object({
 	id: z.string(),
 	userId: z.string(),
-	type: notificationTypeSchema,
+	type: z.string(),
 	title: z.string(),
 	body: z.string(),
 	read: z.boolean(),

@@ -1,23 +1,15 @@
 'use client';
 
-import type { SignedMediaUrl } from '@/types/raffle';
-import { isSignedUrlExpired } from '@/lib/utils/is-signed-url-expired';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-
-/**
- * Image input type - supports both SignedMediaUrl objects and plain string URLs
- */
-type ImageInput = SignedMediaUrl | string;
+import { useState } from 'react';
 
 interface ImageCarouselProps {
-	coverImage?: ImageInput | null;
-	galleryImages?: ImageInput[];
+	coverImage?: string | null;
+	galleryImages?: string[];
 	/** Array of image URLs (alternative to coverImage + galleryImages) */
-	images?: ImageInput[];
+	images?: string[];
 	alt: string;
 	aspectRatio?: string;
 	maxHeight?: string;
@@ -29,11 +21,10 @@ interface ImageCarouselProps {
  *
  * Displays a carousel of images combining cover and gallery images.
  * Features infinite loop navigation with smooth slide animations.
- * Supports both SignedMediaUrl objects and plain string URLs.
  *
- * @param coverImage - The main cover image (shown first)
- * @param galleryImages - Array of gallery images
- * @param images - Alternative: array of all images (takes precedence)
+ * @param coverImage - The main cover image URL (shown first)
+ * @param galleryImages - Array of gallery image URLs
+ * @param images - Alternative: array of all image URLs (takes precedence)
  * @param alt - Alt text for accessibility
  * @param aspectRatio - Tailwind aspect ratio class (e.g., 'aspect-4/3')
  * @param maxHeight - Tailwind max height class (e.g., 'max-h-53')
@@ -48,29 +39,8 @@ export function ImageCarousel({
 	maxHeight = 'max-h-53',
 	className = '',
 }: ImageCarouselProps) {
-	const router = useRouter();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [direction, setDirection] = useState(0);
-	const hasRefreshedForExpiredUrlsRef = useRef(false);
-
-	/**
-	 * Extracts URL from an image input (handles both string and SignedMediaUrl)
-	 * @param image - Image input (string or SignedMediaUrl)
-	 * @returns The URL string
-	 */
-	function getImageUrl(image: ImageInput): string {
-		return typeof image === 'string' ? image : image.url;
-	}
-
-	/**
-	 * Determines if the image input is expired.
-	 * String URLs are treated as non-expiring because they have no metadata.
-	 */
-	function isExpiredImage(image: ImageInput): boolean {
-		return typeof image === 'string'
-			? false
-			: isSignedUrlExpired(image.expiresAt);
-	}
 
 	/**
 	 * Builds a single array from cover and gallery images
@@ -79,22 +49,15 @@ export function ImageCarousel({
 	function buildImageArray(): string[] {
 		// If images prop is provided, use it directly
 		if (imagesProp && imagesProp.length > 0) {
-			return imagesProp
-				.filter(image => !isExpiredImage(image))
-				.map(getImageUrl);
+			return imagesProp;
 		}
 
 		// Otherwise build from cover + gallery
 		const urls: string[] = [];
-
-		if (coverImage && !isExpiredImage(coverImage)) {
-			urls.push(getImageUrl(coverImage));
+		if (coverImage) {
+			urls.push(coverImage);
 		}
-
-		return [
-			...urls,
-			...galleryImages.filter(image => !isExpiredImage(image)).map(getImageUrl),
-		];
+		return [...urls, ...galleryImages];
 	}
 
 	/**
@@ -122,12 +85,6 @@ export function ImageCarousel({
 	}
 
 	const images = buildImageArray();
-	const hasExpiredSignedImage = (
-		imagesProp ?? [coverImage, ...galleryImages]
-	).some(image => {
-		if (!image) return false;
-		return isExpiredImage(image);
-	});
 
 	/**
 	 * Handles navigation to the next image
@@ -144,14 +101,6 @@ export function ImageCarousel({
 		setDirection(-1);
 		setCurrentIndex(prev => getWrappedIndex(prev, -1, images.length));
 	}
-
-	// Trigger exactly one refresh per mount if stale signed media is detected.
-	// Why: stale RSC payload can include expired signed URLs; refresh rehydrates fresh URLs.
-	useEffect(() => {
-		if (!hasExpiredSignedImage || hasRefreshedForExpiredUrlsRef.current) return;
-		hasRefreshedForExpiredUrlsRef.current = true;
-		router.refresh();
-	}, [hasExpiredSignedImage, router]);
 
 	const showNavigation = shouldShowNavigation(images.length);
 	const currentImageUrl = images[currentIndex];

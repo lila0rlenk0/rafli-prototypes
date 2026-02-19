@@ -2,7 +2,7 @@
 
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
-import type { Update, UpdateMediaUrl } from '@/types/update';
+import type { Update } from '@/types/update';
 
 interface UpdateTimelineItemProps {
 	update: Update;
@@ -43,20 +43,20 @@ export function UpdateTimelineItem({
 	}
 
 	/**
-	 * Checks if a media URL object has a valid URL
-	 * @param mediaUrl - Media URL object to validate
+	 * Checks if a URL string is a valid URL
+	 * @param url - URL string to validate
 	 * @returns true if valid URL, false otherwise
 	 */
-	function hasValidUrl(mediaUrl: UpdateMediaUrl): boolean {
+	function isValidUrl(url: string): boolean {
 		try {
-			new URL(mediaUrl.url);
+			new URL(url);
 			return true;
 		} catch {
 			return false;
 		}
 	}
 
-	const validImages = update.imageUrls?.filter(hasValidUrl) ?? [];
+	const validImages = update.imageUrls?.filter(isValidUrl) ?? [];
 	const hasImages = validImages.length > 0;
 	const hasText = update.text && update.text.trim().length > 0;
 

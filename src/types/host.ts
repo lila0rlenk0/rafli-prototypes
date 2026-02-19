@@ -7,14 +7,6 @@ import { paginationQuerySchema } from './pagination';
 // ==========================================
 
 /**
- * Schema for host profile image with expiration
- */
-export const hostImageSchema = z.object({
-	url: z.string(),
-	expiresAt: z.string(),
-});
-
-/**
  * Schema for host profile data
  * Represents the public profile of a raffle host
  */
@@ -23,7 +15,7 @@ export const hostProfileSchema = z.object({
 	name: z.string().nullable(),
 	username: z.string().nullable(),
 	bio: z.string().nullable(),
-	image: hostImageSchema.nullable(),
+	image: z.string().nullable(),
 	averageRating: z.number().nullable(),
 	totalRafflesHosted: z.number(),
 	totalReviews: z.number(),
@@ -33,7 +25,6 @@ export const hostProfileSchema = z.object({
 // Inferred Types
 // ==========================================
 
-export type HostImage = z.infer<typeof hostImageSchema>;
 export type HostProfile = z.infer<typeof hostProfileSchema>;
 
 // ==========================================

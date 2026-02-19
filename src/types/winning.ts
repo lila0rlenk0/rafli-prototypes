@@ -125,14 +125,6 @@ export const CLAIM_TYPE = {
 export type ClaimType = (typeof CLAIM_TYPE)[keyof typeof CLAIM_TYPE];
 
 /**
- * Schema for user avatar with expiring URL
- */
-export const userAvatarSchema = z.object({
-	url: z.string(),
-	expiresAt: z.string(),
-});
-
-/**
  * Schema for a winner entry in host's fulfillment list view
  */
 export const hostWinnerEntrySchema = z.object({
@@ -141,7 +133,7 @@ export const hostWinnerEntrySchema = z.object({
 	raffleId: z.string(),
 	userId: z.string(),
 	userName: z.string().nullable(),
-	userAvatar: userAvatarSchema.nullable(),
+	userAvatar: z.string().nullable(),
 	status: winningStatusSchema,
 	claimType: z.enum([CLAIM_TYPE.SHIPPING, CLAIM_TYPE.WALLET]).nullable(),
 	shippingInfo: shippingInfoSchema.nullable(),
@@ -169,7 +161,6 @@ export const hostRaffleWinningsResponseSchema = z.object({
 	totalPages: z.number(),
 });
 
-export type UserAvatar = z.infer<typeof userAvatarSchema>;
 export type HostWinnerEntry = z.infer<typeof hostWinnerEntrySchema>;
 export type HostRaffleWinningsResponse = z.infer<
 	typeof hostRaffleWinningsResponseSchema

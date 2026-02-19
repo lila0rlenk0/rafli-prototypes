@@ -90,25 +90,11 @@ export const raffleSortOptionSchema = z.enum([
 	RAFFLE_SORT_OPTION.TRENDING,
 ]);
 
-/**
- * Schema for media URL with expiration
- * Represents a presigned URL that expires at a specific time
- */
-const mediaUrlSchema = z.object({
-	url: z.string(),
-	expiresAt: z.string(),
-});
-
 const hostSchema = z.object({
 	id: z.uuid(),
 	name: z.string().nullable(),
 	username: z.string().nullable(),
-	avatar: z
-		.object({
-			expiresAt: z.string(),
-			url: z.string(),
-		})
-		.nullable(),
+	avatar: z.string().nullable(),
 	totalRaffles: z.number().optional(),
 });
 
@@ -135,8 +121,8 @@ export const raffleSchema = z.object({
 	title: z.string(),
 	description: z.string(),
 	categoryId: z.string(),
-	coverMediaUrl: mediaUrlSchema.nullable(),
-	galleryMediaUrls: z.array(mediaUrlSchema),
+	coverMediaUrl: z.string().nullable(),
+	galleryMediaUrls: z.array(z.string()),
 	declaredValueAmount: z.string(),
 	declaredValueCurrency: z.string(),
 	ticketPriceAmount: z.string(),
@@ -180,7 +166,7 @@ export const raffleSchema = z.object({
  */
 export const raffleCoverResponseSchema = z.object({
 	raffleId: z.string(),
-	cover: mediaUrlSchema.nullable(),
+	cover: z.string().nullable(),
 });
 
 /**
@@ -189,7 +175,7 @@ export const raffleCoverResponseSchema = z.object({
  */
 export const raffleGalleryResponseSchema = paginationMetadataSchema.extend({
 	raffleId: z.string(),
-	gallery: z.array(mediaUrlSchema),
+	gallery: z.array(z.string()),
 });
 
 /**
@@ -272,7 +258,6 @@ export const updateRafflePayloadSchema = z.object({
 // Inferred Types
 // ==========================================
 
-export type SignedMediaUrl = z.infer<typeof mediaUrlSchema>;
 export type RaffleWinner = z.infer<typeof raffleWinnerSchema>;
 export type Raffle = z.infer<typeof raffleSchema>;
 export type RaffleCoverResponse = z.infer<typeof raffleCoverResponseSchema>;

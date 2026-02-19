@@ -106,7 +106,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 	}
 
 	return (
-		<div className="group flex min-w-70 flex-col overflow-hidden rounded-[24px] border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
+		<div className="group flex max-w-70 min-w-70 flex-col overflow-hidden rounded-[24px] border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
 			<ImageCarousel
 				coverImage={raffle.coverMediaUrl}
 				galleryImages={raffle.galleryMediaUrls}

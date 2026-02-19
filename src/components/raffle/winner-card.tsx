@@ -31,13 +31,12 @@ export function WinnerCard({
 	 */
 	function getDisplayName(): string {
 		if (isCurrentUser) return 'You';
-		return winner.name || 'Anonymous Winner';
+		return winner.name || `Winner #${winner.position + 1}`;
 	}
 
 	return (
 		<div className="space-y-4 rounded-2xl border border-black bg-white px-6 py-4">
 			<div className="space-y-1">
-				<span className="text-sm text-[#7B7B7B]">Winner</span>
 				<p className="font-semibold">{getDisplayName()}</p>
 				{winner.ticketCode && (
 					<div

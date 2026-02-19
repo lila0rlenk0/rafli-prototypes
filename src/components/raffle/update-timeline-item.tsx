@@ -83,6 +83,7 @@ export function UpdateTimelineItem({
 					aspectRatio="aspect-video"
 					maxHeight=""
 					className="rounded-xl"
+					sizes="(max-width: 1024px) 100vw, 736px"
 				/>
 			)}
 

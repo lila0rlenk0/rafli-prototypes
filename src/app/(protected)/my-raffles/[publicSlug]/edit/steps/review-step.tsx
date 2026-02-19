@@ -249,7 +249,7 @@ export function ReviewStep() {
 							src={coverImageSrc}
 							alt="Cover"
 							fill
-							sizes="100vw"
+							sizes="(max-width: 780px) 100vw, 780px"
 							className="object-cover"
 							unoptimized={coverImage?.[0] !== undefined}
 						/>

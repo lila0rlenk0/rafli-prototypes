@@ -171,6 +171,7 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 				galleryImages={raffle.galleryMediaUrls}
 				alt={raffle.title}
 				className="mb-4"
+				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
 			/>
 
 			<div className="flex flex-1 flex-col p-4">

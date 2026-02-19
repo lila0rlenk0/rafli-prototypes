@@ -393,6 +393,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							aspectRatio="aspect-video"
 							maxHeight="max-h-96"
 							className="border border-[#E5E5E5]"
+							sizes="(max-width: 1024px) 100vw, 736px"
+							priority
 						/>
 
 						{raffle.galleryMediaUrls.length > 0 && (

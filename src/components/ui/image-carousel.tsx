@@ -14,6 +14,19 @@ interface ImageCarouselProps {
 	aspectRatio?: string;
 	maxHeight?: string;
 	className?: string;
+	/**
+	 * Responsive sizes hint for the browser's image selection algorithm.
+	 * Must match the actual rendered width of this carousel's container —
+	 * using "100vw" when the image is inside a bounded container wastes bandwidth
+	 * by downloading an unnecessarily large variant.
+	 */
+	sizes?: string;
+	/**
+	 * Marks the first image as the LCP element — adds `<link rel="preload">` to `<head>`.
+	 * Only applies to the initially visible image (index 0).
+	 * Use on the primary above-the-fold carousel of a page.
+	 */
+	priority?: boolean;
 }
 
 /**
@@ -29,6 +42,8 @@ interface ImageCarouselProps {
  * @param aspectRatio - Tailwind aspect ratio class (e.g., 'aspect-4/3')
  * @param maxHeight - Tailwind max height class (e.g., 'max-h-53')
  * @param className - Additional CSS classes
+ * @param sizes - Responsive sizes hint (defaults to '(max-width: 768px) 100vw, 50vw')
+ * @param priority - Preload first image for LCP optimization
  */
 export function ImageCarousel({
 	coverImage,
@@ -38,6 +53,8 @@ export function ImageCarousel({
 	aspectRatio = 'aspect-4/3',
 	maxHeight = 'max-h-53',
 	className = '',
+	sizes = '(max-width: 768px) 100vw, 50vw',
+	priority = false,
 }: ImageCarouselProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [direction, setDirection] = useState(0);
@@ -143,9 +160,13 @@ export function ImageCarousel({
 							src={currentImageUrl}
 							alt={`${alt} - Image ${currentIndex + 1}`}
 							fill
-							sizes="100vw"
+							sizes={sizes}
 							className="rounded-2xl object-cover"
-							loading="eager"
+							// priority adds <link rel="preload"> — only meaningful for the
+							// first visible image (LCP). Subsequent slides load eagerly
+							// to avoid blank flashes during navigation.
+							priority={priority && currentIndex === 0}
+							loading={priority && currentIndex === 0 ? undefined : 'eager'}
 						/>
 					</motion.div>
 				</AnimatePresence>

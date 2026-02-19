@@ -28,6 +28,13 @@ const nextConfig: NextConfig = {
 		minimumCacheTTL: 86_400,
 		remotePatterns: [
 			{
+				// CloudFront CDN in front of S3 media buckets.
+				// Wildcard covers all distributions (varies per environment).
+				protocol: 'https',
+				hostname: '*.cloudfront.net',
+				pathname: '/**',
+			},
+			{
 				// Encore generates dynamic S3 bucket hostnames per deploy.
 				// Wildcard covers all buckets (auth-media, raffles-media, etc.)
 				protocol: 'https',

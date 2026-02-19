@@ -228,12 +228,12 @@ export function useCreateMyData() {
 
 ### When to use React Query hooks vs direct server actions
 
-| Pattern                                 | Use Case                                                              |
-| --------------------------------------- | --------------------------------------------------------------------- |
-| React Query query hook                  | Client component needs cached data, pagination, or on-demand fetching |
-| React Query mutation hook               | Client component needs loading/error states + cache invalidation      |
-| Direct server action + `useTransition`  | Form submissions (react-hook-form), one-off actions                   |
-| Direct server action (server component) | Server-side data fetching, SSR                                        |
+| Pattern | Use Case |
+|---------|----------|
+| React Query query hook | Client component needs cached data, pagination, or on-demand fetching |
+| React Query mutation hook | Client component needs loading/error states + cache invalidation |
+| Direct server action + `useTransition` | Form submissions (react-hook-form), one-off actions |
+| Direct server action (server component) | Server-side data fetching, SSR |
 
 ## Server Action Checklist
 

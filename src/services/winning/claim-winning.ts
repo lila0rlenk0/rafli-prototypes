@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { revalidateWinningPaths } from '@/lib/cache/revalidation';
 import { failure, mapWinningError, success } from '@/lib/errors';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -30,6 +31,7 @@ type ClaimWinningServiceResponse = ServiceResponse<Winning, WinningErrorCode>;
 export async function claimWinning(
 	raffleId: string,
 	payload: ClaimWinningPayload,
+	publicSlug?: string,
 ): Promise<ClaimWinningServiceResponse> {
 	try {
 		const response = await authenticatedClient.post(
@@ -38,6 +40,7 @@ export async function claimWinning(
 		);
 
 		const validated = winningSchema.parse(response.data);
+		revalidateWinningPaths(publicSlug);
 
 		return success(validated);
 	} catch (error) {

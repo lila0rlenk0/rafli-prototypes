@@ -1,0 +1,122 @@
+Work Split: 2 Developers (FE + BE combined)
+
+  Developer A — Backend-heavy / Data Flow
+
+  WP-A1: Image Token Expiry [#1, #6]
+  - BE shared/storage/signed-url.cache.ts — 7-day TTL cache. Likely issue: Next.js SSR caches rendered HTML with already-expired URLs. Need to
+   either shorten TTL buffer or add a refresh endpoint
+  - BE core/infrastructure/storage.ts, authentication/infrastructure/storage.ts — transformAvatarUrl()/transformRaffleImageUrls() generate
+  URLs per-request but caching layer may serve stale
+  - FE Image rendering across browse/[publicSlug]/page.tsx:367-377 (host avatar), image-carousel (cover/gallery) — add expiresAt check with
+  re-fetch on expired URLs
+  - Root cause: Server components cache renders; signed URLs in those renders expire before the cache does
+
+  WP-A2: Social Login Redirect [#2]
+  - BE authentication/auth.raw.api.ts — OAuth callback endpoint. callbackURL sent by FE is /auth/callback — needs ?returnTo= preserved through
+   Better-Auth OAuth round-trip
+  - FE services/auth/social-sign-in.ts:52 — callbackURL must include ?returnTo=${encodeURIComponent(currentPath)}
+  - FE callback-handler.tsx:64 — already reads returnTo and redirects. Fix is upstream: pass it when initiating OAuth
+
+  WP-A3: Host Unable to Post Updates [#8]
+  - BE updates.auth.api.ts — check endpoint guards (likely restricts to live status only; might need ended/fulfilling too)
+  - FE post-update-button.tsx — button only renders when isOwner && isLive. If intended for ended raffles too, relax isLive condition
+  - FE my-raffles/[publicSlug]/update/page.tsx — verify service call chain
+
+  WP-A4: Notification Text Not Displaying [#11]
+  - BE notifications/commands/ — verify every notification type populates title + body. Some types may publish with empty body
+  - BE notifications/infrastructure/subscribers.ts — check insertion SQL maps title/body correctly
+  - FE notification-item.tsx:115-119 — rendering looks correct (notification.title, notification.body). Issue likely BE-side: empty strings
+  pass Zod z.string() but display blank
+
+  WP-A5: Winner "Unknown" + Shipping Info [#12, #18]
+  - BE winnings/queries/get-raffle-winners.query.ts:84 — userName: userInfo?.name ?? 'Unknown'. getUsersByIdsInternal may fail silently for
+  some users. Debug missing user lookups (line 74 already logs them)
+  - FE winners-table.tsx:36-41 — formatDisplayName falls back to Winner #${position} on null. Issue: BE sends 'Unknown' string, not null, so
+  fallback never triggers
+  - FE winners-table.tsx — shipping info exists in HostWinnerEntry.shippingInfo but table only shows city, country. Add expandable row or
+  modal for full shipping details (name, address, zip, phone)
+
+  WP-A6: Participant Raffle Visibility [#19, #20]
+  - BE raffles/queries/get-enrolled-raffles.query.ts:42-63 — Root cause: ticket-ledger returns paginated enrollment IDs FIRST (line 42), THEN
+  status filter applied in-memory (line 62). If user's 20 enrollments span mixed statuses, a page of 20 from ticket-ledger might yield 0 after
+   status filter
+  - Fix: Either pass status filter down to ticket-ledger, or fetch all enrollment IDs first then paginate after filtering
+  - FE my-raffles/page.tsx, get-enrolled-raffles.ts — no FE change needed if BE pagination fixed
+
+  WP-A7: Host Status Lifecycle [#21]
+  - BE winnings/infrastructure/crons.ts — auto-confirm after 48h. After all winnings reach received/resolved, need to verify the raffle status
+   transition to completed fires
+  - BE raffles/commands/ — check if there's a "check all winnings complete → transition raffle" trigger or if it's missing
+  - FE — stale data on raffle detail page after fulfillment actions. Add revalidatePath or query invalidation after status-changing mutations
+
+  ---
+  Developer B — Frontend-heavy / UI
+
+  WP-B1: Quick Polish [#3, #5, #7, #15] ~1hr total
+  - #3: raffle/public-raffle-card.tsx + my-raffles/raffle-card.tsx — add cursor-pointer to bottom links and CTA buttons
+  - #5: raffle/ticket-selector.tsx — change "3 Tickets" → "+3 Tickets" (add + prefix to bundle labels)
+  - #7: browse/[publicSlug]/page.tsx:362-364 — add target="_blank" rel="noopener noreferrer" to host profile <Link>
+  - #15: my-raffles/status-tabs.tsx:118 — change Participating → Live
+
+  WP-B2: Quiz Answer UX [#4]
+  - FE raffle/raffle-question-modal.tsx — after host selects answer:
+    - Remove RadioGroup/RadioGroupItem elements
+    - Highlight correct answer option (green bg)
+    - If wrong was selected, also highlight it (red bg)
+    - Show check/x icon per option
+
+  WP-B3: Mode Switching Fix [#9]
+  - FE store/user-store.ts — race condition: initializeMode() at line 100 can fire before setPermissions() has updated permissions, causing
+  canSwitchMode() to return false → resets mode to PARTICIPANT
+  - Zustand persist hydration from localStorage happens async. If server reads cookie as host but client hydrates as participant from stale
+  localStorage, they fight
+  - Fix: ensure setPermissions + initializeMode are atomic or sequenced correctly in the provider
+
+  WP-B4: Host View After Raffle Ends [#10]
+  - FE browse/[publicSlug]/page.tsx — shouldShowHostFulfillment() gates the sidebar. Currently shows HostFulfillmentCard +
+  RevenueBreakdownCard only
+  - Host needs to see full raffle details (ticket stats, participant count, revenue) in the main content area + sidebar combined, not just a
+  stripped fulfillment card
+  - Expand concluded-host view: keep all info cards visible, add fulfillment card as additional section
+
+  WP-B5: Fulfillment UI Fixes [#13, #14, #17]
+  - #13: winners-table.tsx:77 — {winner.position} renders BE value. BE winnings table position likely 0-indexed. Either fix BE to store
+  1-indexed, or add +1 in FE display
+  - #14: fulfillment-timeline.tsx — verify checkReview service call fires after confirmReceived success. Debug conditional: canReview &&
+  !hasReviewed → ReviewHostModal should open
+  - #17: winning-status-badge.tsx — for received status with partial participation context, change label from "Received" to "Awaiting
+  Platform". Component needs isPartial prop passed from parent
+
+  WP-B6: How It Works Page [#16]
+  - FE app/(public)/how-it-works/page.tsx — client component with framer-motion. Likely a runtime error preventing render (blank page). Check:
+    - Missing/broken import
+    - Framer-motion SSR hydration error
+    - Component error boundary swallowing errors
+    - Links from raffle pages use href="/how-it-works" without target="_blank" — correct. But some links (like winner-verification.tsx:199)
+  use target="_blank" — verify this isn't the report
+
+  ---
+  Suggested Priority Order
+
+  ┌──────────────────────┬───────────────────────────────────────┬─────────────────────────────────────┐
+  │       Priority       │                 Dev A                 │                Dev B                │
+  ├──────────────────────┼───────────────────────────────────────┼─────────────────────────────────────┤
+  │ P0 (blockers)        │ WP-A6: Participant visibility [19,20] │ WP-B3: Mode switching [9]           │
+  ├──────────────────────┼───────────────────────────────────────┼─────────────────────────────────────┤
+  │ P0 (blockers)        │ WP-A5: Winner Unknown [12,18]         │ WP-B4: Host view after ends [10]    │
+  ├──────────────────────┼───────────────────────────────────────┼─────────────────────────────────────┤
+  │ P1 (broken features) │ WP-A3: Host updates [8]               │ WP-B6: How it works [16]            │
+  ├──────────────────────┼───────────────────────────────────────┼─────────────────────────────────────┤
+  │ P1 (broken features) │ WP-A4: Notifications [11]             │ WP-B5: Fulfillment fixes [13,14,17] │
+  ├──────────────────────┼───────────────────────────────────────┼─────────────────────────────────────┤
+  │ P1 (broken features) │ WP-A7: Status lifecycle [21]          │ WP-B2: Quiz answer UX [4]           │
+  ├──────────────────────┼───────────────────────────────────────┼─────────────────────────────────────┤
+  │ P2 (UX improvements) │ WP-A1: Image tokens [1,6]             │ WP-B1: Quick polish [3,5,7,15]      │
+  ├──────────────────────┼───────────────────────────────────────┼─────────────────────────────────────┤
+  │ P2 (UX improvements) │ WP-A2: Social redirect [2]            │                                     │
+  └──────────────────────┴───────────────────────────────────────┴─────────────────────────────────────┘
+
+  Dev A: 10 issues, heavier investigation + BE fixes
+  Dev B: 11 issues, many quick FE wins + 2 medium investigations
+
+  Both developers can work fully in parallel — work packages don't share file

@@ -1,6 +1,9 @@
 import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
-import { RAFFLE_STATUS } from '@/types/raffle';
+import {
+	UPDATE_MANAGEABLE_STATUSES,
+	type UpdateManageableStatus,
+} from '@/types/raffle';
 import { notFound, redirect } from 'next/navigation';
 import { UpdateForm } from './update-form';
 import { UpdateFormProvider } from './update-form-provider';
@@ -14,12 +17,12 @@ interface PageProps {
 /**
  * Create Update Page
  *
- * Allows hosts to post updates for their live raffles.
- * Server-side protected - only accessible by the raffle host when raffle is live.
+ * Allows hosts to post updates for raffles in update-manageable statuses.
+ * Server-side protected - only accessible by raffle host in allowed statuses.
  * Redirects to /my-raffles if:
  * - Raffle not found
  * - User is not the host
- * - Raffle is not live
+ * - Raffle status is blocked for updates
  */
 export default async function CreateUpdatePage({ params }: PageProps) {
 	const { publicSlug } = await params;
@@ -43,8 +46,12 @@ export default async function CreateUpdatePage({ params }: PageProps) {
 		redirect('/my-raffles');
 	}
 
-	// Only allow updates for live raffles
-	if (raffle.status !== RAFFLE_STATUS.LIVE) {
+	// Only allow updates for statuses where host communication still matters
+	if (
+		!UPDATE_MANAGEABLE_STATUSES.includes(
+			raffle.status as UpdateManageableStatus,
+		)
+	) {
 		redirect('/my-raffles');
 	}
 

@@ -69,7 +69,7 @@ export function PromoCodesContent({
 			bulkCreate.mutate(
 				{ raffleId, data: createData },
 				{
-					onSuccess(result) {
+					onSuccess(result: BulkCreatePromoCodesResponse) {
 						const count = result.created;
 						toast.success(
 							`${count} promo code${count !== 1 ? 's' : ''} created`,

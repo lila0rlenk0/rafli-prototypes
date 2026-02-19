@@ -23,7 +23,7 @@ import { updateRaffle } from '@/services/raffle/update-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
 import { RAFFLE_STATUS } from '@/types/raffle';
-import type { Raffle, SignedMediaUrl } from '@/types/raffle';
+import type { Raffle } from '@/types/raffle';
 
 import { computeRestrictions } from './compute-restrictions';
 import { editFormSchema, type FieldRestrictions } from './schema';
@@ -60,7 +60,7 @@ interface EditFormProviderProps {
 	children: ReactNode;
 	raffle: Raffle;
 	initialCoverUrl: string | null;
-	initialGalleryUrls: SignedMediaUrl[];
+	initialGalleryUrls: string[];
 	defaultValues: EditFormData;
 	questions: Question[];
 	categories: Category[];
@@ -140,7 +140,7 @@ export function EditFormProvider({
 
 	// Extract existing image URLs
 	const existingCoverUrl = initialCoverUrl;
-	const existingGalleryUrls = initialGalleryUrls.map(img => img.url);
+	const existingGalleryUrls = initialGalleryUrls;
 
 	/**
 	 * Advances to the next step in the form

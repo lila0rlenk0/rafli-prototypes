@@ -5,15 +5,6 @@ import { z } from 'zod';
 // ==========================================
 
 /**
- * Schema for signed media URL with expiration
- * Represents a presigned URL that expires at a specific time
- */
-export const updateMediaUrlSchema = z.object({
-	url: z.string(),
-	expiresAt: z.string(),
-});
-
-/**
  * Schema for host information in updates
  * Embedded host data in update responses
  */
@@ -31,7 +22,7 @@ export const updateSchema = z.object({
 	id: z.string(),
 	raffleId: z.string(),
 	text: z.string().min(1).max(5_000),
-	imageUrls: z.array(updateMediaUrlSchema),
+	imageUrls: z.array(z.string()),
 	host: updateHostSchema,
 	createdAt: z.string(),
 });
@@ -69,7 +60,6 @@ export const uploadUpdateImagesResponseSchema = z.object({
 // Inferred Types
 // ==========================================
 
-export type UpdateMediaUrl = z.infer<typeof updateMediaUrlSchema>;
 export type UpdateHost = z.infer<typeof updateHostSchema>;
 export type Update = z.infer<typeof updateSchema>;
 export type ListUpdatesResponse = z.infer<typeof listUpdatesResponseSchema>;

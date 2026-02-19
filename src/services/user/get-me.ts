@@ -27,8 +27,8 @@ export async function getMe(): Promise<GetMeResponse> {
 
 		const validatedData = meResponseSchema.parse(response.data);
 
-		// Extract avatar URL from image object
-		const avatarUrl = validatedData.image?.url ?? null;
+		// Image is now a plain string URL from the backend
+		const avatarUrl = validatedData.image ?? null;
 
 		return success({
 			...validatedData,

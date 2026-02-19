@@ -19,7 +19,6 @@ import {
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getSession } from '@/lib/auth/session';
-import { isSignedUrlExpired } from '@/lib/utils/is-signed-url-expired';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
@@ -215,19 +214,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		raffle.status as UpdateManageableStatus,
 	);
 
-	// Step 4: Skip rendering signed media that's already expired in the server payload.
-	// Why: stale RSC HTML can outlive signed URLs and create broken image flashes on first paint.
-	const hostAvatarUrl =
-		raffle.host?.avatar && !isSignedUrlExpired(raffle.host.avatar.expiresAt)
-			? raffle.host.avatar.url
-			: null;
-	const freshCoverImage =
-		raffle.coverMediaUrl && !isSignedUrlExpired(raffle.coverMediaUrl.expiresAt)
-			? raffle.coverMediaUrl
-			: null;
-	const freshGalleryImages = raffle.galleryMediaUrls.filter(
-		image => !isSignedUrlExpired(image.expiresAt),
-	);
+	// Image URLs are now plain strings — no expiry checks needed
+	const hostAvatarUrl = raffle.host?.avatar ?? null;
 
 	/**
 	 * Statuses that allow promo code management
@@ -399,23 +387,25 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</Link>
 
 						<ImageCarousel
-							coverImage={freshCoverImage}
-							galleryImages={freshGalleryImages}
+							coverImage={raffle.coverMediaUrl}
+							galleryImages={raffle.galleryMediaUrls}
 							alt={raffle.title}
 							aspectRatio="aspect-video"
 							maxHeight="max-h-96"
 							className="border border-[#E5E5E5]"
+							sizes="(max-width: 1024px) 100vw, 736px"
+							priority
 						/>
 
-						{freshGalleryImages.length > 0 && (
+						{raffle.galleryMediaUrls.length > 0 && (
 							<div className="grid grid-cols-3 gap-4">
-								{freshGalleryImages.map((image, index) => (
+								{raffle.galleryMediaUrls.map((image, index) => (
 									<div
 										key={index}
 										className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
 									>
 										<Image
-											src={image.url}
+											src={image}
 											alt={`Gallery ${index + 1}`}
 											fill
 											sizes="33vw"

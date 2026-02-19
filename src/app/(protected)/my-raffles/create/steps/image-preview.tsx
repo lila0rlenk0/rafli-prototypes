@@ -60,7 +60,7 @@ export function ImagePreview({ file, alt, className }: ImagePreviewProps) {
 			src={previewUrl}
 			alt={alt}
 			fill
-			sizes="100vw"
+			sizes="(max-width: 780px) 100vw, 780px"
 			className={cn('object-contain', className)}
 		/>
 	);

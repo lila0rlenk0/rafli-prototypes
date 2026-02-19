@@ -4,7 +4,6 @@ import { cacheLife } from 'next/cache';
 import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
-import { calculateCacheLife } from '@/lib/cache/calculate-revalidate';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
@@ -41,15 +40,8 @@ export async function getRaffleCover(
 		// Validate response structure
 		const validatedData = raffleCoverResponseSchema.parse(response.data);
 
-		// Set cache based on URL expiration
-		// IMPORTANT: stale must be 0 for pre-signed URLs - they cannot be served stale
-		if (validatedData.cover) {
-			const cacheConfig = calculateCacheLife(validatedData.cover.expiresAt);
-			cacheLife(cacheConfig);
-		} else {
-			// No cover image - cache for 5 minutes, stale: 0 for consistency
-			cacheLife({ stale: 0, revalidate: 300, expire: 360 });
-		}
+		// URLs are now plain strings — use fixed 5-minute cache
+		cacheLife({ stale: 0, revalidate: 300, expire: 360 });
 
 		return success(validatedData);
 	} catch (error) {

@@ -5,15 +5,6 @@ import { z } from 'zod';
 // ==========================================
 
 /**
- * Schema for image object returned by backend
- * Represents a presigned URL that expires at a specific time
- */
-const imageSchema = z.object({
-	url: z.string(),
-	expiresAt: z.string(),
-});
-
-/**
  * Schema for /me endpoint response
  * Returned by GET /me
  */
@@ -23,7 +14,7 @@ export const meResponseSchema = z.object({
 	emailVerified: z.boolean(),
 	name: z.string(),
 	username: z.string().nullable(),
-	image: imageSchema.nullable(),
+	image: z.string().nullable(),
 	bio: z.string().nullable(),
 	permissions: z.array(z.string()).optional(),
 	createdAt: z.string(),
@@ -69,7 +60,6 @@ export const updateMeResponseSchema = z.object({
 // ==========================================
 
 export type MeResponse = z.infer<typeof meResponseSchema>;
-export type ImageObject = z.infer<typeof imageSchema>;
 export type UploadAvatarResponse = z.infer<typeof uploadAvatarResponseSchema>;
 export type UpdateMePayload = z.infer<typeof updateMePayloadSchema>;
 export type UpdateMeResponse = z.infer<typeof updateMeResponseSchema>;

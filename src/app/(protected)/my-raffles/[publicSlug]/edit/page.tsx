@@ -149,14 +149,12 @@ export default async function EditRafflePage({ params }: PageProps) {
 		? rafflesResult.data.total || 0
 		: 0;
 
-	// Extract image URLs
-	// Use cover from API response, fallback to raffle.coverMediaUrl if available
+	// Extract image URLs — now plain strings from the backend
 	const initialCoverUrl =
 		coverResult.success && coverResult.data.cover
-			? coverResult.data.cover.url
-			: raffle.coverMediaUrl?.url || null;
+			? coverResult.data.cover
+			: raffle.coverMediaUrl || null;
 
-	// Use gallery from API response, fallback to raffle.galleryMediaUrls if available
 	const initialGalleryUrls =
 		galleryResult.success && galleryResult.data.gallery.length > 0
 			? galleryResult.data.gallery

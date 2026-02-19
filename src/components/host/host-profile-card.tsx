@@ -54,9 +54,9 @@ export function HostProfileCard({
 		>
 			{/* Profile Image */}
 			<div className="relative mx-auto mb-4 flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-3xl font-semibold">
-				{host.image?.url ? (
+				{host.image ? (
 					<Image
-						src={host.image.url}
+						src={host.image}
 						alt={getDisplayName()}
 						fill
 						sizes="112px"

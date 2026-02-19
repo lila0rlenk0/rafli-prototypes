@@ -8,8 +8,7 @@ import type { NextConfig } from 'next';
  */
 const backendUrl = new URL(env.BACKEND_URL);
 const isLocal =
-	backendUrl.hostname === 'localhost' ||
-	backendUrl.hostname === '127.0.0.1';
+	backendUrl.hostname === 'localhost' || backendUrl.hostname === '127.0.0.1';
 
 const nextConfig: NextConfig = {
 	experimental: {
@@ -19,6 +18,14 @@ const nextConfig: NextConfig = {
 	},
 	images: {
 		unoptimized: isLocal,
+		// AVIF compresses ~20% smaller than WebP at equal quality.
+		// Vercel auto-negotiates via Accept header — AVIF for supported browsers, WebP fallback.
+		// First AVIF encode is ~50% slower, but Vercel caches the result on its CDN.
+		formats: ['image/avif', 'image/webp'],
+		// Backend now serves permanent (non-presigned) S3 URLs — safe to cache aggressively.
+		// Without this, Vercel respects upstream Cache-Control which S3 often sets very low,
+		// causing unnecessary re-optimizations and higher image transformation costs.
+		minimumCacheTTL: 86_400,
 		remotePatterns: [
 			{
 				// Encore generates dynamic S3 bucket hostnames per deploy.

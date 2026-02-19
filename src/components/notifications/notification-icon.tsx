@@ -11,9 +11,9 @@ import {
 	type LucideIcon,
 } from 'lucide-react';
 
-import { NOTIFICATION_TYPE, type NotificationType } from '@/types/notification';
+import { NOTIFICATION_TYPE } from '@/types/notification';
 
-const NOTIFICATION_ICON_MAP: Record<NotificationType, LucideIcon> = {
+const NOTIFICATION_ICON_MAP: Record<string, LucideIcon> = {
 	[NOTIFICATION_TYPE.DELIVERY_CONFIRMED]: CheckCircle,
 	[NOTIFICATION_TYPE.DISPUTE_OPENED]: AlertCircle,
 	[NOTIFICATION_TYPE.DISPUTE_RESOLVED]: CheckCircle,
@@ -40,7 +40,7 @@ const NOTIFICATION_ICON_MAP: Record<NotificationType, LucideIcon> = {
 };
 
 interface NotificationIconProps {
-	type: NotificationType;
+	type: string;
 	className?: string;
 }
 

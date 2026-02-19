@@ -373,6 +373,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 						<Link
 							href={getHostProfileUrl()}
+							target="_blank"
+							rel="noopener noreferrer"
 							className="group flex w-fit items-center gap-4"
 						>
 							<div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
@@ -553,6 +555,12 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							<RevenueBreakdownCard
 								raffle={raffle}
 								isPartialParticipation={isPartialFulfillment}
+							/>
+							<RaffleInfoCard
+								raffle={raffle}
+								myTicketCodes={myTicketCodes}
+								myTicketsTotal={myTicketsTotal}
+								isAuthenticated={isAuthenticated}
 							/>
 						</>
 					)}

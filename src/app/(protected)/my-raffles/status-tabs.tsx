@@ -115,7 +115,7 @@ export function StatusTabs({ mode }: StatusTabsProps) {
 					'hover:text-black',
 				)}
 			>
-				Participating
+				Live
 				{isParticipating && (
 					<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
 				)}

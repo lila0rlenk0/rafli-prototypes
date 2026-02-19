@@ -10,6 +10,8 @@ import { WinningStatusBadge } from './winning-status-badge';
 interface WinnersTableProps {
 	/** Initial list of winners */
 	winners: HostWinnerEntry[];
+	/** Whether the raffle concluded with partial participation */
+	isPartial?: boolean;
 	/** Public slug to revalidate host/winner pages after mutations */
 	publicSlug: string;
 }
@@ -22,6 +24,7 @@ interface WinnersTableProps {
  */
 export function WinnersTable({
 	winners: initialWinners,
+	isPartial,
 	publicSlug,
 }: WinnersTableProps) {
 	const [winners, setWinners] = useState(initialWinners);
@@ -114,7 +117,10 @@ export function WinnersTable({
 										</div>
 									</td>
 									<td className="px-6 py-4">
-										<WinningStatusBadge status={winner.status} />
+										<WinningStatusBadge
+											status={winner.status}
+											isPartial={isPartial}
+										/>
 									</td>
 									<td className="px-6 py-4 text-right">
 										<WinnerActionMenu

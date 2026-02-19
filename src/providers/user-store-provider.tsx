@@ -45,13 +45,26 @@ export function UserStoreProvider({
 	);
 
 	/**
-	 * Sync permissions and initialize mode
-	 * Runs on mount and when permissions change
+	 * Sync permissions and initialize mode after hydration completes
+	 * Waits for Zustand persist to finish hydrating from localStorage
+	 * before calling initializeMode() to prevent mode revert race condition
 	 */
 	useEffect(() => {
-		const state = store.getState();
-		state.setPermissions(permissions);
-		state.initializeMode();
+		function syncAndInitialize() {
+			const state = store.getState();
+			state.setPermissions(permissions);
+			state.initializeMode();
+		}
+
+		if (store.persist.hasHydrated()) {
+			syncAndInitialize();
+		} else {
+			const unsubscribe = store.persist.onFinishHydration(() => {
+				syncAndInitialize();
+				unsubscribe();
+			});
+			return unsubscribe;
+		}
 	}, [permissions, store]);
 
 	return (

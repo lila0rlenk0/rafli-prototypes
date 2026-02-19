@@ -455,8 +455,7 @@ export function TicketsStep() {
 						{selectedQuestion.options
 							.sort((a, b) => a.sortOrder - b.sortOrder)
 							.map(option => (
-								<div key={option.id} className="flex items-center gap-2">
-									<div className="h-4 w-4 rounded-full border border-gray-300" />
+								<div key={option.id}>
 									<span className="text-sm text-gray-500">{option.text}</span>
 								</div>
 							))}

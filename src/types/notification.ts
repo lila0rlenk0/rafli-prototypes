@@ -108,11 +108,12 @@ export const notificationMetadataSchema = z
 
 /**
  * Schema for a single notification
+ * Type uses z.string() to tolerate deprecated/new BE types without breaking the list
  */
 export const notificationSchema = z.object({
 	id: z.string(),
 	userId: z.string(),
-	type: notificationTypeSchema,
+	type: z.string(),
 	title: z.string(),
 	body: z.string(),
 	read: z.boolean(),

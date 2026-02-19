@@ -51,6 +51,10 @@ export default async function FulfillmentPage({ params }: PageProps) {
 	const winnersResult = await getRaffleWinnings(raffle.id);
 	const winners = winnersResult.success ? winnersResult.data.items : [];
 
+	const isPartial =
+		raffle.isPartialParticipation ??
+		raffle.ticketsSoldCount < raffle.minParticipants;
+
 	return (
 		<div className="container mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8">
 			<Link
@@ -68,7 +72,11 @@ export default async function FulfillmentPage({ params }: PageProps) {
 				<p className="text-gray-500">{raffle.title}</p>
 			</div>
 
-			<WinnersTable winners={winners} publicSlug={publicSlug} />
+			<WinnersTable
+				winners={winners}
+				isPartial={isPartial}
+				publicSlug={publicSlug}
+			/>
 		</div>
 	);
 }

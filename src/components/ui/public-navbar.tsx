@@ -2,10 +2,12 @@
 
 import { Menu, User, X } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import { Logo } from '@/assets/logo';
+import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +29,18 @@ interface PublicNavbarProps {
  */
 export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+
+	/**
+	 * Builds the sign-in URL with returnTo preserving current page
+	 */
+	function getSignInHref(): string {
+		const returnTo = searchParams.toString()
+			? `${pathname}?${searchParams.toString()}`
+			: pathname;
+		return `/sign-in?returnTo=${encodeURIComponent(returnTo)}`;
+	}
 
 	/**
 	 * Toggles the mobile menu open/closed state
@@ -73,6 +87,7 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 				<div className="hidden items-center gap-3 sm:flex sm:gap-8">
 					{isAuthenticated ? (
 						<>
+							<ModeSwitchButton />
 							<NotificationBell />
 							<Link href="/profile">
 								<User className="size-5" />
@@ -80,7 +95,7 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 						</>
 					) : (
 						<Button asChild className="h-9 px-4 text-sm sm:h-10 sm:px-6">
-							<Link href="/sign-in">Sign In</Link>
+							<Link href={getSignInHref()}>Sign In</Link>
 						</Button>
 					)}
 				</div>
@@ -144,13 +159,17 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 								>
 									Profile
 								</Link>
+
+								<div className="mt-4">
+									<ModeSwitchButton />
+								</div>
 							</>
 						) : (
 							<Button
 								asChild
 								className="bg-dark hover:bg-dark/90 mt-4 h-14 text-lg"
 							>
-								<Link href="/sign-in" onClick={closeMenu}>
+								<Link href={getSignInHref()} onClick={closeMenu}>
 									Sign In
 								</Link>
 							</Button>

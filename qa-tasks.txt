@@ -1,0 +1,23 @@
+QA Tasks
+
+1. Fix expired image token cache causing broken images ✅
+2. Redirect user back to previous page after social login
+3. Add cursor-pointer to raffle card bottom links and CTAs
+4. Remove radio buttons and highlight correct answer after host selects quiz answer
+5. Add "+" icon before ticket bundle labels
+6. Fix expired image token cache causing broken host avatar on raffle detail page
+7. Open host profile in new tab when clicking host name in raffle details
+8. Fix host unable to post raffle updates
+9. Fix mode switching randomly reverting between host and participant
+10. Fix host view after raffle ends — show full raffle details, not just basic info
+11. Fix notification text not displaying despite correct badge count
+12. Fix winner showing as "Unknown" in manage fulfillment (before and after winner fills info)
+13. Fix winner position starting at 0 instead of 1 in manage fulfillment
+14. Show host review flow after winner completes fulfillment
+15. Rename "Participating" tab to "Live"
+16. Fix "How it works" page not loading (currently opens blank new tab)
+17. Change "Received" to "Awaiting Platform" on manage fulfillment for partial fulfillment
+18. Allow host to view winner contact/shipping information
+19. Fix participant unable to see raffle in "Ended" tab after finalization
+20. Fix participant unable to see current raffle they joined
+21. Fix host raffle status not updating after winner receives reward

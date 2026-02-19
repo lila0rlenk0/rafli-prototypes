@@ -41,6 +41,8 @@ interface ShippingFormModalProps {
 	onOpenChange: (open: boolean) => void;
 	/** The raffle ID to claim */
 	raffleId: string;
+	/** Public slug used for revalidation after mutation */
+	publicSlug: string;
 	/** Callback when claim is successful */
 	onSuccess: () => void;
 }
@@ -54,6 +56,7 @@ export function ShippingFormModal({
 	open,
 	onOpenChange,
 	raffleId,
+	publicSlug,
 	onSuccess,
 }: ShippingFormModalProps) {
 	const {
@@ -71,17 +74,21 @@ export function ShippingFormModal({
 	 */
 	function handleClaim(data: FormType) {
 		startTransition(async () => {
-			const result = await claimWinning(raffleId, {
-				claimType: 'shipping',
-				shippingInfo: {
-					name: data.name,
-					address: data.address,
-					city: data.city,
-					zip: data.zip,
-					country: data.country,
-					phone: data.phone,
+			const result = await claimWinning(
+				raffleId,
+				{
+					claimType: 'shipping',
+					shippingInfo: {
+						name: data.name,
+						address: data.address,
+						city: data.city,
+						zip: data.zip,
+						country: data.country,
+						phone: data.phone,
+					},
 				},
-			});
+				publicSlug,
+			);
 
 			if (!result.success) {
 				toast.error('Failed to submit shipping info. Please try again.');

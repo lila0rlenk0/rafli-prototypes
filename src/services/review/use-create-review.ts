@@ -18,7 +18,7 @@ export function useCreateReview() {
 		ServiceError<ReviewErrorCode>,
 		CreateReviewPayload
 	>({
-		mutationFn: async function submitReview(payload) {
+		mutationFn: async function submitReview(payload: CreateReviewPayload) {
 			const result = await createReview(payload);
 			if (!result.success) throw serviceError(result.error);
 			return result.data;

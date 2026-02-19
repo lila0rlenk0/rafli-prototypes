@@ -20,3 +20,16 @@ export function revalidateMyRaffles() {
 export function revalidateRaffleDetail(raffleId: string) {
 	revalidateTag(`${CACHE_TAGS.RAFFLE_DETAIL}-${raffleId}`, 'max');
 }
+
+/**
+ * Revalidates winner/host fulfillment surfaces after winning status mutations.
+ * We always refresh /my-raffles and, when slug is known, both browse detail pages.
+ */
+export function revalidateWinningPaths(publicSlug?: string) {
+	revalidatePath('/my-raffles');
+
+	if (!publicSlug) return;
+
+	revalidatePath(`/browse/${publicSlug}`);
+	revalidatePath(`/browse/${publicSlug}/fulfillment`);
+}

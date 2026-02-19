@@ -38,7 +38,10 @@ export function useBulkCreatePromoCodes() {
 		ServiceError<PromoCodeErrorCode>,
 		BulkCreatePayload
 	>({
-		mutationFn: async function createCodes({ raffleId, data }) {
+		mutationFn: async function createCodes({
+			raffleId,
+			data,
+		}: BulkCreatePayload) {
 			const result = await bulkCreatePromoCodes(raffleId, data);
 			if (!result.success) throw serviceError(result.error);
 			return result.data;

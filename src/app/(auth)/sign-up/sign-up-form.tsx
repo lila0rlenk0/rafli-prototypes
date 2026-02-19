@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
+import { LogoIcon } from '@/assets/logo-icon';
+import { buildOAuthCallbackUrl } from '@/lib/auth/build-oauth-callback-url';
 import { cn } from '@/lib/utils';
 import { validateReturnTo } from '@/lib/utils/validate-return-to';
 import { registerUser } from '@/services/auth/register-user';
@@ -29,7 +31,6 @@ import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { LogoIcon } from '@/assets/logo-icon';
 
 const formSchema = z.object({
 	name: z.string().min(3, 'Name must be at least 3 characters').max(50),
@@ -120,7 +121,7 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 		// Step 1: Build callback URL with validated returnTo.
 		const result = await initiateSocialSignIn({
 			provider: 'google',
-			callbackURL: `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`,
+			callbackURL: buildOAuthCallbackUrl(window.location.origin, returnTo),
 		});
 
 		if (!result.success) {

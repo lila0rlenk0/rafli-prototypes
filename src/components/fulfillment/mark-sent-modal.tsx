@@ -37,6 +37,8 @@ interface MarkSentModalProps {
 	onOpenChange: (open: boolean) => void;
 	/** The winning ID to mark as sent */
 	winningId: string;
+	/** Public slug used for revalidation after mutation */
+	publicSlug: string;
 	/** Callback when mark sent is successful */
 	onSuccess: () => void;
 }
@@ -50,6 +52,7 @@ export function MarkSentModal({
 	open,
 	onOpenChange,
 	winningId,
+	publicSlug,
 	onSuccess,
 }: MarkSentModalProps) {
 	const {
@@ -67,10 +70,14 @@ export function MarkSentModal({
 	 */
 	function handleMarkSent(data: FormType) {
 		startTransition(async () => {
-			const result = await markSent(winningId, {
-				proofUrl: data.proofUrl,
-				hostNotes: data.hostNotes,
-			});
+			const result = await markSent(
+				winningId,
+				{
+					proofUrl: data.proofUrl,
+					hostNotes: data.hostNotes,
+				},
+				publicSlug,
+			);
 
 			if (!result.success) {
 				toast.error('Failed to mark as sent. Please try again.');

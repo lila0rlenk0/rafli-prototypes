@@ -9,11 +9,16 @@ export const NOTIFICATION_TYPE = {
 	DISPUTE_OPENED: 'dispute_opened',
 	DISPUTE_RESOLVED: 'dispute_resolved',
 	FULFILLMENT_STARTED: 'fulfillment_started',
+	HOST_DELIVERY_CONFIRMATION_REMINDER: 'host_delivery_confirmation_reminder',
+	HOST_SHIPPING_REMINDER: 'host_shipping_reminder',
 	NEW_RAFFLE_CREATED: 'new_raffle_created',
 	ORDER_CONFIRMED: 'order_confirmed',
-	PARTIAL_RAFFLE_HOST: 'partial_raffle_host',
-	PARTIAL_RAFFLE_NON_WINNER: 'partial_raffle_non_winner',
-	PARTIAL_RAFFLE_WINNER: 'partial_raffle_winner',
+	// Kept for parity with backend enum; old rows can still contain this deprecated type.
+	PARTIAL_PARTICIPATION_COMPLETED: 'partial_participation_completed',
+	PARTIAL_PARTICIPATION_HOST: 'partial_participation_host',
+	PARTIAL_PARTICIPATION_NON_WINNER: 'partial_participation_non_winner',
+	PARTIAL_PARTICIPATION_WINNER: 'partial_participation_winner',
+	PRIZE_CLAIM_REMINDER: 'prize_claim_reminder',
 	PRIZE_AUTO_CONFIRMED: 'prize_auto_confirmed',
 	PRIZE_DELIVERED: 'prize_delivered',
 	PRIZE_SENT: 'prize_sent',
@@ -38,18 +43,31 @@ export type NotificationType =
 // ==========================================
 
 /**
- * Schema for notification type enum
+ * Maps deprecated `partial_raffle_*` DB values to their current equivalents.
+ * Backend migrated these values, but pre-migration rows may still exist.
+ * Preprocess transforms them before Zod validation so the inferred type stays clean.
  */
-export const notificationTypeSchema = z.enum([
+const DEPRECATED_TYPE_MAP: Record<string, NotificationType> = {
+	partial_raffle_host: NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_HOST,
+	partial_raffle_non_winner: NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_NON_WINNER,
+	partial_raffle_winner: NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_WINNER,
+};
+
+/** Raw enum schema (current values only) */
+const rawNotificationTypeSchema = z.enum([
 	NOTIFICATION_TYPE.DELIVERY_CONFIRMED,
 	NOTIFICATION_TYPE.DISPUTE_OPENED,
 	NOTIFICATION_TYPE.DISPUTE_RESOLVED,
 	NOTIFICATION_TYPE.FULFILLMENT_STARTED,
+	NOTIFICATION_TYPE.HOST_DELIVERY_CONFIRMATION_REMINDER,
+	NOTIFICATION_TYPE.HOST_SHIPPING_REMINDER,
 	NOTIFICATION_TYPE.NEW_RAFFLE_CREATED,
 	NOTIFICATION_TYPE.ORDER_CONFIRMED,
-	NOTIFICATION_TYPE.PARTIAL_RAFFLE_HOST,
-	NOTIFICATION_TYPE.PARTIAL_RAFFLE_NON_WINNER,
-	NOTIFICATION_TYPE.PARTIAL_RAFFLE_WINNER,
+	NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_COMPLETED,
+	NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_HOST,
+	NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_NON_WINNER,
+	NOTIFICATION_TYPE.PARTIAL_PARTICIPATION_WINNER,
+	NOTIFICATION_TYPE.PRIZE_CLAIM_REMINDER,
 	NOTIFICATION_TYPE.PRIZE_AUTO_CONFIRMED,
 	NOTIFICATION_TYPE.PRIZE_DELIVERED,
 	NOTIFICATION_TYPE.PRIZE_SENT,
@@ -61,6 +79,18 @@ export const notificationTypeSchema = z.enum([
 	NOTIFICATION_TYPE.REVIEW_RECEIVED,
 	NOTIFICATION_TYPE.WINNER_CLAIMED,
 ]);
+
+/**
+ * Schema for notification type enum.
+ * Accepts deprecated `partial_raffle_*` values and maps them to current equivalents.
+ */
+export const notificationTypeSchema = z.preprocess(
+	val =>
+		typeof val === 'string' && val in DEPRECATED_TYPE_MAP
+			? DEPRECATED_TYPE_MAP[val]
+			: val,
+	rawNotificationTypeSchema,
+);
 
 /**
  * Schema for notification metadata

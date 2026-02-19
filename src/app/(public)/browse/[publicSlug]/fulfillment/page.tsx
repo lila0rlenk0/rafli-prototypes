@@ -8,8 +8,6 @@ import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleWinnings } from '@/services/winning/get-raffle-winnings';
 import { CONCLUDED_STATUSES, type ConcludedStatus } from '@/types/raffle';
 
-export const dynamic = 'force-dynamic';
-
 interface PageProps {
 	params: Promise<{
 		publicSlug: string;

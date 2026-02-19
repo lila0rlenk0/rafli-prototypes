@@ -79,9 +79,9 @@ export function WinnersTable({
 				<tbody className="divide-y divide-gray-100">
 					{winners.map(winner => (
 						<tr key={winner.id} className="text-sm">
-							<td className="px-6 py-4 font-medium">{winner.position + 1}</td>
+							<td className="px-6 py-4 font-medium">{winner.position}</td>
 							<td className="px-6 py-4">
-								{formatDisplayName(winner.userName, winner.position + 1)}
+								{formatDisplayName(winner.userName, winner.position)}
 							</td>
 							<td className="px-6 py-4 text-gray-500">{getLocation(winner)}</td>
 							<td className="px-6 py-4">

@@ -6,6 +6,7 @@ import { PublicNavbar } from '@/components/ui/public-navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { env } from '@/env/server';
 import { getSession } from '@/lib/auth/session';
+import { NotificationStoreProvider } from '@/providers/notification-store-provider';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 import { permissionSchema, type Permission } from '@/types/user-mode';
 
@@ -163,7 +164,9 @@ async function HowItWorksLayoutContent({ children }: HowItWorksLayoutProps) {
 
 	if (isAuthenticated) {
 		return (
-			<UserStoreProvider permissions={permissions}>{content}</UserStoreProvider>
+			<UserStoreProvider permissions={permissions}>
+				<NotificationStoreProvider>{content}</NotificationStoreProvider>
+			</UserStoreProvider>
 		);
 	}
 

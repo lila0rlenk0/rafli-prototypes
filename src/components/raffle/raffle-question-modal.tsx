@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckIcon, Loader2Icon, XIcon } from 'lucide-react';
+import { Loader2Icon } from 'lucide-react';
 import { ComponentProps, useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -42,10 +42,6 @@ export function RaffleQuestionModal({
 	const [selectedOptionId, setSelectedOptionId] = useState<string>('');
 	const [isLoading, setIsLoading] = useState(false);
 	const [isFetching, setIsFetching] = useState(false);
-	const [answerResult, setAnswerResult] = useState<{
-		correct: boolean;
-		selectedOptionId: string;
-	} | null>(null);
 
 	/**
 	 * Gets user-friendly error message for error codes
@@ -115,7 +111,6 @@ export function RaffleQuestionModal({
 	useEffect(() => {
 		if (!open) {
 			setSelectedOptionId('');
-			setAnswerResult(null);
 		}
 	}, [open]);
 
@@ -139,19 +134,11 @@ export function RaffleQuestionModal({
 				return;
 			}
 
-			setAnswerResult({
-				correct: result.data.correct,
-				selectedOptionId,
-			});
-
-			await new Promise(resolve => setTimeout(resolve, 1500));
-
 			if (result.data.correct) {
 				onCorrectAnswer();
 				onOpenChange(false);
 			} else {
 				toast.error('Incorrect answer. Please try again.');
-				setAnswerResult(null);
 				setSelectedOptionId('');
 			}
 		} catch (error) {
@@ -200,39 +187,32 @@ export function RaffleQuestionModal({
 					<div className="mt-4 space-y-6">
 						<p className="text-center text-lg font-semibold">{question.text}</p>
 
-						{answerResult ? (
-							<AnswerResultOptions
-								options={getSortedOptions(question.options)}
-								result={answerResult}
-							/>
-						) : (
-							<RadioGroup
-								value={selectedOptionId}
-								onValueChange={setSelectedOptionId}
-								className="mx-auto max-w-40"
-							>
-								{getSortedOptions(question.options).map(option => (
-									<div key={option.id} className="flex items-center space-x-3">
-										<RadioGroupItem
-											value={option.id}
-											id={option.id}
-											className="size-4 border-gray-300"
-										/>
-										<Label
-											htmlFor={option.id}
-											className="flex-1 cursor-pointer text-base font-normal"
-										>
-											{option.text}
-										</Label>
-									</div>
-								))}
-							</RadioGroup>
-						)}
+						<RadioGroup
+							value={selectedOptionId}
+							onValueChange={setSelectedOptionId}
+							className="mx-auto max-w-40"
+						>
+							{getSortedOptions(question.options).map(option => (
+								<div key={option.id} className="flex items-center space-x-3">
+									<RadioGroupItem
+										value={option.id}
+										id={option.id}
+										className="size-4 border-gray-300"
+									/>
+									<Label
+										htmlFor={option.id}
+										className="flex-1 cursor-pointer text-base font-normal"
+									>
+										{option.text}
+									</Label>
+								</div>
+							))}
+						</RadioGroup>
 
 						<div className="flex justify-center pt-4">
 							<Button
 								onClick={handleSubmit}
-								disabled={isLoading || !selectedOptionId || !!answerResult}
+								disabled={isLoading || !selectedOptionId}
 								className="hover:bg-background w-full max-w-xs cursor-pointer border-2 border-black bg-black hover:text-black"
 							>
 								{isLoading && (
@@ -245,47 +225,6 @@ export function RaffleQuestionModal({
 				) : null}
 			</DialogContent>
 		</Dialog>
-	);
-}
-
-interface AnswerResultOptionsProps {
-	options: RaffleQuestion['options'];
-	result: { correct: boolean; selectedOptionId: string };
-}
-
-/**
- * Renders quiz options with correct/wrong visual feedback
- */
-function AnswerResultOptions({ options, result }: AnswerResultOptionsProps) {
-	/**
-	 * Gets styling classes for an option based on answer result
-	 */
-	function getOptionClasses(optionId: string): string {
-		if (optionId !== result.selectedOptionId) {
-			return 'border-gray-200 bg-gray-50 text-gray-400';
-		}
-		return result.correct
-			? 'border-green-300 bg-green-50 text-green-800'
-			: 'border-red-300 bg-red-50 text-red-800';
-	}
-
-	return (
-		<div className="mx-auto max-w-40 space-y-2">
-			{options.map(option => (
-				<div
-					key={option.id}
-					className={`flex items-center space-x-3 rounded-lg border px-3 py-2 ${getOptionClasses(option.id)}`}
-				>
-					{option.id === result.selectedOptionId &&
-						(result.correct ? (
-							<CheckIcon className="size-4 shrink-0 text-green-600" />
-						) : (
-							<XIcon className="size-4 shrink-0 text-red-600" />
-						))}
-					<span className="text-base">{option.text}</span>
-				</div>
-			))}
-		</div>
 	);
 }
 

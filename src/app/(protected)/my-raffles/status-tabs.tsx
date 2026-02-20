@@ -1,13 +1,10 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useUserStore } from '@/providers/user-store-provider';
 import { RAFFLE_STATUS } from '@/types/raffle';
-import { USER_MODE, type UserMode } from '@/types/user-mode';
+import { USER_MODE } from '@/types/user-mode';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-
-interface StatusTabsProps {
-	mode?: UserMode | null;
-}
 
 /**
  * StatusTabs Component
@@ -18,9 +15,11 @@ interface StatusTabsProps {
  * - Ended: Cancelled, Completed, Ended or Fulfilling
  * with an indicator line below the active tab.
  *
- * @param mode - User mode to determine which tabs to show
+ * Reads mode from Zustand store (not server prop) to stay in sync
+ * with other client components after mode switches
  */
-export function StatusTabs({ mode }: StatusTabsProps) {
+export function StatusTabs() {
+	const mode = useUserStore(state => state.mode);
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();

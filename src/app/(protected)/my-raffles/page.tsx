@@ -131,7 +131,7 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 
 			<div className="relative mb-8 flex w-full items-center justify-center">
 				<Suspense>
-					<StatusTabs mode={mode} />
+					<StatusTabs />
 				</Suspense>
 
 				{isHost && (

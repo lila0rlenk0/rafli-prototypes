@@ -4,6 +4,7 @@ import {
 	createContext,
 	useContext,
 	useEffect,
+	useMemo,
 	useState,
 	type ReactNode,
 } from 'react';
@@ -37,10 +38,17 @@ export function UserStoreProvider({
 	children,
 	permissions,
 }: UserStoreProviderProps) {
+	// Stabilize permissions reference — server renders produce a new array
+	// each time even when contents are identical (same JWT, same permissions).
+	// Without this, the useEffect below re-fires on every router.refresh(),
+	// causing redundant initializeMode() calls and unnecessary cookie writes.
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	const stablePermissions = useMemo(() => permissions, [permissions.join()]);
+
 	const [store] = useState(() =>
 		createUserStore({
 			mode: null, // Start as null, will be initialized after permissions sync
-			permissions,
+			permissions: stablePermissions,
 		}),
 	);
 
@@ -52,7 +60,7 @@ export function UserStoreProvider({
 	useEffect(() => {
 		function syncAndInitialize() {
 			const state = store.getState();
-			state.setPermissions(permissions);
+			state.setPermissions(stablePermissions);
 			state.initializeMode();
 		}
 
@@ -65,7 +73,7 @@ export function UserStoreProvider({
 			});
 			return unsubscribe;
 		}
-	}, [permissions, store]);
+	}, [stablePermissions, store]);
 
 	return (
 		<UserStoreContext.Provider value={store}>

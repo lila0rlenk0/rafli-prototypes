@@ -1,7 +1,10 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
+import { getNavigationPath } from '@/components/notifications/get-navigation-path';
 import { NotificationIcon } from '@/components/notifications/notification-icon';
 import { cn } from '@/lib/utils';
 import { formatTimeAgo } from '@/lib/utils/format-time-ago';
@@ -14,11 +17,12 @@ interface NotificationsTableProps {
 }
 
 /**
- * Table displaying notifications with mark-as-read on click
+ * Table displaying notifications with mark-as-read and navigation
  *
  * @param notifications - Array of notifications to display
  */
 export function NotificationsTable({ notifications }: NotificationsTableProps) {
+	const router = useRouter();
 	const [readIds, setReadIds] = useState<Set<string>>(new Set());
 	const decrementUnreadCount = useNotificationStore(
 		s => s.decrementUnreadCount,
@@ -32,14 +36,20 @@ export function NotificationsTable({ notifications }: NotificationsTableProps) {
 	}
 
 	/**
-	 * Marks notification as read optimistically
+	 * Marks unread notification as read and navigates to relevant page
 	 */
 	function handleClick(notification: Notification) {
-		if (isRead(notification)) return;
+		if (!isRead(notification)) {
+			setReadIds(prev => new Set(prev).add(notification.id));
+			decrementUnreadCount();
+			markNotificationRead(notification.id);
+			toast.success('Notification marked as read');
+		}
 
-		setReadIds(prev => new Set(prev).add(notification.id));
-		decrementUnreadCount();
-		markNotificationRead(notification.id);
+		const path = getNavigationPath(notification);
+		if (path) {
+			router.push(path);
+		}
 	}
 
 	if (notifications.length === 0) {

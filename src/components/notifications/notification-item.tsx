@@ -40,8 +40,11 @@ function getNavigationPath(notification: Notification): string | null {
 			const slug = metadata?.publicSlug ?? metadata?.raffleId;
 			return slug ? `/browse/${slug}` : null;
 		}
+		// Host fulfillment notifications — all route to the fulfillment page
 		case NOTIFICATION_TYPE.HOST_SHIPPING_REMINDER:
-		case NOTIFICATION_TYPE.HOST_DELIVERY_CONFIRMATION_REMINDER: {
+		case NOTIFICATION_TYPE.HOST_DELIVERY_CONFIRMATION_REMINDER:
+		case NOTIFICATION_TYPE.WINNER_CLAIMED:
+		case NOTIFICATION_TYPE.DELIVERY_CONFIRMED: {
 			const slug = metadata?.publicSlug ?? metadata?.raffleId;
 			return slug ? `/browse/${slug}/fulfillment` : null;
 		}
@@ -54,8 +57,6 @@ function getNavigationPath(notification: Notification): string | null {
 		case NOTIFICATION_TYPE.PRIZE_SENT:
 		case NOTIFICATION_TYPE.PRIZE_DELIVERED:
 		case NOTIFICATION_TYPE.PRIZE_AUTO_CONFIRMED:
-		case NOTIFICATION_TYPE.DELIVERY_CONFIRMED:
-		case NOTIFICATION_TYPE.WINNER_CLAIMED:
 			return '/profile';
 
 		// Dispute notifications - go to profile

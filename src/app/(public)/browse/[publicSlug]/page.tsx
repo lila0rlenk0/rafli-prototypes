@@ -1,6 +1,8 @@
 import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeline';
 import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
+import { RaffleAutoRefresh } from '@/components/raffle/raffle-auto-refresh';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
+import { RaffleDrawCard } from '@/components/raffle/raffle-draw-card';
 import { PrizeBreakdownCard } from '@/components/raffle/prize-breakdown-card';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RevenueBreakdownCard } from '@/components/raffle/revenue-breakdown-card';
@@ -260,10 +262,20 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	/**
+	 * Checks if draw-in-progress card should be shown
+	 * Only during `ended` status — VRF in flight, winners not yet assigned
+	 * Intentionally excludes `fulfilling`/`completed` to avoid masking data inconsistencies
+	 */
+	function shouldShowDrawInProgress(): boolean {
+		return raffle.status === RAFFLE_STATUS.ENDED && !hasWinners;
+	}
+
+	/**
 	 * Checks if "not won" card should be shown
+	 * Requires hasWinners so we don't show "not won" during VRF draw
 	 */
 	function shouldShowNotWonCard(): boolean {
-		return isConcluded && !didUserWin && !isOwner;
+		return isConcluded && !didUserWin && !isOwner && hasWinners;
 	}
 
 	/**
@@ -555,6 +567,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</>
 					)}
 
+					{shouldShowDrawInProgress() && <RaffleDrawCard />}
+
 					{shouldShowNotWonCard() && (
 						<RaffleNotWonCard
 							status={raffle.status}
@@ -636,6 +650,13 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</p>
 						</div>
 					)}
+
+					{/* Auto-refresh during transitional states — self-disables via internal logic */}
+					<RaffleAutoRefresh
+						status={raffle.status}
+						endAt={raffle.endAt}
+						hasWinners={hasWinners}
+					/>
 				</div>
 			</div>
 			<PaymentModalWrapper

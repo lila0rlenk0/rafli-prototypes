@@ -17,37 +17,6 @@ interface TimeRemaining {
 }
 
 /**
- * Calculates time remaining from now until the end date
- * @param endDateString - ISO datetime string for raffle end
- * @returns Object with days, hours, minutes, seconds, and expiration status
- */
-function calculateTimeRemaining(endDateString: string): TimeRemaining {
-	const now = new Date();
-	const end = new Date(endDateString);
-	const secondsRemaining = differenceInSeconds(end, now);
-
-	if (secondsRemaining <= 0) {
-		return {
-			days: 0,
-			hours: 0,
-			minutes: 0,
-			seconds: 0,
-			isExpired: true,
-		};
-	}
-
-	const duration = intervalToDuration({ start: now, end });
-
-	return {
-		days: duration.days || 0,
-		hours: duration.hours || 0,
-		minutes: duration.minutes || 0,
-		seconds: duration.seconds || 0,
-		isExpired: false,
-	};
-}
-
-/**
  * RaffleCountdown Component
  *
  * Displays a live countdown timer showing days, hours, minutes, and seconds
@@ -57,10 +26,40 @@ function calculateTimeRemaining(endDateString: string): TimeRemaining {
  * Features:
  * - Real-time countdown updated every second
  * - Smooth animations on value changes using framer-motion
- * - Handles expired raffles (shows 00:00:00:00)
+ * - Handles expired raffles (shows "Time's up!" message)
  * - Automatic cleanup on component unmount
  */
 export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
+	/**
+	 * Calculates time remaining from now until the end date
+	 * Uses date-fns for precise second-level diffing and duration decomposition
+	 */
+	function calculateTimeRemaining(endDateString: string): TimeRemaining {
+		const now = new Date();
+		const end = new Date(endDateString);
+		const secondsRemaining = differenceInSeconds(end, now);
+
+		if (secondsRemaining <= 0) {
+			return {
+				days: 0,
+				hours: 0,
+				minutes: 0,
+				seconds: 0,
+				isExpired: true,
+			};
+		}
+
+		const duration = intervalToDuration({ start: now, end });
+
+		return {
+			days: duration.days || 0,
+			hours: duration.hours || 0,
+			minutes: duration.minutes || 0,
+			seconds: duration.seconds || 0,
+			isExpired: false,
+		};
+	}
+
 	const [mounted, setMounted] = useState(false);
 	const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() =>
 		calculateTimeRemaining(endAt),
@@ -91,6 +90,17 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 	}, [updateCountdown]);
 
 	if (!mounted) return null;
+
+	// Once expired, replace frozen zeros with a clear message
+	if (timeRemaining.isExpired) {
+		return (
+			<div className="flex items-center justify-center rounded-2xl bg-[#DFFFED] p-4">
+				<p className="font-clash-display text-2xl font-semibold">
+					Time&apos;s up!
+				</p>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex items-center justify-center gap-4 rounded-2xl bg-[#DFFFED] p-4">

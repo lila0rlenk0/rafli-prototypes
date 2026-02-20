@@ -31,7 +31,7 @@ export function WinnerCard({
 	 */
 	function getDisplayName(): string {
 		if (isCurrentUser) return 'You';
-		return winner.name || `Winner #${winner.position + 1}`;
+		return winner.name || `Winner #${winner.position}`;
 	}
 
 	return (

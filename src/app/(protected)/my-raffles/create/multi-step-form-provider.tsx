@@ -16,12 +16,13 @@ import { z } from 'zod';
 
 import type { CreatePromoCodeData } from '@/components/promo-code/create-promo-code-modal';
 import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
-import { createRaffle } from '@/services/raffle/create-raffle';
 import { bulkCreatePromoCodes } from '@/services/promo-code/bulk-create-promo-codes';
+import { createRaffle } from '@/services/raffle/create-raffle';
 import { publishRaffle } from '@/services/raffle/publish-raffle';
 import { uploadCover } from '@/services/raffle/upload-cover';
 import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
 import type { Category } from '@/types/category';
+import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { Question } from '@/types/question';
 import { useRaffleDraft } from './hooks/use-raffle-draft';
 import { SaveDraftModal } from './save-draft-modal';
@@ -286,6 +287,41 @@ export function MultiStepFormProvider({
 	const isLastStep = currentStep === totalSteps - 1;
 
 	/**
+	 * Maps server error codes to user-facing messages and optional form field targets
+	 * Field-targeted errors trigger form.setError + navigate to the relevant step
+	 */
+	function getRaffleServerError(code: RaffleErrorCode): {
+		message: string;
+		field?: keyof RaffleFormData;
+	} {
+		switch (code) {
+			case RAFFLE_ERROR_CODES.MIN_PARTICIPANTS_MUST_EXCEED_WINNERS:
+				return {
+					message:
+						'Minimum participants must be greater than the number of winners',
+					field: 'minParticipants',
+				};
+			case RAFFLE_ERROR_CODES.INVALID_DATES:
+				return {
+					message: 'Invalid dates. End date must be after start date.',
+					field: 'endDate',
+				};
+			case RAFFLE_ERROR_CODES.NOT_DRAFT:
+				return {
+					message: 'Raffle is not in draft status and cannot be edited',
+				};
+			case RAFFLE_ERROR_CODES.PERMISSION_DENIED:
+				return {
+					message: 'You do not have permission to perform this action',
+				};
+			case RAFFLE_ERROR_CODES.MISSING_FIELDS:
+				return { message: 'Some required fields are missing' };
+			default:
+				return { message: 'Failed to create raffle' };
+		}
+	}
+
+	/**
 	 * Handles raffle creation by calling the server action
 	 * Shows modal on success instead of redirecting immediately
 	 *
@@ -321,7 +357,14 @@ export function MultiStepFormProvider({
 				});
 
 				if (!result.success) {
-					toast.error('Failed to create raffle');
+					const { message, field } = getRaffleServerError(result.error);
+					toast.error(message);
+					// Navigate to the relevant step and set field-level error
+					if (field) {
+						form.setError(field, { message });
+						// Tickets step = index 1 (minParticipants, endDate live there)
+						setCurrentStep(1);
+					}
 					return;
 				}
 

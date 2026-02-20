@@ -136,8 +136,8 @@ export function TicketsStep() {
 		!errors.maxParticipants &&
 		!errors.checkInQuestion;
 
-	// Clear only this step's fields
-	const handleClearAll = () => {
+	/** Clears only this step's fields and pending promo codes */
+	function handleClearAll() {
 		setValue('startDate', '');
 		setValue('endDate', '');
 		setValue('pricePerTicket', 0);
@@ -146,11 +146,10 @@ export function TicketsStep() {
 		setValue('maxParticipants', 0);
 		setValue('checkInQuestion', '');
 		clearPendingPromoCodes();
-	};
+	}
 
-	// Handle continue with validation
-	const handleContinue = async () => {
-		// Trigger validation for current step fields
+	/** Validates current step fields before advancing */
+	async function handleContinue() {
 		const isValid = await trigger([
 			'startDate',
 			'endDate',
@@ -164,7 +163,7 @@ export function TicketsStep() {
 		if (isValid) {
 			nextStep();
 		}
-	};
+	}
 
 	return (
 		<div className="flex w-full flex-col gap-6">
@@ -297,6 +296,9 @@ export function TicketsStep() {
 							placeholder="0"
 							{...register('minParticipants', { valueAsNumber: true })}
 						/>
+						<span className="text-xs text-gray-500">
+							Set to 0 to disable. Must exceed number of winners when enabled.
+						</span>
 						{touchedFields.minParticipants && errors.minParticipants && (
 							<span className="text-sm text-red-500">
 								{errors.minParticipants.message}

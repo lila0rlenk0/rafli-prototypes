@@ -16,6 +16,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from '@/components/ui/accordion';
+import { BackLink } from '@/components/ui/back-link';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getSession } from '@/lib/auth/session';
@@ -34,7 +35,7 @@ import {
 } from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
 import type { Winning } from '@/types/winning';
-import { ArrowLeft, InfoIcon } from 'lucide-react';
+import { InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense, type ComponentProps } from 'react';
@@ -349,10 +350,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 	return (
 		<div className="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
-			<Link href="/browse" className="flex w-fit items-center gap-2">
-				<ArrowLeft className="size-4" />
-				<span className="font-semibold">Back to Raffle Browse</span>
-			</Link>
+			<BackLink fallbackHref="/browse" label="Back to Raffle Browse" />
 
 			<div className="flex w-full flex-col gap-8 lg:flex-row">
 				<div className="w-full space-y-4">

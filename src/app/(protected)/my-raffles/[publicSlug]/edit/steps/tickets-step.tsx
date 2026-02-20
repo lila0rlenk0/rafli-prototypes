@@ -361,6 +361,9 @@ export function TicketsStep() {
 							placeholder="0"
 							{...register('minParticipants', { valueAsNumber: true })}
 						/>
+						<span className="text-xs text-gray-500">
+							Set to 0 to disable. Must exceed number of winners when enabled.
+						</span>
 						{touchedFields.minParticipants && errors.minParticipants && (
 							<span className="text-sm text-red-500">
 								{errors.minParticipants.message}

@@ -5,15 +5,17 @@ export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'audio/mp3'];
 
 /**
- * Field restrictions for edit mode
+ * Schema for edit-mode field restrictions
  * Determines which fields should be disabled based on raffle state
  */
-export interface FieldRestrictions {
+export const fieldRestrictionsSchema = z.object({
 	/** Start date locked if raffle is live or has participants */
-	startDateLocked: boolean;
+	startDateLocked: z.boolean(),
 	/** Ticket price locked if any tickets have been sold (participantsCount > 0) */
-	priceLocked: boolean;
-}
+	priceLocked: z.boolean(),
+});
+
+export type FieldRestrictions = z.infer<typeof fieldRestrictionsSchema>;
 
 const fileSchema = z
 	.instanceof(File)
@@ -121,6 +123,19 @@ export const editFormSchema = z
 		},
 		{
 			message: 'Min participants cannot be greater than max participants',
+			path: ['minParticipants'],
+		},
+	)
+	// minParticipants must exceed numberOfWinners when enabled (non-zero)
+	// Backend enforces this — replicate client-side for proactive feedback
+	.refine(
+		data => {
+			if (data.minParticipants === 0) return true;
+			return data.minParticipants > data.numberOfWinners;
+		},
+		{
+			message:
+				'Minimum participants must be greater than the number of winners, or set to 0 to disable',
 			path: ['minParticipants'],
 		},
 	)

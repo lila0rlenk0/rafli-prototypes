@@ -29,6 +29,13 @@ export const RAFFLE_ERROR_CODES = {
 	NOT_DRAFT: 'core:raffle:not-draft',
 	/** Question not found for this raffle */
 	QUESTION_NOT_FOUND: 'core:raffle:question-not-found',
+	/** Min participants must be greater than number of winners */
+	MIN_PARTICIPANTS_MUST_EXCEED_WINNERS:
+		'core:raffle:min-participants-must-exceed-winners',
+	/** Required fields are missing */
+	MISSING_FIELDS: 'core:raffle:missing-fields',
+	/** Raffle cannot be cancelled in its current state */
+	NOT_CANCELLABLE: 'core:raffle:not-cancellable',
 
 	// Gallery errors
 	/** Maximum gallery images limit exceeded */

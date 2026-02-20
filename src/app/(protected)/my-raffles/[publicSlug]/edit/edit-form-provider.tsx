@@ -17,6 +17,7 @@ import { z } from 'zod';
 
 import { computeRaffleDiff, hasRaffleChanges } from '@/lib/utils/raffle-diff';
 import type { Category } from '@/types/category';
+import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { Question } from '@/types/question';
 import { publishRaffle } from '@/services/raffle/publish-raffle';
 import { updateRaffle } from '@/services/raffle/update-raffle';
@@ -66,40 +67,6 @@ interface EditFormProviderProps {
 	categories: Category[];
 	userName: string;
 	totalRaffles: number;
-}
-
-/**
- * Checks if form has any changes compared to original default values
- * Also checks for new image uploads
- *
- * @param formData - Current form data
- * @param originalDefaults - Original default values
- * @returns true if there are changes, false otherwise
- */
-function hasFormChanges(
-	formData: EditFormData,
-	originalDefaults: EditFormData,
-): boolean {
-	// Check for new images
-	const hasNewImages = formData.coverImage && formData.coverImage.length > 0;
-	if (hasNewImages) {
-		return true;
-	}
-
-	// Check field changes (excluding coverImage which is handled separately)
-	return (
-		formData.title !== originalDefaults.title ||
-		formData.description !== originalDefaults.description ||
-		formData.price !== originalDefaults.price ||
-		formData.category !== originalDefaults.category ||
-		formData.startDate !== originalDefaults.startDate ||
-		formData.endDate !== originalDefaults.endDate ||
-		formData.pricePerTicket !== originalDefaults.pricePerTicket ||
-		formData.numberOfWinners !== originalDefaults.numberOfWinners ||
-		formData.minParticipants !== originalDefaults.minParticipants ||
-		formData.maxParticipants !== originalDefaults.maxParticipants ||
-		formData.checkInQuestion !== originalDefaults.checkInQuestion
-	);
 }
 
 /**
@@ -179,6 +146,68 @@ export function EditFormProvider({
 	const isLastStep = currentStep === totalSteps - 1;
 
 	/**
+	 * Checks if form has any changes compared to original default values
+	 * Checks new image uploads first, then compares each field
+	 */
+	function hasFormChanges(
+		formData: EditFormData,
+		originalDefaults: EditFormData,
+	): boolean {
+		// New images are always a change
+		if (formData.coverImage && formData.coverImage.length > 0) return true;
+
+		// Compare each field (excluding coverImage which is handled above)
+		return (
+			formData.title !== originalDefaults.title ||
+			formData.description !== originalDefaults.description ||
+			formData.price !== originalDefaults.price ||
+			formData.category !== originalDefaults.category ||
+			formData.startDate !== originalDefaults.startDate ||
+			formData.endDate !== originalDefaults.endDate ||
+			formData.pricePerTicket !== originalDefaults.pricePerTicket ||
+			formData.numberOfWinners !== originalDefaults.numberOfWinners ||
+			formData.minParticipants !== originalDefaults.minParticipants ||
+			formData.maxParticipants !== originalDefaults.maxParticipants ||
+			formData.checkInQuestion !== originalDefaults.checkInQuestion
+		);
+	}
+
+	/**
+	 * Maps server error codes to user-facing messages and optional form field targets
+	 * Field-targeted errors trigger form.setError + navigate to the relevant step
+	 */
+	function getRaffleServerError(code: RaffleErrorCode): {
+		message: string;
+		field?: keyof EditFormData;
+	} {
+		switch (code) {
+			case RAFFLE_ERROR_CODES.MIN_PARTICIPANTS_MUST_EXCEED_WINNERS:
+				return {
+					message:
+						'Minimum participants must be greater than the number of winners',
+					field: 'minParticipants',
+				};
+			case RAFFLE_ERROR_CODES.INVALID_DATES:
+				return {
+					message: 'Invalid dates. End date must be after start date.',
+					field: 'endDate',
+				};
+			case RAFFLE_ERROR_CODES.NOT_DRAFT:
+				return {
+					message: 'Raffle is not in draft status and cannot be edited',
+				};
+			case RAFFLE_ERROR_CODES.PERMISSION_DENIED:
+				return {
+					message: 'You do not have permission to perform this action',
+				};
+			case RAFFLE_ERROR_CODES.MISSING_FIELDS:
+				return { message: 'Some required fields are missing' };
+			default:
+				return { message: 'Failed to update raffle' };
+		}
+	}
+
+	/**
 	 * Handles raffle update by computing diff and calling the update service
 	 * Only sends changed fields to the backend (partial update)
 	 *
@@ -239,7 +268,15 @@ export function EditFormProvider({
 					const result = await updateRaffle(raffle.id, diff);
 
 					if (!result.success) {
-						toast.error('Failed to update raffle');
+						const { message, field } = getRaffleServerError(result.error);
+						toast.error(message);
+						// Navigate to the relevant step and set field-level error
+						if (field) {
+							form.setError(field, { message });
+							// Tickets step = index 1 (minParticipants, endDate live there)
+							setCurrentStep(1);
+						}
+						setIsUpdating(false);
 						return;
 					}
 				}

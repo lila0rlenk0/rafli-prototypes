@@ -157,6 +157,19 @@ export const raffleFormSchema = z
 			path: ['minParticipants'],
 		},
 	)
+	// minParticipants must exceed numberOfWinners when enabled (non-zero)
+	// Backend enforces this — replicate client-side for proactive feedback
+	.refine(
+		data => {
+			if (data.minParticipants === 0) return true;
+			return data.minParticipants > data.numberOfWinners;
+		},
+		{
+			message:
+				'Minimum participants must be greater than the number of winners, or set to 0 to disable',
+			path: ['minParticipants'],
+		},
+	)
 	// TODO: Temporary rule - minimum 30 days gap between start and end
 	// Remove this validation when no longer needed
 	.refine(

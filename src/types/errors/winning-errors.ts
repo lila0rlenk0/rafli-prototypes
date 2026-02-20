@@ -32,6 +32,12 @@ export const WINNING_ERROR_CODES = {
 	NOT_CLAIMED: 'core:winning:not-claimed',
 	/** Permission denied (not raffle host) */
 	PERMISSION_DENIED: 'core:winning:permission-denied',
+	/** Partial participation — no fulfillment needed (cash distribution) */
+	PARTIAL_NO_FULFILLMENT: 'core:winning:partial-participation-no-fulfillment',
+	/** Invalid state shape for status transition */
+	INVALID_STATE_SHAPE: 'core:winning:invalid-state-shape',
+	/** Raffle not found */
+	RAFFLE_NOT_FOUND: 'core:winning:raffle-not-found',
 
 	/** Generic fetch failure (Zod validation, etc.) */
 	FETCH_FAILED: 'fetch_failed',

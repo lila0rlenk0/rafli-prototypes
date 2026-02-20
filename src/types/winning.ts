@@ -14,12 +14,19 @@ export const WINNING_STATUS = {
 	RESOLVED: 'resolved',
 } as const;
 
+export const CLAIM_TYPE = {
+	SHIPPING: 'shipping',
+	WALLET: 'wallet',
+} as const;
+
 // ==========================================
 // Types from Constants
 // ==========================================
 
 export type WinningStatus =
 	(typeof WINNING_STATUS)[keyof typeof WINNING_STATUS];
+
+export type ClaimType = (typeof CLAIM_TYPE)[keyof typeof CLAIM_TYPE];
 
 // ==========================================
 // Schemas
@@ -39,6 +46,11 @@ export const winningStatusSchema = z.enum([
 ]);
 
 /**
+ * Zod schema for ClaimType
+ */
+export const claimTypeSchema = z.enum([CLAIM_TYPE.SHIPPING, CLAIM_TYPE.WALLET]);
+
+/**
  * Schema for shipping address information
  */
 export const shippingInfoSchema = z.object({
@@ -47,11 +59,12 @@ export const shippingInfoSchema = z.object({
 	city: z.string(),
 	zip: z.string(),
 	country: z.string(),
-	phone: z.string().nullable().optional(),
+	phone: z.string().nullable(),
 });
 
 /**
  * Schema for a single winning entry
+ * Matches backend WinningResponseDto — includes all 5 fields previously stripped
  */
 export const winningSchema = z.object({
 	id: z.string(),
@@ -59,14 +72,19 @@ export const winningSchema = z.object({
 	userId: z.string(),
 	position: z.number(),
 	status: winningStatusSchema,
+	claimType: claimTypeSchema.nullable(),
 	claimedAt: z.string().nullable(),
 	sentAt: z.string().nullable(),
 	deliveredAt: z.string().nullable(),
 	receivedAt: z.string().nullable(),
-	shippingInfo: shippingInfoSchema.nullable().optional(),
-	proofUrl: z.string().nullable().optional(),
-	hostNotes: z.string().nullable().optional(),
-	distributionAmount: z.string().nullable().optional(),
+	disputedAt: z.string().nullable(),
+	resolvedAt: z.string().nullable(),
+	shippingInfo: shippingInfoSchema.nullable(),
+	proofUrl: z.string().nullable(),
+	hostNotes: z.string().nullable(),
+	distributionAmount: z.string().nullable(),
+	createdAt: z.string(),
+	updatedAt: z.string(),
 });
 
 /**
@@ -74,6 +92,7 @@ export const winningSchema = z.object({
  */
 export const listWinningsResponseSchema = z.object({
 	winnings: z.array(winningSchema),
+	total: z.number(),
 });
 
 // ==========================================
@@ -117,37 +136,14 @@ export type MarkSentPayload = z.infer<typeof markSentPayloadSchema>;
 // Host Winner Entry (for fulfillment management)
 // ==========================================
 
-export const CLAIM_TYPE = {
-	SHIPPING: 'shipping',
-	WALLET: 'wallet',
-} as const;
-
-export type ClaimType = (typeof CLAIM_TYPE)[keyof typeof CLAIM_TYPE];
-
 /**
  * Schema for a winner entry in host's fulfillment list view
+ * Extends winningSchema with host-specific display fields (userName, userAvatar)
+ * Backend: HostWinnerDto extends WinningResponseDto
  */
-export const hostWinnerEntrySchema = z.object({
-	id: z.string(),
-	position: z.number(),
-	raffleId: z.string(),
-	userId: z.string(),
+export const hostWinnerEntrySchema = winningSchema.extend({
 	userName: z.string().nullable(),
 	userAvatar: z.string().nullable(),
-	status: winningStatusSchema,
-	claimType: z.enum([CLAIM_TYPE.SHIPPING, CLAIM_TYPE.WALLET]).nullable(),
-	shippingInfo: shippingInfoSchema.nullable(),
-	claimedAt: z.string().nullable(),
-	sentAt: z.string().nullable(),
-	deliveredAt: z.string().nullable(),
-	receivedAt: z.string().nullable(),
-	disputedAt: z.string().nullable(),
-	resolvedAt: z.string().nullable(),
-	hostNotes: z.string().nullable(),
-	proofUrl: z.string().nullable(),
-	createdAt: z.string(),
-	updatedAt: z.string(),
-	distributionAmount: z.string().nullable().optional(),
 });
 
 /**

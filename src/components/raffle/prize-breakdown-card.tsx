@@ -5,6 +5,8 @@ import { Separator } from '../ui/separator';
 interface PrizeBreakdownCardProps {
 	raffle: Raffle;
 	isPartialParticipation: boolean;
+	/** Per-winning distribution amount — overrides raffle.perWinnerAmount when present */
+	distributionAmount?: string | null;
 }
 
 /**
@@ -17,6 +19,7 @@ interface PrizeBreakdownCardProps {
 export function PrizeBreakdownCard({
 	raffle,
 	isPartialParticipation,
+	distributionAmount,
 }: PrizeBreakdownCardProps) {
 	/**
 	 * Formats a nullable string amount as currency
@@ -98,7 +101,7 @@ export function PrizeBreakdownCard({
 						<div className="flex justify-between text-sm">
 							<span className="font-semibold">Your Share</span>
 							<span className="font-semibold">
-								{formatAmount(raffle.perWinnerAmount)}
+								{formatAmount(distributionAmount ?? raffle.perWinnerAmount)}
 							</span>
 						</div>
 					</div>

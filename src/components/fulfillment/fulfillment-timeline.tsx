@@ -84,7 +84,14 @@ export function FulfillmentTimeline({
 		}
 
 		// delivered: steps 1-3 completed, step 4 active
-		if (currentStatus === 'delivered' || currentStatus === 'disputed') {
+		if (currentStatus === 'delivered') {
+			if (step <= 3) return 'completed';
+			if (step === 4) return 'active';
+			return 'pending';
+		}
+
+		// disputed: steps 1-3 completed, step 4 active (informational — no action)
+		if (currentStatus === 'disputed') {
 			if (step <= 3) return 'completed';
 			if (step === 4) return 'active';
 			return 'pending';
@@ -199,6 +206,54 @@ export function FulfillmentTimeline({
 	}
 
 	/**
+	 * Gets step 4 content when status is 'disputed'
+	 * No action buttons — dispute is handled externally
+	 */
+	function getDisputedStep() {
+		return {
+			title: 'Dispute in Progress',
+			description: isHost
+				? 'Winner has opened a dispute. Awaiting resolution.'
+				: 'Your dispute is being reviewed. We will notify you of the outcome.',
+			action: null,
+		};
+	}
+
+	/**
+	 * Gets step 4 content when status is 'resolved'
+	 * Admin resolved a dispute — informational only, no actions
+	 */
+	function getResolvedStep() {
+		return {
+			title: 'Dispute Resolved',
+			description: isHost
+				? 'The dispute has been resolved by an administrator.'
+				: 'Your dispute has been resolved. Check your email for details.',
+			action: null,
+		};
+	}
+
+	/**
+	 * Computes auto-confirm deadline text for delivered status
+	 * Backend auto-confirms receipt 48h after deliveredAt
+	 */
+	function getAutoConfirmText(): string | null {
+		if (!winning.deliveredAt) return null;
+
+		const deadline = new Date(winning.deliveredAt);
+		deadline.setHours(deadline.getHours() + 48);
+
+		const now = new Date();
+		const hoursLeft = Math.max(
+			0,
+			Math.ceil((deadline.getTime() - now.getTime()) / (1_000 * 60 * 60)),
+		);
+
+		if (hoursLeft <= 0) return 'Auto-confirming soon...';
+		return `Auto-confirms in ${hoursLeft}h if not confirmed`;
+	}
+
+	/**
 	 * Gets step 4 (Delivered) content based on role and status
 	 */
 	function getDeliveredStep() {
@@ -215,11 +270,18 @@ export function FulfillmentTimeline({
 			};
 		}
 
+		/** Show auto-confirm countdown for delivered status (winner only) */
+		const autoConfirm =
+			currentStatus === 'delivered' ? getAutoConfirmText() : null;
+		const deliveredDescription = autoConfirm
+			? `Please confirm when you receive your prize. ${autoConfirm}`
+			: 'Please confirm when you receive your prize';
+
 		return {
 			title: isReceived ? 'Completed' : 'Delivered',
 			description: isReceived
 				? 'Prize delivered successfully'
-				: 'Please confirm when you receive your prize',
+				: deliveredDescription,
 			action:
 				status === 'active' && !isReceived ? (
 					<button
@@ -292,16 +354,10 @@ export function FulfillmentTimeline({
 
 	/**
 	 * Handles successful shipping form submission
+	 * Uses real winning data from backend instead of dummy placeholder
 	 */
-	function handleShippingSuccess() {
-		// Update local state to reflect shipping info submitted
-		setShippingInfo({
-			name: 'Submitted',
-			address: '',
-			city: '',
-			zip: '',
-			country: '',
-		});
+	function handleShippingSuccess(updatedWinning: Winning) {
+		setShippingInfo(updatedWinning.shippingInfo ?? null);
 		setCurrentStatus('awaiting_host');
 		router.refresh();
 	}
@@ -317,7 +373,13 @@ export function FulfillmentTimeline({
 	const claimStep = getClaimStep();
 	const preparingStep = getPreparingStep();
 	const shippedStep = getShippedStep();
-	const deliveredStep = getDeliveredStep();
+	// Step 4: disputed → dispute UI, resolved → admin resolution UI, else → delivery UI
+	function getStep4() {
+		if (currentStatus === 'disputed') return getDisputedStep();
+		if (currentStatus === 'resolved') return getResolvedStep();
+		return getDeliveredStep();
+	}
+	const step4 = getStep4();
 
 	return (
 		<div className="rounded-2xl bg-white p-6">
@@ -354,11 +416,11 @@ export function FulfillmentTimeline({
 					action={shippedStep.action}
 				/>
 				<TimelineStep
-					title={deliveredStep.title}
-					description={deliveredStep.description}
+					title={step4.title}
+					description={step4.description}
 					status={getStepStatus(4)}
 					isLast
-					action={deliveredStep.action}
+					action={step4.action}
 				/>
 			</div>
 

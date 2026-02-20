@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { claimWinning } from '@/services/winning/claim-winning';
+import type { Winning } from '@/types/winning';
 
 const formSchema = z.object({
 	name: z.string().min(1, 'Name is required').max(100),
@@ -43,8 +44,8 @@ interface ShippingFormModalProps {
 	raffleId: string;
 	/** Public slug used for revalidation after mutation */
 	publicSlug: string;
-	/** Callback when claim is successful */
-	onSuccess: () => void;
+	/** Callback when claim is successful — receives updated winning from backend */
+	onSuccess: (winning: Winning) => void;
 }
 
 /**
@@ -96,7 +97,7 @@ export function ShippingFormModal({
 			}
 
 			toast.success('Shipping info submitted successfully!');
-			onSuccess();
+			onSuccess(result.data);
 			handleOpenChange(false);
 		});
 	}

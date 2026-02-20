@@ -63,6 +63,12 @@ export function FulfillmentTimeline({
 	 * Determines step status based on current winning status
 	 */
 	function getStepStatus(step: number): StepStatus {
+		// pending_partial_fulfillment: platform handles payout, no shipping timeline
+		// All steps shown as completed since no host/winner action is needed
+		if (currentStatus === 'pending_partial_fulfillment') {
+			return 'completed';
+		}
+
 		// pending: winner hasn't claimed yet
 		if (currentStatus === 'pending') {
 			if (step === 1) return 'active';
@@ -199,7 +205,7 @@ export function FulfillmentTimeline({
 			title: 'Shipped',
 			description:
 				status === 'active'
-					? 'Waiting for host to confirm delivery'
+					? 'Your prize has been shipped and is on its way'
 					: 'Your prize is on the way',
 			action: null,
 		};

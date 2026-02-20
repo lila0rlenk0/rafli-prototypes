@@ -10,6 +10,7 @@ export const WINNING_STATUS = {
 	SENT: 'sent',
 	DELIVERED: 'delivered',
 	RECEIVED: 'received',
+	PENDING_PARTIAL_FULFILLMENT: 'pending_partial_fulfillment',
 	DISPUTED: 'disputed',
 	RESOLVED: 'resolved',
 } as const;
@@ -41,6 +42,7 @@ export const winningStatusSchema = z.enum([
 	WINNING_STATUS.SENT,
 	WINNING_STATUS.DELIVERED,
 	WINNING_STATUS.RECEIVED,
+	WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT,
 	WINNING_STATUS.DISPUTED,
 	WINNING_STATUS.RESOLVED,
 ]);
@@ -59,7 +61,8 @@ export const shippingInfoSchema = z.object({
 	city: z.string(),
 	zip: z.string(),
 	country: z.string(),
-	phone: z.string().nullable(),
+	// Backend JSONB field — may be omitted entirely (undefined) or explicitly null
+	phone: z.string().optional().nullable(),
 });
 
 /**

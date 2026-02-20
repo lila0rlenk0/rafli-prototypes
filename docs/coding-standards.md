@@ -7,15 +7,15 @@ Always use early return with negated condition:
 ```tsx
 // BAD
 if (result.success) {
-	// happy path
+  // happy path
 } else {
-	toast.error('...');
+  toast.error('...');
 }
 
 // GOOD
 if (!result.success) {
-	toast.error('...');
-	return;
+  toast.error('...');
+  return;
 }
 // happy path continues
 ```
@@ -51,20 +51,20 @@ All functions must be inside components. No top-level functions outside componen
 ```tsx
 // BAD
 function isValidStatus(status: Status): boolean {
-	return VALID_STATUSES.includes(status);
+  return VALID_STATUSES.includes(status);
 }
 
 export function MyComponent() {
-	const isValid = isValidStatus(status);
+  const isValid = isValidStatus(status);
 }
 
 // GOOD
 export function MyComponent() {
-	function isValidStatus(status: Status): boolean {
-		return VALID_STATUSES.includes(status);
-	}
+  function isValidStatus(status: Status): boolean {
+    return VALID_STATUSES.includes(status);
+  }
 
-	const isValid = isValidStatus(status);
+  const isValid = isValidStatus(status);
 }
 ```
 
@@ -76,31 +76,26 @@ Break complex conditions into named helper functions:
 
 ```tsx
 // BAD
-const order = orders.find(
-	o =>
-		o.status === STATUS.PENDING &&
-		o.raffleId === raffleId &&
-		(promoCode
-			? o.promoCode === null || o.promoCode === promoCode
-			: o.promoCode === null),
+const order = orders.find(o =>
+  o.status === STATUS.PENDING &&
+  o.raffleId === raffleId &&
+  (promoCode ? o.promoCode === null || o.promoCode === promoCode : o.promoCode === null)
 );
 
 // GOOD
 function matchesRaffle(order: Order): boolean {
-	return order.raffleId === raffleId;
+  return order.raffleId === raffleId;
 }
 
 function hasCompatiblePromo(order: Order, code?: string): boolean {
-	if (!code) return order.promoCode === null;
-	return order.promoCode === null || order.promoCode === code;
+  if (!code) return order.promoCode === null;
+  return order.promoCode === null || order.promoCode === code;
 }
 
 function isReusable(order: Order, code?: string): boolean {
-	return (
-		order.status === STATUS.PENDING &&
-		matchesRaffle(order) &&
-		hasCompatiblePromo(order, code)
-	);
+  return order.status === STATUS.PENDING
+    && matchesRaffle(order)
+    && hasCompatiblePromo(order, code);
 }
 
 const order = orders.find(o => isReusable(o, promoCode));
@@ -113,21 +108,21 @@ Extract inline types to named interfaces:
 ```tsx
 // BAD
 interface Props {
-	onCreate: (data: {
-		count: number;
-		type: PromoCodeType;
-		value: number;
-	}) => Promise<Result>;
+  onCreate: (data: {
+    count: number;
+    type: PromoCodeType;
+    value: number;
+  }) => Promise<Result>;
 }
 
 // GOOD
 export interface CreatePromoCodeData {
-	count: number;
-	type: PromoCodeType;
-	value: number;
+  count: number;
+  type: PromoCodeType;
+  value: number;
 }
 
 interface Props {
-	onCreate: (data: CreatePromoCodeData) => Promise<Result>;
+  onCreate: (data: CreatePromoCodeData) => Promise<Result>;
 }
 ```

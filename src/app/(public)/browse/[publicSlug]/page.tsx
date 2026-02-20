@@ -522,6 +522,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							<PrizeBreakdownCard
 								raffle={raffle}
 								isPartialParticipation={isPartialFulfillment}
+								distributionAmount={myWinning?.distributionAmount}
 							/>
 							{!isPartialFulfillment && (
 								<FulfillmentTimeline

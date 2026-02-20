@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { markSent } from '@/services/winning/mark-sent';
+import type { Winning } from '@/types/winning';
 
 const formSchema = z.object({
 	proofUrl: z.string().url('Please enter a valid URL').max(512),
@@ -39,8 +40,8 @@ interface MarkSentModalProps {
 	winningId: string;
 	/** Public slug used for revalidation after mutation */
 	publicSlug: string;
-	/** Callback when mark sent is successful */
-	onSuccess: () => void;
+	/** Callback when mark sent is successful — receives updated winning from backend */
+	onSuccess: (winning: Winning) => void;
 }
 
 /**
@@ -85,7 +86,7 @@ export function MarkSentModal({
 			}
 
 			toast.success('Prize marked as shipped!');
-			onSuccess();
+			onSuccess(result.data);
 			handleOpenChange(false);
 		});
 	}

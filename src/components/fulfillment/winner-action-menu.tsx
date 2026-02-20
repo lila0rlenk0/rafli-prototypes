@@ -48,6 +48,8 @@ export function WinnerActionMenu({
 	const isCompleted =
 		winner.status === 'delivered' ||
 		winner.status === 'received' ||
+		winner.status === 'pending_partial_fulfillment' ||
+		winner.status === 'disputed' ||
 		winner.status === 'resolved';
 
 	const waitingForShipping = isPending;

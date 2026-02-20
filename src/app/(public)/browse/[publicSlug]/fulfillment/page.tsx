@@ -47,13 +47,9 @@ export default async function FulfillmentPage({ params }: PageProps) {
 		redirect(`/browse/${publicSlug}`);
 	}
 
-	// Fetch winners from dedicated endpoint
-	const winnersResult = await getRaffleWinnings(raffle.id);
+	// Fetch winners — default limit=100 to avoid truncation (full pagination UI out of scope)
+	const winnersResult = await getRaffleWinnings(raffle.id, { limit: 100 });
 	const winners = winnersResult.success ? winnersResult.data.items : [];
-
-	const isPartial =
-		raffle.isPartialParticipation ??
-		raffle.ticketsSoldCount < raffle.minParticipants;
 
 	return (
 		<div className="container mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8">
@@ -72,11 +68,7 @@ export default async function FulfillmentPage({ params }: PageProps) {
 				<p className="text-gray-500">{raffle.title}</p>
 			</div>
 
-			<WinnersTable
-				winners={winners}
-				isPartial={isPartial}
-				publicSlug={publicSlug}
-			/>
+			<WinnersTable winners={winners} publicSlug={publicSlug} />
 		</div>
 	);
 }

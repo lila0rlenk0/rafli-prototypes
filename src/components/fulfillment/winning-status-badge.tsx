@@ -7,8 +7,6 @@ import { WINNING_STATUS, type WinningStatus } from '@/types/winning';
 interface WinningStatusBadgeProps {
 	status: WinningStatus;
 	className?: string;
-	/** Whether the raffle had partial participation (revenue share) */
-	isPartial?: boolean;
 }
 
 /**
@@ -18,38 +16,34 @@ interface WinningStatusBadgeProps {
  * - awaiting_host → yellow
  * - sent → blue
  * - delivered → purple
- * - received → green (or "Awaiting Platform" if partial)
+ * - received → green
+ * - pending_partial_fulfillment → yellow (admin processes payout)
  * - disputed → red
  * - resolved → green
  */
 export function WinningStatusBadge({
 	status,
 	className,
-	isPartial,
 }: WinningStatusBadgeProps) {
 	/**
 	 * Returns Tailwind classes for status color
 	 */
 	function getStatusClasses(): string {
-		if (status === WINNING_STATUS.RECEIVED && isPartial) {
-			return 'bg-yellow-100 text-yellow-700';
-		}
-
 		switch (status) {
 			case WINNING_STATUS.PENDING:
 				return 'bg-gray-100 text-gray-700';
 			case WINNING_STATUS.AWAITING_HOST:
+			case WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT:
 				return 'bg-yellow-100 text-yellow-700';
 			case WINNING_STATUS.SENT:
 				return 'bg-blue-100 text-blue-700';
 			case WINNING_STATUS.DELIVERED:
 				return 'bg-purple-100 text-purple-700';
 			case WINNING_STATUS.RECEIVED:
+			case WINNING_STATUS.RESOLVED:
 				return 'bg-green-100 text-green-700';
 			case WINNING_STATUS.DISPUTED:
 				return 'bg-red-100 text-red-700';
-			case WINNING_STATUS.RESOLVED:
-				return 'bg-green-100 text-green-700';
 			default:
 				return 'bg-gray-100 text-gray-700';
 		}
@@ -59,15 +53,13 @@ export function WinningStatusBadge({
 	 * Returns display label for status
 	 */
 	function getStatusLabel(): string {
-		if (status === WINNING_STATUS.RECEIVED && isPartial) {
-			return 'Awaiting Platform';
-		}
-
 		switch (status) {
 			case WINNING_STATUS.PENDING:
 				return 'Pending';
 			case WINNING_STATUS.AWAITING_HOST:
 				return 'Awaiting';
+			case WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT:
+				return 'Payout Pending';
 			case WINNING_STATUS.SENT:
 				return 'Sent';
 			case WINNING_STATUS.DELIVERED:

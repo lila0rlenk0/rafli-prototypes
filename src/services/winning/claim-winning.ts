@@ -22,7 +22,7 @@ type ClaimWinningServiceResponse = ServiceResponse<Winning, WinningErrorCode>;
  * Claims a winning prize by submitting shipping information
  *
  * Called by the winner to provide their shipping address.
- * Transitions status from awaiting_host (no shipping) to awaiting_host (with shipping).
+ * Transitions status from 'pending' to 'awaiting_host'.
  *
  * @param raffleId - The UUID of the raffle
  * @param payload - The claim data including shipping info

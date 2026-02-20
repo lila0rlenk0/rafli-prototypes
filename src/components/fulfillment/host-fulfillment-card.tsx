@@ -25,8 +25,12 @@ export function HostFulfillmentCard({
 }: HostFulfillmentCardProps) {
 	/**
 	 * Formats the winners count message
+	 * Partial fulfillment = platform-handled payouts, no host action needed
 	 */
 	function getWinnersMessage(): string {
+		if (isPartialFulfillment) {
+			return 'Payouts processed by the platform';
+		}
 		if (winnersCount === 1) {
 			return '1 winner awaiting fulfillment';
 		}

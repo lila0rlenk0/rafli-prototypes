@@ -524,15 +524,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								isPartialParticipation={isPartialFulfillment}
 								distributionAmount={myWinning?.distributionAmount}
 							/>
-							{!isPartialFulfillment && (
-								<FulfillmentTimeline
-									winning={myWinning}
-									isHost={isOwner}
-									raffleId={raffle.id}
-									hostId={raffle.hostId}
-									publicSlug={publicSlug}
-								/>
-							)}
+							<FulfillmentTimeline
+								winning={myWinning}
+								isHost={isOwner}
+								raffleId={raffle.id}
+								hostId={raffle.hostId}
+								publicSlug={publicSlug}
+								isPartialFulfillment={isPartialFulfillment}
+							/>
 						</>
 					)}
 

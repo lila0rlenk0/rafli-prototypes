@@ -1,6 +1,7 @@
 'use client';
 
 import { Bell } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { NotificationList } from '@/components/notifications/notification-list';
@@ -54,7 +55,7 @@ export function NotificationPopover() {
 			<PopoverTrigger asChild>
 				<button
 					type="button"
-					className="relative inline-flex items-center justify-center"
+					className="relative inline-flex cursor-pointer items-center justify-center"
 					aria-label="Notifications"
 				>
 					<Bell className="size-5" />
@@ -65,20 +66,29 @@ export function NotificationPopover() {
 					)}
 				</button>
 			</PopoverTrigger>
-			<PopoverContent align="end" className="w-80 p-0">
+			<PopoverContent align="end" className="w-96 p-0">
 				<div className="flex items-center justify-between border-b px-4 py-3">
 					<h3 className="text-sm font-semibold">Notifications</h3>
-					{unreadCount > 0 && (
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={handleMarkAllRead}
-							disabled={markAllRead.isPending}
-							className="h-auto px-2 py-1 text-xs"
+					<div className="flex items-center gap-2">
+						{unreadCount > 0 && (
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={handleMarkAllRead}
+								disabled={markAllRead.isPending}
+								className="h-auto px-2 py-1 text-xs"
+							>
+								{markAllRead.isPending ? 'Marking...' : 'Mark all read'}
+							</Button>
+						)}
+						<Link
+							href="/profile/notifications"
+							onClick={handleClose}
+							className="text-xs font-medium text-blue-600 hover:underline"
 						>
-							{markAllRead.isPending ? 'Marking...' : 'Mark all read'}
-						</Button>
-					)}
+							View All
+						</Link>
+					</div>
 				</div>
 				<div className="max-h-96 overflow-y-auto">
 					{isLoading ? (

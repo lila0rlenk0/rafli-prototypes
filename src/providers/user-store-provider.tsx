@@ -44,6 +44,11 @@ export function UserStoreProvider({
 		}),
 	);
 
+	// Serialize permissions by value — server renders produce a new array reference
+	// each time even when contents are identical (same JWT). Without this, the effect
+	// re-fires on every router.refresh(), causing redundant cookie writes.
+	const permissionsKey = permissions.join('||');
+
 	/**
 	 * Sync permissions and initialize mode after hydration completes
 	 * Waits for Zustand persist to finish hydrating from localStorage
@@ -65,7 +70,8 @@ export function UserStoreProvider({
 			});
 			return unsubscribe;
 		}
-	}, [permissions, store]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- permissionsKey is the value-based dep for permissions
+	}, [permissionsKey, store]);
 
 	return (
 		<UserStoreContext.Provider value={store}>

@@ -1,5 +1,8 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
@@ -13,11 +16,36 @@ const BECOME_HOST_FORM_URL = 'https://forms.google.com/placeholder';
  * - Loading (mode null): Disabled button
  * - No permission: "Become a Host" external link
  * - Has permission: "Switch to [opposite mode] Mode" button
+ *
+ * On switch: awaits cookie write then triggers server re-render
+ * so server-rendered content (raffle lists, tabs) reflects the new mode
  */
 export function ModeSwitchButton() {
 	const mode = useUserStore(state => state.mode);
 	const canSwitchMode = useUserStore(state => state.canSwitchMode);
 	const switchMode = useUserStore(state => state.switchMode);
+	const router = useRouter();
+	const [isSwitching, startTransition] = useTransition();
+
+	/**
+	 * Handles mode switch: updates store, awaits cookie sync,
+	 * then refreshes server components so they re-render with the new mode
+	 */
+	function handleModeSwitch() {
+		startTransition(async () => {
+			await switchMode();
+			router.refresh();
+		});
+	}
+
+	/**
+	 * Gets button label showing the mode user will switch TO
+	 */
+	function getButtonText(): string {
+		const target =
+			mode === USER_MODE.HOST ? USER_MODE.PARTICIPANT : USER_MODE.HOST;
+		return `Switch to ${target.charAt(0).toUpperCase() + target.slice(1)} Mode`;
+	}
 
 	// Loading state while mode initializes
 	if (mode === null) {
@@ -34,13 +62,6 @@ export function ModeSwitchButton() {
 		);
 	}
 
-	/**
-	 * Handles mode switch button click
-	 */
-	function handleModeSwitch() {
-		switchMode();
-	}
-
 	if (!canSwitchMode()) {
 		return (
 			<a
@@ -54,25 +75,11 @@ export function ModeSwitchButton() {
 		);
 	}
 
-	/**
-	 * Gets the opposite mode to display in the button text
-	 */
-	function getOppositeMode(): string {
-		return mode === USER_MODE.HOST ? USER_MODE.PARTICIPANT : USER_MODE.HOST;
-	}
-
-	function getButtonText() {
-		const oppositeMode = getOppositeMode();
-		const capitalizedMode =
-			oppositeMode.charAt(0).toUpperCase() + oppositeMode.slice(1);
-
-		return `Switch to ${capitalizedMode} Mode`;
-	}
-
 	return (
 		<Button
 			data-mode={mode}
 			onClick={handleModeSwitch}
+			disabled={isSwitching}
 			variant="outline"
 			size="sm"
 			className="flex cursor-pointer items-center gap-2 border-black text-black data-[mode=participant]:bg-black data-[mode=participant]:text-white"

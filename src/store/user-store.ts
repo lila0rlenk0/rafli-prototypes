@@ -11,7 +11,7 @@ export interface UserStoreState {
 }
 
 export interface UserStoreActions {
-	switchMode: () => void;
+	switchMode: () => Promise<void>;
 	hasPermission: (permission: Permission) => boolean;
 	canSwitchMode: () => boolean;
 	setPermissions: (permissions: Permission[]) => void;
@@ -41,9 +41,10 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 				/**
 				 * Toggle between participant and host mode
 				 * Only works if user has raffle:create permission and mode is initialized
-				 * Syncs mode to cookie for server-side access
+				 * Returns a promise that resolves when the cookie is written —
+				 * callers should await before triggering server re-renders
 				 */
-				switchMode: () => {
+				switchMode: async () => {
 					const { canSwitchMode, mode } = get();
 
 					if (!canSwitchMode() || mode === null) {
@@ -55,10 +56,12 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 							? USER_MODE.HOST
 							: USER_MODE.PARTICIPANT;
 
+					// Store updates synchronously — UI reacts immediately
 					set({ mode: newMode });
 
-					// Sync to cookie (fire-and-forget, non-blocking)
-					setUserModeCookie(newMode).catch(console.error);
+					// Await cookie write so server components read the correct value
+					// on the next render (e.g. router.refresh() after this call)
+					await setUserModeCookie(newMode);
 				},
 
 				/**
@@ -95,25 +98,31 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 				/**
 				 * Initialize mode based on permissions and persisted preference
 				 * Called after permissions are set to validate/set the mode
-				 * Only syncs to cookie when mode actually changes to avoid infinite loops
+				 *
+				 * Determines effective mode:
+				 * - HOST without permission → demote to PARTICIPANT
+				 * - null (first visit) → default to PARTICIPANT
+				 * - otherwise → keep persisted preference
+				 *
+				 * ALWAYS syncs cookie to match store — prevents server/client drift
+				 * that causes split-brain between server-rendered and client-rendered UI
 				 */
 				initializeMode: () => {
 					const { mode, canSwitchMode } = get();
 
-					// If mode is HOST but user lost permission, reset to PARTICIPANT
-					if (mode === USER_MODE.HOST && !canSwitchMode()) {
-						set({ mode: USER_MODE.PARTICIPANT });
-						setUserModeCookie(USER_MODE.PARTICIPANT).catch(console.error);
-						return;
+					// Resolve effective mode: demote if permission lost, default if unset
+					const effectiveMode =
+						(mode === USER_MODE.HOST && !canSwitchMode()) || mode === null
+							? USER_MODE.PARTICIPANT
+							: mode;
+
+					if (effectiveMode !== mode) {
+						set({ mode: effectiveMode });
 					}
 
-					// If mode is null (not initialized), default to PARTICIPANT
-					if (mode === null) {
-						set({ mode: USER_MODE.PARTICIPANT });
-						setUserModeCookie(USER_MODE.PARTICIPANT).catch(console.error);
-					}
-					// Otherwise keep current mode - no cookie sync needed
-					// Cookie will be set on next switchMode or page that reads it
+					// Always sync cookie — heals any drift between localStorage and cookie
+					// (e.g. cookie expired, cleared by browser, or fire-and-forget write failed)
+					setUserModeCookie(effectiveMode).catch(console.error);
 				},
 
 				/**

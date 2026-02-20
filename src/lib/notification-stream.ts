@@ -2,6 +2,8 @@
  * WebSocket client for real-time notification streaming
  *
  * Handles connection and reconnection with exponential backoff.
+ * Gives up after MAX_RECONNECT_ATTEMPTS to avoid infinite retry loops
+ * (e.g. when WS endpoint is unreachable on staging/remote backends).
  */
 
 import { clientEnv } from '@/env/client';
@@ -19,6 +21,8 @@ export interface NotificationStreamConfig {
 
 const BASE_RECONNECT_DELAY_MS = 1_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
+/** Stop retrying after this many consecutive failures to avoid console spam */
+const MAX_RECONNECT_ATTEMPTS = 5;
 const WS_CLOSE_NORMAL = 1_000;
 /** Refresh token at 80% of expiry to avoid edge cases */
 const TOKEN_REFRESH_RATIO = 0.8;
@@ -66,6 +70,7 @@ export class NotificationStream {
 	 */
 	async connect(): Promise<void> {
 		this.intentionalClose = false;
+		this.reconnectAttempts = 0;
 		await this.fetchTokenAndConnect();
 	}
 
@@ -138,6 +143,9 @@ export class NotificationStream {
 
 	/**
 	 * Handles connection close
+	 *
+	 * Triggers reconnection unless intentionally closed, token-refreshing,
+	 * or max attempts reached.
 	 */
 	private handleClose(event: CloseEvent): void {
 		this.ws = null;
@@ -161,11 +169,15 @@ export class NotificationStream {
 	/**
 	 * Handles connection error
 	 *
-	 * Connection will close after error, handleClose will trigger reconnect.
+	 * WebSocket onerror provides no detail per spec (security).
+	 * The subsequent onclose event carries the actual close code/reason.
+	 * Logged as warn since this is a transient network condition, not a bug.
 	 */
 	private handleError(): void {
 		if (isDev) {
-			console.error('[NotificationStream] Error');
+			console.warn(
+				'[NotificationStream] Connection error (close event follows with details)',
+			);
 		}
 	}
 
@@ -173,8 +185,18 @@ export class NotificationStream {
 	 * Schedules reconnection with exponential backoff (capped at 30s)
 	 *
 	 * Fetches fresh token on each reconnect attempt.
+	 * Gives up after MAX_RECONNECT_ATTEMPTS to avoid infinite retry loops.
 	 */
 	private scheduleReconnect(): void {
+		if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+			if (isDev) {
+				console.warn(
+					`[NotificationStream] Giving up after ${MAX_RECONNECT_ATTEMPTS} attempts. Real-time notifications unavailable.`,
+				);
+			}
+			return;
+		}
+
 		const delay = Math.min(
 			BASE_RECONNECT_DELAY_MS * Math.pow(2, this.reconnectAttempts),
 			MAX_RECONNECT_DELAY_MS,
@@ -182,7 +204,9 @@ export class NotificationStream {
 		this.reconnectAttempts++;
 
 		if (isDev) {
-			console.log(`[NotificationStream] Reconnecting in ${delay}ms...`);
+			console.log(
+				`[NotificationStream] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`,
+			);
 		}
 
 		this.reconnectTimeoutId = setTimeout(() => {

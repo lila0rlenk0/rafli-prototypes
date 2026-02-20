@@ -3,7 +3,6 @@
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, success } from '@/lib/errors';
 import { mapNotificationError } from '@/lib/errors';
-import { clientEnv } from '@/env/client';
 import {
 	NOTIFICATION_ERROR_CODES,
 	type NotificationErrorCode,
@@ -41,9 +40,6 @@ export async function getWsToken(): Promise<GetWsTokenResponse> {
 		if (error instanceof ZodError) {
 			console.error('[getWsToken] Validation failed:', error);
 			return failure(NOTIFICATION_ERROR_CODES.VALIDATION_FAILED);
-		}
-		if (clientEnv.NODE_ENV === 'development') {
-			console.error('[getWsToken] Error:', error);
 		}
 		return failure(mapNotificationError(error));
 	}

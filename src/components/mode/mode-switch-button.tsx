@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { useUserStore } from '@/providers/user-store-provider';
@@ -25,33 +25,26 @@ export function ModeSwitchButton() {
 	const canSwitchMode = useUserStore(state => state.canSwitchMode);
 	const switchMode = useUserStore(state => state.switchMode);
 	const router = useRouter();
-	const [isSwitching, setIsSwitching] = useState(false);
-
-	// Guard against state updates after unmount —
-	// router.refresh() can remount the component tree mid-await
-	const isMountedRef = useRef(true);
-	useEffect(() => {
-		return () => {
-			isMountedRef.current = false;
-		};
-	}, []);
+	const [isSwitching, startTransition] = useTransition();
 
 	/**
 	 * Handles mode switch: updates store, awaits cookie sync,
 	 * then refreshes server components so they re-render with the new mode
 	 */
-	async function handleModeSwitch() {
-		setIsSwitching(true);
-		try {
-			// Awaits the cookie write — guarantees server reads the new value
+	function handleModeSwitch() {
+		startTransition(async () => {
 			await switchMode();
-			// Re-render server components (page.tsx reads mode from cookie)
 			router.refresh();
-		} finally {
-			if (isMountedRef.current) {
-				setIsSwitching(false);
-			}
-		}
+		});
+	}
+
+	/**
+	 * Gets button label showing the mode user will switch TO
+	 */
+	function getButtonText(): string {
+		const target =
+			mode === USER_MODE.HOST ? USER_MODE.PARTICIPANT : USER_MODE.HOST;
+		return `Switch to ${target.charAt(0).toUpperCase() + target.slice(1)} Mode`;
 	}
 
 	// Loading state while mode initializes
@@ -80,15 +73,6 @@ export function ModeSwitchButton() {
 				Become a Host
 			</a>
 		);
-	}
-
-	/**
-	 * Gets button label showing the mode user will switch TO
-	 */
-	function getButtonText(): string {
-		const target =
-			mode === USER_MODE.HOST ? USER_MODE.PARTICIPANT : USER_MODE.HOST;
-		return `Switch to ${target.charAt(0).toUpperCase() + target.slice(1)} Mode`;
 	}
 
 	return (

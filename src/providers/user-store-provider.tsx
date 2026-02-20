@@ -4,7 +4,6 @@ import {
 	createContext,
 	useContext,
 	useEffect,
-	useMemo,
 	useState,
 	type ReactNode,
 } from 'react';
@@ -38,19 +37,17 @@ export function UserStoreProvider({
 	children,
 	permissions,
 }: UserStoreProviderProps) {
-	// Stabilize permissions reference — server renders produce a new array
-	// each time even when contents are identical (same JWT, same permissions).
-	// Without this, the useEffect below re-fires on every router.refresh(),
-	// causing redundant initializeMode() calls and unnecessary cookie writes.
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	const stablePermissions = useMemo(() => permissions, [permissions.join()]);
-
 	const [store] = useState(() =>
 		createUserStore({
 			mode: null, // Start as null, will be initialized after permissions sync
-			permissions: stablePermissions,
+			permissions,
 		}),
 	);
+
+	// Serialize permissions by value — server renders produce a new array reference
+	// each time even when contents are identical (same JWT). Without this, the effect
+	// re-fires on every router.refresh(), causing redundant cookie writes.
+	const permissionsKey = permissions.join('||');
 
 	/**
 	 * Sync permissions and initialize mode after hydration completes
@@ -60,7 +57,7 @@ export function UserStoreProvider({
 	useEffect(() => {
 		function syncAndInitialize() {
 			const state = store.getState();
-			state.setPermissions(stablePermissions);
+			state.setPermissions(permissions);
 			state.initializeMode();
 		}
 
@@ -73,7 +70,8 @@ export function UserStoreProvider({
 			});
 			return unsubscribe;
 		}
-	}, [stablePermissions, store]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- permissionsKey is the value-based dep for permissions
+	}, [permissionsKey, store]);
 
 	return (
 		<UserStoreContext.Provider value={store}>

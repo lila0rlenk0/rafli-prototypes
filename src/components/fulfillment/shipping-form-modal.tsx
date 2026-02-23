@@ -85,7 +85,7 @@ export function ShippingFormModal({
 						city: data.city,
 						zip: data.zip,
 						country: data.country,
-						phone: data.phone,
+						phone: data.phone || null,
 					},
 				},
 				publicSlug,

@@ -96,15 +96,13 @@ export const notificationTypeSchema = z.preprocess(
  * Schema for notification metadata
  * Contains optional IDs for navigation
  */
-export const notificationMetadataSchema = z
-	.object({
-		raffleId: z.string().optional(),
-		publicSlug: z.string().optional(),
-		orderId: z.string().optional(),
-		winningId: z.string().optional(),
-		disputeId: z.string().optional(),
-	})
-	.passthrough();
+export const notificationMetadataSchema = z.object({
+	raffleId: z.string().optional(),
+	publicSlug: z.string().optional(),
+	orderId: z.string().optional(),
+	winningId: z.string().optional(),
+	disputeId: z.string().optional(),
+});
 
 /**
  * Schema for a single notification

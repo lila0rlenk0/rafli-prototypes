@@ -113,7 +113,7 @@ export const claimWinningPayloadSchema = z.object({
 		city: z.string().min(1).max(100),
 		zip: z.string().min(1).max(20),
 		country: z.string().min(1).max(100),
-		phone: z.string().max(30).optional(),
+		phone: z.string().max(30).nullable(),
 	}),
 });
 

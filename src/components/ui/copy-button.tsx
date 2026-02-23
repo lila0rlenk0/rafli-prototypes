@@ -3,6 +3,7 @@
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 
+import { useTimeout } from '@/lib/hooks/use-timeout';
 import { cn } from '@/lib/utils';
 
 interface CopyButtonProps {
@@ -23,6 +24,7 @@ export function CopyButton({
 	size = 'default',
 }: CopyButtonProps) {
 	const [copied, setCopied] = useState(false);
+	const setTimeout = useTimeout();
 
 	/**
 	 * Copies value to clipboard and shows feedback

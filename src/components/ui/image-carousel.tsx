@@ -166,7 +166,7 @@ export function ImageCarousel({
 							// first visible image (LCP). Subsequent slides load eagerly
 							// to avoid blank flashes during navigation.
 							priority={priority && currentIndex === 0}
-							loading={priority && currentIndex === 0 ? undefined : 'eager'}
+							loading={priority && currentIndex === 0 ? undefined : 'lazy'}
 						/>
 					</motion.div>
 				</AnimatePresence>

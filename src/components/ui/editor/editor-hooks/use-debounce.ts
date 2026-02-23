@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import { debounce, type DebouncedFunc } from 'lodash';
+import type { DebouncedFunc } from 'lodash';
+import debounce from 'lodash/debounce';
 
 export function useDebounce<T extends (...args: Parameters<T>) => void>(
 	fn: T,

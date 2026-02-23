@@ -1,8 +1,14 @@
-import SplitText from '@/components/ui/animations/split-text';
 import { Button } from '@/components/ui/button';
 import { CheckIcon } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ComponentProps } from 'react';
+
+// GSAP-dependent — dynamic import avoids loading the full GSAP bundle upfront
+const SplitText = dynamic(
+	() => import('@/components/ui/animations/split-text'),
+	{ ssr: false },
+);
 
 /**
  * Section for participants with benefits list

@@ -8,9 +8,10 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useMemo,
 	useState,
 } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useForm, useWatch, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -146,7 +147,12 @@ export function MultiStepFormProvider({
 		},
 	});
 
-	const formValues = form.watch();
+	// useWatch re-renders on field changes like form.watch(), but integrates
+	// properly with React's lifecycle. The real perf win is the useMemo below
+	// that stabilizes the context reference — once hasUnsavedChanges flips to
+	// true (first keystroke), it stays true, so subsequent keystrokes won't
+	// cascade re-renders to context consumers.
+	const formValues = useWatch({ control: form.control });
 
 	/**
 	 * Checks if the form has any unsaved changes
@@ -285,6 +291,7 @@ export function MultiStepFormProvider({
 
 	const isFirstStep = currentStep === 0;
 	const isLastStep = currentStep === totalSteps - 1;
+	const isRaffleCreated = createdRaffle !== null;
 
 	/**
 	 * Maps server error codes to user-facing messages and optional form field targets
@@ -478,32 +485,60 @@ export function MultiStepFormProvider({
 		[isLastStep, handleCreateRaffle, nextStep],
 	);
 
+	// Memoize context value to prevent re-render cascades to consumers.
+	// Most deps are stable refs (form, callbacks). The key insight: hasUnsavedChanges
+	// flips to true on first keystroke and stays true — so subsequent keystrokes
+	// don't produce a new context reference and consumers skip re-rendering.
+	const contextValue = useMemo<MultiStepFormContextType>(
+		() => ({
+			currentStep,
+			totalSteps,
+			form,
+			nextStep,
+			previousStep,
+			goToStep,
+			isFirstStep,
+			isLastStep,
+			onSubmit: handleSubmit,
+			isCreating,
+			isRaffleCreated,
+			userName,
+			totalRaffles,
+			hasUnsavedChanges,
+			setShowExitModal,
+			questions,
+			categories,
+			pendingPromoCodes,
+			addPendingPromoCode,
+			removePendingPromoCode,
+			clearPendingPromoCodes,
+		}),
+		[
+			currentStep,
+			totalSteps,
+			form,
+			nextStep,
+			previousStep,
+			goToStep,
+			isFirstStep,
+			isLastStep,
+			handleSubmit,
+			isCreating,
+			isRaffleCreated,
+			userName,
+			totalRaffles,
+			hasUnsavedChanges,
+			questions,
+			categories,
+			pendingPromoCodes,
+			addPendingPromoCode,
+			removePendingPromoCode,
+			clearPendingPromoCodes,
+		],
+	);
+
 	return (
-		<MultiStepFormContext.Provider
-			value={{
-				currentStep,
-				totalSteps,
-				form,
-				nextStep,
-				previousStep,
-				goToStep,
-				isFirstStep,
-				isLastStep,
-				onSubmit: handleSubmit,
-				isCreating,
-				isRaffleCreated: createdRaffle !== null,
-				userName,
-				totalRaffles,
-				hasUnsavedChanges,
-				setShowExitModal,
-				questions,
-				categories,
-				pendingPromoCodes,
-				addPendingPromoCode,
-				removePendingPromoCode,
-				clearPendingPromoCodes,
-			}}
-		>
+		<MultiStepFormContext.Provider value={contextValue}>
 			{children}
 			{createdRaffle && (
 				<RaffleCreatedModal

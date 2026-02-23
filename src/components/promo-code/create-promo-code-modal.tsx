@@ -6,6 +6,8 @@ import { ComponentProps, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { useTimeout } from '@/lib/hooks/use-timeout';
+
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
@@ -113,6 +115,8 @@ export function CreatePromoCodeModal({
 	} | null>(null);
 	const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 	const [copiedAll, setCopiedAll] = useState(false);
+	const setCopyTimeout = useTimeout();
+	const setCopyAllTimeout = useTimeout();
 
 	const form = useForm<CreatePromoCodeFormData>({
 		resolver: zodResolver(createPromoCodeFormSchema),
@@ -211,7 +215,7 @@ export function CreatePromoCodeModal({
 	async function handleCopyCode(code: string, index: number) {
 		await navigator.clipboard.writeText(code);
 		setCopiedIndex(index);
-		setTimeout(() => setCopiedIndex(null), 2_000);
+		setCopyTimeout(() => setCopiedIndex(null), 2_000);
 	}
 
 	/**
@@ -221,7 +225,7 @@ export function CreatePromoCodeModal({
 		if (!createdCodes) return;
 		await navigator.clipboard.writeText(createdCodes.codes.join('\n'));
 		setCopiedAll(true);
-		setTimeout(() => setCopiedAll(false), 2_000);
+		setCopyAllTimeout(() => setCopiedAll(false), 2_000);
 	}
 
 	/**

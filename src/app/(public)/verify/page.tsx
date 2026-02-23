@@ -1,11 +1,20 @@
 'use client';
 
 import { ShieldCheck } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
 import { EnhancedTicketChecker } from '@/components/verification/enhanced-ticket-checker';
 import { WinnerLookup } from '@/components/verification/winner-lookup';
-import { ScrollReveal } from '@/components/ui/scroll-reveal';
+
+// GSAP ScrollTrigger-dependent — dynamic import keeps it out of initial bundle
+const ScrollReveal = dynamic(
+	() =>
+		import('@/components/ui/scroll-reveal').then(mod => ({
+			default: mod.ScrollReveal,
+		})),
+	{ ssr: false },
+);
 
 /**
  * Verify Page

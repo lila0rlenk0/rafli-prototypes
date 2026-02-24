@@ -366,7 +366,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 			<div className="flex w-full flex-col gap-8 lg:flex-row">
 				<div className="w-full space-y-4">
-					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
+					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
 						<h2 className="text-3xl font-bold text-gray-900">{raffle.title}</h2>
 
 						<Link
@@ -575,7 +575,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					)}
 
 					{shouldShowActiveCard() && (
-						<div className="h-fit rounded-2xl border border-black bg-white px-4 py-8">
+						<div className="h-fit rounded-2xl border border-black bg-white p-8">
 							<RaffleFireIcon className="mx-auto size-12" />
 
 							<h2 className="font-clash-display my-8 text-center text-xl font-semibold text-nowrap">

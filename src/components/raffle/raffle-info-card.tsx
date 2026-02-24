@@ -124,7 +124,7 @@ export function RaffleInfoCard({
 
 	return (
 		<div
-			className="mt-8 rounded-2xl border border-black bg-white p-6 data-[authenticated=false]:md:w-84"
+			className="mt-8 rounded-2xl border border-black bg-white p-8 data-[authenticated=false]:md:w-84"
 			data-authenticated={isAuthenticated}
 		>
 			<div className="space-y-6">

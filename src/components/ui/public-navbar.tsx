@@ -57,8 +57,8 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 	}
 
 	return (
-		<div className="z-10 mx-auto flex w-full max-w-[1300px] flex-col">
-			<div className="z-10 flex h-14 items-center justify-between px-4 sm:h-16 sm:px-6">
+		<div className="sticky top-0 z-20 mx-auto flex w-full max-w-[1300px] flex-col border-b border-[#e6e8ec] bg-white/80 backdrop-blur-sm">
+			<div className="flex h-14 items-center justify-between px-4 sm:h-16 sm:px-6">
 				<div className="flex items-center gap-3 sm:gap-8">
 					<Link href="/browse">
 						<Logo className="h-5 w-auto sm:h-6" />

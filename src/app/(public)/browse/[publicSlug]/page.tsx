@@ -479,8 +479,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
 									Participants must be 18 years or older to enter. You can
 									purchase multiple tickets to increase your chances of winning.
-									Winners will be notified via email and must complete KYC
-									verification to claim their prize. All sales are final and
+									Winners will be notified via email and must provide additional
+									details to claim their prize. All sales are final and
 									non-refundable.
 								</AccordionContent>
 							</AccordionItem>

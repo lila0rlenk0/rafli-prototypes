@@ -8,12 +8,10 @@ import { EnhancedTicketChecker } from '@/components/verification/enhanced-ticket
 import { WinnerLookup } from '@/components/verification/winner-lookup';
 
 // GSAP ScrollTrigger-dependent — dynamic import keeps it out of initial bundle
-const ScrollReveal = dynamic(
-	() =>
-		import('@/components/ui/scroll-reveal').then(mod => ({
-			default: mod.ScrollReveal,
-		})),
-	{ ssr: false },
+const ScrollReveal = dynamic(() =>
+	import('@/components/ui/scroll-reveal').then(mod => ({
+		default: mod.ScrollReveal,
+	})),
 );
 
 /**

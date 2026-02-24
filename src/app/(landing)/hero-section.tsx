@@ -7,7 +7,6 @@ import Link from 'next/link';
 // GSAP-dependent — dynamic import avoids loading the full GSAP bundle upfront
 const SplitText = dynamic(
 	() => import('@/components/ui/animations/split-text'),
-	{ ssr: false },
 );
 
 /**

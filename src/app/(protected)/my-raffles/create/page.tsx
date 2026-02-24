@@ -88,7 +88,7 @@ export default async function RafflesCreatePage() {
 						href={item.href}
 						className="flex w-fit items-center gap-4"
 					>
-						<Copy className="size-6" />
+						<Copy className="size-4" />
 						<span className="text-[#6E6E6E]">{item.label}</span>
 					</Link>
 				))}

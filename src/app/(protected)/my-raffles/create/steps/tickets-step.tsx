@@ -223,8 +223,8 @@ export function TicketsStep() {
 				{!isStartDateToday && (
 					<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
 						<div className="flex items-center gap-2">
-							<Clock className="size-6 text-[#2870BD]" />
-							<span className="text-xs">
+							<Clock className="size-4 text-[#2870BD]" />
+							<span className="text-sm">
 								Raffle have a later start date. You cant change date later.
 							</span>
 						</div>
@@ -330,8 +330,8 @@ export function TicketsStep() {
 
 				<div className="flex w-full items-center justify-between rounded-lg bg-[#FEFFE3] p-4">
 					<div className="flex items-center gap-2">
-						<InfoIcon className="size-6 text-[#B7CE00]" />
-						<span className="text-xs">
+						<InfoIcon className="size-4 text-[#B7CE00]" />
+						<span className="text-sm">
 							Price cannot be changed after the first ticket purchase
 						</span>
 					</div>

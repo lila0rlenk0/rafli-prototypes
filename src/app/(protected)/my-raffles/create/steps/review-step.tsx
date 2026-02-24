@@ -231,8 +231,8 @@ export function ReviewStep() {
 			{shouldShowStartNowWarning() && (
 				<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
 					<div className="flex items-center gap-2">
-						<Clock className="size-6 text-[#2870BD]" />
-						<span className="text-xs">The raffle will start now.</span>
+						<Clock className="size-4 text-[#2870BD]" />
+						<span className="text-sm">The raffle will start now.</span>
 					</div>
 				</div>
 			)}

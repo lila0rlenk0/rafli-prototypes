@@ -367,7 +367,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			<div className="flex w-full flex-col gap-8 lg:flex-row">
 				<div className="w-full space-y-4">
 					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
-						<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
+						<h2 className="text-3xl font-bold text-gray-900">{raffle.title}</h2>
 
 						<Link
 							href={getHostProfileUrl()}
@@ -457,9 +457,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					/>
 
 					<div className="flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6">
-						<h2 className="font-clash-display text-3xl font-semibold">
+						<h3 className="font-clash-display text-3xl font-semibold">
 							Have a question?
-						</h2>
+						</h3>
 						<Accordion type="single" collapsible className="w-full space-y-4">
 							<AccordionItem value="how-it-works" className="border-none">
 								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">

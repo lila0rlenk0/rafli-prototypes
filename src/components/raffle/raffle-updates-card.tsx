@@ -45,9 +45,9 @@ export async function RaffleUpdatesCard({
 					<AccordionTrigger className="px-6 py-4 hover:no-underline">
 						<div className="flex flex-1 items-center justify-between">
 							<div className="flex items-center gap-3">
-								<h2 className="font-clash-display text-3xl font-semibold">
+								<h3 className="font-clash-display text-3xl font-semibold">
 									Updates from the host
-								</h2>
+								</h3>
 								{hasUpdates && (
 									<span className="rounded-full bg-black px-2 py-0.5 text-xs text-white">
 										{updates.length}

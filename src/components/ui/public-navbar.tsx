@@ -61,7 +61,7 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 			{/* Background strip — solid bg, z-10 so decorative shapes (z-[15]) show above */}
 			<div className="bg-background sticky top-0 z-10 h-14 sm:h-16" />
 
-			<nav className="sticky top-0 z-20 -mt-14 border-b border-[#e6e8ec] sm:-mt-16">
+			<nav className="bg-background sticky top-0 z-20 -mt-14 border-b border-[#e6e8ec] sm:-mt-16">
 				<div className="mx-auto flex h-14 w-full max-w-[1300px] items-center justify-between px-4 sm:h-16 sm:px-6">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">

@@ -206,6 +206,13 @@ export function RaffleInfoCard({
 						</p>
 					</div>
 
+					<div className="flex items-center justify-between">
+						<h3 className="text-sm font-medium text-[#7B7B7B]">Winners</h3>
+						<p className="text-sm font-medium">
+							{raffle.numberOfWinners.toLocaleString()}
+						</p>
+					</div>
+
 					{isBelowMinParticipants() && (
 						<div className="flex items-center justify-between">
 							<h3 className="text-sm font-medium text-[#7B7B7B]">

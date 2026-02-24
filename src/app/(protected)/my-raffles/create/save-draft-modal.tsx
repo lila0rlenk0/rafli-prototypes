@@ -14,19 +14,21 @@ interface SaveDraftModalProps {
 	onOpenChange: (open: boolean) => void;
 	onStay: () => void;
 	onSaveDraft: () => void;
+	onLeaveWithoutSaving: () => void;
 }
 
 /**
  * SaveDraftModal Component
  *
  * Confirmation modal displayed when user attempts to exit the form with unsaved changes.
- * Offers two actions: stay and continue editing, or save draft and navigate away.
+ * Offers three actions: leave without saving, save draft and leave, or continue editing.
  */
 export function SaveDraftModal({
 	open,
 	onOpenChange,
 	onStay,
 	onSaveDraft,
+	onLeaveWithoutSaving,
 }: SaveDraftModalProps) {
 	/**
 	 * Handles the Stay button click
@@ -46,6 +48,15 @@ export function SaveDraftModal({
 		onOpenChange(false);
 	}
 
+	/**
+	 * Handles the Leave Without Saving button click
+	 * Navigates away without saving draft
+	 */
+	function handleLeaveWithoutSaving() {
+		onLeaveWithoutSaving();
+		onOpenChange(false);
+	}
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
@@ -59,31 +70,34 @@ export function SaveDraftModal({
 						<PencilIcon />
 					</div>
 					<DialogTitle className="font-clash-display text-3xl">
-						Leave raffle creation?
+						Leaving already?
 					</DialogTitle>
 					<DialogDescription className="max-w-md text-center text-black">
-						Your progress will be saved as a draft. You can come back and finish
-						setting up your raffle anytime.
+						Looks like you&apos;ve made some changes. Want to save this raffle
+						as a draft and come back later — or leave without saving?
 					</DialogDescription>
 
-					<div className="flex items-center gap-2">
-						<div className="my-6">
-							<button
-								onClick={handleStay}
-								className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
-							>
-								Continue editing
-							</button>
-						</div>
-						<div className="my-6">
-							<button
-								onClick={handleSaveDraft}
-								className="text-background rounded-full border border-black bg-black px-12 py-3 text-sm font-semibold transition-colors"
-							>
-								Leave & save draft
-							</button>
-						</div>
+					<div className="flex items-center gap-2 pt-6">
+						<button
+							onClick={handleLeaveWithoutSaving}
+							className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
+						>
+							Leave without saving
+						</button>
+						<button
+							onClick={handleSaveDraft}
+							className="text-background rounded-full border border-black bg-black px-12 py-3 text-sm font-semibold transition-colors"
+						>
+							Save draft & leave
+						</button>
 					</div>
+
+					<button
+						onClick={handleStay}
+						className="text-sm font-semibold underline"
+					>
+						Continue editing
+					</button>
 				</DialogHeader>
 			</DialogContent>
 		</Dialog>

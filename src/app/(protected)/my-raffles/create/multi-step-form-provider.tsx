@@ -251,6 +251,13 @@ export function MultiStepFormProvider({
 	}, []);
 
 	/**
+	 * Navigates to my-raffles without saving draft
+	 */
+	const handleLeaveWithoutSaving = useCallback(() => {
+		router.push('/my-raffles');
+	}, [router]);
+
+	/**
 	 * Advances to the next step in the form
 	 * Does nothing if already on the last step
 	 */
@@ -521,6 +528,7 @@ export function MultiStepFormProvider({
 				onOpenChange={setShowExitModal}
 				onStay={handleStay}
 				onSaveDraft={handleSaveDraft}
+				onLeaveWithoutSaving={handleLeaveWithoutSaving}
 			/>
 		</MultiStepFormContext.Provider>
 	);

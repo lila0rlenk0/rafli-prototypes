@@ -166,9 +166,9 @@ export function TicketsStep() {
 	}
 
 	return (
-		<div className="flex w-full flex-col gap-6">
+		<div className="flex w-full flex-col gap-8">
 			{/* Active time period section */}
-			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+			<div className="flex flex-col gap-6 rounded-2xl bg-white p-8">
 				<h2 className="text-xl font-semibold">Active time period</h2>
 
 				<div className="grid grid-cols-2 gap-4">
@@ -238,7 +238,7 @@ export function TicketsStep() {
 			</div>
 
 			{/* Tickets section */}
-			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+			<div className="flex flex-col gap-6 rounded-2xl bg-white p-8">
 				<h2 className="text-xl font-semibold">Tickets</h2>
 
 				<div className="grid grid-cols-2 gap-4">
@@ -342,7 +342,7 @@ export function TicketsStep() {
 			<PromoCodesSection />
 
 			{/* Participant Check-in Question section */}
-			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+			<div className="flex flex-col gap-6 rounded-2xl bg-white p-8">
 				<div className="flex flex-col gap-2">
 					<h2 className="text-xl font-semibold">
 						Participant Check-in Question

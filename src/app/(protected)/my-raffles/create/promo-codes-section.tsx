@@ -123,7 +123,7 @@ export function PromoCodesSection() {
 	}
 
 	return (
-		<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+		<div className="flex flex-col gap-6 rounded-2xl bg-white p-8">
 			<div className="flex flex-col gap-2">
 				<h2 className="text-xl font-semibold">
 					Invite more people with promo codes

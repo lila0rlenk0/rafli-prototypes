@@ -121,7 +121,7 @@ export function ReviewStep() {
 	}
 
 	return (
-		<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
+		<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
 			<div className="flex flex-col gap-4">
 				<div className="relative flex aspect-video max-h-64 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
 					{coverImage?.[0] ? (

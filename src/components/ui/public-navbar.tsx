@@ -58,7 +58,10 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 
 	return (
 		<>
-			<nav className="sticky top-0 z-20 border-b border-[#e6e8ec] bg-white/80">
+			{/* Background strip — solid bg, z-10 so decorative shapes (z-[15]) show above */}
+			<div className="bg-background sticky top-0 z-10 h-14 sm:h-16" />
+
+			<nav className="sticky top-0 z-20 -mt-14 border-b border-[#e6e8ec] sm:-mt-16">
 				<div className="mx-auto flex h-14 w-full max-w-[1300px] items-center justify-between px-4 sm:h-16 sm:px-6">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">
@@ -184,7 +187,7 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 				)}
 			</nav>
 
-			<div className="mx-auto mt-6 max-w-[1400px] overflow-auto px-4 pb-10 sm:mt-10 sm:px-0">
+			<div className="relative z-[16] mx-auto mt-6 max-w-[1400px] overflow-auto px-4 pb-10 sm:mt-10 sm:px-0">
 				{children}
 			</div>
 		</>

@@ -69,8 +69,8 @@ export default function PublicHostLayout({ children }: PublicHostLayoutProps) {
 			<Suspense fallback={<ScreenLoader />}>
 				<PublicHostLayoutContent>{children}</PublicHostLayoutContent>
 			</Suspense>
-			<LeftColoredShapes className="fixed bottom-0 left-0 -z-1 origin-bottom-left scale-[.65]" />
-			<RightColoredShapes className="fixed right-0 bottom-0 -z-1 origin-bottom-right scale-[.65]" />
+			<LeftColoredShapes className="pointer-events-none fixed bottom-0 left-0 z-[15] origin-bottom-left scale-[.65]" />
+			<RightColoredShapes className="pointer-events-none fixed right-0 bottom-0 z-[15] origin-bottom-right scale-[.65]" />
 		</main>
 	);
 }

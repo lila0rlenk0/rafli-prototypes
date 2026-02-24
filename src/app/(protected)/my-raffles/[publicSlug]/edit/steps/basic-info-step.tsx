@@ -11,7 +11,7 @@ import { ImageLightbox } from '@/components/ui/image-lightbox';
 import { ImagePreviewCard } from '@/components/ui/image-preview-card';
 import { Input } from '@/components/ui/input';
 import { DollarSign, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { STEPS } from '.';
 import { DescriptionEditor } from '../../../create/description-editor';
 import { useEditForm } from '../edit-form-provider';
@@ -51,6 +51,9 @@ export function BasicInfoStep() {
 
 	// State for lightbox preview
 	const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+
+	// Ref to Dropzone wrapper for triggering file picker from empty slots
+	const dropzoneRef = useRef<HTMLDivElement>(null);
 
 	/**
 	 * Transforms categories into combobox options format
@@ -159,6 +162,14 @@ export function BasicInfoStep() {
 	}
 
 	/**
+	 * Triggers the Dropzone file picker by clicking its hidden input
+	 */
+	function handleUploadClick() {
+		const input = dropzoneRef.current?.querySelector('input[type="file"]');
+		if (input) (input as HTMLInputElement).click();
+	}
+
+	/**
 	 * Gets all images (Files and existing URLs) for the lightbox
 	 * @returns Array of File, string URL, or null for each position
 	 */
@@ -170,7 +181,7 @@ export function BasicInfoStep() {
 		<div className="flex w-full flex-col gap-6 rounded-2xl bg-white p-6">
 			<h2 className="mb-6 text-xl font-semibold">{currentStep.title}</h2>
 
-			<div className="flex flex-col gap-2">
+			<div className="flex flex-col gap-2" ref={dropzoneRef}>
 				<label htmlFor="coverImage" className="font-medium">
 					Cover Image
 				</label>
@@ -209,6 +220,7 @@ export function BasicInfoStep() {
 								index={index}
 								onRemove={hasNewFile ? handleRemoveImage : undefined}
 								onPreview={src ? handlePreviewImage : undefined}
+								onUpload={src ? undefined : handleUploadClick}
 							/>
 						);
 					})}

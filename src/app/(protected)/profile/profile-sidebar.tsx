@@ -27,29 +27,34 @@ interface ProfileSidebarProps {
  */
 export function ProfileSidebar({ items }: ProfileSidebarProps) {
 	return (
-		<div className="flex h-fit min-w-fit flex-col space-y-8 rounded-2xl border border-black bg-white px-6 py-12">
+		<div className="flex h-fit min-w-fit flex-col rounded-2xl border border-black bg-white px-8 py-8">
 			<ProfileIcon />
 
-			<span className="font-clash-display mr-12 max-w-xs text-3xl font-semibold">
-				Important information to fill in
+			<span className="font-clash-display mt-8 mr-12 mb-16 block max-w-xs text-3xl font-semibold">
+				My Data
 			</span>
 
-			{items.map(item => (
-				<button
-					key={item.sectionId}
-					type="button"
-					onClick={() => {
-						const element = document.getElementById(item.sectionId);
-						if (element) {
-							element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-						}
-					}}
-					className="flex w-fit items-center gap-4 text-left transition-colors hover:text-black"
-				>
-					<Copy className="size-6" />
-					<span className="text-[#6E6E6E]">{item.label}</span>
-				</button>
-			))}
+			<div className="flex flex-col gap-4">
+				{items.map(item => (
+					<button
+						key={item.sectionId}
+						type="button"
+						onClick={() => {
+							const element = document.getElementById(item.sectionId);
+							if (element) {
+								element.scrollIntoView({
+									behavior: 'smooth',
+									block: 'start',
+								});
+							}
+						}}
+						className="flex w-fit items-center gap-4 text-left transition-colors hover:text-black"
+					>
+						<Copy className="size-6" />
+						<span className="text-[#6E6E6E]">{item.label}</span>
+					</button>
+				))}
+			</div>
 		</div>
 	);
 }

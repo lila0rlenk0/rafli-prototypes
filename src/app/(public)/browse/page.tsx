@@ -4,9 +4,15 @@ import {
 } from '@/app/(protected)/lib/parse-search-params';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { FilterBar } from '@/components/filters';
-import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
+import {
+	PublicRaffleCard,
+	type RaffleRole,
+} from '@/components/raffle/public-raffle-card';
+import { getSession } from '@/lib/auth/session';
 import { getCategories } from '@/services/raffle/get-categories';
+import { getEnrolledRaffles } from '@/services/raffle/get-enrolled-raffles';
 import { getRaffles } from '@/services/raffle/get-raffles';
+import type { Raffle } from '@/types/raffle';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
@@ -31,8 +37,8 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const page = parsePage(params.page);
 	const category = params.category;
 
-	// Fetch raffles and categories in parallel
-	const [response, categoriesResponse] = await Promise.all([
+	// Fetch raffles, categories, and session in parallel
+	const [response, categoriesResponse, session] = await Promise.all([
 		getRaffles({
 			status: 'live',
 			page,
@@ -41,7 +47,34 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			limit: 12,
 		}),
 		getCategories(),
+		getSession(),
 	]);
+
+	// Fetch enrolled raffles for authenticated users
+	const enrolledIds = new Set<string>();
+	if (session) {
+		const enrolledResponse = await getEnrolledRaffles({
+			status: 'live',
+			limit: 100,
+		});
+		if (enrolledResponse.success) {
+			for (const r of enrolledResponse.data.raffles) {
+				enrolledIds.add(r.id);
+			}
+		}
+	}
+
+	/**
+	 * Determines user's role for a raffle
+	 * @param raffle - The raffle to check
+	 * @returns Role or undefined for non-authenticated users
+	 */
+	function getRaffleRole(raffle: Raffle): RaffleRole | undefined {
+		if (!session) return undefined;
+		if (raffle.hostId === session.user.id) return 'host';
+		if (enrolledIds.has(raffle.id)) return 'participant';
+		return undefined;
+	}
 
 	// Filter active categories only
 	const categories = categoriesResponse.success
@@ -76,8 +109,8 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 		<div className="z-10 container mx-auto px-4 py-8">
 			{/* Header Section */}
 			<div className="mb-20">
-				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-extrabold sm:text-5xl">
-					Choose a prize you&apos;ve been wanting!
+				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-semibold sm:text-5xl">
+					Pick the prize you actually want
 				</h1>
 				<p className="text-lg font-medium">
 					Get in, make a few clicks, and you&apos;re in the draw.
@@ -87,7 +120,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			{/* Filter Bar */}
 			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<h2 className="font-clash-display text-3xl font-semibold">
-					More existing raffles!
+					Browse all active raffles
 				</h2>
 				<Suspense>
 					<FilterBar categories={categories} />
@@ -98,7 +131,11 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			{raffles && raffles.length > 0 ? (
 				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{raffles.map(raffle => (
-						<PublicRaffleCard key={raffle.id} raffle={raffle} />
+						<PublicRaffleCard
+							key={raffle.id}
+							raffle={raffle}
+							role={getRaffleRole(raffle)}
+						/>
 					))}
 				</div>
 			) : (

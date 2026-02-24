@@ -75,7 +75,7 @@ export default async function RafflesCreatePage() {
 
 	return (
 		<div className="flex w-full gap-4">
-			<div className="flex h-fit min-w-fit flex-col space-y-8 rounded-2xl bg-white px-6 py-12">
+			<div className="flex h-fit min-w-fit flex-col space-y-6 rounded-2xl bg-white px-6 py-12">
 				<InfoBigIcon />
 
 				<span className="mr-12 text-xl font-semibold">
@@ -88,7 +88,7 @@ export default async function RafflesCreatePage() {
 						href={item.href}
 						className="flex w-fit items-center gap-4"
 					>
-						<Copy className="size-6" />
+						<Copy className="size-4" />
 						<span className="text-[#6E6E6E]">{item.label}</span>
 					</Link>
 				))}

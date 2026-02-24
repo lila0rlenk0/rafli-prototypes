@@ -8,13 +8,16 @@ import {
 import Link from 'next/link';
 
 import { ProvablyFairBadge } from '@/components/raffle/provably-fair-badge';
-import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
 
+/** User's relationship to a raffle */
+export type RaffleRole = 'host' | 'participant';
+
 interface PublicRaffleCardProps {
 	raffle: Raffle;
+	role?: RaffleRole;
 }
 
 /**
@@ -27,8 +30,26 @@ interface PublicRaffleCardProps {
  * Displays a summary card for a raffle, including its cover image,
  * progress bar, and a details button.
  */
-export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
+export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	const isUnlimited = raffle.maxParticipants === 0;
+
+	/**
+	 * Gets role tag styles based on user relationship
+	 * @returns Label and className for the role pill, or null
+	 */
+	function getRoleTag(): { label: string; className: string } | null {
+		if (!role) return null;
+		if (role === 'host') {
+			return {
+				label: 'Host',
+				className: 'bg-[#FAFFC4] text-[#998B53]',
+			};
+		}
+		return {
+			label: 'Participant',
+			className: 'bg-[#BEFFDB] text-[#44B476]',
+		};
+	}
 
 	/**
 	 * Calculates the percentage of filled spots in a raffle
@@ -163,24 +184,42 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 	}
 
 	const statusTag = getStatusTag(raffle.status);
+	const roleTag = getRoleTag();
 
 	return (
-		<div className="group flex w-full flex-col overflow-hidden rounded-[24px] border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
-			<ImageCarousel
-				coverImage={raffle.coverMediaUrl}
-				galleryImages={raffle.galleryMediaUrls}
-				alt={raffle.title}
-				className="mb-4"
-				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-			/>
+		<div className="group relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
+			<div className="relative z-10">
+				<ImageCarousel
+					coverImage={raffle.coverMediaUrl}
+					galleryImages={raffle.galleryMediaUrls}
+					alt={raffle.title}
+					maxHeight=""
+					className="mb-4"
+					sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+				/>
+			</div>
 
 			<div className="flex flex-1 flex-col p-4">
-				<h3 className="mb-2 h-16 text-xl font-bold tracking-tight text-gray-900">
-					{raffle.title}
+				<h3 className="mb-2 text-xl font-bold tracking-tight text-gray-900">
+					<Link
+						href={`/browse/${raffle.publicSlugOrCode}`}
+						className="line-clamp-2 after:absolute after:inset-0"
+					>
+						{raffle.title}
+					</Link>
 				</h3>
 
 				<div className="mb-3 flex items-center justify-between">
-					<span className="text-sm text-[#7B7B7B]">{getTimeRemaining()}</span>
+					<div className="flex items-center gap-2">
+						<span className="text-sm text-[#7B7B7B]">{getTimeRemaining()}</span>
+						{roleTag && (
+							<span
+								className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roleTag.className}`}
+							>
+								{roleTag.label}
+							</span>
+						)}
+					</div>
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusTag.className}`}
 					>
@@ -218,17 +257,12 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 
 				<Link
 					href={`/browse/${raffle.publicSlugOrCode}`}
-					className="mt-0 block"
+					className="relative z-10 mt-0 block"
 				>
 					<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
 						Details
 					</Button>
 				</Link>
-
-				<RaffleShareButtons
-					title={raffle.title}
-					publicSlug={raffle.publicSlugOrCode}
-				/>
 			</div>
 		</div>
 	);

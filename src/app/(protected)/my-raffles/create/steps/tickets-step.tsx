@@ -166,9 +166,9 @@ export function TicketsStep() {
 	}
 
 	return (
-		<div className="flex w-full flex-col gap-6">
+		<div className="flex w-full flex-col gap-8">
 			{/* Active time period section */}
-			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+			<div className="flex flex-col gap-6 rounded-2xl bg-white p-8">
 				<h2 className="text-xl font-semibold">Active time period</h2>
 
 				<div className="grid grid-cols-2 gap-4">
@@ -223,8 +223,8 @@ export function TicketsStep() {
 				{!isStartDateToday && (
 					<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
 						<div className="flex items-center gap-2">
-							<Clock className="size-6 text-[#2870BD]" />
-							<span className="text-xs">
+							<Clock className="size-4 text-[#2870BD]" />
+							<span className="text-sm">
 								Raffle have a later start date. You cant change date later.
 							</span>
 						</div>
@@ -238,7 +238,7 @@ export function TicketsStep() {
 			</div>
 
 			{/* Tickets section */}
-			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+			<div className="flex flex-col gap-6 rounded-2xl bg-white p-8">
 				<h2 className="text-xl font-semibold">Tickets</h2>
 
 				<div className="grid grid-cols-2 gap-4">
@@ -330,8 +330,8 @@ export function TicketsStep() {
 
 				<div className="flex w-full items-center justify-between rounded-lg bg-[#FEFFE3] p-4">
 					<div className="flex items-center gap-2">
-						<InfoIcon className="size-6 text-[#B7CE00]" />
-						<span className="text-xs">
+						<InfoIcon className="size-4 text-[#B7CE00]" />
+						<span className="text-sm">
 							Price cannot be changed after the first ticket purchase
 						</span>
 					</div>
@@ -342,7 +342,7 @@ export function TicketsStep() {
 			<PromoCodesSection />
 
 			{/* Participant Check-in Question section */}
-			<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+			<div className="flex flex-col gap-6 rounded-2xl bg-white p-8">
 				<div className="flex flex-col gap-2">
 					<h2 className="text-xl font-semibold">
 						Participant Check-in Question
@@ -396,7 +396,7 @@ export function TicketsStep() {
 					type="button"
 					onClick={handleContinue}
 					disabled={!isCurrentStepValid}
-					className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
+					className="cursor-pointer px-6 disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
 				>
 					Continue
 				</Button>

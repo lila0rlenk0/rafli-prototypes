@@ -169,24 +169,6 @@ export const raffleFormSchema = z
 				'Minimum participants must be greater than the number of winners, or set to 0 to disable',
 			path: ['minParticipants'],
 		},
-	)
-	// TODO: Temporary rule - minimum 30 days gap between start and end
-	// Remove this validation when no longer needed
-	.refine(
-		data => {
-			if (!data.startDate || !data.endDate) return true;
-
-			const start = new Date(data.startDate);
-			const end = new Date(data.endDate);
-			const diffTime = end.getTime() - start.getTime();
-			const diffDays = diffTime / (1000 * 60 * 60 * 24);
-
-			return diffDays >= 30;
-		},
-		{
-			message: 'There must be at least 30 days between start and end date',
-			path: ['endDate'],
-		},
 	);
 
 export type RaffleFormData = z.infer<typeof raffleFormSchema>;

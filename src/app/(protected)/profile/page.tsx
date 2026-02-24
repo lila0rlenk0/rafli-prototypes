@@ -48,12 +48,12 @@ export default async function ProfilePage() {
 	return (
 		<div className="flex flex-col gap-8 px-4">
 			{/* Main Content Layout */}
-			<div className="flex w-full flex-col gap-4 md:flex-row">
+			<div className="flex w-full flex-col gap-10 md:flex-row">
 				{/* Left Sidebar */}
 				<ProfileSidebar items={SIDEBAR_ITEMS} />
 
 				{/* Right Content Sections */}
-				<div className="flex w-full max-w-195 flex-col gap-4">
+				<div className="flex w-full max-w-195 flex-col gap-8">
 					<div className="flex items-center justify-between">
 						<h1 className="font-clash-display text-3xl font-semibold text-black">
 							My Profile

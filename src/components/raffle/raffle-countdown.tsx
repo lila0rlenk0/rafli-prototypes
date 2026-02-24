@@ -1,21 +1,17 @@
 'use client';
 
-import { differenceInSeconds, intervalToDuration } from 'date-fns';
+import { differenceInSeconds } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useTimeout } from '@/lib/hooks/use-timeout';
+import {
+	calculateTimeRemaining,
+	type TimeRemaining,
+} from '@/lib/utils/calculate-time-remaining';
 
 interface RaffleCountdownProps {
 	endAt: string;
-}
-
-interface TimeRemaining {
-	days: number;
-	hours: number;
-	minutes: number;
-	seconds: number;
-	isExpired: boolean;
 }
 
 /**
@@ -34,37 +30,17 @@ interface TimeRemaining {
 export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 	/**
 	 * Calculates time remaining from now until the end date
-	 * Uses date-fns for precise second-level diffing and duration decomposition
 	 */
-	function calculateTimeRemaining(endDateString: string): TimeRemaining {
+	function getTimeRemaining(endDateString: string): TimeRemaining {
 		const now = new Date();
 		const end = new Date(endDateString);
 		const secondsRemaining = differenceInSeconds(end, now);
-
-		if (secondsRemaining <= 0) {
-			return {
-				days: 0,
-				hours: 0,
-				minutes: 0,
-				seconds: 0,
-				isExpired: true,
-			};
-		}
-
-		const duration = intervalToDuration({ start: now, end });
-
-		return {
-			days: duration.days || 0,
-			hours: duration.hours || 0,
-			minutes: duration.minutes || 0,
-			seconds: duration.seconds || 0,
-			isExpired: false,
-		};
+		return calculateTimeRemaining(secondsRemaining);
 	}
 
 	const [mounted, setMounted] = useState(false);
 	const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() =>
-		calculateTimeRemaining(endAt),
+		getTimeRemaining(endAt),
 	);
 	const setMountTimeout = useTimeout();
 
@@ -78,7 +54,7 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 	 * Updates the countdown timer state
 	 */
 	const updateCountdown = useCallback(() => {
-		setTimeRemaining(calculateTimeRemaining(endAt));
+		setTimeRemaining(getTimeRemaining(endAt));
 	}, [endAt]);
 
 	// Update countdown every second

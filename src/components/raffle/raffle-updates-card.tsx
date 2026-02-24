@@ -42,12 +42,12 @@ export async function RaffleUpdatesCard({
 		<div className="w-full overflow-hidden rounded-2xl bg-white">
 			<Accordion type="single" collapsible className="w-full">
 				<AccordionItem value="updates" className="border-none">
-					<AccordionTrigger className="px-6 py-4 hover:no-underline">
+					<AccordionTrigger className="px-8 py-4 hover:no-underline">
 						<div className="flex flex-1 items-center justify-between">
 							<div className="flex items-center gap-3">
-								<h2 className="font-clash-display text-3xl font-semibold">
+								<h3 className="font-clash-display text-3xl font-semibold">
 									Updates from the host
-								</h2>
+								</h3>
 								{hasUpdates && (
 									<span className="rounded-full bg-black px-2 py-0.5 text-xs text-white">
 										{updates.length}
@@ -57,7 +57,7 @@ export async function RaffleUpdatesCard({
 							{actionSlot}
 						</div>
 					</AccordionTrigger>
-					<AccordionContent className="px-6 pb-6">
+					<AccordionContent className="px-8 pb-8">
 						{hasUpdates ? (
 							<div className="pt-2">
 								{updates.map((update, index) => (

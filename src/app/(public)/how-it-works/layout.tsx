@@ -192,7 +192,7 @@ export default function HowItWorksLayout({ children }: HowItWorksLayoutProps) {
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
 			/>
 			<main className="relative min-h-screen">
-				<ColoredShapes className="fixed top-0 left-0 -z-1 origin-top-left scale-[.65]" />
+				<ColoredShapes className="pointer-events-none fixed top-0 left-0 z-[15] origin-top-left scale-[.65]" />
 				<Suspense fallback={<ScreenLoader />}>
 					<HowItWorksLayoutContent>{children}</HowItWorksLayoutContent>
 				</Suspense>

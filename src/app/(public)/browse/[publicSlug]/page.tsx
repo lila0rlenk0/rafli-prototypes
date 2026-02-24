@@ -366,14 +366,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 			<div className="flex w-full flex-col gap-8 lg:flex-row">
 				<div className="w-full space-y-4">
-					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
-						<h1 className="text-3xl font-bold text-gray-900">{raffle.title}</h1>
+					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
+						<h2 className="text-3xl font-bold text-gray-900">{raffle.title}</h2>
 
 						<Link
 							href={getHostProfileUrl()}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="group flex w-fit items-center gap-4"
+							className="group flex w-fit items-center gap-3"
 						>
 							<div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
 								{hostAvatarUrl ? (
@@ -457,9 +457,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					/>
 
 					<div className="flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6">
-						<h2 className="font-clash-display text-3xl font-semibold">
+						<h3 className="font-clash-display text-3xl font-semibold">
 							Have a question?
-						</h2>
+						</h3>
 						<Accordion type="single" collapsible className="w-full space-y-4">
 							<AccordionItem value="how-it-works" className="border-none">
 								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
@@ -479,8 +479,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
 									Participants must be 18 years or older to enter. You can
 									purchase multiple tickets to increase your chances of winning.
-									Winners will be notified via email and must complete KYC
-									verification to claim their prize. All sales are final and
+									Winners will be notified via email and must provide additional
+									details to claim their prize. All sales are final and
 									non-refundable.
 								</AccordionContent>
 							</AccordionItem>
@@ -575,7 +575,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					)}
 
 					{shouldShowActiveCard() && (
-						<div className="h-fit rounded-2xl border border-black bg-white px-4 py-8">
+						<div className="h-fit rounded-2xl border border-black bg-white p-8">
 							<RaffleFireIcon className="mx-auto size-12" />
 
 							<h2 className="font-clash-display my-8 text-center text-xl font-semibold text-nowrap">

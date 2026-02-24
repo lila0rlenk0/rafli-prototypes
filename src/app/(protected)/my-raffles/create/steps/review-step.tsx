@@ -121,7 +121,7 @@ export function ReviewStep() {
 	}
 
 	return (
-		<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
+		<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
 			<div className="flex flex-col gap-4">
 				<div className="relative flex aspect-video max-h-64 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
 					{coverImage?.[0] ? (
@@ -231,8 +231,8 @@ export function ReviewStep() {
 			{shouldShowStartNowWarning() && (
 				<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
 					<div className="flex items-center gap-2">
-						<Clock className="size-6 text-[#2870BD]" />
-						<span className="text-xs">The raffle will start now.</span>
+						<Clock className="size-4 text-[#2870BD]" />
+						<span className="text-sm">The raffle will start now.</span>
 					</div>
 				</div>
 			)}

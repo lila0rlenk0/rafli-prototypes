@@ -123,7 +123,7 @@ export function PromoCodesSection() {
 	}
 
 	return (
-		<div className="flex flex-col gap-6 rounded-2xl bg-white p-6">
+		<div className="flex flex-col gap-6 rounded-2xl bg-white p-8">
 			<div className="flex flex-col gap-2">
 				<h2 className="text-xl font-semibold">
 					Invite more people with promo codes
@@ -151,6 +151,16 @@ export function PromoCodesSection() {
 						</span>
 					)}
 				</div>
+
+				{pendingPromoCodes.length > 0 && (
+					<div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+						<Info className="mt-0.5 size-4 shrink-0 text-blue-600" />
+						<p className="text-sm text-blue-700">
+							These are configurations only. Actual promo codes will be
+							generated once your raffle goes live.
+						</p>
+					</div>
+				)}
 
 				{pendingPromoCodes.length > 0 && (
 					<>
@@ -197,15 +207,17 @@ export function PromoCodesSection() {
 															<span
 																className={cn(
 																	'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
-																	'bg-blue-100 text-blue-700',
+																	'bg-amber-100 text-amber-700',
 																)}
 															>
-																Pending
+																Queued
 																<Info className="size-3" />
 															</span>
 														</TooltipTrigger>
 														<TooltipContent>
-															<p>Will be created after raffle is published</p>
+															<p>
+																Will be generated when your raffle goes live
+															</p>
 														</TooltipContent>
 													</Tooltip>
 												</TooltipProvider>
@@ -241,10 +253,10 @@ export function PromoCodesSection() {
 											<span
 												className={cn(
 													'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-													'bg-blue-100 text-blue-700',
+													'bg-amber-100 text-amber-700',
 												)}
 											>
-												Pending
+												Queued
 											</span>
 										</div>
 										<Button
@@ -265,6 +277,9 @@ export function PromoCodesSection() {
 										Max uses: {formatMaxUses(batch.maxUses)} &middot; Expires:{' '}
 										{formatExpiration(batch.expiresAt)}
 									</div>
+									<p className="mt-2 text-xs text-amber-600">
+										Will be generated when your raffle goes live
+									</p>
 								</div>
 							))}
 						</div>

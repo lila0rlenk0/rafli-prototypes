@@ -92,7 +92,7 @@ export function BasicInfoStep() {
 	function handleClearAll() {
 		setValue('title', '');
 		setValue('description', '');
-		setValue('price', 0);
+		setValue('price', NaN);
 		setValue('category', '');
 		setValue('coverImage', []);
 	}

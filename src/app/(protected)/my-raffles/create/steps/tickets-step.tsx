@@ -140,8 +140,8 @@ export function TicketsStep() {
 	function handleClearAll() {
 		setValue('startDate', '');
 		setValue('endDate', '');
-		setValue('pricePerTicket', 0);
-		setValue('numberOfWinners', 0);
+		setValue('pricePerTicket', NaN);
+		setValue('numberOfWinners', NaN);
 		setValue('minParticipants', 0);
 		setValue('maxParticipants', 0);
 		setValue('checkInQuestion', '');

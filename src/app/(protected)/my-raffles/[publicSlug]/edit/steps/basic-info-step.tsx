@@ -183,8 +183,13 @@ export function BasicInfoStep() {
 
 			<div className="flex flex-col gap-2" ref={dropzoneRef}>
 				<label htmlFor="coverImage" className="font-medium">
-					Cover Image
+					Images
 				</label>
+				<p className="text-sm text-neutral-500">
+					The first image will be used as the cover of your raffle card and
+					details page. Images will be displayed in the carousel in the same
+					order they appear here.
+				</p>
 				<Dropzone
 					src={coverImage}
 					accept={{

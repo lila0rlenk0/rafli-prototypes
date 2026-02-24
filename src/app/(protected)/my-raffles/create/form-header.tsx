@@ -28,7 +28,7 @@ export function FormHeader() {
 	 * Gets the header title based on the current step
 	 */
 	function getTitle(): string {
-		if (isLastStep) return 'Preview a Raffle';
+		if (isLastStep) return 'Preview your Raffle';
 		return 'Create a Raffle';
 	}
 

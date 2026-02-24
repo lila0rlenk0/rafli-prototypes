@@ -125,7 +125,7 @@ export function ImagePreviewCard({
 						alt={alt}
 						fill
 						sizes="112px"
-						className="object-contain"
+						className="object-cover"
 						unoptimized={typeof src === 'string'}
 					/>
 					{onRemove && (

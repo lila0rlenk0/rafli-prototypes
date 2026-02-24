@@ -8,7 +8,6 @@ import {
 import Link from 'next/link';
 
 import { ProvablyFairBadge } from '@/components/raffle/provably-fair-badge';
-import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
@@ -225,11 +224,6 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 						Details
 					</Button>
 				</Link>
-
-				<RaffleShareButtons
-					title={raffle.title}
-					publicSlug={raffle.publicSlugOrCode}
-				/>
 			</div>
 		</div>
 	);

@@ -11,7 +11,7 @@ import {
 	useMemo,
 	useState,
 } from 'react';
-import { useForm, useWatch, UseFormReturn } from 'react-hook-form';
+import { useForm, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -147,12 +147,7 @@ export function MultiStepFormProvider({
 		},
 	});
 
-	// useWatch re-renders on field changes like form.watch(), but integrates
-	// properly with React's lifecycle. The real perf win is the useMemo below
-	// that stabilizes the context reference — once hasUnsavedChanges flips to
-	// true (first keystroke), it stays true, so subsequent keystrokes won't
-	// cascade re-renders to context consumers.
-	const formValues = useWatch({ control: form.control });
+	const formValues = form.watch();
 
 	/**
 	 * Checks if the form has any unsaved changes

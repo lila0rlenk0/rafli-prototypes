@@ -396,7 +396,7 @@ export function TicketsStep() {
 					type="button"
 					onClick={handleContinue}
 					disabled={!isCurrentStepValid}
-					className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
+					className="cursor-pointer px-6 disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
 				>
 					Continue
 				</Button>

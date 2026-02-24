@@ -24,8 +24,6 @@ export function FormHeader() {
 	const progress = ((currentStep + 1) / totalSteps) * 100;
 	const isLastStep = currentStep === totalSteps - 1;
 
-	const shouldDisablePreviousStep = currentStep === 0;
-
 	/**
 	 * Gets the header title based on the current step
 	 */
@@ -61,13 +59,11 @@ export function FormHeader() {
 				</h1>
 
 				<div className="flex items-center gap-2">
-					<Button
-						variant="outline"
-						onClick={handlePreviousStep}
-						disabled={shouldDisablePreviousStep}
-					>
-						Previous page
-					</Button>
+					{currentStep > 0 && (
+						<Button variant="outline" onClick={handlePreviousStep}>
+							Previous page
+						</Button>
+					)}
 					<Button
 						variant="ghost"
 						size="icon"

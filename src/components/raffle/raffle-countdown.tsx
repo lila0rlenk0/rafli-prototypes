@@ -4,6 +4,7 @@ import { differenceInSeconds } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 
+import { useTimeout } from '@/lib/hooks/use-timeout';
 import {
 	calculateTimeRemaining,
 	type TimeRemaining,
@@ -41,14 +42,13 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 	const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() =>
 		getTimeRemaining(endAt),
 	);
+	const setMountTimeout = useTimeout();
 
+	// Defer mount flag to next tick to avoid SSR hydration mismatch
 	useEffect(() => {
 		if (mounted) return;
-
-		setTimeout(() => {
-			setMounted(true);
-		}, 0);
-	}, [mounted]);
+		setMountTimeout(() => setMounted(true), 0);
+	}, [mounted, setMountTimeout]);
 
 	/**
 	 * Updates the countdown timer state

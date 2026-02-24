@@ -1,8 +1,13 @@
 'use client';
 
-import SplitText from '@/components/ui/animations/split-text';
 import { Button } from '@/components/ui/button';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+
+// GSAP-dependent — dynamic import avoids loading the full GSAP bundle upfront
+const SplitText = dynamic(
+	() => import('@/components/ui/animations/split-text'),
+);
 
 /**
  * Hero section with main headline and call-to-action buttons

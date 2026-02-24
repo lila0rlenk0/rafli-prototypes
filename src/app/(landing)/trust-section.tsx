@@ -1,7 +1,12 @@
 import { TicketIcon } from '@/assets/ticket-icon';
-import SplitText from '@/components/ui/animations/split-text';
 import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// GSAP-dependent — dynamic import avoids loading the full GSAP bundle upfront
+const SplitText = dynamic(
+	() => import('@/components/ui/animations/split-text'),
+);
 
 const steps = [
 	{

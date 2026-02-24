@@ -16,6 +16,8 @@ import { $getRoot } from 'lexical';
 import { useEffect, useRef, useState } from 'react';
 import { useController } from 'react-hook-form';
 
+import { useTimeout } from '@/lib/hooks/use-timeout';
+
 import { Editor } from '@/components/ui/blocks/editor-md/editor';
 import { useUpdateForm } from './update-form-provider';
 import type { UpdateFormData } from './schema';
@@ -109,6 +111,7 @@ function MarkdownSyncPlugin({
 	const lastMarkdownRef = useRef<string>(markdownValue || '');
 	const isUpdatingRef = useRef(false);
 	const isInitializedRef = useRef(false);
+	const setDeferredUnlock = useTimeout();
 
 	// Initialize editor with markdown on mount (even if empty)
 	useEffect(() => {
@@ -123,11 +126,13 @@ function MarkdownSyncPlugin({
 			});
 			lastMarkdownRef.current = markdownValue || '';
 			isInitializedRef.current = true;
-			setTimeout(() => {
+			// Defer unlock to next tick so editor update completes before
+			// the OnChangePlugin can fire
+			setDeferredUnlock(() => {
 				isUpdatingRef.current = false;
 			}, 0);
 		}
-	}, [editor, markdownValue]);
+	}, [editor, markdownValue, setDeferredUnlock]);
 
 	// Update editor when markdown value changes externally
 	useEffect(() => {
@@ -148,12 +153,12 @@ function MarkdownSyncPlugin({
 					}
 				});
 				lastMarkdownRef.current = markdownValue || '';
-				setTimeout(() => {
+				setDeferredUnlock(() => {
 					isUpdatingRef.current = false;
 				}, 0);
 			}
 		});
-	}, [editor, markdownValue]);
+	}, [editor, markdownValue, setDeferredUnlock]);
 
 	return (
 		<OnChangePlugin
@@ -180,6 +185,7 @@ function MarkdownSyncPlugin({
  */
 export function UpdateDescriptionEditor() {
 	const [mounted, setMounted] = useState(false);
+	const setMountTimeout = useTimeout();
 	const { form } = useUpdateForm();
 
 	const { field, fieldState } = useController<UpdateFormData, 'text'>({
@@ -187,13 +193,11 @@ export function UpdateDescriptionEditor() {
 		name: 'text',
 	});
 
+	// Defer mount flag to next tick to avoid SSR hydration mismatch
 	useEffect(() => {
 		if (mounted) return;
-
-		setTimeout(() => {
-			setMounted(true);
-		}, 0);
-	}, [mounted]);
+		setMountTimeout(() => setMounted(true), 0);
+	}, [mounted, setMountTimeout]);
 
 	/**
 	 * Handles markdown changes from the editor

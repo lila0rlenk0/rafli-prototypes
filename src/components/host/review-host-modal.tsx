@@ -5,6 +5,8 @@ import { type ComponentProps, useState } from 'react';
 import { FaXTwitter } from 'react-icons/fa6';
 import { toast } from 'sonner';
 
+import { useTimeout } from '@/lib/hooks/use-timeout';
+
 import {
 	Dialog,
 	DialogContent,
@@ -45,6 +47,7 @@ export function ReviewHostModal({
 	const [rating, setRating] = useState(0);
 	const [isSuccess, setIsSuccess] = useState(false);
 	const reviewMutation = useCreateReview();
+	const setCloseTimeout = useTimeout();
 
 	/**
 	 * Handles review form submission
@@ -92,8 +95,8 @@ export function ReviewHostModal({
 	 */
 	function handleOpenChange(newOpen: boolean) {
 		if (!newOpen) {
-			// Reset state after close animation
-			setTimeout(() => {
+			// Reset state after Dialog close animation completes
+			setCloseTimeout(() => {
 				setRating(0);
 				setIsSuccess(false);
 			}, 200);

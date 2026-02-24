@@ -6,6 +6,8 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { useTimeout } from '@/lib/hooks/use-timeout';
+
 import { Button } from '@/components/ui/button';
 import {
 	Dialog,
@@ -69,6 +71,7 @@ export function ShippingFormModal({
 		resolver: zodResolver(formSchema),
 	});
 	const [isPending, startTransition] = useTransition();
+	const setCloseTimeout = useTimeout();
 
 	/**
 	 * Handles form submission
@@ -107,7 +110,8 @@ export function ShippingFormModal({
 	 */
 	function handleOpenChange(newOpen: boolean) {
 		if (!newOpen) {
-			setTimeout(() => {
+			// Reset form after Dialog close animation completes
+			setCloseTimeout(() => {
 				reset();
 			}, 200);
 		}

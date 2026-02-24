@@ -12,7 +12,7 @@ import { ImagePreviewCard } from '@/components/ui/image-preview-card';
 import { Input } from '@/components/ui/input';
 import { generateSlugPreview } from '@/lib/utils/slug-preview';
 import { DollarSign, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { STEPS } from '.';
 import { DescriptionEditor } from '../description-editor';
 import { useMultiStepForm } from '../multi-step-form-provider';
@@ -44,6 +44,9 @@ export function BasicInfoStep() {
 
 	// State for lightbox preview
 	const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+
+	// Ref to Dropzone wrapper for triggering file picker from empty slots
+	const dropzoneRef = useRef<HTMLDivElement>(null);
 
 	// Generate slug preview
 	const previewSlugPath = useMemo(() => {
@@ -116,6 +119,14 @@ export function BasicInfoStep() {
 		setPreviewIndex(index);
 	}
 
+	/**
+	 * Triggers the Dropzone file picker by clicking its hidden input
+	 */
+	function handleUploadClick() {
+		const input = dropzoneRef.current?.querySelector('input[type="file"]');
+		if (input) (input as HTMLInputElement).click();
+	}
+
 	// Handle continue with validation
 	const handleContinue = async () => {
 		// Trigger validation for current step fields
@@ -135,7 +146,7 @@ export function BasicInfoStep() {
 		<div className="flex w-full flex-col gap-6 rounded-2xl bg-white p-6">
 			<h2 className="mb-6 text-xl font-semibold">{currentStep.title}</h2>
 
-			<div className="flex flex-col gap-2">
+			<div className="flex flex-col gap-2" ref={dropzoneRef}>
 				<label htmlFor="coverImage" className="font-medium">
 					Cover Image
 				</label>
@@ -173,6 +184,7 @@ export function BasicInfoStep() {
 								index={index}
 								onRemove={file ? handleRemoveImage : undefined}
 								onPreview={file ? handlePreviewImage : undefined}
+								onUpload={file ? undefined : handleUploadClick}
 							/>
 						);
 					})}

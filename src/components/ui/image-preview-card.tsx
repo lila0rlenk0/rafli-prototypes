@@ -16,6 +16,8 @@ interface ImagePreviewCardProps {
 	onRemove?: (index: number) => void;
 	/** Preview callback */
 	onPreview?: (index: number) => void;
+	/** Upload callback for empty state click */
+	onUpload?: () => void;
 	/** Additional class names */
 	className?: string;
 }
@@ -26,7 +28,7 @@ interface ImagePreviewCardProps {
  * Unified component for image display with remove and preview functionality.
  * Handles both File objects (blob URLs) and URL strings.
  * Shows Trash icon button on hover to remove.
- * Clickable for full-screen preview.
+ * Clickable for full-screen preview when filled, triggers upload when empty.
  */
 export function ImagePreviewCard({
 	src,
@@ -34,6 +36,7 @@ export function ImagePreviewCard({
 	index,
 	onRemove,
 	onPreview,
+	onUpload,
 	className,
 }: ImagePreviewCardProps) {
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -66,11 +69,22 @@ export function ImagePreviewCard({
 	}, [src]);
 
 	/**
-	 * Handles click on the image card for preview
+	 * Checks if the card is interactive (clickable)
+	 */
+	function isInteractive(): boolean {
+		return Boolean(previewUrl && onPreview) || Boolean(!previewUrl && onUpload);
+	}
+
+	/**
+	 * Handles click on the image card
 	 */
 	function handleClick() {
 		if (previewUrl && onPreview) {
 			onPreview(index);
+			return;
+		}
+		if (!previewUrl && onUpload) {
+			onUpload();
 		}
 	}
 
@@ -89,7 +103,10 @@ export function ImagePreviewCard({
 		<div
 			className={cn(
 				'group relative flex aspect-square max-h-28 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white',
-				previewUrl && 'cursor-pointer',
+				isInteractive() && 'cursor-pointer',
+				!previewUrl &&
+					onUpload &&
+					'transition-colors hover:border-gray-400 hover:bg-gray-50',
 				className,
 			)}
 			onClick={handleClick}
@@ -98,8 +115,8 @@ export function ImagePreviewCard({
 					handleClick();
 				}
 			}}
-			role={previewUrl ? 'button' : undefined}
-			tabIndex={previewUrl ? 0 : undefined}
+			role={isInteractive() ? 'button' : undefined}
+			tabIndex={isInteractive() ? 0 : undefined}
 		>
 			{previewUrl ? (
 				<>

@@ -170,6 +170,7 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 				coverImage={raffle.coverMediaUrl}
 				galleryImages={raffle.galleryMediaUrls}
 				alt={raffle.title}
+				maxHeight=""
 				className="mb-4"
 				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
 			/>

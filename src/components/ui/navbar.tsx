@@ -34,7 +34,7 @@ export function Navbar({ children }: NavbarProps) {
 
 	return (
 		<>
-			<nav className="sticky top-0 z-20 border-b border-[#e6e8ec] bg-white">
+			<nav className="bg-background sticky top-0 z-20 border-b border-[#e6e8ec]">
 				<div className="mx-auto flex h-14 w-full max-w-[1300px] items-center justify-between px-4 sm:h-16 sm:px-6">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">

@@ -8,6 +8,7 @@ import {
 import Link from 'next/link';
 
 import { ProvablyFairBadge } from '@/components/raffle/provably-fair-badge';
+import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
 
@@ -41,12 +42,12 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 		if (role === 'host') {
 			return {
 				label: 'Host',
-				className: 'bg-[#c4edff] text-[#2b8fbf]',
+				className: 'bg-[#FAFFC4] text-[#998B53]',
 			};
 		}
 		return {
 			label: 'Participant',
-			className: 'bg-[#beffdb] text-[#44b476]',
+			className: 'bg-[#BEFFDB] text-[#44B476]',
 		};
 	}
 
@@ -199,26 +200,26 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 			</div>
 
 			<div className="flex flex-1 flex-col p-4">
-				<div className="mb-2 flex items-start gap-2">
-					<h3 className="flex-1 text-xl font-bold tracking-tight text-gray-900">
-						<Link
-							href={`/browse/${raffle.publicSlugOrCode}`}
-							className="line-clamp-2 after:absolute after:inset-0"
-						>
-							{raffle.title}
-						</Link>
-					</h3>
-					{roleTag && (
-						<span
-							className={`shrink-0 rounded-lg px-4 py-1 text-[13px] font-semibold ${roleTag.className}`}
-						>
-							{roleTag.label}
-						</span>
-					)}
-				</div>
+				<h3 className="mb-2 text-xl font-bold tracking-tight text-gray-900">
+					<Link
+						href={`/browse/${raffle.publicSlugOrCode}`}
+						className="line-clamp-2 after:absolute after:inset-0"
+					>
+						{raffle.title}
+					</Link>
+				</h3>
 
 				<div className="mb-3 flex items-center justify-between">
-					<span className="text-sm text-[#7B7B7B]">{getTimeRemaining()}</span>
+					<div className="flex items-center gap-2">
+						<span className="text-sm text-[#7B7B7B]">{getTimeRemaining()}</span>
+						{roleTag && (
+							<span
+								className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roleTag.className}`}
+							>
+								{roleTag.label}
+							</span>
+						)}
+					</div>
 					<span
 						className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusTag.className}`}
 					>
@@ -253,6 +254,15 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 						style={{ width: `${progress}%` }}
 					/>
 				</div>
+
+				<Link
+					href={`/browse/${raffle.publicSlugOrCode}`}
+					className="relative z-10 mt-0 block"
+				>
+					<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
+						Details
+					</Button>
+				</Link>
 			</div>
 		</div>
 	);

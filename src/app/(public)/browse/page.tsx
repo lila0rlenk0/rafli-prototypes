@@ -76,7 +76,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 		<div className="z-10 container mx-auto px-4 py-8">
 			{/* Header Section */}
 			<div className="mb-20">
-				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-extrabold sm:text-5xl">
+				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-semibold sm:text-5xl">
 					Pick the prize you actually want
 				</h1>
 				<p className="text-lg font-medium">

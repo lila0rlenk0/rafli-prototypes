@@ -77,7 +77,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			{/* Header Section */}
 			<div className="mb-20">
 				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-extrabold sm:text-5xl">
-					Choose a prize you&apos;ve been wanting!
+					Pick the prize you actually want
 				</h1>
 				<p className="text-lg font-medium">
 					Get in, make a few clicks, and you&apos;re in the draw.
@@ -87,7 +87,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			{/* Filter Bar */}
 			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<h2 className="font-clash-display text-3xl font-semibold">
-					More existing raffles!
+					Browse all active raffles
 				</h2>
 				<Suspense>
 					<FilterBar categories={categories} />

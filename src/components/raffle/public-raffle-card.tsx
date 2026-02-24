@@ -8,7 +8,6 @@ import {
 import Link from 'next/link';
 
 import { ProvablyFairBadge } from '@/components/raffle/provably-fair-badge';
-import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
 
@@ -165,18 +164,25 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 
 	return (
 		<div className="group relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
-			<ImageCarousel
-				coverImage={raffle.coverMediaUrl}
-				galleryImages={raffle.galleryMediaUrls}
-				alt={raffle.title}
-				maxHeight=""
-				className="mb-4"
-				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-			/>
+			<div className="relative z-10">
+				<ImageCarousel
+					coverImage={raffle.coverMediaUrl}
+					galleryImages={raffle.galleryMediaUrls}
+					alt={raffle.title}
+					maxHeight=""
+					className="mb-4"
+					sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+				/>
+			</div>
 
 			<div className="flex flex-1 flex-col p-4">
-				<h3 className="mb-2 h-16 text-xl font-bold tracking-tight text-gray-900">
-					{raffle.title}
+				<h3 className="mb-2 text-xl font-bold tracking-tight text-gray-900">
+					<Link
+						href={`/browse/${raffle.publicSlugOrCode}`}
+						className="line-clamp-2 after:absolute after:inset-0"
+					>
+						{raffle.title}
+					</Link>
 				</h3>
 
 				<div className="mb-3 flex items-center justify-between">
@@ -215,15 +221,6 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 						style={{ width: `${progress}%` }}
 					/>
 				</div>
-
-				<Link
-					href={`/browse/${raffle.publicSlugOrCode}`}
-					className="mt-0 block"
-				>
-					<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
-						Details
-					</Button>
-				</Link>
 			</div>
 		</div>
 	);

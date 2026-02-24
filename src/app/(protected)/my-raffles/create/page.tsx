@@ -75,7 +75,7 @@ export default async function RafflesCreatePage() {
 
 	return (
 		<div className="flex w-full gap-4">
-			<div className="flex h-fit min-w-fit flex-col space-y-8 rounded-2xl bg-white px-6 py-12">
+			<div className="flex h-fit min-w-fit flex-col space-y-6 rounded-2xl bg-white px-6 py-12">
 				<InfoBigIcon />
 
 				<span className="mr-12 text-xl font-semibold">

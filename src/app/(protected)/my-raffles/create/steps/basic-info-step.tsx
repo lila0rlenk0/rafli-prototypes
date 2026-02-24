@@ -144,7 +144,7 @@ export function BasicInfoStep() {
 
 	return (
 		<div className="flex w-full flex-col gap-8 rounded-2xl bg-white p-8">
-			<h2 className="mb-6 text-xl font-semibold">{currentStep.title}</h2>
+			<h2 className="text-xl font-semibold">{currentStep.title}</h2>
 
 			<div className="flex flex-col gap-2" ref={dropzoneRef}>
 				<label htmlFor="coverImage" className="font-medium">

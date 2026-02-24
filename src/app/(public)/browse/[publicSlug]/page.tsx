@@ -2,6 +2,7 @@ import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeli
 import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
 import { RaffleAutoRefresh } from '@/components/raffle/raffle-auto-refresh';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
+import { RaffleExpiredGate } from '@/components/raffle/raffle-expired-gate';
 import { RaffleDrawCard } from '@/components/raffle/raffle-draw-card';
 import { PrizeBreakdownCard } from '@/components/raffle/prize-breakdown-card';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
@@ -584,28 +585,30 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 							<RaffleCountdown endAt={raffle.endAt} />
 
-							<Suspense
-								fallback={
-									<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
-								}
-							>
-								<TicketPurchaseCard
-									raffleId={raffle.id}
-									publicSlug={publicSlug}
-									price={ticketPrice}
-									currency={raffle.ticketPriceCurrency}
-									availableTickets={availableTickets}
-									disabled={showEditButton || disablePurchase}
-									questionId={raffle.questionId}
-									isAuthenticated={isAuthenticated}
-								/>
-							</Suspense>
+							<RaffleExpiredGate endAt={raffle.endAt}>
+								<Suspense
+									fallback={
+										<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
+									}
+								>
+									<TicketPurchaseCard
+										raffleId={raffle.id}
+										publicSlug={publicSlug}
+										price={ticketPrice}
+										currency={raffle.ticketPriceCurrency}
+										availableTickets={availableTickets}
+										disabled={showEditButton || disablePurchase}
+										questionId={raffle.questionId}
+										isAuthenticated={isAuthenticated}
+									/>
+								</Suspense>
 
-							{disablePurchase && !showEditButton && (
-								<p className="mt-2 text-center text-sm text-gray-500">
-									You cannot purchase tickets for your own raffle
-								</p>
-							)}
+								{disablePurchase && !showEditButton && (
+									<p className="mt-2 text-center text-sm text-gray-500">
+										You cannot purchase tickets for your own raffle
+									</p>
+								)}
+							</RaffleExpiredGate>
 
 							<RaffleShareButtons
 								title={raffle.title}

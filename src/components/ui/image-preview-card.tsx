@@ -104,9 +104,7 @@ export function ImagePreviewCard({
 			className={cn(
 				'group relative flex aspect-square max-h-28 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white',
 				isInteractive() && 'cursor-pointer',
-				!previewUrl &&
-					onUpload &&
-					'transition-colors hover:border-gray-400 hover:bg-gray-50',
+				!previewUrl && onUpload && 'transition-colors hover:border-gray-400',
 				className,
 			)}
 			onClick={handleClick}

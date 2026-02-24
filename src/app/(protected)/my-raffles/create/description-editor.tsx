@@ -16,8 +16,6 @@ import { $getRoot } from 'lexical';
 import { useEffect, useRef, useState } from 'react';
 import { useController, type Control } from 'react-hook-form';
 
-import { useTimeout } from '@/lib/hooks/use-timeout';
-
 import { Editor } from '@/components/ui/blocks/editor-md/editor';
 import type { RaffleFormData } from './schema';
 
@@ -110,7 +108,6 @@ function MarkdownSyncPlugin({
 	const lastMarkdownRef = useRef<string>(markdownValue || '');
 	const isUpdatingRef = useRef(false);
 	const isInitializedRef = useRef(false);
-	const setDeferredUnlock = useTimeout();
 
 	// Initialize editor with markdown on mount (even if empty)
 	useEffect(() => {
@@ -125,13 +122,11 @@ function MarkdownSyncPlugin({
 			});
 			lastMarkdownRef.current = markdownValue || '';
 			isInitializedRef.current = true;
-			// Defer unlock to next tick so editor update completes before
-			// the OnChangePlugin can fire
-			setDeferredUnlock(() => {
+			setTimeout(() => {
 				isUpdatingRef.current = false;
 			}, 0);
 		}
-	}, [editor, markdownValue, setDeferredUnlock]);
+	}, [editor, markdownValue]);
 
 	// Update editor when markdown value changes externally
 	useEffect(() => {
@@ -152,12 +147,12 @@ function MarkdownSyncPlugin({
 					}
 				});
 				lastMarkdownRef.current = markdownValue || '';
-				setDeferredUnlock(() => {
+				setTimeout(() => {
 					isUpdatingRef.current = false;
 				}, 0);
 			}
 		});
-	}, [editor, markdownValue, setDeferredUnlock]);
+	}, [editor, markdownValue]);
 
 	return (
 		<OnChangePlugin
@@ -183,18 +178,19 @@ export function DescriptionEditor({
 	trigger,
 }: DescriptionEditorProps) {
 	const [mounted, setMounted] = useState(false);
-	const setMountTimeout = useTimeout();
 
 	const { field, fieldState } = useController({
 		control,
 		name,
 	});
 
-	// Defer mount flag to next tick to avoid SSR hydration mismatch
 	useEffect(() => {
 		if (mounted) return;
-		setMountTimeout(() => setMounted(true), 0);
-	}, [mounted, setMountTimeout]);
+
+		setTimeout(() => {
+			setMounted(true);
+		}, 0);
+	}, [mounted]);
 
 	const handleMarkdownChange = (markdown: string) => {
 		field.onChange(markdown);

@@ -8,7 +8,6 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
-	useMemo,
 	useState,
 } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
@@ -134,13 +133,13 @@ export function MultiStepFormProvider({
 		defaultValues: {
 			title: '',
 			description: '',
-			price: 0,
+			price: NaN,
 			category: '',
 			coverImage: [],
 			startDate: '',
 			endDate: '',
-			pricePerTicket: 0,
-			numberOfWinners: 0,
+			pricePerTicket: NaN,
+			numberOfWinners: NaN,
 			minParticipants: 0,
 			maxParticipants: 0,
 			checkInQuestion: '',
@@ -157,12 +156,12 @@ export function MultiStepFormProvider({
 		return (
 			formValues.title !== '' ||
 			formValues.description !== '' ||
-			formValues.price !== 0 ||
+			!isNaN(formValues.price) ||
 			formValues.category !== '' ||
 			formValues.startDate !== '' ||
 			formValues.endDate !== '' ||
-			formValues.pricePerTicket !== 0 ||
-			formValues.numberOfWinners !== 0 ||
+			!isNaN(formValues.pricePerTicket) ||
+			!isNaN(formValues.numberOfWinners) ||
 			formValues.minParticipants !== 0 ||
 			formValues.maxParticipants !== 0 ||
 			formValues.checkInQuestion !== '' ||
@@ -183,13 +182,13 @@ export function MultiStepFormProvider({
 		form.reset({
 			title: draft.title,
 			description: draft.description,
-			price: draft.price,
+			price: draft.price || NaN,
 			category: draft.category,
 			coverImage: [],
 			startDate: draft.startDate,
 			endDate: draft.endDate,
-			pricePerTicket: draft.pricePerTicket,
-			numberOfWinners: draft.numberOfWinners,
+			pricePerTicket: draft.pricePerTicket || NaN,
+			numberOfWinners: draft.numberOfWinners || NaN,
 			minParticipants: draft.minParticipants,
 			maxParticipants: draft.maxParticipants,
 			checkInQuestion: draft.checkInQuestion || '',
@@ -227,12 +226,16 @@ export function MultiStepFormProvider({
 			{
 				title: values.title,
 				description: values.description,
-				price: values.price,
+				price: isNaN(values.price) ? 0 : values.price,
 				category: values.category,
 				startDate: values.startDate,
 				endDate: values.endDate,
-				pricePerTicket: values.pricePerTicket,
-				numberOfWinners: values.numberOfWinners,
+				pricePerTicket: isNaN(values.pricePerTicket)
+					? 0
+					: values.pricePerTicket,
+				numberOfWinners: isNaN(values.numberOfWinners)
+					? 0
+					: values.numberOfWinners,
 				minParticipants: values.minParticipants,
 				maxParticipants: values.maxParticipants,
 				checkInQuestion: values.checkInQuestion,
@@ -293,7 +296,6 @@ export function MultiStepFormProvider({
 
 	const isFirstStep = currentStep === 0;
 	const isLastStep = currentStep === totalSteps - 1;
-	const isRaffleCreated = createdRaffle !== null;
 
 	/**
 	 * Maps server error codes to user-facing messages and optional form field targets
@@ -440,13 +442,13 @@ export function MultiStepFormProvider({
 				form.reset({
 					title: '',
 					description: '',
-					price: 0,
+					price: NaN,
 					category: '',
 					coverImage: [],
 					startDate: '',
 					endDate: '',
-					pricePerTicket: 0,
-					numberOfWinners: 0,
+					pricePerTicket: NaN,
+					numberOfWinners: NaN,
 					minParticipants: 0,
 					maxParticipants: 0,
 					checkInQuestion: '',
@@ -487,60 +489,32 @@ export function MultiStepFormProvider({
 		[isLastStep, handleCreateRaffle, nextStep],
 	);
 
-	// Memoize context value to prevent re-render cascades to consumers.
-	// Most deps are stable refs (form, callbacks). The key insight: hasUnsavedChanges
-	// flips to true on first keystroke and stays true — so subsequent keystrokes
-	// don't produce a new context reference and consumers skip re-rendering.
-	const contextValue = useMemo<MultiStepFormContextType>(
-		() => ({
-			currentStep,
-			totalSteps,
-			form,
-			nextStep,
-			previousStep,
-			goToStep,
-			isFirstStep,
-			isLastStep,
-			onSubmit: handleSubmit,
-			isCreating,
-			isRaffleCreated,
-			userName,
-			totalRaffles,
-			hasUnsavedChanges,
-			setShowExitModal,
-			questions,
-			categories,
-			pendingPromoCodes,
-			addPendingPromoCode,
-			removePendingPromoCode,
-			clearPendingPromoCodes,
-		}),
-		[
-			currentStep,
-			totalSteps,
-			form,
-			nextStep,
-			previousStep,
-			goToStep,
-			isFirstStep,
-			isLastStep,
-			handleSubmit,
-			isCreating,
-			isRaffleCreated,
-			userName,
-			totalRaffles,
-			hasUnsavedChanges,
-			questions,
-			categories,
-			pendingPromoCodes,
-			addPendingPromoCode,
-			removePendingPromoCode,
-			clearPendingPromoCodes,
-		],
-	);
-
 	return (
-		<MultiStepFormContext.Provider value={contextValue}>
+		<MultiStepFormContext.Provider
+			value={{
+				currentStep,
+				totalSteps,
+				form,
+				nextStep,
+				previousStep,
+				goToStep,
+				isFirstStep,
+				isLastStep,
+				onSubmit: handleSubmit,
+				isCreating,
+				isRaffleCreated: createdRaffle !== null,
+				userName,
+				totalRaffles,
+				hasUnsavedChanges,
+				setShowExitModal,
+				questions,
+				categories,
+				pendingPromoCodes,
+				addPendingPromoCode,
+				removePendingPromoCode,
+				clearPendingPromoCodes,
+			}}
+		>
 			{children}
 			{createdRaffle && (
 				<RaffleCreatedModal

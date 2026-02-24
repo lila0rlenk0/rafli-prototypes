@@ -157,9 +157,9 @@ export function TicketsStep() {
 		}
 		setValue('endDate', '');
 		if (!restrictions.priceLocked) {
-			setValue('pricePerTicket', 0);
+			setValue('pricePerTicket', NaN);
 		}
-		setValue('numberOfWinners', 0);
+		setValue('numberOfWinners', NaN);
 		setValue('minParticipants', 0);
 		setValue('maxParticipants', 0);
 		setValue('checkInQuestion', '');

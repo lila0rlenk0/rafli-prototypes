@@ -1,6 +1,6 @@
 'use client';
 
-import { differenceInSeconds, intervalToDuration } from 'date-fns';
+import { differenceInSeconds } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -49,15 +49,12 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 			};
 		}
 
-		const duration = intervalToDuration({ start: now, end });
+		const days = Math.floor(secondsRemaining / 86_400);
+		const hours = Math.floor((secondsRemaining % 86_400) / 3_600);
+		const minutes = Math.floor((secondsRemaining % 3_600) / 60);
+		const seconds = secondsRemaining % 60;
 
-		return {
-			days: duration.days || 0,
-			hours: duration.hours || 0,
-			minutes: duration.minutes || 0,
-			seconds: duration.seconds || 0,
-			isExpired: false,
-		};
+		return { days, hours, minutes, seconds, isExpired: false };
 	}
 
 	const [mounted, setMounted] = useState(false);

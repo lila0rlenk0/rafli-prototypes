@@ -8,7 +8,6 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
-	useMemo,
 	useState,
 } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
@@ -293,7 +292,6 @@ export function MultiStepFormProvider({
 
 	const isFirstStep = currentStep === 0;
 	const isLastStep = currentStep === totalSteps - 1;
-	const isRaffleCreated = createdRaffle !== null;
 
 	/**
 	 * Maps server error codes to user-facing messages and optional form field targets
@@ -487,60 +485,32 @@ export function MultiStepFormProvider({
 		[isLastStep, handleCreateRaffle, nextStep],
 	);
 
-	// Memoize context value to prevent re-render cascades to consumers.
-	// Most deps are stable refs (form, callbacks). The key insight: hasUnsavedChanges
-	// flips to true on first keystroke and stays true — so subsequent keystrokes
-	// don't produce a new context reference and consumers skip re-rendering.
-	const contextValue = useMemo<MultiStepFormContextType>(
-		() => ({
-			currentStep,
-			totalSteps,
-			form,
-			nextStep,
-			previousStep,
-			goToStep,
-			isFirstStep,
-			isLastStep,
-			onSubmit: handleSubmit,
-			isCreating,
-			isRaffleCreated,
-			userName,
-			totalRaffles,
-			hasUnsavedChanges,
-			setShowExitModal,
-			questions,
-			categories,
-			pendingPromoCodes,
-			addPendingPromoCode,
-			removePendingPromoCode,
-			clearPendingPromoCodes,
-		}),
-		[
-			currentStep,
-			totalSteps,
-			form,
-			nextStep,
-			previousStep,
-			goToStep,
-			isFirstStep,
-			isLastStep,
-			handleSubmit,
-			isCreating,
-			isRaffleCreated,
-			userName,
-			totalRaffles,
-			hasUnsavedChanges,
-			questions,
-			categories,
-			pendingPromoCodes,
-			addPendingPromoCode,
-			removePendingPromoCode,
-			clearPendingPromoCodes,
-		],
-	);
-
 	return (
-		<MultiStepFormContext.Provider value={contextValue}>
+		<MultiStepFormContext.Provider
+			value={{
+				currentStep,
+				totalSteps,
+				form,
+				nextStep,
+				previousStep,
+				goToStep,
+				isFirstStep,
+				isLastStep,
+				onSubmit: handleSubmit,
+				isCreating,
+				isRaffleCreated: createdRaffle !== null,
+				userName,
+				totalRaffles,
+				hasUnsavedChanges,
+				setShowExitModal,
+				questions,
+				categories,
+				pendingPromoCodes,
+				addPendingPromoCode,
+				removePendingPromoCode,
+				clearPendingPromoCodes,
+			}}
+		>
 			{children}
 			{createdRaffle && (
 				<RaffleCreatedModal

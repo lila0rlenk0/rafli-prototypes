@@ -11,8 +11,12 @@ import { ProvablyFairBadge } from '@/components/raffle/provably-fair-badge';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
 
+/** User's relationship to a raffle */
+export type RaffleRole = 'host' | 'participant';
+
 interface PublicRaffleCardProps {
 	raffle: Raffle;
+	role?: RaffleRole;
 }
 
 /**
@@ -25,8 +29,26 @@ interface PublicRaffleCardProps {
  * Displays a summary card for a raffle, including its cover image,
  * progress bar, and a details button.
  */
-export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
+export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	const isUnlimited = raffle.maxParticipants === 0;
+
+	/**
+	 * Gets role tag styles based on user relationship
+	 * @returns Label and className for the role pill, or null
+	 */
+	function getRoleTag(): { label: string; className: string } | null {
+		if (!role) return null;
+		if (role === 'host') {
+			return {
+				label: 'Host',
+				className: 'bg-[#c4edff] text-[#2b8fbf]',
+			};
+		}
+		return {
+			label: 'Participant',
+			className: 'bg-[#beffdb] text-[#44b476]',
+		};
+	}
 
 	/**
 	 * Calculates the percentage of filled spots in a raffle
@@ -161,6 +183,7 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 	}
 
 	const statusTag = getStatusTag(raffle.status);
+	const roleTag = getRoleTag();
 
 	return (
 		<div className="group relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
@@ -176,14 +199,23 @@ export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 			</div>
 
 			<div className="flex flex-1 flex-col p-4">
-				<h3 className="mb-2 text-xl font-bold tracking-tight text-gray-900">
-					<Link
-						href={`/browse/${raffle.publicSlugOrCode}`}
-						className="line-clamp-2 after:absolute after:inset-0"
-					>
-						{raffle.title}
-					</Link>
-				</h3>
+				<div className="mb-2 flex items-start gap-2">
+					<h3 className="flex-1 text-xl font-bold tracking-tight text-gray-900">
+						<Link
+							href={`/browse/${raffle.publicSlugOrCode}`}
+							className="line-clamp-2 after:absolute after:inset-0"
+						>
+							{raffle.title}
+						</Link>
+					</h3>
+					{roleTag && (
+						<span
+							className={`shrink-0 rounded-lg px-4 py-1 text-[13px] font-semibold ${roleTag.className}`}
+						>
+							{roleTag.label}
+						</span>
+					)}
+				</div>
 
 				<div className="mb-3 flex items-center justify-between">
 					<span className="text-sm text-[#7B7B7B]">{getTimeRemaining()}</span>

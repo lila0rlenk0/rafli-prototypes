@@ -6,10 +6,16 @@ import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { ComponentProps, useState } from 'react';
 
+interface NavbarProps {
+	showDecoration?: boolean;
+}
+
 /**
  * Navigation bar component for the landing page
+ * @param props - Component props
+ * @param props.showDecoration - Whether to show decorative colored cards (default: true)
  */
-export function Navbar() {
+export function Navbar({ showDecoration = true }: NavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 
 	/**
@@ -29,7 +35,9 @@ export function Navbar() {
 	return (
 		<>
 			<nav className="relative w-full border-b border-[#e6e8ec]">
-				<ColoredCard className="absolute top-0 right-0 z-0 origin-top-right scale-[.55] md:scale-[.85]" />
+				{showDecoration && (
+					<ColoredCard className="absolute top-0 right-0 z-0 origin-top-right scale-[.55] md:scale-[.85]" />
+				)}
 
 				<div className="relative z-10 mx-auto flex max-w-[1720px] items-center justify-between px-6 py-4 lg:px-[100px] lg:py-5">
 					<div className="flex items-center gap-8 lg:gap-[60px]">

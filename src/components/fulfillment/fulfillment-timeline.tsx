@@ -62,6 +62,16 @@ export function FulfillmentTimeline({
 	const [markSentModalOpen, setMarkSentModalOpen] = useState(false);
 	const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
+	/** Button text for mark delivered action */
+	function getMarkDeliveredText(): string {
+		return isMarkingDelivered ? 'Marking...' : 'Mark as Delivered';
+	}
+
+	/** Button text for confirm receipt action */
+	function getConfirmButtonText(): string {
+		return isConfirming ? 'Confirming...' : 'I received the prize';
+	}
+
 	/**
 	 * Determines step status based on current winning status
 	 */
@@ -205,7 +215,7 @@ export function FulfillmentTimeline({
 							disabled={isMarkingDelivered}
 							className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
 						>
-							{isMarkingDelivered ? 'Marking...' : 'Mark as Delivered'}
+							{getMarkDeliveredText()}
 						</button>
 					) : null,
 			};
@@ -318,7 +328,7 @@ export function FulfillmentTimeline({
 						disabled={isConfirming}
 						className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
 					>
-						{isConfirming ? 'Confirming...' : 'I received the prize'}
+						{getConfirmButtonText()}
 					</button>
 				) : isReceived ? (
 					<button

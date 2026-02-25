@@ -37,6 +37,21 @@ export function RaffleCancelledCard({
 }: RaffleCancelledCardProps) {
 	const isAuto = isAutoReason(reason);
 
+	/** Pluralizes a noun based on count */
+	function pluralize(count: number, singular: string): string {
+		return count !== 1 ? `${singular}s` : singular;
+	}
+
+	/** Formats "N ticket(s)" for display */
+	function formatTicketCount(count: number): string {
+		return `${count} ${pluralize(count, 'ticket')}`;
+	}
+
+	/** Formats "N participant(s)" for display */
+	function formatParticipantCount(count: number): string {
+		return `${count} ${pluralize(count, 'participant')}`;
+	}
+
 	/** Title text based on cancellation type */
 	function getTitle(): string {
 		return isAuto ? 'Auto-Cancelled' : 'Cancelled';
@@ -55,8 +70,8 @@ export function RaffleCancelledCard({
 
 			case CANCELLATION_REASON.INSUFFICIENT_PARTICIPANTS:
 				return isOwner
-					? `This raffle needed at least ${numberOfWinners} participant${numberOfWinners !== 1 ? 's' : ''} but only had ${participantsCount}. It was automatically cancelled.`
-					: `This raffle needed at least ${numberOfWinners} participant${numberOfWinners !== 1 ? 's' : ''} to draw winners but didn't reach the minimum.`;
+					? `This raffle needed at least ${formatParticipantCount(numberOfWinners)} but only had ${participantsCount}. It was automatically cancelled.`
+					: `This raffle needed at least ${formatParticipantCount(numberOfWinners)} to draw winners but didn't reach the minimum.`;
 
 			case CANCELLATION_REASON.HOST_CANCELLED:
 				return isOwner
@@ -88,19 +103,16 @@ export function RaffleCancelledCard({
 			{shouldShowRefundNotice() && (
 				<div className="mt-4 rounded-lg bg-[#E1F8FF] p-3 text-center text-sm">
 					<p>
-						You had{' '}
-						<strong>
-							{myTicketCount} ticket{myTicketCount !== 1 ? 's' : ''}
-						</strong>{' '}
-						&mdash; all purchases are automatically refunded.
+						You had <strong>{formatTicketCount(myTicketCount)}</strong> &mdash;
+						all purchases are automatically refunded.
 					</p>
 				</div>
 			)}
 
 			{isOwner && ticketsSoldCount > 0 && (
 				<p className="mt-3 text-center text-xs text-gray-500">
-					{ticketsSoldCount} ticket{ticketsSoldCount !== 1 ? 's' : ''} sold
-					&mdash; all purchases are automatically refunded.
+					{formatTicketCount(ticketsSoldCount)} sold &mdash; all purchases are
+					automatically refunded.
 				</p>
 			)}
 		</div>

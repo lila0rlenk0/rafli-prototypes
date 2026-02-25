@@ -166,6 +166,11 @@ interface VerificationSuccessProps {
  * Displays successful verification result
  */
 function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
+	/** Formats winner position as 1-based label */
+	function getWinnerPositionLabel(position: number | null): string {
+		return `Position #${(position ?? 0) + 1}`;
+	}
+
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center gap-2 text-green-600">
@@ -209,7 +214,7 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 						label="Winner"
 						value={
 							<span className="flex items-center gap-1 text-amber-600">
-								🏆 Position #{(data.winnerPosition ?? 0) + 1}
+								{getWinnerPositionLabel(data.winnerPosition)}
 							</span>
 						}
 					/>

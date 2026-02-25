@@ -49,6 +49,16 @@ export function WinnersTable({
 		return twoNames.length > 20 ? twoNames.slice(0, 17) + '...' : twoNames;
 	}
 
+	/** Converts 0-based position to 1-based for display */
+	function getDisplayPosition(position: number): number {
+		return position + 1;
+	}
+
+	/** Toggle label for shipping details expand/collapse */
+	function getToggleLabel(isExpanded: boolean): string {
+		return isExpanded ? 'Hide details' : 'View details';
+	}
+
 	/**
 	 * Gets location from shipping info
 	 */
@@ -97,7 +107,7 @@ export function WinnersTable({
 							<Fragment key={winner.id}>
 								<tr className="text-sm">
 									<td className="px-6 py-4 font-medium">
-										{winner.position + 1}
+										{getDisplayPosition(winner.position)}
 									</td>
 									<td className="px-6 py-4">
 										{formatDisplayName(winner.userName, winner.position)}
@@ -111,7 +121,7 @@ export function WinnersTable({
 													onClick={() => toggleExpanded(winner.id)}
 													className="cursor-pointer text-xs font-semibold text-black underline"
 												>
-													{isExpanded ? 'Hide details' : 'View details'}
+													{getToggleLabel(isExpanded)}
 												</button>
 											)}
 										</div>

@@ -177,6 +177,11 @@ interface WinnerSuccessProps {
  * Displays successful winner verification result
  */
 function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
+	/** Formats verified winner title with 1-based position */
+	function getVerifiedWinnerTitle(position: number): string {
+		return `Winner #${position + 1} Verified`;
+	}
+
 	/**
 	 * Truncates a hex string for display
 	 */
@@ -190,7 +195,7 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 			<div className="flex items-center gap-2 text-amber-600">
 				<Trophy className="size-5" />
 				<span className="font-semibold">
-					Winner #{data.position + 1} Verified
+					{getVerifiedWinnerTitle(data.position)}
 				</span>
 			</div>
 

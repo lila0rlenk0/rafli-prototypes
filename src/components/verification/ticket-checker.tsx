@@ -167,7 +167,7 @@ interface VerificationSuccessProps {
  */
 function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 	/** Formats winner position as 1-based label */
-	function getWinnerPositionLabel(position: number | null): string {
+	function getWinnerPositionLabel(position: number | null | undefined): string {
 		return `Position #${(position ?? 0) + 1}`;
 	}
 

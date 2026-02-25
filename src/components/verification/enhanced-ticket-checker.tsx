@@ -196,7 +196,7 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 	const { ticket, proof } = data;
 
 	/** Formats winner position as 1-based label */
-	function getWinnerPositionLabel(position: number | null): string {
+	function getWinnerPositionLabel(position: number | null | undefined): string {
 		return `Position #${(position ?? 0) + 1}`;
 	}
 

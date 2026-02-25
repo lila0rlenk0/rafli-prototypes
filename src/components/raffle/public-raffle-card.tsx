@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { ProvablyFairBadge } from '@/components/raffle/provably-fair-badge';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
+import { isAutoCancelled } from '@/lib/utils/cancellation-reason';
 import { RAFFLE_STATUS, type Raffle, type RaffleStatus } from '@/types/raffle';
 
 /** User's relationship to a raffle */
@@ -169,6 +170,14 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 					className: 'text-purple-600 bg-purple-50',
 				};
 			case RAFFLE_STATUS.CANCELLED:
+				// Auto-cancelled (system) → orange, host-cancelled → red
+				if (isAutoCancelled(raffle)) {
+					return {
+						label: 'Auto-Cancelled',
+						icon: CircleOff,
+						className: 'text-orange-600 bg-orange-50',
+					};
+				}
 				return {
 					label: 'Cancelled',
 					icon: CircleOff,

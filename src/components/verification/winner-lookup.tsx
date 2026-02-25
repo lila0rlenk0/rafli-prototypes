@@ -64,7 +64,8 @@ export function WinnerLookup() {
 		setLoading(true);
 		setResult(null);
 
-		const response = await verifyWinner(raffleId.trim(), posNum);
+		// User enters 1-based position; API expects 0-based
+		const response = await verifyWinner(raffleId.trim(), posNum - 1);
 
 		if (response.success) {
 			setResult({ type: 'success', data: response.data });
@@ -176,6 +177,11 @@ interface WinnerSuccessProps {
  * Displays successful winner verification result
  */
 function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
+	/** Formats verified winner title with 1-based position */
+	function getVerifiedWinnerTitle(position: number): string {
+		return `Winner #${position + 1} Verified`;
+	}
+
 	/**
 	 * Truncates a hex string for display
 	 */
@@ -188,7 +194,9 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 		<div className="space-y-4">
 			<div className="flex items-center gap-2 text-amber-600">
 				<Trophy className="size-5" />
-				<span className="font-semibold">Winner #{data.position} Verified</span>
+				<span className="font-semibold">
+					{getVerifiedWinnerTitle(data.position)}
+				</span>
 			</div>
 
 			<div className="space-y-3 rounded-lg bg-neutral-50 p-4">

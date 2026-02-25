@@ -81,6 +81,16 @@ export function TicketsStep() {
 		);
 	}
 
+	/** Whether to show partial draw info bullet */
+	function shouldShowPartialDrawInfo(): boolean {
+		return minParticipants > 0 && minParticipants - 1 > numberOfWinners;
+	}
+
+	/** Pluralized "participant" label */
+	function formatParticipantLabel(count: number): string {
+		return count !== 1 ? 'participants' : 'participant';
+	}
+
 	// Check if end date is after start date
 	const isDateRangeValid = useMemo(() => {
 		if (!startDate || !endDate) return true; // Don't validate if dates are not set
@@ -336,6 +346,37 @@ export function TicketsStep() {
 						</span>
 					</div>
 				</div>
+
+				{numberOfWinners > 0 && (
+					<div className="flex w-full flex-col gap-2 rounded-lg bg-[#FEFFE3] p-4">
+						<div className="flex items-center gap-2">
+							<InfoIcon className="size-4 shrink-0 text-[#B7CE00]" />
+							<span className="text-sm font-medium">
+								What happens when the raffle ends?
+							</span>
+						</div>
+						<ul className="ml-6 list-disc space-y-1 text-sm text-gray-700">
+							{minParticipants > 0 && (
+								<li>
+									<strong>Full draw</strong> — {minParticipants}+ participants:
+									winners receive the declared prize
+								</li>
+							)}
+							{shouldShowPartialDrawInfo() && (
+								<li>
+									<strong>Partial draw</strong> — {numberOfWinners} to{' '}
+									{minParticipants - 1} participants: winners split the revenue
+									(cash distribution)
+								</li>
+							)}
+							<li>
+								<strong>Auto-cancel</strong> — fewer than {numberOfWinners}{' '}
+								{formatParticipantLabel(numberOfWinners)}: raffle is cancelled
+								and all tickets are refunded
+							</li>
+						</ul>
+					</div>
+				)}
 			</div>
 
 			{/* Promo codes section */}

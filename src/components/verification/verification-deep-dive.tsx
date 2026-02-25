@@ -116,15 +116,20 @@ interface RaffleHeaderProps {
 function RaffleHeader({ data }: RaffleHeaderProps) {
 	const allVerified = data.winners.every(w => w.merkleVerified);
 
+	/** Formats raffle summary line (tickets + winners count) */
+	function getSummaryText(): string {
+		const tickets = `${data.totalTickets.toLocaleString()} tickets`;
+		const count = data.winners.length;
+		const winners = `${count} ${count !== 1 ? 'winners' : 'winner'}`;
+		return `${tickets} · ${winners}`;
+	}
+
 	return (
 		<div className="rounded-2xl border border-black bg-white p-6">
 			<div className="flex items-start justify-between gap-4">
 				<div>
 					<h2 className="text-xl font-semibold">{data.title}</h2>
-					<p className="mt-1 text-sm text-neutral-500">
-						{data.totalTickets.toLocaleString()} tickets &middot;{' '}
-						{data.winners.length} winner{data.winners.length !== 1 ? 's' : ''}
-					</p>
+					<p className="mt-1 text-sm text-neutral-500">{getSummaryText()}</p>
 				</div>
 				<div
 					className={cn(
@@ -362,6 +367,11 @@ function WinnerCard({
 	isExpanded,
 	onToggle,
 }: WinnerCardProps) {
+	/** Converts 0-based position to 1-based for display */
+	function getDisplayPosition(position: number): number {
+		return position + 1;
+	}
+
 	/**
 	 * Truncates a hex string for display
 	 */
@@ -381,7 +391,7 @@ function WinnerCard({
 			>
 				<div className="flex items-center gap-3">
 					<div className="flex size-8 items-center justify-center rounded-full bg-amber-100 text-sm font-semibold text-amber-700">
-						{winner.position}
+						{getDisplayPosition(winner.position)}
 					</div>
 					<div className="text-left">
 						<div className="text-sm font-medium">

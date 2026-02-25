@@ -7,6 +7,8 @@ import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
+import { isAutoCancelled } from '@/lib/utils/cancellation-reason';
+import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import {
 	isEnrolledRaffle,
@@ -66,6 +68,30 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 	const showEditButton = shouldShowEditButton();
 
 	/**
+	 * Gets cancellation badge label and color for cancelled raffles.
+	 * Auto-cancelled → orange, host-cancelled → red.
+	 * @returns Badge config or null if not cancelled
+	 */
+	function getCancelledBadge(): {
+		label: string;
+		className: string;
+	} | null {
+		if (raffle.status !== RAFFLE_STATUS.CANCELLED) return null;
+		if (isAutoCancelled(raffle)) {
+			return {
+				label: 'Auto-Cancelled',
+				className: 'bg-orange-50 text-orange-600',
+			};
+		}
+		return {
+			label: 'Cancelled',
+			className: 'bg-red-50 text-red-600',
+		};
+	}
+
+	const cancelledBadge = getCancelledBadge();
+
+	/**
 	 * Gets the fill status text
 	 * @returns "Unlimited" for unlimited raffles, otherwise percentage
 	 */
@@ -119,6 +145,17 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 				<h3 className="mb-2 h-16 text-xl font-bold tracking-tight text-gray-900">
 					{raffle.title}
 				</h3>
+
+				{cancelledBadge && (
+					<span
+						className={cn(
+							'mb-2 inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+							cancelledBadge.className,
+						)}
+					>
+						{cancelledBadge.label}
+					</span>
+				)}
 
 				<div className="mb-4 flex flex-col">
 					<div className="flex items-center justify-between">

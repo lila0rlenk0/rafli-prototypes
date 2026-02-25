@@ -336,6 +336,37 @@ export function TicketsStep() {
 						</span>
 					</div>
 				</div>
+
+				{numberOfWinners > 0 && (
+					<div className="flex w-full flex-col gap-2 rounded-lg bg-[#FEFFE3] p-4">
+						<div className="flex items-center gap-2">
+							<InfoIcon className="size-4 shrink-0 text-[#B7CE00]" />
+							<span className="text-sm font-medium">
+								What happens when the raffle ends?
+							</span>
+						</div>
+						<ul className="ml-6 list-disc space-y-1 text-sm text-gray-700">
+							{minParticipants > 0 && (
+								<li>
+									<strong>Full draw</strong> — {minParticipants}+ participants:
+									winners receive the declared prize
+								</li>
+							)}
+							{minParticipants > 0 && minParticipants - 1 > numberOfWinners && (
+								<li>
+									<strong>Partial draw</strong> — {numberOfWinners} to{' '}
+									{minParticipants - 1} participants: winners split the revenue
+									(cash distribution)
+								</li>
+							)}
+							<li>
+								<strong>Auto-cancel</strong> — fewer than {numberOfWinners}{' '}
+								participant{numberOfWinners !== 1 ? 's' : ''}: raffle is
+								cancelled and all tickets are refunded
+							</li>
+						</ul>
+					</div>
+				)}
 			</div>
 
 			{/* Promo codes section */}

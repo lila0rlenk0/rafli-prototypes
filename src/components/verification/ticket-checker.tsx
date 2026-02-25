@@ -209,7 +209,7 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 						label="Winner"
 						value={
 							<span className="flex items-center gap-1 text-amber-600">
-								🏆 Position #{data.winnerPosition}
+								🏆 Position #{(data.winnerPosition ?? 0) + 1}
 							</span>
 						}
 					/>

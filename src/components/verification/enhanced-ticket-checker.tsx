@@ -240,7 +240,7 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 						label="Winner"
 						value={
 							<span className="flex items-center gap-1 text-amber-600">
-								Position #{ticket.winnerPosition}
+								Position #{(ticket.winnerPosition ?? 0) + 1}
 							</span>
 						}
 					/>

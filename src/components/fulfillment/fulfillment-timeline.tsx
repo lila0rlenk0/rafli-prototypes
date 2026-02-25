@@ -85,10 +85,17 @@ export function FulfillmentTimeline({
 			return 'pending';
 		}
 
-		// sent: steps 1-2 completed, step 3 active
+		// sent: role-aware — host sees step 3 active (mark delivered),
+		// winner sees step 4 active (confirm receipt, skipping host's delivered step)
 		if (currentStatus === 'sent') {
-			if (step <= 2) return 'completed';
-			if (step === 3) return 'active';
+			if (isHost) {
+				if (step <= 2) return 'completed';
+				if (step === 3) return 'active';
+				return 'pending';
+			}
+			// Winner: steps 1-3 completed, step 4 active
+			if (step <= 3) return 'completed';
+			if (step === 4) return 'active';
 			return 'pending';
 		}
 
@@ -263,11 +270,24 @@ export function FulfillmentTimeline({
 	}
 
 	/**
-	 * Gets step 4 (Delivered) content based on role and status
+	 * Gets step 4 (Delivered / Confirm Receipt) content based on role and status.
+	 * Winner can confirm from both 'sent' and 'delivered' statuses.
 	 */
 	function getDeliveredStep() {
 		const status = getStepStatus(4);
 		const isReceived = currentStatus === 'received';
+
+		/**
+		 * Contextual title for step 4:
+		 * - received → "Completed"
+		 * - sent (winner view) → "Confirm Receipt" (skipping host's delivered step)
+		 * - delivered / other → "Delivered"
+		 */
+		function getStep4Title(): string {
+			if (isReceived) return 'Completed';
+			if (currentStatus === 'sent') return 'Confirm Receipt';
+			return 'Delivered';
+		}
 
 		if (isHost) {
 			return {
@@ -287,7 +307,7 @@ export function FulfillmentTimeline({
 			: 'Please confirm when you receive your prize';
 
 		return {
-			title: isReceived ? 'Completed' : 'Delivered',
+			title: getStep4Title(),
 			description: isReceived
 				? 'Prize delivered successfully'
 				: deliveredDescription,

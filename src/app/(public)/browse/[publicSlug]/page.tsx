@@ -1,6 +1,7 @@
 import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeline';
 import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
 import { RaffleAutoRefresh } from '@/components/raffle/raffle-auto-refresh';
+import { RaffleCancelledCard } from '@/components/raffle/raffle-cancelled-card';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleExpiredGate } from '@/components/raffle/raffle-expired-gate';
 import { RaffleDrawCard } from '@/components/raffle/raffle-draw-card';
@@ -23,6 +24,7 @@ import { BackLink } from '@/components/ui/back-link';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getSession } from '@/lib/auth/session';
+import { getCancellationReason } from '@/lib/utils/cancellation-reason';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
@@ -240,6 +242,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	const isManageable = isManageableStatus();
+	const isCancelled = raffle.status === RAFFLE_STATUS.CANCELLED;
+	const cancellationReason = getCancellationReason(raffle);
 
 	/**
 	 * Whether the raffle concluded with partial participation (revenue share)
@@ -281,10 +285,18 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	/**
+	 * Checks if cancelled card should be shown
+	 */
+	function shouldShowCancelledCard(): boolean {
+		return isCancelled && !!cancellationReason;
+	}
+
+	/**
 	 * Checks if active raffle card should be shown
+	 * Excludes both concluded and cancelled raffles
 	 */
 	function shouldShowActiveCard(): boolean {
-		return !isConcluded;
+		return !isConcluded && !isCancelled;
 	}
 
 	/**
@@ -568,6 +580,17 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 					{shouldShowDrawInProgress() && <RaffleDrawCard />}
 
+					{shouldShowCancelledCard() && (
+						<RaffleCancelledCard
+							reason={cancellationReason!}
+							isOwner={isOwner}
+							participantsCount={raffle.participantsCount}
+							numberOfWinners={raffle.numberOfWinners}
+							ticketsSoldCount={raffle.ticketsSoldCount}
+							myTicketCount={myTicketsTotal}
+						/>
+					)}
+
 					{shouldShowNotWonCard() && (
 						<RaffleNotWonCard
 							status={raffle.status}
@@ -643,7 +666,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						isManageable={isManageable}
 					/>
 
-					{!isConcluded && (
+					{!isConcluded && !isCancelled && (
 						<div className="flex items-center justify-center gap-2">
 							<InfoIcon className="size-4 text-[#7B7B7B]" />
 							<p className="text-sm text-[#7B7B7B]">

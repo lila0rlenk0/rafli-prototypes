@@ -41,7 +41,8 @@ export function WinnersTable({
 	 */
 	function formatDisplayName(name: string | null, position: number): string {
 		if (!name || name.trim().toLowerCase() === 'unknown') {
-			return `Winner #${position}`;
+			// Backend positions are 0-based; display as 1-based for users
+			return `Winner #${position + 1}`;
 		}
 		const names = name.trim().split(/\s+/);
 		const twoNames = names.slice(0, 2).join(' ');
@@ -95,7 +96,9 @@ export function WinnersTable({
 						return (
 							<Fragment key={winner.id}>
 								<tr className="text-sm">
-									<td className="px-6 py-4 font-medium">{winner.position}</td>
+									<td className="px-6 py-4 font-medium">
+										{winner.position + 1}
+									</td>
 									<td className="px-6 py-4">
 										{formatDisplayName(winner.userName, winner.position)}
 									</td>

@@ -1,6 +1,6 @@
 'use client';
 
-import { ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 
 import {
@@ -112,21 +112,13 @@ function StepItem({ number, children }: StepItemProps) {
 	);
 }
 
-/**
- * Styled image placeholder (temporary until real images provided)
- * @param props - Component props
- * @param props.alt - Alt text description
- */
-function ImagePlaceholder({ alt }: { alt: string }) {
-	return (
-		<div className="mt-8 flex h-[320px] flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-200/60">
-			<ImageIcon className="size-10 text-neutral-400" strokeWidth={1.5} />
-			<span className="font-clash-display text-[13px] font-semibold tracking-[0.05em] text-neutral-400 uppercase">
-				{alt}
-			</span>
-		</div>
-	);
-}
+/** Press release image paths in display order */
+const PRESS_IMAGES = {
+	banner: '/press/banner.png',
+	raffleList: '/press/raffle-list.png',
+	raffleDetails: '/press/raffle-details.png',
+	footer: '/press/footer.png',
+} as const;
 
 /**
  * Press Release page
@@ -191,7 +183,13 @@ export default function PressReleasePage() {
 								creates a draw to the moment a winner is announced, Rafli puts
 								transparency at the center of the experience.
 							</p>
-							<ImagePlaceholder alt="Rafli banner" />
+							<Image
+								src={PRESS_IMAGES.banner}
+								alt="Rafli banner"
+								width={1600}
+								height={500}
+								className="mt-8 w-full rounded-2xl"
+							/>
 						</section>
 					</ScrollReveal>
 
@@ -368,7 +366,13 @@ export default function PressReleasePage() {
 								alike, Rafli offers a legitimate and exciting new discovery
 								channel.
 							</p>
-							<ImagePlaceholder alt="Raffle listings" />
+							<Image
+								src={PRESS_IMAGES.raffleList}
+								alt="Raffle listings on Rafli"
+								width={1600}
+								height={500}
+								className="mt-8 w-full rounded-2xl"
+							/>
 						</section>
 					</ScrollReveal>
 
@@ -395,6 +399,13 @@ export default function PressReleasePage() {
 								infrastructure, hosts benefit from immediate credibility, even
 								if their audience has never heard of them before.
 							</p>
+							<Image
+								src={PRESS_IMAGES.raffleDetails}
+								alt="Rafli raffle details page"
+								width={1600}
+								height={900}
+								className="mt-8 w-full rounded-2xl"
+							/>
 						</section>
 					</ScrollReveal>
 
@@ -429,7 +440,13 @@ export default function PressReleasePage() {
 									Rafli is the answer.
 								</strong>
 							</p>
-							<ImagePlaceholder alt="Rafli product overview" />
+							<Image
+								src={PRESS_IMAGES.footer}
+								alt="Rafli prizes and items illustration"
+								width={1600}
+								height={500}
+								className="mt-8 w-full rounded-2xl"
+							/>
 						</section>
 					</ScrollReveal>
 

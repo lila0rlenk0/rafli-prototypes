@@ -153,9 +153,9 @@ export function PromoCodesSection() {
 				</div>
 
 				{pendingPromoCodes.length > 0 && (
-					<div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
-						<Info className="mt-0.5 size-4 shrink-0 text-blue-600" />
-						<p className="text-sm text-blue-700">
+					<div className="flex w-full items-start gap-2 rounded-lg bg-[#FEFFE3] p-4">
+						<Info className="mt-0.5 size-4 shrink-0 text-[#B7CE00]" />
+						<p className="text-sm">
 							These are configurations only. Actual promo codes will be
 							generated once your raffle goes live.
 						</p>

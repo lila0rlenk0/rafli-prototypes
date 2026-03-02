@@ -8,6 +8,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useRef,
 	useState,
 } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
@@ -117,6 +118,9 @@ export function MultiStepFormProvider({
 		setPendingPromoCodes([]);
 	}, []);
 
+	/** Stores the href the user tried to navigate to before being intercepted */
+	const pendingNavigationRef = useRef<string | null>(null);
+
 	const {
 		draft,
 		hasDraft,
@@ -217,7 +221,43 @@ export function MultiStepFormProvider({
 	}, [hasUnsavedChanges]);
 
 	/**
-	 * Saves current form data as draft and navigates to my-raffles
+	 * Intercepts internal link clicks when form has unsaved changes.
+	 * Captures clicks on <a> tags (including Next.js <Link>) in capture phase
+	 * before the router processes them, stores the target href, and shows the
+	 * save draft modal instead of navigating away.
+	 */
+	useEffect(() => {
+		if (!hasUnsavedChanges) return;
+
+		function handleLinkClick(event: MouseEvent) {
+			const anchor = (event.target as HTMLElement).closest('a');
+			if (!anchor) return;
+
+			const href = anchor.getAttribute('href');
+			if (!href || href.startsWith('#')) return;
+
+			// Skip external links
+			if (href.startsWith('http') && !href.startsWith(window.location.origin)) {
+				return;
+			}
+
+			// Skip same-page navigation
+			if (href === window.location.pathname) return;
+
+			event.preventDefault();
+			event.stopPropagation();
+			pendingNavigationRef.current = href;
+			setShowExitModal(true);
+		}
+
+		document.addEventListener('click', handleLinkClick, true);
+		return () => {
+			document.removeEventListener('click', handleLinkClick, true);
+		};
+	}, [hasUnsavedChanges]);
+
+	/**
+	 * Saves current form data as draft and navigates to target
 	 */
 	const handleSaveDraft = useCallback(() => {
 		const values = form.getValues();
@@ -243,21 +283,26 @@ export function MultiStepFormProvider({
 			currentStep,
 		);
 		toast.success('Draft saved successfully!');
-		router.push('/my-raffles');
+		const target = pendingNavigationRef.current || '/my-raffles';
+		pendingNavigationRef.current = null;
+		router.push(target);
 	}, [form, saveDraft, currentStep, router]);
 
 	/**
-	 * Closes the exit modal without saving
+	 * Closes the exit modal and clears pending navigation
 	 */
 	const handleStay = useCallback(() => {
+		pendingNavigationRef.current = null;
 		setShowExitModal(false);
 	}, []);
 
 	/**
-	 * Navigates to my-raffles without saving draft
+	 * Navigates to pending target without saving draft
 	 */
 	const handleLeaveWithoutSaving = useCallback(() => {
-		router.push('/my-raffles');
+		const target = pendingNavigationRef.current || '/my-raffles';
+		pendingNavigationRef.current = null;
+		router.push(target);
 	}, [router]);
 
 	/**

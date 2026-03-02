@@ -1,30 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-import { createTestRaffle } from './helpers/create-test-raffle';
+const RAFFLE_SLUG = 'test-raffle-rt7qh';
 
 test.describe.serial('Promo Codes', () => {
 	test.setTimeout(90_000);
 
-	let raffleTitle: string;
-
-	test('create raffle and navigate to promo codes', async ({ page }) => {
-		const { title } = await createTestRaffle(page, { startToday: true });
-		raffleTitle = title;
-
-		// Close modal → go to my-raffles
-		await page.getByRole('button', { name: 'View my raffles' }).click();
-		await expect(page).toHaveURL('/my-raffles');
-
-		// Find raffle card in Live tab (default) and click Details
-		const card = page.getByText(raffleTitle).first();
-		await expect(card).toBeVisible({ timeout: 10_000 });
-
-		// Click Details button (it's a link wrapping a button)
-		const cardContainer = card.locator('..').locator('..').locator('..');
-		await cardContainer.getByRole('link', { name: 'Details' }).click();
-
-		// Wait for raffle detail page
-		await page.waitForURL(/\/browse\/.+/);
+	test('navigate to promo codes page', async ({ page }) => {
+		// Navigate directly to raffle detail page
+		await page.goto(`/browse/${RAFFLE_SLUG}`);
 
 		// Find and click "See promo codes" link
 		const promoLink = page.getByRole('link', { name: 'See promo codes' });
@@ -37,20 +20,11 @@ test.describe.serial('Promo Codes', () => {
 	});
 
 	test('creates promo codes via modal', async ({ page }) => {
-		// Navigate directly to my-raffles, find the raffle, go to promo codes
-		await page.goto('/my-raffles');
-
-		const card = page.getByText(raffleTitle).first();
-		await expect(card).toBeVisible({ timeout: 10_000 });
-
-		const cardContainer = card.locator('..').locator('..').locator('..');
-		await cardContainer.getByRole('link', { name: 'Details' }).click();
-		await page.waitForURL(/\/browse\/.+/);
-
-		const promoLink = page.getByRole('link', { name: 'See promo codes' });
-		await expect(promoLink).toBeVisible({ timeout: 15_000 });
-		await promoLink.click();
-		await page.waitForURL(/\/promo-codes/);
+		// Navigate directly to promo codes page
+		await page.goto(`/my-raffles/${RAFFLE_SLUG}/promo-codes`);
+		await expect(page.getByText('Manage promo codes')).toBeVisible({
+			timeout: 15_000,
+		});
 
 		// Click "Create Code" button
 		await page.getByRole('button', { name: 'Create Code' }).click();

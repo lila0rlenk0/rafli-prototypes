@@ -149,8 +149,8 @@ export function MultiStepFormProvider({
 	const formValues = form.watch();
 
 	/**
-	 * Checks if the form has any unsaved changes
-	 * Returns true if any field has non-default values
+	 * Checks if the form has any unsaved changes worth persisting as draft
+	 * Excludes coverImage since File[] cannot be serialized to localStorage
 	 */
 	function checkHasUnsavedChanges(): boolean {
 		return (
@@ -164,8 +164,7 @@ export function MultiStepFormProvider({
 			!isNaN(formValues.numberOfWinners) ||
 			formValues.minParticipants !== 0 ||
 			formValues.maxParticipants !== 0 ||
-			formValues.checkInQuestion !== '' ||
-			(formValues.coverImage?.length ?? 0) > 0
+			formValues.checkInQuestion !== ''
 		);
 	}
 

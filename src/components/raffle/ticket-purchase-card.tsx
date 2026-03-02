@@ -210,7 +210,7 @@ export function TicketPurchaseCard({
 	const isFree = isFreeTicketsPromo();
 
 	// TODO: Remove once payment gateway integration is complete
-	if (clientEnv.NODE_ENV === 'production') {
+	if (clientEnv.NEXT_PUBLIC_APP_ENV === 'production') {
 		return (
 			<div className="mt-6 space-y-4">
 				<Separator className="my-4 bg-[#B4B4B4]" />

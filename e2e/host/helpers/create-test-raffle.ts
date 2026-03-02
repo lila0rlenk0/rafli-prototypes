@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 
 import type { Page } from '@playwright/test';
@@ -12,6 +13,38 @@ interface CreateTestRaffleOptions {
 
 interface CreateTestRaffleResult {
 	title: string;
+}
+
+/**
+ * Picks a day in the currently open calendar popover.
+ * Navigates months forward if the target date is in a later month than the reference.
+ * Scopes to the visible popover to avoid matching hidden calendars.
+ */
+async function pickCalendarDay(
+	page: Page,
+	target: Date,
+	reference: Date,
+): Promise<void> {
+	const popover = page
+		.locator('[data-slot="popover-content"]:visible')
+		.last();
+	const calendar = popover.locator('[data-slot="calendar"]');
+
+	// Navigate forward month by month if needed
+	const monthsToNavigate =
+		(target.getFullYear() - reference.getFullYear()) * 12 +
+		(target.getMonth() - reference.getMonth());
+
+	for (let i = 0; i < monthsToNavigate; i++) {
+		await calendar
+			.getByRole('button', { name: 'Go to the Next Month' })
+			.click();
+	}
+
+	// Click the day button using data-day attribute (locale-formatted date string)
+	await calendar
+		.locator(`button[data-day="${target.toLocaleDateString()}"]`)
+		.click();
 }
 
 /**
@@ -35,9 +68,29 @@ export async function createTestRaffle(
 
 	// ---- Step 0: Basic Info ----
 
-	// Upload test image
-	const fileInput = page.locator('input[type="file"]');
-	await fileInput.setInputFiles(TEST_IMAGE);
+	// Upload test image via simulated drop event (react-dropzone ignores setInputFiles)
+	const imageBuffer = fs.readFileSync(TEST_IMAGE);
+	const dropzone = page.locator('button', {
+		hasText: /upload|drag/i,
+	});
+	await dropzone.evaluate(
+		(el, buffer) => {
+			const file = new File([new Uint8Array(buffer)], 'test-image.png', {
+				type: 'image/png',
+			});
+			const dt = new DataTransfer();
+			dt.items.add(file);
+			el.dispatchEvent(
+				new DragEvent('drop', { dataTransfer: dt, bubbles: true }),
+			);
+		},
+		[...imageBuffer],
+	);
+
+	// Verify image was accepted by Dropzone (preview should appear)
+	await expect(page.getByText('test-image.png')).toBeVisible({
+		timeout: 5_000,
+	});
 
 	// Fill title
 	await page.locator('#title').fill(title);
@@ -63,28 +116,21 @@ export async function createTestRaffle(
 	// ---- Step 1: Dates & Tickets ----
 
 	const today = new Date();
+	const todayMidnight = new Date(
+		today.getFullYear(),
+		today.getMonth(),
+		today.getDate(),
+	);
 
 	// Calculate start date
-	const startDate = new Date(today);
+	const startDate = new Date(todayMidnight);
 	if (!options.startToday) {
 		startDate.setDate(startDate.getDate() + 2);
 	}
 
 	// Select start date
 	await page.getByRole('button', { name: 'Select start date' }).click();
-
-	// Navigate to correct month if start date is in a different month
-	if (startDate.getMonth() !== today.getMonth()) {
-		await page.getByRole('button', { name: /next/i }).click();
-	}
-
-	await page
-		.getByRole('gridcell', {
-			name: String(startDate.getDate()),
-			exact: true,
-		})
-		.first()
-		.click();
+	await pickCalendarDay(page, startDate, todayMidnight);
 
 	// Calculate end date (31 days from start)
 	const endDate = new Date(startDate);
@@ -92,24 +138,7 @@ export async function createTestRaffle(
 
 	// Select end date
 	await page.getByRole('button', { name: 'Select end date' }).click();
-
-	// Navigate months in end date calendar to reach target month
-	// The calendar opens at today's month, so we need to navigate forward
-	const monthsToNavigate =
-		(endDate.getFullYear() - today.getFullYear()) * 12 +
-		(endDate.getMonth() - today.getMonth());
-
-	for (let i = 0; i < monthsToNavigate; i++) {
-		await page.getByRole('button', { name: /next/i }).click();
-	}
-
-	await page
-		.getByRole('gridcell', {
-			name: String(endDate.getDate()),
-			exact: true,
-		})
-		.first()
-		.click();
+	await pickCalendarDay(page, endDate, todayMidnight);
 
 	// Fill ticket fields
 	await page.locator('#pricePerTicket').fill('1');

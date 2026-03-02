@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
 import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
+import { clientEnv } from '@/env/client';
 import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 
 import { SignInToBuyButton } from './sign-in-button';
@@ -207,6 +208,23 @@ export function TicketPurchaseCard({
 	const total = calculateTotal();
 	const hasDiscount = discount > 0;
 	const isFree = isFreeTicketsPromo();
+
+	// TODO: Remove once payment gateway integration is complete
+	if (clientEnv.NODE_ENV === 'production') {
+		return (
+			<div className="mt-6 space-y-4">
+				<Separator className="my-4 bg-[#B4B4B4]" />
+				<div className="rounded-lg border border-dashed border-[#B4B4B4] p-6 text-center">
+					<p className="font-clash-display text-lg font-semibold">
+						Coming Soon
+					</p>
+					<p className="mt-1 text-sm text-[#7B7B7B]">
+						Ticket purchases will be available shortly.
+					</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="mt-6 space-y-4">

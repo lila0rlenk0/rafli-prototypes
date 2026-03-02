@@ -5,6 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
 process.loadEnvFile(path.resolve(__dirname, '.env.test'));
 
 const AUTH_FILE = path.join(__dirname, 'e2e/.auth/user.json');
+const HOST_AUTH_FILE = path.join(__dirname, 'e2e/.auth/host.json');
 
 export default defineConfig({
 	testDir: './e2e',
@@ -32,6 +33,19 @@ export default defineConfig({
 				storageState: AUTH_FILE,
 			},
 			dependencies: ['setup'],
+		},
+		{
+			name: 'host-setup',
+			testMatch: /host\.setup\.ts/,
+		},
+		{
+			name: 'host',
+			testDir: './e2e/host',
+			use: {
+				...devices['Desktop Chrome'],
+				storageState: HOST_AUTH_FILE,
+			},
+			dependencies: ['host-setup'],
 		},
 	],
 

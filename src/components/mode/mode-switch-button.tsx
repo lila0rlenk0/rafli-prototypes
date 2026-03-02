@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
 
@@ -82,7 +83,10 @@ export function ModeSwitchButton() {
 			disabled={isSwitching}
 			variant="outline"
 			size="sm"
-			className="flex cursor-pointer items-center gap-2 border-black text-black data-[mode=participant]:bg-black data-[mode=participant]:text-white"
+			className={cn(
+				'flex items-center gap-2 border-black text-black data-[mode=participant]:bg-black data-[mode=participant]:text-white',
+				isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
+			)}
 		>
 			<span className="hidden sm:inline">{getButtonText()}</span>
 			<span className="sm:hidden">Switch Mode</span>

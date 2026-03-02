@@ -15,7 +15,7 @@ test.describe('Sign In', () => {
 
 	test('valid credentials redirect to /browse', async ({ page }) => {
 		await page.getByLabel('Email').fill(process.env.E2E_USER_EMAIL!);
-		await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!);
+		await page.locator('#password').fill(process.env.E2E_USER_PASSWORD!);
 		await page.getByRole('button', { name: 'Sign In' }).click();
 
 		await expect(page).toHaveURL('/browse');
@@ -23,7 +23,7 @@ test.describe('Sign In', () => {
 
 	test('invalid credentials show error', async ({ page }) => {
 		await page.getByLabel('Email').fill('wrong@example.com');
-		await page.getByLabel('Password').fill('wrongpassword12');
+		await page.locator('#password').fill('wrongpassword12');
 		await page.getByRole('button', { name: 'Sign In' }).click();
 
 		await expect(
@@ -33,7 +33,7 @@ test.describe('Sign In', () => {
 
 	test('client-side validation for short password', async ({ page }) => {
 		await page.getByLabel('Email').fill('test@example.com');
-		await page.getByLabel('Password').fill('short');
+		await page.locator('#password').fill('short');
 		await page.getByRole('button', { name: 'Sign In' }).click();
 
 		await expect(

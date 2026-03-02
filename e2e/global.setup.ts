@@ -6,7 +6,7 @@ setup('authenticate', async ({ page }) => {
 	await page.goto('/sign-in');
 
 	await page.getByLabel('Email').fill(process.env.E2E_USER_EMAIL!);
-	await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD!);
+	await page.locator('#password').fill(process.env.E2E_USER_PASSWORD!);
 	await page.getByRole('button', { name: 'Sign In' }).click();
 
 	await page.waitForURL('/browse');

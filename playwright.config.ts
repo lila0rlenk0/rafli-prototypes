@@ -1,8 +1,8 @@
-import { defineConfig, devices } from '@playwright/test';
-import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '.env.test') });
+import { defineConfig, devices } from '@playwright/test';
+
+process.loadEnvFile(path.resolve(__dirname, '.env.test'));
 
 const AUTH_FILE = path.join(__dirname, 'e2e/.auth/user.json');
 

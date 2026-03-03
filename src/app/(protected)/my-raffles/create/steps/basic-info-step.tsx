@@ -213,7 +213,8 @@ export function BasicInfoStep() {
 					<span className="text-sm text-red-500">{errors.title.message}</span>
 				)}
 				<p className="text-muted-foreground min-h-[20px] text-sm">
-					{previewSlugPath && `Your raffle page: ${previewSlugPath}`}
+					{previewSlugPath &&
+						`Slug preview: ${previewSlugPath} (final URL may differ)`}
 				</p>
 			</div>
 

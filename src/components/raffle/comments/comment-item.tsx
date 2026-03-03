@@ -7,7 +7,12 @@ import { MoreHorizontalIcon, TrashIcon } from 'lucide-react';
 
 import type { Comment, VoteType } from '@/types/comment';
 
-import { cn } from '@/lib/utils';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { formatTimeAgo } from '@/lib/utils/format-time-ago';
 import { useDeleteComment } from '@/services/comment/use-delete-comment';
 
@@ -48,7 +53,6 @@ export function CommentItem({
 	isReply = false,
 }: CommentItemProps) {
 	const [showReplyInput, setShowReplyInput] = useState(false);
-	const [showMenu, setShowMenu] = useState(false);
 	const deleteMutation = useDeleteComment();
 
 	/** Whether the current user can delete this comment */
@@ -71,9 +75,8 @@ export function CommentItem({
 		return name.charAt(0).toUpperCase();
 	}
 
-	/** Handles delete with confirmation */
+	/** Handles delete — uses Radix DropdownMenu (portal-based, no overflow clipping) */
 	function handleDelete() {
-		setShowMenu(false);
 		deleteMutation.mutate(comment.id, {
 			onError(error) {
 				toast.error(error.message ?? 'Failed to delete comment');
@@ -146,51 +149,23 @@ export function CommentItem({
 							</button>
 						)}
 
-						{/* Delete dropdown — for comment owner or raffle host */}
+						{/* Delete dropdown — portal-based to avoid overflow clipping */}
 						{canDelete() && (
-							<div className="relative">
-								<button
-									type="button"
-									onClick={function toggleMenu() {
-										setShowMenu(prev => !prev);
-									}}
-									className="rounded p-0.5 text-gray-400 hover:text-gray-600"
-								>
+							<DropdownMenu>
+								<DropdownMenuTrigger className="rounded p-0.5 text-gray-400 outline-none hover:text-gray-600">
 									<MoreHorizontalIcon className="size-4" />
-								</button>
-
-								{showMenu && (
-									<>
-										{/* Backdrop to close menu on outside click */}
-										<div
-											className="fixed inset-0 z-10"
-											onClick={function closeMenu() {
-												setShowMenu(false);
-											}}
-											onKeyDown={function handleKeyDown(e) {
-												if (e.key === 'Escape') setShowMenu(false);
-											}}
-											role="button"
-											tabIndex={-1}
-											aria-label="Close menu"
-										/>
-										<div className="absolute top-full left-0 z-20 mt-1 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-											<button
-												type="button"
-												onClick={handleDelete}
-												disabled={deleteMutation.isPending}
-												className={cn(
-													'flex items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap text-red-600 hover:bg-red-50',
-													deleteMutation.isPending && 'opacity-50',
-												)}
-											>
-												<TrashIcon className="size-3" />
-												Delete comment
-											</button>
-										</div>
-									</>
-								)}
-							</div>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="start">
+									<DropdownMenuItem
+										onClick={handleDelete}
+										disabled={deleteMutation.isPending}
+										className="text-red-600 focus:bg-red-50 focus:text-red-600"
+									>
+										<TrashIcon className="size-3" />
+										Delete comment
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
 						)}
 					</div>
 				)}

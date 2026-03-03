@@ -75,8 +75,10 @@ export const listCommentsResponseSchema = paginationMetadataSchema.extend({
  * Returns updated vote state after toggle
  */
 export const voteResponseSchema = z.object({
+	commentId: z.string(),
 	voteScore: z.number(),
-	userVote: z.enum(['upvote', 'downvote']).nullable(),
+	/** Backend returns `voteType` (null when toggled off) */
+	voteType: z.enum(['upvote', 'downvote']).nullable(),
 });
 
 /**

@@ -29,7 +29,7 @@ export async function voteComment(
 	try {
 		const response = await authenticatedClient.post(
 			`/comments/${commentId}/vote`,
-			{ type },
+			{ voteType: type },
 		);
 		const validated = voteResponseSchema.parse(response.data);
 		return success(validated);

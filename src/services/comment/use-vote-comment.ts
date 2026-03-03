@@ -151,9 +151,35 @@ export function useVoteComment() {
 				}
 			}
 		},
-		onSettled() {
-			// Step 5: Refetch to ensure server state after mutation settles
-			queryClient.invalidateQueries({ queryKey: ['comment'] });
+		onSuccess(serverData, variables) {
+			// Step 5: Apply server-authoritative vote state to cache
+			//         Don't use invalidateQueries — it refetches and can race with
+			//         backend commit timing, causing the optimistic update to revert.
+			//         Instead, patch the cache directly with the server response.
+			const queryCache = queryClient.getQueryCache();
+			const commentQueries = queryCache.findAll({
+				queryKey: ['comment'],
+			});
+
+			for (const query of commentQueries) {
+				const data = query.state.data as InfiniteCommentsData | undefined;
+				if (!data?.pages) continue;
+
+				queryClient.setQueryData<InfiniteCommentsData>(query.queryKey, {
+					...data,
+					pages: data.pages.map(page => ({
+						...page,
+						items: page.items.map(comment => {
+							if (comment.id !== variables.commentId) return comment;
+							return {
+								...comment,
+								voteScore: serverData.voteScore,
+								userVote: serverData.voteType,
+							};
+						}),
+					})),
+				});
+			}
 		},
 	});
 }

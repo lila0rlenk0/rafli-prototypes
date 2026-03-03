@@ -1,3 +1,4 @@
+import { CommentSection } from '@/components/raffle/comments/comment-section';
 import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeline';
 import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
 import { RaffleAutoRefresh } from '@/components/raffle/raffle-auto-refresh';
@@ -32,6 +33,8 @@ import { getMe } from '@/services/user/get-me';
 import { getMyWinnings } from '@/services/winning/get-my-winnings';
 import type { Category } from '@/types/category';
 import {
+	COMMENTABLE_STATUSES,
+	type CommentableStatus,
 	CONCLUDED_STATUSES,
 	type ConcludedStatus,
 	RAFFLE_STATUS,
@@ -218,6 +221,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const hasWinners = (raffle.winners?.length ?? 0) > 0;
 	const canManageUpdates = UPDATE_MANAGEABLE_STATUSES.includes(
 		raffle.status as UpdateManageableStatus,
+	);
+	const isCommentable = COMMENTABLE_STATUSES.includes(
+		raffle.status as CommentableStatus,
 	);
 
 	// Image URLs are now plain strings — no expiry checks needed
@@ -468,6 +474,16 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							/>
 						}
 					/>
+
+					{/* Comment section — visible for live through completed statuses */}
+					{isCommentable && (
+						<CommentSection
+							raffleId={raffle.id}
+							isAuthenticated={isAuthenticated}
+							isOwner={isOwner}
+							currentUserId={currentUserId}
+						/>
+					)}
 
 					<div className="flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6">
 						<h3 className="font-clash-display text-3xl font-semibold">

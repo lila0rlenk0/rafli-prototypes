@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Textarea } from '@/components/ui/textarea';
 import { COMMENT_BODY_MAX } from '@/types/comment';
 
 import { useCreateComment } from '@/services/comment/use-create-comment';
@@ -74,7 +75,7 @@ export function CommentInput({
 
 	return (
 		<div className="flex flex-col gap-2">
-			<textarea
+			<Textarea
 				value={body}
 				onChange={function onInput(e) {
 					setBody(e.target.value);
@@ -84,7 +85,7 @@ export function CommentInput({
 				maxLength={COMMENT_BODY_MAX}
 				autoFocus={autoFocus}
 				rows={2}
-				className="w-full resize-none rounded-lg border border-[#E5E5E5] bg-gray-50 px-3 py-2 text-sm transition-colors outline-none placeholder:text-[#B4B4B4] focus:border-black focus:bg-white"
+				className="resize-none bg-gray-50 text-sm placeholder:text-[#B4B4B4] focus:bg-white"
 			/>
 			<div className="flex items-center justify-between">
 				<span className="text-xs text-gray-400">

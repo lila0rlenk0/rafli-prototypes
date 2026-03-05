@@ -247,3 +247,37 @@ test.describe('Email Preferences', () => {
 		).toBeVisible();
 	});
 });
+
+test.describe('Payment History', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/profile');
+	});
+
+	test('shows payment history heading', async ({ page }) => {
+		await expect(
+			page.getByRole('heading', { name: 'Payment History' }),
+		).toBeVisible();
+	});
+
+	test('shows view all button linking to orders', async ({ page }) => {
+		const section = page.locator('#payment-history');
+		const link = section.getByRole('link', { name: 'View all' });
+
+		await expect(link).toBeVisible();
+		await expect(link).toHaveAttribute('href', '/profile/orders');
+	});
+
+	test('shows orders or empty state', async ({ page }) => {
+		const section = page.locator('#payment-history');
+
+		const hasOrders = await section
+			.locator('.border-b, .border-gray-100')
+			.first()
+			.isVisible()
+			.catch(() => false);
+
+		if (!hasOrders) {
+			await expect(section.getByText('No orders yet')).toBeVisible();
+		}
+	});
+});

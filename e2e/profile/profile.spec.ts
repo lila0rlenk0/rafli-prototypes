@@ -115,3 +115,72 @@ test.describe('Personal Information', () => {
 		await expect(section.getByText(/\d+\/500/)).toBeVisible();
 	});
 });
+
+test.describe('Security', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/profile');
+	});
+
+	test('shows change password button', async ({ page }) => {
+		await expect(
+			page.getByRole('button', { name: 'Change Password' }),
+		).toBeVisible();
+	});
+
+	test('opens password form on click', async ({ page }) => {
+		await page.getByRole('button', { name: 'Change Password' }).click();
+
+		await expect(page.getByLabel('Current Password')).toBeVisible();
+		await expect(
+			page.getByLabel('New Password', { exact: true }),
+		).toBeVisible();
+		await expect(page.getByLabel('Confirm New Password')).toBeVisible();
+	});
+
+	test('validates minimum password length', async ({ page }) => {
+		await page.getByRole('button', { name: 'Change Password' }).click();
+
+		await page.getByLabel('Current Password').fill('currentpass123');
+		await page.getByLabel('New Password', { exact: true }).fill('short');
+		await page.getByLabel('Confirm New Password').fill('short');
+
+		await page
+			.getByRole('button', { name: 'Change Password' })
+			.click();
+
+		await expect(
+			page.getByText('Password must be at least 12 characters'),
+		).toBeVisible();
+	});
+
+	test('validates password confirmation mismatch', async ({ page }) => {
+		await page.getByRole('button', { name: 'Change Password' }).click();
+
+		await page.getByLabel('Current Password').fill('currentpass123');
+		await page
+			.getByLabel('New Password', { exact: true })
+			.fill('newpassword1234');
+		await page.getByLabel('Confirm New Password').fill('differentpass123');
+
+		await page
+			.getByRole('button', { name: 'Change Password' })
+			.click();
+
+		await expect(page.getByText('Passwords do not match')).toBeVisible();
+	});
+
+	test('can cancel password form', async ({ page }) => {
+		await page.getByRole('button', { name: 'Change Password' }).click();
+
+		// Verify form is open
+		await expect(page.getByLabel('Current Password')).toBeVisible();
+
+		// Cancel
+		await page.getByRole('button', { name: 'Cancel' }).click();
+
+		// Verify back to button state
+		await expect(
+			page.getByRole('button', { name: 'Change Password' }),
+		).toBeVisible();
+	});
+});

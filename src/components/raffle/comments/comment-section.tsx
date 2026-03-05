@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { MessageCircleIcon } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { COMMENT_SORT, type Comment, type CommentSort } from '@/types/comment';
 
@@ -43,7 +43,35 @@ export function CommentSection({
 	isOwner,
 	currentUserId,
 }: CommentSectionProps) {
-	const [sort, setSort] = useState<CommentSort>(COMMENT_SORT.NEWEST);
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+
+	/** Reads sort from URL query, defaults to 'top' */
+	function getSort(): CommentSort {
+		const param = searchParams.get('commentSort');
+		if (
+			param === COMMENT_SORT.NEWEST ||
+			param === COMMENT_SORT.OLDEST ||
+			param === COMMENT_SORT.TOP
+		) {
+			return param;
+		}
+		return COMMENT_SORT.TOP;
+	}
+
+	/** Updates the commentSort URL query parameter */
+	function handleSort(value: CommentSort) {
+		const params = new URLSearchParams(searchParams);
+		if (value === COMMENT_SORT.TOP) {
+			params.delete('commentSort');
+		} else {
+			params.set('commentSort', value);
+		}
+		router.push(`${pathname}?${params.toString()}`, { scroll: false });
+	}
+
+	const sort = getSort();
 
 	const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
 		useComments({ raffleId, sort, isAuthenticated });
@@ -64,7 +92,12 @@ export function CommentSection({
 
 	return (
 		<div className="w-full overflow-hidden rounded-2xl bg-white">
-			<Accordion type="single" collapsible className="w-full">
+			<Accordion
+				type="single"
+				collapsible
+				defaultValue="comments"
+				className="w-full"
+			>
 				<AccordionItem value="comments" className="border-none">
 					<AccordionTrigger className="px-8 py-4 hover:no-underline">
 						<div className="flex flex-1 items-center justify-between">
@@ -88,7 +121,7 @@ export function CommentSection({
 								}}
 								role="presentation"
 							>
-								<CommentSortTabs sort={sort} onSort={setSort} />
+								<CommentSortTabs sort={sort} onSort={handleSort} />
 							</div>
 						</div>
 					</AccordionTrigger>

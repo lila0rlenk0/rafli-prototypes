@@ -11,8 +11,8 @@ interface CommentSortTabsProps {
 
 /** All sort options with display labels */
 const SORT_OPTIONS: { value: CommentSort; label: string }[] = [
-	{ value: COMMENT_SORT.NEWEST, label: 'Newest' },
 	{ value: COMMENT_SORT.TOP, label: 'Top' },
+	{ value: COMMENT_SORT.NEWEST, label: 'Newest' },
 	{ value: COMMENT_SORT.OLDEST, label: 'Oldest' },
 ];
 

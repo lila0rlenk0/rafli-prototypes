@@ -184,3 +184,66 @@ test.describe('Security', () => {
 		).toBeVisible();
 	});
 });
+
+test.describe('Email Preferences', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/profile');
+	});
+
+	test('shows all preference categories', async ({ page }) => {
+		const section = page.locator('#email-preferences');
+
+		await expect(section.getByText('Raffle Updates')).toBeVisible();
+		await expect(section.getByText('Prize Updates')).toBeVisible();
+		await expect(section.getByText('Host Notifications')).toBeVisible();
+		await expect(
+			section.getByText('Reviews', { exact: true }),
+		).toBeVisible();
+	});
+
+	test('shows preference toggle switches', async ({ page }) => {
+		const section = page.locator('#email-preferences');
+
+		await expect(
+			section.getByRole('switch', { name: 'Raffle Updates' }),
+		).toBeVisible();
+		await expect(
+			section.getByRole('switch', { name: 'Prize Updates' }),
+		).toBeVisible();
+		await expect(
+			section.getByRole('switch', { name: 'Host Notifications' }),
+		).toBeVisible();
+		await expect(
+			section.getByRole('switch', { name: 'Reviews' }),
+		).toBeVisible();
+	});
+
+	test('can toggle a preference', async ({ page }) => {
+		const section = page.locator('#email-preferences');
+		const toggle = section.getByRole('switch', { name: 'Reviews' });
+
+		const wasChecked = await toggle.isChecked();
+		await toggle.click();
+
+		// Verify state changed
+		if (wasChecked) {
+			await expect(toggle).not.toBeChecked();
+		} else {
+			await expect(toggle).toBeChecked();
+		}
+
+		// No error toast should appear
+		await expect(
+			page.getByText('Failed to update preference'),
+		).not.toBeVisible();
+
+		// Toggle back to restore original state
+		await toggle.click();
+	});
+
+	test('shows transactional email notice', async ({ page }) => {
+		await expect(
+			page.getByText(/transactional emails/i),
+		).toBeVisible();
+	});
+});

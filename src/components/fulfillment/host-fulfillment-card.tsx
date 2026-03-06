@@ -38,7 +38,7 @@ export function HostFulfillmentCard({
 	}
 
 	return (
-		<div className="min-w-sm rounded-2xl bg-white p-6">
+		<div className="min-w-sm rounded-2xl border border-black bg-white p-6">
 			<div className="mb-4 flex items-center justify-between">
 				<h3 className="text-lg font-semibold">Delivery status</h3>
 			</div>

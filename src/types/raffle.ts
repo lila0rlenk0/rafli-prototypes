@@ -30,6 +30,19 @@ export type UpdateManageableStatus =
 	(typeof UPDATE_MANAGEABLE_STATUSES)[number];
 
 /**
+ * Statuses where participants can view and post comments.
+ * Covers the full active-to-completed lifecycle — excludes draft/queued/cancelled.
+ */
+export const COMMENTABLE_STATUSES = [
+	RAFFLE_STATUS.LIVE,
+	RAFFLE_STATUS.ENDED,
+	RAFFLE_STATUS.FULFILLING,
+	RAFFLE_STATUS.COMPLETED,
+] as const;
+
+export type CommentableStatus = (typeof COMMENTABLE_STATUSES)[number];
+
+/**
  * Statuses indicating a raffle has concluded (draw happened, lifecycle winding down).
  * Used to gate winner cards, fulfillment UI, and "not won" messaging.
  */

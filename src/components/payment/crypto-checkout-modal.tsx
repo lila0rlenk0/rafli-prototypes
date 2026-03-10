@@ -103,6 +103,11 @@ export function CryptoCheckoutModal({
 	// before React re-renders. Cleared only in handleReset.
 	const [txSubmitted, setTxSubmitted] = useState(false);
 
+	// Synchronous ref guard for handlePay — prevents double-execution from rapid clicks.
+	// React state (txSubmitted) is batched/async, so two clicks before re-render would
+	// both pass the state check. This ref is set synchronously at function entry.
+	const payInFlight = useRef(false);
+
 	// Ref-based idempotency guard for submitCryptoTx effect.
 	// Unlike txSubmitted (state), this is synchronous — prevents duplicate backend
 	// submissions even when React batches state updates or re-runs effects (Strict Mode).
@@ -215,19 +220,19 @@ export function CryptoCheckoutModal({
 
 		const msUntilExpiry = new Date(session.expiresAt).getTime() - Date.now();
 
-		// Already expired — transition immediately
-		if (msUntilExpiry <= 0) {
+		/** Handles session expiry — extracted to avoid duplicating the error message */
+		function handleExpiry() {
 			setErrorMessage('Checkout session expired. Please try again.');
 			setStep('failure');
+		}
+
+		// Already expired — transition immediately
+		if (msUntilExpiry <= 0) {
+			handleExpiry();
 			return;
 		}
 
-		// Set timer to transition on expiry
-		const timer = setTimeout(() => {
-			setErrorMessage('Checkout session expired. Please try again.');
-			setStep('failure');
-		}, msUntilExpiry);
-
+		const timer = setTimeout(handleExpiry, msUntilExpiry);
 		return () => clearTimeout(timer);
 	}, [step, session?.expiresAt]);
 
@@ -287,6 +292,19 @@ export function CryptoCheckoutModal({
 				await refetchWallets();
 			}
 
+			// Reuse existing session if same chain and not expired — avoids unnecessary
+			// API calls when user navigates Back from review and clicks Continue again.
+			const existingSessionValid =
+				session &&
+				session.chainId === selectedChainId &&
+				new Date(session.expiresAt).getTime() > Date.now();
+
+			if (existingSessionValid) {
+				setStep('review');
+				setIsProcessing(false);
+				return;
+			}
+
 			// Create checkout session so Review step shows the amount
 			const checkoutResult = await createCryptoCheckout({
 				orderId,
@@ -320,6 +338,7 @@ export function CryptoCheckoutModal({
 		signMessageAsync,
 		refetchWallets,
 		orderId,
+		session,
 	]);
 
 	/**
@@ -336,10 +355,11 @@ export function CryptoCheckoutModal({
 	 */
 	async function handlePay() {
 		if (!address || !selectedChainId || !session) return;
+		// Synchronous ref guard — closes the double-click window that React state can't.
+		// Two rapid clicks both execute before the first setTxSubmitted(true) re-renders.
+		if (payInFlight.current) return;
+		payInFlight.current = true;
 
-		// Optimistic guard — set BEFORE writeContractAsync to close the double-click
-		// window. React state updates are batched, so without this, a fast second click
-		// could pass the isProcessing check before the first call's state commits.
 		setTxSubmitted(true);
 		setIsProcessing(true);
 		setErrorMessage(null);
@@ -365,7 +385,8 @@ export function CryptoCheckoutModal({
 
 			setStep('confirming');
 		} catch (error) {
-			// Revert optimistic guard — allow retry on rejection or failure
+			// Revert guards — allow retry on rejection or failure
+			payInFlight.current = false;
 			setTxSubmitted(false);
 
 			// User rejected the tx in their wallet — not an error, just stay on review
@@ -392,7 +413,8 @@ export function CryptoCheckoutModal({
 		setIsProcessing(false);
 		setErrorMessage(null);
 		setTxSubmitted(false);
-		// Reset ref guard so retried flow can submit to backend again
+		// Reset ref guards so retried flow can submit again
+		payInFlight.current = false;
 		txSubmittedToBackend.current = false;
 		// Reset wagmi write state so stale txHash doesn't persist across retries
 		resetWriteContract();
@@ -417,6 +439,9 @@ export function CryptoCheckoutModal({
 				setStep('select-chain');
 				break;
 			case 'review':
+				// Clear session — user may change wallet or chain on re-entry.
+				// handleWalletReady will reuse it if same chain + not expired.
+				setSession(null);
 				setStep('connect-wallet');
 				break;
 			default:
@@ -534,7 +559,7 @@ export function CryptoCheckoutModal({
 							onWalletReady={handleWalletReady}
 						/>
 					)}
-					{step === 'review' && (
+					{step === 'review' && selectedChainId && (
 						<ReviewStep
 							session={session}
 							selectedChainId={selectedChainId}
@@ -546,17 +571,17 @@ export function CryptoCheckoutModal({
 							onPay={handlePay}
 						/>
 					)}
-					{step === 'confirming' && (
+					{step === 'confirming' && selectedChainId && (
 						<ConfirmingStep txHash={txHash} selectedChainId={selectedChainId} />
 					)}
-					{step === 'success' && (
+					{step === 'success' && selectedChainId && (
 						<SuccessStep
 							txHash={txHash}
 							selectedChainId={selectedChainId}
 							onClose={handleClose}
 						/>
 					)}
-					{step === 'failure' && (
+					{step === 'failure' && selectedChainId && (
 						<FailureStep
 							txHash={txHash}
 							selectedChainId={selectedChainId}

@@ -117,7 +117,7 @@ export function CryptoBuyButton({
 	}, [pendingCheckout, isConnected, proceedToCryptoCheckout]);
 
 	/**
-	 * Safety timeout — clears pendingCheckout after 2 minutes if wallet never connects.
+	 * Safety timeout — clears pendingCheckout after 30s if wallet never connects.
 	 * Prevents stale state if user dismisses the RainbowKit modal without connecting.
 	 */
 	useEffect(() => {

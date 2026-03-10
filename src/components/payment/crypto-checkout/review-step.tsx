@@ -12,7 +12,8 @@ import { CHAIN_NAMES, type CryptoCheckoutSession } from '@/types/wallet';
 
 interface ReviewStepProps {
 	session: CryptoCheckoutSession | null;
-	selectedChainId: number | null;
+	/** Parent guarantees non-null — only renders when chain is selected */
+	selectedChainId: number;
 	isCorrectChain: boolean;
 	/** Token balance from wagmi useBalance — undefined while loading */
 	tokenBalance:
@@ -83,7 +84,7 @@ export function ReviewStep({
 					<div className="flex items-center justify-between">
 						<span className="text-[#7B7B7B]">Network</span>
 						<span className="font-medium">
-							{CHAIN_NAMES[selectedChainId!] ?? `Chain ${selectedChainId}`}
+							{CHAIN_NAMES[selectedChainId] ?? `Chain ${selectedChainId}`}
 						</span>
 					</div>
 					<div className="flex items-center justify-between">
@@ -125,7 +126,7 @@ export function ReviewStep({
 			{/* Chain switch notice */}
 			{!isCorrectChain && hasEnoughTokens() && (
 				<p className="text-center text-xs text-amber-600">
-					You&apos;ll be prompted to switch to {CHAIN_NAMES[selectedChainId!]}
+					You&apos;ll be prompted to switch to {CHAIN_NAMES[selectedChainId]}
 				</p>
 			)}
 

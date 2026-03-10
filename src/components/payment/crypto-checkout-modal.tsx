@@ -488,8 +488,8 @@ export function CryptoCheckoutModal({
 				setStep('select-chain');
 				break;
 			case 'review':
-				// Clear session — forces re-creation since user may change wallet on re-entry
-				setSession(null);
+				// Keep session — reuse check in handleWalletReady skips API call
+				// if same chain + not expired. Wallet changes are handled by walletAddress param.
 				setStep('connect-wallet');
 				break;
 			default:

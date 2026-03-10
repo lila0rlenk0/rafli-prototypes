@@ -79,6 +79,15 @@ export function ReviewStep({
 		return isProcessing || !!txSubmitted || !hasEnoughTokens();
 	}
 
+	/**
+	 * Text color for the balance row — red when insufficient, normal otherwise.
+	 * isTokenBalanceLoading check avoids flashing red before balance arrives.
+	 */
+	function getBalanceTextClass(): string {
+		if (isTokenBalanceLoading) return '';
+		return !hasEnoughTokens() ? 'text-red-500' : '';
+	}
+
 	return (
 		<div className="flex flex-col gap-4">
 			{/* Payment summary card */}
@@ -96,9 +105,7 @@ export function ReviewStep({
 					</div>
 					<div className="flex items-center justify-between">
 						<span className="text-[#7B7B7B]">Your balance</span>
-						<span
-							className={`font-medium ${!hasEnoughTokens() && !isTokenBalanceLoading ? 'text-red-500' : ''}`}
-						>
+						<span className={`font-medium ${getBalanceTextClass()}`}>
 							{isTokenBalanceLoading
 								? 'Loading...'
 								: isTokenBalanceError

@@ -165,13 +165,6 @@ export function CryptoBuyButton({
 		proceedToCryptoCheckout();
 	}
 
-	/**
-	 * Handles correct answer from question modal
-	 */
-	function handleCorrectAnswer() {
-		startCryptoFlow();
-	}
-
 	// ==========================================
 	// Button Text
 	// ==========================================
@@ -210,7 +203,7 @@ export function CryptoBuyButton({
 					open={showQuestionModal}
 					onOpenChange={setShowQuestionModal}
 					raffleId={raffleId}
-					onCorrectAnswer={handleCorrectAnswer}
+					onCorrectAnswer={startCryptoFlow}
 				/>
 			)}
 

@@ -21,6 +21,8 @@ interface ReviewStepProps {
 		| undefined;
 	/** True when token balance is still loading from chain */
 	isTokenBalanceLoading: boolean;
+	/** True when RPC call to fetch token balance failed */
+	isTokenBalanceError?: boolean;
 	isProcessing: boolean;
 	/** True after writeContractAsync returns (Worker A's txSubmitted state) */
 	txSubmitted?: boolean;
@@ -42,6 +44,7 @@ export function ReviewStep({
 	isCorrectChain,
 	tokenBalance,
 	isTokenBalanceLoading,
+	isTokenBalanceError,
 	isProcessing,
 	txSubmitted,
 	onPay,
@@ -98,7 +101,9 @@ export function ReviewStep({
 						>
 							{isTokenBalanceLoading
 								? 'Loading...'
-								: `${formatTokenBalance(tokenBalance)} USDC`}
+								: isTokenBalanceError
+									? 'Failed to load'
+									: `${formatTokenBalance(tokenBalance)} USDC`}
 						</span>
 					</div>
 
@@ -115,8 +120,16 @@ export function ReviewStep({
 				</div>
 			</div>
 
+			{/* Token balance RPC error — explain why Pay is disabled */}
+			{isTokenBalanceError && (
+				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-600">
+					Unable to read token balance. Check your wallet connection and try
+					again.
+				</div>
+			)}
+
 			{/* Insufficient balance warning */}
-			{!isTokenBalanceLoading && !hasEnoughTokens() && (
+			{!isTokenBalanceLoading && !isTokenBalanceError && !hasEnoughTokens() && (
 				<div className="rounded-xl bg-red-50 px-4 py-3 text-center text-xs text-red-600">
 					Insufficient USDC balance. You need {formatPaymentAmount(session)}{' '}
 					USDC.

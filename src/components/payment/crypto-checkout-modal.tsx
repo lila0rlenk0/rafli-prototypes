@@ -109,6 +109,10 @@ export function CryptoCheckoutModal({
 	// both pass the state check. This ref is set synchronously at function entry.
 	const payInFlight = useRef(false);
 
+	// Same pattern for handleWalletReady — prevents duplicate verify+checkout calls
+	// when user rapid-clicks "Continue" on the wallet step.
+	const walletReadyInFlight = useRef(false);
+
 	// Ref-based idempotency guard for submitCryptoTx effect.
 	// Unlike txSubmitted (state), this is synchronous — prevents duplicate backend
 	// submissions even when React batches state updates or re-runs effects (Strict Mode).
@@ -127,34 +131,37 @@ export function CryptoCheckoutModal({
 	// USDC token balance — wagmi v3 removed `token` from useBalance,
 	// so we read balanceOf + decimals + symbol via useReadContracts with erc20Abi.
 	const tokenAddress = session?.tokenAddress as `0x${string}` | undefined;
-	const { data: tokenReadResults, isLoading: isTokenBalanceLoading } =
-		useReadContracts({
-			allowFailure: false,
-			contracts:
-				tokenAddress && address
-					? [
-							{
-								address: tokenAddress,
-								abi: erc20Abi,
-								functionName: 'balanceOf',
-								args: [address],
-								chainId: selectedChainId ?? undefined,
-							},
-							{
-								address: tokenAddress,
-								abi: erc20Abi,
-								functionName: 'decimals',
-								chainId: selectedChainId ?? undefined,
-							},
-							{
-								address: tokenAddress,
-								abi: erc20Abi,
-								functionName: 'symbol',
-								chainId: selectedChainId ?? undefined,
-							},
-						]
-					: undefined,
-		});
+	const {
+		data: tokenReadResults,
+		isLoading: isTokenBalanceLoading,
+		isError: isTokenBalanceError,
+	} = useReadContracts({
+		allowFailure: false,
+		contracts:
+			tokenAddress && address
+				? [
+						{
+							address: tokenAddress,
+							abi: erc20Abi,
+							functionName: 'balanceOf',
+							args: [address],
+							chainId: selectedChainId ?? undefined,
+						},
+						{
+							address: tokenAddress,
+							abi: erc20Abi,
+							functionName: 'decimals',
+							chainId: selectedChainId ?? undefined,
+						},
+						{
+							address: tokenAddress,
+							abi: erc20Abi,
+							functionName: 'symbol',
+							chainId: selectedChainId ?? undefined,
+						},
+					]
+				: undefined,
+	});
 
 	// Shape token data to match the interface ReviewStep expects
 	const tokenBalance = useMemo(() => {
@@ -293,6 +300,9 @@ export function CryptoCheckoutModal({
 	 */
 	const handleWalletReady = useCallback(async () => {
 		if (!address || !selectedChainId) return;
+		// Synchronous ref guard — same pattern as payInFlight for handlePay.
+		if (walletReadyInFlight.current) return;
+		walletReadyInFlight.current = true;
 
 		setIsProcessing(true);
 
@@ -365,6 +375,7 @@ export function CryptoCheckoutModal({
 				toast.error('Signature failed. Please try again.');
 			}
 		} finally {
+			walletReadyInFlight.current = false;
 			setIsProcessing(false);
 		}
 	}, [
@@ -451,6 +462,7 @@ export function CryptoCheckoutModal({
 		setErrorMessage(null);
 		setTxSubmitted(false);
 		// Reset ref guards so retried flow can submit again
+		walletReadyInFlight.current = false;
 		payInFlight.current = false;
 		txSubmittedToBackend.current = false;
 		// Reset wagmi write state so stale txHash doesn't persist across retries
@@ -476,8 +488,7 @@ export function CryptoCheckoutModal({
 				setStep('select-chain');
 				break;
 			case 'review':
-				// Clear session — user may change wallet or chain on re-entry.
-				// handleWalletReady will reuse it if same chain + not expired.
+				// Clear session — forces re-creation since user may change wallet on re-entry
 				setSession(null);
 				setStep('connect-wallet');
 				break;
@@ -603,6 +614,7 @@ export function CryptoCheckoutModal({
 							isCorrectChain={isCorrectChain}
 							tokenBalance={tokenBalance ?? undefined}
 							isTokenBalanceLoading={isTokenBalanceLoading}
+							isTokenBalanceError={isTokenBalanceError}
 							isProcessing={isProcessing}
 							txSubmitted={txSubmitted}
 							onPay={handlePay}

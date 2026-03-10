@@ -10,7 +10,7 @@ import type { CryptoCheckoutSession } from '@/types/wallet';
  * USDC uses 6 decimals across all chains (not 18 like ETH)
  * Used to format amountRaw for display: 10000000 → "10.00"
  */
-export const STABLECOIN_DECIMALS = 6;
+const STABLECOIN_DECIMALS = 6;
 
 // ==========================================
 // Types

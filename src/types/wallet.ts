@@ -9,7 +9,7 @@ import { z } from 'zod';
  * Mainnets: Ethereum, Arbitrum, Base, Polygon
  * Testnets: Sepolia, Arbitrum Sepolia, Base Sepolia
  */
-export const SUPPORTED_CHAINS = {
+const SUPPORTED_CHAINS = {
 	MAINNET: 1,
 	ARBITRUM: 42_161,
 	BASE: 8453,
@@ -17,14 +17,6 @@ export const SUPPORTED_CHAINS = {
 	SEPOLIA: 11_155_111,
 	ARBITRUM_SEPOLIA: 421_614,
 	BASE_SEPOLIA: 84_532,
-} as const;
-
-/**
- * Supported stablecoin tokens for crypto payments
- */
-export const SUPPORTED_TOKENS = {
-	USDC: 'USDC',
-	USDT: 'USDT',
 } as const;
 
 /**
@@ -39,16 +31,6 @@ export const CHAIN_NAMES: Record<number, string> = {
 	[SUPPORTED_CHAINS.ARBITRUM_SEPOLIA]: 'Arbitrum Sepolia',
 	[SUPPORTED_CHAINS.BASE_SEPOLIA]: 'Base Sepolia',
 };
-
-// ==========================================
-// Types from Constants
-// ==========================================
-
-export type SupportedChainId =
-	(typeof SUPPORTED_CHAINS)[keyof typeof SUPPORTED_CHAINS];
-
-export type SupportedToken =
-	(typeof SUPPORTED_TOKENS)[keyof typeof SUPPORTED_TOKENS];
 
 // ==========================================
 // Schemas
@@ -78,13 +60,18 @@ export const verifyWalletPayloadSchema = z.object({
 /**
  * Schema for crypto checkout session returned by POST /payments/crypto/checkout
  */
+/** Validates EVM address format — 0x prefix + 40 hex chars */
+const evmAddressSchema = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
+
 export const cryptoCheckoutSessionSchema = z.object({
 	id: z.string(),
 	amount: z.string(),
 	amountRaw: z.string(),
 	chainId: z.number(),
-	tokenAddress: z.string(),
-	treasuryAddress: z.string(),
+	/** ERC20 token contract address — validated as 0x + 40 hex */
+	tokenAddress: evmAddressSchema,
+	/** Treasury wallet that receives payment — validated as 0x + 40 hex */
+	treasuryAddress: evmAddressSchema,
 	orderId: z.string(),
 	expiresAt: z.string(),
 });

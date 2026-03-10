@@ -110,11 +110,13 @@ export function CryptoBuyButton({
 	 * automatically proceed to crypto checkout
 	 */
 	useEffect(() => {
-		if (pendingCheckout && isConnected) {
+		// Guard against concurrent calls — if already loading (e.g. direct click path),
+		// skip the auto-proceed to avoid duplicate order creation.
+		if (pendingCheckout && isConnected && !isLoading) {
 			setPendingCheckout(false);
 			proceedToCryptoCheckout();
 		}
-	}, [pendingCheckout, isConnected, proceedToCryptoCheckout]);
+	}, [pendingCheckout, isConnected, isLoading, proceedToCryptoCheckout]);
 
 	/**
 	 * Safety timeout — clears pendingCheckout after 30s if wallet never connects.

@@ -2,6 +2,7 @@ import { AxiosError } from 'axios';
 
 import {
 	type AuthErrorCode,
+	type CommentErrorCode,
 	COMMON_ERROR_CODES,
 	type HostErrorCode,
 	type NotificationErrorCode,
@@ -603,6 +604,38 @@ export function mapReviewError(error: unknown): ReviewErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as ReviewErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps comment errors to CommentErrorCode
+ *
+ * Accepts `core:comment:*`, `core:raffle:*`, and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns CommentErrorCode (either backend code or frontend fallback)
+ */
+export function mapCommentError(error: unknown): CommentErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "core:comment:not-found", "core:raffle:not-commentable", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('core:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as CommentErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
+			return mappedCode as CommentErrorCode;
 		}
 	}
 

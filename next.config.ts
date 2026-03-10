@@ -41,6 +41,24 @@ const nextConfig: NextConfig = {
 				hostname: '*.s3.us-east-1.amazonaws.com',
 				pathname: '/**',
 			},
+			// Local dev: MinIO serves images on the backend port.
+			// `unoptimized: isLocal` skips the optimization pipeline but Next.js 16
+			// still validates hostnames against remotePatterns — without this entry
+			// any <Image src="http://127.0.0.1:…"> throws at render time.
+			...(isLocal
+				? [
+						{
+							protocol: 'http' as const,
+							hostname: '127.0.0.1',
+							pathname: '/**',
+						},
+						{
+							protocol: 'http' as const,
+							hostname: 'localhost',
+							pathname: '/**',
+						},
+					]
+				: []),
 		],
 	},
 	cacheComponents: true,

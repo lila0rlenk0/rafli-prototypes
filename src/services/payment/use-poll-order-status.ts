@@ -25,22 +25,23 @@ const TERMINAL_STATUSES = [
  */
 const POLL_INTERVAL_MS = 3_000;
 
+/** Query key for order status polling — exported for cache invalidation/prefetching */
+export function pollOrderStatusKey(orderId: string | null) {
+	return ['order', 'poll', orderId] as const;
+}
+
 /**
  * Polls order status every 3 seconds until terminal state
  *
  * Used after crypto tx submission to track backend confirmation.
  * Automatically stops when order reaches completed/failed/refunded.
  *
- * @param orderId - The order to poll
- * @param options - enabled controls whether polling is active
+ * @param orderId - The order to poll (pass null to disable polling)
  * @returns React Query result with order data
  */
-export function usePollOrderStatus(
-	orderId: string | null,
-	options?: { enabled?: boolean },
-) {
+export function usePollOrderStatus(orderId: string | null) {
 	return useQuery<Order, ServiceError<OrderErrorCode>>({
-		queryKey: ['order', 'poll', orderId],
+		queryKey: pollOrderStatusKey(orderId),
 		queryFn: async function pollOrder() {
 			if (!orderId) throw serviceError('fetch_failed' as OrderErrorCode);
 
@@ -48,7 +49,7 @@ export function usePollOrderStatus(
 			if (!result.success) throw serviceError(result.error);
 			return result.data;
 		},
-		enabled: !!orderId && (options?.enabled ?? true),
+		enabled: !!orderId,
 		// Poll every 3s, stop when terminal status reached
 		refetchInterval(query) {
 			const status = query.state.data?.status;

@@ -1,17 +1,9 @@
 'use client';
 
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import {
-	ArrowLeft,
-	CheckCircle2,
-	ExternalLink,
-	Loader2,
-	ShieldCheck,
-	XCircle,
-} from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { erc20Abi, formatUnits } from 'viem';
+import { erc20Abi, getAddress } from 'viem';
 import {
 	useAccount,
 	useBalance,
@@ -21,95 +13,29 @@ import {
 	useWriteContract,
 } from 'wagmi';
 
-import { Button } from '@/components/ui/button';
+import { ChainSelector } from '@/components/payment/crypto-checkout/chain-selector';
+import { ConfirmingStep } from '@/components/payment/crypto-checkout/confirming-step';
+import { ReviewStep } from '@/components/payment/crypto-checkout/review-step';
+import {
+	FailureStep,
+	SuccessStep,
+} from '@/components/payment/crypto-checkout/terminal-steps';
+import { WalletStep } from '@/components/payment/crypto-checkout/wallet-step';
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
+import { getCryptoCheckoutErrorMessage } from '@/lib/checkout/error-messages';
+import { isUserRejection } from '@/lib/web3/errors';
 import { createCryptoCheckout } from '@/services/payment/create-crypto-checkout';
 import { submitCryptoTx } from '@/services/payment/submit-crypto-tx';
 import { usePollOrderStatus } from '@/services/payment/use-poll-order-status';
 import { useWallets } from '@/services/wallet/use-wallets';
 import { verifyWallet } from '@/services/wallet/verify-wallet';
 import { ORDER_STATUS } from '@/types/order';
-import { CHAIN_NAMES, type CryptoCheckoutSession } from '@/types/wallet';
-import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
-
-// ==========================================
-// Constants
-// ==========================================
-
-/**
- * USDC uses 6 decimals across all chains (not 18 like ETH)
- * Used to format amountRaw for display: 10000000 → "10.00"
- */
-const STABLECOIN_DECIMALS = 6;
-
-/**
- * Block explorer base URLs for tx links
- * Maps chain ID → explorer URL prefix
- */
-const BLOCK_EXPLORERS: Record<number, string> = {
-	1: 'https://etherscan.io/tx/',
-	42_161: 'https://arbiscan.io/tx/',
-	8453: 'https://basescan.org/tx/',
-	137: 'https://polygonscan.com/tx/',
-	11_155_111: 'https://sepolia.etherscan.io/tx/',
-	421_614: 'https://sepolia.arbiscan.io/tx/',
-	84_532: 'https://sepolia.basescan.org/tx/',
-};
-
-/**
- * Maps crypto checkout error codes to user-friendly messages
- * Covers both payments:* and core:* prefixed errors
- */
-function getCryptoCheckoutErrorMessage(errorCode: string): string {
-	switch (errorCode) {
-		case 'payments:crypto:wallet-not-verified':
-			return 'Your wallet is not verified. Please verify first.';
-		case 'payments:crypto:raffle-not-accepting':
-			return 'This raffle does not accept crypto payments.';
-		case 'payments:crypto:unsupported-chain':
-			return 'This chain is not supported for this raffle.';
-		case 'payments:crypto:session-expired':
-			return 'Checkout session expired. Please try again.';
-		case 'payments:crypto:already-completed':
-			return 'This payment was already completed.';
-		case 'core:order:not-found':
-			return 'Order not found. Please try again.';
-		case 'core:order:not-pending':
-			return 'This order can no longer be paid.';
-		case 'unauthorized':
-		case 'global:auth:unauthenticated':
-			return 'Please sign in to continue.';
-		case 'network_error':
-			return 'Network error. Please check your connection.';
-		case 'timeout_error':
-			return 'Request timed out. Please try again.';
-		default:
-			return `Failed to create checkout session (${errorCode}).`;
-	}
-}
-
-/**
- * Detects if an error is a user wallet rejection (e.g. clicked "Reject" in MetaMask).
- * wagmi/viem throw errors with specific codes or messages for user denials.
- */
-function isUserRejection(error: unknown): boolean {
-	if (!(error instanceof Error)) return false;
-	const msg = error.message.toLowerCase();
-	// MetaMask / most wallets: "user rejected" or "user denied"
-	// WalletConnect: "rejected" in message
-	// viem: UserRejectedRequestError has code 4001
-	return (
-		msg.includes('user rejected') ||
-		msg.includes('user denied') ||
-		msg.includes('rejected the request') ||
-		(error as { code?: number }).code === 4001
-	);
-}
+import type { CryptoCheckoutSession } from '@/types/wallet';
 
 // ==========================================
 // Types
@@ -167,7 +93,21 @@ export function CryptoCheckoutModal({
 	const { address, chainId: connectedChainId } = useAccount();
 	const { signMessageAsync } = useSignMessage();
 	const { switchChainAsync } = useSwitchChain();
-	const { writeContractAsync, data: txHash } = useWriteContract();
+	const {
+		writeContractAsync,
+		data: txHash,
+		reset: resetWriteContract,
+	} = useWriteContract();
+
+	// Guards against double-payment — set true immediately after writeContractAsync resolves,
+	// before React re-renders. Cleared only in handleReset.
+	const [txSubmitted, setTxSubmitted] = useState(false);
+
+	// Ref-based idempotency guard for submitCryptoTx effect.
+	// Unlike txSubmitted (state), this is synchronous — prevents duplicate backend
+	// submissions even when React batches state updates or re-runs effects (Strict Mode).
+	const txSubmittedToBackend = useRef(false);
+
 	const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
 		hash: txHash,
 	});
@@ -179,7 +119,7 @@ export function CryptoCheckoutModal({
 	});
 
 	// USDC token balance — shown so user knows if they have enough
-	const { data: tokenBalance } = useBalance({
+	const { data: tokenBalance, isLoading: isTokenBalanceLoading } = useBalance({
 		address,
 		token: session?.tokenAddress as `0x${string}` | undefined,
 		chainId: selectedChainId ?? undefined,
@@ -212,75 +152,20 @@ export function CryptoCheckoutModal({
 	 */
 	const isCorrectChain = selectedChainId === connectedChainId;
 
-	/**
-	 * Formats the payment amount from raw units (6 decimals) to human display
-	 * e.g. "10000000" → "10.00"
-	 */
-	function formatPaymentAmount(): string {
-		if (!session) return '—';
-		const formatted = formatUnits(
-			BigInt(session.amountRaw),
-			STABLECOIN_DECIMALS,
-		);
-		return parseFloat(formatted).toFixed(2);
-	}
-
-	/**
-	 * Formats native balance for gas indicator
-	 * Shows 4 decimal places for ETH/MATIC
-	 */
-	function formatNativeBalance(): string {
-		if (!nativeBalance) return '—';
-		return parseFloat(
-			formatUnits(nativeBalance.value, nativeBalance.decimals),
-		).toFixed(4);
-	}
-
-	/**
-	 * Formats USDC token balance
-	 * Shows 2 decimal places for stablecoins
-	 */
-	function formatTokenBalance(): string {
-		if (!tokenBalance) return '—';
-		return parseFloat(
-			formatUnits(tokenBalance.value, tokenBalance.decimals),
-		).toFixed(2);
-	}
-
-	/**
-	 * Whether user has enough USDC for the payment
-	 */
-	function hasEnoughTokens(): boolean {
-		if (!tokenBalance || !session) return true; // Assume enough if unknown
-		return tokenBalance.value >= BigInt(session.amountRaw);
-	}
-
-	/**
-	 * Truncates an address for display: 0x1234...5678
-	 */
-	function truncateAddress(addr: string): string {
-		return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-	}
-
-	/**
-	 * Gets block explorer URL for the submitted tx
-	 */
-	function getTxExplorerUrl(): string | null {
-		if (!txHash || !selectedChainId) return null;
-		const base = BLOCK_EXPLORERS[selectedChainId];
-		if (!base) return null;
-		return `${base}${txHash}`;
-	}
-
 	// ==========================================
 	// Effects
 	// ==========================================
 
 	/**
-	 * After tx is confirmed on-chain, submit hash to backend and start polling
+	 * After tx is confirmed on-chain, submit hash to backend and start polling.
+	 * Uses txSubmittedToBackend ref as idempotency guard — effect can re-run when
+	 * other deps change (e.g. step transitions), but backend call must happen exactly once.
 	 */
 	useEffect(() => {
-		if (!isTxConfirmed || !txHash || !session || step !== 'review') return;
+		if (!isTxConfirmed || !txHash || !session || step !== 'confirming') return;
+		// Synchronous ref check — survives React re-renders and Strict Mode double-invocation
+		if (txSubmittedToBackend.current) return;
+		txSubmittedToBackend.current = true;
 
 		async function submitTx() {
 			const result = await submitCryptoTx({
@@ -296,7 +181,7 @@ export function CryptoCheckoutModal({
 				return;
 			}
 
-			setStep('confirming');
+			// Step already 'confirming' — polling effect handles success/failure transition
 		}
 
 		submitTx();
@@ -319,6 +204,32 @@ export function CryptoCheckoutModal({
 			setStep('failure');
 		}
 	}, [polledOrder, step, onSuccess]);
+
+	/**
+	 * Session expiry timer — transitions to failure when checkout session expires.
+	 * Runs only during 'confirming' step since that's when we're waiting on backend.
+	 * Backend won't accept tx submissions after expiry, so we proactively fail.
+	 */
+	useEffect(() => {
+		if (step !== 'confirming' || !session?.expiresAt) return;
+
+		const msUntilExpiry = new Date(session.expiresAt).getTime() - Date.now();
+
+		// Already expired — transition immediately
+		if (msUntilExpiry <= 0) {
+			setErrorMessage('Checkout session expired. Please try again.');
+			setStep('failure');
+			return;
+		}
+
+		// Set timer to transition on expiry
+		const timer = setTimeout(() => {
+			setErrorMessage('Checkout session expired. Please try again.');
+			setStep('failure');
+		}, msUntilExpiry);
+
+		return () => clearTimeout(timer);
+	}, [step, session?.expiresAt]);
 
 	// ==========================================
 	// Handlers
@@ -353,7 +264,10 @@ export function CryptoCheckoutModal({
 				}
 
 				const timestamp = new Date().toISOString();
-				const message = `Link wallet ${address} to Raffles account ${userId} at ${timestamp}`;
+				// EIP-55 checksum address — must match backend's verification format exactly.
+				// wagmi returns lowercase; backend checksums before building expected message.
+				const checksummedAddress = getAddress(address);
+				const message = `Link wallet ${checksummedAddress} to Raffles account ${userId} at ${timestamp}`;
 
 				const signature = await signMessageAsync({ message });
 
@@ -382,7 +296,6 @@ export function CryptoCheckoutModal({
 			});
 
 			if (!checkoutResult.success) {
-				console.error('[CryptoCheckout] session failed:', checkoutResult.error);
 				setErrorMessage(getCryptoCheckoutErrorMessage(checkoutResult.error));
 				setStep('failure');
 				return;
@@ -424,6 +337,10 @@ export function CryptoCheckoutModal({
 	async function handlePay() {
 		if (!address || !selectedChainId || !session) return;
 
+		// Optimistic guard — set BEFORE writeContractAsync to close the double-click
+		// window. React state updates are batched, so without this, a fast second click
+		// could pass the isProcessing check before the first call's state commits.
+		setTxSubmitted(true);
 		setIsProcessing(true);
 		setErrorMessage(null);
 
@@ -446,9 +363,11 @@ export function CryptoCheckoutModal({
 				],
 			});
 
-			// tx hash captured by useWriteContract → useWaitForTransactionReceipt
-			// → effect submits to backend → transitions to 'confirming'
+			setStep('confirming');
 		} catch (error) {
+			// Revert optimistic guard — allow retry on rejection or failure
+			setTxSubmitted(false);
+
 			// User rejected the tx in their wallet — not an error, just stay on review
 			if (isUserRejection(error)) {
 				toast.info('Transaction cancelled.');
@@ -472,6 +391,11 @@ export function CryptoCheckoutModal({
 		setSession(null);
 		setIsProcessing(false);
 		setErrorMessage(null);
+		setTxSubmitted(false);
+		// Reset ref guard so retried flow can submit to backend again
+		txSubmittedToBackend.current = false;
+		// Reset wagmi write state so stale txHash doesn't persist across retries
+		resetWriteContract();
 	}
 
 	/**
@@ -557,302 +481,6 @@ export function CryptoCheckoutModal({
 	}
 
 	// ==========================================
-	// Render Helpers
-	// ==========================================
-
-	/**
-	 * Renders the chain selector step with static chain icons
-	 * Icons from CHAIN_ICONS map — RainbowKit only exposes icons for the connected chain
-	 */
-	function renderChainSelector() {
-		return (
-			<div className="flex flex-col gap-3">
-				<p className="text-sm text-[#7B7B7B]">Choose which network to pay on</p>
-				{cryptoChainIds.map(chainId => {
-					const icon = CHAIN_ICONS[chainId];
-
-					return (
-						<button
-							key={chainId}
-							type="button"
-							className="group flex h-14 items-center justify-between rounded-2xl border border-[#E5E5E5] bg-white px-5 text-left transition-all hover:border-black hover:shadow-sm"
-							onClick={() => handleSelectChain(chainId)}
-						>
-							<span className="flex items-center gap-3">
-								{icon && (
-									<span
-										className="flex size-6 items-center justify-center overflow-hidden rounded-full"
-										style={{ background: icon.iconBackground }}
-									>
-										{/* eslint-disable-next-line @next/next/no-img-element */}
-										<img
-											alt={CHAIN_NAMES[chainId] ?? ''}
-											src={icon.iconUrl}
-											className="size-4"
-										/>
-									</span>
-								)}
-								<span className="text-sm font-medium">
-									{CHAIN_NAMES[chainId] ?? `Chain ${chainId}`}
-								</span>
-							</span>
-							<span className="text-xs text-[#7B7B7B] transition-colors group-hover:text-black">
-								USDC
-							</span>
-						</button>
-					);
-				})}
-			</div>
-		);
-	}
-
-	/**
-	 * Renders the wallet connect + verify step
-	 * Uses ConnectButton.Custom for consistent styling within the modal
-	 */
-	function renderWalletStep() {
-		return (
-			<div className="flex flex-col items-center gap-5">
-				<p className="text-center text-sm text-[#7B7B7B]">
-					{isWalletVerified
-						? 'Wallet connected and verified'
-						: 'Connect your wallet and verify ownership'}
-				</p>
-
-				{/* Custom connect button — styled to match app */}
-				{!address && (
-					<ConnectButton.Custom>
-						{({ openConnectModal }) => (
-							<Button
-								onClick={openConnectModal}
-								variant="outline"
-								className="h-12 w-full border-2 border-black bg-white text-black hover:bg-black hover:text-white"
-							>
-								Connect Wallet
-							</Button>
-						)}
-					</ConnectButton.Custom>
-				)}
-
-				{/* Connected wallet info card */}
-				{address && (
-					<div className="w-full rounded-2xl border border-[#E5E5E5] p-5">
-						<div className="flex flex-col gap-3">
-							{/* Wallet address */}
-							<div className="flex items-center justify-between">
-								<span className="text-sm text-[#7B7B7B]">Wallet</span>
-								<span className="font-mono text-sm font-medium">
-									{truncateAddress(address)}
-								</span>
-							</div>
-
-							{/* Verification status */}
-							<div className="flex items-center justify-between">
-								<span className="text-sm text-[#7B7B7B]">Status</span>
-								{isWalletVerified ? (
-									<span className="flex items-center gap-1 text-sm font-medium text-green-600">
-										<ShieldCheck className="size-3.5" />
-										Verified
-									</span>
-								) : (
-									<span className="text-sm text-amber-600">
-										Needs verification
-									</span>
-								)}
-							</div>
-
-							{/* Native balance for gas */}
-							<div className="flex items-center justify-between">
-								<span className="text-sm text-[#7B7B7B]">Gas balance</span>
-								<span className="text-sm font-medium">
-									{formatNativeBalance()} {nativeBalance?.symbol ?? 'ETH'}
-								</span>
-							</div>
-						</div>
-					</div>
-				)}
-
-				{/* Verify / Continue button */}
-				{address && (
-					<Button
-						onClick={handleWalletReady}
-						disabled={isProcessing}
-						className="h-12 w-full border-2 border-black bg-black hover:bg-white hover:text-black"
-					>
-						{isProcessing && <Loader2 className="mr-2 size-4 animate-spin" />}
-						{isWalletVerified ? 'Continue' : 'Verify Wallet'}
-					</Button>
-				)}
-			</div>
-		);
-	}
-
-	/**
-	 * Renders the review & pay step with payment summary
-	 */
-	function renderReviewStep() {
-		return (
-			<div className="flex flex-col gap-4">
-				{/* Payment summary card */}
-				<div className="rounded-2xl border border-[#E5E5E5] p-5">
-					<div className="flex flex-col gap-3 text-sm">
-						<div className="flex items-center justify-between">
-							<span className="text-[#7B7B7B]">Network</span>
-							<span className="font-medium">
-								{CHAIN_NAMES[selectedChainId!] ?? `Chain ${selectedChainId}`}
-							</span>
-						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-[#7B7B7B]">Token</span>
-							<span className="font-medium">USDC</span>
-						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-[#7B7B7B]">Your balance</span>
-							<span
-								className={`font-medium ${!hasEnoughTokens() ? 'text-red-500' : ''}`}
-							>
-								{formatTokenBalance()} USDC
-							</span>
-						</div>
-
-						{/* Separator */}
-						<div className="border-t border-[#E5E5E5]" />
-
-						{/* Amount — large display */}
-						<div className="flex items-center justify-between">
-							<span className="text-[#7B7B7B]">Amount</span>
-							<span className="font-clash-display text-lg font-semibold">
-								{formatPaymentAmount()} USDC
-							</span>
-						</div>
-					</div>
-				</div>
-
-				{/* Insufficient balance warning */}
-				{!hasEnoughTokens() && (
-					<div className="rounded-xl bg-red-50 px-4 py-3 text-center text-xs text-red-600">
-						Insufficient USDC balance. You need {formatPaymentAmount()} USDC.
-					</div>
-				)}
-
-				{/* Chain switch notice */}
-				{!isCorrectChain && hasEnoughTokens() && (
-					<p className="text-center text-xs text-amber-600">
-						You&apos;ll be prompted to switch to {CHAIN_NAMES[selectedChainId!]}
-					</p>
-				)}
-
-				<Button
-					onClick={handlePay}
-					disabled={isProcessing || !hasEnoughTokens()}
-					className="h-12 w-full border-2 border-black bg-black hover:bg-white hover:text-black"
-				>
-					{isProcessing && <Loader2 className="mr-2 size-4 animate-spin" />}
-					{isProcessing ? 'Processing...' : `Pay ${formatPaymentAmount()} USDC`}
-				</Button>
-			</div>
-		);
-	}
-
-	/**
-	 * Renders the confirming step with spinner and tx link
-	 */
-	function renderConfirmingStep() {
-		return (
-			<div className="flex flex-col items-center gap-5 py-6">
-				<div className="relative">
-					<div className="absolute inset-0 animate-ping rounded-full bg-black/5" />
-					<Loader2 className="size-10 animate-spin text-black" />
-				</div>
-				<div className="flex flex-col items-center gap-1">
-					<p className="text-sm font-medium">Verifying payment on-chain...</p>
-					<p className="text-xs text-[#7B7B7B]">This may take a few moments</p>
-				</div>
-				{renderTxLink()}
-			</div>
-		);
-	}
-
-	/**
-	 * Renders the success step
-	 */
-	function renderSuccessStep() {
-		return (
-			<div className="flex flex-col items-center gap-5 py-6">
-				<div className="flex size-14 items-center justify-center rounded-full bg-green-50">
-					<CheckCircle2 className="size-8 text-green-500" />
-				</div>
-				<div className="flex flex-col items-center gap-1">
-					<p className="font-clash-display text-lg font-semibold">
-						Payment confirmed!
-					</p>
-					<p className="text-sm text-[#7B7B7B]">Your tickets are ready.</p>
-				</div>
-				{renderTxLink()}
-				<Button
-					onClick={handleClose}
-					className="h-12 w-full border-2 border-black bg-black hover:bg-white hover:text-black"
-				>
-					Done
-				</Button>
-			</div>
-		);
-	}
-
-	/**
-	 * Renders the failure step with retry option
-	 */
-	function renderFailureStep() {
-		return (
-			<div className="flex flex-col items-center gap-5 py-6">
-				<div className="flex size-14 items-center justify-center rounded-full bg-red-50">
-					<XCircle className="size-8 text-red-500" />
-				</div>
-				<p className="text-center text-sm text-red-600">
-					{errorMessage ?? 'Something went wrong.'}
-				</p>
-				{renderTxLink()}
-				<div className="flex w-full gap-2">
-					<Button
-						variant="outline"
-						onClick={handleClose}
-						className="h-12 flex-1 border-2 border-black bg-white hover:bg-black hover:text-white"
-					>
-						Close
-					</Button>
-					<Button
-						onClick={handleReset}
-						className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
-					>
-						Try Again
-					</Button>
-				</div>
-			</div>
-		);
-	}
-
-	/**
-	 * Renders a block explorer link for the submitted tx hash
-	 * Reused across confirming, success, and failure steps
-	 */
-	function renderTxLink() {
-		const url = getTxExplorerUrl();
-		if (!txHash || !url) return null;
-
-		return (
-			<a
-				href={url}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="flex items-center gap-1 text-xs text-[#7B7B7B] underline transition-colors hover:text-black"
-			>
-				View transaction
-				<ExternalLink className="size-3" />
-			</a>
-		);
-	}
-
-	// ==========================================
 	// Render
 	// ==========================================
 
@@ -891,12 +519,52 @@ export function CryptoCheckoutModal({
 				</DialogHeader>
 
 				<div className="flex flex-col gap-4 pt-2">
-					{step === 'select-chain' && renderChainSelector()}
-					{step === 'connect-wallet' && renderWalletStep()}
-					{step === 'review' && renderReviewStep()}
-					{step === 'confirming' && renderConfirmingStep()}
-					{step === 'success' && renderSuccessStep()}
-					{step === 'failure' && renderFailureStep()}
+					{step === 'select-chain' && (
+						<ChainSelector
+							cryptoChainIds={cryptoChainIds}
+							onSelectChain={handleSelectChain}
+						/>
+					)}
+					{step === 'connect-wallet' && (
+						<WalletStep
+							address={address}
+							isWalletVerified={isWalletVerified}
+							isProcessing={isProcessing}
+							nativeBalance={nativeBalance ?? undefined}
+							onWalletReady={handleWalletReady}
+						/>
+					)}
+					{step === 'review' && (
+						<ReviewStep
+							session={session}
+							selectedChainId={selectedChainId}
+							isCorrectChain={isCorrectChain}
+							tokenBalance={tokenBalance ?? undefined}
+							isTokenBalanceLoading={isTokenBalanceLoading}
+							isProcessing={isProcessing}
+							txSubmitted={txSubmitted}
+							onPay={handlePay}
+						/>
+					)}
+					{step === 'confirming' && (
+						<ConfirmingStep txHash={txHash} selectedChainId={selectedChainId} />
+					)}
+					{step === 'success' && (
+						<SuccessStep
+							txHash={txHash}
+							selectedChainId={selectedChainId}
+							onClose={handleClose}
+						/>
+					)}
+					{step === 'failure' && (
+						<FailureStep
+							txHash={txHash}
+							selectedChainId={selectedChainId}
+							errorMessage={errorMessage}
+							onClose={handleClose}
+							onReset={handleReset}
+						/>
+					)}
 				</div>
 			</DialogContent>
 		</Dialog>

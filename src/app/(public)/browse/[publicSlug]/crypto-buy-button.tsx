@@ -4,21 +4,12 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Loader2Icon, WalletIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
 
 import { CryptoCheckoutModal } from '@/components/payment/crypto-checkout-modal';
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
-import {
-	getOrderErrorMessage,
-	getPromoErrorMessage,
-	shouldClearPromo,
-} from '@/lib/checkout/error-messages';
-import { getReusablePendingOrder } from '@/lib/checkout/order-reuse';
-import { createOrder } from '@/services/order/create-order';
-import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
-import { validatePromoCode } from '@/services/promo-code/validate-promo-code';
+import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
 
 // ==========================================
 // Types
@@ -30,7 +21,7 @@ interface CryptoBuyButtonProps {
 	disabled?: boolean;
 	questionId?: string | null;
 	promoCode?: string;
-	isFreeTickets?: boolean;
+
 	onPromoInvalid?: () => void;
 	cryptoChainIds: number[];
 	userId?: string | null;
@@ -55,7 +46,6 @@ export function CryptoBuyButton({
 	disabled = false,
 	questionId,
 	promoCode,
-	isFreeTickets = false,
 	onPromoInvalid,
 	cryptoChainIds,
 	userId,
@@ -76,108 +66,40 @@ export function CryptoBuyButton({
 	// ==========================================
 
 	/**
-	 * Creates order and opens crypto checkout modal
-	 * Mirrors BuyButton.proceedToCheckout but routes to crypto modal instead of Stripe
+	 * Creates order and opens crypto checkout modal.
+	 * Uses shared buildCheckoutOrder for order creation + promo handling,
+	 * then opens modal for the resulting order.
 	 */
 	const proceedToCryptoCheckout = useCallback(async () => {
 		setIsLoading(true);
 
 		try {
-			// Step 1: Reuse existing pending order if possible
-			let order = await getReusablePendingOrder(
+			// Build order with promo handling (shared with Stripe flow)
+			const result = await buildCheckoutOrder({
 				raffleId,
 				ticketQuantity,
 				promoCode,
-			);
+				onPromoInvalid,
+			});
 
-			const promoAlreadyApplied =
-				promoCode && !isFreeTickets && order?.promoCode === promoCode;
+			// Null means error — already toasted by buildCheckoutOrder
+			if (!result) return;
 
-			if (!promoAlreadyApplied) {
-				// Step 2: Re-validate promo just before checkout
-				if (promoCode && !isFreeTickets) {
-					const validationResult = await validatePromoCode(raffleId, promoCode);
-					if (!validationResult.success) {
-						toast.error(getPromoErrorMessage(validationResult.error));
-						if (shouldClearPromo(validationResult.error)) {
-							onPromoInvalid?.();
-						}
-						return;
-					}
-				}
-
-				// Step 3: Create order if none exists
-				if (!order) {
-					const orderResult = await createOrder({
-						raffleId,
-						ticketQuantity,
-					});
-
-					if (!orderResult.success) {
-						toast.error(getOrderErrorMessage(orderResult.error));
-						return;
-					}
-
-					order = orderResult.data;
-				}
-
-				// Step 4: Apply promo to order if needed
-				if (promoCode && !isFreeTickets) {
-					if (order.promoCode && order.promoCode !== promoCode) {
-						toast.error(
-							'A different promo code is already applied to this order',
-						);
-						onPromoInvalid?.();
-						return;
-					}
-
-					if (order.promoCode !== promoCode) {
-						const redeemResult = await redeemPromoCode({
-							code: promoCode,
-							raffleId,
-							orderId: order.id,
-						});
-
-						if (!redeemResult.success) {
-							toast.error(getPromoErrorMessage(redeemResult.error));
-							if (shouldClearPromo(redeemResult.error)) {
-								onPromoInvalid?.();
-							}
-							return;
-						}
-
-						const discountAmount = parseFloat(
-							redeemResult.data.discountAmount ?? '0',
-						);
-						const orderTotal = parseFloat(order.totalAmount);
-						const remainingTotal = Math.max(0, orderTotal - discountAmount);
-
-						// Backend auto-completes $0 orders after promo redemption
-						if (remainingTotal === 0) {
-							toast.success('Promo applied. Tickets claimed successfully!');
-							router.refresh();
-							return;
-						}
-					}
-				}
-			}
-
-			if (!order) {
-				toast.error('Failed to create order. Please try again');
+			// $0 order after promo — backend auto-completed, just refresh
+			if (result.isFullyDiscounted) {
+				router.refresh();
 				return;
 			}
 
-			// Step 5: Open crypto checkout modal
-			setCryptoOrderId(order.id);
+			// Open crypto checkout modal with the order
+			setCryptoOrderId(result.order.id);
 			setShowCryptoModal(true);
 		} catch (error) {
 			console.error('Unexpected error during crypto checkout:', error);
-			toast.error('An unexpected error occurred. Please try again');
 		} finally {
 			setIsLoading(false);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [raffleId, ticketQuantity, promoCode, isFreeTickets]);
+	}, [raffleId, ticketQuantity, promoCode, onPromoInvalid, router]);
 
 	// ==========================================
 	// Auto-proceed after wallet connection
@@ -193,6 +115,22 @@ export function CryptoBuyButton({
 			proceedToCryptoCheckout();
 		}
 	}, [pendingCheckout, isConnected, proceedToCryptoCheckout]);
+
+	/**
+	 * Safety timeout — clears pendingCheckout after 2 minutes if wallet never connects.
+	 * Prevents stale state if user dismisses the RainbowKit modal without connecting.
+	 */
+	useEffect(() => {
+		if (!pendingCheckout) return;
+
+		// 30s is tight enough to prevent ghost orders from stale intent,
+		// but long enough for slow WalletConnect QR scans on mobile
+		const timeout = setTimeout(() => {
+			setPendingCheckout(false);
+		}, 30_000);
+
+		return () => clearTimeout(timeout);
+	}, [pendingCheckout]);
 
 	// ==========================================
 	// Handlers
@@ -241,7 +179,6 @@ export function CryptoBuyButton({
 	 */
 	function getButtonText(): string {
 		if (isLoading) return 'Processing...';
-		if (isFreeTickets) return 'Claim with wallet';
 		if (!isConnected) return 'Connect wallet to buy';
 		return 'Buy with crypto';
 	}

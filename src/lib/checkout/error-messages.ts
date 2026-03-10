@@ -40,12 +40,25 @@ export function getOrderErrorMessage(errorCode: OrderErrorCode): string {
 
 /**
  * Maps payment error codes to user-friendly messages
- * Used by Stripe checkout flow
+ * Shared between Stripe and crypto checkout flows
  */
 export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 	switch (errorCode) {
 		case 'payments:session:already-completed':
+		case 'payments:crypto:already-completed':
 			return 'This order has already been paid';
+		case 'payments:crypto:session-expired':
+			return 'Checkout session expired. Please try again';
+		case 'payments:crypto:wallet-not-verified':
+			return 'Please verify your wallet first';
+		case 'payments:crypto:raffle-not-accepting':
+			return 'This raffle does not accept crypto payments';
+		case 'payments:crypto:unsupported-chain':
+			return 'Selected network is not supported for this raffle';
+		case 'payments:crypto:tx-already-used':
+			return 'This transaction was already submitted';
+		case 'payments:crypto:submit-failed':
+			return 'Failed to verify transaction. Please contact support';
 		case 'core:order:not-found':
 			return 'Order not found';
 		case 'core:order:permission-denied':

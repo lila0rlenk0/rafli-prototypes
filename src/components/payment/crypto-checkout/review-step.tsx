@@ -88,6 +88,15 @@ export function ReviewStep({
 		return !hasEnoughTokens() ? 'text-red-500' : '';
 	}
 
+	/**
+	 * Balance display text — shows loading/error/formatted value
+	 */
+	function getBalanceDisplay(): string {
+		if (isTokenBalanceLoading) return 'Loading...';
+		if (isTokenBalanceError) return 'Failed to load';
+		return `${formatTokenBalance(tokenBalance)} USDC`;
+	}
+
 	return (
 		<div className="flex flex-col gap-4">
 			{/* Payment summary card */}
@@ -106,11 +115,7 @@ export function ReviewStep({
 					<div className="flex items-center justify-between">
 						<span className="text-[#7B7B7B]">Your balance</span>
 						<span className={`font-medium ${getBalanceTextClass()}`}>
-							{isTokenBalanceLoading
-								? 'Loading...'
-								: isTokenBalanceError
-									? 'Failed to load'
-									: `${formatTokenBalance(tokenBalance)} USDC`}
+							{getBalanceDisplay()}
 						</span>
 					</div>
 

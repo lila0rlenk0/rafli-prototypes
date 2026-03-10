@@ -553,6 +553,16 @@ export function CryptoCheckoutModal({
 		);
 	}
 
+	/**
+	 * CSS class for step progress dot — active dots are wider and black
+	 */
+	function getStepDotClass(n: number): string {
+		const base = 'h-1 rounded-full transition-all duration-300';
+		return n <= getStepNumber()
+			? `${base} w-6 bg-black`
+			: `${base} w-1.5 bg-[#E5E5E5]`;
+	}
+
 	// ==========================================
 	// Render
 	// ==========================================
@@ -580,12 +590,7 @@ export function CryptoCheckoutModal({
 					{showStepIndicator() && (
 						<div className="flex items-center justify-center gap-1.5 pt-1">
 							{[1, 2, 3].map(n => (
-								<div
-									key={n}
-									className={`h-1 rounded-full transition-all duration-300 ${
-										n <= getStepNumber() ? 'w-6 bg-black' : 'w-1.5 bg-[#E5E5E5]'
-									}`}
-								/>
+								<div key={n} className={getStepDotClass(n)} />
 							))}
 						</div>
 					)}

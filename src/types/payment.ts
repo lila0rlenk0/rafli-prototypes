@@ -82,3 +82,21 @@ export type CheckoutSessionResponse = z.infer<
 	typeof checkoutSessionResponseSchema
 >;
 export type CreateCheckoutPayload = z.infer<typeof createCheckoutPayloadSchema>;
+
+// ==========================================
+// Crypto Payment
+// ==========================================
+
+/**
+ * Status values for crypto payment sessions
+ */
+export const CRYPTO_PAYMENT_STATUS = {
+	AWAITING_TX: 'awaiting_tx',
+	CONFIRMING: 'confirming',
+	COMPLETED: 'completed',
+	FAILED: 'failed',
+	EXPIRED: 'expired',
+} as const;
+
+export type CryptoPaymentStatus =
+	(typeof CRYPTO_PAYMENT_STATUS)[keyof typeof CRYPTO_PAYMENT_STATUS];

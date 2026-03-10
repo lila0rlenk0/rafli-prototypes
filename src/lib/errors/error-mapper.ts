@@ -9,6 +9,7 @@ import {
 	type PaymentErrorCode,
 	type PromoCodeErrorCode,
 	type RaffleErrorCode,
+	type WalletErrorCode,
 	type ReviewErrorCode,
 	type TicketErrorCode,
 	type UpdateErrorCode,
@@ -314,6 +315,40 @@ export function mapOrderError(error: unknown): OrderErrorCode {
 }
 
 /**
+ * Maps wallet errors to WalletErrorCode
+ *
+ * Accepts `auth:wallet:*` and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns WalletErrorCode (either backend code or frontend fallback)
+ */
+export function mapWalletError(error: unknown): WalletErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		if (
+			extractedCode.startsWith('auth:wallet:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as WalletErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (
+			mappedCode.startsWith('auth:wallet:') ||
+			mappedCode.startsWith('global:')
+		) {
+			return mappedCode as WalletErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
  * Maps payment errors to PaymentErrorCode
  *
  * Accepts `payments:*` and `global:*` prefixes.
@@ -326,9 +361,11 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 
 	if (extractedCode) {
 		// Backend code with known prefix - use directly
-		// Examples: "payments:checkout:failed", "global:auth:unauthenticated"
+		// Examples: "payments:checkout:failed", "core:order:not-found", "global:auth:unauthenticated"
+		// Accepts core:* because crypto checkout can return core:order:* errors
 		if (
 			extractedCode.startsWith('payments:') ||
+			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
 		) {
 			return extractedCode as PaymentErrorCode;
@@ -338,6 +375,7 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('payments:') ||
+			mappedCode.startsWith('core:') ||
 			mappedCode.startsWith('global:')
 		) {
 			return mappedCode as PaymentErrorCode;

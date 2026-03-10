@@ -4,9 +4,11 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
+import { CryptoBuyButton } from '@/app/(public)/browse/[publicSlug]/crypto-buy-button';
 import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
 import { clientEnv } from '@/env/client';
+import { isWeb3Enabled } from '@/lib/web3/config';
 import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 
 import { SignInToBuyButton } from './sign-in-button';
@@ -24,6 +26,9 @@ interface TicketPurchaseCardProps {
 	disabled?: boolean;
 	questionId?: string | null;
 	isAuthenticated?: boolean;
+	acceptsCrypto?: boolean;
+	cryptoChainIds?: number[];
+	userId?: string | null;
 }
 
 /**
@@ -48,6 +53,9 @@ export function TicketPurchaseCard({
 	disabled = false,
 	questionId,
 	isAuthenticated = true,
+	acceptsCrypto = false,
+	cryptoChainIds = [],
+	userId,
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
 	const pathname = usePathname();
@@ -296,17 +304,36 @@ export function TicketPurchaseCard({
 
 			{/* Buy button or Sign In button */}
 			{isAuthenticated ? (
-				<BuyButton
-					raffleId={raffleId}
-					publicSlug={publicSlug}
-					ticketQuantity={isFree ? getFreeTicketCount() : ticketQuantity}
-					disabled={disabled}
-					questionId={questionId}
-					promoCode={appliedPromo?.code}
-					isFreeTickets={isFree}
-					onPromoInvalid={handlePromoInvalid}
-					onPromoRedeemed={handlePromoRedeemed}
-				/>
+				<>
+					<BuyButton
+						raffleId={raffleId}
+						publicSlug={publicSlug}
+						ticketQuantity={isFree ? getFreeTicketCount() : ticketQuantity}
+						disabled={disabled}
+						questionId={questionId}
+						promoCode={appliedPromo?.code}
+						isFreeTickets={isFree}
+						onPromoInvalid={handlePromoInvalid}
+						onPromoRedeemed={handlePromoRedeemed}
+					/>
+
+					{/* Crypto buy button — only when raffle accepts crypto AND Web3 is configured */}
+					{acceptsCrypto &&
+						isWeb3Enabled &&
+						cryptoChainIds.length > 0 &&
+						!isFree && (
+							<CryptoBuyButton
+								raffleId={raffleId}
+								ticketQuantity={ticketQuantity}
+								disabled={disabled}
+								questionId={questionId}
+								promoCode={appliedPromo?.code}
+								onPromoInvalid={handlePromoInvalid}
+								cryptoChainIds={cryptoChainIds}
+								userId={userId}
+							/>
+						)}
+				</>
 			) : (
 				<SignInToBuyButton />
 			)}

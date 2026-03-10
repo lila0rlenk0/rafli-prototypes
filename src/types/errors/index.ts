@@ -18,3 +18,4 @@ export * from './verification-errors';
 export * from './notification-errors';
 export * from './review-errors';
 export * from './promo-code-errors';
+export * from './wallet-errors';

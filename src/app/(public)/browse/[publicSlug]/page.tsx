@@ -623,6 +623,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										disabled={showEditButton || disablePurchase}
 										questionId={raffle.questionId}
 										isAuthenticated={isAuthenticated}
+										acceptsCrypto={raffle.acceptsCrypto}
+										cryptoChainIds={raffle.cryptoChainIds}
+										userId={currentUserId}
 									/>
 								</Suspense>
 

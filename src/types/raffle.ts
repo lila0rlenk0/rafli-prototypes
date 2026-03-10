@@ -171,6 +171,10 @@ export const raffleSchema = z.object({
 	netRevenueAmount: z.string().nullable().optional(),
 	perWinnerAmount: z.string().nullable().optional(),
 	disputeWindowEndsAt: z.string().nullable().optional(),
+	/** Whether raffle accepts crypto (USDC) payments — backend sets per raffle */
+	acceptsCrypto: z.boolean().optional(),
+	/** EVM chain IDs the raffle supports for crypto payments (e.g. [1, 42161]) */
+	cryptoChainIds: z.array(z.number()).optional(),
 });
 
 /**

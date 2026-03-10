@@ -7,6 +7,7 @@ import { erc20Abi, getAddress } from 'viem';
 import {
 	useAccount,
 	useBalance,
+	useReadContracts,
 	useSignMessage,
 	useSwitchChain,
 	useWaitForTransactionReceipt,
@@ -27,7 +28,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { getCryptoCheckoutErrorMessage } from '@/lib/checkout/error-messages';
+import { getPaymentErrorMessage } from '@/lib/checkout/error-messages';
 import { isUserRejection } from '@/lib/web3/errors';
 import { createCryptoCheckout } from '@/services/payment/create-crypto-checkout';
 import { submitCryptoTx } from '@/services/payment/submit-crypto-tx';
@@ -123,12 +124,48 @@ export function CryptoCheckoutModal({
 		chainId: selectedChainId ?? undefined,
 	});
 
-	// USDC token balance — shown so user knows if they have enough
-	const { data: tokenBalance, isLoading: isTokenBalanceLoading } = useBalance({
-		address,
-		token: session?.tokenAddress as `0x${string}` | undefined,
-		chainId: selectedChainId ?? undefined,
-	});
+	// USDC token balance — wagmi v3 removed `token` from useBalance,
+	// so we read balanceOf + decimals + symbol via useReadContracts with erc20Abi.
+	const tokenAddress = session?.tokenAddress as `0x${string}` | undefined;
+	const { data: tokenReadResults, isLoading: isTokenBalanceLoading } =
+		useReadContracts({
+			allowFailure: false,
+			contracts:
+				tokenAddress && address
+					? [
+							{
+								address: tokenAddress,
+								abi: erc20Abi,
+								functionName: 'balanceOf',
+								args: [address],
+								chainId: selectedChainId ?? undefined,
+							},
+							{
+								address: tokenAddress,
+								abi: erc20Abi,
+								functionName: 'decimals',
+								chainId: selectedChainId ?? undefined,
+							},
+							{
+								address: tokenAddress,
+								abi: erc20Abi,
+								functionName: 'symbol',
+								chainId: selectedChainId ?? undefined,
+							},
+						]
+					: undefined,
+		});
+
+	// Shape token data to match the interface ReviewStep expects
+	const tokenBalance = useMemo(() => {
+		if (!tokenReadResults) return undefined;
+		const [value, decimals, symbol] = tokenReadResults;
+		return {
+			value: value as bigint,
+			decimals: decimals as number,
+			symbol: symbol as string,
+		};
+	}, [tokenReadResults]);
 
 	// Backend hooks
 	const { data: walletsData, refetch: refetchWallets } = useWallets({
@@ -314,7 +351,7 @@ export function CryptoCheckoutModal({
 			});
 
 			if (!checkoutResult.success) {
-				setErrorMessage(getCryptoCheckoutErrorMessage(checkoutResult.error));
+				setErrorMessage(getPaymentErrorMessage(checkoutResult.error));
 				setStep('failure');
 				return;
 			}

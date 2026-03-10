@@ -13,7 +13,7 @@ import {
 	getPromoErrorMessage,
 	shouldClearPromo,
 } from '@/lib/checkout/error-messages';
-import { getReusablePendingOrder } from '@/lib/checkout/order-reuse';
+import { getReusablePendingOrder } from '@/services/order/get-reusable-pending-order';
 import { createOrder } from '@/services/order/create-order';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';

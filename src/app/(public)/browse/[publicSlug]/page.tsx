@@ -48,6 +48,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense, type ComponentProps } from 'react';
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { ReportRaffleButton } from './report-raffle-button';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
@@ -386,7 +387,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			<div className="flex w-full flex-col gap-8 lg:flex-row">
 				<div className="w-full space-y-4">
 					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
-						<h2 className="text-3xl font-bold text-gray-900">{raffle.title}</h2>
+						<div className="flex items-start justify-between gap-4">
+							<h2 className="text-3xl font-bold text-gray-900">
+								{raffle.title}
+							</h2>
+							{isAuthenticated && !isOwner && (
+								<ReportRaffleButton raffleId={raffle.id} />
+							)}
+						</div>
 
 						<Link
 							href={getHostProfileUrl()}

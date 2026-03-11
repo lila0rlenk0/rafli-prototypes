@@ -11,10 +11,13 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatTimeAgo } from '@/lib/utils/format-time-ago';
 import { useDeleteComment } from '@/services/comment/use-delete-comment';
+
+import { ReportMenuItem } from '@/components/report/report-menu-item';
 
 import { CommentInput } from './comment-input';
 import { CommentReplies } from './comment-replies';
@@ -62,6 +65,14 @@ export function CommentItem({
 		if (isOwner) return true;
 		// Comment author can delete their own
 		return currentUserId === comment.author.id;
+	}
+
+	/** Whether the current user can report this comment */
+	function canReport(): boolean {
+		if (comment.isDeleted) return false;
+		if (!isAuthenticated) return false;
+		// Can't report your own comment
+		return currentUserId !== comment.author.id;
 	}
 
 	/** Gets the author display name */
@@ -149,21 +160,31 @@ export function CommentItem({
 							</button>
 						)}
 
-						{/* Delete dropdown — portal-based to avoid overflow clipping */}
-						{canDelete() && (
+						{/* Actions dropdown — portal-based to avoid overflow clipping */}
+						{(canDelete() || canReport()) && (
 							<DropdownMenu>
 								<DropdownMenuTrigger className="rounded p-0.5 text-gray-400 outline-none hover:text-gray-600">
 									<MoreHorizontalIcon className="size-4" />
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="start">
-									<DropdownMenuItem
-										onClick={handleDelete}
-										disabled={deleteMutation.isPending}
-										className="text-red-600 focus:bg-red-50 focus:text-red-600"
-									>
-										<TrashIcon className="size-3" />
-										Delete comment
-									</DropdownMenuItem>
+									{canDelete() && (
+										<DropdownMenuItem
+											onClick={handleDelete}
+											disabled={deleteMutation.isPending}
+											className="text-red-600 focus:bg-red-50 focus:text-red-600"
+										>
+											<TrashIcon className="size-3" />
+											Delete comment
+										</DropdownMenuItem>
+									)}
+									{canDelete() && canReport() && <DropdownMenuSeparator />}
+									{canReport() && (
+										<ReportMenuItem
+											contentType="comment"
+											contentId={comment.id}
+											raffleId={raffleId}
+										/>
+									)}
 								</DropdownMenuContent>
 							</DropdownMenu>
 						)}

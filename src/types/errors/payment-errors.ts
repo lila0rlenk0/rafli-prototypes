@@ -67,6 +67,8 @@ export const PAYMENT_ERROR_CODES = {
 	CRYPTO_TX_ALREADY_USED: 'payments:crypto:tx-already-used',
 	/** Failed to submit crypto transaction */
 	CRYPTO_SUBMIT_FAILED: 'payments:crypto:submit-failed',
+	/** Failed to confirm crypto transaction (FE-driven finalization) */
+	CRYPTO_CONFIRM_FAILED: 'payments:crypto:confirm-failed',
 	/** Crypto checkout session not found */
 	CRYPTO_SESSION_NOT_FOUND: 'payments:crypto:session-not-found',
 	/** Failed to create crypto checkout session */

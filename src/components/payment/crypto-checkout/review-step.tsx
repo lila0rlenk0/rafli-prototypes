@@ -105,7 +105,10 @@ export function ReviewStep({
 	 * isTokenBalanceLoading check avoids flashing red before balance arrives.
 	 */
 	function getBalanceTextClass(): string {
-		if (isBalanceCheckPending || isTokenBalanceLoading) return '';
+		// Skip red styling when balance is pending, loading, or errored —
+		// "Failed to load" shouldn't look like "Insufficient balance"
+		if (isBalanceCheckPending || isTokenBalanceLoading || isTokenBalanceError)
+			return '';
 		return !hasEnoughTokens() ? 'text-red-500' : '';
 	}
 

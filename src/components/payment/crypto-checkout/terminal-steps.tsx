@@ -62,7 +62,9 @@ export function SuccessStep({
 				<p className="font-clash-display text-lg font-semibold">
 					Payment confirmed!
 				</p>
-				<p className="text-sm text-[#7B7B7B]">Your tickets are ready.</p>
+				<p className="text-center text-sm text-[#7B7B7B]">
+					Your tickets will appear below shortly — it may take 1-2 minutes.
+				</p>
 			</div>
 			<TxLink txHash={txHash} selectedChainId={selectedChainId} />
 			<Button

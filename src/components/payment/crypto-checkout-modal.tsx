@@ -10,6 +10,8 @@ import {
 	useReadContract,
 	useSignMessage,
 	useSwitchChain,
+	useTransaction,
+	useTransactionConfirmations,
 	useWaitForTransactionReceipt,
 	useWriteContract,
 } from 'wagmi';
@@ -33,6 +35,7 @@ import {
 	getPaymentErrorMessage,
 	getWalletErrorMessage,
 } from '@/lib/checkout/error-messages';
+import { getConfirmationTarget } from '@/lib/web3/block-explorers';
 import { isUserRejection } from '@/lib/web3/errors';
 import {
 	getAllChainIds,
@@ -40,6 +43,7 @@ import {
 	type TokenInfo,
 } from '@/lib/web3/tokens';
 import { cancelPaymentSession } from '@/services/payment/cancel-payment-session';
+import { confirmCryptoTx } from '@/services/payment/confirm-crypto-tx';
 import { createCryptoCheckout } from '@/services/payment/create-crypto-checkout';
 import { submitCryptoTx } from '@/services/payment/submit-crypto-tx';
 import { usePollOrderStatus } from '@/services/payment/use-poll-order-status';
@@ -156,6 +160,12 @@ export function CryptoCheckoutModal({
 	// submissions even when React batches state updates or re-runs effects (Strict Mode).
 	const txSubmittedToBackend = useRef(false);
 
+	// Idempotency guard for confirmCryptoTx — the FE-driven finalization call.
+	// Fires once when on-chain confirmations reach the chain's target threshold.
+	// Separate from txSubmittedToBackend because submit (hash notification) and
+	// confirm (finalization request) are two distinct backend calls.
+	const txConfirmRequested = useRef(false);
+
 	// chainId is required — without it wagmi defaults to the connected chain,
 	// which may differ from the target chain after switchChainAsync. This caused
 	// the "stuck on confirming" bug: receipt lookup hit the wrong chain's RPC.
@@ -164,10 +174,36 @@ export function CryptoCheckoutModal({
 		chainId: selectedChainId ?? undefined,
 	});
 
-	// Native token balance (ETH/MATIC) — shown as gas indicator
-	const { data: nativeBalance } = useBalance({
-		address,
+	// ---- Confirmation tracking ----
+	// Tracks live confirmation block count for display in the confirming step.
+	// wagmi polls the RPC for the tx's block number vs current block.
+	const confirmingEnabled = step === 'confirming' && !!txHash;
+
+	const { data: confirmationCount } = useTransactionConfirmations({
+		hash: txHash,
 		chainId: selectedChainId ?? undefined,
+		query: {
+			enabled: confirmingEnabled,
+			// Poll every 4s — slightly less than block time on most L2s,
+			// fast enough to show progress without excessive RPC calls
+			refetchInterval: confirmingEnabled ? 4_000 : false,
+		},
+	});
+
+	// ---- Reorg detection ----
+	// Fetches the tx object from the RPC. If the tx was included in a block that got
+	// reorged, the RPC errors (tx no longer exists in the canonical chain).
+	// `isError` true with consecutive failures (failureCount ≥ 2) signals a reorg.
+	const { isError: isTxError, failureCount: txFailureCount } = useTransaction({
+		hash: txHash,
+		chainId: selectedChainId ?? undefined,
+		query: {
+			enabled: confirmingEnabled,
+			// Poll less frequently — reorgs are rare, 8s is plenty
+			refetchInterval: confirmingEnabled ? 8_000 : false,
+			// Retry once before concluding tx is gone — transient RPC errors are common
+			retry: 1,
+		},
 	});
 
 	// ERC20 token balance — read balanceOf + decimals + symbol individually.
@@ -179,6 +215,25 @@ export function CryptoCheckoutModal({
 	const tokenAddress = session?.tokenAddress as `0x${string}` | undefined;
 	const targetChainId = selectedChainId ?? undefined;
 	const tokenQueryEnabled = !!tokenAddress && !!address;
+
+	// ---- Balance recheck for reorg recovery ----
+	// Separate balance read that's only enabled during confirming to detect if funds
+	// were actually deducted after a suspected reorg. Uses a different query key than
+	// the review-step balance read (via enabled flag gating).
+	const { refetch: refetchConfirmingBalance } = useReadContract({
+		address: tokenAddress,
+		abi: erc20Abi,
+		functionName: 'balanceOf',
+		args: address ? [address] : undefined,
+		chainId: targetChainId,
+		query: { enabled: confirmingEnabled && tokenQueryEnabled },
+	});
+
+	// Native token balance (ETH/MATIC) — shown as gas indicator
+	const { data: nativeBalance } = useBalance({
+		address,
+		chainId: selectedChainId ?? undefined,
+	});
 
 	const {
 		data: rawBalance,
@@ -225,9 +280,10 @@ export function CryptoCheckoutModal({
 
 	// Backend hooks
 	const { data: walletsData, refetch: refetchWallets } = useWallets({
-		enabled: open,
+		// Guard on userId — without auth, getWallets returns 401 silently
+		enabled: open && !!userId,
 	});
-	const { data: polledOrder } = usePollOrderStatus(
+	const { data: polledOrder, isExpired: isPollingExpired } = usePollOrderStatus(
 		step === 'confirming' ? orderId : null,
 	);
 
@@ -316,6 +372,62 @@ export function CryptoCheckoutModal({
 	}, [isTxConfirmed, txHash, session, step]);
 
 	/**
+	 * FE-driven finalization — when on-chain confirmations reach the chain's target,
+	 * proactively ask backend to finalize the payment instead of waiting for the cron.
+	 *
+	 * This is an optimization, not a requirement:
+	 * - If backend already moved the order to COMPLETED (cron was faster), this is a no-op
+	 * - If backend hasn't processed yet, it validates the tx and finalizes synchronously
+	 * - On failure, we don't transition to error — polling/cron remain as fallback
+	 *
+	 * Fires after txSubmittedToBackend (hash must be known to backend first).
+	 * Uses txConfirmRequested ref for idempotency — exactly one call per tx.
+	 */
+	useEffect(() => {
+		if (step !== 'confirming' || !txHash || !session || !selectedChainId)
+			return;
+		// Wait until submit-tx call has fired — backend needs the hash first
+		if (!txSubmittedToBackend.current) return;
+		// Only fire once per tx
+		if (txConfirmRequested.current) return;
+
+		const target = getConfirmationTarget(selectedChainId);
+		const currentConfirmations =
+			confirmationCount !== undefined ? Number(confirmationCount) : 0;
+		if (currentConfirmations < target) return;
+
+		txConfirmRequested.current = true;
+
+		async function requestConfirmation() {
+			const result = await confirmCryptoTx({
+				sessionId: session!.id,
+				txHash: txHash!,
+				chainId: selectedChainId!,
+				confirmations: Number(confirmationCount),
+			});
+
+			if (!result.success) {
+				// Non-fatal — polling/cron will finalize eventually.
+				// Log for debugging but don't interrupt the user's confirming experience.
+				console.warn(
+					'FE-driven confirm failed, falling back to cron:',
+					result.error,
+				);
+				return;
+			}
+
+			// Backend confirmed — if order is COMPLETED, transition immediately
+			if (result.data.status === ORDER_STATUS.COMPLETED) {
+				setStep('success');
+				onSuccess?.();
+			}
+			// Any other status: cron/polling will handle the final transition
+		}
+
+		requestConfirmation();
+	}, [step, txHash, session, selectedChainId, confirmationCount, onSuccess]);
+
+	/**
 	 * Transition to success/failure when polling detects terminal state
 	 */
 	useEffect(() => {
@@ -332,6 +444,83 @@ export function CryptoCheckoutModal({
 			setStep('failure');
 		}
 	}, [polledOrder, step, onSuccess]);
+
+	/**
+	 * Polling timeout — transitions to failure when polling exceeds max duration.
+	 * Safety net for cases where backend never moves order to terminal status
+	 * (e.g. tx validation stuck, session expired without cleanup).
+	 */
+	useEffect(() => {
+		if (!isPollingExpired || step !== 'confirming') return;
+		setErrorMessage(
+			'Payment verification timed out. Your transaction may still be processing — please check your order history or contact support.',
+		);
+		setStep('failure');
+	}, [isPollingExpired, step]);
+
+	/**
+	 * Reorg detection — if the RPC stops returning the transaction (null data or errors
+	 * after retries), the tx may have been dropped from the canonical chain.
+	 *
+	 * Recovery flow:
+	 * 1. Detect tx gone (isTxError with 2+ consecutive failures after retry)
+	 * 2. Recheck the user's token balance on-chain
+	 * 3a. If balance ≥ payment amount → funds weren't deducted → safe to retry
+	 * 3b. If balance < payment amount → funds were deducted but tx vanished → contact support
+	 *
+	 * Only triggers after txSubmittedToBackend (we have a hash and entered confirming).
+	 * The failure count threshold (2) prevents false positives from transient RPC hiccups.
+	 */
+	useEffect(() => {
+		if (step !== 'confirming' || !txHash) return;
+		if (!txSubmittedToBackend.current) return;
+
+		// isTxError with failureCount ≥ 2 means consecutive failures after retry
+		// (not transient). wagmi's useTransaction returns `undefined` (not `null`)
+		// when tx is missing, so error state is the only reliable reorg signal.
+		const txLikelyGone = isTxError && txFailureCount >= 2;
+
+		if (!txLikelyGone) return;
+
+		async function handlePossibleReorg() {
+			// Recheck balance to determine if funds left the wallet
+			const { data: freshBalance } = await refetchConfirmingBalance();
+
+			if (!session) {
+				setErrorMessage(
+					'Transaction may have been removed from the blockchain. Please contact support.',
+				);
+				setStep('failure');
+				return;
+			}
+
+			const paymentAmount = BigInt(session.amountRaw);
+			// If fresh balance covers the payment → funds weren't deducted → safe to retry
+			const fundsStillAvailable =
+				freshBalance !== undefined && (freshBalance as bigint) >= paymentAmount;
+
+			if (fundsStillAvailable) {
+				setErrorMessage(
+					'Your transaction was removed from the blockchain (chain reorganization). Your funds were not deducted — you can safely try again.',
+				);
+			} else {
+				// Funds appear deducted but tx vanished — ambiguous state, need support
+				setErrorMessage(
+					'Your transaction may have been affected by a chain reorganization. Please contact support with your transaction hash for assistance.',
+				);
+			}
+			setStep('failure');
+		}
+
+		handlePossibleReorg();
+	}, [
+		step,
+		txHash,
+		isTxError,
+		txFailureCount,
+		session,
+		refetchConfirmingBalance,
+	]);
 
 	/**
 	 * Session expiry timer — transitions to failure when checkout session expires.
@@ -608,6 +797,7 @@ export function CryptoCheckoutModal({
 		walletReadyInFlight.current = false;
 		payInFlight.current = false;
 		txSubmittedToBackend.current = false;
+		txConfirmRequested.current = false;
 		// Reset wagmi write state so stale txHash doesn't persist across retries
 		resetWriteContract();
 	}
@@ -824,7 +1014,15 @@ export function CryptoCheckoutModal({
 						/>
 					)}
 					{step === 'confirming' && selectedChainId && (
-						<ConfirmingStep txHash={txHash} selectedChainId={selectedChainId} />
+						<ConfirmingStep
+							txHash={txHash}
+							selectedChainId={selectedChainId}
+							confirmations={
+								confirmationCount !== undefined ? Number(confirmationCount) : 0
+							}
+							confirmationTarget={getConfirmationTarget(selectedChainId)}
+							isTxConfirmed={isTxConfirmed}
+						/>
 					)}
 					{step === 'success' && selectedChainId && (
 						<SuccessStep

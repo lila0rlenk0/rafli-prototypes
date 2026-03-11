@@ -96,6 +96,19 @@ export const submitCryptoTxPayloadSchema = z.object({
 });
 
 /**
+ * Schema for frontend-driven confirmation request.
+ * Sent when on-chain confirmations reach the chain's target threshold,
+ * allowing backend to finalize immediately instead of waiting for the cron.
+ */
+export const confirmCryptoTxPayloadSchema = z.object({
+	sessionId: z.string().min(1),
+	txHash: z.string().min(1),
+	chainId: z.number(),
+	/** Number of on-chain confirmations observed by the frontend */
+	confirmations: z.number().min(1),
+});
+
+/**
  * Schema for wallets list response
  */
 export const walletsListResponseSchema = z.object({
@@ -113,4 +126,7 @@ export type CreateCryptoCheckoutPayload = z.infer<
 	typeof createCryptoCheckoutPayloadSchema
 >;
 export type SubmitCryptoTxPayload = z.infer<typeof submitCryptoTxPayloadSchema>;
+export type ConfirmCryptoTxPayload = z.infer<
+	typeof confirmCryptoTxPayloadSchema
+>;
 export type WalletsListResponse = z.infer<typeof walletsListResponseSchema>;

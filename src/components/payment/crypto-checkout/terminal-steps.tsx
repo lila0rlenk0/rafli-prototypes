@@ -85,6 +85,8 @@ interface FailureStepProps {
 	txHash: string | undefined;
 	selectedChainId: number;
 	errorMessage: string | null;
+	/** When true, funds may have been deducted — hides "Try Again" to prevent duplicate payment */
+	fundsAtRisk?: boolean;
 	onClose: () => void;
 	onReset: () => void;
 }
@@ -92,11 +94,14 @@ interface FailureStepProps {
 /**
  * Terminal failure step — payment failed or verification timed out.
  * Offers retry via onReset and close via onClose.
+ * "Try Again" is hidden when fundsAtRisk is true (reorg with ambiguous balance)
+ * — retrying could cause a duplicate payment.
  */
 export function FailureStep({
 	txHash,
 	selectedChainId,
 	errorMessage,
+	fundsAtRisk = false,
 	onClose,
 	onReset,
 }: FailureStepProps) {
@@ -117,12 +122,14 @@ export function FailureStep({
 				>
 					Close
 				</Button>
-				<Button
-					onClick={onReset}
-					className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
-				>
-					Try Again
-				</Button>
+				{!fundsAtRisk && (
+					<Button
+						onClick={onReset}
+						className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
+					>
+						Try Again
+					</Button>
+				)}
 			</div>
 		</div>
 	);

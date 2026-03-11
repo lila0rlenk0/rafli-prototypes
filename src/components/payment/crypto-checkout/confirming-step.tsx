@@ -86,14 +86,18 @@ export function ConfirmingStep({
 	 * 4. Completing — pending until target reached + confirmed, then active
 	 *    ("done" never visible — same reason as verifying)
 	 */
+	// txHash is undefined while MetaMask is still prompting (optimistic step transition).
+	// Once writeContractAsync resolves, wagmi sets txHash and broadcast is truly done.
+	const isBroadcast = !!txHash;
+
 	const phases: {
 		label: string;
 		status: PhaseStatus;
 		detail: string | null;
 	}[] = [
 		{
-			label: 'Transaction broadcast',
-			status: 'done',
+			label: isBroadcast ? 'Transaction broadcast' : 'Sending transaction',
+			status: isBroadcast ? 'done' : 'active',
 			detail: null,
 		},
 		{

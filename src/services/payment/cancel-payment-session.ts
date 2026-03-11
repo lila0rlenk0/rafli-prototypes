@@ -59,7 +59,7 @@ export async function cancelPaymentSession(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			console.error('Cancel session response validation failed:', error);
-			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
+			return failure(PAYMENT_ERROR_CODES.CANCEL_SESSION_FAILED);
 		}
 
 		return failure(mapPaymentError(error));

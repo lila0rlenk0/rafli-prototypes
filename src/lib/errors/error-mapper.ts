@@ -168,50 +168,6 @@ function mapCommonError(
 }
 
 /**
- * Generic error mapper (deprecated)
- *
- * @deprecated Use service-specific mappers: mapAuthError, mapRaffleError, etc.
- */
-export function mapBackendError<TErrorCode extends string>(
-	error: unknown,
-	errorCodeMap: Record<string, TErrorCode>,
-	defaultErrorCode: TErrorCode,
-): TErrorCode {
-	if (!(error instanceof AxiosError)) {
-		return defaultErrorCode;
-	}
-
-	const backendCode = error.response?.data?.message as string | undefined;
-
-	if (backendCode && backendCode in errorCodeMap) {
-		return errorCodeMap[backendCode];
-	}
-
-	const status = error.response?.status;
-	if (status === 401) {
-		return COMMON_ERROR_CODES.UNAUTHORIZED as TErrorCode;
-	}
-	if (status === 403) {
-		return COMMON_ERROR_CODES.FORBIDDEN as TErrorCode;
-	}
-	if (status === 500) {
-		return COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR as TErrorCode;
-	}
-	if (status === 503) {
-		return COMMON_ERROR_CODES.SERVICE_UNAVAILABLE as TErrorCode;
-	}
-
-	if (error.code === 'ECONNABORTED') {
-		return COMMON_ERROR_CODES.TIMEOUT_ERROR as TErrorCode;
-	}
-	if (error.code === 'ERR_NETWORK') {
-		return COMMON_ERROR_CODES.NETWORK_ERROR as TErrorCode;
-	}
-
-	return defaultErrorCode;
-}
-
-/**
  * Maps authentication errors to AuthErrorCode
  *
  * Flow:

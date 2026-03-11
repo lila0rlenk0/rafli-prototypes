@@ -131,6 +131,10 @@ export function CryptoCheckoutModal({
 	const [sessionTokenSlug, setSessionTokenSlug] = useState<string | null>(null);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	// Tracks whether a reorg with ambiguous balance was detected — funds may have
+	// left the wallet but the tx vanished. When true, "Try Again" is hidden to
+	// prevent duplicate payments. Passed as explicit prop to FailureStep.
+	const [fundsAtRisk, setFundsAtRisk] = useState(false);
 
 	// Wagmi hooks
 	const { address, chainId: connectedChainId } = useAccount();
@@ -165,6 +169,15 @@ export function CryptoCheckoutModal({
 	// Separate from txSubmittedToBackend because submit (hash notification) and
 	// confirm (finalization request) are two distinct backend calls.
 	const txConfirmRequested = useRef(false);
+
+	// Guards the success transition — prevents double onSuccess() when both
+	// FE-driven confirm and polling detect COMPLETED in the same render cycle.
+	// Set synchronously before async state update to close the race window.
+	const successTransitioned = useRef(false);
+
+	// Guards reorg detection — prevents concurrent handlePossibleReorg executions
+	// when txFailureCount increments multiple times while balance refetch is pending.
+	const reorgHandled = useRef(false);
 
 	// chainId is required — without it wagmi defaults to the connected chain,
 	// which may differ from the target chain after switchChainAsync. This caused
@@ -218,8 +231,9 @@ export function CryptoCheckoutModal({
 
 	// ---- Balance recheck for reorg recovery ----
 	// Separate balance read that's only enabled during confirming to detect if funds
-	// were actually deducted after a suspected reorg. Uses a different query key than
-	// the review-step balance read (via enabled flag gating).
+	// were actually deducted after a suspected reorg. Shares the same wagmi cache entry
+	// as the review-step balance read (same contract params = same query key).
+	// This is harmless — both want fresh balance data and refetch updates both.
 	const { refetch: refetchConfirmingBalance } = useReadContract({
 		address: tokenAddress,
 		abi: erc20Abi,
@@ -416,8 +430,12 @@ export function CryptoCheckoutModal({
 				return;
 			}
 
-			// Backend confirmed — if order is COMPLETED, transition immediately
+			// Backend confirmed — if order is COMPLETED, transition immediately.
+			// successTransitioned ref prevents double onSuccess() when polling
+			// also detects COMPLETED in the same render cycle.
 			if (result.data.status === ORDER_STATUS.COMPLETED) {
+				if (successTransitioned.current) return;
+				successTransitioned.current = true;
 				setStep('success');
 				onSuccess?.();
 			}
@@ -434,6 +452,10 @@ export function CryptoCheckoutModal({
 		if (!polledOrder || step !== 'confirming') return;
 
 		if (polledOrder.status === ORDER_STATUS.COMPLETED) {
+			// successTransitioned ref prevents double onSuccess() when FE-driven
+			// confirm also detected COMPLETED in the same render cycle
+			if (successTransitioned.current) return;
+			successTransitioned.current = true;
 			setStep('success');
 			onSuccess?.();
 		} else if (
@@ -481,6 +503,10 @@ export function CryptoCheckoutModal({
 		const txLikelyGone = isTxError && txFailureCount >= 2;
 
 		if (!txLikelyGone) return;
+		// Idempotency guard — prevents concurrent handlePossibleReorg executions
+		// when txFailureCount increments multiple times while refetch is pending
+		if (reorgHandled.current) return;
+		reorgHandled.current = true;
 
 		async function handlePossibleReorg() {
 			// Recheck balance to determine if funds left the wallet
@@ -504,7 +530,9 @@ export function CryptoCheckoutModal({
 					'Your transaction was removed from the blockchain (chain reorganization). Your funds were not deducted — you can safely try again.',
 				);
 			} else {
-				// Funds appear deducted but tx vanished — ambiguous state, need support
+				// Funds appear deducted but tx vanished — ambiguous state, need support.
+				// fundsAtRisk disables "Try Again" in FailureStep to prevent duplicate payment.
+				setFundsAtRisk(true);
 				setErrorMessage(
 					'Your transaction may have been affected by a chain reorganization. Please contact support with your transaction hash for assistance.',
 				);
@@ -748,6 +776,15 @@ export function CryptoCheckoutModal({
 				await switchChainAsync({ chainId: selectedChainId });
 			}
 
+			// Transition to confirming BEFORE writeContractAsync resolves.
+			// On fast L2 chains (Polygon, Arbitrum — 2-block targets), wagmi's
+			// useWaitForTransactionReceipt can resolve from cache before React flushes
+			// state. If step is still 'review' when isTxConfirmed becomes true,
+			// the submit-tx effect's `step !== 'confirming'` guard blocks the backend
+			// call — silently losing the tx hash. Moving the transition here ensures
+			// step is 'confirming' by the time the receipt arrives.
+			setStep('confirming');
+
 			// Execute ERC20 transfer
 			// amountRaw is already in token's smallest unit (6 decimals for USDC, 18 for EARNM)
 			await writeContractAsync({
@@ -759,8 +796,6 @@ export function CryptoCheckoutModal({
 					BigInt(session.amountRaw),
 				],
 			});
-
-			setStep('confirming');
 		} catch (error) {
 			// Reset guards in catch only — on success path, payInFlight stays true to prevent
 			// double-transfer if React re-renders before confirming step takes over.
@@ -772,6 +807,8 @@ export function CryptoCheckoutModal({
 			// User rejected the tx in their wallet — not an error, just stay on review
 			if (isUserRejection(error)) {
 				toast.info('Transaction cancelled.');
+				// Return to review since we optimistically moved to confirming
+				setStep('review');
 				return;
 			}
 
@@ -792,12 +829,15 @@ export function CryptoCheckoutModal({
 		setSessionTokenSlug(null);
 		setIsProcessing(false);
 		setErrorMessage(null);
+		setFundsAtRisk(false);
 		setTxSubmitted(false);
 		// Reset ref guards so retried flow can submit again
 		walletReadyInFlight.current = false;
 		payInFlight.current = false;
 		txSubmittedToBackend.current = false;
 		txConfirmRequested.current = false;
+		successTransitioned.current = false;
+		reorgHandled.current = false;
 		// Reset wagmi write state so stale txHash doesn't persist across retries
 		resetWriteContract();
 	}
@@ -1036,6 +1076,7 @@ export function CryptoCheckoutModal({
 							txHash={txHash}
 							selectedChainId={selectedChainId}
 							errorMessage={errorMessage}
+							fundsAtRisk={fundsAtRisk}
 							onClose={handleClose}
 							onReset={handleReset}
 						/>

@@ -84,6 +84,8 @@ export const PAYMENT_ERROR_CODES = {
 	// Cancel session errors
 	/** Cannot cancel crypto session — tx is on-chain awaiting confirmation */
 	CANCEL_CRYPTO_CONFIRMING: 'payments:cancel:crypto-confirming',
+	/** Failed to cancel payment session (response validation) */
+	CANCEL_SESSION_FAILED: 'payments:cancel:session-failed',
 
 	// Generic fetch failure
 	FETCH_FAILED: 'fetch_failed',

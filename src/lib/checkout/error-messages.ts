@@ -92,6 +92,8 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		// Cancel errors
 		case 'payments:cancel:crypto-confirming':
 			return 'Cannot switch payment method while crypto payment is being verified';
+		case 'payments:cancel:session-failed':
+			return 'Failed to cancel payment session. Please try again';
 
 		// Order errors
 		case 'payments:order:permission-denied':

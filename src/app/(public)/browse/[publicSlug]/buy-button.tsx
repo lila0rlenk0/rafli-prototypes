@@ -8,16 +8,13 @@ import { toast } from 'sonner';
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import {
-	getOrderErrorMessage,
 	getPaymentErrorMessage,
 	getPromoErrorMessage,
 	shouldClearPromo,
 } from '@/lib/checkout/error-messages';
-import { getReusablePendingOrder } from '@/services/order/get-reusable-pending-order';
-import { createOrder } from '@/services/order/create-order';
+import { buildCheckoutOrder } from '@/services/checkout/build-checkout-order';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
-import { validatePromoCode } from '@/services/promo-code/validate-promo-code';
 
 /**
  * Props for BuyButton
@@ -38,7 +35,7 @@ interface BuyButtonProps {
  * BuyButton Component
  *
  * Handles the ticket purchase flow:
- * 1. Creates order with backend
+ * 1. Creates order via shared buildCheckoutOrder (with promo handling)
  * 2. Creates Stripe checkout session
  * 3. Redirects to Stripe checkout page
  *
@@ -64,14 +61,11 @@ export function BuyButton({
 	 * Routes to appropriate flow based on ticket type
 	 */
 	function handleBuyClick() {
-		// Step 1: Route to question modal if required.
 		if (questionId) {
 			setShowQuestionModal(true);
 		} else if (isFreeTickets && promoCode) {
-			// Step 2: Redeem free tickets directly.
 			redeemFreeTickets();
 		} else {
-			// Step 3: Continue to checkout.
 			proceedToCheckout();
 		}
 	}
@@ -90,7 +84,7 @@ export function BuyButton({
 
 	/**
 	 * Redeems free tickets promo code
-	 * Called for free_tickets type promos - skips order/checkout flow
+	 * Called for free_tickets type promos — skips order/checkout flow
 	 */
 	async function redeemFreeTickets() {
 		if (!promoCode) return;
@@ -98,22 +92,19 @@ export function BuyButton({
 		setIsLoading(true);
 
 		try {
-			// Step 1: Redeem code with backend.
 			const result = await redeemPromoCode({
 				code: promoCode,
 				raffleId,
 			});
 
 			if (!result.success) {
-				const message = getPromoErrorMessage(result.error);
-				toast.error(message);
+				toast.error(getPromoErrorMessage(result.error));
 				if (shouldClearPromo(result.error)) {
 					onPromoInvalid?.();
 				}
 				return;
 			}
 
-			// Step 2: Notify and refresh.
 			const { ticketsGranted } = result.data;
 			const ticketText = ticketsGranted === 1 ? 'ticket' : 'tickets';
 			toast.success(`You received ${ticketsGranted} free ${ticketText}!`);
@@ -129,101 +120,33 @@ export function BuyButton({
 	}
 
 	/**
-	 * Creates order and checkout session, then redirects to Stripe
+	 * Creates order via shared buildCheckoutOrder, then redirects to Stripe.
+	 * Order creation + promo handling is shared with CryptoBuyButton.
 	 */
 	async function proceedToCheckout() {
 		setIsLoading(true);
 
 		try {
-			// Step 1: Reuse existing pending order if possible
-			let order = await getReusablePendingOrder(
+			// Step 1: Build order with promo handling (shared with crypto flow)
+			const result = await buildCheckoutOrder({
 				raffleId,
 				ticketQuantity,
 				promoCode,
-			);
+				onPromoInvalid,
+			});
 
-			const promoAlreadyApplied =
-				promoCode && !isFreeTickets && order?.promoCode === promoCode;
+			// Null means error — already toasted by buildCheckoutOrder
+			if (!result) return;
 
-			if (!promoAlreadyApplied) {
-				// Step 2: Re-validate promo just before checkout to avoid stale codes
-				if (promoCode && !isFreeTickets) {
-					const validationResult = await validatePromoCode(raffleId, promoCode);
-					if (!validationResult.success) {
-						const message = getPromoErrorMessage(validationResult.error);
-						toast.error(message);
-						if (shouldClearPromo(validationResult.error)) {
-							onPromoInvalid?.();
-						}
-						return;
-					}
-				}
-
-				// Step 3: Create order if none exists
-				if (!order) {
-					const orderResult = await createOrder({
-						raffleId,
-						ticketQuantity,
-					});
-
-					if (!orderResult.success) {
-						toast.error(getOrderErrorMessage(orderResult.error));
-						return;
-					}
-
-					order = orderResult.data;
-				}
-
-				// Step 4: Apply discount promo to pending order (free tickets handled separately)
-				if (promoCode && !isFreeTickets) {
-					if (order.promoCode && order.promoCode !== promoCode) {
-						toast.error(
-							'A different promo code is already applied to this order',
-						);
-						onPromoInvalid?.();
-						return;
-					}
-
-					if (order.promoCode !== promoCode) {
-						const redeemResult = await redeemPromoCode({
-							code: promoCode,
-							raffleId,
-							orderId: order.id,
-						});
-
-						if (!redeemResult.success) {
-							const message = getPromoErrorMessage(redeemResult.error);
-							toast.error(message);
-							if (shouldClearPromo(redeemResult.error)) {
-								onPromoInvalid?.();
-							}
-							return;
-						}
-
-						const discountAmount = parseFloat(
-							redeemResult.data.discountAmount ?? '0',
-						);
-						const orderTotal = parseFloat(order.totalAmount);
-						const remainingTotal = Math.max(0, orderTotal - discountAmount);
-
-						// Backend auto-completes $0 orders after promo redemption
-						if (remainingTotal === 0) {
-							toast.success('Promo applied. Tickets claimed successfully!');
-							router.refresh();
-							return;
-						}
-					}
-				}
-			}
-
-			if (!order) {
-				toast.error('Failed to create order. Please try again');
+			// $0 order after promo — backend auto-completed, just refresh
+			if (result.isFullyDiscounted) {
+				router.refresh();
 				return;
 			}
 
-			// Step 5: Create Stripe checkout session and redirect
+			// Step 2: Create Stripe checkout session and redirect
 			const checkoutResult = await createCheckoutSession({
-				orderId: order.id,
+				orderId: result.order.id,
 				raffleId,
 				publicSlug,
 			});

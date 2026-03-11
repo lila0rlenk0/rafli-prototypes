@@ -9,7 +9,7 @@ import { useAccount } from 'wagmi';
 import { CryptoCheckoutModal } from '@/components/payment/crypto-checkout-modal';
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
-import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
+import { buildCheckoutOrder } from '@/services/checkout/build-checkout-order';
 
 // ==========================================
 // Types

@@ -19,6 +19,8 @@ export const WALLET_ERROR_CODES = {
 	INVALID_ADDRESS: 'auth:wallet:invalid-address',
 	/** Wallet not found */
 	NOT_FOUND: 'auth:wallet:not-found',
+	/** Response validation failed (Zod parse error on verify/fetch response) */
+	VALIDATION_FAILED: 'auth:wallet:validation-failed',
 	/** Generic fetch failure */
 	FETCH_FAILED: 'fetch_failed',
 } as const;

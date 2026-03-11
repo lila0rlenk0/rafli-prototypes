@@ -15,7 +15,7 @@ interface ReviewStepProps {
 	/** Parent guarantees non-null — only renders when chain is selected */
 	selectedChainId: number;
 	isCorrectChain: boolean;
-	/** Token balance from wagmi useBalance — undefined while loading */
+	/** Token balance from wagmi useBalance — undefined while loading or not yet started */
 	tokenBalance:
 		| { value: bigint; decimals: number; symbol?: string }
 		| undefined;
@@ -23,6 +23,12 @@ interface ReviewStepProps {
 	isTokenBalanceLoading: boolean;
 	/** True when RPC call to fetch token balance failed */
 	isTokenBalanceError?: boolean;
+	/**
+	 * True when balance read hasn't started yet (no session/token address).
+	 * Distinguishes "not started" from "loaded and zero" — prevents false
+	 * "Insufficient balance" warning on review step mount.
+	 */
+	isBalanceCheckPending?: boolean;
 	isProcessing: boolean;
 	/** True after writeContractAsync returns (Worker A's txSubmitted state) */
 	txSubmitted?: boolean;
@@ -45,16 +51,17 @@ export function ReviewStep({
 	tokenBalance,
 	isTokenBalanceLoading,
 	isTokenBalanceError,
+	isBalanceCheckPending,
 	isProcessing,
 	txSubmitted,
 	onPay,
 }: ReviewStepProps) {
 	/**
 	 * Checks if user has enough USDC for the payment.
-	 * Returns false when balance is still loading — prevents premature pay.
+	 * Returns false when balance is still loading or not yet started — prevents premature pay.
 	 */
 	function hasEnoughTokens(): boolean {
-		if (isTokenBalanceLoading) return false;
+		if (isBalanceCheckPending || isTokenBalanceLoading) return false;
 		// If balance loaded but data is undefined (RPC error, unsupported token),
 		// disable Pay — prevents confusing wallet-level failure after clicking Pay
 		if (!tokenBalance || !session) return false;
@@ -62,11 +69,22 @@ export function ReviewStep({
 	}
 
 	/**
+	 * Whether to show the "Insufficient USDC" warning.
+	 * Only after balance loaded successfully and it's not enough.
+	 */
+	function shouldShowInsufficientWarning(): boolean {
+		if (isBalanceCheckPending || isTokenBalanceLoading || isTokenBalanceError)
+			return false;
+		return !hasEnoughTokens();
+	}
+
+	/**
 	 * Gets pay button text based on current state
 	 */
 	function getPayButtonText(): string {
 		if (isProcessing || txSubmitted) return 'Processing...';
-		if (isTokenBalanceLoading) return 'Checking balance...';
+		if (isBalanceCheckPending || isTokenBalanceLoading)
+			return 'Checking balance...';
 		return `Pay ${formatPaymentAmount(session)} USDC`;
 	}
 
@@ -84,7 +102,7 @@ export function ReviewStep({
 	 * isTokenBalanceLoading check avoids flashing red before balance arrives.
 	 */
 	function getBalanceTextClass(): string {
-		if (isTokenBalanceLoading) return '';
+		if (isBalanceCheckPending || isTokenBalanceLoading) return '';
 		return !hasEnoughTokens() ? 'text-red-500' : '';
 	}
 
@@ -92,7 +110,7 @@ export function ReviewStep({
 	 * Balance display text — shows loading/error/formatted value
 	 */
 	function getBalanceDisplay(): string {
-		if (isTokenBalanceLoading) return 'Loading...';
+		if (isBalanceCheckPending || isTokenBalanceLoading) return 'Loading...';
 		if (isTokenBalanceError) return 'Failed to load';
 		return `${formatTokenBalance(tokenBalance)} USDC`;
 	}
@@ -140,8 +158,8 @@ export function ReviewStep({
 				</div>
 			)}
 
-			{/* Insufficient balance warning */}
-			{!isTokenBalanceLoading && !isTokenBalanceError && !hasEnoughTokens() && (
+			{/* Insufficient balance warning — only after balance loaded successfully */}
+			{shouldShowInsufficientWarning() && (
 				<div className="rounded-xl bg-red-50 px-4 py-3 text-center text-xs text-red-600">
 					Insufficient USDC balance. You need {formatPaymentAmount(session)}{' '}
 					USDC.

@@ -41,13 +41,6 @@ export async function createCryptoCheckout(
 			return failure(PAYMENT_ERROR_CODES.CRYPTO_CHECKOUT_FAILED);
 		}
 
-		const mapped = mapPaymentError(error);
-		// Log full backend response body for debugging
-		const axiosErr = error as { response?: { status?: number; data?: unknown } };
-		console.error(
-			'[createCryptoCheckout] response body:',
-			JSON.stringify(axiosErr?.response?.data, null, 2),
-		);
-		return failure(mapped);
+		return failure(mapPaymentError(error));
 	}
 }

@@ -32,7 +32,7 @@ export async function verifyWallet(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			console.error('Wallet verify response validation failed:', error);
-			return failure(WALLET_ERROR_CODES.FETCH_FAILED);
+			return failure(WALLET_ERROR_CODES.VALIDATION_FAILED);
 		}
 
 		return failure(mapWalletError(error));

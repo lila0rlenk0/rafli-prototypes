@@ -433,9 +433,12 @@ export function CryptoCheckoutModal({
 
 			setStep('confirming');
 		} catch (error) {
-			// Revert guards — allow retry on rejection or failure
+			// Reset guards in catch only — on success path, payInFlight stays true to prevent
+			// double-transfer if React re-renders before confirming step takes over.
+			// handleReset clears everything when user retries or closes.
 			payInFlight.current = false;
 			setTxSubmitted(false);
+			setIsProcessing(false);
 
 			// User rejected the tx in their wallet — not an error, just stay on review
 			if (isUserRejection(error)) {
@@ -446,8 +449,6 @@ export function CryptoCheckoutModal({
 			console.error('Crypto payment error:', error);
 			setErrorMessage('Transaction failed. Please try again.');
 			setStep('failure');
-		} finally {
-			setIsProcessing(false);
 		}
 	}
 
@@ -522,14 +523,8 @@ export function CryptoCheckoutModal({
 	}
 
 	/**
-	 * Whether the back button should be visible
-	 */
-	function showBackButton(): boolean {
-		return step === 'connect-wallet' || step === 'review';
-	}
-
-	/**
-	 * Step progress indicator (1-indexed for display)
+	 * Step progress indicator (1-indexed for display).
+	 * Returns 0 for terminal steps (confirming, success, failure) — hides progress dots.
 	 */
 	function getStepNumber(): number {
 		switch (step) {
@@ -544,13 +539,9 @@ export function CryptoCheckoutModal({
 		}
 	}
 
-	/**
-	 * Whether to show the step progress dots
-	 */
-	function showStepIndicator(): boolean {
-		return (
-			step === 'select-chain' || step === 'connect-wallet' || step === 'review'
-		);
+	/** Back button visible only on navigable steps (not first step or terminal states) */
+	function showBackButton(): boolean {
+		return getStepNumber() >= 2;
 	}
 
 	/**
@@ -587,7 +578,7 @@ export function CryptoCheckoutModal({
 					</DialogTitle>
 
 					{/* Step progress dots */}
-					{showStepIndicator() && (
+					{getStepNumber() > 0 && (
 						<div className="flex items-center justify-center gap-1.5 pt-1">
 							{[1, 2, 3].map(n => (
 								<div key={n} className={getStepDotClass(n)} />
@@ -620,6 +611,7 @@ export function CryptoCheckoutModal({
 							tokenBalance={tokenBalance ?? undefined}
 							isTokenBalanceLoading={isTokenBalanceLoading}
 							isTokenBalanceError={isTokenBalanceError}
+							isBalanceCheckPending={!tokenAddress || !address}
 							isProcessing={isProcessing}
 							txSubmitted={txSubmitted}
 							onPay={handlePay}

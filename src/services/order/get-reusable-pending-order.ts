@@ -59,6 +59,10 @@ export async function getReusablePendingOrder(
 	ticketQuantity: number,
 	promoCode?: string,
 ): Promise<OrderWithRaffle | null> {
+	// Limitation: only checks first 100 orders. Backend GET /me/orders doesn't support
+	// status filtering, so we can't query pending-only. For users with 100+ orders,
+	// a reusable pending order could be missed, creating a duplicate (harmless — old
+	// one expires). Acceptable tradeoff until backend adds status filter.
 	const ordersResult = await getMyOrders({ page: 1, limit: 100 });
 
 	if (!ordersResult.success) return null;

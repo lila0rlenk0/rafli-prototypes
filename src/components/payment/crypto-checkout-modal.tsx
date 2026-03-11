@@ -7,7 +7,7 @@ import { erc20Abi, getAddress } from 'viem';
 import {
 	useAccount,
 	useBalance,
-	useReadContracts,
+	useReadContract,
 	useSignMessage,
 	useSwitchChain,
 	useWaitForTransactionReceipt,
@@ -21,6 +21,7 @@ import {
 	FailureStep,
 	SuccessStep,
 } from '@/components/payment/crypto-checkout/terminal-steps';
+import { TokenSelector } from '@/components/payment/crypto-checkout/token-selector';
 import { WalletStep } from '@/components/payment/crypto-checkout/wallet-step';
 import {
 	Dialog,
@@ -28,15 +29,35 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { getPaymentErrorMessage } from '@/lib/checkout/error-messages';
+import {
+	getPaymentErrorMessage,
+	getWalletErrorMessage,
+} from '@/lib/checkout/error-messages';
 import { isUserRejection } from '@/lib/web3/errors';
+import {
+	getAllChainIds,
+	getTokensForChain,
+	type TokenInfo,
+} from '@/lib/web3/tokens';
+import { cancelPaymentSession } from '@/services/payment/cancel-payment-session';
 import { createCryptoCheckout } from '@/services/payment/create-crypto-checkout';
 import { submitCryptoTx } from '@/services/payment/submit-crypto-tx';
 import { usePollOrderStatus } from '@/services/payment/use-poll-order-status';
+import { PAYMENT_ERROR_CODES } from '@/types/errors';
 import { useWallets } from '@/services/wallet/use-wallets';
 import { verifyWallet } from '@/services/wallet/verify-wallet';
 import { ORDER_STATUS } from '@/types/order';
 import type { CryptoCheckoutSession } from '@/types/wallet';
+
+// ==========================================
+// Constants
+// ==========================================
+
+/** Total steps when token selection is shown (multi-token chain) */
+const TOTAL_STEPS_WITH_TOKEN = 4;
+
+/** Total steps when token selection is auto-skipped (single-token chain) */
+const TOTAL_STEPS_WITHOUT_TOKEN = 3;
 
 // ==========================================
 // Types
@@ -47,15 +68,21 @@ interface CryptoCheckoutModalProps {
 	onOpenChange: (open: boolean) => void;
 	orderId: string;
 	cryptoChainIds: number[];
+	/** Allowed token slugs from raffle — empty means all tokens allowed */
+	cryptoTokens?: string[];
 	userId?: string | null;
 	onSuccess?: () => void;
+	/** Notifies parent when confirming state changes — used to show persistent "pending" button */
+	onConfirmingChange?: (isConfirming: boolean) => void;
 }
 
 /**
- * Modal flow steps for crypto checkout
+ * Modal flow steps for crypto checkout.
+ * select-token is auto-skipped when chain has only one token.
  */
 type CheckoutStep =
 	| 'select-chain'
+	| 'select-token'
 	| 'connect-wallet'
 	| 'review'
 	| 'confirming'
@@ -71,22 +98,33 @@ type CheckoutStep =
  *
  * Multi-step modal handling the full crypto payment flow:
  * 1. Select Chain — user picks target chain from raffle's supported chains
- * 2. Connect & Verify Wallet — RainbowKit connect + EIP-191 signature verification
- * 3. Review & Send — create checkout session, execute ERC20 transfer, submit tx hash
- * 4. Confirming — poll order status until backend confirms
- * 5. Success/Failure — terminal state with tx explorer link
+ * 2. Select Token — user picks token (auto-skipped if chain has single token)
+ * 3. Connect & Verify Wallet — RainbowKit connect + EIP-191 signature verification
+ * 4. Review & Send — cancel existing session, create checkout, execute ERC20 transfer, submit tx hash
+ * 5. Confirming — poll order status until backend confirms
+ * 6. Success/Failure — terminal state with tx explorer link
+ *
+ * Cross-method guard: cancels any active Stripe/crypto session before creating
+ * a new crypto session, preventing "stripe-session-active" / "crypto-session-active" errors.
  */
 export function CryptoCheckoutModal({
 	open,
 	onOpenChange,
 	orderId,
 	cryptoChainIds,
+	cryptoTokens = [],
 	userId,
 	onSuccess,
+	onConfirmingChange,
 }: CryptoCheckoutModalProps) {
 	const [step, setStep] = useState<CheckoutStep>('select-chain');
 	const [selectedChainId, setSelectedChainId] = useState<number | null>(null);
+	const [selectedToken, setSelectedToken] = useState<TokenInfo | null>(null);
 	const [session, setSession] = useState<CryptoCheckoutSession | null>(null);
+	// Tracks which token slug was used to create the current session — needed
+	// to detect token changes when user navigates back and picks a different token.
+	// Can't compare via session.tokenAddress because frontend doesn't have slug→address mapping.
+	const [sessionTokenSlug, setSessionTokenSlug] = useState<string | null>(null);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -118,8 +156,12 @@ export function CryptoCheckoutModal({
 	// submissions even when React batches state updates or re-runs effects (Strict Mode).
 	const txSubmittedToBackend = useRef(false);
 
+	// chainId is required — without it wagmi defaults to the connected chain,
+	// which may differ from the target chain after switchChainAsync. This caused
+	// the "stuck on confirming" bug: receipt lookup hit the wrong chain's RPC.
 	const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
 		hash: txHash,
+		chainId: selectedChainId ?? undefined,
 	});
 
 	// Native token balance (ETH/MATIC) — shown as gas indicator
@@ -128,51 +170,58 @@ export function CryptoCheckoutModal({
 		chainId: selectedChainId ?? undefined,
 	});
 
-	// USDC token balance — wagmi v3 removed `token` from useBalance,
-	// so we read balanceOf + decimals + symbol via useReadContracts with erc20Abi.
+	// ERC20 token balance — read balanceOf + decimals + symbol individually.
+	// Individual useReadContract calls instead of useReadContracts because:
+	// 1. useReadContracts uses multicall3 which can silently return zero when
+	//    the wallet is connected to a different chain than the target chainId
+	// 2. Individual calls route directly to the target chain's RPC transport,
+	//    bypassing multicall aggregation issues with cross-chain reads
 	const tokenAddress = session?.tokenAddress as `0x${string}` | undefined;
+	const targetChainId = selectedChainId ?? undefined;
+	const tokenQueryEnabled = !!tokenAddress && !!address;
+
 	const {
-		data: tokenReadResults,
-		isLoading: isTokenBalanceLoading,
-		isError: isTokenBalanceError,
-	} = useReadContracts({
-		allowFailure: false,
-		contracts:
-			tokenAddress && address
-				? [
-						{
-							address: tokenAddress,
-							abi: erc20Abi,
-							functionName: 'balanceOf',
-							args: [address],
-							chainId: selectedChainId ?? undefined,
-						},
-						{
-							address: tokenAddress,
-							abi: erc20Abi,
-							functionName: 'decimals',
-							chainId: selectedChainId ?? undefined,
-						},
-						{
-							address: tokenAddress,
-							abi: erc20Abi,
-							functionName: 'symbol',
-							chainId: selectedChainId ?? undefined,
-						},
-					]
-				: undefined,
+		data: rawBalance,
+		isLoading: isBalanceLoading,
+		isError: isBalanceError,
+	} = useReadContract({
+		address: tokenAddress,
+		abi: erc20Abi,
+		functionName: 'balanceOf',
+		args: address ? [address] : undefined,
+		chainId: targetChainId,
+		query: { enabled: tokenQueryEnabled },
 	});
+
+	const { data: rawDecimals, isLoading: isDecimalsLoading } = useReadContract({
+		address: tokenAddress,
+		abi: erc20Abi,
+		functionName: 'decimals',
+		chainId: targetChainId,
+		query: { enabled: tokenQueryEnabled },
+	});
+
+	const { data: rawSymbol, isLoading: isSymbolLoading } = useReadContract({
+		address: tokenAddress,
+		abi: erc20Abi,
+		functionName: 'symbol',
+		chainId: targetChainId,
+		query: { enabled: tokenQueryEnabled },
+	});
+
+	const isTokenBalanceLoading =
+		isBalanceLoading || isDecimalsLoading || isSymbolLoading;
+	const isTokenBalanceError = isBalanceError;
 
 	// Shape token data to match the interface ReviewStep expects
 	const tokenBalance = useMemo(() => {
-		if (!tokenReadResults) return undefined;
-		const [value, decimals, symbol] = tokenReadResults;
+		if (rawBalance === undefined || rawDecimals === undefined) return undefined;
 		return {
-			value: value as bigint,
-			decimals: decimals as number,
-			symbol: symbol as string,
+			value: rawBalance as bigint,
+			decimals: rawDecimals as number,
+			symbol: (rawSymbol as string) ?? 'USDC',
 		};
-	}, [tokenReadResults]);
+	}, [rawBalance, rawDecimals, rawSymbol]);
 
 	// Backend hooks
 	const { data: walletsData, refetch: refetchWallets } = useWallets({
@@ -185,6 +234,24 @@ export function CryptoCheckoutModal({
 	// ==========================================
 	// Derived State
 	// ==========================================
+
+	/**
+	 * Resolved chain IDs — empty from API means "all chains allowed",
+	 * so fall back to every chain in the token registry.
+	 * Chains with zero allowed tokens are filtered out to prevent
+	 * selecting a chain that has no valid payment option.
+	 */
+	const resolvedChainIds = useMemo(() => {
+		const baseChains =
+			cryptoChainIds.length > 0 ? cryptoChainIds : getAllChainIds();
+
+		// Filter to only chains that have at least one allowed token
+		if (cryptoTokens.length === 0) return baseChains;
+		return baseChains.filter(chainId => {
+			const chainTokens = getTokensForChain(chainId);
+			return chainTokens.some(t => cryptoTokens.includes(t.slug));
+		});
+	}, [cryptoChainIds, cryptoTokens]);
 
 	/**
 	 * Checks if current wallet address is already verified on backend
@@ -201,9 +268,23 @@ export function CryptoCheckoutModal({
 	 */
 	const isCorrectChain = selectedChainId === connectedChainId;
 
+	/**
+	 * Display symbol for the selected token — used across review and warning UI
+	 */
+	const tokenSymbol = selectedToken?.label ?? 'USDC';
+
 	// ==========================================
 	// Effects
 	// ==========================================
+
+	/**
+	 * Notify parent of confirming state changes — drives the persistent
+	 * "pending transaction" button in CryptoBuyButton.
+	 * Fires on step transitions to/from 'confirming'.
+	 */
+	useEffect(() => {
+		onConfirmingChange?.(step === 'confirming');
+	}, [step, onConfirmingChange]);
 
 	/**
 	 * After tx is confirmed on-chain, submit hash to backend and start polling.
@@ -223,9 +304,7 @@ export function CryptoCheckoutModal({
 			});
 
 			if (!result.success) {
-				setErrorMessage(
-					'Failed to submit transaction. Please contact support.',
-				);
+				setErrorMessage(getPaymentErrorMessage(result.error));
 				setStep('failure');
 				return;
 			}
@@ -285,21 +364,58 @@ export function CryptoCheckoutModal({
 	// ==========================================
 
 	/**
-	 * Step 1: User selects a chain
+	 * Gets allowed tokens for a chain, filtered by raffle's cryptoTokens.
+	 * Empty cryptoTokens means all tokens for the chain are allowed.
+	 */
+	function getAllowedTokens(chainId: number): TokenInfo[] {
+		const chainTokens = getTokensForChain(chainId);
+		if (cryptoTokens.length === 0) return chainTokens;
+		return chainTokens.filter(t => cryptoTokens.includes(t.slug));
+	}
+
+	/**
+	 * Step 1: User selects a chain.
+	 * If chain has only one allowed token, auto-select it and skip token step.
+	 * If multiple tokens, show token selector.
 	 */
 	function handleSelectChain(chainId: number) {
 		setSelectedChainId(chainId);
+
+		const tokens = getAllowedTokens(chainId);
+
+		// Single token available — auto-select and skip to wallet step.
+		// tokens[0] is always defined here because resolvedChainIds pre-filters
+		// chains that have zero allowed tokens.
+		if (tokens.length <= 1) {
+			setSelectedToken(tokens[0]!);
+			setStep('connect-wallet');
+			return;
+		}
+
+		// Multiple tokens — show token selector
+		setStep('select-token');
+	}
+
+	/**
+	 * Step 1b: User selects a token from available options for the chain.
+	 */
+	function handleSelectToken(token: TokenInfo) {
+		setSelectedToken(token);
 		setStep('connect-wallet');
 	}
 
 	/**
-	 * Step 2: After wallet is connected, verify if needed then create checkout session
+	 * Step 2: After wallet is connected, verify if needed then create checkout session.
+	 *
+	 * Cross-method guard: cancels any active payment session on this order before
+	 * creating the crypto session. This handles the case where user started a Stripe
+	 * checkout, went back, and now wants to pay with crypto on the same order.
 	 *
 	 * EIP-191 signature message format must match backend exactly:
 	 * "Link wallet {checksummedAddress} to Raffles account {userId} at {isoTimestamp}"
 	 */
 	const handleWalletReady = useCallback(async () => {
-		if (!address || !selectedChainId) return;
+		if (!address || !selectedChainId || !selectedToken) return;
 		// Synchronous ref guard — same pattern as payInFlight for handlePay.
 		if (walletReadyInFlight.current) return;
 		walletReadyInFlight.current = true;
@@ -331,7 +447,7 @@ export function CryptoCheckoutModal({
 				});
 
 				if (!result.success) {
-					toast.error('Wallet verification failed. Please try again.');
+					toast.error(getWalletErrorMessage(result.error));
 					setIsProcessing(false);
 					return;
 				}
@@ -339,11 +455,15 @@ export function CryptoCheckoutModal({
 				await refetchWallets();
 			}
 
-			// Reuse existing session if same chain and not expired — avoids unnecessary
-			// API calls when user navigates Back from review and clicks Continue again.
+			// Reuse existing session if same chain, same token, and not expired — avoids
+			// unnecessary API calls when user navigates Back from review and clicks Continue again.
+			// Token check uses tokenAddress from session vs current session — backend resolves
+			// slug→address, so we can't compare slug directly. Instead we track selectedToken
+			// at session creation time via sessionTokenSlug stored alongside the session.
 			const existingSessionValid =
 				session &&
 				session.chainId === selectedChainId &&
+				sessionTokenSlug === selectedToken.slug &&
 				new Date(session.expiresAt).getTime() > Date.now();
 
 			if (existingSessionValid) {
@@ -352,12 +472,30 @@ export function CryptoCheckoutModal({
 				return;
 			}
 
+			// Cancel any active payment session on this order before creating crypto session.
+			// Idempotent — safe even if no session exists. Clears cross-method guards so
+			// crypto checkout doesn't fail with "stripe-session-active".
+			const cancelResult = await cancelPaymentSession(orderId);
+
+			if (!cancelResult.success) {
+				// Only block on crypto-confirming — tx is on-chain and can't be cancelled
+				if (
+					cancelResult.error === PAYMENT_ERROR_CODES.CANCEL_CRYPTO_CONFIRMING
+				) {
+					setErrorMessage(getPaymentErrorMessage(cancelResult.error));
+					setStep('failure');
+					return;
+				}
+				// Other cancel errors (permission, not-pending) are non-fatal —
+				// proceed and let createCryptoCheckout handle them
+			}
+
 			// Create checkout session so Review step shows the amount
 			const checkoutResult = await createCryptoCheckout({
 				orderId,
 				chainId: selectedChainId,
 				walletAddress: address,
-				token: 'usdc',
+				token: selectedToken.slug,
 			});
 
 			if (!checkoutResult.success) {
@@ -367,6 +505,7 @@ export function CryptoCheckoutModal({
 			}
 
 			setSession(checkoutResult.data);
+			setSessionTokenSlug(selectedToken.slug);
 			setStep('review');
 		} catch (error) {
 			if (isUserRejection(error)) {
@@ -381,12 +520,14 @@ export function CryptoCheckoutModal({
 	}, [
 		address,
 		selectedChainId,
+		selectedToken,
 		isWalletVerified,
 		userId,
 		signMessageAsync,
 		refetchWallets,
 		orderId,
 		session,
+		sessionTokenSlug,
 	]);
 
 	/**
@@ -419,8 +560,7 @@ export function CryptoCheckoutModal({
 			}
 
 			// Execute ERC20 transfer
-			// amountRaw is already in token's smallest unit (6 decimals for USDC)
-			// e.g. $10 USDC → amountRaw = "10000000"
+			// amountRaw is already in token's smallest unit (6 decimals for USDC, 18 for EARNM)
 			await writeContractAsync({
 				address: session.tokenAddress as `0x${string}`,
 				abi: erc20Abi,
@@ -458,7 +598,9 @@ export function CryptoCheckoutModal({
 	function handleReset() {
 		setStep('select-chain');
 		setSelectedChainId(null);
+		setSelectedToken(null);
 		setSession(null);
+		setSessionTokenSlug(null);
 		setIsProcessing(false);
 		setErrorMessage(null);
 		setTxSubmitted(false);
@@ -471,10 +613,25 @@ export function CryptoCheckoutModal({
 	}
 
 	/**
-	 * Close modal and reset state
+	 * Whether the modal is in a non-dismissable confirming state.
+	 * When true, closing the modal hides it but preserves all state so the
+	 * user can reopen and resume watching confirmation progress.
+	 */
+	function isInConfirmingState(): boolean {
+		return step === 'confirming';
+	}
+
+	/**
+	 * Close modal — preserves state during confirming step so user can reopen.
+	 * Fully resets on all other steps (select, review, terminal).
 	 */
 	function handleClose() {
 		onOpenChange(false);
+
+		// During confirming: keep all state alive (session, txHash, polling).
+		// User can reopen via the "pending transaction" button in CryptoBuyButton.
+		if (isInConfirmingState()) return;
+
 		// Delay reset to avoid flash during close animation
 		setTimeout(handleReset, 300);
 	}
@@ -484,9 +641,22 @@ export function CryptoCheckoutModal({
 	 */
 	function handleBack() {
 		switch (step) {
-			case 'connect-wallet':
+			case 'select-token':
 				setSelectedChainId(null);
+				setSelectedToken(null);
 				setStep('select-chain');
+				break;
+			case 'connect-wallet':
+				// If chain has multiple allowed tokens, go back to token selector.
+				// If auto-skipped, go back to chain selector.
+				if (selectedChainId && getAllowedTokens(selectedChainId).length > 1) {
+					setSelectedToken(null);
+					setStep('select-token');
+				} else {
+					setSelectedChainId(null);
+					setSelectedToken(null);
+					setStep('select-chain');
+				}
 				break;
 			case 'review':
 				// Keep session — reuse check in handleWalletReady skips API call
@@ -509,6 +679,8 @@ export function CryptoCheckoutModal({
 		switch (step) {
 			case 'select-chain':
 				return 'Select Network';
+			case 'select-token':
+				return 'Select Token';
 			case 'connect-wallet':
 				return 'Connect Wallet';
 			case 'review':
@@ -523,17 +695,39 @@ export function CryptoCheckoutModal({
 	}
 
 	/**
+	 * Whether the token selection step was shown (multi-token chain).
+	 * Drives dynamic step count — when skipped, progress dots show 3 instead of 4.
+	 */
+	function wasTokenStepShown(): boolean {
+		if (!selectedChainId) return false;
+		return getAllowedTokens(selectedChainId).length > 1;
+	}
+
+	/**
+	 * Total navigable steps — 4 when token step is shown, 3 when auto-skipped
+	 */
+	function getTotalSteps(): number {
+		return wasTokenStepShown()
+			? TOTAL_STEPS_WITH_TOKEN
+			: TOTAL_STEPS_WITHOUT_TOKEN;
+	}
+
+	/**
 	 * Step progress indicator (1-indexed for display).
 	 * Returns 0 for terminal steps (confirming, success, failure) — hides progress dots.
+	 * When token step is skipped, connect-wallet becomes step 2 and review becomes step 3.
 	 */
 	function getStepNumber(): number {
+		const tokenShown = wasTokenStepShown();
 		switch (step) {
 			case 'select-chain':
 				return 1;
-			case 'connect-wallet':
+			case 'select-token':
 				return 2;
+			case 'connect-wallet':
+				return tokenShown ? 3 : 2;
 			case 'review':
-				return 3;
+				return tokenShown ? 4 : 3;
 			default:
 				return 0;
 		}
@@ -567,22 +761,26 @@ export function CryptoCheckoutModal({
 						<button
 							type="button"
 							onClick={handleBack}
-							className="absolute top-0 -left-1 rounded-full p-1 text-[#7B7B7B] transition-colors hover:bg-gray-100 hover:text-black"
+							className="absolute top-0.5 left-0 rounded-full p-1 text-[#7B7B7B] transition-colors hover:bg-gray-100 hover:text-black"
 							aria-label="Go back"
 						>
 							<ArrowLeft className="size-4" />
 						</button>
 					)}
-					<DialogTitle className="font-clash-display text-xl">
+					<DialogTitle
+						className={`font-clash-display text-xl ${showBackButton() ? 'pl-7' : ''}`}
+					>
 						{getStepTitle()}
 					</DialogTitle>
 
 					{/* Step progress dots */}
 					{getStepNumber() > 0 && (
 						<div className="flex items-center justify-center gap-1.5 pt-1">
-							{[1, 2, 3].map(n => (
-								<div key={n} className={getStepDotClass(n)} />
-							))}
+							{Array.from({ length: getTotalSteps() }, (_, i) => i + 1).map(
+								n => (
+									<div key={n} className={getStepDotClass(n)} />
+								),
+							)}
 						</div>
 					)}
 				</DialogHeader>
@@ -590,8 +788,15 @@ export function CryptoCheckoutModal({
 				<div className="flex flex-col gap-4 pt-2">
 					{step === 'select-chain' && (
 						<ChainSelector
-							cryptoChainIds={cryptoChainIds}
+							cryptoChainIds={resolvedChainIds}
+							cryptoTokens={cryptoTokens}
 							onSelectChain={handleSelectChain}
+						/>
+					)}
+					{step === 'select-token' && selectedChainId && (
+						<TokenSelector
+							tokens={getAllowedTokens(selectedChainId)}
+							onSelectToken={handleSelectToken}
 						/>
 					)}
 					{step === 'connect-wallet' && (
@@ -607,6 +812,7 @@ export function CryptoCheckoutModal({
 						<ReviewStep
 							session={session}
 							selectedChainId={selectedChainId}
+							tokenSymbol={tokenSymbol}
 							isCorrectChain={isCorrectChain}
 							tokenBalance={tokenBalance ?? undefined}
 							isTokenBalanceLoading={isTokenBalanceLoading}

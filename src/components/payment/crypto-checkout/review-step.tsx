@@ -14,6 +14,8 @@ interface ReviewStepProps {
 	session: CryptoCheckoutSession | null;
 	/** Parent guarantees non-null — only renders when chain is selected */
 	selectedChainId: number;
+	/** Token symbol for display (e.g. "USDC", "USDT", "EARNM") */
+	tokenSymbol: string;
 	isCorrectChain: boolean;
 	/** Token balance from wagmi useBalance — undefined while loading or not yet started */
 	tokenBalance:
@@ -47,6 +49,7 @@ interface ReviewStepProps {
 export function ReviewStep({
 	session,
 	selectedChainId,
+	tokenSymbol,
 	isCorrectChain,
 	tokenBalance,
 	isTokenBalanceLoading,
@@ -57,7 +60,7 @@ export function ReviewStep({
 	onPay,
 }: ReviewStepProps) {
 	/**
-	 * Checks if user has enough USDC for the payment.
+	 * Checks if user has enough tokens for the payment.
 	 * Returns false when balance is still loading or not yet started — prevents premature pay.
 	 */
 	function hasEnoughTokens(): boolean {
@@ -69,7 +72,7 @@ export function ReviewStep({
 	}
 
 	/**
-	 * Whether to show the "Insufficient USDC" warning.
+	 * Whether to show the "Insufficient balance" warning.
 	 * Only after balance loaded successfully and it's not enough.
 	 */
 	function shouldShowInsufficientWarning(): boolean {
@@ -85,7 +88,7 @@ export function ReviewStep({
 		if (isProcessing || txSubmitted) return 'Processing...';
 		if (isBalanceCheckPending || isTokenBalanceLoading)
 			return 'Checking balance...';
-		return `Pay ${formatPaymentAmount(session)} USDC`;
+		return `Pay ${formatPaymentAmount(session)} ${tokenSymbol}`;
 	}
 
 	/**
@@ -112,7 +115,7 @@ export function ReviewStep({
 	function getBalanceDisplay(): string {
 		if (isBalanceCheckPending || isTokenBalanceLoading) return 'Loading...';
 		if (isTokenBalanceError) return 'Failed to load';
-		return `${formatTokenBalance(tokenBalance)} USDC`;
+		return `${formatTokenBalance(tokenBalance)} ${tokenSymbol}`;
 	}
 
 	return (
@@ -128,7 +131,7 @@ export function ReviewStep({
 					</div>
 					<div className="flex items-center justify-between">
 						<span className="text-[#7B7B7B]">Token</span>
-						<span className="font-medium">USDC</span>
+						<span className="font-medium">{tokenSymbol}</span>
 					</div>
 					<div className="flex items-center justify-between">
 						<span className="text-[#7B7B7B]">Your balance</span>
@@ -144,7 +147,7 @@ export function ReviewStep({
 					<div className="flex items-center justify-between">
 						<span className="text-[#7B7B7B]">Amount</span>
 						<span className="font-clash-display text-lg font-semibold">
-							{formatPaymentAmount(session)} USDC
+							{formatPaymentAmount(session)} {tokenSymbol}
 						</span>
 					</div>
 				</div>
@@ -161,8 +164,8 @@ export function ReviewStep({
 			{/* Insufficient balance warning — only after balance loaded successfully */}
 			{shouldShowInsufficientWarning() && (
 				<div className="rounded-xl bg-red-50 px-4 py-3 text-center text-xs text-red-600">
-					Insufficient USDC balance. You need {formatPaymentAmount(session)}{' '}
-					USDC.
+					Insufficient {tokenSymbol} balance. You need{' '}
+					{formatPaymentAmount(session)} {tokenSymbol}.
 				</div>
 			)}
 

@@ -28,6 +28,8 @@ interface TicketPurchaseCardProps {
 	isAuthenticated?: boolean;
 	acceptsCrypto?: boolean;
 	cryptoChainIds?: number[];
+	/** Allowed token slugs — empty/undefined means all tokens allowed */
+	cryptoTokens?: string[];
 	userId?: string | null;
 }
 
@@ -55,6 +57,7 @@ export function TicketPurchaseCard({
 	isAuthenticated = true,
 	acceptsCrypto = false,
 	cryptoChainIds = [],
+	cryptoTokens = [],
 	userId,
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
@@ -318,21 +321,20 @@ export function TicketPurchaseCard({
 					/>
 
 					{/* Crypto buy button — only when raffle accepts crypto AND Web3 is configured */}
-					{acceptsCrypto &&
-						isWeb3Enabled &&
-						cryptoChainIds.length > 0 &&
-						!isFree && (
-							<CryptoBuyButton
-								raffleId={raffleId}
-								ticketQuantity={ticketQuantity}
-								disabled={disabled}
-								questionId={questionId}
-								promoCode={appliedPromo?.code}
-								onPromoInvalid={handlePromoInvalid}
-								cryptoChainIds={cryptoChainIds}
-								userId={userId}
-							/>
-						)}
+					{/* cryptoChainIds empty = all chains allowed, so no length check */}
+					{acceptsCrypto && isWeb3Enabled && !isFree && (
+						<CryptoBuyButton
+							raffleId={raffleId}
+							ticketQuantity={ticketQuantity}
+							disabled={disabled}
+							questionId={questionId}
+							promoCode={appliedPromo?.code}
+							onPromoInvalid={handlePromoInvalid}
+							cryptoChainIds={cryptoChainIds}
+							cryptoTokens={cryptoTokens}
+							userId={userId}
+						/>
+					)}
 				</>
 			) : (
 				<SignInToBuyButton />

@@ -8,19 +8,10 @@ import { mapReportError } from '@/lib/errors/error-mapper';
 import { REPORT_ERROR_CODES, type ReportErrorCode } from '@/types/errors';
 import {
 	type CreateReportPayload,
-	createReportSchema,
 	type UserReportResponse,
 	userReportResponseSchema,
 } from '@/types/report';
 import type { ServiceResponse } from '@/types/service-response';
-
-/**
- * Response type for creating a content report
- */
-type CreateReportServiceResponse = ServiceResponse<
-	UserReportResponse,
-	ReportErrorCode
->;
 
 /**
  * Submits a content report to the moderation system
@@ -30,33 +21,17 @@ type CreateReportServiceResponse = ServiceResponse<
  */
 export async function createReport(
 	payload: CreateReportPayload,
-): Promise<CreateReportServiceResponse> {
+): Promise<ServiceResponse<UserReportResponse, ReportErrorCode>> {
 	try {
-		// Validate payload before sending — catches malformed data before network call
-		const validationResult = createReportSchema.safeParse(payload);
-		if (!validationResult.success) {
-			console.error(
-				'Report payload validation failed:',
-				validationResult.error,
-			);
-			return failure(REPORT_ERROR_CODES.VALIDATION_FAILED);
-		}
-
-		const response = await authenticatedClient.post(
-			'/reports',
-			validationResult.data,
-		);
-
+		const response = await authenticatedClient.post('/reports', payload);
 		const validated = userReportResponseSchema.parse(response.data);
-
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
+			// Backend returned a shape we don't recognise — treat as validation failure
 			console.error('Create report response validation failed:', error);
 			return failure(REPORT_ERROR_CODES.VALIDATION_FAILED);
 		}
-
-		const errorCode = mapReportError(error);
-		return failure(errorCode);
+		return failure(mapReportError(error));
 	}
 }

@@ -305,7 +305,7 @@ export function mapOrderError(error: unknown): OrderErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('core:order:') ||
-			extractedCode.startsWith('core:raffle:') ||
+			mappedCode.startsWith('core:raffle:') ||
 			mappedCode.startsWith('global:')
 		) {
 			return mappedCode as OrderErrorCode;

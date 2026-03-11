@@ -24,6 +24,8 @@ interface CryptoBuyButtonProps {
 
 	onPromoInvalid?: () => void;
 	cryptoChainIds: number[];
+	/** Allowed token slugs — empty means all tokens allowed */
+	cryptoTokens?: string[];
 	userId?: string | null;
 }
 
@@ -48,6 +50,7 @@ export function CryptoBuyButton({
 	promoCode,
 	onPromoInvalid,
 	cryptoChainIds,
+	cryptoTokens = [],
 	userId,
 }: CryptoBuyButtonProps) {
 	const router = useRouter();
@@ -60,6 +63,9 @@ export function CryptoBuyButton({
 	const [cryptoOrderId, setCryptoOrderId] = useState<string | null>(null);
 	// Tracks whether we should auto-proceed after wallet connects
 	const [pendingCheckout, setPendingCheckout] = useState(false);
+	// Tracks active confirming state — persists when modal is closed during confirmation
+	// so we can show a "pending transaction" button to reopen the modal
+	const [isConfirming, setIsConfirming] = useState(false);
 
 	// ==========================================
 	// Checkout Flow
@@ -140,11 +146,18 @@ export function CryptoBuyButton({
 
 	/**
 	 * Main click handler
+	 * - If confirming → reopen the modal (no new order needed)
 	 * - If question required → show question modal first
 	 * - If wallet not connected → open RainbowKit connect modal, then auto-proceed
 	 * - If wallet connected → create order and open crypto checkout
 	 */
 	function handleClick() {
+		// Reopen modal to show confirmation progress — no new order needed
+		if (isConfirming && cryptoOrderId) {
+			setShowCryptoModal(true);
+			return;
+		}
+
 		if (questionId) {
 			setShowQuestionModal(true);
 			return;
@@ -170,12 +183,43 @@ export function CryptoBuyButton({
 	// ==========================================
 
 	/**
-	 * Gets button label based on wallet connection state
+	 * Handles confirming state change from the crypto checkout modal.
+	 * When modal transitions to/from confirming, we track it here so the
+	 * button reflects the pending transaction even when modal is closed.
+	 */
+	const handleConfirmingChange = useCallback((confirming: boolean) => {
+		setIsConfirming(confirming);
+	}, []);
+
+	/**
+	 * Gets button label based on wallet connection and transaction state
 	 */
 	function getButtonText(): string {
 		if (isLoading) return 'Processing...';
+		if (isConfirming) return 'Transaction pending...';
 		if (!isConnected) return 'Connect wallet to buy';
 		return 'Buy with crypto';
+	}
+
+	/**
+	 * Gets button icon — pulsing loader for confirming, wallet otherwise
+	 */
+	function getButtonIcon(): React.ReactNode {
+		if (isLoading || isConfirming) {
+			return <Loader2Icon className="mr-2 size-4 animate-spin" />;
+		}
+		return <WalletIcon className="mr-2 size-4" />;
+	}
+
+	/**
+	 * Button class — amber border when confirming to draw attention to pending tx
+	 */
+	function getButtonClass(): string {
+		const base = 'h-12 w-full cursor-pointer border-2';
+		if (isConfirming) {
+			return `${base} border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100`;
+		}
+		return `${base} border-black bg-white text-black hover:bg-black hover:text-white`;
 	}
 
 	// ==========================================
@@ -186,15 +230,11 @@ export function CryptoBuyButton({
 		<>
 			<Button
 				onClick={handleClick}
-				disabled={isLoading || disabled}
+				disabled={isLoading || (disabled && !isConfirming)}
 				variant="outline"
-				className="h-12 w-full cursor-pointer border-2 border-black bg-white text-black hover:bg-black hover:text-white"
+				className={getButtonClass()}
 			>
-				{isLoading ? (
-					<Loader2Icon className="mr-2 size-4 animate-spin" />
-				) : (
-					<WalletIcon className="mr-2 size-4" />
-				)}
+				{getButtonIcon()}
 				<p className="font-semibold">{getButtonText()}</p>
 			</Button>
 
@@ -213,8 +253,10 @@ export function CryptoBuyButton({
 					onOpenChange={setShowCryptoModal}
 					orderId={cryptoOrderId}
 					cryptoChainIds={cryptoChainIds}
+					cryptoTokens={cryptoTokens}
 					userId={userId}
 					onSuccess={() => router.refresh()}
+					onConfirmingChange={handleConfirmingChange}
 				/>
 			)}
 		</>

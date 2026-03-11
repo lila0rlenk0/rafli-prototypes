@@ -13,8 +13,10 @@ import {
 	shouldClearPromo,
 } from '@/lib/checkout/error-messages';
 import { buildCheckoutOrder } from '@/services/checkout/build-checkout-order';
+import { cancelPaymentSession } from '@/services/payment/cancel-payment-session';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
+import { PAYMENT_ERROR_CODES } from '@/types/errors';
 
 /**
  * Props for BuyButton
@@ -144,7 +146,21 @@ export function BuyButton({
 				return;
 			}
 
-			// Step 2: Create Stripe checkout session and redirect
+			// Step 2: Cancel any active payment session on this order before Stripe checkout.
+			// Idempotent — safe even if no session exists. Clears cross-method guards so
+			// Stripe checkout doesn't fail with "crypto-session-active".
+			const cancelResult = await cancelPaymentSession(result.order.id);
+
+			if (
+				!cancelResult.success &&
+				cancelResult.error === PAYMENT_ERROR_CODES.CANCEL_CRYPTO_CONFIRMING
+			) {
+				// Crypto tx is on-chain — can't switch to Stripe
+				toast.error(getPaymentErrorMessage(cancelResult.error));
+				return;
+			}
+
+			// Step 3: Create Stripe checkout session and redirect
 			const checkoutResult = await createCheckoutSession({
 				orderId: result.order.id,
 				raffleId,

@@ -1,6 +1,7 @@
 'use client';
 
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
+import { getTokensForChain } from '@/lib/web3/tokens';
 import { CHAIN_NAMES } from '@/types/wallet';
 
 // ==========================================
@@ -8,7 +9,10 @@ import { CHAIN_NAMES } from '@/types/wallet';
 // ==========================================
 
 interface ChainSelectorProps {
+	/** Chain IDs to display — already resolved (empty = all) and filtered by parent */
 	cryptoChainIds: number[];
+	/** Allowed token slugs — empty means all. Used to show accurate token labels per chain. */
+	cryptoTokens?: string[];
 	onSelectChain: (chainId: number) => void;
 }
 
@@ -19,13 +23,28 @@ interface ChainSelectorProps {
 /**
  * Chain selector step for crypto checkout.
  * Displays supported chains with icons from CHAIN_ICONS map.
- * RainbowKit only exposes icons for the connected chain —
- * we use static SVG data URIs for all chains in the selector.
+ * Token labels are dynamically resolved from the token registry —
+ * shows available tokens per chain (e.g. "USDC · USDT" or "USDC · USDT · EARNM").
  */
 export function ChainSelector({
 	cryptoChainIds,
+	cryptoTokens = [],
 	onSelectChain,
 }: ChainSelectorProps) {
+	/**
+	 * Gets dot-separated token labels for a chain, filtered by raffle allowlist.
+	 * Shown as secondary text on each chain button.
+	 */
+	function getTokenLabels(chainId: number): string {
+		const tokens = getTokensForChain(chainId);
+		const allowed =
+			cryptoTokens.length > 0
+				? tokens.filter(t => cryptoTokens.includes(t.slug))
+				: tokens;
+		if (allowed.length === 0) return 'USDC';
+		return allowed.map(t => t.label).join(' · ');
+	}
+
 	return (
 		<div className="flex flex-col gap-3">
 			<p className="text-sm text-[#7B7B7B]">Choose which network to pay on</p>
@@ -58,7 +77,7 @@ export function ChainSelector({
 							</span>
 						</span>
 						<span className="text-xs text-[#7B7B7B] transition-colors group-hover:text-black">
-							USDC
+							{getTokenLabels(chainId)}
 						</span>
 					</button>
 				);

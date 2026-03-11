@@ -175,6 +175,8 @@ export const raffleSchema = z.object({
 	acceptsCrypto: z.boolean().optional(),
 	/** EVM chain IDs the raffle supports for crypto payments (e.g. [1, 42161]) */
 	cryptoChainIds: z.array(z.number()).optional(),
+	/** Allowed token slugs for crypto payments (e.g. ["usdc", "earnm"]). Empty = all tokens allowed. */
+	cryptoTokens: z.array(z.string()).optional(),
 });
 
 /**

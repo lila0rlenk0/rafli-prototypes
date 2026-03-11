@@ -99,9 +99,11 @@ export function WalletStep({
 							)}
 						</div>
 
-						{/* Native balance for gas */}
+						{/* Native token balance — needed for gas fees */}
 						<div className="flex items-center justify-between">
-							<span className="text-sm text-[#7B7B7B]">Gas balance</span>
+							<span className="text-sm text-[#7B7B7B]">
+								{nativeBalance?.symbol ?? 'ETH'} balance
+							</span>
 							<span className="text-sm font-medium">
 								{formatNativeBalance(nativeBalance)}{' '}
 								{nativeBalance?.symbol ?? 'ETH'}

@@ -5,6 +5,11 @@ import { useState } from 'react';
 
 import { ReportContentModal } from '@/components/report/report-content-modal';
 import { Button } from '@/components/ui/button';
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ReportRaffleButtonProps {
 	/** The raffle ID to report */
@@ -23,17 +28,22 @@ export function ReportRaffleButton({ raffleId }: ReportRaffleButtonProps) {
 
 	return (
 		<>
-			<Button
-				variant="ghost"
-				size="icon"
-				onClick={function openReportModal() {
-					setOpen(true);
-				}}
-				className="shrink-0 text-gray-400 hover:text-gray-600"
-				aria-label="Report raffle"
-			>
-				<FlagIcon className="size-4" />
-			</Button>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={function openModal() {
+							setOpen(true);
+						}}
+						className="shrink-0 text-gray-400 hover:text-gray-600"
+						aria-label="Report raffle"
+					>
+						<FlagIcon className="size-4" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>Report this raffle</TooltipContent>
+			</Tooltip>
 			{/* raffleId omitted — only required for child content types (comment, review, chat) */}
 			<ReportContentModal
 				contentType="raffle"

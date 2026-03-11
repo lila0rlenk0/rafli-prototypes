@@ -6,6 +6,9 @@ import {
 	useQueryClient,
 } from '@tanstack/react-query';
 
+import { toast } from 'sonner';
+
+import { getVoteErrorMessage } from '@/lib/comment/error-messages';
 import { serviceError, type ServiceError } from '@/lib/query/errors';
 import type {
 	ListCommentsResponse,
@@ -85,7 +88,7 @@ export function useVoteComment() {
 		VoteCommentVariables,
 		{ previousData: Map<string, InfiniteCommentsData | undefined> }
 	>({
-		mutationFn: async function vote(variables: VoteCommentVariables) {
+		mutationFn: async function vote(variables) {
 			const result = await voteComment(variables.commentId, variables.type);
 			if (!result.success) throw serviceError(result.error);
 			return result.data;
@@ -134,20 +137,17 @@ export function useVoteComment() {
 
 			return { previousData };
 		},
-		onError(_error, _variables, context) {
-			// Step 4: Rollback — restore all cached data from snapshot
+		onError(error, _variables, context) {
+			// Step 4: Rollback — restore all cached data from snapshot + notify user
+			toast.error(getVoteErrorMessage(error.code));
+
 			if (!context?.previousData) return;
 
-			const queryCache = queryClient.getQueryCache();
-			const commentQueries = queryCache.findAll({
-				queryKey: ['comment'],
-			});
-
-			for (const query of commentQueries) {
-				const key = JSON.stringify(query.queryKey);
-				const previous = context.previousData.get(key);
+			// Iterate snapshot entries directly — ensures every snapshotted query
+			// is restored even if the query was unmounted between onMutate and onError
+			for (const [key, previous] of context.previousData.entries()) {
 				if (previous !== undefined) {
-					queryClient.setQueryData(query.queryKey, previous);
+					queryClient.setQueryData(JSON.parse(key), previous);
 				}
 			}
 		},

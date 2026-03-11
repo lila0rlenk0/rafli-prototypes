@@ -231,20 +231,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const hostAvatarUrl = raffle.host?.avatar ?? null;
 
 	/**
-	 * Statuses that allow promo code management
-	 */
-	const MANAGEABLE_STATUSES = [
-		RAFFLE_STATUS.DRAFT,
-		RAFFLE_STATUS.QUEUED,
-		RAFFLE_STATUS.LIVE,
-	] as const;
-
-	/**
 	 * Check if raffle status allows promo code management
+	 * Draft/queued/live allow managing promo codes; concluded/cancelled do not.
 	 */
 	function isManageableStatus(): boolean {
-		return MANAGEABLE_STATUSES.includes(
-			raffle.status as (typeof MANAGEABLE_STATUSES)[number],
+		return (
+			raffle.status === RAFFLE_STATUS.DRAFT ||
+			raffle.status === RAFFLE_STATUS.QUEUED ||
+			raffle.status === RAFFLE_STATUS.LIVE
 		);
 	}
 
@@ -338,10 +332,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	 * @returns Formatted string with label
 	 */
 	function getHostRafflesCount(): string {
-		let count = 0;
-		if (raffle.host?.totalRaffles) {
-			count = raffle.host.totalRaffles;
-		}
+		const count = raffle.host?.totalRaffles ?? 0;
 		return `${count} Raffles`;
 	}
 
@@ -649,6 +640,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										isAuthenticated={isAuthenticated}
 										acceptsCrypto={raffle.acceptsCrypto}
 										cryptoChainIds={raffle.cryptoChainIds}
+										cryptoTokens={raffle.cryptoTokens}
 										userId={currentUserId}
 									/>
 								</Suspense>

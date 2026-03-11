@@ -2,6 +2,7 @@ import type {
 	OrderErrorCode,
 	PaymentErrorCode,
 	PromoCodeErrorCode,
+	WalletErrorCode,
 } from '@/types/errors';
 
 // ==========================================
@@ -44,25 +45,64 @@ export function getOrderErrorMessage(errorCode: OrderErrorCode): string {
  */
 export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 	switch (errorCode) {
+		// Session errors
 		case 'payments:session:already-completed':
 		case 'payments:crypto:already-completed':
+		case 'payments:order:already-paid':
 			return 'This order has already been paid';
 		case 'payments:crypto:session-expired':
 			return 'Checkout session expired. Please try again';
+
+		// Cross-method guard errors
+		case 'payments:stripe:crypto-session-active':
+			return 'A crypto payment is in progress. Please cancel it first';
+		case 'payments:crypto:stripe-session-active':
+			return 'A card payment is in progress. Please cancel it first';
+
+		// Crypto checkout errors
 		case 'payments:crypto:wallet-not-verified':
 			return 'Please verify your wallet first';
 		case 'payments:crypto:raffle-not-accepting':
 			return 'This raffle does not accept crypto payments';
 		case 'payments:crypto:unsupported-chain':
+		case 'payments:crypto:chain-not-allowed':
 			return 'Selected network is not supported for this raffle';
+		case 'payments:crypto:unknown-token':
+		case 'payments:crypto:token-not-on-chain':
+			return 'Selected token is not available on this network';
+		case 'payments:crypto:token-not-allowed':
+			return 'Selected token is not accepted for this raffle';
+		case 'payments:crypto:no-token-pricing':
+			return 'This token does not have pricing configured for this raffle';
 		case 'payments:crypto:tx-already-used':
 			return 'This transaction was already submitted';
+		case 'payments:crypto:already-confirming':
+			return 'Transaction already submitted and awaiting confirmation';
 		case 'payments:crypto:submit-failed':
 			return 'Failed to verify transaction. Please contact support';
-		case 'core:order:not-found':
-			return 'Order not found';
+		case 'payments:crypto:order-not-recoverable':
+			return 'This order can no longer be paid. Please create a new one';
+		case 'payments:crypto:concurrent-completion':
+		case 'payments:crypto:concurrent-update':
+		case 'payments:checkout:concurrent-completion':
+			return 'Payment status changed. Please refresh and try again';
+		case 'payments:raffle:user-ticket-limit-exceeded':
+			return 'You reached the maximum tickets per user for this raffle';
+
+		// Cancel errors
+		case 'payments:cancel:crypto-confirming':
+			return 'Cannot switch payment method while crypto payment is being verified';
+
+		// Order errors
+		case 'payments:order:permission-denied':
 		case 'core:order:permission-denied':
 			return 'You do not have access to this order';
+		case 'payments:order:not-pending':
+			return 'This order is no longer pending';
+		case 'core:order:not-found':
+			return 'Order not found';
+
+		// Common errors
 		case 'network_error':
 			return 'Network error. Please check your connection';
 		case 'timeout_error':
@@ -71,6 +111,37 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 			return 'Invalid request. Please try again';
 		default:
 			return 'Failed to start checkout. Please try again';
+	}
+}
+
+// ==========================================
+// Wallet Error Messages
+// ==========================================
+
+/**
+ * Maps wallet error codes to user-friendly messages
+ * Used across wallet verification, linking, and unlinking flows
+ */
+export function getWalletErrorMessage(errorCode: WalletErrorCode): string {
+	switch (errorCode) {
+		case 'auth:wallet:not-verified':
+			return 'Wallet is not verified. Please verify first';
+		case 'auth:wallet:signature-invalid':
+			return 'Signature verification failed. Please try again';
+		case 'auth:wallet:signature-expired':
+			return 'Signature expired. Please sign a new message';
+		case 'auth:wallet:limit-reached':
+			return 'Maximum linked wallets reached. Unlink one to add another';
+		case 'auth:wallet:invalid-address':
+			return 'Invalid wallet address format';
+		case 'auth:wallet:not-found':
+			return 'Wallet not found on your account';
+		case 'network_error':
+			return 'Network error. Please check your connection';
+		case 'timeout_error':
+			return 'Request timed out. Please try again';
+		default:
+			return 'Wallet operation failed. Please try again';
 	}
 }
 

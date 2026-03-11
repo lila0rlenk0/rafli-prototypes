@@ -3,16 +3,6 @@ import { formatUnits } from 'viem';
 import type { CryptoCheckoutSession } from '@/types/wallet';
 
 // ==========================================
-// Constants
-// ==========================================
-
-/**
- * USDC uses 6 decimals across all chains (not 18 like ETH)
- * Used to format amountRaw for display: 10000000 → "10.00"
- */
-const STABLECOIN_DECIMALS = 6;
-
-// ==========================================
 // Types
 // ==========================================
 
@@ -31,8 +21,9 @@ interface BalanceData {
 // ==========================================
 
 /**
- * Formats payment amount from raw token units to human display
- * e.g. session with amountRaw "10000000" → "10.00"
+ * Formats payment amount from session's `amount` field (human-readable string).
+ * Uses `amount` instead of parsing `amountRaw` with hardcoded decimals —
+ * works for any token regardless of decimal count (6 for USDC, 18 for EARNM).
  *
  * @param session - Crypto checkout session (null returns placeholder)
  * @returns Formatted amount string with 2 decimal places
@@ -41,8 +32,8 @@ export function formatPaymentAmount(
 	session: CryptoCheckoutSession | null,
 ): string {
 	if (!session) return '\u2014';
-	const formatted = formatUnits(BigInt(session.amountRaw), STABLECOIN_DECIMALS);
-	return parseFloat(formatted).toFixed(2);
+	// Backend's `amount` is already human-readable (e.g. "10.00" for $10 USDC)
+	return parseFloat(session.amount).toFixed(2);
 }
 
 /**
@@ -58,15 +49,21 @@ export function formatNativeBalance(balance: BalanceData | undefined): string {
 }
 
 /**
- * Formats stablecoin token balance for display
- * Shows 2 decimal places matching USD convention
+ * Formats ERC20 token balance for display.
+ * Stablecoins (6 decimals) → 2 decimal places (USD convention).
+ * Non-stablecoins (18 decimals, e.g. EARNM) → 4 decimal places for precision.
+ * Threshold: tokens with ≤8 decimals are treated as stablecoin-like.
  *
  * @param balance - Token balance from useBalance hook
- * @returns Formatted balance string with 2 decimal places
+ * @returns Formatted balance string
  */
 export function formatTokenBalance(balance: BalanceData | undefined): string {
 	if (!balance) return '\u2014';
-	return parseFloat(formatUnits(balance.value, balance.decimals)).toFixed(2);
+	// 6-decimal tokens (USDC, USDT) → 2dp; 18-decimal tokens (EARNM) → 4dp
+	const displayDecimals = balance.decimals <= 8 ? 2 : 4;
+	return parseFloat(formatUnits(balance.value, balance.decimals)).toFixed(
+		displayDecimals,
+	);
 }
 
 /**

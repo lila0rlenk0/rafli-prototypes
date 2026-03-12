@@ -3,8 +3,6 @@
 import '@rainbow-me/rainbowkit/styles.css';
 
 import { lightTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
 import { WagmiProvider } from 'wagmi';
 
 import { isWeb3Enabled, wagmiConfig } from '@/lib/web3/config';
@@ -34,34 +32,30 @@ const appTheme = lightTheme({
 /**
  * Web3Provider Component
  *
- * Wraps children with wagmi + RainbowKit providers for wallet connectivity.
- * Uses a separate QueryClient from the app's main React Query provider
- * to avoid cache collisions between wagmi's internal queries and app queries.
+ * Wraps children with wagmi + RainbowKit for wallet connectivity.
+ * Shares the app's QueryClient (from QueryProvider in providers.tsx) — wagmi v2
+ * uses namespaced query keys internally so there are no cache collisions.
+ * A separate QueryClient would override the app's configured defaults
+ * (staleTime: Infinity, refetch disabled) since React Query uses the innermost
+ * QueryClientProvider, breaking either app queries or wagmi polling.
+ *
+ * Wagmi hooks that need polling (e.g. useTransactionConfirmations) explicitly
+ * set refetchInterval per-query, overriding the global staleTime: Infinity.
  *
  * Renders children directly (no-op) when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
  * is not configured — ensures card payments and the rest of the app work
  * even without Web3 infrastructure.
  */
 export function Web3Provider({ children }: { children: React.ReactNode }) {
-	// Wagmi requires its own QueryClient — separate from the app's React Query instance
-	// to prevent cache key collisions between wagmi internal queries and app data queries
-	const [queryClient] = useState(() => new QueryClient());
-
 	// No WalletConnect project ID → skip Web3 providers entirely
 	// This keeps the app functional for card-only payments
 	if (!isWeb3Enabled || !wagmiConfig) {
 		return <>{children}</>;
 	}
 
-	// Wagmi's QueryClientProvider wraps only RainbowKit internals here.
-	// The app's QueryProvider (staleTime: Infinity, refetch disabled) must be
-	// nested INSIDE this provider in the component tree so it wins as the
-	// innermost Context — see providers.tsx for the ordering.
 	return (
 		<WagmiProvider config={wagmiConfig}>
-			<QueryClientProvider client={queryClient}>
-				<RainbowKitProvider theme={appTheme}>{children}</RainbowKitProvider>
-			</QueryClientProvider>
+			<RainbowKitProvider theme={appTheme}>{children}</RainbowKitProvider>
 		</WagmiProvider>
 	);
 }

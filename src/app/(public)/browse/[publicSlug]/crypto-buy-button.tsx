@@ -3,7 +3,7 @@
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Loader2Icon, WalletIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 
 import { CryptoCheckoutModal } from '@/components/payment/crypto-checkout-modal';
@@ -66,15 +66,10 @@ export function CryptoBuyButton({
 	// Tracks active confirming state — persists when modal is closed during confirmation
 	// so we can show a "pending transaction" button to reopen the modal
 	const [isConfirming, setIsConfirming] = useState(false);
-	// Ref tracks latest showCryptoModal value — avoids stale closure in handleConfirmingChange.
-	// useCallback with showCryptoModal as dep would cause unnecessary callback identity changes
-	// on every modal open/close, re-triggering the onConfirmingChange effect in the modal.
-	const showCryptoModalRef = useRef(showCryptoModal);
-
-	// Keep ref in sync with state — read by handleConfirmingChange to avoid stale closure
-	useEffect(() => {
-		showCryptoModalRef.current = showCryptoModal;
-	}, [showCryptoModal]);
+	// Tracks whether the raffle question was already answered correctly this session.
+	// Without this, every click re-gates on questionId — forcing the user to re-answer
+	// if the crypto flow fails or wallet connect doesn't open.
+	const [questionAnswered, setQuestionAnswered] = useState(false);
 
 	// ==========================================
 	// Checkout Flow
@@ -167,7 +162,8 @@ export function CryptoBuyButton({
 			return;
 		}
 
-		if (questionId) {
+		// Gate on raffle question — skip if already answered this session
+		if (questionId && !questionAnswered) {
 			setShowQuestionModal(true);
 			return;
 		}
@@ -198,13 +194,6 @@ export function CryptoBuyButton({
 	 */
 	const handleConfirmingChange = useCallback((confirming: boolean) => {
 		setIsConfirming(confirming);
-		// When confirming ends (order completed/failed in background) and modal is closed,
-		// clear cryptoOrderId to prevent stale reuse — otherwise the next click would
-		// create a duplicate order against the same raffle.
-		// Uses ref instead of state to avoid stale closure and keep callback identity stable.
-		if (!confirming && !showCryptoModalRef.current) {
-			setCryptoOrderId(null);
-		}
 	}, []);
 
 	/**
@@ -259,7 +248,10 @@ export function CryptoBuyButton({
 					open={showQuestionModal}
 					onOpenChange={setShowQuestionModal}
 					raffleId={raffleId}
-					onCorrectAnswer={startCryptoFlow}
+					onCorrectAnswer={() => {
+						setQuestionAnswered(true);
+						startCryptoFlow();
+					}}
 				/>
 			)}
 

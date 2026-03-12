@@ -64,7 +64,7 @@ export const TOKENS_BY_CHAIN: Record<number, TokenInfo[]> = {
 	11_155_111: [USDC, USDT], // Sepolia
 	421_614: [USDC, USDT], // Arbitrum Sepolia
 	84_532: [USDC, USDT], // Base Sepolia
-	80_002: [USDC], // Polygon Amoy
+	80_002: [USDC, USDT], // Polygon Amoy (mirrors Polygon mainnet)
 };
 
 /**

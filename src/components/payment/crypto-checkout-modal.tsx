@@ -673,6 +673,10 @@ export function CryptoCheckoutModal({
 		setIsProcessing(true);
 
 		try {
+			// EIP-55 checksum address — wagmi returns lowercase, backend stores/compares
+			// in checksummed format. Hoisted so both verify and checkout paths share it.
+			const checksummedAddress = getAddress(address);
+
 			// Verify wallet if not already verified
 			if (!isWalletVerified) {
 				if (!userId) {
@@ -682,15 +686,12 @@ export function CryptoCheckoutModal({
 				}
 
 				const timestamp = new Date().toISOString();
-				// EIP-55 checksum address — must match backend's verification format exactly.
-				// wagmi returns lowercase; backend checksums before building expected message.
-				const checksummedAddress = getAddress(address);
 				const message = `Link wallet ${checksummedAddress} to Raffles account ${userId} at ${timestamp}`;
 
 				const signature = await signMessageAsync({ message });
 
 				const result = await verifyWallet({
-					address,
+					address: checksummedAddress,
 					message,
 					signature,
 					timestamp,
@@ -744,7 +745,7 @@ export function CryptoCheckoutModal({
 			const checkoutResult = await createCryptoCheckout({
 				orderId,
 				chainId: selectedChainId,
-				walletAddress: address,
+				walletAddress: checksummedAddress,
 				token: selectedToken.slug,
 			});
 

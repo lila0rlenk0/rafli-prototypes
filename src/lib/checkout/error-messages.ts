@@ -88,6 +88,8 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 			return 'This order has already been paid';
 		case 'payments:crypto:order-not-recoverable':
 			return 'This order can no longer be paid. Please create a new one';
+		case 'payments:crypto:session-not-found':
+			return 'Payment session not found. Please start a new checkout.';
 		case 'payments:crypto:concurrent-completion':
 		case 'payments:crypto:concurrent-update':
 		case 'payments:checkout:concurrent-completion':

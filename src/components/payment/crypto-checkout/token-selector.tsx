@@ -40,9 +40,9 @@ export function TokenSelector({
 	 */
 	function getPriceLabel(token: TokenInfo): string | null {
 		if (token.isStablecoin) return '1:1 USD';
-		const pricing = cryptoTokenPricing.find(p => p.token === token.slug);
+		const pricing = cryptoTokenPricing.find(p => p.tokenId === token.slug);
 		if (!pricing) return null;
-		return `${pricing.pricePerTicket} ${token.label}/ticket`;
+		return `${pricing.price} ${token.label}/ticket`;
 	}
 
 	return (

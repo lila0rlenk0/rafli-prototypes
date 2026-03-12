@@ -171,22 +171,24 @@ export const raffleSchema = z.object({
 	netRevenueAmount: z.string().nullable().optional(),
 	perWinnerAmount: z.string().nullable().optional(),
 	disputeWindowEndsAt: z.string().nullable().optional(),
-	/** Whether raffle accepts crypto (USDC) payments — backend sets per raffle */
-	acceptsCrypto: z.boolean().optional(),
+	/** Whether raffle accepts crypto (USDC) payments — backend always sends this, defaults false */
+	acceptsCrypto: z.boolean().default(false),
 	/** EVM chain IDs the raffle supports for crypto payments (e.g. [1, 42161]). Empty = all chains. */
 	cryptoChainIds: z.array(z.number()).default([]),
 	/** Allowed token slugs for crypto payments (e.g. ["usdc", "earnm"]). Empty = all tokens. */
 	cryptoTokens: z.array(z.string()).default([]),
 	/**
-	 * Non-stablecoin pricing per token (e.g. [{ token: "earnm", pricePerTicket: "100" }]).
+	 * Non-stablecoin pricing per token (e.g. [{ tokenId: "earnm", price: "100" }]).
 	 * Required by backend for non-stablecoin checkout — without it, backend returns
 	 * `payments:crypto:no-token-pricing`. Stablecoins use implicit 1:1 USD pricing.
 	 */
 	cryptoTokenPricing: z
 		.array(
 			z.object({
-				token: z.string(),
-				pricePerTicket: z.string(),
+				/** Token slug from TOKEN_REGISTRY (e.g. "earnm") — matches backend TokenPriceEntry.tokenId */
+				tokenId: z.string(),
+				/** Static price per ticket as decimal string (e.g. "100") — matches backend TokenPriceEntry.price */
+				price: z.string(),
 			}),
 		)
 		.default([]),

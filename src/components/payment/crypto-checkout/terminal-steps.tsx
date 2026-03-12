@@ -11,7 +11,7 @@ import { getTxExplorerUrl } from '@/lib/web3/block-explorers';
 
 interface TxLinkProps {
 	txHash: string | undefined;
-	selectedChainId: number;
+	selectedChainId: number | undefined;
 }
 
 /**
@@ -83,7 +83,8 @@ export function SuccessStep({
 
 interface FailureStepProps {
 	txHash: string | undefined;
-	selectedChainId: number;
+	/** May be undefined if failure occurs before chain selection (e.g. expired session on reopen) */
+	selectedChainId: number | undefined;
 	errorMessage: string | null;
 	/** When true, funds may have been deducted — hides "Try Again" to prevent duplicate payment */
 	fundsAtRisk?: boolean;

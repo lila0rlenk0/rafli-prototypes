@@ -1,4 +1,4 @@
-import { isAddress } from 'viem';
+import { getAddress, isAddress } from 'viem';
 import { z } from 'zod';
 
 // ==========================================
@@ -6,10 +6,16 @@ import { z } from 'zod';
 // ==========================================
 
 /**
- * Validates EVM address using viem's `isAddress` — handles EIP-55 checksums,
- * mixed-case, and edge cases that a simple hex regex would miss.
+ * Validates and normalizes EVM addresses to EIP-55 checksum format.
+ * Uses viem's `isAddress` for validation, then `getAddress` for checksumming.
+ * This ensures all addresses stored/compared in the app are consistently cased —
+ * prevents bugs from mixed-case comparisons (e.g. wagmi returns lowercase,
+ * backend expects checksummed).
  */
-const evmAddressSchema = z.string().refine(isAddress, 'Invalid EVM address');
+const evmAddressSchema = z
+	.string()
+	.refine(v => isAddress(v, { strict: false }), 'Invalid EVM address')
+	.transform(getAddress);
 
 /**
  * Validates a string is parseable as a BigInt (non-negative integer).

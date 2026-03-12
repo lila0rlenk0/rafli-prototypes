@@ -30,19 +30,19 @@ export const BLOCK_EXPLORERS: Record<number, string> = {
  *
  * Must match backend CHAIN_CONFIG confirmation thresholds exactly.
  * L1 (Ethereum): 12 blocks (~2.5 min) — standard finality threshold
- * L2 (Arbitrum, Base): 1 block — sequencer provides near-instant finality
- * L1 sidechain (Polygon): 128 blocks (~4 min) — historical reorg protection
+ * L2 (Arbitrum, Base): 30 blocks — sequencer + L1 batch posting safety margin
+ * L1 sidechain (Polygon): 50 blocks (~100s) — reorg protection
  * Testnets mirror their mainnet counterparts
  */
 export const CONFIRMATION_TARGETS: Record<number, number> = {
 	1: 12, // Ethereum — ~12s/block, 12 blocks ≈ 2.5 min
-	42_161: 1, // Arbitrum — sequencer finality, matches backend
-	8453: 1, // Base — sequencer finality, matches backend
-	137: 128, // Polygon — ~2s blocks, 128 blocks for reorg safety (matches backend)
+	42_161: 30, // Arbitrum — 30 blocks per backend CHAIN_CONFIG
+	8453: 30, // Base — 30 blocks per backend CHAIN_CONFIG
+	137: 50, // Polygon — ~2s blocks, 50 blocks per backend CHAIN_CONFIG
 	11_155_111: 12, // Sepolia (mirrors Ethereum)
-	421_614: 1, // Arbitrum Sepolia (mirrors Arbitrum)
-	84_532: 1, // Base Sepolia (mirrors Base)
-	80_002: 128, // Polygon Amoy (mirrors Polygon mainnet)
+	421_614: 30, // Arbitrum Sepolia (mirrors Arbitrum)
+	84_532: 30, // Base Sepolia (mirrors Base)
+	80_002: 50, // Polygon Amoy (mirrors Polygon mainnet)
 };
 
 /**
@@ -69,7 +69,7 @@ export function getConfirmationTarget(chainId: number): number {
  */
 export function getTxExplorerUrl(
 	txHash: string | undefined,
-	chainId: number | null,
+	chainId: number | null | undefined,
 ): string | null {
 	if (!txHash || !chainId) return null;
 	const base = BLOCK_EXPLORERS[chainId];

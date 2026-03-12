@@ -7,16 +7,18 @@ import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
+import { cryptoPaymentStatusSchema } from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
 import type { SubmitCryptoTxPayload } from '@/types/wallet';
 
 /**
- * Schema for crypto tx submission response
- * Backend returns session ID and updated status after verifying the tx
+ * Schema for crypto tx submission response.
+ * Backend returns session ID and updated status (transitions to 'confirming').
+ * Uses shared cryptoPaymentStatusSchema for consistent enum validation.
  */
 const cryptoTxSubmitResponseSchema = z.object({
 	id: z.string(),
-	status: z.string(),
+	status: cryptoPaymentStatusSchema,
 });
 
 type CryptoTxSubmitResponse = z.infer<typeof cryptoTxSubmitResponseSchema>;

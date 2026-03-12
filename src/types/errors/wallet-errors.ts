@@ -15,6 +15,8 @@ export const WALLET_ERROR_CODES = {
 	SIGNATURE_EXPIRED: 'auth:wallet:signature-expired',
 	/** Maximum linked wallets reached */
 	LIMIT_REACHED: 'auth:wallet:limit-reached',
+	/** Signed message doesn't match expected format — address/userId/timestamp mismatch */
+	MESSAGE_MISMATCH: 'auth:wallet:message-mismatch',
 	/** Invalid wallet address format */
 	INVALID_ADDRESS: 'auth:wallet:invalid-address',
 	/** Wallet not found */

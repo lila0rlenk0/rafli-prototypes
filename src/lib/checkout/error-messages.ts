@@ -140,6 +140,8 @@ export function getWalletErrorMessage(errorCode: WalletErrorCode): string {
 			return 'Signature expired. Please sign a new message';
 		case 'auth:wallet:limit-reached':
 			return 'Maximum linked wallets reached. Unlink one to add another';
+		case 'auth:wallet:message-mismatch':
+			return 'Signed message does not match expected format. Please try again';
 		case 'auth:wallet:invalid-address':
 			return 'Invalid wallet address format';
 		case 'auth:wallet:not-found':

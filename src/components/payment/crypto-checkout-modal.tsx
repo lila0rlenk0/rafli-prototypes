@@ -590,8 +590,11 @@ export function CryptoCheckoutModal({
 
 		const msUntilExpiry = new Date(session.expiresAt).getTime() - Date.now();
 
-		/** Handles session expiry — extracted to avoid duplicating the error message */
+		/** Handles session expiry — guards against racing with successful completion.
+		 * Without the successTransitioned check, expiry timer can fire in the same
+		 * event loop tick as FE-driven confirm on fast L2s, overriding 'success' with 'failure'. */
 		function handleExpiry() {
+			if (successTransitioned.current) return;
 			setErrorMessage('Checkout session expired. Please try again.');
 			setStep('failure');
 		}
@@ -1093,10 +1096,10 @@ export function CryptoCheckoutModal({
 							onClose={handleClose}
 						/>
 					)}
-					{step === 'failure' && selectedChainId && (
+					{step === 'failure' && (
 						<FailureStep
 							txHash={txHash}
-							selectedChainId={selectedChainId}
+							selectedChainId={selectedChainId ?? undefined}
 							errorMessage={errorMessage}
 							fundsAtRisk={fundsAtRisk}
 							onClose={handleClose}

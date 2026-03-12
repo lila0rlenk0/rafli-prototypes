@@ -53,6 +53,10 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
 		return <>{children}</>;
 	}
 
+	// Wagmi's QueryClientProvider wraps only RainbowKit internals here.
+	// The app's QueryProvider (staleTime: Infinity, refetch disabled) must be
+	// nested INSIDE this provider in the component tree so it wins as the
+	// innermost Context — see providers.tsx for the ordering.
 	return (
 		<WagmiProvider config={wagmiConfig}>
 			<QueryClientProvider client={queryClient}>

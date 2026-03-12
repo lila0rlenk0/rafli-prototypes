@@ -54,6 +54,18 @@ export const CONCLUDED_STATUSES = [
 
 export type ConcludedStatus = (typeof CONCLUDED_STATUSES)[number];
 
+/**
+ * Statuses where promo code management is allowed (create/deactivate).
+ * Concluded and cancelled raffles cannot have promos modified.
+ */
+export const PROMO_MANAGEABLE_STATUSES = [
+	RAFFLE_STATUS.DRAFT,
+	RAFFLE_STATUS.QUEUED,
+	RAFFLE_STATUS.LIVE,
+] as const;
+
+export type PromoManageableStatus = (typeof PROMO_MANAGEABLE_STATUSES)[number];
+
 export const RAFFLE_SORT_OPTION = {
 	ENDING_SOON: 'ending_soon',
 	LOWEST_PRICE: 'lowest_price',

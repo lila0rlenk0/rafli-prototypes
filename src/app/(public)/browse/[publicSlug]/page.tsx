@@ -37,6 +37,8 @@ import {
 	type CommentableStatus,
 	CONCLUDED_STATUSES,
 	type ConcludedStatus,
+	PROMO_MANAGEABLE_STATUSES,
+	type PromoManageableStatus,
 	RAFFLE_STATUS,
 	UPDATE_MANAGEABLE_STATUSES,
 	type UpdateManageableStatus,
@@ -48,7 +50,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense, type ComponentProps } from 'react';
 import { BugIcon } from '@/assets/icons/bug-icon';
-import { ReportRaffleButton } from './report-raffle-button';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
@@ -232,13 +233,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 	/**
 	 * Check if raffle status allows promo code management
-	 * Draft/queued/live allow managing promo codes; concluded/cancelled do not.
 	 */
 	function isManageableStatus(): boolean {
-		return (
-			raffle.status === RAFFLE_STATUS.DRAFT ||
-			raffle.status === RAFFLE_STATUS.QUEUED ||
-			raffle.status === RAFFLE_STATUS.LIVE
+		return PROMO_MANAGEABLE_STATUSES.includes(
+			raffle.status as PromoManageableStatus,
 		);
 	}
 
@@ -378,14 +376,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			<div className="flex w-full flex-col gap-8 lg:flex-row">
 				<div className="w-full space-y-4">
 					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
-						<div className="flex items-start justify-between gap-4">
-							<h2 className="text-3xl font-bold text-gray-900">
-								{raffle.title}
-							</h2>
-							{isAuthenticated && !isOwner && (
-								<ReportRaffleButton raffleId={raffle.id} />
-							)}
-						</div>
+						<h2 className="text-3xl font-bold text-gray-900">{raffle.title}</h2>
 
 						<Link
 							href={getHostProfileUrl()}

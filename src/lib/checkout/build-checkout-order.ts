@@ -124,9 +124,10 @@ export async function buildCheckoutOrder(
 					return null;
 				}
 
-				// Check if promo made order $0 — backend auto-completes these
+				// Check if promo made order $0 — backend auto-completes these.
 				// Use integer cents to avoid IEEE 754 float imprecision on currency values
-				// (e.g. parseFloat("3.30") - parseFloat("3.30") can produce epsilon residuals)
+				// (e.g. parseFloat("3.30") - parseFloat("3.30") can produce epsilon residuals).
+				// >= (not ===) handles 100% discount promos where discount exactly equals order total.
 				const discountCents = Math.round(
 					parseFloat(redeemResult.data.discountAmount ?? '0') * 100,
 				);

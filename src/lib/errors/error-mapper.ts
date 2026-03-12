@@ -10,7 +10,6 @@ import {
 	type PaymentErrorCode,
 	type PromoCodeErrorCode,
 	type RaffleErrorCode,
-	type ReportErrorCode,
 	type WalletErrorCode,
 	type ReviewErrorCode,
 	type TicketErrorCode,
@@ -92,17 +91,20 @@ function extractErrorCode(error: unknown): string | null {
  * @param code - Simple code from backend
  * @returns Full error code or original if no mapping
  */
-function mapSimpleCode(code: string): string {
-	const SIMPLE_CODE_MAP: Record<string, string> = {
-		// Simple code → Full backend code
-		unauthenticated: 'global:auth:unauthenticated',
-		permission_denied: 'forbidden',
-		not_found: 'not_found',
-		invalid_argument: 'validation_error',
-		// better-auth plugin codes
-		PASSWORD_COMPROMISED: 'auth:password:compromised',
-	};
+/**
+ * Simple code → full backend code mapping.
+ * Hoisted to module scope to avoid re-allocation on every call.
+ */
+const SIMPLE_CODE_MAP: Record<string, string> = {
+	unauthenticated: 'global:auth:unauthenticated',
+	permission_denied: 'forbidden',
+	not_found: 'not_found',
+	invalid_argument: 'validation_error',
+	// better-auth plugin codes
+	PASSWORD_COMPROMISED: 'auth:password:compromised',
+};
 
+function mapSimpleCode(code: string): string {
 	return SIMPLE_CODE_MAP[code] || code;
 }
 
@@ -593,41 +595,6 @@ export function mapCommentError(error: unknown): CommentErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as CommentErrorCode;
-		}
-	}
-
-	// No backend code - use frontend-only fallback
-	return mapCommonError(error);
-}
-
-/**
- * Maps report errors to ReportErrorCode
- *
- * Accepts `moderation:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns ReportErrorCode (either backend code or frontend fallback)
- */
-export function mapReportError(error: unknown): ReportErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "moderation:report:duplicate", "global:auth:unauthenticated"
-		if (
-			extractedCode.startsWith('moderation:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as ReportErrorCode;
-		}
-
-		// Simple code - try to map
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (
-			mappedCode.startsWith('moderation:') ||
-			mappedCode.startsWith('global:')
-		) {
-			return mappedCode as ReportErrorCode;
 		}
 	}
 

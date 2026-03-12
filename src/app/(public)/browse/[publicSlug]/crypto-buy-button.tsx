@@ -4,6 +4,7 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Loader2Icon, WalletIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
 
 import { CryptoCheckoutModal } from '@/components/payment/crypto-checkout-modal';
@@ -110,6 +111,7 @@ export function CryptoBuyButton({
 			setShowCryptoModal(true);
 		} catch (error) {
 			console.error('Unexpected error during crypto checkout:', error);
+			toast.error('An unexpected error occurred. Please try again');
 		} finally {
 			setIsLoading(false);
 		}

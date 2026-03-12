@@ -34,10 +34,13 @@ type PhaseStatus = 'done' | 'active' | 'pending';
  * Confirming step — vertical step tracker inspired by Safe's transaction flow.
  *
  * Four sequential phases connected by vertical lines:
- * 1. Transaction broadcast — immediately done (we're already in confirming)
+ * 1. Confirm in wallet — active while MetaMask/wallet is prompting, done once tx broadcast
  * 2. Block confirmations — shows live X/Y count, active until target reached
  * 3. Verifying payment — backend validates the tx against checkout session
  * 4. Completing order — backend finalizes order (transitions to success step)
+ *
+ * Only one phase is active at a time — prevents the "two spinners" issue
+ * when the wallet popup coexists with the modal.
  *
  * Each phase shows: dot (done=black, active=pulsing, pending=gray) + label + optional detail.
  * Connecting lines between dots fill black as phases complete.
@@ -54,6 +57,13 @@ export function ConfirmingStep({
 	// ==========================================
 
 	/**
+	 * txHash is undefined while MetaMask is still prompting (optimistic step transition).
+	 * Once writeContractAsync resolves, wagmi populates txHash and broadcast is truly done.
+	 * This drives the "Confirm in wallet" → "Block confirmations" transition.
+	 */
+	const isBroadcast = !!txHash;
+
+	/**
 	 * Whether block confirmations have reached the chain's target.
 	 * Reaching this threshold triggers the FE-driven finalization call
 	 * (confirmCryptoTx) in the parent modal — not just UI progress.
@@ -62,11 +72,11 @@ export function ConfirmingStep({
 
 	/**
 	 * Detail text for the confirmations phase — shows live block count.
-	 * Null when 0 confirmations (tx seen but not yet in a block).
+	 * Null when not yet broadcast or 0 confirmations (tx seen but not yet in a block).
 	 * Clamps display to target when reached (avoids showing 15/12).
 	 */
 	function getConfirmationDetail(): string | null {
-		if (confirmations === 0) return null;
+		if (!isBroadcast || confirmations === 0) return null;
 		const display = reachedTarget ? confirmationTarget : confirmations;
 		return `${display} / ${confirmationTarget} blocks`;
 	}
@@ -79,30 +89,27 @@ export function ConfirmingStep({
 	 * Ordered list of phases rendered in the vertical tracker.
 	 *
 	 * Status logic per phase:
-	 * 1. Broadcast — always done (we only render after tx is sent)
-	 * 2. Confirmations — active until target reached, then done
+	 * 1. Confirm in wallet — active while MetaMask is prompting (!txHash),
+	 *    done once user confirms and tx hash is returned
+	 * 2. Block confirmations — pending until broadcast, active until target reached, then done
 	 * 3. Verifying — pending until tx confirmed on-chain, then active
 	 *    ("done" never visible — modal transitions to success step first)
 	 * 4. Completing — pending until target reached + confirmed, then active
 	 *    ("done" never visible — same reason as verifying)
 	 */
-	// txHash is undefined while MetaMask is still prompting (optimistic step transition).
-	// Once writeContractAsync resolves, wagmi sets txHash and broadcast is truly done.
-	const isBroadcast = !!txHash;
-
 	const phases: {
 		label: string;
 		status: PhaseStatus;
 		detail: string | null;
 	}[] = [
 		{
-			label: isBroadcast ? 'Transaction broadcast' : 'Sending transaction',
+			label: 'Confirm in wallet',
 			status: isBroadcast ? 'done' : 'active',
 			detail: null,
 		},
 		{
 			label: 'Block confirmations',
-			status: reachedTarget ? 'done' : 'active',
+			status: !isBroadcast ? 'pending' : reachedTarget ? 'done' : 'active',
 			detail: getConfirmationDetail(),
 		},
 		{

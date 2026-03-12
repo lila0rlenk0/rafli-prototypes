@@ -15,6 +15,7 @@ export const BLOCK_EXPLORERS: Record<number, string> = {
 	11_155_111: 'https://sepolia.etherscan.io/tx/',
 	421_614: 'https://sepolia.arbiscan.io/tx/',
 	84_532: 'https://sepolia.basescan.org/tx/',
+	80_002: 'https://amoy.polygonscan.com/tx/',
 };
 
 // ==========================================
@@ -35,10 +36,11 @@ export const CONFIRMATION_TARGETS: Record<number, number> = {
 	1: 12, // Ethereum — ~12s/block, 12 blocks ≈ 2.5 min
 	42_161: 2, // Arbitrum — sub-second blocks, 2 for safety
 	8453: 2, // Base — ~2s blocks
-	137: 2, // Polygon — ~2s blocks
+	137: 128, // Polygon — ~2s blocks, 128 blocks for reorg safety (matches backend)
 	11_155_111: 12, // Sepolia (mirrors Ethereum)
 	421_614: 2, // Arbitrum Sepolia
 	84_532: 2, // Base Sepolia
+	80_002: 128, // Polygon Amoy (mirrors Polygon mainnet)
 };
 
 /**

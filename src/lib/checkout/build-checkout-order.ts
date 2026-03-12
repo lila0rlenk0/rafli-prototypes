@@ -5,7 +5,7 @@ import {
 	getPromoErrorMessage,
 	shouldClearPromo,
 } from '@/lib/checkout/error-messages';
-import { getReusablePendingOrder } from '@/services/order/get-reusable-pending-order';
+import { getReusablePendingOrder } from '@/lib/checkout/get-reusable-pending-order';
 import { createOrder } from '@/services/order/create-order';
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
 import { validatePromoCode } from '@/services/promo-code/validate-promo-code';
@@ -125,13 +125,14 @@ export async function buildCheckoutOrder(
 				}
 
 				// Check if promo made order $0 — backend auto-completes these
-				const discountAmount = parseFloat(
-					redeemResult.data.discountAmount ?? '0',
+				// Use integer cents to avoid IEEE 754 float imprecision on currency values
+				// (e.g. parseFloat("3.30") - parseFloat("3.30") can produce epsilon residuals)
+				const discountCents = Math.round(
+					parseFloat(redeemResult.data.discountAmount ?? '0') * 100,
 				);
-				const orderTotal = parseFloat(order.totalAmount);
-				const remainingTotal = Math.max(0, orderTotal - discountAmount);
+				const orderCents = Math.round(parseFloat(order.totalAmount) * 100);
 
-				if (remainingTotal === 0) {
+				if (discountCents >= orderCents) {
 					toast.success('Promo applied. Tickets claimed successfully!');
 					return { order, isFullyDiscounted: true };
 				}

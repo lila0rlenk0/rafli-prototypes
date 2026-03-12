@@ -1,36 +1,31 @@
+import { isAddress } from 'viem';
 import { z } from 'zod';
 
 // ==========================================
-// Constants
+// Shared Validators
 // ==========================================
 
 /**
- * Supported EVM chain IDs for crypto payments
- * Mainnets: Ethereum, Arbitrum, Base, Polygon
- * Testnets: Sepolia, Arbitrum Sepolia, Base Sepolia
+ * Validates EVM address using viem's `isAddress` — handles EIP-55 checksums,
+ * mixed-case, and edge cases that a simple hex regex would miss.
  */
-const SUPPORTED_CHAINS = {
-	MAINNET: 1,
-	ARBITRUM: 42_161,
-	BASE: 8453,
-	POLYGON: 137,
-	SEPOLIA: 11_155_111,
-	ARBITRUM_SEPOLIA: 421_614,
-	BASE_SEPOLIA: 84_532,
-} as const;
+const evmAddressSchema = z.string().refine(isAddress, 'Invalid EVM address');
 
 /**
- * Human-readable chain names for UI display
+ * Validates a string is parseable as a BigInt (non-negative integer).
+ * Uses actual BigInt parsing instead of regex — catches leading zeros,
+ * whitespace, and other edge cases that /^\d+$/ would miss or allow.
  */
-export const CHAIN_NAMES: Record<number, string> = {
-	[SUPPORTED_CHAINS.MAINNET]: 'Ethereum',
-	[SUPPORTED_CHAINS.ARBITRUM]: 'Arbitrum',
-	[SUPPORTED_CHAINS.BASE]: 'Base',
-	[SUPPORTED_CHAINS.POLYGON]: 'Polygon',
-	[SUPPORTED_CHAINS.SEPOLIA]: 'Sepolia',
-	[SUPPORTED_CHAINS.ARBITRUM_SEPOLIA]: 'Arbitrum Sepolia',
-	[SUPPORTED_CHAINS.BASE_SEPOLIA]: 'Base Sepolia',
-};
+function isBigIntString(value: string): boolean {
+	try {
+		return BigInt(value) >= 0n;
+	} catch {
+		return false;
+	}
+}
+const bigIntStringSchema = z
+	.string()
+	.refine(isBigIntString, 'Must be a non-negative integer string');
 
 // ==========================================
 // Schemas
@@ -41,7 +36,7 @@ export const CHAIN_NAMES: Record<number, string> = {
  */
 export const walletResponseSchema = z.object({
 	id: z.string(),
-	address: z.string(),
+	address: evmAddressSchema,
 	verifiedAt: z.string(),
 	createdAt: z.string(),
 });
@@ -50,7 +45,8 @@ export const walletResponseSchema = z.object({
  * Schema for wallet verification payload (EIP-191 signature)
  */
 export const verifyWalletPayloadSchema = z.object({
-	address: z.string().min(1),
+	/** EVM wallet address — 0x prefix + 40 hex chars */
+	address: evmAddressSchema,
 	message: z.string().min(1),
 	signature: z.string().min(1),
 	/** ISO 8601 timestamp string — backend parses with `new Date(timestamp)` */
@@ -60,13 +56,11 @@ export const verifyWalletPayloadSchema = z.object({
 /**
  * Schema for crypto checkout session returned by POST /payments/crypto/checkout
  */
-/** Validates EVM address format — 0x prefix + 40 hex chars */
-const evmAddressSchema = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
-
 export const cryptoCheckoutSessionSchema = z.object({
 	id: z.string(),
 	amount: z.string(),
-	amountRaw: z.string(),
+	/** On-chain token units as integer string (e.g. "10000000" for 10 USDC at 6 decimals) */
+	amountRaw: bigIntStringSchema,
 	chainId: z.number(),
 	/** ERC20 token contract address — validated as 0x + 40 hex */
 	tokenAddress: evmAddressSchema,
@@ -82,8 +76,9 @@ export const cryptoCheckoutSessionSchema = z.object({
 export const createCryptoCheckoutPayloadSchema = z.object({
 	orderId: z.string().min(1),
 	chainId: z.number(),
-	walletAddress: z.string().min(1),
-	/** Stablecoin token — backend requires this field, defaults to 'usdc' */
+	/** Verified wallet address — must be linked via EIP-191 first */
+	walletAddress: evmAddressSchema,
+	/** Token slug (e.g. 'usdc', 'usdt', 'earnm') — backend validates against registry */
 	token: z.string().min(1),
 });
 

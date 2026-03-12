@@ -2,7 +2,7 @@
 
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
 import { getTokensForChain } from '@/lib/web3/tokens';
-import { CHAIN_NAMES } from '@/types/wallet';
+import { CHAIN_NAMES } from '@/lib/web3/chains';
 
 // ==========================================
 // Types

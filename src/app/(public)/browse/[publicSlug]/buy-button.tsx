@@ -12,7 +12,7 @@ import {
 	getPromoErrorMessage,
 	shouldClearPromo,
 } from '@/lib/checkout/error-messages';
-import { buildCheckoutOrder } from '@/services/checkout/build-checkout-order';
+import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
 import { cancelPaymentSession } from '@/services/payment/cancel-payment-session';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';

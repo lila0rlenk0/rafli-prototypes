@@ -57,6 +57,7 @@ export const CHAIN_ICONS: Record<number, ChainIcon> = {
 	8453: { iconUrl: BASE_ICON, iconBackground: '#0052FF' },
 	84_532: { iconUrl: BASE_ICON, iconBackground: '#0052FF' },
 
-	// Polygon mainnet
+	// Polygon mainnet + Amoy testnet
 	137: { iconUrl: POLYGON_ICON, iconBackground: '#7B3FE4' },
+	80_002: { iconUrl: POLYGON_ICON, iconBackground: '#7B3FE4' },
 };

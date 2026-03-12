@@ -4,7 +4,8 @@ import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { formatPaymentAmount, formatTokenBalance } from '@/lib/web3/format';
-import { CHAIN_NAMES, type CryptoCheckoutSession } from '@/types/wallet';
+import { CHAIN_NAMES } from '@/lib/web3/chains';
+import type { CryptoCheckoutSession } from '@/types/wallet';
 
 // ==========================================
 // Types

@@ -6,6 +6,7 @@ import {
 	baseSepolia,
 	mainnet,
 	polygon,
+	polygonAmoy,
 	sepolia,
 } from 'wagmi/chains';
 
@@ -28,6 +29,7 @@ const devChains = [
 	sepolia,
 	arbitrumSepolia,
 	baseSepolia,
+	polygonAmoy,
 ] as const;
 
 /**

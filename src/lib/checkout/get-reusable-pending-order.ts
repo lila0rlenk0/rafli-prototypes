@@ -1,6 +1,6 @@
 import { ORDER_STATUS, type OrderWithRaffle } from '@/types/order';
 
-import { getMyOrders } from './get-my-orders';
+import { getMyOrders } from '@/services/order/get-my-orders';
 
 // ==========================================
 // Order Reuse Logic

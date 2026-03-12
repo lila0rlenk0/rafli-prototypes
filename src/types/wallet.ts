@@ -15,7 +15,7 @@ import { z } from 'zod';
 const evmAddressSchema = z
 	.string()
 	.refine(v => isAddress(v, { strict: false }), 'Invalid EVM address')
-	.transform(getAddress);
+	.transform(v => getAddress(v));
 
 /**
  * Validates a string is parseable as a BigInt (non-negative integer).

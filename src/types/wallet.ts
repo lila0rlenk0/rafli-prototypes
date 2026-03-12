@@ -24,7 +24,7 @@ const evmAddressSchema = z
  */
 function isBigIntString(value: string): boolean {
 	try {
-		return BigInt(value) >= 0n;
+		return BigInt(value) >= BigInt(0);
 	} catch {
 		return false;
 	}

@@ -18,7 +18,7 @@ import type { ServiceResponse } from '@/types/service-response';
  * Returned by GET /payments/crypto/sessions/:id.
  * Contains authoritative session state + failure reason for error display.
  */
-export const cryptoSessionResponseSchema = z.object({
+const cryptoSessionResponseSchema = z.object({
 	id: z.string(),
 	status: cryptoPaymentStatusSchema,
 	/** Transaction hash — null until submitted via POST /crypto/submit */

@@ -173,10 +173,23 @@ export const raffleSchema = z.object({
 	disputeWindowEndsAt: z.string().nullable().optional(),
 	/** Whether raffle accepts crypto (USDC) payments — backend sets per raffle */
 	acceptsCrypto: z.boolean().optional(),
-	/** EVM chain IDs the raffle supports for crypto payments (e.g. [1, 42161]) */
-	cryptoChainIds: z.array(z.number()).optional(),
-	/** Allowed token slugs for crypto payments (e.g. ["usdc", "earnm"]). Empty = all tokens allowed. */
-	cryptoTokens: z.array(z.string()).optional(),
+	/** EVM chain IDs the raffle supports for crypto payments (e.g. [1, 42161]). Empty = all chains. */
+	cryptoChainIds: z.array(z.number()).default([]),
+	/** Allowed token slugs for crypto payments (e.g. ["usdc", "earnm"]). Empty = all tokens. */
+	cryptoTokens: z.array(z.string()).default([]),
+	/**
+	 * Non-stablecoin pricing per token (e.g. [{ token: "earnm", pricePerTicket: "100" }]).
+	 * Required by backend for non-stablecoin checkout — without it, backend returns
+	 * `payments:crypto:no-token-pricing`. Stablecoins use implicit 1:1 USD pricing.
+	 */
+	cryptoTokenPricing: z
+		.array(
+			z.object({
+				token: z.string(),
+				pricePerTicket: z.string(),
+			}),
+		)
+		.default([]),
 });
 
 /**
@@ -279,6 +292,9 @@ export const updateRafflePayloadSchema = z.object({
 
 export type RaffleWinner = z.infer<typeof raffleWinnerSchema>;
 export type Raffle = z.infer<typeof raffleSchema>;
+
+/** Per-token pricing entry for non-stablecoin crypto payments (e.g. EARNM) */
+export type CryptoTokenPricing = Raffle['cryptoTokenPricing'];
 export type RaffleCoverResponse = z.infer<typeof raffleCoverResponseSchema>;
 export type RaffleGalleryResponse = z.infer<typeof raffleGalleryResponseSchema>;
 export type CreateRaffleInput = z.infer<typeof createRaffleInputSchema>;

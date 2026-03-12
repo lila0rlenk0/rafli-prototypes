@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { clientEnv } from '@/env/client';
 import { isWeb3Enabled } from '@/lib/web3/config';
 import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
+import type { CryptoTokenPricing } from '@/types/raffle';
 
 import { SignInToBuyButton } from './sign-in-button';
 import { TicketSelector } from './ticket-selector';
@@ -30,6 +31,8 @@ interface TicketPurchaseCardProps {
 	cryptoChainIds?: number[];
 	/** Allowed token slugs — empty/undefined means all tokens allowed */
 	cryptoTokens?: string[];
+	/** Non-stablecoin pricing per token — needed for EARNM and future non-stablecoin tokens */
+	cryptoTokenPricing?: CryptoTokenPricing;
 	userId?: string | null;
 }
 
@@ -58,6 +61,7 @@ export function TicketPurchaseCard({
 	acceptsCrypto = false,
 	cryptoChainIds = [],
 	cryptoTokens = [],
+	cryptoTokenPricing = [],
 	userId,
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
@@ -332,6 +336,7 @@ export function TicketPurchaseCard({
 							onPromoInvalid={handlePromoInvalid}
 							cryptoChainIds={cryptoChainIds}
 							cryptoTokens={cryptoTokens}
+							cryptoTokenPricing={cryptoTokenPricing}
 							userId={userId}
 						/>
 					)}

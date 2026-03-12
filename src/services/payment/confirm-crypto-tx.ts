@@ -7,17 +7,18 @@ import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
+import { cryptoPaymentStatusSchema } from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
 import type { ConfirmCryptoTxPayload } from '@/types/wallet';
 
 /**
  * Schema for crypto tx confirmation response.
- * Backend returns order status — COMPLETED means tickets were created immediately,
+ * Backend returns session status — 'completed' means tickets were created immediately,
  * any other status means the cron will handle it (no-op from FE perspective).
  */
 const confirmCryptoTxResponseSchema = z.object({
 	id: z.string(),
-	status: z.string(),
+	status: cryptoPaymentStatusSchema,
 });
 
 type ConfirmCryptoTxResponse = z.infer<typeof confirmCryptoTxResponseSchema>;

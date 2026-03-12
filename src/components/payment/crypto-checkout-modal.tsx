@@ -46,11 +46,14 @@ import { cancelPaymentSession } from '@/services/payment/cancel-payment-session'
 import { confirmCryptoTx } from '@/services/payment/confirm-crypto-tx';
 import { createCryptoCheckout } from '@/services/payment/create-crypto-checkout';
 import { submitCryptoTx } from '@/services/payment/submit-crypto-tx';
+import { usePollCryptoSession } from '@/services/payment/use-poll-crypto-session';
 import { usePollOrderStatus } from '@/services/payment/use-poll-order-status';
 import { PAYMENT_ERROR_CODES } from '@/types/errors';
 import { useWallets } from '@/services/wallet/use-wallets';
 import { verifyWallet } from '@/services/wallet/verify-wallet';
 import { ORDER_STATUS } from '@/types/order';
+import { CRYPTO_PAYMENT_STATUS } from '@/types/payment';
+import type { CryptoTokenPricing } from '@/types/raffle';
 import type { CryptoCheckoutSession } from '@/types/wallet';
 
 // ==========================================
@@ -74,6 +77,8 @@ interface CryptoCheckoutModalProps {
 	cryptoChainIds: number[];
 	/** Allowed token slugs from raffle — empty means all tokens allowed */
 	cryptoTokens?: string[];
+	/** Non-stablecoin pricing per token — needed for display in token selector */
+	cryptoTokenPricing?: CryptoTokenPricing;
 	userId?: string | null;
 	onSuccess?: () => void;
 	/** Notifies parent when confirming state changes — used to show persistent "pending" button */
@@ -117,6 +122,7 @@ export function CryptoCheckoutModal({
 	orderId,
 	cryptoChainIds,
 	cryptoTokens = [],
+	cryptoTokenPricing = [],
 	userId,
 	onSuccess,
 	onConfirmingChange,
@@ -178,6 +184,12 @@ export function CryptoCheckoutModal({
 	// Guards reorg detection — prevents concurrent handlePossibleReorg executions
 	// when txFailureCount increments multiple times while balance refetch is pending.
 	const reorgHandled = useRef(false);
+
+	// Ref for latest polledSession — avoids adding polledSession to useEffect deps
+	// (which would cause re-runs every 5s). Read from ref inside effects to get
+	// the most recent failureReason without coupling to the poll cycle.
+	const polledSessionRef =
+		useRef<Awaited<ReturnType<typeof usePollCryptoSession>>['data']>(undefined);
 
 	// chainId is required — without it wagmi defaults to the connected chain,
 	// which may differ from the target chain after switchChainAsync. This caused
@@ -300,6 +312,15 @@ export function CryptoCheckoutModal({
 	const { data: polledOrder, isExpired: isPollingExpired } = usePollOrderStatus(
 		step === 'confirming' ? orderId : null,
 	);
+
+	// Poll crypto session endpoint for authoritative session state + failureReason.
+	// The order endpoint only has status; the session endpoint exposes the
+	// backend's actual failure reason (e.g. "Transaction reverted", "Amount mismatch").
+	const { data: polledSession } = usePollCryptoSession(
+		step === 'confirming' && session ? session.id : null,
+	);
+	// Sync ref each render — effects read from ref to avoid dep on poll cycle
+	polledSessionRef.current = polledSession;
 
 	// ==========================================
 	// Derived State
@@ -430,10 +451,10 @@ export function CryptoCheckoutModal({
 				return;
 			}
 
-			// Backend confirmed — if order is COMPLETED, transition immediately.
+			// Backend confirmed — session status 'completed' means tickets created.
 			// successTransitioned ref prevents double onSuccess() when polling
 			// also detects COMPLETED in the same render cycle.
-			if (result.data.status === ORDER_STATUS.COMPLETED) {
+			if (result.data.status === CRYPTO_PAYMENT_STATUS.COMPLETED) {
 				if (successTransitioned.current) return;
 				successTransitioned.current = true;
 				setStep('success');
@@ -446,7 +467,9 @@ export function CryptoCheckoutModal({
 	}, [step, txHash, session, selectedChainId, confirmationCount, onSuccess]);
 
 	/**
-	 * Transition to success/failure when polling detects terminal state
+	 * Transition to success/failure when polling detects terminal state.
+	 * Uses both order polling (authoritative for order status) and session polling
+	 * (provides failureReason for user-facing error messages).
 	 */
 	useEffect(() => {
 		if (!polledOrder || step !== 'confirming') return;
@@ -462,7 +485,14 @@ export function CryptoCheckoutModal({
 			polledOrder.status === ORDER_STATUS.FAILED ||
 			polledOrder.status === ORDER_STATUS.REFUNDED
 		) {
-			setErrorMessage('Payment verification failed. Please contact support.');
+			// Use failureReason from session ref if available — it contains
+			// actionable info (e.g. "Transaction reverted", "Amount mismatch")
+			// that the order endpoint does not expose. Read from ref to avoid
+			// coupling this effect to the session poll cycle.
+			const reason =
+				polledSessionRef.current?.failureReason ??
+				'Payment verification failed. Please contact support.';
+			setErrorMessage(reason);
 			setStep('failure');
 		}
 	}, [polledOrder, step, onSuccess]);
@@ -843,15 +873,6 @@ export function CryptoCheckoutModal({
 	}
 
 	/**
-	 * Whether the modal is in a non-dismissable confirming state.
-	 * When true, closing the modal hides it but preserves all state so the
-	 * user can reopen and resume watching confirmation progress.
-	 */
-	function isInConfirmingState(): boolean {
-		return step === 'confirming';
-	}
-
-	/**
 	 * Close modal — preserves state during confirming step so user can reopen.
 	 * Fully resets on all other steps (select, review, terminal).
 	 */
@@ -860,7 +881,7 @@ export function CryptoCheckoutModal({
 
 		// During confirming: keep all state alive (session, txHash, polling).
 		// User can reopen via the "pending transaction" button in CryptoBuyButton.
-		if (isInConfirmingState()) return;
+		if (step === 'confirming') return;
 
 		// Delay reset to avoid flash during close animation
 		setTimeout(handleReset, 300);
@@ -1026,6 +1047,7 @@ export function CryptoCheckoutModal({
 					{step === 'select-token' && selectedChainId && (
 						<TokenSelector
 							tokens={getAllowedTokens(selectedChainId)}
+							cryptoTokenPricing={cryptoTokenPricing}
 							onSelectToken={handleSelectToken}
 						/>
 					)}

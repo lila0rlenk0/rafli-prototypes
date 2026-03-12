@@ -10,6 +10,7 @@ import { CryptoCheckoutModal } from '@/components/payment/crypto-checkout-modal'
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
+import type { CryptoTokenPricing } from '@/types/raffle';
 
 // ==========================================
 // Types
@@ -26,6 +27,8 @@ interface CryptoBuyButtonProps {
 	cryptoChainIds: number[];
 	/** Allowed token slugs — empty means all tokens allowed */
 	cryptoTokens?: string[];
+	/** Non-stablecoin pricing per token — needed for EARNM and future non-stablecoin tokens */
+	cryptoTokenPricing?: CryptoTokenPricing;
 	userId?: string | null;
 }
 
@@ -51,6 +54,7 @@ export function CryptoBuyButton({
 	onPromoInvalid,
 	cryptoChainIds,
 	cryptoTokens = [],
+	cryptoTokenPricing = [],
 	userId,
 }: CryptoBuyButtonProps) {
 	const router = useRouter();
@@ -262,6 +266,7 @@ export function CryptoBuyButton({
 					orderId={cryptoOrderId}
 					cryptoChainIds={cryptoChainIds}
 					cryptoTokens={cryptoTokens}
+					cryptoTokenPricing={cryptoTokenPricing}
 					userId={userId}
 					onSuccess={() => router.refresh()}
 					onConfirmingChange={handleConfirmingChange}

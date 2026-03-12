@@ -641,6 +641,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										acceptsCrypto={raffle.acceptsCrypto}
 										cryptoChainIds={raffle.cryptoChainIds}
 										cryptoTokens={raffle.cryptoTokens}
+										cryptoTokenPricing={raffle.cryptoTokenPricing}
 										userId={currentUserId}
 									/>
 								</Suspense>

@@ -77,6 +77,12 @@ export const PAYMENT_ERROR_CODES = {
 	CRYPTO_ORDER_NOT_RECOVERABLE: 'payments:crypto:order-not-recoverable',
 	/** Race: status changed between read and update */
 	CRYPTO_CONCURRENT_UPDATE: 'payments:crypto:concurrent-update',
+	/** chainId in confirm request doesn't match session's stored chain */
+	CRYPTO_CHAIN_MISMATCH: 'payments:crypto:chain-mismatch',
+	/** Crypto session not owned by requesting user */
+	CRYPTO_PERMISSION_DENIED: 'payments:crypto:permission-denied',
+	/** Crypto payment already paid (duplicate of already-completed for session context) */
+	CRYPTO_ALREADY_PAID: 'payments:crypto:already-paid',
 	/** User hit per-raffle ticket cap */
 	RAFFLE_USER_TICKET_LIMIT_EXCEEDED:
 		'payments:raffle:user-ticket-limit-exceeded',

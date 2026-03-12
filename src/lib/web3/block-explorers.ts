@@ -28,18 +28,20 @@ export const BLOCK_EXPLORERS: Record<number, string> = {
  * to request immediate finalization (bypassing the backend cron).
  * Backend still independently validates — these thresholds are advisory, not authoritative.
  *
+ * Must match backend CHAIN_CONFIG confirmation thresholds exactly.
  * L1 (Ethereum): 12 blocks (~2.5 min) — standard finality threshold
- * L2 (Arbitrum, Base, Polygon): 2 blocks (~1-4s) — near-instant finality
+ * L2 (Arbitrum, Base): 1 block — sequencer provides near-instant finality
+ * L1 sidechain (Polygon): 128 blocks (~4 min) — historical reorg protection
  * Testnets mirror their mainnet counterparts
  */
 export const CONFIRMATION_TARGETS: Record<number, number> = {
 	1: 12, // Ethereum — ~12s/block, 12 blocks ≈ 2.5 min
-	42_161: 2, // Arbitrum — sub-second blocks, 2 for safety
-	8453: 2, // Base — ~2s blocks
+	42_161: 1, // Arbitrum — sequencer finality, matches backend
+	8453: 1, // Base — sequencer finality, matches backend
 	137: 128, // Polygon — ~2s blocks, 128 blocks for reorg safety (matches backend)
 	11_155_111: 12, // Sepolia (mirrors Ethereum)
-	421_614: 2, // Arbitrum Sepolia
-	84_532: 2, // Base Sepolia
+	421_614: 1, // Arbitrum Sepolia (mirrors Arbitrum)
+	84_532: 1, // Base Sepolia (mirrors Base)
 	80_002: 128, // Polygon Amoy (mirrors Polygon mainnet)
 };
 

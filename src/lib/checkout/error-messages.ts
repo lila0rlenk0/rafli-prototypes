@@ -80,6 +80,12 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 			return 'Transaction already submitted and awaiting confirmation';
 		case 'payments:crypto:submit-failed':
 			return 'Failed to verify transaction. Please contact support';
+		case 'payments:crypto:chain-mismatch':
+			return 'Chain mismatch — please retry with the correct network';
+		case 'payments:crypto:permission-denied':
+			return 'You do not have access to this payment session';
+		case 'payments:crypto:already-paid':
+			return 'This order has already been paid';
 		case 'payments:crypto:order-not-recoverable':
 			return 'This order can no longer be paid. Please create a new one';
 		case 'payments:crypto:concurrent-completion':

@@ -82,13 +82,7 @@ function extractErrorCode(error: unknown): string | null {
 	return null;
 }
 
-/**
- * Simple code → full backend code mapping.
- *
- * Some endpoints return simple codes like "unauthenticated" instead of
- * full codes like "global:auth:unauthenticated". This normalizes them.
- * Hoisted to module scope to avoid re-allocation on every call.
- */
+/** Hoisted to module scope to avoid re-allocation on every call */
 const SIMPLE_CODE_MAP: Record<string, string> = {
 	unauthenticated: 'global:auth:unauthenticated',
 	permission_denied: 'forbidden',
@@ -98,6 +92,15 @@ const SIMPLE_CODE_MAP: Record<string, string> = {
 	PASSWORD_COMPROMISED: 'auth:password:compromised',
 };
 
+/**
+ * Normalizes simple backend codes to their full qualified equivalents.
+ * Some endpoints return shorthand codes like "unauthenticated" instead of
+ * "global:auth:unauthenticated" — this maps those to canonical form so
+ * prefix-based routing in domain mappers works correctly.
+ *
+ * @param code - Raw code from backend response
+ * @returns Normalized code, or original if no mapping exists
+ */
 function mapSimpleCode(code: string): string {
 	return SIMPLE_CODE_MAP[code] || code;
 }

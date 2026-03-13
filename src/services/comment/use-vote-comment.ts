@@ -26,48 +26,6 @@ interface VoteCommentVariables {
 	raffleId: string;
 }
 
-/**
- * Calculates the new vote score after a vote toggle
- *
- * Backend toggles votes: voting the same direction twice removes the vote.
- * We need to predict the new score for optimistic updates.
- *
- * @param currentScore - Current vote score
- * @param currentVote - Current user vote (null if none)
- * @param newVoteType - The vote being cast
- * @returns Predicted new score
- */
-function predictVoteScore(
-	currentScore: number,
-	currentVote: 'upvote' | 'downvote' | null,
-	newVoteType: VoteType,
-): number {
-	// Step 1: Remove existing vote effect (if any)
-	let score = currentScore;
-	if (currentVote === 'upvote') score -= 1;
-	if (currentVote === 'downvote') score += 1;
-
-	// Step 2: Apply new vote (unless toggling off — same direction)
-	if (currentVote !== newVoteType) {
-		if (newVoteType === 'upvote') score += 1;
-		if (newVoteType === 'downvote') score -= 1;
-	}
-
-	return score;
-}
-
-/**
- * Predicts the new userVote after a toggle
- *
- * Same direction = remove vote (null), different direction = apply new vote.
- */
-function predictUserVote(
-	currentVote: 'upvote' | 'downvote' | null,
-	newVoteType: VoteType,
-): 'upvote' | 'downvote' | null {
-	return currentVote === newVoteType ? null : newVoteType;
-}
-
 /** Type alias for the infinite query data shape */
 type InfiniteCommentsData = InfiniteData<ListCommentsResponse, number>;
 
@@ -80,6 +38,48 @@ type InfiniteCommentsData = InfiniteData<ListCommentsResponse, number>;
  * @returns React Query mutation result
  */
 export function useVoteComment() {
+	/**
+	 * Calculates the new vote score after a vote toggle
+	 *
+	 * Backend toggles votes: voting the same direction twice removes the vote.
+	 * We need to predict the new score for optimistic updates.
+	 *
+	 * @param currentScore - Current vote score
+	 * @param currentVote - Current user vote (null if none)
+	 * @param newVoteType - The vote being cast
+	 * @returns Predicted new score
+	 */
+	function predictVoteScore(
+		currentScore: number,
+		currentVote: 'upvote' | 'downvote' | null,
+		newVoteType: VoteType,
+	): number {
+		// Step 1: Remove existing vote effect (if any)
+		let score = currentScore;
+		if (currentVote === 'upvote') score -= 1;
+		if (currentVote === 'downvote') score += 1;
+
+		// Step 2: Apply new vote (unless toggling off — same direction)
+		if (currentVote !== newVoteType) {
+			if (newVoteType === 'upvote') score += 1;
+			if (newVoteType === 'downvote') score -= 1;
+		}
+
+		return score;
+	}
+
+	/**
+	 * Predicts the new userVote after a toggle
+	 *
+	 * Same direction = remove vote (null), different direction = apply new vote.
+	 */
+	function predictUserVote(
+		currentVote: 'upvote' | 'downvote' | null,
+		newVoteType: VoteType,
+	): 'upvote' | 'downvote' | null {
+		return currentVote === newVoteType ? null : newVoteType;
+	}
+
 	const queryClient = useQueryClient();
 
 	return useMutation<

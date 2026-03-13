@@ -1530,6 +1530,11 @@ export function CryptoCheckoutModal({
 			: `${base} w-1.5 bg-[#E5E5E5]`;
 	}
 
+	/** Returns 1-indexed step numbers for rendering progress dots */
+	function getStepNumbers(): number[] {
+		return Array.from({ length: getTotalSteps() }, (_, i) => i + 1);
+	}
+
 	// ==========================================
 	// Render
 	// ==========================================
@@ -1558,11 +1563,9 @@ export function CryptoCheckoutModal({
 					{/* Step progress dots */}
 					{getStepNumber() > 0 && (
 						<div className="flex items-center justify-center gap-1.5 pt-1">
-							{Array.from({ length: getTotalSteps() }, (_, i) => i + 1).map(
-								n => (
-									<div key={n} className={getStepDotClass(n)} />
-								),
-							)}
+							{getStepNumbers().map(n => (
+								<div key={n} className={getStepDotClass(n)} />
+							))}
 						</div>
 					)}
 				</DialogHeader>

@@ -218,7 +218,10 @@ export function TicketPurchaseCard({
 	}
 
 	/**
-	 * Handles successful promo redemption (free tickets)
+	 * Handles successful promo redemption (free tickets).
+	 * Reuses handlePromoInvalid because post-redemption cleanup
+	 * (clear promo, bump reset signal, reset quantity) is identical
+	 * to invalidation cleanup.
 	 */
 	function handlePromoRedeemed() {
 		clearPromoCodeFromUrl();
@@ -231,6 +234,7 @@ export function TicketPurchaseCard({
 	const total = calculateTotal();
 	const hasDiscount = discount > 0;
 	const isFree = isFreeTicketsPromo();
+	const freeTicketCount = isFree ? getFreeTicketCount() : 0;
 	const shouldShowClosingSoonWarning = isHydrated && isClosingSoon;
 
 	/**
@@ -328,8 +332,8 @@ export function TicketPurchaseCard({
 			{/* Free tickets info */}
 			{isFree && (
 				<p className="text-center text-sm text-green-600">
-					{getFreeTicketCount()} free ticket
-					{getFreeTicketCount() !== 1 ? 's' : ''} with this code
+					{freeTicketCount} free ticket
+					{freeTicketCount !== 1 ? 's' : ''} with this code
 				</p>
 			)}
 
@@ -345,7 +349,7 @@ export function TicketPurchaseCard({
 					<BuyButton
 						raffleId={raffleId}
 						publicSlug={publicSlug}
-						ticketQuantity={isFree ? getFreeTicketCount() : ticketQuantity}
+						ticketQuantity={isFree ? freeTicketCount : ticketQuantity}
 						disabled={disabled}
 						questionId={questionId}
 						promoCode={appliedPromo?.code}

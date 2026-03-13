@@ -33,7 +33,7 @@ const POLL_INTERVAL_MS = 5_000;
  * session expired but order not moved to FAILED), stop polling to prevent
  * infinite requests. The session expiry timer in the modal handles the UX side.
  */
-const MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
+const DEFAULT_MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
 
 /** Query key for order status polling — exported for cache invalidation/prefetching */
 export function pollOrderStatusKey(orderId: string | null) {
@@ -62,7 +62,12 @@ function isTerminalStatus(status: string | undefined): boolean {
  * @param orderId - The order to poll (pass null to disable polling)
  * @returns React Query result with order data and `isExpired` flag
  */
-export function usePollOrderStatus(orderId: string | null) {
+export function usePollOrderStatus(
+	orderId: string | null,
+	maxDurationMs?: number,
+) {
+	const resolvedMaxDurationMs = maxDurationMs ?? DEFAULT_MAX_POLL_DURATION_MS;
+
 	// Tracks when polling started — read only inside refetchInterval callback
 	// (not during render), so it's safe as a ref for the Date.now() check there.
 	const startedAtRef = useRef<number>(0);
@@ -87,13 +92,13 @@ export function usePollOrderStatus(orderId: string | null) {
 		// Async setState in timer callback is allowed (not synchronous in effect body).
 		const timer = setTimeout(() => {
 			setIsExpired(true);
-		}, MAX_POLL_DURATION_MS);
+		}, resolvedMaxDurationMs);
 
 		return function cleanup() {
 			clearTimeout(timer);
 			setIsExpired(false);
 		};
-	}, [orderId]);
+	}, [orderId, resolvedMaxDurationMs]);
 
 	const query = useQuery<Order, ServiceError<OrderErrorCode>>({
 		queryKey: pollOrderStatusKey(orderId),
@@ -116,11 +121,13 @@ export function usePollOrderStatus(orderId: string | null) {
 			// Step 1: Stop on terminal status
 			if (isTerminalStatus(q.state.data?.status)) return false;
 
-			// Step 2: Stop after max duration — prevents infinite polling
+			// Step 2: Stop after the caller-defined max duration — prevents
+			// infinite polling while still letting crypto flows match the
+			// backend's longer post-expiry grace windows when needed.
 			// when backend never moves order to terminal state
 			if (startedAtRef.current > 0) {
 				const elapsed = Date.now() - startedAtRef.current;
-				if (elapsed >= MAX_POLL_DURATION_MS) return false;
+				if (elapsed >= resolvedMaxDurationMs) return false;
 			}
 
 			return POLL_INTERVAL_MS;

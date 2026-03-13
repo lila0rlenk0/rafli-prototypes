@@ -38,19 +38,24 @@ import {
 import { getConfirmationTarget } from '@/lib/web3/block-explorers';
 import {
 	CRYPTO_TX_SUBMIT_OUTCOME,
+	getCryptoSessionGraceDeadline,
+	getCryptoSessionGraceWindowMs,
 	getCryptoTxSubmitOutcome,
 	normalizeTxHash,
 	toBackendConfirmationCount,
+	type CryptoConfirmingGracePhase,
 } from '@/lib/web3/crypto-payment-flow';
 import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
 import { isUserRejection } from '@/lib/web3/errors';
 import {
+	getTokenBySlugForChain,
 	getSelectableTokensForChain,
 	type TokenInfo,
 } from '@/lib/web3/tokens';
 import { cancelPaymentSession } from '@/services/payment/cancel-payment-session';
 import { confirmCryptoTx } from '@/services/payment/confirm-crypto-tx';
 import { createCryptoCheckout } from '@/services/payment/create-crypto-checkout';
+import { getCryptoSession } from '@/services/payment/get-crypto-session';
 import { submitCryptoTx } from '@/services/payment/submit-crypto-tx';
 import { usePollCryptoSession } from '@/services/payment/use-poll-crypto-session';
 import { usePollOrderStatus } from '@/services/payment/use-poll-order-status';
@@ -80,6 +85,7 @@ interface CryptoCheckoutModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	orderId: string;
+	raffleEndAt: string;
 	cryptoChainIds: number[];
 	/** Allowed token slugs from raffle — empty means all tokens allowed */
 	cryptoTokens?: string[];
@@ -129,6 +135,7 @@ export function CryptoCheckoutModal({
 	open,
 	onOpenChange,
 	orderId,
+	raffleEndAt,
 	cryptoChainIds,
 	cryptoTokens = [],
 	cryptoTokenPricing = [],
@@ -218,6 +225,13 @@ export function CryptoCheckoutModal({
 	// The ref is for idempotency; this state is for rendering the tracker row transition
 	// from "Verifying payment" → "Completing order" after backend accepts confirm.
 	const [finalizationRequested, setFinalizationRequested] = useState(false);
+	// FE mirror of the backend's two post-expiry windows:
+	// - submit: backend has not durably accepted a tx hash yet
+	// - confirming: backend already owns a hash / session is confirming
+	// This is state (not just a ref) because timers and poll budgets must re-arm
+	// when the session upgrades from "submit grace" to "confirming grace".
+	const [confirmingGracePhase, setConfirmingGracePhase] =
+		useState<CryptoConfirmingGracePhase>('submit');
 
 	// Guards the success transition — prevents double onSuccess() when both
 	// FE-driven confirm and polling detect COMPLETED in the same render cycle.
@@ -283,6 +297,186 @@ export function CryptoCheckoutModal({
 	);
 
 	/**
+	 * Shared failure path once the backend grace window is genuinely exhausted.
+	 *
+	 * We deliberately distinguish "never safely registered a tx" from
+	 * "backend knew about an in-flight payment" because the second case should not
+	 * tell the user to simply retry — funds may already be committed on-chain.
+	 */
+	const failConfirmingWindowExpired = useCallback(() => {
+		if (successTransitioned.current) return;
+
+		if (confirmingGracePhase === 'confirming' || !!txHash) {
+			setErrorMessage(
+				'Payment verification timed out. Your transaction may still be processing — please check your order history or contact support.',
+			);
+		} else {
+			setErrorMessage('Checkout session expired. Please try again.');
+		}
+
+		setStep('failure');
+	}, [confirmingGracePhase, txHash]);
+
+	/**
+	 * Minimal fallback token when backend returns a stored session for a token the
+	 * current FE selection no longer represents.
+	 *
+	 * Why this fallback exists:
+	 * - backend checkout recovery is authoritative and may return stored session values
+	 * - the modal still needs a stable label/slug even if FE's latest selection differs
+	 * - TokenInfo only drives display + local comparisons; on-chain execution uses the
+	 *   session's tokenAddress/amount from backend, not this fallback object
+	 */
+	const buildRecoveredToken = useCallback(
+		(
+			currency: string,
+			chainId: number,
+			fallbackToken: TokenInfo,
+		): TokenInfo => {
+			const recoveredSlug = currency.toLowerCase();
+
+			return (
+				getTokenBySlugForChain(chainId, recoveredSlug) ??
+				(fallbackToken.slug === recoveredSlug
+					? fallbackToken
+					: {
+							slug: recoveredSlug,
+							label: currency,
+							// Fallback heuristic — only reached when token is absent from
+							// TOKENS_BY_CHAIN (e.g. newly added backend token not yet in FE
+							// registry). If a new stablecoin is added, update TOKENS_BY_CHAIN first.
+							isStablecoin:
+								recoveredSlug === 'usdc' || recoveredSlug === 'usdt',
+						})
+			);
+		},
+		[],
+	);
+
+	/**
+	 * Hydrates FE state from the backend-owned crypto session.
+	 *
+	 * This is the recovery bridge for refresh/session-resume cases:
+	 * - checkout creation is idempotent server-side and may return an existing session
+	 * - a follow-up session read tells the FE whether it should render review,
+	 *   confirming, success, or failure
+	 * - if we just created a fresh session and the read fails, we can still fall back
+	 *   to review because cancel succeeded and there is no older confirming session to recover
+	 */
+	const hydrateCheckoutSession = useCallback(
+		async ({
+			allowReviewFallback,
+			checkoutSession,
+			checksummedAddress,
+			fallbackToken,
+		}: {
+			allowReviewFallback: boolean;
+			checkoutSession: CryptoCheckoutSession;
+			checksummedAddress: string;
+			fallbackToken: TokenInfo;
+		}) => {
+			const sessionResult = await getCryptoSession(checkoutSession.id);
+
+			if (!sessionResult.success) {
+				if (!allowReviewFallback) {
+					setErrorMessage(getPaymentErrorMessage(sessionResult.error));
+					setStep('failure');
+					return false;
+				}
+
+				// Fresh session fallback: cancel already succeeded, so we know backend is not
+				// holding an older confirming session. Review can safely continue on the
+				// just-created checkout payload even if the follow-up read hiccups.
+				setSelectedChainId(checkoutSession.chainId);
+				setSelectedToken(fallbackToken);
+				setSession(checkoutSession);
+				setSessionTokenSlug(fallbackToken.slug);
+				setSessionWalletAddress(checksummedAddress);
+				setTxHash(undefined);
+				setTxSubmitted(false);
+				setSubmitRecoveryMode(null);
+				setFinalizationRequested(false);
+				setConfirmingGracePhase('submit');
+				submitRequestInFlight.current = false;
+				submitRetriedHashes.current.clear();
+				lastReplacementReason.current = null;
+				txConfirmRequested.current = false;
+				txConfirmInFlight.current = false;
+				reorgHandled.current = false;
+				successTransitioned.current = false;
+				backendTrackedTxHash.current = null;
+				txSubmittedToBackend.current = false;
+				resetWriteContract();
+				setStep('review');
+				return true;
+			}
+
+			const serverSession = sessionResult.data;
+			const recoveredToken = buildRecoveredToken(
+				serverSession.currency,
+				checkoutSession.chainId,
+				fallbackToken,
+			);
+			const recoveredTxHash = serverSession.txHash as `0x${string}` | null;
+
+			// Backend checkout recovery can return stored chain/token values instead of the
+			// user's latest FE selection. Always overwrite local selection with server truth
+			// so review/confirming flows use the exact session the backend will verify.
+			setSelectedChainId(checkoutSession.chainId);
+			setSelectedToken(recoveredToken);
+			setSession(checkoutSession);
+			setSessionTokenSlug(recoveredToken.slug);
+			setSessionWalletAddress(checksummedAddress);
+			setErrorMessage(null);
+			setFundsAtRisk(false);
+			setRetryBlocked(false);
+			setSubmitRecoveryMode(null);
+			setFinalizationRequested(false);
+			setTxSubmitted(!!recoveredTxHash);
+			setTxHash(recoveredTxHash ?? undefined);
+			setConfirmingGracePhase(recoveredTxHash ? 'confirming' : 'submit');
+
+			submitRequestInFlight.current = false;
+			submitRetriedHashes.current.clear();
+			lastReplacementReason.current = null;
+			txConfirmRequested.current = false;
+			txConfirmInFlight.current = false;
+			reorgHandled.current = false;
+			successTransitioned.current = false;
+			backendTrackedTxHash.current = recoveredTxHash
+				? normalizeTxHash(recoveredTxHash)
+				: null;
+			txSubmittedToBackend.current = !!recoveredTxHash;
+			resetWriteContract();
+
+			if (serverSession.status === CRYPTO_PAYMENT_STATUS.COMPLETED) {
+				successTransitioned.current = true;
+				setStep('success');
+				onSuccess?.();
+				return true;
+			}
+
+			if (serverSession.status === CRYPTO_PAYMENT_STATUS.FAILED) {
+				setErrorMessage(
+					serverSession.failureReason ??
+						'Payment verification failed. Please contact support.',
+				);
+				setStep('failure');
+				return false;
+			}
+
+			if (serverSession.status === CRYPTO_PAYMENT_STATUS.CONFIRMING) {
+				setStep('confirming');
+				return true;
+			}
+
+			setStep('review');
+			return true;
+		},
+		[buildRecoveredToken, onSuccess, resetWriteContract],
+	);
+
+	/**
 	 * Registers the current tx hash with backend.
 	 *
 	 * Same-hash retries are safe and useful:
@@ -314,6 +508,7 @@ export function CryptoCheckoutModal({
 					backendTrackedTxHash.current = normalizedHash;
 					txSubmittedToBackend.current = true;
 					setSubmitRecoveryMode(null);
+					setConfirmingGracePhase('confirming');
 					return { kind: 'accepted' as const };
 				}
 
@@ -327,6 +522,12 @@ export function CryptoCheckoutModal({
 				}
 
 				setSubmitRecoveryMode(outcome);
+				// `poll` means backend already owns authoritative session state.
+				// Upgrade to the longer confirming grace window immediately instead
+				// of waiting for the next session poll tick to catch up.
+				if (outcome === CRYPTO_TX_SUBMIT_OUTCOME.POLL) {
+					setConfirmingGracePhase('confirming');
+				}
 				return { kind: outcome, error: result.error } as const;
 			} finally {
 				submitRequestInFlight.current = false;
@@ -353,7 +554,8 @@ export function CryptoCheckoutModal({
 			refetchInterval: confirmingEnabled ? 4_000 : false,
 		},
 	});
-	const backendConfirmationCount = toBackendConfirmationCount(confirmationCount);
+	const backendConfirmationCount =
+		toBackendConfirmationCount(confirmationCount);
 
 	useWaitForTransactionReceipt({
 		hash: txHash,
@@ -495,15 +697,40 @@ export function CryptoCheckoutModal({
 		// Guard on userId — without auth, getWallets returns 401 silently
 		enabled: open && !!userId,
 	});
+	// Order/session polling should live for exactly the same remaining grace window
+	// as the expiry timer. Otherwise the modal can stop receiving backend state
+	// updates long before the backend has actually given up on the payment.
+	//
+	// Wrapped in useMemo keyed to stable deps — getCryptoSessionGraceWindowMs calls
+	// Date.now() internally, so an inline const would produce a new shrinking value
+	// every render. That would reset the polling hooks' useEffect (which depends on
+	// resolvedMaxDurationMs), causing isExpired to flicker false→true on each cycle.
+	const confirmingPollWindowMs = useMemo(
+		() =>
+			step === 'confirming' && session?.expiresAt
+				? getCryptoSessionGraceWindowMs(session.expiresAt, confirmingGracePhase)
+				: undefined,
+		[step, session?.expiresAt, confirmingGracePhase],
+	);
+	// Avoid polling the backend while the wallet signature/send prompt is still open.
+	// We start polling once there is a tx hash, a submit recovery path, or we know
+	// backend already owns the session as a confirming payment.
+	const shouldPollConfirmingState =
+		step === 'confirming' &&
+		(!!txHash ||
+			submitRecoveryMode !== null ||
+			confirmingGracePhase === 'confirming');
 	const { data: polledOrder, isExpired: isPollingExpired } = usePollOrderStatus(
-		step === 'confirming' ? orderId : null,
+		shouldPollConfirmingState ? orderId : null,
+		confirmingPollWindowMs,
 	);
 
 	// Poll crypto session endpoint for authoritative session state + failureReason.
 	// The order endpoint only has status; the session endpoint exposes the
 	// backend's actual failure reason (e.g. "Transaction reverted", "Amount mismatch").
 	const { data: polledSession } = usePollCryptoSession(
-		step === 'confirming' && session ? session.id : null,
+		shouldPollConfirmingState && session ? session.id : null,
+		confirmingPollWindowMs,
 	);
 	// Sync ref each render — effects read from ref to avoid dep on poll cycle
 	polledSessionRef.current = polledSession;
@@ -597,6 +824,7 @@ export function CryptoCheckoutModal({
 		backendTrackedTxHash.current = normalizeTxHash(polledSession.txHash);
 		txSubmittedToBackend.current = true;
 		setSubmitRecoveryMode(null);
+		setConfirmingGracePhase('confirming');
 	}, [step, polledSession?.txHash]);
 
 	/**
@@ -614,7 +842,8 @@ export function CryptoCheckoutModal({
 			submitRecoveryMode !== CRYPTO_TX_SUBMIT_OUTCOME.RETRY
 		)
 			return;
-		if (!session || txSubmittedToBackend.current || polledSession?.txHash) return;
+		if (!session || txSubmittedToBackend.current || polledSession?.txHash)
+			return;
 
 		const normalizedHash = normalizeTxHash(txHash);
 		if (submitRetriedHashes.current.has(normalizedHash)) return;
@@ -778,11 +1007,8 @@ export function CryptoCheckoutModal({
 	 */
 	useEffect(() => {
 		if (!isPollingExpired || step !== 'confirming') return;
-		setErrorMessage(
-			'Payment verification timed out. Your transaction may still be processing — please check your order history or contact support.',
-		);
-		setStep('failure');
-	}, [isPollingExpired, step]);
+		failConfirmingWindowExpired();
+	}, [failConfirmingWindowExpired, isPollingExpired, step]);
 
 	/**
 	 * Reorg detection — if the RPC stops returning the transaction (null data or errors
@@ -855,33 +1081,34 @@ export function CryptoCheckoutModal({
 	]);
 
 	/**
-	 * Session expiry timer — transitions to failure when checkout session expires.
-	 * Runs only during 'confirming' step since that's when we're waiting on backend.
-	 * Backend won't accept tx submissions after expiry, so we proactively fail.
+	 * Session expiry timer — aligned to backend PR 40 grace windows.
+	 *
+	 * Why this is not tied to raw expiresAt:
+	 * - backend accepts late submit attempts for 10 minutes after expiry
+	 * - once backend owns a tx hash, it keeps verifying for 15 minutes after expiry
+	 * - failing the FE at raw TTL creates false terminal failures for real in-flight payments
 	 */
 	useEffect(() => {
 		if (step !== 'confirming' || !session?.expiresAt) return;
 
-		const msUntilExpiry = new Date(session.expiresAt).getTime() - Date.now();
+		const msUntilExpiry =
+			getCryptoSessionGraceDeadline(session.expiresAt, confirmingGracePhase) -
+			Date.now();
 
-		/** Handles session expiry — guards against racing with successful completion.
-		 * Without the successTransitioned check, expiry timer can fire in the same
-		 * event loop tick as FE-driven confirm on fast L2s, overriding 'success' with 'failure'. */
-		function handleExpiry() {
-			if (successTransitioned.current) return;
-			setErrorMessage('Checkout session expired. Please try again.');
-			setStep('failure');
-		}
-
-		// Already expired — transition immediately
+		// Already beyond the backend grace window — transition immediately
 		if (msUntilExpiry <= 0) {
-			handleExpiry();
+			failConfirmingWindowExpired();
 			return;
 		}
 
-		const timer = setTimeout(handleExpiry, msUntilExpiry);
+		const timer = setTimeout(failConfirmingWindowExpired, msUntilExpiry);
 		return () => clearTimeout(timer);
-	}, [step, session?.expiresAt]);
+	}, [
+		confirmingGracePhase,
+		failConfirmingWindowExpired,
+		session?.expiresAt,
+		step,
+	]);
 
 	// ==========================================
 	// Handlers
@@ -919,11 +1146,13 @@ export function CryptoCheckoutModal({
 	}
 
 	/**
-	 * Step 2: After wallet is connected, verify if needed then create checkout session.
+	 * Step 2: After wallet is connected, verify if needed then create/recover checkout session.
 	 *
-	 * Cross-method guard: cancels any active payment session on this order before
-	 * creating the crypto session. This handles the case where user started a Stripe
-	 * checkout, went back, and now wants to pay with crypto on the same order.
+	 * Cross-method guard still starts with cancel, but `cancel:crypto-confirming`
+	 * is a recovery signal now, not a hard failure:
+	 * - Stripe/pending sessions should still be cancelled before we continue
+	 * - confirming crypto sessions cannot be cancelled, so we immediately re-run
+	 *   idempotent checkout creation and hydrate from the stored backend session
 	 *
 	 * EIP-191 signature message format must match backend exactly:
 	 * "Link wallet {checksummedAddress} to Raffles account {userId} at {isoTimestamp}"
@@ -988,12 +1217,16 @@ export function CryptoCheckoutModal({
 				return;
 			}
 
-			// Cancel any active payment session on this order before creating crypto session.
-			// Idempotent — safe even if no session exists. Clears cross-method guards so
-			// crypto checkout doesn't fail with "stripe-session-active".
+			// Cancel-first remains the safe default because it clears Stripe sessions and
+			// stale pending crypto sessions. The one exception is `crypto-confirming`:
+			// backend already owns an in-flight payment there, so the FE must recover it
+			// instead of forcing a false terminal failure.
 			const cancelResult = await cancelPaymentSession(orderId);
+			const recoveringConfirmingSession =
+				!cancelResult.success &&
+				cancelResult.error === PAYMENT_ERROR_CODES.CANCEL_CRYPTO_CONFIRMING;
 
-			if (!cancelResult.success) {
+			if (!cancelResult.success && !recoveringConfirmingSession) {
 				// Cancel is the method-switch guard. If it fails, we no longer know
 				// whether the opposite payment method is still active, so do not proceed.
 				setErrorMessage(getPaymentErrorMessage(cancelResult.error));
@@ -1015,10 +1248,12 @@ export function CryptoCheckoutModal({
 				return;
 			}
 
-			setSession(checkoutResult.data);
-			setSessionTokenSlug(selectedToken.slug);
-			setSessionWalletAddress(checksummedAddress);
-			setStep('review');
+			await hydrateCheckoutSession({
+				allowReviewFallback: !recoveringConfirmingSession,
+				checkoutSession: checkoutResult.data,
+				checksummedAddress,
+				fallbackToken: selectedToken,
+			});
 		} catch (error) {
 			if (isUserRejection(error)) {
 				toast.info('Signature cancelled.');
@@ -1041,6 +1276,7 @@ export function CryptoCheckoutModal({
 		session,
 		sessionTokenSlug,
 		sessionWalletAddress,
+		hydrateCheckoutSession,
 	]);
 
 	/**
@@ -1076,6 +1312,9 @@ export function CryptoCheckoutModal({
 			// Move to confirming before awaiting wallet broadcast.
 			// This keeps the UI in the pending state the moment the user approves,
 			// and avoids a stale "review" screen while wagmi starts producing tx data.
+			// Start on submit grace — we only switch to confirming grace once backend
+			// actually owns the tx hash or session polling proves it does.
+			setConfirmingGracePhase('submit');
 			setStep('confirming');
 
 			// Execute ERC20 transfer
@@ -1117,6 +1356,7 @@ export function CryptoCheckoutModal({
 			if (isUserRejection(error)) {
 				toast.info('Transaction cancelled.');
 				// Return to review since we optimistically moved to confirming
+				setConfirmingGracePhase('submit');
 				setStep('review');
 				return;
 			}
@@ -1146,6 +1386,7 @@ export function CryptoCheckoutModal({
 		setTxHash(undefined);
 		setSubmitRecoveryMode(null);
 		setFinalizationRequested(false);
+		setConfirmingGracePhase('submit');
 		// Reset ref guards so retried flow can submit again
 		walletReadyInFlight.current = false;
 		payInFlight.current = false;
@@ -1354,6 +1595,7 @@ export function CryptoCheckoutModal({
 					{step === 'review' && selectedChainId && (
 						<ReviewStep
 							session={session}
+							raffleEndAt={raffleEndAt}
 							selectedChainId={selectedChainId}
 							tokenSymbol={tokenSymbol}
 							isCorrectChain={isCorrectChain}

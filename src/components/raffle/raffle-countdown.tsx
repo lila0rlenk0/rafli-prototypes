@@ -1,14 +1,8 @@
 'use client';
 
-import { differenceInSeconds } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useEffect, useState } from 'react';
 
-import { useTimeout } from '@/lib/hooks/use-timeout';
-import {
-	calculateTimeRemaining,
-	type TimeRemaining,
-} from '@/lib/utils/calculate-time-remaining';
+import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
 
 interface RaffleCountdownProps {
 	endAt: string;
@@ -28,49 +22,13 @@ interface RaffleCountdownProps {
  * - Automatic cleanup on component unmount
  */
 export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
-	/**
-	 * Calculates time remaining from now until the end date
-	 */
-	function getTimeRemaining(endDateString: string): TimeRemaining {
-		const now = new Date();
-		const end = new Date(endDateString);
-		const secondsRemaining = differenceInSeconds(end, now);
-		return calculateTimeRemaining(secondsRemaining);
-	}
+	const { isClosingSoon, isExpired, isHydrated, ...timeRemaining } =
+		useRaffleSaleWindow(endAt);
 
-	const [mounted, setMounted] = useState(false);
-	const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>(() =>
-		getTimeRemaining(endAt),
-	);
-	const setMountTimeout = useTimeout();
-
-	// Defer mount flag to next tick to avoid SSR hydration mismatch
-	useEffect(() => {
-		if (mounted) return;
-		setMountTimeout(() => setMounted(true), 0);
-	}, [mounted, setMountTimeout]);
-
-	/**
-	 * Updates the countdown timer state
-	 */
-	const updateCountdown = useCallback(() => {
-		setTimeRemaining(getTimeRemaining(endAt));
-	}, [endAt]);
-
-	// Update countdown every second while active.
-	// Once expired, stop the timer entirely — frozen zeroes don't need more work.
-	useEffect(() => {
-		if (timeRemaining.isExpired) return;
-
-		const interval = setInterval(updateCountdown, 1_000);
-
-		return () => clearInterval(interval);
-	}, [updateCountdown, timeRemaining.isExpired]);
-
-	if (!mounted) return null;
+	if (!isHydrated) return null;
 
 	// Once expired, replace frozen zeros with a clear message
-	if (timeRemaining.isExpired) {
+	if (isExpired) {
 		return (
 			<div className="flex items-center justify-center rounded-2xl bg-[#DFFFED] p-4">
 				<p className="font-clash-display text-2xl font-semibold">
@@ -81,11 +39,38 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 	}
 
 	return (
-		<div className="flex items-center justify-center gap-4 rounded-2xl bg-[#DFFFED] p-4">
-			<CountdownUnit value={timeRemaining.days} label="Days" />
-			<CountdownUnit value={timeRemaining.hours} label="Hours" />
-			<CountdownUnit value={timeRemaining.minutes} label="Minutes" />
-			<CountdownUnit value={timeRemaining.seconds} label="Seconds" />
+		<div
+			className={`rounded-2xl p-4 ${
+				isClosingSoon ? 'border border-amber-200 bg-amber-50' : 'bg-[#DFFFED]'
+			}`}
+		>
+			{isClosingSoon && (
+				<p className="mb-3 text-center text-xs font-semibold tracking-[0.2em] text-amber-700 uppercase">
+					Final 10 minutes
+				</p>
+			)}
+			<div className="flex items-center justify-center gap-4">
+				<CountdownUnit
+					value={timeRemaining.days}
+					label="Days"
+					isClosingSoon={isClosingSoon}
+				/>
+				<CountdownUnit
+					value={timeRemaining.hours}
+					label="Hours"
+					isClosingSoon={isClosingSoon}
+				/>
+				<CountdownUnit
+					value={timeRemaining.minutes}
+					label="Minutes"
+					isClosingSoon={isClosingSoon}
+				/>
+				<CountdownUnit
+					value={timeRemaining.seconds}
+					label="Seconds"
+					isClosingSoon={isClosingSoon}
+				/>
+			</div>
 		</div>
 	);
 }
@@ -93,6 +78,7 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 interface CountdownUnitProps {
 	value: number;
 	label: string;
+	isClosingSoon?: boolean;
 }
 
 /**
@@ -101,7 +87,11 @@ interface CountdownUnitProps {
  * Displays a single unit of time (days, hours, minutes, or seconds) with
  * animated transitions when the value changes.
  */
-function CountdownUnit({ value, label }: CountdownUnitProps) {
+function CountdownUnit({
+	value,
+	label,
+	isClosingSoon = false,
+}: CountdownUnitProps) {
 	/**
 	 * Formats the value as a two-digit string
 	 * @param num - The number to format
@@ -122,12 +112,20 @@ function CountdownUnit({ value, label }: CountdownUnitProps) {
 					animate={{ y: 0, opacity: 1 }}
 					exit={{ y: 20, opacity: 0 }}
 					transition={{ duration: 0.3, ease: 'easeOut' }}
-					className="font-clash-display text-4xl font-semibold"
+					className={`font-clash-display text-4xl font-semibold ${
+						isClosingSoon ? 'text-amber-900' : ''
+					}`}
 				>
 					{formattedValue}
 				</motion.p>
 			</AnimatePresence>
-			<p className="text-sm text-[#7B7B7B]">{label}</p>
+			<p
+				className={`text-sm ${
+					isClosingSoon ? 'text-amber-700' : 'text-[#7B7B7B]'
+				}`}
+			>
+				{label}
+			</p>
 		</div>
 	);
 }

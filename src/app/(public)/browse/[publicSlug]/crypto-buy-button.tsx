@@ -20,6 +20,7 @@ import type { CryptoTokenPricing } from '@/types/raffle';
 
 interface CryptoBuyButtonProps {
 	raffleId: string;
+	endAt: string;
 	ticketQuantity: number;
 	disabled?: boolean;
 	questionId?: string | null;
@@ -51,6 +52,7 @@ interface CryptoBuyButtonProps {
  */
 export function CryptoBuyButton({
 	raffleId,
+	endAt,
 	ticketQuantity,
 	disabled = false,
 	questionId,
@@ -324,9 +326,11 @@ export function CryptoBuyButton({
 
 			{cryptoOrderId && (
 				<CryptoCheckoutModal
+					key={cryptoOrderId}
 					open={showCryptoModal}
 					onOpenChange={setShowCryptoModal}
 					orderId={cryptoOrderId}
+					raffleEndAt={endAt}
 					cryptoChainIds={cryptoChainIds}
 					cryptoTokens={cryptoTokens}
 					cryptoTokenPricing={cryptoTokenPricing}

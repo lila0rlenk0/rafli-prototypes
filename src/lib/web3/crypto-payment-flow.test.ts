@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+	CRYPTO_CONFIRMING_GRACE_MS,
+	CRYPTO_SUBMIT_GRACE_MS,
 	CRYPTO_TX_SUBMIT_OUTCOME,
+	getCryptoSessionGraceDeadline,
+	getCryptoSessionGraceWindowMs,
 	getCryptoTxSubmitOutcome,
 	normalizeTxHash,
 	toBackendConfirmationCount,
@@ -30,9 +34,9 @@ describe('toBackendConfirmationCount', () => {
 
 describe('getCryptoTxSubmitOutcome', () => {
 	test('keeps transport-level failures on the retry path', () => {
-		expect(
-			getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.TIMEOUT_ERROR),
-		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
+		expect(getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.TIMEOUT_ERROR)).toBe(
+			CRYPTO_TX_SUBMIT_OUTCOME.RETRY,
+		);
 		expect(
 			getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED),
 		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
@@ -57,5 +61,48 @@ describe('getCryptoTxSubmitOutcome', () => {
 		expect(
 			getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.GLOBAL_AUTH_UNAUTHENTICATED),
 		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL);
+	});
+});
+
+describe('getCryptoSessionGraceDeadline', () => {
+	test('uses submit grace before backend owns the transaction', () => {
+		const expiresAt = '2026-03-13T12:00:00.000Z';
+
+		expect(getCryptoSessionGraceDeadline(expiresAt, 'submit')).toBe(
+			new Date(expiresAt).getTime() + CRYPTO_SUBMIT_GRACE_MS,
+		);
+	});
+
+	test('uses confirming grace once backend owns the transaction', () => {
+		const expiresAt = '2026-03-13T12:00:00.000Z';
+
+		expect(getCryptoSessionGraceDeadline(expiresAt, 'confirming')).toBe(
+			new Date(expiresAt).getTime() + CRYPTO_CONFIRMING_GRACE_MS,
+		);
+	});
+});
+
+describe('getCryptoSessionGraceWindowMs', () => {
+	test('clamps expired windows to zero', () => {
+		const expiresAt = '2026-03-13T12:00:00.000Z';
+		const afterConfirmingDeadline =
+			new Date(expiresAt).getTime() + CRYPTO_CONFIRMING_GRACE_MS + 1;
+
+		expect(
+			getCryptoSessionGraceWindowMs(
+				expiresAt,
+				'confirming',
+				afterConfirmingDeadline,
+			),
+		).toBe(0);
+	});
+
+	test('returns remaining milliseconds inside the grace window', () => {
+		const expiresAt = '2026-03-13T12:00:00.000Z';
+		const now = new Date(expiresAt).getTime() + 30_000;
+
+		expect(getCryptoSessionGraceWindowMs(expiresAt, 'submit', now)).toBe(
+			CRYPTO_SUBMIT_GRACE_MS - 30_000,
+		);
 	});
 });

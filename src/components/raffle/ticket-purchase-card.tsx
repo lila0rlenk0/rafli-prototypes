@@ -8,6 +8,7 @@ import { CryptoBuyButton } from '@/app/(public)/browse/[publicSlug]/crypto-buy-b
 import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
 import { clientEnv } from '@/env/client';
+import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
 import { isWeb3Enabled } from '@/lib/web3/config';
 import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 import type { CryptoTokenPricing } from '@/types/raffle';
@@ -21,6 +22,7 @@ import { TicketSelector } from './ticket-selector';
 interface TicketPurchaseCardProps {
 	raffleId: string;
 	publicSlug: string;
+	endAt: string;
 	price: number;
 	currency: string;
 	availableTickets: number;
@@ -54,6 +56,7 @@ interface TicketPurchaseCardProps {
 export function TicketPurchaseCard({
 	raffleId,
 	publicSlug,
+	endAt,
 	price,
 	currency,
 	availableTickets,
@@ -69,6 +72,8 @@ export function TicketPurchaseCard({
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
 	const pathname = usePathname();
+	// isExpired not needed — isClosingSoon is only true when secondsRemaining > 0
+	const { isClosingSoon, isHydrated } = useRaffleSaleWindow(endAt);
 	// Only use code if non-empty (handles ?code= edge case)
 	const codeParam = searchParams.get('code');
 	const initialCode = codeParam?.trim() || undefined;
@@ -226,6 +231,22 @@ export function TicketPurchaseCard({
 	const total = calculateTotal();
 	const hasDiscount = discount > 0;
 	const isFree = isFreeTicketsPromo();
+	const shouldShowClosingSoonWarning = isHydrated && isClosingSoon;
+
+	/**
+	 * Final-10-minute warning copy.
+	 * We keep it next to the CTAs so the user sees the risk at decision time,
+	 * not only in the countdown at the top of the card.
+	 */
+	function getClosingSoonWarning(): string {
+		const baseMessage =
+			'Raffle closes soon. Purchases stay open until the countdown ends. Start checkout now to avoid missing the cutoff.';
+		const shouldMentionCrypto = acceptsCrypto && isWeb3Enabled && !isFree;
+
+		if (!shouldMentionCrypto) return baseMessage;
+
+		return `${baseMessage} Crypto payments can take longer to confirm near the end.`;
+	}
 
 	// TODO: Remove once payment gateway integration is complete
 	if (clientEnv.NEXT_PUBLIC_APP_ENV === 'production') {
@@ -312,6 +333,12 @@ export function TicketPurchaseCard({
 				</p>
 			)}
 
+			{shouldShowClosingSoonWarning && (
+				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
+					{getClosingSoonWarning()}
+				</div>
+			)}
+
 			{/* Buy button or Sign In button */}
 			{isAuthenticated ? (
 				<>
@@ -329,25 +356,26 @@ export function TicketPurchaseCard({
 
 					{/* Crypto buy button — only when raffle accepts crypto AND Web3 is configured */}
 					{/* cryptoChainIds empty = all chains allowed, so no length check */}
-						{acceptsCrypto && isWeb3Enabled && !isFree && (
-							<CryptoBuyButton
-								raffleId={raffleId}
-								ticketQuantity={ticketQuantity}
-								disabled={disabled}
-								questionId={questionId}
-								promoCode={appliedPromo?.code}
-								onPromoInvalid={handlePromoInvalid}
-								cryptoChainIds={cryptoChainIds}
-								cryptoTokens={cryptoTokens}
-								cryptoTokenPricing={cryptoTokenPricing}
-								myTicketsTotal={myTicketsTotal}
-								userId={userId}
-							/>
-						)}
-					</>
-				) : (
-					<SignInToBuyButton />
-				)}
+					{acceptsCrypto && isWeb3Enabled && !isFree && (
+						<CryptoBuyButton
+							raffleId={raffleId}
+							endAt={endAt}
+							ticketQuantity={ticketQuantity}
+							disabled={disabled}
+							questionId={questionId}
+							promoCode={appliedPromo?.code}
+							onPromoInvalid={handlePromoInvalid}
+							cryptoChainIds={cryptoChainIds}
+							cryptoTokens={cryptoTokens}
+							cryptoTokenPricing={cryptoTokenPricing}
+							myTicketsTotal={myTicketsTotal}
+							userId={userId}
+						/>
+					)}
+				</>
+			) : (
+				<SignInToBuyButton />
+			)}
 		</div>
 	);
 }

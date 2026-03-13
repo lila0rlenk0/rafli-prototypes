@@ -80,8 +80,6 @@ export function resolveRaffleAutoRefreshPhase({
 /**
  * Timeout budget for a specific auto-refresh phase.
  */
-export function getAutoRefreshTimeoutMs(
-	phase: RaffleAutoRefreshPhase,
-): number {
+export function getAutoRefreshTimeoutMs(phase: RaffleAutoRefreshPhase): number {
 	return AUTO_REFRESH_TIMEOUT_MS[phase];
 }

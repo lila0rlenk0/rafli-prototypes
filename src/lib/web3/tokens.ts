@@ -88,6 +88,23 @@ function getTokensForChain(chainId: number): TokenInfo[] {
 }
 
 /**
+ * Resolves a token slug on a specific chain.
+ *
+ * Recovery flows need the inverse lookup because backend checkout recovery
+ * returns the stored chain/session values, not necessarily the user's latest
+ * FE selection. Returning null keeps the caller in control of the fallback UX
+ * instead of silently inventing a token that may not exist on that chain.
+ */
+export function getTokenBySlugForChain(
+	chainId: number,
+	tokenSlug: string,
+): TokenInfo | null {
+	return (
+		getTokensForChain(chainId).find(token => token.slug === tokenSlug) ?? null
+	);
+}
+
+/**
  * Gets tokens that are actually selectable for a raffle on a given chain.
  *
  * Why this helper exists:
@@ -106,8 +123,7 @@ export function getSelectableTokensForChain(
 
 	return getTokensForChain(chainId).filter(token => {
 		const isAllowed =
-			allowedTokenSlugs.length === 0 ||
-			allowedTokenSlugs.includes(token.slug);
+			allowedTokenSlugs.length === 0 || allowedTokenSlugs.includes(token.slug);
 		if (!isAllowed) return false;
 
 		// Stablecoins are always valid once allowed; backend prices them 1:1 to USD.

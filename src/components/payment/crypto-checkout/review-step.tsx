@@ -3,6 +3,7 @@
 import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
 import { formatPaymentAmount, formatTokenBalance } from '@/lib/web3/format';
 import { CHAIN_NAMES } from '@/lib/web3/chains';
 import type { CryptoCheckoutSession } from '@/types/wallet';
@@ -13,6 +14,7 @@ import type { CryptoCheckoutSession } from '@/types/wallet';
 
 interface ReviewStepProps {
 	session: CryptoCheckoutSession | null;
+	raffleEndAt: string;
 	/** Parent guarantees non-null — only renders when chain is selected */
 	selectedChainId: number;
 	/** Token symbol for display (e.g. "USDC", "USDT", "EARNM") */
@@ -49,6 +51,7 @@ interface ReviewStepProps {
  */
 export function ReviewStep({
 	session,
+	raffleEndAt,
 	selectedChainId,
 	tokenSymbol,
 	isCorrectChain,
@@ -60,6 +63,9 @@ export function ReviewStep({
 	txSubmitted,
 	onPay,
 }: ReviewStepProps) {
+	// isExpired not needed — isClosingSoon is only true when secondsRemaining > 0
+	const { isClosingSoon, isHydrated } = useRaffleSaleWindow(raffleEndAt);
+
 	/**
 	 * Checks if user has enough tokens for the payment.
 	 * Returns false when balance is still loading or not yet started — prevents premature pay.
@@ -178,6 +184,14 @@ export function ReviewStep({
 				<p className="text-center text-xs text-amber-600">
 					You&apos;ll be prompted to switch to {CHAIN_NAMES[selectedChainId]}
 				</p>
+			)}
+
+			{isHydrated && isClosingSoon && (
+				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
+					Less than 10 minutes remain. Crypto confirmations can continue after
+					the raffle ends. If settlement lands after draw start, support may
+					need to review the purchase.
+				</div>
 			)}
 
 			<Button

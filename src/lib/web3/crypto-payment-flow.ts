@@ -25,8 +25,31 @@ export const CRYPTO_TX_SUBMIT_OUTCOME = {
 	TERMINAL: 'terminal',
 } as const;
 
+/**
+ * Backend submit endpoint keeps accepting tx hashes for 10 minutes after the
+ * nominal checkout TTL. This covers the common "wallet approval happened right
+ * at the deadline" case without forcing users into a false failure state.
+ */
+export const CRYPTO_SUBMIT_GRACE_MS = 10 * 60 * 1_000;
+
+/**
+ * Once backend already owns a tx hash, it keeps verifying the session for
+ * 15 minutes after expiry. Confirming sessions can outlive the original
+ * checkout TTL because the transaction may still be in mempool or waiting for
+ * slow-chain confirmations (notably Polygon's 128-block threshold).
+ */
+export const CRYPTO_CONFIRMING_GRACE_MS = 15 * 60 * 1_000;
+
 export type CryptoTxSubmitOutcome =
 	(typeof CRYPTO_TX_SUBMIT_OUTCOME)[keyof typeof CRYPTO_TX_SUBMIT_OUTCOME];
+
+/**
+ * FE mirror of the backend's two post-expiry windows.
+ *
+ * - `submit`: tx not durably registered server-side yet
+ * - `confirming`: backend already owns a tx hash or session moved to confirming
+ */
+export type CryptoConfirmingGracePhase = 'submit' | 'confirming';
 
 // ==========================================
 // Helpers
@@ -40,6 +63,44 @@ export type CryptoTxSubmitOutcome =
  */
 export function normalizeTxHash(hash: string): string {
 	return hash.toLowerCase();
+}
+
+/**
+ * Resolves the absolute timestamp when the FE should finally give up on a
+ * confirming checkout.
+ *
+ * This must stay in lockstep with backend PR 40:
+ * - pending/submit recovery: expiresAt + 10 minutes
+ * - confirming verification: expiresAt + 15 minutes
+ *
+ * Keeping the deadline calculation pure lets both the modal effect and the
+ * polling hooks share one source of truth instead of re-encoding timing rules.
+ */
+export function getCryptoSessionGraceDeadline(
+	expiresAt: string,
+	phase: CryptoConfirmingGracePhase,
+): number {
+	const expiresAtMs = new Date(expiresAt).getTime();
+	const graceMs =
+		phase === 'confirming'
+			? CRYPTO_CONFIRMING_GRACE_MS
+			: CRYPTO_SUBMIT_GRACE_MS;
+
+	return expiresAtMs + graceMs;
+}
+
+/**
+ * Converts the absolute grace deadline into a poll/timer budget.
+ *
+ * We clamp at zero so callers can pass the result directly into timeout logic
+ * without needing their own negative-duration guards.
+ */
+export function getCryptoSessionGraceWindowMs(
+	expiresAt: string,
+	phase: CryptoConfirmingGracePhase,
+	now = Date.now(),
+): number {
+	return Math.max(0, getCryptoSessionGraceDeadline(expiresAt, phase) - now);
 }
 
 /**
@@ -59,9 +120,7 @@ export function toBackendConfirmationCount(
 	if (confirmations === undefined) return 0;
 
 	const numericConfirmations =
-		typeof confirmations === 'bigint'
-			? Number(confirmations)
-			: confirmations;
+		typeof confirmations === 'bigint' ? Number(confirmations) : confirmations;
 
 	return Math.max(0, numericConfirmations - 1);
 }

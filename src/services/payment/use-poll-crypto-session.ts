@@ -31,7 +31,7 @@ const POLL_INTERVAL_MS = 5_000;
  * Maximum polling duration in milliseconds (5 minutes).
  * Safety net: prevents infinite requests if backend session never transitions.
  */
-const MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
+const DEFAULT_MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
 
 /** Query key for crypto session polling — exported for cache invalidation */
 export function pollCryptoSessionKey(sessionId: string | null) {
@@ -66,7 +66,12 @@ function isTerminalSessionStatus(status: string | undefined): boolean {
  * @param sessionId - Crypto session ID (pass null to disable polling)
  * @returns React Query result with session data and `isExpired` flag
  */
-export function usePollCryptoSession(sessionId: string | null) {
+export function usePollCryptoSession(
+	sessionId: string | null,
+	maxDurationMs?: number,
+) {
+	const resolvedMaxDurationMs = maxDurationMs ?? DEFAULT_MAX_POLL_DURATION_MS;
+
 	// Tracks when polling started — only read inside refetchInterval (not render)
 	const startedAtRef = useRef<number>(0);
 
@@ -84,13 +89,13 @@ export function usePollCryptoSession(sessionId: string | null) {
 
 		const timer = setTimeout(() => {
 			setIsExpired(true);
-		}, MAX_POLL_DURATION_MS);
+		}, resolvedMaxDurationMs);
 
 		return function cleanup() {
 			clearTimeout(timer);
 			setIsExpired(false);
 		};
-	}, [sessionId]);
+	}, [sessionId, resolvedMaxDurationMs]);
 
 	const query = useQuery<CryptoSessionResponse, ServiceError<PaymentErrorCode>>(
 		{
@@ -113,7 +118,7 @@ export function usePollCryptoSession(sessionId: string | null) {
 
 				if (startedAtRef.current > 0) {
 					const elapsed = Date.now() - startedAtRef.current;
-					if (elapsed >= MAX_POLL_DURATION_MS) return false;
+					if (elapsed >= resolvedMaxDurationMs) return false;
 				}
 
 				return POLL_INTERVAL_MS;

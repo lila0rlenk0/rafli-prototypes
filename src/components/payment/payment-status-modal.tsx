@@ -15,7 +15,6 @@ import { FaXTwitter } from 'react-icons/fa6';
 import { toast } from 'sonner';
 
 interface PaymentStatusModalProps {
-	sessionId: string;
 	raffleId: string; // Can be publicSlug or raffleId - used for URL construction
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -105,6 +104,7 @@ export function PaymentStatusModal({
 	);
 }
 
+/** Ticket icon SVG for the payment success modal */
 function TicketIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -123,6 +123,7 @@ function TicketIcon(props: ComponentProps<'svg'>) {
 	);
 }
 
+/** Decorative colored shapes rendered at the top-left of the success modal */
 function LeftColoredCard(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -149,6 +150,7 @@ function LeftColoredCard(props: ComponentProps<'svg'>) {
 	);
 }
 
+/** Decorative colored shapes rendered at the top-right of the success modal */
 function RightColoredCard(props: ComponentProps<'svg'>) {
 	return (
 		<svg

@@ -88,6 +88,11 @@ export function CryptoBuyButton({
 	// Without this, every click re-gates on questionId — forcing the user to re-answer
 	// if the crypto flow fails or wallet connect doesn't open.
 	const [questionAnswered, setQuestionAnswered] = useState(false);
+	// Synchronous single-flight guard for order creation.
+	// `setIsLoading(true)` is async, so a rapid second click or the post-connect
+	// auto-proceed effect can otherwise enter `buildCheckoutOrder()` before the
+	// disabled state lands on screen.
+	const checkoutLaunchInFlight = useRef(false);
 
 	const { isExpired: isTicketSyncExpired, isSynced: isTicketSyncComplete } =
 		usePollMyTicketCodes(
@@ -105,6 +110,14 @@ export function CryptoBuyButton({
 	 * then opens modal for the resulting order.
 	 */
 	const proceedToCryptoCheckout = useCallback(async () => {
+		// Guard at function entry so every caller path shares the same lock:
+		// direct click, question modal success, and wallet-connect auto-proceed.
+		if (checkoutLaunchInFlight.current) return;
+		checkoutLaunchInFlight.current = true;
+		// Once order creation starts, the pending connect intent has been consumed.
+		// Clearing it here prevents the auto-proceed effect from replaying stale intent
+		// if connection state changes while the async order build is in flight.
+		setPendingCheckout(false);
 		setIsLoading(true);
 
 		try {
@@ -132,6 +145,7 @@ export function CryptoBuyButton({
 			console.error('Unexpected error during crypto checkout:', error);
 			toast.error('An unexpected error occurred. Please try again');
 		} finally {
+			checkoutLaunchInFlight.current = false;
 			setIsLoading(false);
 		}
 	}, [raffleId, ticketQuantity, promoCode, onPromoInvalid, router]);
@@ -145,13 +159,12 @@ export function CryptoBuyButton({
 	 * automatically proceed to crypto checkout
 	 */
 	useEffect(() => {
-		// Guard against concurrent calls — if already loading (e.g. direct click path),
-		// skip the auto-proceed to avoid duplicate order creation.
-		if (pendingCheckout && isConnected && !isLoading) {
-			setPendingCheckout(false);
+		// Use the ref guard instead of `isLoading`: the effect can race before
+		// React commits the disabled/loading state after a direct click.
+		if (pendingCheckout && isConnected && !checkoutLaunchInFlight.current) {
 			proceedToCryptoCheckout();
 		}
-	}, [pendingCheckout, isConnected, isLoading, proceedToCryptoCheckout]);
+	}, [pendingCheckout, isConnected, proceedToCryptoCheckout]);
 
 	/**
 	 * Safety timeout — clears pendingCheckout after 30s if wallet never connects.
@@ -240,8 +253,15 @@ export function CryptoBuyButton({
 	 */
 	function startCryptoFlow() {
 		if (!isConnected) {
+			// RainbowKit intentionally withholds modal open handlers until the wallet
+			// modal is actually displayable. Do not set latent checkout intent when the
+			// handler is unavailable, or an unrelated later wallet connect can create an order.
+			if (!openConnectModal) {
+				toast.error('Wallet connect is still loading. Please try again.');
+				return;
+			}
 			setPendingCheckout(true);
-			openConnectModal?.();
+			openConnectModal();
 			return;
 		}
 		proceedToCryptoCheckout();

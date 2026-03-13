@@ -50,6 +50,7 @@ export function TokenSelector({
 			<p className="text-sm text-[#7B7B7B]">Choose which token to pay with</p>
 			{tokens.map(token => {
 				const priceLabel = getPriceLabel(token);
+
 				return (
 					<button
 						key={token.slug}

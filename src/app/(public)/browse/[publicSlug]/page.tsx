@@ -64,22 +64,6 @@ interface PageProps {
 }
 
 /**
- * Gets the category name from a list of categories by ID
- *
- * @param categories - List of available categories
- * @param categoryId - The category ID to look up
- * @returns The category name or 'Other' if not found
- */
-function getCategoryName(
-	categories: Category[],
-	categoryId: string | undefined,
-): string {
-	if (!categoryId) return 'Other';
-	const category = categories.find(c => c.id === categoryId);
-	return category?.name || 'Other';
-}
-
-/**
  * Raffle Detail Page
  *
  * Displays full details of a specific raffle including cover image, gallery,
@@ -91,6 +75,22 @@ function getCategoryName(
  */
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;
+
+	/**
+	 * Gets the category name from a list of categories by ID
+	 *
+	 * @param categories - List of available categories
+	 * @param categoryId - The category ID to look up
+	 * @returns The category name or 'Other' if not found
+	 */
+	function getCategoryName(
+		categories: Category[],
+		categoryId: string | undefined,
+	): string {
+		if (!categoryId) return 'Other';
+		const category = categories.find(c => c.id === categoryId);
+		return category?.name || 'Other';
+	}
 
 	// Step 1: Fetch raffle + categories in parallel.
 	const [response, categoriesResponse] = await Promise.all([

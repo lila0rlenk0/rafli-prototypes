@@ -59,6 +59,10 @@ export function pollMyTicketCodesKey(
  * - request only `limit=1` because we only care about `total`
  * - disable focus/reconnect refetches so polling cadence stays predictable
  * - disable retries to avoid hidden duplicate traffic on transient failures
+ *
+ * @param raffleId - Raffle to poll ticket codes for (pass null to disable)
+ * @param targetTotal - Expected ticket total after purchase (pass null to disable)
+ * @returns React Query result with ticket data, `isExpired`, and `isSynced` flags
  */
 export function usePollMyTicketCodes(
 	raffleId: string | null,
@@ -98,7 +102,7 @@ export function usePollMyTicketCodes(
 		refetchOnReconnect: false,
 		refetchOnWindowFocus: false,
 		retry: false,
-		refetchInterval(q) {
+		refetchInterval: function computeRefetchInterval(q) {
 			const currentTotal = q.state.data?.total;
 
 			// Stop once the page's "My Tickets" source-of-truth has caught up.

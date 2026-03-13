@@ -20,9 +20,7 @@ test.describe('Page Load & Layout', () => {
 		await expect(
 			page.getByRole('button', { name: 'Personal Information' }),
 		).toBeVisible();
-		await expect(
-			page.getByRole('button', { name: 'Security' }),
-		).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Security' })).toBeVisible();
 		await expect(
 			page.getByRole('button', { name: 'Email Preferences' }),
 		).toBeVisible();
@@ -32,9 +30,7 @@ test.describe('Page Load & Layout', () => {
 	});
 
 	test('shows sign out button', async ({ page }) => {
-		await expect(
-			page.getByRole('button', { name: /sign out/i }),
-		).toBeVisible();
+		await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
 	});
 });
 
@@ -144,9 +140,7 @@ test.describe('Security', () => {
 		await page.getByLabel('New Password', { exact: true }).fill('short');
 		await page.getByLabel('Confirm New Password').fill('short');
 
-		await page
-			.getByRole('button', { name: 'Change Password' })
-			.click();
+		await page.getByRole('button', { name: 'Change Password' }).click();
 
 		await expect(
 			page.getByText('Password must be at least 12 characters'),
@@ -162,9 +156,7 @@ test.describe('Security', () => {
 			.fill('newpassword1234');
 		await page.getByLabel('Confirm New Password').fill('differentpass123');
 
-		await page
-			.getByRole('button', { name: 'Change Password' })
-			.click();
+		await page.getByRole('button', { name: 'Change Password' }).click();
 
 		await expect(page.getByText('Passwords do not match')).toBeVisible();
 	});
@@ -196,9 +188,7 @@ test.describe('Email Preferences', () => {
 		await expect(section.getByText('Raffle Updates')).toBeVisible();
 		await expect(section.getByText('Prize Updates')).toBeVisible();
 		await expect(section.getByText('Host Notifications')).toBeVisible();
-		await expect(
-			section.getByText('Reviews', { exact: true }),
-		).toBeVisible();
+		await expect(section.getByText('Reviews', { exact: true })).toBeVisible();
 	});
 
 	test('shows preference toggle switches', async ({ page }) => {
@@ -242,9 +232,7 @@ test.describe('Email Preferences', () => {
 	});
 
 	test('shows transactional email notice', async ({ page }) => {
-		await expect(
-			page.getByText(/transactional emails/i),
-		).toBeVisible();
+		await expect(page.getByText(/transactional emails/i)).toBeVisible();
 	});
 });
 

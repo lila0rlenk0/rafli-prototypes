@@ -117,7 +117,7 @@ export function usePollOrderStatus(
 		// Poll every 5s, stop on terminal status or timeout.
 		// refetchInterval is a callback invoked by React Query (not during render),
 		// so Date.now() and ref reads are safe here.
-		refetchInterval(q) {
+		refetchInterval: function computeRefetchInterval(q) {
 			// Step 1: Stop on terminal status
 			if (isTerminalStatus(q.state.data?.status)) return false;
 

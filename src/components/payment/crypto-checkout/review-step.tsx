@@ -37,6 +37,8 @@ interface ReviewStepProps {
 	isProcessing: boolean;
 	/** True after writeContractAsync returns (Worker A's txSubmitted state) */
 	txSubmitted?: boolean;
+	/** Local review guard message for wallet changes / expired sessions */
+	sessionBlockMessage?: string | null;
 	onPay: () => void;
 }
 
@@ -61,6 +63,7 @@ export function ReviewStep({
 	isBalanceCheckPending,
 	isProcessing,
 	txSubmitted,
+	sessionBlockMessage,
 	onPay,
 }: ReviewStepProps) {
 	// isExpired not needed — isClosingSoon is only true when secondsRemaining > 0
@@ -93,6 +96,7 @@ export function ReviewStep({
 	 */
 	function getPayButtonText(): string {
 		if (isProcessing || txSubmitted) return 'Processing...';
+		if (sessionBlockMessage) return 'Continue Again';
 		if (isBalanceCheckPending || isTokenBalanceLoading)
 			return 'Checking balance...';
 		return `Pay ${formatPaymentAmount(session)} ${tokenSymbol}`;
@@ -104,7 +108,12 @@ export function ReviewStep({
 	 * so no need to check isTokenBalanceLoading separately.
 	 */
 	function isPayDisabled(): boolean {
-		return isProcessing || !!txSubmitted || !hasEnoughTokens();
+		return (
+			isProcessing ||
+			!!txSubmitted ||
+			!!sessionBlockMessage ||
+			!hasEnoughTokens()
+		);
 	}
 
 	/**
@@ -168,6 +177,13 @@ export function ReviewStep({
 				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-600">
 					Unable to read token balance. Check your wallet connection and try
 					again.
+				</div>
+			)}
+
+			{/* Review session drift — sending is blocked until wallet step refreshes the session */}
+			{sessionBlockMessage && (
+				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
+					{sessionBlockMessage}
 				</div>
 			)}
 

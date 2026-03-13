@@ -113,7 +113,7 @@ export function usePollCryptoSession(
 			// extra session requests on top of the next scheduled poll tick.
 			retry: false,
 			// Poll every 5s, stop on terminal status or timeout
-			refetchInterval(q) {
+			refetchInterval: function computeRefetchInterval(q) {
 				if (isTerminalSessionStatus(q.state.data?.status)) return false;
 
 				if (startedAtRef.current > 0) {

@@ -61,11 +61,20 @@ export async function buildCheckoutOrder(
 
 	// Step 1: Check for reusable pending order — avoids creating duplicates
 	//         when user retries checkout (e.g. back button, network error)
-	let order = await getReusablePendingOrder(
+	const reusableOrderResult = await getReusablePendingOrder(
 		raffleId,
 		ticketQuantity,
 		promoCode,
 	);
+	if (reusableOrderResult.kind === 'lookup_failed') {
+		// Order reuse is the only client-side duplicate-order guard today.
+		// If the lookup is degraded, do not guess "no order" and create another one.
+		toast.error(getOrderErrorMessage(reusableOrderResult.error));
+		return null;
+	}
+
+	let order =
+		reusableOrderResult.kind === 'found' ? reusableOrderResult.order : null;
 
 	// Skip promo flow entirely if order already has this promo applied
 	const promoAlreadyApplied = promoCode && order?.promoCode === promoCode;

@@ -60,15 +60,24 @@ export function WalletStep({
 			{/* Custom connect button — styled to match app */}
 			{!address && (
 				<ConnectButton.Custom>
-					{({ openConnectModal }) => (
-						<Button
-							onClick={openConnectModal}
-							variant="outline"
-							className="h-12 w-full border-2 border-black bg-white text-black hover:bg-black hover:text-white"
-						>
-							Connect Wallet
-						</Button>
-					)}
+					{({ openConnectModal, mounted, authenticationStatus }) => {
+						// RainbowKit does not guarantee modal handlers exist before the
+						// widget is mounted/auth state is resolved. Render a disabled CTA
+						// until the modal can actually open instead of a dead button.
+						const isReady = mounted && authenticationStatus !== 'loading';
+						const canOpenModal = isReady && !!openConnectModal;
+
+						return (
+							<Button
+								onClick={() => openConnectModal?.()}
+								disabled={!canOpenModal}
+								variant="outline"
+								className="h-12 w-full border-2 border-black bg-white text-black hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:border-[#D4D4D4] disabled:bg-[#F5F5F5] disabled:text-[#7B7B7B] disabled:hover:bg-[#F5F5F5] disabled:hover:text-[#7B7B7B]"
+							>
+								{canOpenModal ? 'Connect Wallet' : 'Preparing wallet...'}
+							</Button>
+						);
+					}}
 				</ConnectButton.Custom>
 			)}
 

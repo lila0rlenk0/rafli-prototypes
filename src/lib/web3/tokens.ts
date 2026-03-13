@@ -23,7 +23,7 @@ export interface TokenInfo {
 	isStablecoin: boolean;
 }
 
-interface SelectableTokenOptions {
+export interface SelectableTokenOptions {
 	/** Raffle allowlist — empty means backend allows every token in its registry */
 	allowedTokenSlugs?: string[];
 	/**
@@ -51,7 +51,7 @@ const USDT: TokenInfo = {
 	isStablecoin: true,
 };
 
-/** EARNM — 18 decimals, only on Arbitrum */
+/** EARNM — 18 decimals, backend-supported on selected Ethereum L2/L1 chains */
 const EARNM: TokenInfo = {
 	slug: 'earnm',
 	label: 'EARNM',
@@ -64,19 +64,24 @@ const EARNM: TokenInfo = {
  *
  * Stablecoins are shown on all chains. Non-stablecoins (EARNM) require
  * `cryptoTokenPricing` on the raffle — backend rejects if missing.
+ *
+ * Keep this in lockstep with the backend TOKEN_REGISTRY. If FE lags behind,
+ * raffles that allow only a newly-supported chain/token pair become impossible
+ * to purchase even though checkout succeeds server-side.
  */
 export const TOKENS_BY_CHAIN: Record<number, TokenInfo[]> = {
 	// Mainnets
-	1: [USDC, USDT], // Ethereum
+	1: [USDC, USDT, EARNM], // Ethereum
 	42_161: [USDC, USDT, EARNM], // Arbitrum
-	8453: [USDC, USDT], // Base
-	137: [USDC, USDT], // Polygon
+	8453: [USDC, USDT, EARNM], // Base
+	137: [USDC, USDT, EARNM], // Polygon
 	// Testnets
 	11_155_111: [USDC, USDT], // Sepolia
 	421_614: [USDC, USDT], // Arbitrum Sepolia
 	84_532: [USDC, USDT], // Base Sepolia
-	// Backend PR 40 has no Amoy USDT deployment in TOKEN_REGISTRY — keep FE in lockstep
-	80_002: [USDC], // Polygon Amoy
+	// Backend PR 40 has no Amoy USDT deployment in TOKEN_REGISTRY.
+	// EARNM is supported there, so FE must still expose it when the raffle prices it.
+	80_002: [USDC, EARNM], // Polygon Amoy
 };
 
 /**
@@ -95,6 +100,10 @@ function getTokensForChain(chainId: number): TokenInfo[] {
  * returns the stored chain/session values, not necessarily the user's latest
  * FE selection. Returning null keeps the caller in control of the fallback UX
  * instead of silently inventing a token that may not exist on that chain.
+ *
+ * @param chainId - EVM chain ID
+ * @param tokenSlug - Token slug to look up (e.g. 'usdc', 'earnm')
+ * @returns Token metadata or null if not found on the given chain
  */
 export function getTokenBySlugForChain(
 	chainId: number,
@@ -112,6 +121,10 @@ export function getTokenBySlugForChain(
  * - Backend interprets empty `cryptoTokens` as "all registry tokens allowed"
  * - But non-stablecoins still require `cryptoTokenPricing`
  * - FE must not surface tokens the backend will deterministically reject
+ *
+ * @param chainId - EVM chain ID
+ * @param options - Raffle allowlist and priced token slugs
+ * @returns Filtered array of selectable tokens for the chain
  */
 export function getSelectableTokensForChain(
 	chainId: number,

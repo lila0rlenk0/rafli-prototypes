@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { use, useState } from 'react';
 
 import { PaymentStatusModal } from '@/components/payment/payment-status-modal';
 
@@ -16,33 +16,21 @@ interface PaymentModalWrapperProps {
  * Detects URL parameters after Stripe redirect and opens PaymentStatusModal.
  * Manages modal state based on URL flags (?session_id=xxx).
  * Removes URL parameter when modal is closed to prevent re-showing on refresh.
+ *
+ * Uses React's `use()` to unwrap the Next.js 15 Promise-based searchParams,
+ * which integrates with Suspense boundaries instead of resolving inside useEffect.
  */
 export function PaymentModalWrapper({
 	publicSlug,
 	searchParams,
 }: PaymentModalWrapperProps) {
 	const router = useRouter();
-	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [sessionId, setSessionId] = useState<string | null>(null);
+	const params = use(searchParams);
+	const [isModalOpen, setIsModalOpen] = useState(!!params.session_id);
 
 	/**
-	 * Checks URL params and opens modal if payment flag is present
-	 */
-	useEffect(() => {
-		async function checkPaymentStatus() {
-			const params = await searchParams;
-
-			if (params.session_id) {
-				setSessionId(params.session_id);
-				setIsModalOpen(true);
-			}
-		}
-
-		checkPaymentStatus();
-	}, [searchParams]);
-
-	/**
-	 * Handles modal close - removes session_id from URL
+	 * Handles modal close — strips session_id from URL to prevent re-triggering on refresh.
+	 * Uses router.replace to avoid adding a history entry.
 	 */
 	function handleOpenChange(open: boolean) {
 		setIsModalOpen(open);
@@ -52,13 +40,12 @@ export function PaymentModalWrapper({
 		}
 	}
 
-	if (!sessionId) {
+	if (!params.session_id) {
 		return null;
 	}
 
 	return (
 		<PaymentStatusModal
-			sessionId={sessionId}
 			raffleId={publicSlug}
 			open={isModalOpen}
 			onOpenChange={handleOpenChange}

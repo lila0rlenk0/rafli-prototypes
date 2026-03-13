@@ -4,7 +4,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapOrderError } from '@/lib/errors/error-mapper';
-import type { OrderErrorCode } from '@/types/errors';
+import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import type { OrdersResponse } from '@/types/order';
 import { ordersBackendResponseSchema } from '@/types/order';
 import type { ServiceResponse } from '@/types/service-response';
@@ -15,13 +15,6 @@ import type { ServiceResponse } from '@/types/service-response';
 interface GetMyOrdersParams {
 	page?: number;
 	limit?: number;
-}
-
-/**
- * Creates empty paginated response
- */
-function emptyResponse(page: number, limit: number): OrdersResponse {
-	return { items: [], limit, page, total: 0, totalPages: 0 };
 }
 
 /**
@@ -41,9 +34,12 @@ export async function getMyOrders(
 			timeout: API_TIMEOUTS.QUERY,
 		});
 
-		// Handle empty/null response
+		// Checkout order reuse depends on this response being trustworthy.
+		// Treat null/missing payloads as fetch failures instead of "no orders",
+		// otherwise degraded `/me/orders` responses can create duplicate orders.
 		if (!response.data) {
-			return success(emptyResponse(page, limit));
+			console.error('Orders response missing data:', { page, limit });
+			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 
 		// Parse backend response format { total, orders }
@@ -60,10 +56,12 @@ export async function getMyOrders(
 			});
 		}
 
-		// Return empty if backend returns unexpected format (graceful degradation)
-		return success(emptyResponse(page, limit));
+		// Invalid shape means the caller cannot safely distinguish "no orders"
+		// from "orders exist but the payload drifted". Fail closed and let callers
+		// decide whether creating new orders is still safe.
+		console.error('Orders response validation failed:', result.error);
+		return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 	} catch (error) {
-		const errorCode = mapOrderError(error);
-		return failure(errorCode);
+		return failure(mapOrderError(error));
 	}
 }

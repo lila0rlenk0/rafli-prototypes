@@ -1,8 +1,8 @@
 'use client';
 
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
-import { getTokensForChain } from '@/lib/web3/tokens';
 import { CHAIN_NAMES } from '@/lib/web3/chains';
+import { getSelectableTokensForChain } from '@/lib/web3/tokens';
 
 // ==========================================
 // Types
@@ -13,6 +13,8 @@ interface ChainSelectorProps {
 	cryptoChainIds: number[];
 	/** Allowed token slugs — empty means all. Used to show accurate token labels per chain. */
 	cryptoTokens?: string[];
+	/** Non-stablecoin pricing entries present on the raffle */
+	pricedTokenSlugs?: string[];
 	onSelectChain: (chainId: number) => void;
 }
 
@@ -29,6 +31,7 @@ interface ChainSelectorProps {
 export function ChainSelector({
 	cryptoChainIds,
 	cryptoTokens = [],
+	pricedTokenSlugs = [],
 	onSelectChain,
 }: ChainSelectorProps) {
 	/**
@@ -36,11 +39,10 @@ export function ChainSelector({
 	 * Shown as secondary text on each chain button.
 	 */
 	function getTokenLabels(chainId: number): string {
-		const tokens = getTokensForChain(chainId);
-		const allowed =
-			cryptoTokens.length > 0
-				? tokens.filter(t => cryptoTokens.includes(t.slug))
-				: tokens;
+		const allowed = getSelectableTokensForChain(chainId, {
+			allowedTokenSlugs: cryptoTokens,
+			pricedTokenSlugs,
+		});
 		if (allowed.length === 0) return 'USDC';
 		return allowed.map(t => t.label).join(' · ');
 	}

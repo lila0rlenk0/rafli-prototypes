@@ -30,19 +30,19 @@ export const BLOCK_EXPLORERS: Record<number, string> = {
  *
  * Must match backend CHAIN_CONFIG confirmation thresholds exactly.
  * L1 (Ethereum): 12 blocks (~2.5 min) — standard finality threshold
- * L2 (Arbitrum, Base): 30 blocks — sequencer + L1 batch posting safety margin
- * L1 sidechain (Polygon): 50 blocks (~100s) — reorg protection
+ * L2 (Arbitrum, Base): 1 block — backend treats sequencer finality as sufficient
+ * L1 sidechain (Polygon): 128 blocks — backend uses historical reorg-safe threshold
  * Testnets mirror their mainnet counterparts
  */
 export const CONFIRMATION_TARGETS: Record<number, number> = {
 	1: 12, // Ethereum — ~12s/block, 12 blocks ≈ 2.5 min
-	42_161: 30, // Arbitrum — 30 blocks per backend CHAIN_CONFIG
-	8453: 30, // Base — 30 blocks per backend CHAIN_CONFIG
-	137: 50, // Polygon — ~2s blocks, 50 blocks per backend CHAIN_CONFIG
+	42_161: 1, // Arbitrum — backend CHAIN_CONFIG uses 1 sequencer confirmation
+	8453: 1, // Base — backend CHAIN_CONFIG uses 1 sequencer confirmation
+	137: 128, // Polygon — backend CHAIN_CONFIG uses 128-block reorg protection
 	11_155_111: 12, // Sepolia (mirrors Ethereum)
-	421_614: 30, // Arbitrum Sepolia (mirrors Arbitrum)
-	84_532: 30, // Base Sepolia (mirrors Base)
-	80_002: 50, // Polygon Amoy (mirrors Polygon mainnet)
+	421_614: 1, // Arbitrum Sepolia (mirrors Arbitrum)
+	84_532: 1, // Base Sepolia (mirrors Base)
+	80_002: 128, // Polygon Amoy (mirrors Polygon mainnet)
 };
 
 /**

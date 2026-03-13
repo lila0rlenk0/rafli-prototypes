@@ -37,6 +37,7 @@ const devChains = [
  * Production only gets mainnets; dev/staging gets testnets too
  */
 const isProd = clientEnv.NEXT_PUBLIC_APP_ENV === 'production';
+const configuredChains = isProd ? prodChains : devChains;
 
 // ==========================================
 // Wagmi + RainbowKit Config
@@ -47,6 +48,15 @@ const isProd = clientEnv.NEXT_PUBLIC_APP_ENV === 'production';
  * Requires WalletConnect project ID to be configured in environment
  */
 export const isWeb3Enabled = !!clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+
+/**
+ * Chain IDs FE is actually configured to support in the current environment.
+ *
+ * This is the UI/runtime source of truth for "selectable" chains.
+ * It intentionally differs between prod and non-prod so we never surface
+ * testnets in production even if backend allowlists are empty.
+ */
+export const SUPPORTED_WEB3_CHAIN_IDS = configuredChains.map(chain => chain.id);
 
 /**
  * Combined wagmi + RainbowKit configuration
@@ -60,7 +70,7 @@ export const wagmiConfig = isWeb3Enabled
 	? getDefaultConfig({
 			appName: 'Rafli',
 			projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-			chains: isProd ? prodChains : devChains,
+			chains: configuredChains,
 			ssr: true, // Required for Next.js SSR hydration
 		})
 	: null;

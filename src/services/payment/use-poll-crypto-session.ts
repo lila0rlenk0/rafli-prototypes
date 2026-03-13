@@ -103,6 +103,10 @@ export function usePollCryptoSession(sessionId: string | null) {
 				return result.data;
 			},
 			enabled: !!sessionId,
+			// Polling itself is already the retry strategy.
+			// Disable hidden React Query retries so one failed read does not stack
+			// extra session requests on top of the next scheduled poll tick.
+			retry: false,
 			// Poll every 5s, stop on terminal status or timeout
 			refetchInterval(q) {
 				if (isTerminalSessionStatus(q.state.data?.status)) return false;

@@ -22,6 +22,16 @@ export interface TokenInfo {
 	isStablecoin: boolean;
 }
 
+interface SelectableTokenOptions {
+	/** Raffle allowlist — empty means backend allows every token in its registry */
+	allowedTokenSlugs?: string[];
+	/**
+	 * Non-stablecoins require explicit per-ticket pricing on the raffle.
+	 * Stablecoins ignore this list because backend prices them 1:1 to USD.
+	 */
+	pricedTokenSlugs?: string[];
+}
+
 // ==========================================
 // Constants
 // ==========================================
@@ -64,23 +74,46 @@ export const TOKENS_BY_CHAIN: Record<number, TokenInfo[]> = {
 	11_155_111: [USDC, USDT], // Sepolia
 	421_614: [USDC, USDT], // Arbitrum Sepolia
 	84_532: [USDC, USDT], // Base Sepolia
-	80_002: [USDC, USDT], // Polygon Amoy (mirrors Polygon mainnet)
+	// Backend PR 40 has no Amoy USDT deployment in TOKEN_REGISTRY — keep FE in lockstep
+	80_002: [USDC], // Polygon Amoy
 };
-
-/**
- * Gets all registered chain IDs from the token registry.
- * Used as fallback when raffle.cryptoChainIds is empty (= all chains allowed).
- * @returns Array of chain IDs that have at least one token configured
- */
-export function getAllChainIds(): number[] {
-	return Object.keys(TOKENS_BY_CHAIN).map(Number);
-}
 
 /**
  * Gets available tokens for a chain
  * @param chainId - EVM chain ID
  * @returns Array of available tokens, empty if chain not supported
  */
-export function getTokensForChain(chainId: number): TokenInfo[] {
+function getTokensForChain(chainId: number): TokenInfo[] {
 	return TOKENS_BY_CHAIN[chainId] ?? [];
+}
+
+/**
+ * Gets tokens that are actually selectable for a raffle on a given chain.
+ *
+ * Why this helper exists:
+ * - Backend interprets empty `cryptoTokens` as "all registry tokens allowed"
+ * - But non-stablecoins still require `cryptoTokenPricing`
+ * - FE must not surface tokens the backend will deterministically reject
+ */
+export function getSelectableTokensForChain(
+	chainId: number,
+	{
+		allowedTokenSlugs = [],
+		pricedTokenSlugs = [],
+	}: SelectableTokenOptions = {},
+): TokenInfo[] {
+	const pricedTokenSet = new Set(pricedTokenSlugs);
+
+	return getTokensForChain(chainId).filter(token => {
+		const isAllowed =
+			allowedTokenSlugs.length === 0 ||
+			allowedTokenSlugs.includes(token.slug);
+		if (!isAllowed) return false;
+
+		// Stablecoins are always valid once allowed; backend prices them 1:1 to USD.
+		if (token.isStablecoin) return true;
+
+		// Non-stablecoins are only valid when the raffle explicitly prices them.
+		return pricedTokenSet.has(token.slug);
+	});
 }

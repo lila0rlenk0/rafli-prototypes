@@ -24,13 +24,8 @@ interface PaymentStatusModalProps {
 /**
  * PaymentStatusModal Component
  *
- * Displays payment session status after returning from Stripe checkout.
- * Polls the payment session status until it becomes completed, failed, or expired.
- *
- * Shows different UI states based on session status:
- * - Polling: Loading spinner with "Processing payment..."
- * - Completed: Success icon with confirmation message
- * - Failed/Expired: Error icon with failure message
+ * Displays the post-Stripe success UI after redirect.
+ * The polling implementation was removed; this component is now static and purely presentational.
  */
 export function PaymentStatusModal({
 	raffleId,

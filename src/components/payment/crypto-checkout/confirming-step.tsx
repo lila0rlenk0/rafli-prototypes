@@ -2,6 +2,10 @@
 
 import { Check, Loader2 } from 'lucide-react';
 
+import {
+	buildConfirmingPhases,
+	type PhaseStatus,
+} from '@/components/payment/crypto-checkout/confirming-step-state';
 import { TxLink } from '@/components/payment/crypto-checkout/terminal-steps';
 
 // ==========================================
@@ -16,15 +20,9 @@ interface ConfirmingStepProps {
 	confirmations: number;
 	/** Target confirmations for this chain (e.g. 12 for L1, 2 for L2) */
 	confirmationTarget: number;
-	/** Whether the tx receipt has been confirmed on-chain (triggers backend submission) */
-	isTxConfirmed: boolean;
+	/** Whether backend accepted FE's explicit finalization request */
+	finalizationRequested: boolean;
 }
-
-/**
- * Phase in the vertical step tracker.
- * Each phase transitions from pending → active → done as the flow progresses.
- */
-type PhaseStatus = 'done' | 'active' | 'pending';
 
 // ==========================================
 // Component
@@ -50,37 +48,8 @@ export function ConfirmingStep({
 	selectedChainId,
 	confirmations,
 	confirmationTarget,
-	isTxConfirmed,
+	finalizationRequested,
 }: ConfirmingStepProps) {
-	// ==========================================
-	// Phase Status Derivation
-	// ==========================================
-
-	/**
-	 * txHash is undefined while MetaMask is still prompting (optimistic step transition).
-	 * Once writeContractAsync resolves, wagmi populates txHash and broadcast is truly done.
-	 * This drives the "Confirm in wallet" → "Block confirmations" transition.
-	 */
-	const isBroadcast = !!txHash;
-
-	/**
-	 * Whether block confirmations have reached the chain's target.
-	 * Reaching this threshold triggers the FE-driven finalization call
-	 * (confirmCryptoTx) in the parent modal — not just UI progress.
-	 */
-	const reachedTarget = confirmations >= confirmationTarget;
-
-	/**
-	 * Detail text for the confirmations phase — shows live block count.
-	 * Null when not yet broadcast or 0 confirmations (tx seen but not yet in a block).
-	 * Clamps display to target when reached (avoids showing 15/12).
-	 */
-	function getConfirmationDetail(): string | null {
-		if (!isBroadcast || confirmations === 0) return null;
-		const display = reachedTarget ? confirmationTarget : confirmations;
-		return `${display} / ${confirmationTarget} blocks`;
-	}
-
 	// ==========================================
 	// Phase Definitions
 	// ==========================================
@@ -88,41 +57,16 @@ export function ConfirmingStep({
 	/**
 	 * Ordered list of phases rendered in the vertical tracker.
 	 *
-	 * Status logic per phase:
-	 * 1. Confirm in wallet — active while MetaMask is prompting (!txHash),
-	 *    done once user confirms and tx hash is returned
-	 * 2. Block confirmations — pending until broadcast, active until target reached, then done
-	 * 3. Verifying — pending until tx confirmed on-chain, then active
-	 *    ("done" never visible — modal transitions to success step first)
-	 * 4. Completing — pending until target reached + confirmed, then active
-	 *    ("done" never visible — same reason as verifying)
+	 * The state machine lives in a pure helper so we can test the sequencing rules:
+	 * only one phase active, no receipt-driven overlap, and a real boundary between
+	 * "verifying payment" and "completing order".
 	 */
-	const phases: {
-		label: string;
-		status: PhaseStatus;
-		detail: string | null;
-	}[] = [
-		{
-			label: 'Confirm in wallet',
-			status: isBroadcast ? 'done' : 'active',
-			detail: null,
-		},
-		{
-			label: 'Block confirmations',
-			status: !isBroadcast ? 'pending' : reachedTarget ? 'done' : 'active',
-			detail: getConfirmationDetail(),
-		},
-		{
-			label: 'Verifying payment',
-			status: isTxConfirmed ? 'active' : 'pending',
-			detail: null,
-		},
-		{
-			label: 'Completing order',
-			status: reachedTarget && isTxConfirmed ? 'active' : 'pending',
-			detail: null,
-		},
-	];
+	const phases = buildConfirmingPhases({
+		txHash,
+		confirmations,
+		confirmationTarget,
+		finalizationRequested,
+	});
 
 	// ==========================================
 	// Render Helpers

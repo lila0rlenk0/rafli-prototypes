@@ -619,23 +619,24 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									fallback={
 										<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
 									}
-								>
-									<TicketPurchaseCard
-										raffleId={raffle.id}
-										publicSlug={publicSlug}
-										price={ticketPrice}
-										currency={raffle.ticketPriceCurrency}
-										availableTickets={availableTickets}
-										disabled={showEditButton || disablePurchase}
-										questionId={raffle.questionId}
-										isAuthenticated={isAuthenticated}
-										acceptsCrypto={raffle.acceptsCrypto}
-										cryptoChainIds={raffle.cryptoChainIds}
-										cryptoTokens={raffle.cryptoTokens}
-										cryptoTokenPricing={raffle.cryptoTokenPricing}
-										userId={currentUserId}
-									/>
-								</Suspense>
+									>
+										<TicketPurchaseCard
+											raffleId={raffle.id}
+											publicSlug={publicSlug}
+											price={ticketPrice}
+											currency={raffle.ticketPriceCurrency}
+											availableTickets={availableTickets}
+											disabled={showEditButton || disablePurchase}
+											questionId={raffle.questionId}
+											isAuthenticated={isAuthenticated}
+											acceptsCrypto={raffle.acceptsCrypto}
+											cryptoChainIds={raffle.cryptoChainIds}
+											cryptoTokens={raffle.cryptoTokens}
+											cryptoTokenPricing={raffle.cryptoTokenPricing}
+											myTicketsTotal={myTicketsTotal}
+											userId={currentUserId}
+										/>
+									</Suspense>
 
 								{disablePurchase && !showEditButton && (
 									<p className="mt-2 text-center text-sm text-gray-500">

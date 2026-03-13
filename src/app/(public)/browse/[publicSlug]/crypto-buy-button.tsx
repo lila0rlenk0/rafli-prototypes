@@ -3,7 +3,7 @@
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Loader2Icon, WalletIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
 
@@ -11,6 +11,7 @@ import { CryptoCheckoutModal } from '@/components/payment/crypto-checkout-modal'
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
+import { usePollMyTicketCodes } from '@/services/ticket/use-poll-my-ticket-codes';
 import type { CryptoTokenPricing } from '@/types/raffle';
 
 // ==========================================
@@ -30,6 +31,8 @@ interface CryptoBuyButtonProps {
 	cryptoTokens?: string[];
 	/** Non-stablecoin pricing per token — needed for EARNM and future non-stablecoin tokens */
 	cryptoTokenPricing?: CryptoTokenPricing;
+	/** Current server-rendered ticket total for this raffle — baseline for post-payment sync */
+	myTicketsTotal: number;
 	userId?: string | null;
 }
 
@@ -56,6 +59,7 @@ export function CryptoBuyButton({
 	cryptoChainIds,
 	cryptoTokens = [],
 	cryptoTokenPricing = [],
+	myTicketsTotal,
 	userId,
 }: CryptoBuyButtonProps) {
 	const router = useRouter();
@@ -71,10 +75,23 @@ export function CryptoBuyButton({
 	// Tracks active confirming state — persists when modal is closed during confirmation
 	// so we can show a "pending transaction" button to reopen the modal
 	const [isConfirming, setIsConfirming] = useState(false);
+	// Expected total after a successful crypto purchase.
+	// We keep polling ticket codes until the server-rendered "My Tickets" source of
+	// truth reaches this number, then trigger one final router.refresh().
+	const [ticketSyncTarget, setTicketSyncTarget] = useState<number | null>(null);
+	// Dev Strict Mode can re-run effects; resolve each target once to avoid duplicate
+	// terminal refreshes when sync completes or times out.
+	const resolvedTicketSyncTarget = useRef<number | null>(null);
 	// Tracks whether the raffle question was already answered correctly this session.
 	// Without this, every click re-gates on questionId — forcing the user to re-answer
 	// if the crypto flow fails or wallet connect doesn't open.
 	const [questionAnswered, setQuestionAnswered] = useState(false);
+
+	const { isExpired: isTicketSyncExpired, isSynced: isTicketSyncComplete } =
+		usePollMyTicketCodes(
+			ticketSyncTarget !== null ? raffleId : null,
+			ticketSyncTarget,
+		);
 
 	// ==========================================
 	// Checkout Flow
@@ -150,6 +167,39 @@ export function CryptoBuyButton({
 		return () => clearTimeout(timeout);
 	}, [pendingCheckout]);
 
+	/**
+	 * When ticket issuance catches up, refresh the route one more time so the
+	 * server-rendered Raffle Details panel reflects the new ticket codes and total.
+	 *
+	 * Why a second refresh is needed:
+	 * - The first refresh happens when payment is confirmed
+	 * - Ticket issuance is async after order completion
+	 * - Refreshing again only after `getMyTicketCodes()` reports the expected total
+	 *   removes the need for a manual page reload
+	 */
+	useEffect(() => {
+		if (ticketSyncTarget === null || !isTicketSyncComplete) return;
+		if (resolvedTicketSyncTarget.current === ticketSyncTarget) return;
+		resolvedTicketSyncTarget.current = ticketSyncTarget;
+		setTicketSyncTarget(null);
+		router.refresh();
+	}, [ticketSyncTarget, isTicketSyncComplete, router]);
+
+	/**
+	 * Safety net: if ticket issuance never catches up within the polling window,
+	 * stop the background loop and do one last refresh.
+	 *
+	 * This avoids an infinite poll while still giving the page one more chance to
+	 * pick up late data before falling back to the existing manual-refresh behavior.
+	 */
+	useEffect(() => {
+		if (ticketSyncTarget === null || !isTicketSyncExpired) return;
+		if (resolvedTicketSyncTarget.current === ticketSyncTarget) return;
+		resolvedTicketSyncTarget.current = ticketSyncTarget;
+		setTicketSyncTarget(null);
+		router.refresh();
+	}, [ticketSyncTarget, isTicketSyncExpired, router]);
+
 	// ==========================================
 	// Handlers
 	// ==========================================
@@ -201,6 +251,17 @@ export function CryptoBuyButton({
 	const handleConfirmingChange = useCallback((confirming: boolean) => {
 		setIsConfirming(confirming);
 	}, []);
+
+	/**
+	 * Crypto success means the order completed, but ticket codes may still be
+	 * issuing asynchronously. Refresh immediately for raffle counters, then keep a
+	 * background sync alive until the bought tickets actually appear.
+	 */
+	const handleCryptoSuccess = useCallback(() => {
+		resolvedTicketSyncTarget.current = null;
+		router.refresh();
+		setTicketSyncTarget(myTicketsTotal + ticketQuantity);
+	}, [myTicketsTotal, router, ticketQuantity]);
 
 	/**
 	 * Gets button label based on wallet connection and transaction state
@@ -270,7 +331,7 @@ export function CryptoBuyButton({
 					cryptoTokens={cryptoTokens}
 					cryptoTokenPricing={cryptoTokenPricing}
 					userId={userId}
-					onSuccess={() => router.refresh()}
+					onSuccess={handleCryptoSuccess}
 					onConfirmingChange={handleConfirmingChange}
 				/>
 			)}

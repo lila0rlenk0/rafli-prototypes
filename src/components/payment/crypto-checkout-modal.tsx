@@ -36,10 +36,16 @@ import {
 	getWalletErrorMessage,
 } from '@/lib/checkout/error-messages';
 import { getConfirmationTarget } from '@/lib/web3/block-explorers';
+import {
+	CRYPTO_TX_SUBMIT_OUTCOME,
+	getCryptoTxSubmitOutcome,
+	normalizeTxHash,
+	toBackendConfirmationCount,
+} from '@/lib/web3/crypto-payment-flow';
+import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
 import { isUserRejection } from '@/lib/web3/errors';
 import {
-	getAllChainIds,
-	getTokensForChain,
+	getSelectableTokensForChain,
 	type TokenInfo,
 } from '@/lib/web3/tokens';
 import { cancelPaymentSession } from '@/services/payment/cancel-payment-session';
@@ -48,9 +54,9 @@ import { createCryptoCheckout } from '@/services/payment/create-crypto-checkout'
 import { submitCryptoTx } from '@/services/payment/submit-crypto-tx';
 import { usePollCryptoSession } from '@/services/payment/use-poll-crypto-session';
 import { usePollOrderStatus } from '@/services/payment/use-poll-order-status';
-import { PAYMENT_ERROR_CODES } from '@/types/errors';
 import { useWallets } from '@/services/wallet/use-wallets';
 import { verifyWallet } from '@/services/wallet/verify-wallet';
+import { PAYMENT_ERROR_CODES } from '@/types/errors';
 import { ORDER_STATUS } from '@/types/order';
 import { CRYPTO_PAYMENT_STATUS } from '@/types/payment';
 import type { CryptoTokenPricing } from '@/types/raffle';
@@ -98,6 +104,9 @@ type CheckoutStep =
 	| 'success'
 	| 'failure';
 
+type ReplacementReason = 'cancelled' | 'replaced' | 'repriced';
+type SubmitRecoveryMode = null | 'poll' | 'retry';
+
 // ==========================================
 // Component
 // ==========================================
@@ -135,6 +144,12 @@ export function CryptoCheckoutModal({
 	// to detect token changes when user navigates back and picks a different token.
 	// Can't compare via session.tokenAddress because frontend doesn't have slug→address mapping.
 	const [sessionTokenSlug, setSessionTokenSlug] = useState<string | null>(null);
+	// Backend binds each session to the verified sender wallet (`fromAddress`).
+	// Track the address used at session creation time so back-navigation cannot
+	// silently reuse wallet A's session after the user reconnects wallet B.
+	const [sessionWalletAddress, setSessionWalletAddress] = useState<
+		string | null
+	>(null);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	// Tracks whether a reorg with ambiguous balance was detected — funds may have
@@ -146,15 +161,22 @@ export function CryptoCheckoutModal({
 	const { address, chainId: connectedChainId } = useAccount();
 	const { signMessageAsync } = useSignMessage();
 	const { switchChainAsync } = useSwitchChain();
-	const {
-		writeContractAsync,
-		data: txHash,
-		reset: resetWriteContract,
-	} = useWriteContract();
+	const { writeContractAsync, reset: resetWriteContract } = useWriteContract();
+	// Canonical tx hash the FE should follow right now.
+	// Stored locally instead of reading from useWriteContract's data so we can pivot
+	// to replacement hashes when the wallet speeds up or replaces a transaction.
+	const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
 
 	// Guards against double-payment — set true immediately after writeContractAsync resolves,
 	// before React re-renders. Cleared only in handleReset.
 	const [txSubmitted, setTxSubmitted] = useState(false);
+	// Distinguishes "retry same-hash once" from "poll only".
+	// This avoids unnecessary duplicate submits once backend already owns the session state.
+	const [submitRecoveryMode, setSubmitRecoveryMode] =
+		useState<SubmitRecoveryMode>(null);
+	// Some failures should not offer an immediate retry even if funds are not definitely
+	// deducted yet (e.g. wallet cancelled/replaced after backend already bound a hash).
+	const [retryBlocked, setRetryBlocked] = useState(false);
 
 	// Synchronous ref guard for handlePay — prevents double-execution from rapid clicks.
 	// React state (txSubmitted) is batched/async, so two clicks before re-render would
@@ -169,12 +191,33 @@ export function CryptoCheckoutModal({
 	// Unlike txSubmitted (state), this is synchronous — prevents duplicate backend
 	// submissions even when React batches state updates or re-runs effects (Strict Mode).
 	const txSubmittedToBackend = useRef(false);
+	// Tracks the exact hash the backend has accepted/polled for this session.
+	// Needed because backend PR 40 binds `confirming` sessions to a single hash.
+	const backendTrackedTxHash = useRef<string | null>(null);
+	// Prevent overlapping submit calls between the initial submit and the one-shot
+	// recovery retry. Without this, transport flakiness can stack duplicate POSTs.
+	const submitRequestInFlight = useRef(false);
+	// Exactly one same-hash retry per canonical tx hash.
+	// Keeps recovery bounded even if the network stays flaky.
+	const submitRetriedHashes = useRef<Set<string>>(new Set());
+	// Replacement reason is only observable in the wallet/RPC layer.
+	// Stash it so a later backend-hash mismatch can explain whether the tx was
+	// sped up/replaced or explicitly cancelled.
+	const lastReplacementReason = useRef<null | ReplacementReason>(null);
 
 	// Idempotency guard for confirmCryptoTx — the FE-driven finalization call.
 	// Fires once when on-chain confirmations reach the chain's target threshold.
 	// Separate from txSubmittedToBackend because submit (hash notification) and
 	// confirm (finalization request) are two distinct backend calls.
 	const txConfirmRequested = useRef(false);
+	// Distinct from txConfirmRequested: this only guards the active network call.
+	// We keep failures retryable on the next polling tick instead of permanently
+	// disabling FE-driven confirm after one transient error.
+	const txConfirmInFlight = useRef(false);
+	// UI-facing mirror of txConfirmRequested.
+	// The ref is for idempotency; this state is for rendering the tracker row transition
+	// from "Verifying payment" → "Completing order" after backend accepts confirm.
+	const [finalizationRequested, setFinalizationRequested] = useState(false);
 
 	// Guards the success transition — prevents double onSuccess() when both
 	// FE-driven confirm and polling detect COMPLETED in the same render cycle.
@@ -191,18 +234,114 @@ export function CryptoCheckoutModal({
 	const polledSessionRef =
 		useRef<Awaited<ReturnType<typeof usePollCryptoSession>>['data']>(undefined);
 
-	// chainId is required — without it wagmi defaults to the connected chain,
-	// which may differ from the target chain after switchChainAsync. This caused
-	// the "stuck on confirming" bug: receipt lookup hit the wrong chain's RPC.
-	const { isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
-		hash: txHash,
-		chainId: selectedChainId ?? undefined,
-	});
+	/**
+	 * Terminal failure when the wallet tx is already on-chain but FE can no longer
+	 * trust the server-side session registration.
+	 *
+	 * Why this is a hard stop:
+	 * - a transfer/broadcast already happened
+	 * - backend PR 40 only finalizes against the stored session hash
+	 * - blindly offering retry would risk duplicate payments or misleading UX
+	 */
+	const failSubmittedTxRegistration = useCallback(() => {
+		setSubmitRecoveryMode(null);
+		setRetryBlocked(true);
+		setFundsAtRisk(true);
+		setErrorMessage(
+			'Transaction was sent, but the server could not safely register it. Please contact support with your transaction hash.',
+		);
+		setStep('failure');
+	}, []);
+
+	/**
+	 * Handles the backend-immutable-hash edge case.
+	 *
+	 * Backend PR 40 treats the first accepted tx hash as the session's source of truth.
+	 * If the wallet later replaces or cancels that tx with a different hash, the FE can
+	 * detect it, but cannot mutate the backend session to follow the new hash.
+	 */
+	const failBackendTrackedReplacement = useCallback(
+		(reason: null | ReplacementReason) => {
+			setSubmitRecoveryMode(null);
+			setRetryBlocked(true);
+
+			if (reason === 'cancelled') {
+				setFundsAtRisk(false);
+				setErrorMessage(
+					'Your wallet cancelled the original transaction after the server had already registered it. Please wait for the checkout session to clear, then try again.',
+				);
+			} else {
+				setFundsAtRisk(true);
+				setErrorMessage(
+					'Your wallet replaced the original transaction after the server had already registered it. Please contact support with your transaction hash.',
+				);
+			}
+
+			setStep('failure');
+		},
+		[],
+	);
+
+	/**
+	 * Registers the current tx hash with backend.
+	 *
+	 * Same-hash retries are safe and useful:
+	 * - if the first request timed out after commit, backend returns the current state
+	 * - if the first request never reached backend, the retry establishes `confirming`
+	 */
+	const registerTxHashWithBackend = useCallback(
+		async (hash: `0x${string}`) => {
+			if (!session) {
+				return {
+					kind: CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL,
+					error: PAYMENT_ERROR_CODES.CRYPTO_SESSION_NOT_FOUND,
+				} as const;
+			}
+			if (submitRequestInFlight.current) {
+				return { kind: CRYPTO_TX_SUBMIT_OUTCOME.POLL } as const;
+			}
+
+			submitRequestInFlight.current = true;
+
+			try {
+				const normalizedHash = normalizeTxHash(hash);
+				const result = await submitCryptoTx({
+					sessionId: session.id,
+					txHash: hash,
+				});
+
+				if (result.success) {
+					backendTrackedTxHash.current = normalizedHash;
+					txSubmittedToBackend.current = true;
+					setSubmitRecoveryMode(null);
+					return { kind: 'accepted' as const };
+				}
+
+				const outcome = getCryptoTxSubmitOutcome(result.error);
+
+				if (outcome === CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL) {
+					return {
+						kind: CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL,
+						error: result.error,
+					} as const;
+				}
+
+				setSubmitRecoveryMode(outcome);
+				return { kind: outcome, error: result.error } as const;
+			} finally {
+				submitRequestInFlight.current = false;
+			}
+		},
+		[session],
+	);
 
 	// ---- Confirmation tracking ----
 	// Tracks live confirmation block count for display in the confirming step.
 	// wagmi polls the RPC for the tx's block number vs current block.
 	const confirmingEnabled = step === 'confirming' && !!txHash;
+	const confirmationTarget = selectedChainId
+		? getConfirmationTarget(selectedChainId)
+		: null;
 
 	const { data: confirmationCount } = useTransactionConfirmations({
 		hash: txHash,
@@ -212,6 +351,53 @@ export function CryptoCheckoutModal({
 			// Poll every 4s — slightly less than block time on most L2s,
 			// fast enough to show progress without excessive RPC calls
 			refetchInterval: confirmingEnabled ? 4_000 : false,
+		},
+	});
+	const backendConfirmationCount = toBackendConfirmationCount(confirmationCount);
+
+	useWaitForTransactionReceipt({
+		hash: txHash,
+		chainId: selectedChainId ?? undefined,
+		confirmations: 1,
+		pollingInterval: 4_000,
+		onReplaced(replacement) {
+			lastReplacementReason.current = replacement.reason;
+
+			// If the wallet cancelled before backend accepted any hash, unwind cleanly
+			// back to review — no payment tx remains to reconcile.
+			if (
+				replacement.reason === 'cancelled' &&
+				!backendTrackedTxHash.current &&
+				!txSubmittedToBackend.current
+			) {
+				setTxHash(undefined);
+				setTxSubmitted(false);
+				setSubmitRecoveryMode(null);
+				setFinalizationRequested(false);
+				setRetryBlocked(false);
+				setFundsAtRisk(false);
+				setErrorMessage(null);
+				payInFlight.current = false;
+				txConfirmRequested.current = false;
+				txConfirmInFlight.current = false;
+				reorgHandled.current = false;
+				toast.info('Transaction cancelled.');
+				setStep('review');
+				return;
+			}
+
+			// Follow the replacement hash while backend is still unbound.
+			// If backend already accepted a different hash, the mismatch effect below
+			// will stop the flow with a clear support message.
+			setTxHash(replacement.transaction.hash);
+			setSubmitRecoveryMode(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
+			submitRetriedHashes.current.delete(
+				normalizeTxHash(replacement.transaction.hash),
+			);
+			reorgHandled.current = false;
+		},
+		query: {
+			enabled: confirmingEnabled,
 		},
 	});
 
@@ -322,6 +508,26 @@ export function CryptoCheckoutModal({
 	// Sync ref each render — effects read from ref to avoid dep on poll cycle
 	polledSessionRef.current = polledSession;
 
+	// Non-stablecoins are only actually purchasable when the raffle prices them.
+	// Hoist token IDs once so chain resolution and selectors share the same filter.
+	const pricedTokenSlugs = useMemo(
+		() => cryptoTokenPricing.map(entry => entry.tokenId),
+		[cryptoTokenPricing],
+	);
+
+	/**
+	 * Gets tokens the current raffle can actually sell on a chain.
+	 * Shared by chain resolution, token selection, and chain-label display.
+	 */
+	const getAllowedTokens = useCallback(
+		(chainId: number): TokenInfo[] =>
+			getSelectableTokensForChain(chainId, {
+				allowedTokenSlugs: cryptoTokens,
+				pricedTokenSlugs,
+			}),
+		[cryptoTokens, pricedTokenSlugs],
+	);
+
 	// ==========================================
 	// Derived State
 	// ==========================================
@@ -333,16 +539,17 @@ export function CryptoCheckoutModal({
 	 * selecting a chain that has no valid payment option.
 	 */
 	const resolvedChainIds = useMemo(() => {
+		// Backend may allow "all chains", but FE must only surface chains the
+		// current wagmi config can actually switch to in this environment.
+		const supportedChainIds = new Set<number>(SUPPORTED_WEB3_CHAIN_IDS);
 		const baseChains =
-			cryptoChainIds.length > 0 ? cryptoChainIds : getAllChainIds();
+			cryptoChainIds.length > 0 ? cryptoChainIds : SUPPORTED_WEB3_CHAIN_IDS;
 
-		// Filter to only chains that have at least one allowed token
-		if (cryptoTokens.length === 0) return baseChains;
 		return baseChains.filter(chainId => {
-			const chainTokens = getTokensForChain(chainId);
-			return chainTokens.some(t => cryptoTokens.includes(t.slug));
+			if (!supportedChainIds.has(chainId)) return false;
+			return getAllowedTokens(chainId).length > 0;
 		});
-	}, [cryptoChainIds, cryptoTokens]);
+	}, [cryptoChainIds, getAllowedTokens]);
 
 	/**
 	 * Checks if current wallet address is already verified on backend
@@ -378,33 +585,79 @@ export function CryptoCheckoutModal({
 	}, [step, onConfirmingChange]);
 
 	/**
-	 * After tx is confirmed on-chain, submit hash to backend and start polling.
-	 * Uses txSubmittedToBackend ref as idempotency guard — effect can re-run when
-	 * other deps change (e.g. step transitions), but backend call must happen exactly once.
+	 * Session polling is authoritative for whether backend has accepted a hash.
+	 *
+	 * This closes the "response lost after commit" gap:
+	 * - submit POST may succeed server-side but fail client-side on the way back
+	 * - polling the session gives FE the same truth without trusting the submit response
 	 */
 	useEffect(() => {
-		if (!isTxConfirmed || !txHash || !session || step !== 'confirming') return;
-		// Synchronous ref check — survives React re-renders and Strict Mode double-invocation
-		if (txSubmittedToBackend.current) return;
+		if (step !== 'confirming' || !polledSession?.txHash) return;
+
+		backendTrackedTxHash.current = normalizeTxHash(polledSession.txHash);
 		txSubmittedToBackend.current = true;
+		setSubmitRecoveryMode(null);
+	}, [step, polledSession?.txHash]);
 
-		async function submitTx() {
-			const result = await submitCryptoTx({
-				sessionId: session!.id,
-				txHash: txHash!,
-			});
+	/**
+	 * One bounded same-hash retry after ambiguous submit failures.
+	 *
+	 * Why only once:
+	 * - same-hash submit is idempotent on backend, so one retry is safe
+	 * - repeated retries would just amplify backend load during outages
+	 * - if one retry + polling still don't converge, timeout/failure handling takes over
+	 */
+	useEffect(() => {
+		if (
+			step !== 'confirming' ||
+			!txHash ||
+			submitRecoveryMode !== CRYPTO_TX_SUBMIT_OUTCOME.RETRY
+		)
+			return;
+		if (!session || txSubmittedToBackend.current || polledSession?.txHash) return;
 
-			if (!result.success) {
-				setErrorMessage(getPaymentErrorMessage(result.error));
-				setStep('failure');
-				return;
+		const normalizedHash = normalizeTxHash(txHash);
+		if (submitRetriedHashes.current.has(normalizedHash)) return;
+
+		const timer = setTimeout(async () => {
+			submitRetriedHashes.current.add(normalizedHash);
+
+			const outcome = await registerTxHashWithBackend(txHash);
+
+			if (outcome.kind === CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL) {
+				failSubmittedTxRegistration();
 			}
+		}, 3_000);
 
-			// Step already 'confirming' — polling effect handles success/failure transition
-		}
+		return () => clearTimeout(timer);
+	}, [
+		step,
+		txHash,
+		submitRecoveryMode,
+		session,
+		polledSession?.txHash,
+		registerTxHashWithBackend,
+		failSubmittedTxRegistration,
+	]);
 
-		submitTx();
-	}, [isTxConfirmed, txHash, session, step]);
+	/**
+	 * Detect when the wallet's canonical hash diverges from the backend-tracked hash.
+	 *
+	 * This is the irreducible backend-contract edge case from PR 40:
+	 * once backend is bound to hash A, a later wallet replacement to hash B cannot be
+	 * reconciled client-side. Surface that explicitly instead of pretending the flow
+	 * can still finalize normally.
+	 */
+	useEffect(() => {
+		if (step !== 'confirming' || !txHash) return;
+
+		const trackedHash = backendTrackedTxHash.current;
+		if (!trackedHash) return;
+
+		if (normalizeTxHash(txHash) === trackedHash) return;
+
+		failBackendTrackedReplacement(lastReplacementReason.current);
+	}, [step, txHash, failBackendTrackedReplacement]);
 
 	/**
 	 * FE-driven finalization — when on-chain confirmations reach the chain's target,
@@ -419,52 +672,73 @@ export function CryptoCheckoutModal({
 	 * Uses txConfirmRequested ref for idempotency — exactly one call per tx.
 	 */
 	useEffect(() => {
-		if (step !== 'confirming' || !txHash || !session || !selectedChainId)
+		if (
+			step !== 'confirming' ||
+			!txHash ||
+			!session ||
+			!selectedChainId ||
+			confirmationTarget === null
+		)
 			return;
-		// Wait until submit-tx call has fired — backend needs the hash first
+		// Wait until submit-tx succeeded — backend needs the hash first
 		if (!txSubmittedToBackend.current) return;
-		// Only fire once per tx
-		if (txConfirmRequested.current) return;
+		// Only one in-flight confirm request at a time, and stop once backend accepted one.
+		if (txConfirmRequested.current || txConfirmInFlight.current) return;
 
-		const target = getConfirmationTarget(selectedChainId);
-		const currentConfirmations =
-			confirmationCount !== undefined ? Number(confirmationCount) : 0;
-		if (currentConfirmations < target) return;
-
-		txConfirmRequested.current = true;
+		if (backendConfirmationCount < confirmationTarget) return;
+		const sessionId = session.id;
+		const chainId = selectedChainId;
+		const confirmedTxHash = txHash;
 
 		async function requestConfirmation() {
-			const result = await confirmCryptoTx({
-				sessionId: session!.id,
-				txHash: txHash!,
-				chainId: selectedChainId!,
-				confirmations: Number(confirmationCount),
-			});
+			txConfirmInFlight.current = true;
+			try {
+				const result = await confirmCryptoTx({
+					sessionId,
+					txHash: confirmedTxHash,
+					chainId,
+					confirmations: backendConfirmationCount,
+				});
 
-			if (!result.success) {
-				// Non-fatal — polling/cron will finalize eventually.
-				// Log for debugging but don't interrupt the user's confirming experience.
-				console.warn(
-					'FE-driven confirm failed, falling back to cron:',
-					result.error,
-				);
-				return;
-			}
+				if (!result.success) {
+					// Non-fatal — polling/cron will finalize eventually.
+					// Leave retry open for the next confirmation/poll tick instead of
+					// permanently downgrading this tx to cron-only after one transient error.
+					console.warn(
+						'FE-driven confirm failed, falling back to cron:',
+						result.error,
+					);
+					return;
+				}
 
-			// Backend confirmed — session status 'completed' means tickets created.
-			// successTransitioned ref prevents double onSuccess() when polling
-			// also detects COMPLETED in the same render cycle.
-			if (result.data.status === CRYPTO_PAYMENT_STATUS.COMPLETED) {
-				if (successTransitioned.current) return;
-				successTransitioned.current = true;
-				setStep('success');
-				onSuccess?.();
+				txConfirmRequested.current = true;
+				setFinalizationRequested(true);
+
+				// Backend confirmed — session status 'completed' means tickets created.
+				// successTransitioned ref prevents double onSuccess() when polling
+				// also detects COMPLETED in the same render cycle.
+				if (result.data.status === CRYPTO_PAYMENT_STATUS.COMPLETED) {
+					if (successTransitioned.current) return;
+					successTransitioned.current = true;
+					setStep('success');
+					onSuccess?.();
+				}
+				// Any other status: cron/polling will handle the final transition
+			} finally {
+				txConfirmInFlight.current = false;
 			}
-			// Any other status: cron/polling will handle the final transition
 		}
 
 		requestConfirmation();
-	}, [step, txHash, session, selectedChainId, confirmationCount, onSuccess]);
+	}, [
+		step,
+		txHash,
+		session,
+		selectedChainId,
+		confirmationTarget,
+		backendConfirmationCount,
+		onSuccess,
+	]);
 
 	/**
 	 * Transition to success/failure when polling detects terminal state.
@@ -614,16 +888,6 @@ export function CryptoCheckoutModal({
 	// ==========================================
 
 	/**
-	 * Gets allowed tokens for a chain, filtered by raffle's cryptoTokens.
-	 * Empty cryptoTokens means all tokens for the chain are allowed.
-	 */
-	function getAllowedTokens(chainId: number): TokenInfo[] {
-		const chainTokens = getTokensForChain(chainId);
-		if (cryptoTokens.length === 0) return chainTokens;
-		return chainTokens.filter(t => cryptoTokens.includes(t.slug));
-	}
-
-	/**
 	 * Step 1: User selects a chain.
 	 * If chain has only one allowed token, auto-select it and skip token step.
 	 * If multiple tokens, show token selector.
@@ -715,6 +979,7 @@ export function CryptoCheckoutModal({
 				session &&
 				session.chainId === selectedChainId &&
 				sessionTokenSlug === selectedToken.slug &&
+				sessionWalletAddress === checksummedAddress &&
 				new Date(session.expiresAt).getTime() > Date.now();
 
 			if (existingSessionValid) {
@@ -729,16 +994,11 @@ export function CryptoCheckoutModal({
 			const cancelResult = await cancelPaymentSession(orderId);
 
 			if (!cancelResult.success) {
-				// Only block on crypto-confirming — tx is on-chain and can't be cancelled
-				if (
-					cancelResult.error === PAYMENT_ERROR_CODES.CANCEL_CRYPTO_CONFIRMING
-				) {
-					setErrorMessage(getPaymentErrorMessage(cancelResult.error));
-					setStep('failure');
-					return;
-				}
-				// Other cancel errors (permission, not-pending) are non-fatal —
-				// proceed and let createCryptoCheckout handle them
+				// Cancel is the method-switch guard. If it fails, we no longer know
+				// whether the opposite payment method is still active, so do not proceed.
+				setErrorMessage(getPaymentErrorMessage(cancelResult.error));
+				setStep('failure');
+				return;
 			}
 
 			// Create checkout session so Review step shows the amount
@@ -757,6 +1017,7 @@ export function CryptoCheckoutModal({
 
 			setSession(checkoutResult.data);
 			setSessionTokenSlug(selectedToken.slug);
+			setSessionWalletAddress(checksummedAddress);
 			setStep('review');
 		} catch (error) {
 			if (isUserRejection(error)) {
@@ -779,6 +1040,7 @@ export function CryptoCheckoutModal({
 		orderId,
 		session,
 		sessionTokenSlug,
+		sessionWalletAddress,
 	]);
 
 	/**
@@ -790,8 +1052,9 @@ export function CryptoCheckoutModal({
 	 * Flow:
 	 * 1. Switch to selected chain (if not already on it)
 	 * 2. Execute ERC20 transfer(treasuryAddress, amountRaw) via wagmi
-	 * 3. useWaitForTransactionReceipt watches for on-chain confirmation
-	 * 4. Effect submits txHash to backend, transitions to 'confirming'
+	 * 3. Submit tx hash to backend immediately after broadcast so the session moves
+	 *    to `confirming` before any cancel/switch flow can race it
+	 * 4. Receipt + confirmation hooks track on-chain progress after backend knows the hash
 	 */
 	async function handlePay() {
 		if (!address || !selectedChainId || !session) return;
@@ -810,18 +1073,14 @@ export function CryptoCheckoutModal({
 				await switchChainAsync({ chainId: selectedChainId });
 			}
 
-			// Transition to confirming BEFORE writeContractAsync resolves.
-			// On fast L2 chains (Polygon, Arbitrum — 2-block targets), wagmi's
-			// useWaitForTransactionReceipt can resolve from cache before React flushes
-			// state. If step is still 'review' when isTxConfirmed becomes true,
-			// the submit-tx effect's `step !== 'confirming'` guard blocks the backend
-			// call — silently losing the tx hash. Moving the transition here ensures
-			// step is 'confirming' by the time the receipt arrives.
+			// Move to confirming before awaiting wallet broadcast.
+			// This keeps the UI in the pending state the moment the user approves,
+			// and avoids a stale "review" screen while wagmi starts producing tx data.
 			setStep('confirming');
 
 			// Execute ERC20 transfer
 			// amountRaw is already in token's smallest unit (6 decimals for USDC, 18 for EARNM)
-			await writeContractAsync({
+			const submittedTxHash = await writeContractAsync({
 				address: session.tokenAddress as `0x${string}`,
 				abi: erc20Abi,
 				functionName: 'transfer',
@@ -830,6 +1089,22 @@ export function CryptoCheckoutModal({
 					BigInt(session.amountRaw),
 				],
 			});
+			setTxHash(submittedTxHash);
+
+			// Register the tx with backend immediately from the returned hash.
+			// This closes the dangerous window where real funds are in-flight but
+			// backend still sees a cancellable `pending` crypto session.
+			const submitOutcome = await registerTxHashWithBackend(submittedTxHash);
+
+			if (submitOutcome.kind === CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL) {
+				setIsProcessing(false);
+				failSubmittedTxRegistration();
+				return;
+			}
+
+			// Retry/poll recovery keeps the step alive without punishing the user with
+			// a false terminal failure when the submit response was merely ambiguous.
+			setIsProcessing(false);
 		} catch (error) {
 			// Reset guards in catch only — on success path, payInFlight stays true to prevent
 			// double-transfer if React re-renders before confirming step takes over.
@@ -847,6 +1122,7 @@ export function CryptoCheckoutModal({
 			}
 
 			console.error('Crypto payment error:', error);
+			setRetryBlocked(false);
 			setErrorMessage('Transaction failed. Please try again.');
 			setStep('failure');
 		}
@@ -861,15 +1137,25 @@ export function CryptoCheckoutModal({
 		setSelectedToken(null);
 		setSession(null);
 		setSessionTokenSlug(null);
+		setSessionWalletAddress(null);
 		setIsProcessing(false);
 		setErrorMessage(null);
 		setFundsAtRisk(false);
+		setRetryBlocked(false);
 		setTxSubmitted(false);
+		setTxHash(undefined);
+		setSubmitRecoveryMode(null);
+		setFinalizationRequested(false);
 		// Reset ref guards so retried flow can submit again
 		walletReadyInFlight.current = false;
 		payInFlight.current = false;
+		submitRequestInFlight.current = false;
 		txSubmittedToBackend.current = false;
+		backendTrackedTxHash.current = null;
+		submitRetriedHashes.current.clear();
+		lastReplacementReason.current = null;
 		txConfirmRequested.current = false;
+		txConfirmInFlight.current = false;
 		successTransitioned.current = false;
 		reorgHandled.current = false;
 		// Reset wagmi write state so stale txHash doesn't persist across retries
@@ -915,7 +1201,7 @@ export function CryptoCheckoutModal({
 				break;
 			case 'review':
 				// Keep session — reuse check in handleWalletReady skips API call
-				// if same chain + not expired. Wallet changes are handled by walletAddress param.
+				// only when chain + token + verified sender wallet still match.
 				setStep('connect-wallet');
 				break;
 			default:
@@ -1045,6 +1331,7 @@ export function CryptoCheckoutModal({
 						<ChainSelector
 							cryptoChainIds={resolvedChainIds}
 							cryptoTokens={cryptoTokens}
+							pricedTokenSlugs={pricedTokenSlugs}
 							onSelectChain={handleSelectChain}
 						/>
 					)}
@@ -1079,17 +1366,17 @@ export function CryptoCheckoutModal({
 							onPay={handlePay}
 						/>
 					)}
-					{step === 'confirming' && selectedChainId && (
-						<ConfirmingStep
-							txHash={txHash}
-							selectedChainId={selectedChainId}
-							confirmations={
-								confirmationCount !== undefined ? Number(confirmationCount) : 0
-							}
-							confirmationTarget={getConfirmationTarget(selectedChainId)}
-							isTxConfirmed={isTxConfirmed}
-						/>
-					)}
+					{step === 'confirming' &&
+						selectedChainId &&
+						confirmationTarget !== null && (
+							<ConfirmingStep
+								txHash={txHash}
+								selectedChainId={selectedChainId}
+								confirmations={backendConfirmationCount}
+								confirmationTarget={confirmationTarget}
+								finalizationRequested={finalizationRequested}
+							/>
+						)}
 					{step === 'success' && selectedChainId && (
 						<SuccessStep
 							txHash={txHash}
@@ -1103,6 +1390,7 @@ export function CryptoCheckoutModal({
 							selectedChainId={selectedChainId ?? undefined}
 							errorMessage={errorMessage}
 							fundsAtRisk={fundsAtRisk}
+							retryBlocked={retryBlocked}
 							onClose={handleClose}
 							onReset={handleReset}
 						/>

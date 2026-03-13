@@ -33,6 +33,8 @@ interface TicketPurchaseCardProps {
 	cryptoTokens?: string[];
 	/** Non-stablecoin pricing per token — needed for EARNM and future non-stablecoin tokens */
 	cryptoTokenPricing?: CryptoTokenPricing;
+	/** Current user ticket total for this raffle — baseline for crypto post-success sync */
+	myTicketsTotal?: number;
 	userId?: string | null;
 }
 
@@ -62,6 +64,7 @@ export function TicketPurchaseCard({
 	cryptoChainIds = [],
 	cryptoTokens = [],
 	cryptoTokenPricing = [],
+	myTicketsTotal = 0,
 	userId,
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
@@ -326,24 +329,25 @@ export function TicketPurchaseCard({
 
 					{/* Crypto buy button — only when raffle accepts crypto AND Web3 is configured */}
 					{/* cryptoChainIds empty = all chains allowed, so no length check */}
-					{acceptsCrypto && isWeb3Enabled && !isFree && (
-						<CryptoBuyButton
-							raffleId={raffleId}
-							ticketQuantity={ticketQuantity}
-							disabled={disabled}
-							questionId={questionId}
-							promoCode={appliedPromo?.code}
-							onPromoInvalid={handlePromoInvalid}
-							cryptoChainIds={cryptoChainIds}
-							cryptoTokens={cryptoTokens}
-							cryptoTokenPricing={cryptoTokenPricing}
-							userId={userId}
-						/>
-					)}
-				</>
-			) : (
-				<SignInToBuyButton />
-			)}
+						{acceptsCrypto && isWeb3Enabled && !isFree && (
+							<CryptoBuyButton
+								raffleId={raffleId}
+								ticketQuantity={ticketQuantity}
+								disabled={disabled}
+								questionId={questionId}
+								promoCode={appliedPromo?.code}
+								onPromoInvalid={handlePromoInvalid}
+								cryptoChainIds={cryptoChainIds}
+								cryptoTokens={cryptoTokens}
+								cryptoTokenPricing={cryptoTokenPricing}
+								myTicketsTotal={myTicketsTotal}
+								userId={userId}
+							/>
+						)}
+					</>
+				) : (
+					<SignInToBuyButton />
+				)}
 		</div>
 	);
 }

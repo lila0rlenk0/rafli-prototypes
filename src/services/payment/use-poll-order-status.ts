@@ -105,6 +105,10 @@ export function usePollOrderStatus(orderId: string | null) {
 			return result.data;
 		},
 		enabled: !!orderId,
+		// Polling itself is already the retry strategy.
+		// Disable hidden React Query retries so one slow backend response doesn't
+		// multiply into extra requests on top of the next scheduled interval.
+		retry: false,
 		// Poll every 5s, stop on terminal status or timeout.
 		// refetchInterval is a callback invoked by React Query (not during render),
 		// so Date.now() and ref reads are safe here.

@@ -57,14 +57,15 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 		setTimeRemaining(getTimeRemaining(endAt));
 	}, [endAt]);
 
-	// Update countdown every second
+	// Update countdown every second while active.
+	// Once expired, stop the timer entirely — frozen zeroes don't need more work.
 	useEffect(() => {
-		// Set up interval for updates
+		if (timeRemaining.isExpired) return;
+
 		const interval = setInterval(updateCountdown, 1_000);
 
-		// Cleanup on unmount
 		return () => clearInterval(interval);
-	}, [updateCountdown]);
+	}, [updateCountdown, timeRemaining.isExpired]);
 
 	if (!mounted) return null;
 

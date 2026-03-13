@@ -16,7 +16,6 @@ import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
 import { cancelPaymentSession } from '@/services/payment/cancel-payment-session';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
-import { PAYMENT_ERROR_CODES } from '@/types/errors';
 
 /**
  * Props for BuyButton
@@ -151,11 +150,10 @@ export function BuyButton({
 			// Stripe checkout doesn't fail with "crypto-session-active".
 			const cancelResult = await cancelPaymentSession(result.order.id);
 
-			if (
-				!cancelResult.success &&
-				cancelResult.error === PAYMENT_ERROR_CODES.CANCEL_CRYPTO_CONFIRMING
-			) {
-				// Crypto tx is on-chain — can't switch to Stripe
+			if (!cancelResult.success) {
+				// Cancel is the guard-clearing step for method switching.
+				// If it fails for any reason, we no longer know whether Stripe/crypto
+				// is still active on this order, so stop here with the real error.
 				toast.error(getPaymentErrorMessage(cancelResult.error));
 				return;
 			}

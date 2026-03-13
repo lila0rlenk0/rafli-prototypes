@@ -88,6 +88,11 @@ interface FailureStepProps {
 	errorMessage: string | null;
 	/** When true, funds may have been deducted — hides "Try Again" to prevent duplicate payment */
 	fundsAtRisk?: boolean;
+	/**
+	 * Some failures are non-retryable even if funds are not definitely at risk.
+	 * Example: wallet replaced/cancelled a tx after backend already registered a different hash.
+	 */
+	retryBlocked?: boolean;
 	onClose: () => void;
 	onReset: () => void;
 }
@@ -103,9 +108,12 @@ export function FailureStep({
 	selectedChainId,
 	errorMessage,
 	fundsAtRisk = false,
+	retryBlocked = false,
 	onClose,
 	onReset,
 }: FailureStepProps) {
+	const hideRetry = fundsAtRisk || retryBlocked;
+
 	return (
 		<div className="flex flex-col items-center gap-5 py-6">
 			<div className="flex size-14 items-center justify-center rounded-full bg-red-50">
@@ -123,7 +131,7 @@ export function FailureStep({
 				>
 					Close
 				</Button>
-				{!fundsAtRisk && (
+				{!hideRetry && (
 					<Button
 						onClick={onReset}
 						className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"

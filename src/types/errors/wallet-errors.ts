@@ -11,8 +11,12 @@ export const WALLET_ERROR_CODES = {
 	NOT_VERIFIED: 'auth:wallet:not-verified',
 	/** EIP-191 signature is invalid */
 	SIGNATURE_INVALID: 'auth:wallet:signature-invalid',
+	/** Signature payload is malformed / not a valid EIP-191 signature */
+	INVALID_SIGNATURE: 'auth:wallet:invalid-signature',
 	/** Signature timestamp expired */
 	SIGNATURE_EXPIRED: 'auth:wallet:signature-expired',
+	/** Timestamp payload was malformed */
+	INVALID_TIMESTAMP: 'auth:wallet:invalid-timestamp',
 	/** Maximum linked wallets reached */
 	LIMIT_REACHED: 'auth:wallet:limit-reached',
 	/** Signed message doesn't match expected format — address/userId/timestamp mismatch */

@@ -97,9 +97,19 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		case 'payments:raffle:user-ticket-limit-exceeded':
 			return 'You reached the maximum tickets per user for this raffle';
 
+		// Checkout/confirm failures
+		case 'payments:checkout:failed':
+			return 'Failed to create checkout session. Please try again';
+		case 'payments:crypto:checkout-failed':
+			return 'Failed to start crypto checkout. Please try again';
+		case 'payments:crypto:confirm-failed':
+			return 'Failed to confirm transaction. Please contact support';
+		case 'fetch_failed':
+			return 'Failed to load payment data. Please try again';
+
 		// Cancel errors
-		case 'payments:cancel:crypto-confirming':
-			return 'Cannot switch payment method while crypto payment is being verified';
+		case 'payments:cancel:crypto-active':
+			return 'A crypto payment is already in progress. Resume or finish it before switching payment methods';
 		case 'payments:cancel:session-failed':
 			return 'Failed to cancel payment session. Please try again';
 
@@ -138,8 +148,12 @@ export function getWalletErrorMessage(errorCode: WalletErrorCode): string {
 			return 'Wallet is not verified. Please verify first';
 		case 'auth:wallet:signature-invalid':
 			return 'Signature verification failed. Please try again';
+		case 'auth:wallet:invalid-signature':
+			return 'Invalid wallet signature. Please try again';
 		case 'auth:wallet:signature-expired':
 			return 'Signature expired. Please sign a new message';
+		case 'auth:wallet:invalid-timestamp':
+			return 'Wallet verification expired. Please sign a fresh message';
 		case 'auth:wallet:limit-reached':
 			return 'Maximum linked wallets reached. Unlink one to add another';
 		case 'auth:wallet:message-mismatch':
@@ -148,6 +162,10 @@ export function getWalletErrorMessage(errorCode: WalletErrorCode): string {
 			return 'Invalid wallet address format';
 		case 'auth:wallet:not-found':
 			return 'Wallet not found on your account';
+		case 'auth:wallet:validation-failed':
+			return 'Wallet verification response was invalid. Please try again';
+		case 'fetch_failed':
+			return 'Failed to load wallet data. Please try again';
 		case 'network_error':
 			return 'Network error. Please check your connection';
 		case 'timeout_error':

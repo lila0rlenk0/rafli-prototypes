@@ -2,7 +2,7 @@
 
 import { Loader2Icon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
@@ -56,6 +56,10 @@ export function BuyButton({
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 	const [showQuestionModal, setShowQuestionModal] = useState(false);
+	// Synchronous single-flight guard for checkout.
+	// `setIsLoading(true)` is async-batched, so rapid double-clicks can both
+	// enter `buildCheckoutOrder` before React commits the disabled state.
+	const checkoutInFlight = useRef(false);
 
 	/**
 	 * Handles the buy button click
@@ -125,6 +129,8 @@ export function BuyButton({
 	 * Order creation + promo handling is shared with CryptoBuyButton.
 	 */
 	async function proceedToCheckout() {
+		if (checkoutInFlight.current) return;
+		checkoutInFlight.current = true;
 		setIsLoading(true);
 
 		try {
@@ -175,6 +181,7 @@ export function BuyButton({
 			console.error('Unexpected error during checkout:', error);
 			toast.error('An unexpected error occurred. Please try again');
 		} finally {
+			checkoutInFlight.current = false;
 			setIsLoading(false);
 		}
 	}

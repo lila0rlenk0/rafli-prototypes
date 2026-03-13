@@ -37,12 +37,12 @@ function buildOrder(overrides: Partial<OrderWithRaffle> = {}): OrderWithRaffle {
 }
 
 describe('getReusablePendingOrder', () => {
-	test('finds a reusable pending order on a later page', async () => {
+	test('finds a reusable pending order even on page 4', async () => {
 		mockGet.mockReset();
 		mockGet
 			.mockResolvedValueOnce(
 				mockAxiosResponse({
-					total: 101,
+					total: 301,
 					orders: [
 						buildOrder({
 							id: '33333333-3333-4333-8333-333333333333',
@@ -53,8 +53,30 @@ describe('getReusablePendingOrder', () => {
 			)
 			.mockResolvedValueOnce(
 				mockAxiosResponse({
-					total: 101,
-					orders: [buildOrder({ id: '44444444-4444-4444-8444-444444444444' })],
+					total: 301,
+					orders: [
+						buildOrder({
+							id: '44444444-4444-4444-8444-444444444444',
+							status: ORDER_STATUS.FAILED,
+						}),
+					],
+				}),
+			)
+			.mockResolvedValueOnce(
+				mockAxiosResponse({
+					total: 301,
+					orders: [
+						buildOrder({
+							id: '99999999-9999-4999-8999-999999999999',
+							status: ORDER_STATUS.COMPLETED,
+						}),
+					],
+				}),
+			)
+			.mockResolvedValueOnce(
+				mockAxiosResponse({
+					total: 301,
+					orders: [buildOrder({ id: '88888888-8888-4888-8888-888888888888' })],
 				}),
 			);
 
@@ -65,14 +87,20 @@ describe('getReusablePendingOrder', () => {
 
 		expect(result).toEqual({
 			kind: 'found',
-			order: buildOrder({ id: '44444444-4444-4444-8444-444444444444' }),
+			order: buildOrder({ id: '88888888-8888-4888-8888-888888888888' }),
 		});
-		expect(mockGet).toHaveBeenCalledTimes(2);
+		expect(mockGet).toHaveBeenCalledTimes(4);
 		expect(mockGet.mock.calls[0]?.[1]).toMatchObject({
 			params: { page: 1, limit: 100 },
 		});
 		expect(mockGet.mock.calls[1]?.[1]).toMatchObject({
 			params: { page: 2, limit: 100 },
+		});
+		expect(mockGet.mock.calls[2]?.[1]).toMatchObject({
+			params: { page: 3, limit: 100 },
+		});
+		expect(mockGet.mock.calls[3]?.[1]).toMatchObject({
+			params: { page: 4, limit: 100 },
 		});
 	});
 
@@ -109,6 +137,81 @@ describe('getReusablePendingOrder', () => {
 
 		expect(result).toEqual({ kind: 'not_found' });
 		expect(mockGet).toHaveBeenCalledTimes(2);
+	});
+
+	test('skips pending orders with incompatible promo codes', async () => {
+		mockGet.mockReset();
+		mockGet.mockResolvedValueOnce(
+			mockAxiosResponse({
+				total: 1,
+				orders: [
+					buildOrder({
+						id: 'aaa11111-1111-4111-8111-111111111111',
+						promoCode: 'OTHER_CODE',
+					}),
+				],
+			}),
+		);
+
+		const result = await getReusablePendingOrder(
+			'22222222-2222-4222-8222-222222222222',
+			2,
+			'MY_CODE',
+		);
+
+		expect(result).toEqual({ kind: 'not_found' });
+	});
+
+	test('matches pending order when promo matches or order has no promo', async () => {
+		mockGet.mockReset();
+		mockGet.mockResolvedValueOnce(
+			mockAxiosResponse({
+				total: 1,
+				orders: [
+					buildOrder({
+						id: 'bbb11111-1111-4111-8111-111111111111',
+						promoCode: null,
+					}),
+				],
+			}),
+		);
+
+		const result = await getReusablePendingOrder(
+			'22222222-2222-4222-8222-222222222222',
+			2,
+			'MY_CODE',
+		);
+
+		expect(result).toEqual({
+			kind: 'found',
+			order: buildOrder({
+				id: 'bbb11111-1111-4111-8111-111111111111',
+				promoCode: null,
+			}),
+		});
+	});
+
+	test('rejects pending orders when no promo expected but order has one', async () => {
+		mockGet.mockReset();
+		mockGet.mockResolvedValueOnce(
+			mockAxiosResponse({
+				total: 1,
+				orders: [
+					buildOrder({
+						id: 'ccc11111-1111-4111-8111-111111111111',
+						promoCode: 'SOME_CODE',
+					}),
+				],
+			}),
+		);
+
+		// No promoCode argument = only accept orders without promo
+		const result = await getReusablePendingOrder(
+			'22222222-2222-4222-8222-222222222222',
+			2,
+		);
+
+		expect(result).toEqual({ kind: 'not_found' });
 	});
 
 	test('returns lookup_failed when any page read degrades', async () => {

@@ -104,17 +104,16 @@ export function getCryptoSessionGraceWindowMs(
 }
 
 /**
- * Converts viem/wagmi confirmation counts to the backend's block-distance semantics.
+ * Normalizes wagmi confirmation counts into a plain number for UI + FE-driven confirm.
  *
- * Why the subtraction exists:
- * - viem reports the inclusion block as the first confirmation
- * - backend PR 40 computes `currentBlock - receipt.blockNumber`
- * - so the inclusion block is `0` from the backend's perspective
+ * Keep wagmi's native semantics intact:
+ * - inclusion block = 1 confirmation
+ * - 1-confirmation chains should fast-path confirm on the receipt block
  *
- * Without this normalization the FE asks backend to confirm one block too early
- * on every chain, especially visible on 1-block Arbitrum/Base thresholds.
+ * Backend re-verifies confirmations independently, so the FE should not invent
+ * a different counting scheme here.
  */
-export function toBackendConfirmationCount(
+export function getObservedConfirmationCount(
 	confirmations: bigint | number | undefined,
 ): number {
 	if (confirmations === undefined) return 0;
@@ -122,7 +121,7 @@ export function toBackendConfirmationCount(
 	const numericConfirmations =
 		typeof confirmations === 'bigint' ? Number(confirmations) : confirmations;
 
-	return Math.max(0, numericConfirmations - 1);
+	return Math.max(0, numericConfirmations);
 }
 
 /**

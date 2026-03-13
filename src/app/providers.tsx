@@ -1,22 +1,26 @@
-'use client';
+import { cookies } from 'next/headers';
 
-import { MixpanelProvider } from '@/providers/mixpanel-provider';
-import { QueryProvider } from '@/providers/query-provider';
-import { Web3Provider } from '@/providers/web3-provider';
+import { WAGMI_COOKIE_KEY } from '@/lib/web3/config';
+import { ProvidersClient } from './providers-client';
+
+interface ProvidersProps {
+	children: React.ReactNode;
+}
 
 /**
- * Root Providers
+ * Root Providers Server Wrapper
  *
- * QueryProvider is outermost — single QueryClient for both app queries and wagmi.
- * Web3Provider no longer creates its own QueryClient; it reuses the app's.
- * This avoids the nested-QueryClientProvider problem where one overrides the other.
+ * Reads only wagmi's persisted SSR cookie and forwards that single value into
+ * the client provider tree. Never serialize the full request cookie header into
+ * client props — auth/session cookies must stay server-only.
  */
-export function Providers({ children }: { children: React.ReactNode }) {
+export async function Providers({ children }: ProvidersProps) {
+	const wagmiCookieValue =
+		(await cookies()).get(WAGMI_COOKIE_KEY)?.value ?? null;
+
 	return (
-		<QueryProvider>
-			<Web3Provider>
-				<MixpanelProvider>{children}</MixpanelProvider>
-			</Web3Provider>
-		</QueryProvider>
+		<ProvidersClient wagmiCookieValue={wagmiCookieValue}>
+			{children}
+		</ProvidersClient>
 	);
 }

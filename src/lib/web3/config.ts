@@ -1,4 +1,5 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { cookieStorage, createStorage } from 'wagmi';
 import {
 	arbitrum,
 	arbitrumSepolia,
@@ -50,6 +51,16 @@ const configuredChains = isProd ? prodChains : devChains;
 export const isWeb3Enabled = !!clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 
 /**
+ * wagmi persists its SSR hydration snapshot under `wagmi.store`.
+ *
+ * Keep the prefix explicit instead of relying on wagmi's default so the
+ * server-side provider wrapper can safely extract only this cookie without
+ * ever serializing the full request cookie header into the client bundle.
+ */
+export const WAGMI_STORAGE_KEY = 'wagmi';
+export const WAGMI_COOKIE_KEY = `${WAGMI_STORAGE_KEY}.store`;
+
+/**
  * Chain IDs FE is actually configured to support in the current environment.
  *
  * This is the UI/runtime source of truth for "selectable" chains.
@@ -57,6 +68,15 @@ export const isWeb3Enabled = !!clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
  * testnets in production even if backend allowlists are empty.
  */
 export const SUPPORTED_WEB3_CHAIN_IDS = configuredChains.map(chain => chain.id);
+
+/**
+ * Persist wagmi state in cookies so App Router server renders can hydrate the
+ * connected wallet state without a disconnect → reconnect flash.
+ */
+const wagmiStorage = createStorage({
+	key: WAGMI_STORAGE_KEY,
+	storage: cookieStorage,
+});
 
 /**
  * Combined wagmi + RainbowKit configuration
@@ -71,6 +91,7 @@ export const wagmiConfig = isWeb3Enabled
 			appName: 'Rafli',
 			projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
 			chains: configuredChains,
+			storage: wagmiStorage,
 			ssr: true, // Required for Next.js SSR hydration
 		})
 	: null;

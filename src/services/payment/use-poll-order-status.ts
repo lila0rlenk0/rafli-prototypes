@@ -68,18 +68,14 @@ export function usePollOrderStatus(
 ) {
 	const resolvedMaxDurationMs = maxDurationMs ?? DEFAULT_MAX_POLL_DURATION_MS;
 
-	// Tracks when polling started — read only inside refetchInterval callback
-	// (not during render), so it's safe as a ref for the Date.now() check there.
+	// Tracks when polling started — only read inside refetchInterval (not render)
 	const startedAtRef = useRef<number>(0);
 
-	// isExpired is state (not a ref) because callers read it during render.
-	// Only set to true asynchronously via setTimeout — never synchronously in the effect body.
+	// isExpired is render-visible state — only set asynchronously via setTimeout
 	const [isExpired, setIsExpired] = useState(false);
 
-	// Initialize/reset start time when orderId changes.
-	// The synchronous reset of startedAtRef is fine — refs can be written in effects.
-	// isExpired is only set asynchronously via the timer callback (not synchronously),
-	// which satisfies the react-hooks/set-state-in-effect rule.
+	// Initialize/reset start time only when orderId changes.
+	// maxDurationMs changes should extend the existing window, not restart the clock.
 	useEffect(() => {
 		if (!orderId) {
 			startedAtRef.current = 0;
@@ -88,22 +84,32 @@ export function usePollOrderStatus(
 
 		startedAtRef.current = Date.now();
 
-		// Schedule expiry — fires once after MAX_POLL_DURATION_MS.
-		// Async setState in timer callback is allowed (not synchronous in effect body).
+		return function cleanup() {
+			setIsExpired(false);
+		};
+	}, [orderId]);
+
+	// Separate timer effect keyed on both orderId and maxDuration.
+	// Restarting the expiry timer when the grace window extends is intentional —
+	// a longer confirming window should push back the timeout, not keep the old one.
+	useEffect(() => {
+		if (!orderId) return;
+
 		const timer = setTimeout(() => {
 			setIsExpired(true);
 		}, resolvedMaxDurationMs);
 
 		return function cleanup() {
 			clearTimeout(timer);
-			setIsExpired(false);
 		};
 	}, [orderId, resolvedMaxDurationMs]);
 
 	const query = useQuery<Order, ServiceError<OrderErrorCode>>({
 		queryKey: pollOrderStatusKey(orderId),
 		queryFn: async function pollOrder() {
-			if (!orderId) throw serviceError('fetch_failed' as OrderErrorCode);
+			// Guard is technically unreachable (enabled: !!orderId prevents this),
+			// but satisfies TypeScript's narrowing for the non-null orderId below.
+			if (!orderId) throw serviceError('fetch_failed');
 
 			const result = await getOrder(orderId);
 			if (!result.success) throw serviceError(result.error);

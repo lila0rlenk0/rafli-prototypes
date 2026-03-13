@@ -16,6 +16,36 @@ interface BalanceData {
 	symbol?: string;
 }
 
+/**
+ * Formats a decimal string without losing small non-stablecoin amounts.
+ *
+ * Why string-based formatting:
+ * - backend already returns a human-readable decimal string
+ * - stablecoins should still read like fiat (`10.00`)
+ * - non-stablecoins can legitimately need more than 2 decimals (`0.1234`)
+ *
+ * We keep at least 2 fraction digits, preserve up to 4 when the backend
+ * provided meaningful precision, and trim trailing zero noise beyond that.
+ */
+function formatDisplayDecimal(value: string): string {
+	const [integerPart, rawFraction = ''] = value.split('.');
+
+	if (rawFraction.length === 0) {
+		return `${integerPart}.00`;
+	}
+
+	const trimmedFraction = rawFraction.replace(/0+$/, '');
+	if (trimmedFraction.length === 0) {
+		return `${integerPart}.00`;
+	}
+
+	if (trimmedFraction.length <= 2) {
+		return `${integerPart}.${trimmedFraction.padEnd(2, '0')}`;
+	}
+
+	return `${integerPart}.${trimmedFraction.slice(0, 4)}`;
+}
+
 // ==========================================
 // Formatting Functions
 // ==========================================
@@ -26,14 +56,13 @@ interface BalanceData {
  * works for any token regardless of decimal count (6 for USDC, 18 for EARNM).
  *
  * @param session - Crypto checkout session (null returns placeholder)
- * @returns Formatted amount string with 2 decimal places
+ * @returns Formatted amount string preserving up to 4 meaningful decimals
  */
 export function formatPaymentAmount(
 	session: CryptoCheckoutSession | null,
 ): string {
 	if (!session) return '\u2014';
-	// Backend's `amount` is already human-readable (e.g. "10.00" for $10 USDC)
-	return parseFloat(session.amount).toFixed(2);
+	return formatDisplayDecimal(session.amount);
 }
 
 /**

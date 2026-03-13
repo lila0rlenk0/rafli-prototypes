@@ -4,11 +4,11 @@ import {
 	CRYPTO_CONFIRMING_GRACE_MS,
 	CRYPTO_SUBMIT_GRACE_MS,
 	CRYPTO_TX_SUBMIT_OUTCOME,
+	getObservedConfirmationCount,
 	getCryptoSessionGraceDeadline,
 	getCryptoSessionGraceWindowMs,
 	getCryptoTxSubmitOutcome,
 	normalizeTxHash,
-	toBackendConfirmationCount,
 } from './crypto-payment-flow';
 import { COMMON_ERROR_CODES, PAYMENT_ERROR_CODES } from '@/types/errors';
 
@@ -18,17 +18,17 @@ describe('normalizeTxHash', () => {
 	});
 });
 
-describe('toBackendConfirmationCount', () => {
+describe('getObservedConfirmationCount', () => {
 	test('keeps unconfirmed transactions at zero', () => {
-		expect(toBackendConfirmationCount(undefined)).toBe(0);
-		expect(toBackendConfirmationCount(0)).toBe(0);
-		expect(toBackendConfirmationCount(0n)).toBe(0);
+		expect(getObservedConfirmationCount(undefined)).toBe(0);
+		expect(getObservedConfirmationCount(0)).toBe(0);
+		expect(getObservedConfirmationCount(0n)).toBe(0);
 	});
 
-	test('aligns viem counts with backend block-distance semantics', () => {
-		expect(toBackendConfirmationCount(1)).toBe(0);
-		expect(toBackendConfirmationCount(2)).toBe(1);
-		expect(toBackendConfirmationCount(5n)).toBe(4);
+	test('preserves wagmi confirmation semantics', () => {
+		expect(getObservedConfirmationCount(1)).toBe(1);
+		expect(getObservedConfirmationCount(2)).toBe(2);
+		expect(getObservedConfirmationCount(5n)).toBe(5);
 	});
 });
 
@@ -37,14 +37,35 @@ describe('getCryptoTxSubmitOutcome', () => {
 		expect(getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.TIMEOUT_ERROR)).toBe(
 			CRYPTO_TX_SUBMIT_OUTCOME.RETRY,
 		);
+		expect(getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.NETWORK_ERROR)).toBe(
+			CRYPTO_TX_SUBMIT_OUTCOME.RETRY,
+		);
+		expect(
+			getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR),
+		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
+		expect(
+			getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.SERVICE_UNAVAILABLE),
+		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
+		expect(
+			getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.CONNECTION_ABORTED),
+		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
 		expect(
 			getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED),
+		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
+		expect(getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.UNKNOWN_ERROR)).toBe(
+			CRYPTO_TX_SUBMIT_OUTCOME.RETRY,
+		);
+		expect(
+			getCryptoTxSubmitOutcome(PAYMENT_ERROR_CODES.CRYPTO_SUBMIT_FAILED),
 		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
 	});
 
 	test('uses poll-only recovery once backend already moved the session', () => {
 		expect(
 			getCryptoTxSubmitOutcome(PAYMENT_ERROR_CODES.CRYPTO_ALREADY_CONFIRMING),
+		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.POLL);
+		expect(
+			getCryptoTxSubmitOutcome(PAYMENT_ERROR_CODES.CRYPTO_ALREADY_COMPLETED),
 		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.POLL);
 		expect(
 			getCryptoTxSubmitOutcome(PAYMENT_ERROR_CODES.CRYPTO_CONCURRENT_UPDATE),

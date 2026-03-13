@@ -15,12 +15,12 @@ import type { ServiceResponse } from '@/types/service-response';
 
 /**
  * Schema for cancel payment session response.
- * Backend returns which method was cancelled (if any).
- * Idempotent — returns { cancelled: false, cancelledMethod: null } if nothing active.
+ * Backend only cancels Stripe sessions — crypto sessions are managed separately.
+ * cancelledMethod is 'stripe' when a session was cancelled, null when no-op.
  */
 const cancelPaymentSessionResponseSchema = z.object({
 	cancelled: z.boolean(),
-	cancelledMethod: z.enum(['stripe', 'crypto']).nullable(),
+	cancelledMethod: z.literal('stripe').nullable(),
 });
 
 type CancelPaymentSessionResponse = z.infer<
@@ -32,14 +32,14 @@ type CancelPaymentSessionResponse = z.infer<
 // ==========================================
 
 /**
- * Cancels the active payment session (Stripe or crypto) for an order.
+ * Cancels the active Stripe payment session for an order.
  *
  * Idempotent — safe to call even if no session is active.
  * Used before switching payment methods to clear cross-method guards:
  * - Stripe → Crypto: cancels pending Stripe session
- * - Crypto → Stripe: cancels pending crypto session (if not confirming)
+ * - Crypto → Stripe: backend rejects while any crypto session is still active
  *
- * Rejects with `payments:cancel:crypto-confirming` if crypto tx is already on-chain.
+ * Rejects with `payments:cancel:crypto-active` if crypto checkout must be resumed.
  *
  * @param orderId - Order ID whose active session to cancel
  * @returns ServiceResponse with cancellation result or error code

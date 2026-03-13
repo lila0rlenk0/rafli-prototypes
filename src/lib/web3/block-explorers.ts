@@ -46,9 +46,10 @@ export const CONFIRMATION_TARGETS: Record<number, number> = {
 };
 
 /**
- * Default confirmation target for unknown chains
+ * Default confirmation target for unknown chains.
+ * Must match backend CHAIN_CONFIG fallback (12 blocks).
  */
-const DEFAULT_CONFIRMATION_TARGET = 6;
+const DEFAULT_CONFIRMATION_TARGET = 12;
 
 /**
  * Gets the target confirmation count for a chain

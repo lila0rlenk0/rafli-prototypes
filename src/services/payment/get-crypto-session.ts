@@ -65,7 +65,7 @@ export async function getCryptoSession(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			console.error('Crypto session response validation failed:', error);
-			return failure(PAYMENT_ERROR_CODES.CRYPTO_SESSION_NOT_FOUND);
+			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
 		}
 
 		return failure(mapPaymentError(error));

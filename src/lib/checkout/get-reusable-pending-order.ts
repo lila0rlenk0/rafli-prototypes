@@ -10,13 +10,6 @@ import type { OrderErrorCode } from '@/types/errors';
 /** Backend max page size currently used by the profile orders UI as well. */
 const ORDERS_PAGE_LIMIT = 100;
 
-/**
- * Cap sequential page scans to bound worst-case latency on the checkout hot path.
- * Pending orders are almost always recent — 3 pages (300 orders) covers all
- * realistic cases without unbounded sequential API round-trips.
- */
-const MAX_PAGES = 3;
-
 export type ReusablePendingOrderLookupResult =
 	| { kind: 'found'; order: OrderWithRaffle }
 	| { kind: 'not_found' }
@@ -75,19 +68,21 @@ export async function getReusablePendingOrder(
 	ticketQuantity: number,
 	promoCode?: string,
 ): Promise<ReusablePendingOrderLookupResult> {
-	// Step 1: Walk pages until we find a match, exhaust the list, or hit MAX_PAGES.
+	// Step 1: Walk pages until we find a match or exhaust the list.
 	//         `/me/orders` does not expose a server-side pending filter yet, so
-	//         partial scans are not trustworthy for duplicate-order prevention.
-	//         MAX_PAGES caps worst-case latency on the checkout critical path.
+	//         duplicate-order prevention is only trustworthy if we scan the full
+	//         paginated history the backend says exists.
 	let page = 1;
+	let totalPages = 1;
 
-	while (page <= MAX_PAGES) {
+	while (page <= totalPages) {
+		// Step 2: Fetch current page of orders.
 		const ordersResult = await getMyOrders({
 			page,
 			limit: ORDERS_PAGE_LIMIT,
 		});
 
-		// Step 2: Fail closed on any degraded page read.
+		// Step 3: Fail closed on any degraded page read.
 		//         "Lookup failed" is materially different from "no reusable order".
 		if (!ordersResult.success) {
 			return {
@@ -96,7 +91,7 @@ export async function getReusablePendingOrder(
 			};
 		}
 
-		// Step 3: Return on the first reusable order.
+		// Step 4: Return on the first reusable order.
 		//         There is no need to scan later pages once checkout can safely reuse.
 		const reusableOrder = ordersResult.data.items.find(order =>
 			isReusableOrder(order, raffleId, ticketQuantity, promoCode),
@@ -105,18 +100,11 @@ export async function getReusablePendingOrder(
 			return { kind: 'found', order: reusableOrder };
 		}
 
-		// Step 4: Stop only after exhausting the paginated list.
-		//         totalPages can be zero for empty histories, so clamp the terminal
-		//         page to at least page 1.
-		const lastPage = Math.max(ordersResult.data.totalPages, 1);
-		if (page >= lastPage) {
-			return { kind: 'not_found' };
-		}
-
+		// Step 5: Update total pages from response and advance.
+		//         totalPages can be zero for empty histories, so clamp to at least 1.
+		totalPages = Math.max(ordersResult.data.totalPages, 1);
 		page += 1;
 	}
 
-	// Exhausted MAX_PAGES without finding a match or empty list.
-	// Treat as not_found — caller can safely proceed to create a new order.
 	return { kind: 'not_found' };
 }

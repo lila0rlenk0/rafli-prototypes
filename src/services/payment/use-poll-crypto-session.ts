@@ -78,7 +78,8 @@ export function usePollCryptoSession(
 	// isExpired is render-visible state — only set asynchronously via setTimeout
 	const [isExpired, setIsExpired] = useState(false);
 
-	// Initialize/reset start time when sessionId changes
+	// Initialize/reset start time only when sessionId changes.
+	// maxDurationMs changes should extend the existing window, not restart the clock.
 	useEffect(() => {
 		if (!sessionId) {
 			startedAtRef.current = 0;
@@ -87,13 +88,23 @@ export function usePollCryptoSession(
 
 		startedAtRef.current = Date.now();
 
+		return function cleanup() {
+			setIsExpired(false);
+		};
+	}, [sessionId]);
+
+	// Separate timer effect keyed on both sessionId and maxDuration.
+	// Restarting the expiry timer when the grace window extends is intentional —
+	// a longer confirming window should push back the timeout, not keep the old one.
+	useEffect(() => {
+		if (!sessionId) return;
+
 		const timer = setTimeout(() => {
 			setIsExpired(true);
 		}, resolvedMaxDurationMs);
 
 		return function cleanup() {
 			clearTimeout(timer);
-			setIsExpired(false);
 		};
 	}, [sessionId, resolvedMaxDurationMs]);
 
@@ -101,7 +112,9 @@ export function usePollCryptoSession(
 		{
 			queryKey: pollCryptoSessionKey(sessionId),
 			queryFn: async function pollSession() {
-				if (!sessionId) throw serviceError('fetch_failed' as PaymentErrorCode);
+				// Guard is technically unreachable (enabled: !!sessionId prevents this),
+				// but satisfies TypeScript's narrowing for the non-null sessionId below.
+				if (!sessionId) throw serviceError('fetch_failed');
 
 				const result = await getCryptoSession(sessionId);
 				if (!result.success) throw serviceError(result.error);

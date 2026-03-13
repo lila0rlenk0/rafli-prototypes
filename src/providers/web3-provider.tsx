@@ -3,9 +3,14 @@
 import '@rainbow-me/rainbowkit/styles.css';
 
 import { lightTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { WagmiProvider } from 'wagmi';
+import { useMemo } from 'react';
+import { cookieToInitialState, WagmiProvider } from 'wagmi';
 
-import { isWeb3Enabled, wagmiConfig } from '@/lib/web3/config';
+import {
+	isWeb3Enabled,
+	WAGMI_COOKIE_KEY,
+	wagmiConfig,
+} from '@/lib/web3/config';
 
 // ==========================================
 // Theme
@@ -33,11 +38,15 @@ const appTheme = lightTheme({
  * Web3Provider Component
  *
  * Wraps children with wagmi + RainbowKit for wallet connectivity.
- * Shares the app's QueryClient (from QueryProvider in providers.tsx) — wagmi v2
+ * Shares the app's QueryClient (from QueryProvider in providers.tsx) — wagmi
  * uses namespaced query keys internally so there are no cache collisions.
  * A separate QueryClient would override the app's configured defaults
  * (staleTime: Infinity, refetch disabled) since React Query uses the innermost
  * QueryClientProvider, breaking either app queries or wagmi polling.
+ *
+ * `wagmiCookieValue` is only the serialized `wagmi.store` payload from the
+ * server-rendered request. Rebuild the single-cookie string locally so wagmi
+ * can hydrate without exposing unrelated request cookies to client JavaScript.
  *
  * Wagmi hooks that need polling (e.g. useTransactionConfirmations) explicitly
  * set refetchInterval per-query, overriding the global staleTime: Infinity.
@@ -46,7 +55,26 @@ const appTheme = lightTheme({
  * is not configured — ensures card payments and the rest of the app work
  * even without Web3 infrastructure.
  */
-export function Web3Provider({ children }: { children: React.ReactNode }) {
+interface Web3ProviderProps {
+	children: React.ReactNode;
+	wagmiCookieValue?: string | null;
+}
+
+export function Web3Provider({
+	children,
+	wagmiCookieValue,
+}: Web3ProviderProps) {
+	const initialState = useMemo(
+		() =>
+			wagmiCookieValue && wagmiConfig
+				? cookieToInitialState(
+						wagmiConfig,
+						`${WAGMI_COOKIE_KEY}=${wagmiCookieValue}`,
+					)
+				: undefined,
+		[wagmiCookieValue],
+	);
+
 	// No WalletConnect project ID → skip Web3 providers entirely
 	// This keeps the app functional for card-only payments
 	if (!isWeb3Enabled || !wagmiConfig) {
@@ -54,7 +82,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
 	}
 
 	return (
-		<WagmiProvider config={wagmiConfig}>
+		<WagmiProvider config={wagmiConfig} initialState={initialState}>
 			<RainbowKitProvider theme={appTheme}>{children}</RainbowKitProvider>
 		</WagmiProvider>
 	);

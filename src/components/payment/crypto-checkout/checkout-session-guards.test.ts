@@ -4,12 +4,17 @@ import { CRYPTO_PAYMENT_STATUS } from '@/types/payment';
 
 import {
 	getPaySessionRevalidationDecision,
+	getPolledTxHashSyncDecision,
 	getReviewSessionGuard,
 	resolveCheckoutHydrationDecision,
 } from './checkout-session-guards';
 
+import { CRYPTO_SUBMIT_GRACE_MS } from '@/lib/web3/crypto-payment-flow';
+
 const EXPIRES_AT = '2026-03-13T12:00:00.000Z';
-const SUBMIT_DEADLINE_MS = new Date('2026-03-13T12:10:00.000Z').getTime();
+/** Derived from CRYPTO_SUBMIT_GRACE_MS so tests stay in sync with production constants */
+const SUBMIT_DEADLINE_MS =
+	new Date(EXPIRES_AT).getTime() + CRYPTO_SUBMIT_GRACE_MS;
 
 describe('getReviewSessionGuard', () => {
 	test('allows send when wallet binding matches and submit grace is still open', () => {
@@ -43,6 +48,39 @@ describe('getReviewSessionGuard', () => {
 				now: SUBMIT_DEADLINE_MS + 1,
 			}).kind,
 		).toBe('session-expired');
+	});
+
+	test('returns missing-session when expiresAt is null', () => {
+		expect(
+			getReviewSessionGuard({
+				connectedAddress: '0xabc',
+				sessionWalletAddress: '0xabc',
+				expiresAt: null,
+				now: SUBMIT_DEADLINE_MS - 1,
+			}).kind,
+		).toBe('missing-session');
+	});
+
+	test('returns wallet-changed when connected address is null', () => {
+		expect(
+			getReviewSessionGuard({
+				connectedAddress: null,
+				sessionWalletAddress: '0xabc',
+				expiresAt: EXPIRES_AT,
+				now: SUBMIT_DEADLINE_MS - 1,
+			}).kind,
+		).toBe('wallet-changed');
+	});
+
+	test('returns wallet-changed when session wallet is null', () => {
+		expect(
+			getReviewSessionGuard({
+				connectedAddress: '0xabc',
+				sessionWalletAddress: null,
+				expiresAt: EXPIRES_AT,
+				now: SUBMIT_DEADLINE_MS - 1,
+			}).kind,
+		).toBe('wallet-changed');
 	});
 });
 
@@ -102,28 +140,17 @@ describe('getPaySessionRevalidationDecision', () => {
 });
 
 describe('resolveCheckoutHydrationDecision', () => {
-	test('uses review fallback for fresh-session read failures', () => {
+	test('uses review fallback for read failures', () => {
 		expect(
 			resolveCheckoutHydrationDecision({
-				allowReviewFallback: true,
 				sessionReadSucceeded: false,
 			}),
 		).toEqual({ kind: 'review-fallback' });
 	});
 
-	test('uses confirming recovery for read failures while recovering backend-owned sessions', () => {
-		expect(
-			resolveCheckoutHydrationDecision({
-				allowReviewFallback: false,
-				sessionReadSucceeded: false,
-			}),
-		).toEqual({ kind: 'confirming-recovery' });
-	});
-
 	test('maps successful reads to authoritative FE steps', () => {
 		expect(
 			resolveCheckoutHydrationDecision({
-				allowReviewFallback: false,
 				sessionReadSucceeded: true,
 				serverStatus: CRYPTO_PAYMENT_STATUS.PENDING,
 			}),
@@ -133,13 +160,81 @@ describe('resolveCheckoutHydrationDecision', () => {
 		});
 		expect(
 			resolveCheckoutHydrationDecision({
-				allowReviewFallback: false,
 				sessionReadSucceeded: true,
 				serverStatus: CRYPTO_PAYMENT_STATUS.CONFIRMING,
 			}),
 		).toEqual({
 			kind: 'apply-server-state',
 			nextStep: 'confirming',
+		});
+	});
+
+	test('maps completed session to success step', () => {
+		expect(
+			resolveCheckoutHydrationDecision({
+				sessionReadSucceeded: true,
+				serverStatus: CRYPTO_PAYMENT_STATUS.COMPLETED,
+			}),
+		).toEqual({
+			kind: 'apply-server-state',
+			nextStep: 'success',
+		});
+	});
+
+	test('maps failed session to failure step', () => {
+		expect(
+			resolveCheckoutHydrationDecision({
+				sessionReadSucceeded: true,
+				serverStatus: CRYPTO_PAYMENT_STATUS.FAILED,
+			}),
+		).toEqual({
+			kind: 'apply-server-state',
+			nextStep: 'failure',
+		});
+	});
+});
+
+describe('getPolledTxHashSyncDecision', () => {
+	test('returns noop when polled hash is null', () => {
+		expect(
+			getPolledTxHashSyncDecision({
+				localTxHash: '0xabc',
+				polledTxHash: null,
+			}),
+		).toEqual({ kind: 'noop' });
+	});
+
+	test('returns noop when polled hash is undefined', () => {
+		expect(
+			getPolledTxHashSyncDecision({
+				localTxHash: undefined,
+				polledTxHash: undefined,
+			}),
+		).toEqual({ kind: 'noop' });
+	});
+
+	test('adopts the backend hash when confirming recovery has no local hash yet', () => {
+		expect(
+			getPolledTxHashSyncDecision({
+				localTxHash: undefined,
+				polledTxHash: '0xAbC123' as `0x${string}`,
+			}),
+		).toEqual({
+			kind: 'sync-backend-hash',
+			normalizedBackendHash: '0xabc123',
+			adoptLocalTxHash: '0xAbC123',
+		});
+	});
+
+	test('keeps the local wallet hash when polling reports a different backend hash', () => {
+		expect(
+			getPolledTxHashSyncDecision({
+				localTxHash: '0xdef456',
+				polledTxHash: '0xAbC123',
+			}),
+		).toEqual({
+			kind: 'sync-backend-hash',
+			normalizedBackendHash: '0xabc123',
 		});
 	});
 });

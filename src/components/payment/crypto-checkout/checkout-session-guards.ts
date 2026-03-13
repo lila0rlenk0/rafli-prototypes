@@ -1,4 +1,7 @@
-import { getCryptoSessionGraceDeadline } from '@/lib/web3/crypto-payment-flow';
+import {
+	getCryptoSessionGraceDeadline,
+	normalizeTxHash,
+} from '@/lib/web3/crypto-payment-flow';
 import {
 	CRYPTO_PAYMENT_STATUS,
 	type CryptoPaymentStatus,
@@ -27,8 +30,15 @@ export type PaySessionRevalidationDecision =
 
 export type CheckoutHydrationDecision =
 	| { kind: 'review-fallback' }
-	| { kind: 'confirming-recovery' }
 	| { kind: 'apply-server-state'; nextStep: HydratedCheckoutStep };
+
+export type PolledTxHashSyncDecision =
+	| { kind: 'noop' }
+	| {
+			kind: 'sync-backend-hash';
+			normalizedBackendHash: string;
+			adoptLocalTxHash?: `0x${string}`;
+	  };
 
 interface ReviewSessionGuardParams {
 	connectedAddress: string | null;
@@ -43,22 +53,20 @@ interface PaySessionRevalidationParams {
 	now?: number;
 }
 
-/**
- * Discriminated union ensures `serverStatus` is required when the session read
- * succeeded — prevents callers from passing `{ sessionReadSucceeded: true }`
- * without the status and hitting a runtime throw.
- */
 type CheckoutHydrationDecisionParams =
 	| {
-			allowReviewFallback: boolean;
 			sessionReadSucceeded: false;
 			serverStatus?: undefined;
 	  }
 	| {
-			allowReviewFallback: boolean;
 			sessionReadSucceeded: true;
 			serverStatus: CryptoPaymentStatus;
 	  };
+
+interface PolledTxHashSyncParams {
+	localTxHash: `0x${string}` | undefined;
+	polledTxHash: string | null | undefined;
+}
 
 // ==========================================
 // Helpers
@@ -157,24 +165,46 @@ export function getPaySessionRevalidationDecision({
  * Resolves how checkout hydration should behave when the follow-up session read
  * succeeds or fails.
  *
- * Two failure modes matter:
- * - newly-created pending session: local review fallback is safe
- * - recovering already-confirming session: stay in confirming and let polling
- *   recover the authoritative backend state instead of terminally failing
+ * If the immediate read fails, always fall back to review.
+ *
+ * Why this is safe:
+ * - `createCryptoCheckout()` is idempotent, so the checkout payload still
+ *   represents the backend-owned session we will re-read later
+ * - `handlePay()` re-reads the session authoritatively before any transfer
+ * - showing review is conservative; forcing confirming without a tx hash traps
+ *   the user in a state where they cannot actually send funds
  */
 export function resolveCheckoutHydrationDecision({
-	allowReviewFallback,
 	serverStatus,
 	sessionReadSucceeded,
 }: CheckoutHydrationDecisionParams): CheckoutHydrationDecision {
 	if (!sessionReadSucceeded) {
-		return allowReviewFallback
-			? { kind: 'review-fallback' }
-			: { kind: 'confirming-recovery' };
+		return { kind: 'review-fallback' };
 	}
 
 	return {
 		kind: 'apply-server-state',
 		nextStep: getHydratedCheckoutStep(serverStatus),
+	};
+}
+
+/**
+ * Mirrors backend tx-hash recovery from session polling into FE state.
+ *
+ * Polling owns whether backend has accepted a hash. The FE only adopts that
+ * hash locally when it does not already have one; if a different local hash is
+ * present we keep it so the replacement-mismatch guard can surface the conflict
+ * instead of silently rewriting history.
+ */
+export function getPolledTxHashSyncDecision({
+	localTxHash,
+	polledTxHash,
+}: PolledTxHashSyncParams): PolledTxHashSyncDecision {
+	if (!polledTxHash) return { kind: 'noop' };
+
+	return {
+		kind: 'sync-backend-hash',
+		normalizedBackendHash: normalizeTxHash(polledTxHash),
+		adoptLocalTxHash: localTxHash ? undefined : (polledTxHash as `0x${string}`),
 	};
 }

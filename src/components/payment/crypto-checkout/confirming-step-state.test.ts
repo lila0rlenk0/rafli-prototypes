@@ -19,6 +19,24 @@ describe('buildConfirmingPhases', () => {
 		]);
 	});
 
+	test('shows broadcast done but hides confirmation detail at zero confirmations', () => {
+		const phases = buildConfirmingPhases({
+			txHash: '0xabc',
+			confirmations: 0,
+			confirmationTarget: 12,
+			finalizationRequested: false,
+		});
+
+		expect(phases.map(phase => phase.status)).toEqual([
+			'done',
+			'active',
+			'pending',
+			'pending',
+		]);
+		// Zero confirmations should not show "0 / 12 blocks" — no detail yet
+		expect(phases[1]?.detail).toBeNull();
+	});
+
 	test('keeps exactly one active phase while waiting for confirmations', () => {
 		const phases = buildConfirmingPhases({
 			txHash: '0xabc',

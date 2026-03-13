@@ -88,8 +88,8 @@ export const PAYMENT_ERROR_CODES = {
 		'payments:raffle:user-ticket-limit-exceeded',
 
 	// Cancel session errors
-	/** Cannot cancel crypto session — tx is on-chain awaiting confirmation */
-	CANCEL_CRYPTO_CONFIRMING: 'payments:cancel:crypto-confirming',
+	/** Cannot switch away while any crypto session is still active for this order */
+	CANCEL_CRYPTO_ACTIVE: 'payments:cancel:crypto-active',
 	/** Failed to cancel payment session (response validation) */
 	CANCEL_SESSION_FAILED: 'payments:cancel:session-failed',
 

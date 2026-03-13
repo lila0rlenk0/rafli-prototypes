@@ -560,6 +560,9 @@ export function CryptoCheckoutModal({
 	useWaitForTransactionReceipt({
 		hash: txHash,
 		chainId: selectedChainId ?? undefined,
+		// 1 — fires onReplaced on first block inclusion. Using confirmationTarget
+		// here would delay replacement detection on high-finality chains (e.g.
+		// Ethereum 12 blocks). Actual finalization is tracked via confirmationTarget.
 		confirmations: 1,
 		pollingInterval: 4_000,
 		onReplaced(replacement) {
@@ -856,6 +859,8 @@ export function CryptoCheckoutModal({
 			if (outcome.kind === CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL) {
 				failSubmittedTxRegistration();
 			}
+			// 3s: below the 5s poll interval so the retry lands before the first
+			// poll tick, maximising the chance backend converges without extra polls.
 		}, 3_000);
 
 		return () => clearTimeout(timer);
@@ -1414,7 +1419,8 @@ export function CryptoCheckoutModal({
 		// User can reopen via the "pending transaction" button in CryptoBuyButton.
 		if (step === 'confirming') return;
 
-		// Delay reset to avoid flash during close animation
+		// 300ms matches Dialog close animation (data-[state=closed]:duration-300).
+		// Must stay in sync — if animation duration changes, update this too.
 		setTimeout(handleReset, 300);
 	}
 

@@ -13,6 +13,7 @@
 // Types
 // ==========================================
 
+/** Metadata for a supported payment token in the crypto checkout flow. */
 export interface TokenInfo {
 	/** Token slug sent to backend — must match TOKEN_REGISTRY key */
 	slug: string;

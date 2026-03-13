@@ -11,6 +11,7 @@ import {
  */
 export const RAFFLE_CLOSING_SOON_THRESHOLD_SECONDS = 10 * 60;
 
+/** Computed sale-window state for a raffle, used by countdown and purchase CTAs. */
 export interface RaffleSaleWindow extends TimeRemaining {
 	isClosingSoon: boolean;
 	secondsRemaining: number;

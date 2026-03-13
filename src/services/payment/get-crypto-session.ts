@@ -3,6 +3,7 @@
 import { z, ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
@@ -56,6 +57,7 @@ export async function getCryptoSession(
 	try {
 		const response = await authenticatedClient.get(
 			`/payments/crypto/sessions/${sessionId}`,
+			{ timeout: API_TIMEOUTS.QUERY },
 		);
 
 		const data = cryptoSessionResponseSchema.parse(response.data);

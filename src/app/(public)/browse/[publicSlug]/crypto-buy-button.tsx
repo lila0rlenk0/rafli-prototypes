@@ -228,6 +228,12 @@ export function CryptoBuyButton({
 		startCryptoFlow();
 	}
 
+	/** Handles the raffle question modal success — marks answered and starts checkout. */
+	function handleCorrectAnswer() {
+		setQuestionAnswered(true);
+		startCryptoFlow();
+	}
+
 	/**
 	 * Starts the crypto payment flow
 	 * Opens wallet connect if needed, otherwise proceeds directly
@@ -317,10 +323,7 @@ export function CryptoBuyButton({
 					open={showQuestionModal}
 					onOpenChange={setShowQuestionModal}
 					raffleId={raffleId}
-					onCorrectAnswer={() => {
-						setQuestionAnswered(true);
-						startCryptoFlow();
-					}}
+					onCorrectAnswer={handleCorrectAnswer}
 				/>
 			)}
 

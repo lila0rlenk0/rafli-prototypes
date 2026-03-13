@@ -83,16 +83,10 @@ function extractErrorCode(error: unknown): string | null {
 }
 
 /**
- * Maps simple backend codes to full error codes
+ * Simple code → full backend code mapping.
  *
  * Some endpoints return simple codes like "unauthenticated" instead of
  * full codes like "global:auth:unauthenticated". This normalizes them.
- *
- * @param code - Simple code from backend
- * @returns Full error code or original if no mapping
- */
-/**
- * Simple code → full backend code mapping.
  * Hoisted to module scope to avoid re-allocation on every call.
  */
 const SIMPLE_CODE_MAP: Record<string, string> = {

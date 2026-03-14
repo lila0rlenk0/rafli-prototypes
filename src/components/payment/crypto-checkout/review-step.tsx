@@ -5,7 +5,8 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
 import { formatPaymentAmount, formatTokenBalance } from '@/lib/web3/format';
-import { CHAIN_NAMES } from '@/lib/web3/chains';
+import { getChainName } from '@/lib/web3/block-explorers';
+import type { CryptoChainConfig } from '@/types/crypto-config';
 import type { CryptoCheckoutSession } from '@/types/wallet';
 
 // ==========================================
@@ -39,6 +40,8 @@ interface ReviewStepProps {
 	txSubmitted?: boolean;
 	/** Local review guard message for wallet changes / expired sessions */
 	sessionBlockMessage?: string | null;
+	/** Chain configs for display name resolution */
+	chains: CryptoChainConfig[];
 	onPay: () => void;
 }
 
@@ -64,6 +67,7 @@ export function ReviewStep({
 	isProcessing,
 	txSubmitted,
 	sessionBlockMessage,
+	chains,
 	onPay,
 }: ReviewStepProps) {
 	// isExpired not needed — isClosingSoon is only true when secondsRemaining > 0
@@ -145,7 +149,7 @@ export function ReviewStep({
 					<div className="flex items-center justify-between">
 						<span className="text-[#7B7B7B]">Network</span>
 						<span className="font-medium">
-							{CHAIN_NAMES[selectedChainId] ?? `Chain ${selectedChainId}`}
+							{getChainName(selectedChainId, chains)}
 						</span>
 					</div>
 					<div className="flex items-center justify-between">
@@ -198,7 +202,8 @@ export function ReviewStep({
 			{/* Chain switch notice */}
 			{!isCorrectChain && hasEnoughTokens() && (
 				<p className="text-center text-xs text-amber-600">
-					You&apos;ll be prompted to switch to {CHAIN_NAMES[selectedChainId]}
+					You&apos;ll be prompted to switch to{' '}
+					{getChainName(selectedChainId, chains)}
 				</p>
 			)}
 

@@ -74,6 +74,10 @@ export const cryptoCheckoutSessionSchema = z.object({
 	treasuryAddress: evmAddressSchema,
 	orderId: z.string(),
 	expiresAt: z.string(),
+	/** Absolute deadline for tx hash submission — expiresAt + backend submit grace */
+	submitDeadline: z.string(),
+	/** Absolute deadline for confirming sessions — expiresAt + backend confirming grace */
+	confirmDeadline: z.string(),
 });
 
 /**

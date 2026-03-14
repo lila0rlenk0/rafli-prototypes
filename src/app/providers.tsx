@@ -1,11 +1,17 @@
 import { cookies } from 'next/headers';
 
-import { WAGMI_COOKIE_KEY } from '@/lib/web3/config';
 import { ProvidersClient } from './providers-client';
 
 interface ProvidersProps {
 	children: React.ReactNode;
 }
+
+/**
+ * wagmi persists its SSR hydration snapshot under this cookie key.
+ * Duplicated from `@/lib/web3/config` to avoid importing a client-only module
+ * (getDefaultConfig runs at module scope) into this server component.
+ */
+const WAGMI_COOKIE_KEY = 'wagmi.store';
 
 /**
  * Root Providers Server Wrapper

@@ -28,6 +28,8 @@ describe('getCryptoSession', () => {
 				orderId: 'order-1',
 				completedAt: null,
 				expiresAt: '2026-03-13T12:00:00.000Z',
+				submitDeadline: '2026-03-13T12:10:00.000Z',
+				confirmDeadline: '2026-03-13T12:15:00.000Z',
 			}),
 		);
 

@@ -2,18 +2,15 @@
 
 import { Coins } from 'lucide-react';
 
-import type { TokenInfo } from '@/lib/web3/tokens';
-import type { CryptoTokenPricing } from '@/types/raffle';
+import type { RaffleCryptoToken } from '@/types/raffle';
 
 // ==========================================
 // Types
 // ==========================================
 
 interface TokenSelectorProps {
-	tokens: TokenInfo[];
-	/** Non-stablecoin pricing from raffle — maps token slug to price per ticket */
-	cryptoTokenPricing?: CryptoTokenPricing;
-	onSelectToken: (token: TokenInfo) => void;
+	tokens: RaffleCryptoToken[];
+	onSelectToken: (token: RaffleCryptoToken) => void;
 }
 
 // ==========================================
@@ -25,24 +22,18 @@ interface TokenSelectorProps {
  * Shown after chain selection when multiple tokens are available.
  * Auto-skipped by the parent modal when only one token exists.
  *
- * Stablecoins show "1:1 USD" — non-stablecoins show the per-ticket price
- * from the raffle's `cryptoTokenPricing` config.
+ * Stablecoins (pricePerTicket === null) show "1:1 USD".
+ * Custom-priced tokens show the explicit per-ticket rate from crypto options.
  */
-export function TokenSelector({
-	tokens,
-	cryptoTokenPricing = [],
-	onSelectToken,
-}: TokenSelectorProps) {
+export function TokenSelector({ tokens, onSelectToken }: TokenSelectorProps) {
 	/**
 	 * Gets the display price label for a token.
-	 * Stablecoins use implicit 1:1 USD pricing.
-	 * Non-stablecoins look up the raffle's cryptoTokenPricing array.
+	 * Null pricePerTicket = stablecoin (1:1 USD).
+	 * Non-null = custom-priced token with explicit per-ticket rate.
 	 */
-	function getPriceLabel(token: TokenInfo): string | null {
-		if (token.isStablecoin) return '1:1 USD';
-		const pricing = cryptoTokenPricing.find(p => p.tokenId === token.slug);
-		if (!pricing) return null;
-		return `${pricing.price} ${token.label}/ticket`;
+	function getPriceLabel(token: RaffleCryptoToken): string | null {
+		if (!token.pricePerTicket) return '1:1 USD';
+		return `${token.pricePerTicket} ${token.label}/ticket`;
 	}
 
 	return (

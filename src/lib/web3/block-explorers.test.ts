@@ -1,43 +1,78 @@
 import { describe, expect, test } from 'bun:test';
 
-import { getConfirmationTarget, getTxExplorerUrl } from './block-explorers';
+import type { CryptoChainConfig } from '@/types/crypto-config';
+
+import {
+	getChainName,
+	getConfirmationTarget,
+	getTxExplorerUrl,
+} from './block-explorers';
+
+/** Minimal chain configs for testing */
+const CHAINS: CryptoChainConfig[] = [
+	{
+		chainId: 1,
+		name: 'Ethereum',
+		confirmationTarget: 12,
+		explorerTxUrl: 'https://etherscan.io/tx/',
+	},
+	{
+		chainId: 42_161,
+		name: 'Arbitrum',
+		confirmationTarget: 1,
+		explorerTxUrl: 'https://arbiscan.io/tx/',
+	},
+	{
+		chainId: 137,
+		name: 'Polygon',
+		confirmationTarget: 128,
+		explorerTxUrl: 'https://polygonscan.com/tx/',
+	},
+] as CryptoChainConfig[];
 
 describe('getConfirmationTarget', () => {
-	test('matches backend parity for sequencer-based chains', () => {
-		expect(getConfirmationTarget(42_161)).toBe(1);
-		expect(getConfirmationTarget(8453)).toBe(1);
-		expect(getConfirmationTarget(421_614)).toBe(1);
-		expect(getConfirmationTarget(84_532)).toBe(1);
+	test('returns confirmation target from config', () => {
+		expect(getConfirmationTarget(42_161, CHAINS)).toBe(1);
+		expect(getConfirmationTarget(137, CHAINS)).toBe(128);
+		expect(getConfirmationTarget(1, CHAINS)).toBe(12);
 	});
 
-	test('matches backend parity for Polygon-style reorg protection', () => {
-		expect(getConfirmationTarget(137)).toBe(128);
-		expect(getConfirmationTarget(80_002)).toBe(128);
-	});
-
-	test('falls back to default for unknown chains', () => {
-		expect(getConfirmationTarget(99_999)).toBe(12);
+	test('returns null for unknown chains', () => {
+		expect(getConfirmationTarget(99_999, CHAINS)).toBeNull();
 	});
 });
 
 describe('getTxExplorerUrl', () => {
 	test('builds full explorer URL for known chains', () => {
-		expect(getTxExplorerUrl('0xabc', 1)).toBe('https://etherscan.io/tx/0xabc');
-		expect(getTxExplorerUrl('0xdef', 42_161)).toBe(
+		expect(getTxExplorerUrl('0xabc', 1, CHAINS)).toBe(
+			'https://etherscan.io/tx/0xabc',
+		);
+		expect(getTxExplorerUrl('0xdef', 42_161, CHAINS)).toBe(
 			'https://arbiscan.io/tx/0xdef',
 		);
 	});
 
 	test('returns null when txHash is undefined', () => {
-		expect(getTxExplorerUrl(undefined, 1)).toBeNull();
+		expect(getTxExplorerUrl(undefined, 1, CHAINS)).toBeNull();
 	});
 
 	test('returns null when chainId is null or undefined', () => {
-		expect(getTxExplorerUrl('0xabc', null)).toBeNull();
-		expect(getTxExplorerUrl('0xabc', undefined)).toBeNull();
+		expect(getTxExplorerUrl('0xabc', null, CHAINS)).toBeNull();
+		expect(getTxExplorerUrl('0xabc', undefined, CHAINS)).toBeNull();
 	});
 
 	test('returns null for unknown chain IDs', () => {
-		expect(getTxExplorerUrl('0xabc', 99_999)).toBeNull();
+		expect(getTxExplorerUrl('0xabc', 99_999, CHAINS)).toBeNull();
+	});
+});
+
+describe('getChainName', () => {
+	test('returns chain name from config', () => {
+		expect(getChainName(1, CHAINS)).toBe('Ethereum');
+		expect(getChainName(137, CHAINS)).toBe('Polygon');
+	});
+
+	test('returns fallback for unknown chains', () => {
+		expect(getChainName(99_999, CHAINS)).toBe('Chain 99999');
 	});
 });

@@ -1,7 +1,6 @@
 import type {
 	OrderErrorCode,
 	PaymentErrorCode,
-	PromoCodeErrorCode,
 	WalletErrorCode,
 } from '@/types/errors';
 
@@ -183,7 +182,7 @@ export function getWalletErrorMessage(errorCode: WalletErrorCode): string {
  * Maps promo code error codes to user-friendly messages
  * Shared between card and crypto checkout flows
  */
-export function getPromoErrorMessage(errorCode: PromoCodeErrorCode): string {
+export function getPromoErrorMessage(errorCode: string): string {
 	switch (errorCode) {
 		case 'core:promo:not-found':
 			return 'Promo code not found';
@@ -231,7 +230,7 @@ export function getPromoErrorMessage(errorCode: PromoCodeErrorCode): string {
  * Determines if promo should be cleared from UI after an error.
  * Only clear for deterministic business errors, not transient network issues.
  */
-export function shouldClearPromo(errorCode: PromoCodeErrorCode): boolean {
+export function shouldClearPromo(errorCode: string): boolean {
 	switch (errorCode) {
 		case 'core:promo:not-found':
 		case 'core:promo:expired':

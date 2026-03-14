@@ -12,7 +12,7 @@ import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
 import { usePollMyTicketCodes } from '@/services/ticket/use-poll-my-ticket-codes';
-import type { CryptoTokenPricing } from '@/types/raffle';
+import type { RaffleCryptoOptions } from '@/types/raffle';
 
 // ==========================================
 // Types
@@ -25,13 +25,9 @@ interface CryptoBuyButtonProps {
 	disabled?: boolean;
 	questionId?: string | null;
 	promoCode?: string;
-
 	onPromoInvalid?: () => void;
-	cryptoChainIds: number[];
-	/** Allowed token slugs — empty means all tokens allowed */
-	cryptoTokens?: string[];
-	/** Non-stablecoin pricing per token — needed for EARNM and future non-stablecoin tokens */
-	cryptoTokenPricing?: CryptoTokenPricing;
+	/** Structured crypto options from raffle — chains with selectable tokens */
+	cryptoOptions: RaffleCryptoOptions;
 	/** Current server-rendered ticket total for this raffle — baseline for post-payment sync */
 	myTicketsTotal: number;
 	userId?: string | null;
@@ -58,9 +54,7 @@ export function CryptoBuyButton({
 	questionId,
 	promoCode,
 	onPromoInvalid,
-	cryptoChainIds,
-	cryptoTokens = [],
-	cryptoTokenPricing = [],
+	cryptoOptions,
 	myTicketsTotal,
 	userId,
 }: CryptoBuyButtonProps) {
@@ -354,9 +348,7 @@ export function CryptoBuyButton({
 					onOpenChange={setShowCryptoModal}
 					orderId={cryptoOrderId}
 					raffleEndAt={endAt}
-					cryptoChainIds={cryptoChainIds}
-					cryptoTokens={cryptoTokens}
-					cryptoTokenPricing={cryptoTokenPricing}
+					cryptoOptions={cryptoOptions}
 					userId={userId}
 					onSuccess={handleCryptoSuccess}
 					onConfirmingChange={handleConfirmingChange}

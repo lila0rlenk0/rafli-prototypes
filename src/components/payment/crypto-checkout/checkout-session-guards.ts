@@ -43,13 +43,15 @@ export type PolledTxHashSyncDecision =
 interface ReviewSessionGuardParams {
 	connectedAddress: string | null;
 	sessionWalletAddress: string | null;
-	expiresAt: string | null | undefined;
+	/** Backend-provided submit deadline — replaces raw expiresAt + FE grace math */
+	submitDeadline: string | null | undefined;
 	now?: number;
 }
 
 interface PaySessionRevalidationParams {
 	status: CryptoPaymentStatus;
-	expiresAt: string;
+	/** Backend-provided submit deadline — replaces raw expiresAt + FE grace math */
+	submitDeadline: string;
 	now?: number;
 }
 
@@ -110,10 +112,10 @@ export function getHydratedCheckoutStep(
 export function getReviewSessionGuard({
 	connectedAddress,
 	sessionWalletAddress,
-	expiresAt,
+	submitDeadline,
 	now = Date.now(),
 }: ReviewSessionGuardParams): ReviewSessionGuard {
-	if (!expiresAt) return { kind: 'missing-session' };
+	if (!submitDeadline) return { kind: 'missing-session' };
 
 	if (!connectedAddress || !sessionWalletAddress) {
 		return { kind: 'wallet-changed' };
@@ -125,10 +127,8 @@ export function getReviewSessionGuard({
 		return { kind: 'wallet-changed' };
 	}
 
-	// Pending review sessions stay sendable through backend's submit grace window,
-	// not just until the raw checkout TTL.
-	const submitDeadline = getCryptoSessionGraceDeadline(expiresAt, 'submit');
-	if (now > submitDeadline) {
+	// Backend-provided submit deadline — no FE grace computation needed
+	if (now > getCryptoSessionGraceDeadline(submitDeadline)) {
 		return { kind: 'session-expired' };
 	}
 
@@ -145,12 +145,11 @@ export function getReviewSessionGuard({
  */
 export function getPaySessionRevalidationDecision({
 	status,
-	expiresAt,
+	submitDeadline,
 	now = Date.now(),
 }: PaySessionRevalidationParams): PaySessionRevalidationDecision {
 	if (status === CRYPTO_PAYMENT_STATUS.PENDING) {
-		const submitDeadline = getCryptoSessionGraceDeadline(expiresAt, 'submit');
-		return now > submitDeadline
+		return now > getCryptoSessionGraceDeadline(submitDeadline)
 			? { kind: 'session-expired' }
 			: { kind: 'sendable' };
 	}

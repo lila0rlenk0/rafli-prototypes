@@ -9,12 +9,9 @@ import {
 	resolveCheckoutHydrationDecision,
 } from './checkout-session-guards';
 
-import { CRYPTO_SUBMIT_GRACE_MS } from '@/lib/web3/crypto-payment-flow';
-
-const EXPIRES_AT = '2026-03-13T12:00:00.000Z';
-/** Derived from CRYPTO_SUBMIT_GRACE_MS so tests stay in sync with production constants */
-const SUBMIT_DEADLINE_MS =
-	new Date(EXPIRES_AT).getTime() + CRYPTO_SUBMIT_GRACE_MS;
+/** Backend-provided submit deadline — 10 minutes after some base time */
+const SUBMIT_DEADLINE = '2026-03-13T12:10:00.000Z';
+const SUBMIT_DEADLINE_MS = new Date(SUBMIT_DEADLINE).getTime();
 
 describe('getReviewSessionGuard', () => {
 	test('allows send when wallet binding matches and submit grace is still open', () => {
@@ -22,7 +19,7 @@ describe('getReviewSessionGuard', () => {
 			getReviewSessionGuard({
 				connectedAddress: '0xabc',
 				sessionWalletAddress: '0xAbC',
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}).kind,
 		).toBe('ready');
@@ -33,7 +30,7 @@ describe('getReviewSessionGuard', () => {
 			getReviewSessionGuard({
 				connectedAddress: '0xdef',
 				sessionWalletAddress: '0xabc',
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}).kind,
 		).toBe('wallet-changed');
@@ -44,18 +41,18 @@ describe('getReviewSessionGuard', () => {
 			getReviewSessionGuard({
 				connectedAddress: '0xabc',
 				sessionWalletAddress: '0xabc',
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS + 1,
 			}).kind,
 		).toBe('session-expired');
 	});
 
-	test('returns missing-session when expiresAt is null', () => {
+	test('returns missing-session when submitDeadline is null', () => {
 		expect(
 			getReviewSessionGuard({
 				connectedAddress: '0xabc',
 				sessionWalletAddress: '0xabc',
-				expiresAt: null,
+				submitDeadline: null,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}).kind,
 		).toBe('missing-session');
@@ -66,7 +63,7 @@ describe('getReviewSessionGuard', () => {
 			getReviewSessionGuard({
 				connectedAddress: null,
 				sessionWalletAddress: '0xabc',
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}).kind,
 		).toBe('wallet-changed');
@@ -77,7 +74,7 @@ describe('getReviewSessionGuard', () => {
 			getReviewSessionGuard({
 				connectedAddress: '0xabc',
 				sessionWalletAddress: null,
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}).kind,
 		).toBe('wallet-changed');
@@ -89,7 +86,7 @@ describe('getPaySessionRevalidationDecision', () => {
 		expect(
 			getPaySessionRevalidationDecision({
 				status: CRYPTO_PAYMENT_STATUS.PENDING,
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}),
 		).toEqual({ kind: 'sendable' });
@@ -99,7 +96,7 @@ describe('getPaySessionRevalidationDecision', () => {
 		expect(
 			getPaySessionRevalidationDecision({
 				status: CRYPTO_PAYMENT_STATUS.PENDING,
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS + 1,
 			}),
 		).toEqual({ kind: 'session-expired' });
@@ -109,7 +106,7 @@ describe('getPaySessionRevalidationDecision', () => {
 		expect(
 			getPaySessionRevalidationDecision({
 				status: CRYPTO_PAYMENT_STATUS.CONFIRMING,
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 			}),
 		).toEqual({
 			kind: 'rehydrate',
@@ -121,7 +118,7 @@ describe('getPaySessionRevalidationDecision', () => {
 		expect(
 			getPaySessionRevalidationDecision({
 				status: CRYPTO_PAYMENT_STATUS.COMPLETED,
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 			}),
 		).toEqual({
 			kind: 'rehydrate',
@@ -130,7 +127,7 @@ describe('getPaySessionRevalidationDecision', () => {
 		expect(
 			getPaySessionRevalidationDecision({
 				status: CRYPTO_PAYMENT_STATUS.FAILED,
-				expiresAt: EXPIRES_AT,
+				submitDeadline: SUBMIT_DEADLINE,
 			}),
 		).toEqual({
 			kind: 'rehydrate',

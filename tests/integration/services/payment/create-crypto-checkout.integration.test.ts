@@ -26,6 +26,8 @@ describe('createCryptoCheckout', () => {
 				treasuryAddress: '0x8e93ae06a3aa1dc901af08d8b1029b95a3ce12d4',
 				orderId: 'order-1',
 				expiresAt: '2026-03-13T12:00:00.000Z',
+				submitDeadline: '2026-03-13T12:10:00.000Z',
+				confirmDeadline: '2026-03-13T12:15:00.000Z',
 			}),
 		);
 

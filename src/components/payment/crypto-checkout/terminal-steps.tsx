@@ -4,6 +4,7 @@ import { CheckCircle2, ExternalLink, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { getTxExplorerUrl } from '@/lib/web3/block-explorers';
+import type { CryptoChainConfig } from '@/types/crypto-config';
 
 // ==========================================
 // Shared: TxLink
@@ -12,14 +13,16 @@ import { getTxExplorerUrl } from '@/lib/web3/block-explorers';
 interface TxLinkProps {
 	txHash: string | undefined;
 	selectedChainId: number | undefined;
+	/** Chain configs from crypto config endpoint — needed for explorer URL resolution */
+	chains: CryptoChainConfig[];
 }
 
 /**
  * Block explorer link for the submitted transaction hash.
  * Reused across confirming, success, and failure steps.
  */
-export function TxLink({ txHash, selectedChainId }: TxLinkProps) {
-	const url = getTxExplorerUrl(txHash, selectedChainId);
+export function TxLink({ txHash, selectedChainId, chains }: TxLinkProps) {
+	const url = getTxExplorerUrl(txHash, selectedChainId, chains);
 	if (!txHash || !url) return null;
 
 	return (
@@ -42,6 +45,8 @@ export function TxLink({ txHash, selectedChainId }: TxLinkProps) {
 interface SuccessStepProps {
 	txHash: string | undefined;
 	selectedChainId: number;
+	/** Chain configs for explorer URL resolution */
+	chains: CryptoChainConfig[];
 	onClose: () => void;
 }
 
@@ -51,6 +56,7 @@ interface SuccessStepProps {
 export function SuccessStep({
 	txHash,
 	selectedChainId,
+	chains,
 	onClose,
 }: SuccessStepProps) {
 	return (
@@ -66,7 +72,11 @@ export function SuccessStep({
 					Your tickets will appear below shortly — it may take 1-2 minutes.
 				</p>
 			</div>
-			<TxLink txHash={txHash} selectedChainId={selectedChainId} />
+			<TxLink
+				txHash={txHash}
+				selectedChainId={selectedChainId}
+				chains={chains}
+			/>
 			<Button
 				onClick={onClose}
 				className="h-12 w-full border-2 border-black bg-black hover:bg-white hover:text-black"
@@ -85,6 +95,8 @@ interface FailureStepProps {
 	txHash: string | undefined;
 	/** May be undefined if failure occurs before chain selection (e.g. expired session on reopen) */
 	selectedChainId: number | undefined;
+	/** Chain configs for explorer URL resolution */
+	chains: CryptoChainConfig[];
 	errorMessage: string | null;
 	/** When true, funds may have been deducted — hides "Try Again" to prevent duplicate payment */
 	fundsAtRisk?: boolean;
@@ -106,6 +118,7 @@ interface FailureStepProps {
 export function FailureStep({
 	txHash,
 	selectedChainId,
+	chains,
 	errorMessage,
 	fundsAtRisk = false,
 	retryBlocked = false,
@@ -122,7 +135,11 @@ export function FailureStep({
 			<p className="text-center text-sm text-red-600">
 				{errorMessage ?? 'Something went wrong.'}
 			</p>
-			<TxLink txHash={txHash} selectedChainId={selectedChainId} />
+			<TxLink
+				txHash={txHash}
+				selectedChainId={selectedChainId}
+				chains={chains}
+			/>
 			<div className="flex w-full gap-2">
 				<Button
 					variant="outline"

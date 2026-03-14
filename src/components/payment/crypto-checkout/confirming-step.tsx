@@ -7,6 +7,7 @@ import {
 	type PhaseStatus,
 } from '@/components/payment/crypto-checkout/confirming-step-state';
 import { TxLink } from '@/components/payment/crypto-checkout/terminal-steps';
+import type { CryptoChainConfig } from '@/types/crypto-config';
 
 // ==========================================
 // Types
@@ -22,6 +23,8 @@ interface ConfirmingStepProps {
 	confirmationTarget: number;
 	/** Whether backend accepted FE's explicit finalization request */
 	finalizationRequested: boolean;
+	/** Chain configs for explorer URL resolution */
+	chains: CryptoChainConfig[];
 }
 
 // ==========================================
@@ -49,6 +52,7 @@ export function ConfirmingStep({
 	confirmations,
 	confirmationTarget,
 	finalizationRequested,
+	chains,
 }: ConfirmingStepProps) {
 	// ==========================================
 	// Phase Definitions
@@ -160,7 +164,11 @@ export function ConfirmingStep({
 
 			{/* Tx explorer link — centered below the tracker */}
 			<div className="flex justify-center pt-1">
-				<TxLink txHash={txHash} selectedChainId={selectedChainId} />
+				<TxLink
+					txHash={txHash}
+					selectedChainId={selectedChainId}
+					chains={chains}
+				/>
 			</div>
 		</div>
 	);

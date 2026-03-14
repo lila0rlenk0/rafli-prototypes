@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { cryptoPaymentStatusSchema } from './payment';
+
 // ==========================================
 // Constants
 // ==========================================
@@ -51,6 +53,12 @@ export const orderSchema = z.object({
 	updatedAt: z.string(), // ISO datetime
 	raffleName: z.string().optional().default('N/A'), // Optional, defaults to N/A
 	raffleSlug: z.string().optional(), // Optional slug for linking
+	/** Crypto session status — null when no crypto session exists for this order */
+	cryptoSessionStatus: cryptoPaymentStatusSchema.nullable().default(null),
+	/** Crypto session tx hash — null until submitted */
+	cryptoSessionTxHash: z.string().nullable().default(null),
+	/** Human-readable crypto failure reason — null unless session failed */
+	cryptoSessionFailureReason: z.string().nullable().default(null),
 });
 
 /**

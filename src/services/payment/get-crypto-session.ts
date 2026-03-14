@@ -33,6 +33,10 @@ const cryptoSessionResponseSchema = z.object({
 	/** ISO timestamp when session was completed — null until completed */
 	completedAt: z.string().nullable(),
 	expiresAt: z.string(),
+	/** Absolute deadline for tx hash submission */
+	submitDeadline: z.string(),
+	/** Absolute deadline for confirming-phase sessions */
+	confirmDeadline: z.string(),
 });
 
 export type CryptoSessionResponse = z.infer<typeof cryptoSessionResponseSchema>;

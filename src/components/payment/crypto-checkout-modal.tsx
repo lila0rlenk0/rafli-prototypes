@@ -49,28 +49,22 @@ import {
 	getCryptoSessionGraceWindowMs,
 	getCryptoTxSubmitOutcome,
 	normalizeTxHash,
-	type CryptoConfirmingGracePhase,
 } from '@/lib/web3/crypto-payment-flow';
 import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
 import { isTransactionNotFound, isUserRejection } from '@/lib/web3/errors';
-import {
-	getTokenBySlugForChain,
-	getSelectableTokensForChain,
-	type TokenInfo,
-} from '@/lib/web3/tokens';
 import { cancelPaymentSession } from '@/services/payment/cancel-payment-session';
 import { confirmCryptoTx } from '@/services/payment/confirm-crypto-tx';
 import { createCryptoCheckout } from '@/services/payment/create-crypto-checkout';
 import { getCryptoSession } from '@/services/payment/get-crypto-session';
 import { submitCryptoTx } from '@/services/payment/submit-crypto-tx';
-import { usePollCryptoSession } from '@/services/payment/use-poll-crypto-session';
+import { useCryptoConfig } from '@/services/payment/use-crypto-config';
 import { usePollOrderStatus } from '@/services/payment/use-poll-order-status';
 import { useWallets } from '@/services/wallet/use-wallets';
 import { verifyWallet } from '@/services/wallet/verify-wallet';
 import { PAYMENT_ERROR_CODES } from '@/types/errors';
 import { ORDER_STATUS } from '@/types/order';
 import { CRYPTO_PAYMENT_STATUS } from '@/types/payment';
-import type { CryptoTokenPricing } from '@/types/raffle';
+import type { RaffleCryptoOptions, RaffleCryptoToken } from '@/types/raffle';
 import type { CryptoCheckoutSession } from '@/types/wallet';
 
 // ==========================================
@@ -96,11 +90,8 @@ interface CryptoCheckoutModalProps {
 	onOpenChange: (open: boolean) => void;
 	orderId: string;
 	raffleEndAt: string;
-	cryptoChainIds: number[];
-	/** Allowed token slugs from raffle — empty means all tokens allowed */
-	cryptoTokens?: string[];
-	/** Non-stablecoin pricing per token — needed for display in token selector */
-	cryptoTokenPricing?: CryptoTokenPricing;
+	/** Structured crypto options from raffle — chains with selectable tokens */
+	cryptoOptions: RaffleCryptoOptions;
 	userId?: string | null;
 	onSuccess?: () => void;
 	/** Notifies parent when confirming state changes — used to show persistent "pending" button */
@@ -126,9 +117,12 @@ type SubmitRecoveryMode = null | 'poll' | 'retry';
 /** Minimal server session shape needed by the hydration helper */
 interface ServerSessionSnapshot {
 	currency: string;
-	expiresAt: string;
 	txHash: string | null;
 	failureReason?: string | null;
+	/** Backend-provided submit deadline */
+	submitDeadline: string;
+	/** Backend-provided confirming deadline */
+	confirmDeadline: string;
 }
 
 /** Params for the shared server→local hydration mapper */
@@ -136,7 +130,7 @@ interface ApplyServerHydrationParams {
 	serverSession: ServerSessionSnapshot;
 	checkoutSession: CryptoCheckoutSession;
 	checksummedAddress: Address;
-	fallbackToken: TokenInfo;
+	fallbackToken: RaffleCryptoToken;
 	nextStep: CheckoutStep;
 }
 
@@ -164,16 +158,16 @@ export function CryptoCheckoutModal({
 	onOpenChange,
 	orderId,
 	raffleEndAt,
-	cryptoChainIds,
-	cryptoTokens = [],
-	cryptoTokenPricing = [],
+	cryptoOptions,
 	userId,
 	onSuccess,
 	onConfirmingChange,
 }: CryptoCheckoutModalProps) {
 	const [step, setStep] = useState<CheckoutStep>('select-chain');
 	const [selectedChainId, setSelectedChainId] = useState<number | null>(null);
-	const [selectedToken, setSelectedToken] = useState<TokenInfo | null>(null);
+	const [selectedToken, setSelectedToken] = useState<RaffleCryptoToken | null>(
+		null,
+	);
 	const [session, setSession] = useState<CryptoCheckoutSession | null>(null);
 	// Tracks which token slug was used to create the current session — needed
 	// to detect token changes when user navigates back and picks a different token.
@@ -190,6 +184,10 @@ export function CryptoCheckoutModal({
 	// left the wallet but the tx vanished. When true, "Try Again" is hidden to
 	// prevent duplicate payments. Passed as explicit prop to FailureStep.
 	const [fundsAtRisk, setFundsAtRisk] = useState(false);
+
+	// Crypto config — chain metadata (names, explorers, confirmation targets)
+	const { data: cryptoConfig } = useCryptoConfig();
+	const chains = cryptoConfig?.chains ?? [];
 
 	// Wagmi hooks
 	const { address, chainId: connectedChainId } = useAccount();
@@ -272,14 +270,6 @@ export function CryptoCheckoutModal({
 	// The ref is for idempotency; this state is for rendering the tracker row transition
 	// from "Verifying payment" → "Completing order" after backend accepts confirm.
 	const [finalizationRequested, setFinalizationRequested] = useState(false);
-	// FE mirror of the backend's two post-expiry windows:
-	// - submit: backend has not durably accepted a tx hash yet
-	// - confirming: backend already owns a hash / session is confirming
-	// This is state (not just a ref) because timers and poll budgets must re-arm
-	// when the session upgrades from "submit grace" to "confirming grace".
-	const [confirmingGracePhase, setConfirmingGracePhase] =
-		useState<CryptoConfirmingGracePhase>('submit');
-
 	// Guards the success transition — prevents double onSuccess() when both
 	// FE-driven confirm and polling detect COMPLETED in the same render cycle.
 	// Set synchronously before async state update to close the race window.
@@ -288,12 +278,6 @@ export function CryptoCheckoutModal({
 	// Guards reorg detection — prevents concurrent handlePossibleReorg executions
 	// when txFailureCount increments multiple times while balance refetch is pending.
 	const reorgHandled = useRef(false);
-
-	// Ref for latest polledSession — avoids adding polledSession to useEffect deps
-	// (which would cause re-runs every 5s). Read from ref inside effects to get
-	// the most recent failureReason without coupling to the poll cycle.
-	const polledSessionRef =
-		useRef<Awaited<ReturnType<typeof usePollCryptoSession>>['data']>(undefined);
 
 	/**
 	 * Terminal failure when the wallet tx is already on-chain but FE can no longer
@@ -353,7 +337,9 @@ export function CryptoCheckoutModal({
 	const failConfirmingWindowExpired = useCallback(() => {
 		if (successTransitioned.current) return;
 
-		if (confirmingGracePhase === 'confirming' || !!txHash) {
+		// After tx submission, the payment may still be processing on-chain.
+		// Before submission, this is just a session expiry.
+		if (txSubmittedToBackend.current || !!txHash) {
 			setErrorMessage(
 				'Payment verification timed out. Your transaction may still be processing — please check your order history or contact support.',
 			);
@@ -362,7 +348,7 @@ export function CryptoCheckoutModal({
 		}
 
 		setStep('failure');
-	}, [confirmingGracePhase, txHash]);
+	}, [txHash]);
 
 	/**
 	 * Minimal fallback token when backend returns a stored session for a token the
@@ -371,33 +357,37 @@ export function CryptoCheckoutModal({
 	 * Why this fallback exists:
 	 * - backend checkout recovery is authoritative and may return stored session values
 	 * - the modal still needs a stable label/slug even if FE's latest selection differs
-	 * - TokenInfo only drives display + local comparisons; on-chain execution uses the
+	 * - RaffleCryptoToken only drives display + local comparisons; on-chain execution uses the
 	 *   session's tokenAddress/amount from backend, not this fallback object
 	 */
 	const buildRecoveredToken = useCallback(
 		(
 			currency: string,
 			chainId: number,
-			fallbackToken: TokenInfo,
-		): TokenInfo => {
+			fallbackToken: RaffleCryptoToken,
+		): RaffleCryptoToken => {
 			const recoveredSlug = currency.toLowerCase();
 
-			return (
-				getTokenBySlugForChain(chainId, recoveredSlug) ??
-				(fallbackToken.slug === recoveredSlug
-					? fallbackToken
-					: {
-							slug: recoveredSlug,
-							label: currency,
-							// Fallback heuristic — only reached when token is absent from
-							// TOKENS_BY_CHAIN (e.g. newly added backend token not yet in FE
-							// registry). If a new stablecoin is added, update TOKENS_BY_CHAIN first.
-							isStablecoin:
-								recoveredSlug === 'usdc' || recoveredSlug === 'usdt',
-						})
-			);
+			// Try to find the token in raffle's crypto options for this chain
+			const chainTokens =
+				cryptoOptions.chains.find(c => c.chainId === chainId)?.tokens ?? [];
+			const matchedToken = chainTokens.find(t => t.slug === recoveredSlug);
+			if (matchedToken) return matchedToken;
+
+			// Fallback to the caller-provided token if slug matches
+			if (fallbackToken.slug === recoveredSlug) return fallbackToken;
+
+			// Last resort — synthesize a token from the currency string.
+			// Only reached when backend stores a token not in the raffle's current options.
+			return {
+				slug: recoveredSlug,
+				label: currency,
+				// Stablecoins have null pricePerTicket (1:1 USD)
+				pricePerTicket:
+					recoveredSlug === 'usdc' || recoveredSlug === 'usdt' ? null : '0',
+			};
 		},
-		[],
+		[cryptoOptions.chains],
 	);
 
 	/**
@@ -423,7 +413,6 @@ export function CryptoCheckoutModal({
 			txSubmitted: nextTxSubmitted,
 			submitRecoveryMode: nextSubmitRecoveryMode = null,
 			finalizationRequested: nextFinalizationRequested = false,
-			confirmingGracePhase: nextConfirmingGracePhase,
 			backendTrackedHash = null,
 			backendOwnsTx = false,
 			fundsAtRisk: nextFundsAtRisk = false,
@@ -434,7 +423,6 @@ export function CryptoCheckoutModal({
 			txSubmitted: boolean;
 			submitRecoveryMode?: SubmitRecoveryMode;
 			finalizationRequested?: boolean;
-			confirmingGracePhase: CryptoConfirmingGracePhase;
 			backendTrackedHash?: string | null;
 			backendOwnsTx?: boolean;
 			fundsAtRisk?: boolean;
@@ -445,7 +433,6 @@ export function CryptoCheckoutModal({
 			setTxSubmitted(nextTxSubmitted);
 			setSubmitRecoveryMode(nextSubmitRecoveryMode);
 			setFinalizationRequested(nextFinalizationRequested);
-			setConfirmingGracePhase(nextConfirmingGracePhase);
 			setFundsAtRisk(nextFundsAtRisk);
 			setRetryBlocked(nextRetryBlocked);
 			setErrorMessage(nextErrorMessage);
@@ -480,7 +467,7 @@ export function CryptoCheckoutModal({
 		}: {
 			checkoutSession: CryptoCheckoutSession;
 			checksummedAddress: Address;
-			token: TokenInfo;
+			token: RaffleCryptoToken;
 		}) => {
 			setSelectedChainId(checkoutSession.chainId);
 			setSelectedToken(token);
@@ -514,7 +501,8 @@ export function CryptoCheckoutModal({
 			);
 			const hydratedCheckoutSession = {
 				...checkoutSession,
-				expiresAt: serverSession.expiresAt,
+				submitDeadline: serverSession.submitDeadline,
+				confirmDeadline: serverSession.confirmDeadline,
 			};
 			const recoveredTxHash = serverSession.txHash as `0x${string}` | null;
 
@@ -529,10 +517,6 @@ export function CryptoCheckoutModal({
 			applyCheckoutRuntimeState({
 				txHash: recoveredTxHash ?? undefined,
 				txSubmitted: nextStep === 'confirming' ? true : !!recoveredTxHash,
-				confirmingGracePhase:
-					nextStep === 'confirming' || !!recoveredTxHash
-						? 'confirming'
-						: 'submit',
 				backendTrackedHash: recoveredTxHash,
 				backendOwnsTx: nextStep === 'confirming' || !!recoveredTxHash,
 				errorMessage:
@@ -616,7 +600,6 @@ export function CryptoCheckoutModal({
 		applyCheckoutRuntimeState({
 			txHash: undefined,
 			txSubmitted: false,
-			confirmingGracePhase: 'submit',
 		});
 	}, [applyCheckoutRuntimeState]);
 
@@ -663,7 +646,7 @@ export function CryptoCheckoutModal({
 		}: {
 			checkoutSession: CryptoCheckoutSession;
 			checksummedAddress: Address;
-			fallbackToken: TokenInfo;
+			fallbackToken: RaffleCryptoToken;
 			flowVersion: number;
 		}) => {
 			const sessionResult = await getCryptoSession(checkoutSession.id);
@@ -690,7 +673,6 @@ export function CryptoCheckoutModal({
 				applyCheckoutRuntimeState({
 					txHash: undefined,
 					txSubmitted: false,
-					confirmingGracePhase: 'submit',
 				});
 				setStep('review');
 				return true;
@@ -749,7 +731,6 @@ export function CryptoCheckoutModal({
 					backendTrackedTxHash.current = normalizedHash;
 					txSubmittedToBackend.current = true;
 					setSubmitRecoveryMode(null);
-					setConfirmingGracePhase('confirming');
 					return { kind: 'accepted' as const };
 				}
 
@@ -763,12 +744,6 @@ export function CryptoCheckoutModal({
 				}
 
 				setSubmitRecoveryMode(outcome);
-				// `poll` means backend already owns authoritative session state.
-				// Upgrade to the longer confirming grace window immediately instead
-				// of waiting for the next session poll tick to catch up.
-				if (outcome === CRYPTO_TX_SUBMIT_OUTCOME.POLL) {
-					setConfirmingGracePhase('confirming');
-				}
 				return { kind: outcome, error: result.error } as const;
 			} finally {
 				submitRequestInFlight.current = false;
@@ -782,7 +757,7 @@ export function CryptoCheckoutModal({
 	// wagmi polls the RPC for the tx's block number vs current block.
 	const confirmingEnabled = step === 'confirming' && !!txHash;
 	const confirmationTarget = selectedChainId
-		? getConfirmationTarget(selectedChainId)
+		? getConfirmationTarget(selectedChainId, chains)
 		: null;
 
 	const { data: confirmationCount } = useTransactionConfirmations({
@@ -958,54 +933,35 @@ export function CryptoCheckoutModal({
 	// Date.now() internally, so an inline const would produce a new shrinking value
 	// every render. That would reset the polling hooks' useEffect (which depends on
 	// resolvedMaxDurationMs), causing isExpired to flicker false→true on each cycle.
-	const confirmingPollWindowMs = useMemo(
-		() =>
-			step === 'confirming' && session?.expiresAt
-				? getCryptoSessionGraceWindowMs(session.expiresAt, confirmingGracePhase)
-				: undefined,
-		[step, session?.expiresAt, confirmingGracePhase],
-	);
+	const confirmingPollWindowMs = useMemo(() => {
+		if (step !== 'confirming' || !session) return undefined;
+		// After tx submission, use the longer confirming deadline;
+		// before submission, use the shorter submit deadline.
+		const deadline = txHash ? session.confirmDeadline : session.submitDeadline;
+		return getCryptoSessionGraceWindowMs(deadline);
+		// Only the deadline strings matter for the poll window computation.
+		// Including the full session object would cause unnecessary recomputation
+		// on every session reference change (e.g. revalidation refresh).
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [step, session?.submitDeadline, session?.confirmDeadline, txHash]);
 	// Avoid polling the backend while the wallet signature/send prompt is still open.
 	// We start polling once there is a tx hash, a submit recovery path, or we know
-	// backend already owns the session as a confirming payment.
+	// backend already owns the session (txSubmittedToBackend is true from polling).
 	const shouldPollConfirmingState =
-		step === 'confirming' &&
-		(!!txHash ||
-			submitRecoveryMode !== null ||
-			confirmingGracePhase === 'confirming');
+		step === 'confirming' && (!!txHash || submitRecoveryMode !== null);
 	const { data: polledOrder, isExpired: isPollingExpired } = usePollOrderStatus(
 		shouldPollConfirmingState ? orderId : null,
 		confirmingPollWindowMs,
 	);
 
-	// Poll crypto session endpoint for authoritative session state + failureReason.
-	// The order endpoint only has status; the session endpoint exposes the
-	// backend's actual failure reason (e.g. "Transaction reverted", "Amount mismatch").
-	const { data: polledSession } = usePollCryptoSession(
-		shouldPollConfirmingState && session ? session.id : null,
-		confirmingPollWindowMs,
-	);
-	// Sync ref each render — effects read from ref to avoid dep on poll cycle
-	polledSessionRef.current = polledSession;
-
-	// Non-stablecoins are only actually purchasable when the raffle prices them.
-	// Hoist token IDs once so chain resolution and selectors share the same filter.
-	const pricedTokenSlugs = useMemo(
-		() => cryptoTokenPricing.map(entry => entry.tokenId),
-		[cryptoTokenPricing],
-	);
-
 	/**
-	 * Gets tokens the current raffle can actually sell on a chain.
-	 * Shared by chain resolution, token selection, and chain-label display.
+	 * Gets tokens for a chain from the raffle's pre-computed crypto options.
+	 * Backend already filtered by allowlist and pricing — no client-side logic needed.
 	 */
-	const getAllowedTokens = useCallback(
-		(chainId: number): TokenInfo[] =>
-			getSelectableTokensForChain(chainId, {
-				allowedTokenSlugs: cryptoTokens,
-				pricedTokenSlugs,
-			}),
-		[cryptoTokens, pricedTokenSlugs],
+	const getTokensForChain = useCallback(
+		(chainId: number): RaffleCryptoToken[] =>
+			cryptoOptions.chains.find(c => c.chainId === chainId)?.tokens ?? [],
+		[cryptoOptions.chains],
 	);
 
 	// ==========================================
@@ -1013,23 +969,16 @@ export function CryptoCheckoutModal({
 	// ==========================================
 
 	/**
-	 * Resolved chain IDs — empty from API means "all chains allowed",
-	 * so fall back to every chain in the token registry.
-	 * Chains with zero allowed tokens are filtered out to prevent
-	 * selecting a chain that has no valid payment option.
+	 * Resolved chain IDs — filtered to chains the wagmi config supports
+	 * and that have at least one token available.
 	 */
 	const resolvedChainIds = useMemo(() => {
-		// Backend may allow "all chains", but FE must only surface chains the
-		// current wagmi config can actually switch to in this environment.
 		const supportedChainIds = new Set<number>(SUPPORTED_WEB3_CHAIN_IDS);
-		const baseChains =
-			cryptoChainIds.length > 0 ? cryptoChainIds : SUPPORTED_WEB3_CHAIN_IDS;
-
-		return baseChains.filter(chainId => {
-			if (!supportedChainIds.has(chainId)) return false;
-			return getAllowedTokens(chainId).length > 0;
-		});
-	}, [cryptoChainIds, getAllowedTokens]);
+		return cryptoOptions.chains
+			.filter(c => supportedChainIds.has(c.chainId))
+			.filter(c => c.tokens.length > 0)
+			.map(c => c.chainId);
+	}, [cryptoOptions.chains]);
 
 	/**
 	 * Checks if current wallet address is already verified on backend
@@ -1061,7 +1010,7 @@ export function CryptoCheckoutModal({
 		const reviewGuard = getReviewSessionGuard({
 			connectedAddress: checksummedAddress,
 			sessionWalletAddress,
-			expiresAt: session?.expiresAt,
+			submitDeadline: session?.submitDeadline,
 		});
 
 		switch (reviewGuard.kind) {
@@ -1072,7 +1021,7 @@ export function CryptoCheckoutModal({
 			default:
 				return null;
 		}
-	}, [checksummedAddress, session?.expiresAt, sessionWalletAddress]);
+	}, [checksummedAddress, session?.submitDeadline, sessionWalletAddress]);
 
 	// ==========================================
 	// Effects
@@ -1097,18 +1046,18 @@ export function CryptoCheckoutModal({
 	}, [clearCloseResetTimeout, open]);
 
 	/**
-	 * Session polling is authoritative for whether backend has accepted a hash.
+	 * Order polling is authoritative for whether backend has accepted a hash.
 	 *
 	 * This closes the "response lost after commit" gap:
 	 * - submit POST may succeed server-side but fail client-side on the way back
-	 * - polling the session gives FE the same truth without trusting the submit response
+	 * - polling the order gives FE the same truth without trusting the submit response
 	 */
 	useEffect(() => {
 		if (step !== 'confirming') return;
 
 		const txHashSyncDecision = getPolledTxHashSyncDecision({
 			localTxHash: txHash,
-			polledTxHash: polledSession?.txHash,
+			polledTxHash: polledOrder?.cryptoSessionTxHash,
 		});
 		if (txHashSyncDecision.kind === 'noop') return;
 
@@ -1116,7 +1065,6 @@ export function CryptoCheckoutModal({
 		// local hash has already been restored from polling.
 		if (
 			txSubmittedToBackend.current &&
-			confirmingGracePhase === 'confirming' &&
 			backendTrackedTxHash.current ===
 				txHashSyncDecision.normalizedBackendHash &&
 			!txHashSyncDecision.adoptLocalTxHash
@@ -1127,11 +1075,10 @@ export function CryptoCheckoutModal({
 		backendTrackedTxHash.current = txHashSyncDecision.normalizedBackendHash;
 		txSubmittedToBackend.current = true;
 		setSubmitRecoveryMode(null);
-		setConfirmingGracePhase('confirming');
 		if (txHashSyncDecision.adoptLocalTxHash) {
 			setTxHash(txHashSyncDecision.adoptLocalTxHash);
 		}
-	}, [step, polledSession?.txHash, confirmingGracePhase, txHash]);
+	}, [step, polledOrder?.cryptoSessionTxHash, txHash]);
 
 	/**
 	 * One bounded same-hash retry after ambiguous submit failures.
@@ -1148,7 +1095,11 @@ export function CryptoCheckoutModal({
 			submitRecoveryMode !== CRYPTO_TX_SUBMIT_OUTCOME.RETRY
 		)
 			return;
-		if (!session || txSubmittedToBackend.current || polledSession?.txHash)
+		if (
+			!session ||
+			txSubmittedToBackend.current ||
+			polledOrder?.cryptoSessionTxHash
+		)
 			return;
 
 		const normalizedHash = normalizeTxHash(txHash);
@@ -1172,7 +1123,7 @@ export function CryptoCheckoutModal({
 		txHash,
 		submitRecoveryMode,
 		session,
-		polledSession?.txHash,
+		polledOrder?.cryptoSessionTxHash,
 		registerTxHashWithBackend,
 		failSubmittedTxRegistration,
 	]);
@@ -1194,7 +1145,12 @@ export function CryptoCheckoutModal({
 		if (normalizeTxHash(txHash) === trackedHash) return;
 
 		failBackendTrackedReplacement(lastReplacementReason.current);
-	}, [step, txHash, polledSession?.txHash, failBackendTrackedReplacement]);
+	}, [
+		step,
+		txHash,
+		polledOrder?.cryptoSessionTxHash,
+		failBackendTrackedReplacement,
+	]);
 
 	/**
 	 * FE-driven finalization — when on-chain confirmations reach the chain's target,
@@ -1276,8 +1232,7 @@ export function CryptoCheckoutModal({
 
 	/**
 	 * Transition to success/failure when polling detects terminal state.
-	 * Uses both order polling (authoritative for order status) and session polling
-	 * (provides failureReason for user-facing error messages).
+	 * Order now includes cryptoSessionFailureReason directly — no separate session poll needed.
 	 */
 	useEffect(() => {
 		if (!polledOrder || step !== 'confirming') return;
@@ -1288,12 +1243,10 @@ export function CryptoCheckoutModal({
 			polledOrder.status === ORDER_STATUS.FAILED ||
 			polledOrder.status === ORDER_STATUS.REFUNDED
 		) {
-			// Use failureReason from session ref if available — it contains
-			// actionable info (e.g. "Transaction reverted", "Amount mismatch")
-			// that the order endpoint does not expose. Read from ref to avoid
-			// coupling this effect to the session poll cycle.
+			// Order now exposes the crypto session's failure reason directly,
+			// eliminating the need for a separate session poll endpoint.
 			const reason =
-				polledSessionRef.current?.failureReason ?? FALLBACK_FAILURE_MESSAGE;
+				polledOrder.cryptoSessionFailureReason ?? FALLBACK_FAILURE_MESSAGE;
 			setErrorMessage(reason);
 			setStep('failure');
 		}
@@ -1388,19 +1341,19 @@ export function CryptoCheckoutModal({
 	]);
 
 	/**
-	 * Session expiry timer — aligned to backend PR 40 grace windows.
+	 * Session expiry timer — uses backend-provided deadlines directly.
 	 *
-	 * Why this is not tied to raw expiresAt:
-	 * - backend accepts late submit attempts for 10 minutes after expiry
-	 * - once backend owns a tx hash, it keeps verifying for 15 minutes after expiry
-	 * - failing the FE at raw TTL creates false terminal failures for real in-flight payments
+	 * Before tx submission: expires at submitDeadline (shorter window).
+	 * After tx submission: expires at confirmDeadline (longer window).
+	 * The txHash state drives which deadline is active.
 	 */
 	useEffect(() => {
-		if (step !== 'confirming' || !session?.expiresAt) return;
+		if (step !== 'confirming' || !session) return;
 
-		const msUntilExpiry =
-			getCryptoSessionGraceDeadline(session.expiresAt, confirmingGracePhase) -
-			Date.now();
+		// After tx submission, use the longer confirming deadline;
+		// before submission, use the shorter submit deadline.
+		const deadline = txHash ? session.confirmDeadline : session.submitDeadline;
+		const msUntilExpiry = getCryptoSessionGraceDeadline(deadline) - Date.now();
 
 		// Already beyond the backend grace window — transition immediately
 		if (msUntilExpiry <= 0) {
@@ -1410,11 +1363,16 @@ export function CryptoCheckoutModal({
 
 		const timer = setTimeout(failConfirmingWindowExpired, msUntilExpiry);
 		return () => clearTimeout(timer);
+		// Only the deadline strings drive the timer — avoid re-arming the
+		// setTimeout on unrelated session field changes by pinning to the
+		// exact values this effect reads.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
-		confirmingGracePhase,
 		failConfirmingWindowExpired,
-		session?.expiresAt,
+		session?.submitDeadline,
+		session?.confirmDeadline,
 		step,
+		txHash,
 	]);
 
 	// ==========================================
@@ -1429,7 +1387,7 @@ export function CryptoCheckoutModal({
 	function handleSelectChain(chainId: number) {
 		setSelectedChainId(chainId);
 
-		const tokens = getAllowedTokens(chainId);
+		const tokens = getTokensForChain(chainId);
 
 		// Single token available — auto-select and skip to wallet step.
 		// tokens[0] is always defined here because resolvedChainIds pre-filters
@@ -1447,7 +1405,7 @@ export function CryptoCheckoutModal({
 	/**
 	 * Step 1b: User selects a token from available options for the chain.
 	 */
-	function handleSelectToken(token: TokenInfo) {
+	function handleSelectToken(token: RaffleCryptoToken) {
 		setSelectedToken(token);
 		setStep('connect-wallet');
 	}
@@ -1514,7 +1472,7 @@ export function CryptoCheckoutModal({
 				getReviewSessionGuard({
 					connectedAddress: checksummedAddress,
 					sessionWalletAddress,
-					expiresAt: session.expiresAt,
+					submitDeadline: session.submitDeadline,
 				}).kind === 'ready';
 
 			if (existingSessionValid) {
@@ -1611,7 +1569,7 @@ export function CryptoCheckoutModal({
 			const reviewGuard = getReviewSessionGuard({
 				connectedAddress: checksummedAddress,
 				sessionWalletAddress,
-				expiresAt: session.expiresAt,
+				submitDeadline: session.submitDeadline,
 			});
 			if (reviewGuard.kind === 'wallet-changed') {
 				returnToWalletStep('wallet-changed');
@@ -1651,7 +1609,7 @@ export function CryptoCheckoutModal({
 			const serverSession = sessionResult.data;
 			const sendDecision = getPaySessionRevalidationDecision({
 				status: serverSession.status,
-				expiresAt: serverSession.expiresAt,
+				submitDeadline: serverSession.submitDeadline,
 			});
 
 			if (sendDecision.kind === 'session-expired') {
@@ -1672,10 +1630,11 @@ export function CryptoCheckoutModal({
 				return;
 			}
 
-			// Keep local session expiry aligned with the server we just revalidated.
+			// Keep local session deadlines aligned with the server we just revalidated.
 			setSession({
 				...session,
-				expiresAt: serverSession.expiresAt,
+				submitDeadline: serverSession.submitDeadline,
+				confirmDeadline: serverSession.confirmDeadline,
 			});
 
 			// Switch chain if wallet is on a different network
@@ -1699,10 +1658,7 @@ export function CryptoCheckoutModal({
 			// Move to confirming before awaiting wallet broadcast.
 			// This keeps the UI in the pending state the moment the user approves,
 			// and avoids a stale "review" screen while wagmi starts producing tx data.
-			// Start on submit grace — we only switch to confirming grace once backend
-			// actually owns the tx hash or session polling proves it does.
 			setTxSubmitted(true);
-			setConfirmingGracePhase('submit');
 			setStep('confirming');
 
 			// Execute ERC20 transfer
@@ -1744,7 +1700,6 @@ export function CryptoCheckoutModal({
 			if (isUserRejection(error)) {
 				toast.info('Transaction cancelled.');
 				// Return to review since we optimistically moved to confirming
-				setConfirmingGracePhase('submit');
 				setStep('review');
 				return;
 			}
@@ -1776,7 +1731,6 @@ export function CryptoCheckoutModal({
 		setTxHash(undefined);
 		setSubmitRecoveryMode(null);
 		setFinalizationRequested(false);
-		setConfirmingGracePhase('submit');
 		// Reset ref guards so retried flow can submit again
 		walletReadyInFlight.current = false;
 		payInFlight.current = false;
@@ -1830,7 +1784,7 @@ export function CryptoCheckoutModal({
 			case 'connect-wallet':
 				// If chain has multiple allowed tokens, go back to token selector.
 				// If auto-skipped, go back to chain selector.
-				if (selectedChainId && getAllowedTokens(selectedChainId).length > 1) {
+				if (selectedChainId && getTokensForChain(selectedChainId).length > 1) {
 					setSelectedToken(null);
 					setStep('select-token');
 				} else {
@@ -1912,7 +1866,7 @@ export function CryptoCheckoutModal({
 	 */
 	function wasTokenStepShown(): boolean {
 		if (!selectedChainId) return false;
-		return getAllowedTokens(selectedChainId).length > 1;
+		return getTokensForChain(selectedChainId).length > 1;
 	}
 
 	/**
@@ -2004,15 +1958,14 @@ export function CryptoCheckoutModal({
 					{step === 'select-chain' && (
 						<ChainSelector
 							cryptoChainIds={resolvedChainIds}
-							cryptoTokens={cryptoTokens}
-							pricedTokenSlugs={pricedTokenSlugs}
+							cryptoOptions={cryptoOptions}
+							chains={chains}
 							onSelectChain={handleSelectChain}
 						/>
 					)}
 					{shouldShowTokenSelector() && (
 						<TokenSelector
-							tokens={getAllowedTokens(selectedChainId!)}
-							cryptoTokenPricing={cryptoTokenPricing}
+							tokens={getTokensForChain(selectedChainId!)}
 							onSelectToken={handleSelectToken}
 						/>
 					)}
@@ -2039,6 +1992,7 @@ export function CryptoCheckoutModal({
 							isProcessing={isProcessing}
 							txSubmitted={txSubmitted}
 							sessionBlockMessage={reviewSessionBlockMessage}
+							chains={chains}
 							onPay={handlePay}
 						/>
 					)}
@@ -2049,12 +2003,14 @@ export function CryptoCheckoutModal({
 							confirmations={observedConfirmationCount}
 							confirmationTarget={confirmationTarget!}
 							finalizationRequested={finalizationRequested}
+							chains={chains}
 						/>
 					)}
 					{shouldShowSuccessStep() && (
 						<SuccessStep
 							txHash={txHash}
 							selectedChainId={selectedChainId!}
+							chains={chains}
 							onClose={handleClose}
 						/>
 					)}
@@ -2062,6 +2018,7 @@ export function CryptoCheckoutModal({
 						<FailureStep
 							txHash={txHash}
 							selectedChainId={selectedChainId ?? undefined}
+							chains={chains}
 							errorMessage={errorMessage}
 							fundsAtRisk={fundsAtRisk}
 							retryBlocked={retryBlocked}

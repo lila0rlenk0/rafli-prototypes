@@ -11,7 +11,7 @@ import { clientEnv } from '@/env/client';
 import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
 import { isWeb3Enabled } from '@/lib/web3/config';
 import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
-import type { CryptoTokenPricing } from '@/types/raffle';
+import type { RaffleCryptoOptions } from '@/types/raffle';
 
 import { SignInToBuyButton } from './sign-in-button';
 import { TicketSelector } from './ticket-selector';
@@ -29,12 +29,8 @@ interface TicketPurchaseCardProps {
 	disabled?: boolean;
 	questionId?: string | null;
 	isAuthenticated?: boolean;
-	acceptsCrypto?: boolean;
-	cryptoChainIds?: number[];
-	/** Allowed token slugs — empty/undefined means all tokens allowed */
-	cryptoTokens?: string[];
-	/** Non-stablecoin pricing per token — needed for EARNM and future non-stablecoin tokens */
-	cryptoTokenPricing?: CryptoTokenPricing;
+	/** Structured crypto options from raffle — null when raffle doesn't accept crypto */
+	cryptoOptions?: RaffleCryptoOptions | null;
 	/** Current user ticket total for this raffle — baseline for crypto post-success sync */
 	myTicketsTotal?: number;
 	userId?: string | null;
@@ -63,10 +59,7 @@ export function TicketPurchaseCard({
 	disabled = false,
 	questionId,
 	isAuthenticated = true,
-	acceptsCrypto = false,
-	cryptoChainIds = [],
-	cryptoTokens = [],
-	cryptoTokenPricing = [],
+	cryptoOptions,
 	myTicketsTotal = 0,
 	userId,
 }: TicketPurchaseCardProps) {
@@ -245,7 +238,7 @@ export function TicketPurchaseCard({
 	function getClosingSoonWarning(): string {
 		const baseMessage =
 			'Raffle closes soon. Purchases stay open until the countdown ends. Start checkout now to avoid missing the cutoff.';
-		const shouldMentionCrypto = acceptsCrypto && isWeb3Enabled && !isFree;
+		const shouldMentionCrypto = !!cryptoOptions && isWeb3Enabled && !isFree;
 
 		if (!shouldMentionCrypto) return baseMessage;
 
@@ -358,9 +351,8 @@ export function TicketPurchaseCard({
 						onPromoRedeemed={handlePromoRedeemed}
 					/>
 
-					{/* Crypto buy button — only when raffle accepts crypto AND Web3 is configured */}
-					{/* cryptoChainIds empty = all chains allowed, so no length check */}
-					{acceptsCrypto && isWeb3Enabled && !isFree && (
+					{/* Crypto buy button — only when raffle has crypto options AND Web3 is configured */}
+					{cryptoOptions && isWeb3Enabled && !isFree && (
 						<CryptoBuyButton
 							raffleId={raffleId}
 							endAt={endAt}
@@ -369,9 +361,7 @@ export function TicketPurchaseCard({
 							questionId={questionId}
 							promoCode={appliedPromo?.code}
 							onPromoInvalid={handlePromoInvalid}
-							cryptoChainIds={cryptoChainIds}
-							cryptoTokens={cryptoTokens}
-							cryptoTokenPricing={cryptoTokenPricing}
+							cryptoOptions={cryptoOptions}
 							myTicketsTotal={myTicketsTotal}
 							userId={userId}
 						/>

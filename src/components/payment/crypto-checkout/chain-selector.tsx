@@ -1,20 +1,21 @@
 'use client';
 
+import { getChainName } from '@/lib/web3/block-explorers';
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
-import { CHAIN_NAMES } from '@/lib/web3/chains';
-import { getSelectableTokensForChain } from '@/lib/web3/tokens';
+import type { CryptoChainConfig } from '@/types/crypto-config';
+import type { RaffleCryptoOptions } from '@/types/raffle';
 
 // ==========================================
 // Types
 // ==========================================
 
 interface ChainSelectorProps {
-	/** Chain IDs to display — already resolved (empty = all) and filtered by parent */
+	/** Chain IDs to display — already resolved and filtered by parent */
 	cryptoChainIds: number[];
-	/** Allowed token slugs — empty means all. Used to show accurate token labels per chain. */
-	cryptoTokens?: string[];
-	/** Non-stablecoin pricing entries present on the raffle */
-	pricedTokenSlugs?: string[];
+	/** Raffle crypto options — pre-computed tokens per chain */
+	cryptoOptions: RaffleCryptoOptions;
+	/** Chain configs from crypto config endpoint */
+	chains: CryptoChainConfig[];
 	onSelectChain: (chainId: number) => void;
 }
 
@@ -30,21 +31,18 @@ interface ChainSelectorProps {
  */
 export function ChainSelector({
 	cryptoChainIds,
-	cryptoTokens = [],
-	pricedTokenSlugs = [],
+	cryptoOptions,
+	chains,
 	onSelectChain,
 }: ChainSelectorProps) {
 	/**
-	 * Gets dot-separated token labels for a chain, filtered by raffle allowlist.
-	 * Shown as secondary text on each chain button.
+	 * Gets dot-separated token labels for a chain from raffle's pre-computed options.
+	 * Backend already filtered by allowlist and pricing — no client-side logic needed.
 	 */
 	function getTokenLabels(chainId: number): string {
-		const allowed = getSelectableTokensForChain(chainId, {
-			allowedTokenSlugs: cryptoTokens,
-			pricedTokenSlugs,
-		});
-		if (allowed.length === 0) return 'USDC';
-		return allowed.map(t => t.label).join(' · ');
+		const chainOption = cryptoOptions.chains.find(c => c.chainId === chainId);
+		if (!chainOption || chainOption.tokens.length === 0) return 'USDC';
+		return chainOption.tokens.map(t => t.label).join(' · ');
 	}
 
 	return (
@@ -68,14 +66,14 @@ export function ChainSelector({
 								>
 									{/* eslint-disable-next-line @next/next/no-img-element */}
 									<img
-										alt={CHAIN_NAMES[chainId] ?? ''}
+										alt={getChainName(chainId, chains)}
 										src={icon.iconUrl}
 										className="size-4"
 									/>
 								</span>
 							)}
 							<span className="text-sm font-medium">
-								{CHAIN_NAMES[chainId] ?? `Chain ${chainId}`}
+								{getChainName(chainId, chains)}
 							</span>
 						</span>
 						<span className="text-xs text-[#7B7B7B] transition-colors group-hover:text-black">

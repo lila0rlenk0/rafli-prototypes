@@ -183,27 +183,34 @@ export const raffleSchema = z.object({
 	netRevenueAmount: z.string().nullable().optional(),
 	perWinnerAmount: z.string().nullable().optional(),
 	disputeWindowEndsAt: z.string().nullable().optional(),
-	/** Whether raffle accepts crypto (USDC) payments — backend always sends this, defaults false */
-	acceptsCrypto: z.boolean().default(false),
-	/** EVM chain IDs the raffle supports for crypto payments (e.g. [1, 42161]). Empty = all chains. */
-	cryptoChainIds: z.array(z.number()).default([]),
-	/** Allowed token slugs for crypto payments (e.g. ["usdc", "earnm"]). Empty = all tokens. */
-	cryptoTokens: z.array(z.string()).default([]),
 	/**
-	 * Non-stablecoin pricing per token (e.g. [{ tokenId: "earnm", price: "100" }]).
-	 * Required by backend for non-stablecoin checkout — without it, backend returns
-	 * `payments:crypto:no-token-pricing`. Stablecoins use implicit 1:1 USD pricing.
+	 * Structured crypto payment options — null when raffle doesn't accept crypto.
+	 * Backend computes per-chain selectable tokens with pricing, eliminating
+	 * client-side filtering that previously lived in tokens.ts.
 	 */
-	cryptoTokenPricing: z
-		.array(
-			z.object({
-				/** Token slug from TOKEN_REGISTRY (e.g. "earnm") — matches backend TokenPriceEntry.tokenId */
-				tokenId: z.string(),
-				/** Static price per ticket as decimal string (e.g. "100") — matches backend TokenPriceEntry.price */
-				price: z.string(),
-			}),
-		)
-		.default([]),
+	cryptoOptions: z
+		.object({
+			chains: z.array(
+				z.object({
+					chainId: z.number(),
+					tokens: z.array(
+						z.object({
+							/** Token slug from TOKEN_REGISTRY (e.g. "usdc", "earnm") */
+							slug: z.string(),
+							/** Display name (e.g. "USDC", "EARNM") */
+							label: z.string(),
+							/**
+							 * Price per ticket as decimal string — null for stablecoins (1:1 USD).
+							 * Non-stablecoins require explicit pricing from the raffle config.
+							 */
+							pricePerTicket: z.string().nullable(),
+						}),
+					),
+				}),
+			),
+		})
+		.nullable()
+		.default(null),
 });
 
 /**
@@ -307,8 +314,14 @@ export const updateRafflePayloadSchema = z.object({
 export type RaffleWinner = z.infer<typeof raffleWinnerSchema>;
 export type Raffle = z.infer<typeof raffleSchema>;
 
-/** Per-token pricing entry for non-stablecoin crypto payments (e.g. EARNM) */
-export type CryptoTokenPricing = Raffle['cryptoTokenPricing'];
+/** Single token entry from a raffle's structured crypto options */
+export type RaffleCryptoToken = NonNullable<
+	Raffle['cryptoOptions']
+>['chains'][number]['tokens'][number];
+
+/** Structured crypto options from raffle — non-null subset for components that only render when crypto is enabled */
+export type RaffleCryptoOptions = NonNullable<Raffle['cryptoOptions']>;
+
 export type RaffleCoverResponse = z.infer<typeof raffleCoverResponseSchema>;
 export type RaffleGalleryResponse = z.infer<typeof raffleGalleryResponseSchema>;
 export type CreateRaffleInput = z.infer<typeof createRaffleInputSchema>;

@@ -17,15 +17,12 @@ interface BalanceData {
 }
 
 /**
- * Formats a decimal string without losing small non-stablecoin amounts.
+ * Formats a decimal string for display.
+ * Preserves >=2 fraction digits (USD convention), trims trailing zeros beyond
+ * 2dp, and caps at 4dp to avoid distracting precision on non-stablecoin amounts.
  *
- * Why string-based formatting:
- * - backend already returns a human-readable decimal string
- * - stablecoins should still read like fiat (`10.00`)
- * - non-stablecoins can legitimately need more than 2 decimals (`0.1234`)
- *
- * We keep at least 2 fraction digits, preserve up to 4 when the backend
- * provided meaningful precision, and trim trailing zero noise beyond that.
+ * @param value - Backend decimal string (e.g. "10.50000", "0.1234567")
+ * @returns Formatted string with 2-4 meaningful fraction digits
  */
 function formatDisplayDecimal(value: string): string {
 	const [integerPart, rawFraction = ''] = value.split('.');

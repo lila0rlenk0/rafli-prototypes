@@ -45,21 +45,6 @@ export interface CheckoutOrderResponse {
 }
 
 // ==========================================
-// Helpers
-// ==========================================
-
-/**
- * Derives whether the order was fully discounted from the totalAmount field.
- * Backend returns totalAmount as a decimal string (e.g. "0.0000" for free orders).
- *
- * @param order - Validated order from checkout response
- * @returns True when totalAmount parses to exactly 0
- */
-function isOrderFullyDiscounted(order: Order): boolean {
-	return parseFloat(order.totalAmount) === 0;
-}
-
-// ==========================================
 // Server Action
 // ==========================================
 
@@ -102,7 +87,8 @@ export async function checkoutOrder(
 
 		return success({
 			order,
-			isFullyDiscounted: isOrderFullyDiscounted(order),
+			// Backend returns totalAmount as decimal string — "0.0000" means promo covered entire order
+			isFullyDiscounted: parseFloat(order.totalAmount) === 0,
 		});
 	} catch (error) {
 		if (error instanceof ZodError) {
@@ -112,7 +98,8 @@ export async function checkoutOrder(
 
 		const errorCode = mapOrderError(error);
 
-		await trackServer(
+		// Fire-and-forget — analytics failures must not mask the original checkout error
+		void trackServer(
 			PURCHASE_EVENTS.ORDER_FAILED,
 			{ raffle_id: payload.raffleId, error_code: errorCode },
 			{ userId },

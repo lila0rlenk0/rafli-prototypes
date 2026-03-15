@@ -53,12 +53,20 @@ export const orderSchema = z.object({
 	updatedAt: z.string(), // ISO datetime
 	raffleName: z.string().optional().default('N/A'), // Optional, defaults to N/A
 	raffleSlug: z.string().optional(), // Optional slug for linking
-	/** Crypto session status — null when no crypto session exists for this order */
-	cryptoSessionStatus: cryptoPaymentStatusSchema.nullable().default(null),
-	/** Crypto session tx hash — null until submitted */
-	cryptoSessionTxHash: z.string().nullable().default(null),
-	/** Human-readable crypto failure reason — null unless session failed */
-	cryptoSessionFailureReason: z.string().nullable().default(null),
+	/** Nested crypto session summary — null when no crypto session exists for this order.
+	 * Matches BE CryptoSessionSummaryDto shape exactly. */
+	cryptoSession: z
+		.object({
+			id: z.string(),
+			status: cryptoPaymentStatusSchema,
+			txHash: z.string().nullable(),
+			failureReason: z.string().nullable(),
+			completedAt: z.string().nullable(),
+			confirmationTarget: z.number(),
+			confirmDeadline: z.string(),
+		})
+		.nullable()
+		.optional(),
 });
 
 /**
@@ -101,13 +109,13 @@ export const ordersBackendResponseSchema = z.object({
 	orders: z.array(orderWithRaffleSchema),
 });
 
-/**
- * Normalized orders response for UI consumption
- */
-export interface OrdersResponse {
-	items: OrderWithRaffle[];
-	total: number;
-	page: number;
-	limit: number;
-	totalPages: number;
-}
+/** Schema for normalized orders response for UI consumption */
+export const ordersResponseSchema = z.object({
+	items: z.array(orderWithRaffleSchema),
+	total: z.number(),
+	page: z.number(),
+	limit: z.number(),
+	totalPages: z.number(),
+});
+
+export type OrdersResponse = z.infer<typeof ordersResponseSchema>;

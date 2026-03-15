@@ -16,6 +16,12 @@ import { getCheckoutStatus } from './get-checkout-status';
 /**
  * Terminal checkout phases that stop polling.
  * Once checkout reaches one of these, no further fetches are needed.
+ *
+ * PROCESSING is included because the backend only returns it when order status
+ * is neither pending/completed/failed — an edge case during Stripe webhook reconciliation.
+ * For crypto flows, backend never returns PROCESSING (crypto has explicit status transitions).
+ * Treating it as terminal is safe: the crypto modal's confirming step maps it to failure,
+ * and Stripe's own redirect modal handles post-processing states separately.
  */
 const TERMINAL_PHASES = [
 	CHECKOUT_PHASE.COMPLETED,
@@ -82,13 +88,21 @@ export function usePollCheckoutStatus(
 ) {
 	const resolvedMaxDurationMs = maxDurationMs ?? DEFAULT_MAX_POLL_DURATION_MS;
 
-	// Tracks when polling started — only read inside refetchInterval (not render)
+	// Tracks when polling started — only read inside refetchInterval (not render).
+	// Reset when orderId OR maxDurationMs changes so the elapsed-time guard in
+	// refetchInterval stays aligned with the setTimeout-based isExpired below.
 	const startedAtRef = useRef<number>(0);
 
 	// isExpired is render-visible state — only set asynchronously via setTimeout
 	const [isExpired, setIsExpired] = useState(false);
 
-	// Initialize/reset start time only when orderId changes.
+	// Combined init + timer effect keyed on both orderId and maxDuration.
+	// Both startedAtRef reset and setTimeout use the same trigger set, so the
+	// refetchInterval elapsed guard and the render-visible isExpired flag always
+	// agree on when polling should stop.
+	//
+	// Restarting when maxDurationMs changes is intentional — switching from
+	// submitDeadline to confirmDeadline (post-tx) should push back the timeout.
 	useEffect(() => {
 		if (!orderId) {
 			startedAtRef.current = 0;
@@ -97,32 +111,21 @@ export function usePollCheckoutStatus(
 
 		startedAtRef.current = Date.now();
 
-		return function cleanup() {
-			setIsExpired(false);
-		};
-	}, [orderId]);
-
-	// Separate timer effect keyed on both orderId and maxDuration.
-	// Restarting the expiry timer when the grace window extends is intentional —
-	// a longer confirming window should push back the timeout, not keep the old one.
-	useEffect(() => {
-		if (!orderId) return;
-
 		const timer = setTimeout(() => {
 			setIsExpired(true);
 		}, resolvedMaxDurationMs);
 
 		return function cleanup() {
 			clearTimeout(timer);
+			setIsExpired(false);
 		};
 	}, [orderId, resolvedMaxDurationMs]);
 
 	const query = useQuery<CheckoutStatus, ServiceError<PaymentErrorCode>>({
 		queryKey: pollCheckoutStatusKey(orderId),
 		queryFn: async function pollCheckoutStatus() {
-			if (!orderId) throw serviceError('fetch_failed');
-
-			const result = await getCheckoutStatus(orderId);
+			// orderId is guaranteed non-null by enabled: !!orderId above
+			const result = await getCheckoutStatus(orderId!);
 			if (!result.success) throw serviceError(result.error);
 			return result.data;
 		},

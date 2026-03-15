@@ -1,7 +1,5 @@
 'use server';
 
-import { ZodError } from 'zod';
-
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
@@ -70,10 +68,6 @@ export async function getMyOrders(
 			totalPages: Math.ceil(total / limit),
 		});
 	} catch (error) {
-		if (error instanceof ZodError) {
-			console.error('Orders response validation failed:', error);
-			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
-		}
 		return failure(mapOrderError(error));
 	}
 }

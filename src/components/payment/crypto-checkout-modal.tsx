@@ -134,6 +134,19 @@ interface ServerSessionSnapshot {
 	confirmDeadline: string;
 }
 
+/** Runtime state snapshot applied when hydrating checkout from backend or local state changes */
+interface CheckoutRuntimeState {
+	txHash: `0x${string}` | undefined;
+	txSubmitted: boolean;
+	submitRecoveryMode?: SubmitRecoveryMode;
+	finalizationRequested?: boolean;
+	backendTrackedHash?: string | null;
+	backendOwnsTx?: boolean;
+	fundsAtRisk?: boolean;
+	retryBlocked?: boolean;
+	errorMessage?: string | null;
+}
+
 /** Params for the shared server→local hydration mapper */
 interface ApplyServerHydrationParams {
 	serverSession: ServerSessionSnapshot;
@@ -443,17 +456,7 @@ export function CryptoCheckoutModal({
 			fundsAtRisk: nextFundsAtRisk = false,
 			retryBlocked: nextRetryBlocked = false,
 			errorMessage: nextErrorMessage = null,
-		}: {
-			txHash: `0x${string}` | undefined;
-			txSubmitted: boolean;
-			submitRecoveryMode?: SubmitRecoveryMode;
-			finalizationRequested?: boolean;
-			backendTrackedHash?: string | null;
-			backendOwnsTx?: boolean;
-			fundsAtRisk?: boolean;
-			retryBlocked?: boolean;
-			errorMessage?: string | null;
-		}) => {
+		}: CheckoutRuntimeState) => {
 			setTxHash(nextTxHash);
 			setTxSubmitted(nextTxSubmitted);
 			setSubmitRecoveryMode(nextSubmitRecoveryMode);
@@ -1274,7 +1277,7 @@ export function CryptoCheckoutModal({
 			}
 		}
 
-		requestConfirmation();
+		void requestConfirmation();
 	}, [
 		step,
 		txHash,
@@ -1395,7 +1398,7 @@ export function CryptoCheckoutModal({
 			setStep('failure');
 		}
 
-		handlePossibleReorg();
+		void handlePossibleReorg();
 	}, [
 		step,
 		txHash,
@@ -1530,21 +1533,30 @@ export function CryptoCheckoutModal({
 			// Re-read backend state even when a local session looks reusable.
 			// Local review data only proves chain/token/wallet continuity; it does not prove
 			// the backend session is still pending rather than already confirming/terminal.
-			const existingSessionValid =
-				session &&
-				session.chainId === selectedChainId &&
-				sessionTokenId === selectedToken.tokenId &&
-				getReviewSessionGuard({
-					connectedAddress: checksummedAddress,
-					sessionWalletAddress,
-					submitDeadline: session.submitDeadline,
-				}).kind === 'ready';
+
+			/** Checks if current session matches selected chain/token and is still in sendable state */
+			function isExistingSessionReusable(): boolean {
+				if (!session) return false;
+				if (session.chainId !== selectedChainId) return false;
+				if (!selectedToken || sessionTokenId !== selectedToken.tokenId)
+					return false;
+				return (
+					getReviewSessionGuard({
+						connectedAddress: checksummedAddress,
+						sessionWalletAddress,
+						submitDeadline: session.submitDeadline,
+					}).kind === 'ready'
+				);
+			}
+
+			const existingSessionValid = isExistingSessionReusable();
 
 			if (existingSessionValid) {
+				// session and selectedToken are guaranteed non-null by isExistingSessionReusable()
 				await hydrateCheckoutSession({
-					checkoutSession: session,
+					checkoutSession: session!,
 					checksummedAddress,
-					fallbackToken: selectedToken,
+					fallbackToken: selectedToken!,
 					flowVersion,
 				});
 				return;

@@ -1,7 +1,10 @@
 'use client';
 
-import { Copy } from 'lucide-react';
-import { ComponentProps } from 'react';
+import { Copy, Loader2Icon } from 'lucide-react';
+import Link from 'next/link';
+import { type ComponentProps, useEffect, useState } from 'react';
+import { FaXTwitter } from 'react-icons/fa6';
+import { toast } from 'sonner';
 
 import {
 	Dialog,
@@ -10,27 +13,98 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import Link from 'next/link';
-import { FaXTwitter } from 'react-icons/fa6';
-import { toast } from 'sonner';
+import { getStripeSessionStatus } from '@/services/payment/get-stripe-session-status';
+
+// ==========================================
+// Types
+// ==========================================
 
 interface PaymentStatusModalProps {
-	raffleId: string; // Can be publicSlug or raffleId - used for URL construction
+	raffleId: string;
+	/** Stripe checkout session ID — used to verify actual payment status */
+	stripeSessionId: string;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }
 
+/** Verified payment status from backend — 'loading' is FE-only initial state */
+type VerifiedStatus = 'loading' | 'paid' | 'unpaid' | 'expired';
+
+/**
+ * Redirect verification poll interval.
+ * Stripe usually redirects before our webhook finishes persisting the completed row,
+ * so one-shot verification can briefly observe "unpaid" on a successful checkout.
+ */
+const STRIPE_STATUS_POLL_INTERVAL_MS = 3_000;
+
+// ==========================================
+// Component
+// ==========================================
+
 /**
  * PaymentStatusModal Component
  *
- * Displays the post-Stripe success UI after redirect.
- * The polling implementation was removed; this component is now static and purely presentational.
+ * Displays post-Stripe redirect UI with real backend-verified status.
+ * Calls GET /payments/stripe/sessions/:id/status on mount to avoid
+ * blindly showing "success" based on URL params alone.
  */
 export function PaymentStatusModal({
 	raffleId,
+	stripeSessionId,
 	open,
 	onOpenChange,
 }: PaymentStatusModalProps) {
+	const [status, setStatus] = useState<VerifiedStatus>('loading');
+
+	/** Checks if status has reached a terminal state that stops polling */
+	function isTerminalVerifiedStatus(
+		s: VerifiedStatus,
+	): s is 'expired' | 'paid' {
+		return s === 'paid' || s === 'expired';
+	}
+
+	// Verify Stripe session status until it reaches a terminal state.
+	// Why poll instead of one-shot:
+	// - Stripe can redirect the browser before our webhook persists `completed`
+	// - the first verification call can therefore still observe `unpaid`
+	// - continuing until paid/expired keeps the redirect screen honest without manual refresh
+	useEffect(() => {
+		if (!open) return;
+
+		let cancelled = false;
+		let timerId: ReturnType<typeof globalThis.setTimeout> | null = null;
+
+		async function verifyStatus() {
+			const result = await getStripeSessionStatus(stripeSessionId);
+			if (cancelled) return;
+
+			const nextStatus = result.success ? result.data.status : 'unpaid';
+
+			// On verification failure, stay conservative and keep polling.
+			// The next tick can still converge once the webhook or backend catches up.
+			setStatus(nextStatus);
+
+			if (isTerminalVerifiedStatus(nextStatus)) return;
+
+			timerId = globalThis.setTimeout(() => {
+				void verifyStatus();
+			}, STRIPE_STATUS_POLL_INTERVAL_MS);
+		}
+
+		void verifyStatus();
+
+		return function cleanup() {
+			cancelled = true;
+			if (timerId !== null) {
+				globalThis.clearTimeout(timerId);
+			}
+		};
+	}, [open, stripeSessionId]);
+
+	// ==========================================
+	// SVG Helpers
+	// ==========================================
+
 	/** Ticket icon SVG for the payment success modal. */
 	function renderTicketIcon(props?: ComponentProps<'svg'>): React.ReactNode {
 		return (
@@ -125,17 +199,34 @@ export function PaymentStatusModal({
 		window.open(url, '_blank');
 	}
 
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-2xl border border-[#0F0F0FF2] py-24">
-				{renderLeftColoredCard({ className: 'absolute top-0 left-0' })}
-				{renderRightColoredCard({ className: 'absolute top-0 right-0' })}
+	// ==========================================
+	// Status-specific rendering
+	// ==========================================
 
+	/** Loading state while verifying with backend */
+	function renderLoadingContent(): React.ReactNode {
+		return (
+			<DialogHeader className="z-1 flex items-center justify-center space-y-2">
+				<Loader2Icon className="size-12 animate-spin text-gray-400" />
+				<DialogTitle className="font-clash-display text-2xl">
+					Verifying payment...
+				</DialogTitle>
+				<DialogDescription className="text-center text-black">
+					Please wait while we confirm your payment.
+				</DialogDescription>
+			</DialogHeader>
+		);
+	}
+
+	/** Success state — payment verified as paid */
+	function renderPaidContent(): React.ReactNode {
+		return (
+			<>
 				<DialogHeader className="z-1 flex items-center justify-center space-y-2">
 					<div className="flex justify-center pb-4">{renderTicketIcon()}</div>
 					<DialogTitle className="font-clash-display text-3xl">
 						Tickets confirmed. <br />
-						You’re officially in!
+						You&apos;re officially in!
 					</DialogTitle>
 					<DialogDescription className="text-center text-black">
 						Thanks for joining this raffle — your entry has been recorded.{' '}
@@ -173,6 +264,74 @@ export function PaymentStatusModal({
 						</button>
 					</div>
 				</div>
+			</>
+		);
+	}
+
+	/** Unpaid state — payment not yet processed (still processing at Stripe) */
+	function renderUnpaidContent(): React.ReactNode {
+		return (
+			<DialogHeader className="z-1 flex items-center justify-center space-y-2">
+				<DialogTitle className="font-clash-display text-2xl">
+					Payment processing
+				</DialogTitle>
+				<DialogDescription className="text-center text-black">
+					Your payment is still being processed by Stripe.
+					<br />
+					This usually takes a few seconds. Please check back shortly.
+				</DialogDescription>
+				<div className="my-6">
+					<Link
+						href="/my-raffles"
+						className="rounded-full border border-black px-12 py-3 text-sm font-semibold"
+					>
+						View my raffles
+					</Link>
+				</div>
+			</DialogHeader>
+		);
+	}
+
+	/** Expired state — Stripe session timed out */
+	function renderExpiredContent(): React.ReactNode {
+		return (
+			<DialogHeader className="z-1 flex items-center justify-center space-y-2">
+				<DialogTitle className="font-clash-display text-2xl">
+					Payment expired
+				</DialogTitle>
+				<DialogDescription className="text-center text-black">
+					Your checkout session has expired. No payment was taken.
+					<br />
+					Please try purchasing tickets again.
+				</DialogDescription>
+			</DialogHeader>
+		);
+	}
+
+	/** Selects the correct content renderer based on verified status */
+	function renderContent(): React.ReactNode {
+		switch (status) {
+			case 'loading':
+				return renderLoadingContent();
+			case 'paid':
+				return renderPaidContent();
+			case 'unpaid':
+				return renderUnpaidContent();
+			case 'expired':
+				return renderExpiredContent();
+		}
+	}
+
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="max-w-2xl border border-[#0F0F0FF2] py-24">
+				{status === 'paid' && (
+					<>
+						{renderLeftColoredCard({ className: 'absolute top-0 left-0' })}
+						{renderRightColoredCard({ className: 'absolute top-0 right-0' })}
+					</>
+				)}
+				{renderContent()}
 			</DialogContent>
 		</Dialog>
 	);

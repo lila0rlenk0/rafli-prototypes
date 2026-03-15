@@ -4,13 +4,11 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Loader2Icon, WalletIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
 
 import { CryptoCheckoutModal } from '@/components/payment/crypto-checkout-modal';
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
-import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
 import { usePollMyTicketCodes } from '@/services/ticket/use-poll-my-ticket-codes';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
@@ -41,10 +39,11 @@ interface CryptoBuyButtonProps {
  * CryptoBuyButton Component
  *
  * Secondary purchase button for crypto payments via Web3 wallet.
- * Flow:
+ * Flow (with atomic checkout):
  * 1. Click → opens RainbowKit wallet connect modal if not connected
- * 2. Once connected → creates order and opens crypto checkout modal
- * 3. Crypto checkout modal handles chain selection, wallet verify, and ERC20 transfer
+ * 2. Once connected → opens crypto checkout modal with raffle params
+ * 3. Modal handles chain/token/wallet selection, then calls atomic checkout
+ *    endpoint which creates order + session in one call
  */
 export function CryptoBuyButton({
 	raffleId,
@@ -62,10 +61,8 @@ export function CryptoBuyButton({
 	const { openConnectModal } = useConnectModal();
 	const { isConnected } = useAccount();
 
-	const [isLoading, setIsLoading] = useState(false);
 	const [showQuestionModal, setShowQuestionModal] = useState(false);
 	const [showCryptoModal, setShowCryptoModal] = useState(false);
-	const [cryptoOrderId, setCryptoOrderId] = useState<string | null>(null);
 	// Tracks whether we should auto-proceed after wallet connects
 	const [pendingCheckout, setPendingCheckout] = useState(false);
 	// Tracks active confirming state — persists when modal is closed during confirmation
@@ -82,11 +79,6 @@ export function CryptoBuyButton({
 	// Without this, every click re-gates on questionId — forcing the user to re-answer
 	// if the crypto flow fails or wallet connect doesn't open.
 	const [questionAnswered, setQuestionAnswered] = useState(false);
-	// Synchronous single-flight guard for order creation.
-	// `setIsLoading(true)` is async, so a rapid second click or the post-connect
-	// auto-proceed effect can otherwise enter `buildCheckoutOrder()` before the
-	// disabled state lands on screen.
-	const checkoutLaunchInFlight = useRef(false);
 
 	const { isExpired: isTicketSyncExpired, isSynced: isTicketSyncComplete } =
 		usePollMyTicketCodes(
@@ -95,70 +87,22 @@ export function CryptoBuyButton({
 		);
 
 	// ==========================================
-	// Checkout Flow
-	// ==========================================
-
-	/**
-	 * Creates order and opens crypto checkout modal.
-	 * Uses shared buildCheckoutOrder for order creation + promo handling,
-	 * then opens modal for the resulting order.
-	 */
-	const proceedToCryptoCheckout = useCallback(async () => {
-		// Guard at function entry so every caller path shares the same lock:
-		// direct click, question modal success, and wallet-connect auto-proceed.
-		if (checkoutLaunchInFlight.current) return;
-		checkoutLaunchInFlight.current = true;
-		// Once order creation starts, the pending connect intent has been consumed.
-		// Clearing it here prevents the auto-proceed effect from replaying stale intent
-		// if connection state changes while the async order build is in flight.
-		setPendingCheckout(false);
-		setIsLoading(true);
-
-		try {
-			// Build order with promo handling (shared with Stripe flow)
-			const result = await buildCheckoutOrder({
-				raffleId,
-				ticketQuantity,
-				promoCode,
-				onPromoInvalid,
-			});
-
-			// Null means error — already toasted by buildCheckoutOrder
-			if (!result) return;
-
-			// $0 order after promo — backend auto-completed, just refresh
-			if (result.isFullyDiscounted) {
-				router.refresh();
-				return;
-			}
-
-			// Open crypto checkout modal with the order
-			setCryptoOrderId(result.order.id);
-			setShowCryptoModal(true);
-		} catch (error) {
-			console.error('Unexpected error during crypto checkout:', error);
-			toast.error('An unexpected error occurred. Please try again');
-		} finally {
-			checkoutLaunchInFlight.current = false;
-			setIsLoading(false);
-		}
-	}, [raffleId, ticketQuantity, promoCode, onPromoInvalid, router]);
-
-	// ==========================================
 	// Auto-proceed after wallet connection
 	// ==========================================
 
 	/**
 	 * When user connects wallet after clicking the button,
-	 * automatically proceed to crypto checkout
+	 * automatically open crypto checkout modal.
+	 * setState is intentional here — syncing external wallet-connect event to FE state.
 	 */
 	useEffect(() => {
-		// Use the ref guard instead of `isLoading`: the effect can race before
-		// React commits the disabled/loading state after a direct click.
-		if (pendingCheckout && isConnected && !checkoutLaunchInFlight.current) {
-			proceedToCryptoCheckout();
+		if (pendingCheckout && isConnected) {
+			/* eslint-disable react-hooks/set-state-in-effect -- intentional: syncing external wallet-connect event to FE state */
+			setPendingCheckout(false);
+			setShowCryptoModal(true);
+			/* eslint-enable react-hooks/set-state-in-effect */
 		}
-	}, [pendingCheckout, isConnected, proceedToCryptoCheckout]);
+	}, [pendingCheckout, isConnected]);
 
 	/**
 	 * Safety timeout — clears pendingCheckout after 30s if wallet never connects.
@@ -178,18 +122,15 @@ export function CryptoBuyButton({
 
 	/**
 	 * When ticket issuance catches up, refresh the route one more time so the
-	 * server-rendered Raffle Details panel reflects the new ticket codes and total.
+	 * server-rendered Raffle Details panel reflects the new ticket codes.
 	 *
-	 * Why a second refresh is needed:
-	 * - The first refresh happens when payment is confirmed
-	 * - Ticket issuance is async after order completion
-	 * - Refreshing again only after `getMyTicketCodes()` reports the expected total
-	 *   removes the need for a manual page reload
+	 * setState is intentional — syncing external polling result to FE state.
 	 */
 	useEffect(() => {
 		if (ticketSyncTarget === null || !isTicketSyncComplete) return;
 		if (resolvedTicketSyncTarget.current === ticketSyncTarget) return;
 		resolvedTicketSyncTarget.current = ticketSyncTarget;
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: resolving ticket sync from polling callback
 		setTicketSyncTarget(null);
 		router.refresh();
 	}, [ticketSyncTarget, isTicketSyncComplete, router]);
@@ -197,14 +138,12 @@ export function CryptoBuyButton({
 	/**
 	 * Safety net: if ticket issuance never catches up within the polling window,
 	 * stop the background loop and do one last refresh.
-	 *
-	 * This avoids an infinite poll while still giving the page one more chance to
-	 * pick up late data before falling back to the existing manual-refresh behavior.
 	 */
 	useEffect(() => {
 		if (ticketSyncTarget === null || !isTicketSyncExpired) return;
 		if (resolvedTicketSyncTarget.current === ticketSyncTarget) return;
 		resolvedTicketSyncTarget.current = ticketSyncTarget;
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: resolving ticket sync timeout
 		setTicketSyncTarget(null);
 		router.refresh();
 	}, [ticketSyncTarget, isTicketSyncExpired, router]);
@@ -218,11 +157,11 @@ export function CryptoBuyButton({
 	 * - If confirming → reopen the modal (no new order needed)
 	 * - If question required → show question modal first
 	 * - If wallet not connected → open RainbowKit connect modal, then auto-proceed
-	 * - If wallet connected → create order and open crypto checkout
+	 * - If wallet connected → open crypto checkout modal
 	 */
 	function handleClick() {
 		// Reopen modal to show confirmation progress — no new order needed
-		if (isConfirming && cryptoOrderId) {
+		if (isConfirming) {
 			setShowCryptoModal(true);
 			return;
 		}
@@ -243,7 +182,7 @@ export function CryptoBuyButton({
 
 	/**
 	 * Starts the crypto payment flow
-	 * Opens wallet connect if needed, otherwise proceeds directly
+	 * Opens wallet connect if needed, otherwise opens modal directly
 	 */
 	function startCryptoFlow() {
 		if (!isConnected) {
@@ -251,24 +190,27 @@ export function CryptoBuyButton({
 			// modal is actually displayable. Do not set latent checkout intent when the
 			// handler is unavailable, or an unrelated later wallet connect can create an order.
 			if (!openConnectModal) {
-				toast.error('Wallet connect is still loading. Please try again.');
 				return;
 			}
 			setPendingCheckout(true);
 			openConnectModal();
 			return;
 		}
-		proceedToCryptoCheckout();
+		setShowCryptoModal(true);
 	}
 
 	// ==========================================
-	// Button Text
+	// Callbacks
 	// ==========================================
 
 	/**
 	 * Handles confirming state change from the crypto checkout modal.
 	 * When modal transitions to/from confirming, we track it here so the
 	 * button reflects the pending transaction even when modal is closed.
+	 *
+	 * useCallback required — passed as prop to modal where it sits in a useEffect
+	 * dependency array. Without stable reference, every parent render triggers
+	 * a spurious effect fire in the child.
 	 */
 	const handleConfirmingChange = useCallback((confirming: boolean) => {
 		setIsConfirming(confirming);
@@ -285,11 +227,14 @@ export function CryptoBuyButton({
 		setTicketSyncTarget(myTicketsTotal + ticketQuantity);
 	}, [myTicketsTotal, router, ticketQuantity]);
 
+	// ==========================================
+	// Button Text
+	// ==========================================
+
 	/**
 	 * Gets button label based on wallet connection and transaction state
 	 */
 	function getButtonText(): string {
-		if (isLoading) return 'Processing...';
 		if (isConfirming) return 'Transaction pending...';
 		if (!isConnected) return 'Connect wallet to buy';
 		return 'Buy with crypto';
@@ -299,7 +244,7 @@ export function CryptoBuyButton({
 	 * Gets button icon — pulsing loader for confirming, wallet otherwise
 	 */
 	function getButtonIcon(): React.ReactNode {
-		if (isLoading || isConfirming) {
+		if (isConfirming) {
 			return <Loader2Icon className="mr-2 size-4 animate-spin" />;
 		}
 		return <WalletIcon className="mr-2 size-4" />;
@@ -324,7 +269,7 @@ export function CryptoBuyButton({
 		<>
 			<Button
 				onClick={handleClick}
-				disabled={isLoading || (disabled && !isConfirming)}
+				disabled={disabled && !isConfirming}
 				variant="outline"
 				className={getButtonClass()}
 			>
@@ -341,19 +286,19 @@ export function CryptoBuyButton({
 				/>
 			)}
 
-			{cryptoOrderId && (
-				<CryptoCheckoutModal
-					key={cryptoOrderId}
-					open={showCryptoModal}
-					onOpenChange={setShowCryptoModal}
-					orderId={cryptoOrderId}
-					raffleEndAt={endAt}
-					cryptoOptions={cryptoOptions}
-					userId={userId}
-					onSuccess={handleCryptoSuccess}
-					onConfirmingChange={handleConfirmingChange}
-				/>
-			)}
+			<CryptoCheckoutModal
+				open={showCryptoModal}
+				onOpenChange={setShowCryptoModal}
+				raffleId={raffleId}
+				ticketQuantity={ticketQuantity}
+				promoCode={promoCode}
+				onPromoInvalid={onPromoInvalid}
+				raffleEndAt={endAt}
+				cryptoOptions={cryptoOptions}
+				userId={userId}
+				onSuccess={handleCryptoSuccess}
+				onConfirmingChange={handleConfirmingChange}
+			/>
 		</>
 	);
 }

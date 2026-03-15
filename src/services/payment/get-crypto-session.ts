@@ -18,6 +18,7 @@ import type { ServiceResponse } from '@/types/service-response';
  * Schema for crypto session polling response.
  * Returned by GET /payments/crypto/sessions/:id.
  * Contains authoritative session state + failure reason for error display.
+ * `confirmDeadline` and `confirmationTarget` are always present — backend guarantees non-null.
  */
 const cryptoSessionResponseSchema = z.object({
 	id: z.string(),
@@ -33,10 +34,12 @@ const cryptoSessionResponseSchema = z.object({
 	/** ISO timestamp when session was completed — null until completed */
 	completedAt: z.string().nullable(),
 	expiresAt: z.string(),
-	/** Absolute deadline for tx hash submission */
+	/** Absolute deadline for tx hash submission — always present */
 	submitDeadline: z.string(),
-	/** Absolute deadline for confirming-phase sessions */
+	/** Absolute deadline for on-chain confirmations — backend always provides this */
 	confirmDeadline: z.string(),
+	/** Number of on-chain confirmations required — from backend session, not FE config */
+	confirmationTarget: z.number(),
 });
 
 export type CryptoSessionResponse = z.infer<typeof cryptoSessionResponseSchema>;

@@ -12,7 +12,9 @@ import type { OrderWithRaffle } from '@/types/order';
  * Shows "View all" link when there are more orders.
  */
 export async function PaymentHistorySection() {
-	const result = await getMyOrders({ page: 1, limit: 5 });
+	// excludeStale hides abandoned/expired pending orders — profile summary
+	// should only show meaningful orders (completed, recent active, etc.)
+	const result = await getMyOrders({ page: 1, limit: 5, excludeStale: true });
 
 	const orders = result.success ? result.data.items : [];
 

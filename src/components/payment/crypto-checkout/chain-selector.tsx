@@ -1,8 +1,6 @@
 'use client';
 
-import { getChainName } from '@/lib/web3/block-explorers';
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
-import type { CryptoChainConfig } from '@/types/crypto-config';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
 // ==========================================
@@ -12,10 +10,8 @@ import type { RaffleCryptoOptions } from '@/types/raffle';
 interface ChainSelectorProps {
 	/** Chain IDs to display — already resolved and filtered by parent */
 	cryptoChainIds: number[];
-	/** Raffle crypto options — pre-computed tokens per chain */
+	/** Raffle crypto options — pre-computed tokens and chain names from backend */
 	cryptoOptions: RaffleCryptoOptions;
-	/** Chain configs from crypto config endpoint */
-	chains: CryptoChainConfig[];
 	onSelectChain: (chainId: number) => void;
 }
 
@@ -26,23 +22,31 @@ interface ChainSelectorProps {
 /**
  * Chain selector step for crypto checkout.
  * Displays supported chains with icons from CHAIN_ICONS map.
- * Token labels are dynamically resolved from the token registry —
- * shows available tokens per chain (e.g. "USDC · USDT" or "USDC · USDT · EARNM").
+ * Chain names and token labels come from raffle's cryptoOptions (backend-resolved).
  */
 export function ChainSelector({
 	cryptoChainIds,
 	cryptoOptions,
-	chains,
 	onSelectChain,
 }: ChainSelectorProps) {
+	/** Finds the chain entry from raffle's crypto options */
+	function getChainOption(chainId: number) {
+		return cryptoOptions.chains.find(c => c.chainId === chainId);
+	}
+
+	/** Gets chain display name from raffle's crypto options, falls back to chain ID */
+	function getChainName(chainId: number): string {
+		return getChainOption(chainId)?.name ?? `Chain ${chainId}`;
+	}
+
 	/**
-	 * Gets dot-separated token labels for a chain from raffle's pre-computed options.
+	 * Gets dot-separated token symbols for a chain.
 	 * Backend already filtered by allowlist and pricing — no client-side logic needed.
 	 */
 	function getTokenLabels(chainId: number): string {
-		const chainOption = cryptoOptions.chains.find(c => c.chainId === chainId);
+		const chainOption = getChainOption(chainId);
 		if (!chainOption || chainOption.tokens.length === 0) return 'USDC';
-		return chainOption.tokens.map(t => t.label).join(' · ');
+		return chainOption.tokens.map(t => t.symbol).join(' · ');
 	}
 
 	return (
@@ -50,6 +54,7 @@ export function ChainSelector({
 			<p className="text-sm text-[#7B7B7B]">Choose which network to pay on</p>
 			{cryptoChainIds.map(chainId => {
 				const icon = CHAIN_ICONS[chainId];
+				const chainName = getChainName(chainId);
 
 				return (
 					<button
@@ -65,16 +70,10 @@ export function ChainSelector({
 									style={{ background: icon.iconBackground }}
 								>
 									{/* eslint-disable-next-line @next/next/no-img-element */}
-									<img
-										alt={getChainName(chainId, chains)}
-										src={icon.iconUrl}
-										className="size-4"
-									/>
+									<img alt={chainName} src={icon.iconUrl} className="size-4" />
 								</span>
 							)}
-							<span className="text-sm font-medium">
-								{getChainName(chainId, chains)}
-							</span>
+							<span className="text-sm font-medium">{chainName}</span>
 						</span>
 						<span className="text-xs text-[#7B7B7B] transition-colors group-hover:text-black">
 							{getTokenLabels(chainId)}

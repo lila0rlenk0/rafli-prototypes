@@ -44,19 +44,27 @@ export function getOrderErrorMessage(errorCode: OrderErrorCode): string {
  */
 export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 	switch (errorCode) {
-		// Session errors
+		// Session errors (shared Stripe + crypto)
+		case 'payments:session:not-found':
+		case 'payments:crypto:session-not-found':
+			return 'Payment session not found. Please start a new checkout';
+		case 'payments:session:expired':
+		case 'payments:crypto:session-expired':
+			return 'Checkout session expired. Please try again';
+		case 'payments:session:permission-denied':
+		case 'payments:crypto:permission-denied':
+			return 'You do not have access to this payment session';
 		case 'payments:session:already-completed':
 		case 'payments:crypto:already-completed':
 		case 'payments:order:already-paid':
 			return 'This order has already been paid';
-		case 'payments:crypto:session-expired':
-			return 'Checkout session expired. Please try again';
 
-		// Cross-method guard errors
+		// Cross-method guard errors — backend auto-cancels, but may still surface these
+		// if the incompatible session is in a non-cancellable state (e.g. confirming)
 		case 'payments:stripe:crypto-session-active':
-			return 'A crypto payment is in progress. Please cancel it first';
+			return 'A crypto payment is in progress. Please wait for it to complete';
 		case 'payments:crypto:stripe-session-active':
-			return 'A card payment is in progress. Please cancel it first';
+			return 'A card payment is in progress. Please wait for it to complete';
 
 		// Crypto checkout errors
 		case 'payments:crypto:wallet-not-verified':
@@ -81,14 +89,10 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 			return 'Failed to verify transaction. Please contact support';
 		case 'payments:crypto:chain-mismatch':
 			return 'Chain mismatch — please retry with the correct network';
-		case 'payments:crypto:permission-denied':
-			return 'You do not have access to this payment session';
 		case 'payments:crypto:already-paid':
 			return 'This order has already been paid';
 		case 'payments:crypto:order-not-recoverable':
 			return 'This order can no longer be paid. Please create a new one';
-		case 'payments:crypto:session-not-found':
-			return 'Payment session not found. Please start a new checkout.';
 		case 'payments:crypto:concurrent-completion':
 		case 'payments:crypto:concurrent-update':
 		case 'payments:checkout:concurrent-completion':
@@ -106,12 +110,6 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		case 'fetch_failed':
 			return 'Failed to load payment data. Please try again';
 
-		// Cancel errors
-		case 'payments:cancel:crypto-active':
-			return 'A crypto payment is already in progress. Resume or finish it before switching payment methods';
-		case 'payments:cancel:session-failed':
-			return 'Failed to cancel payment session. Please try again';
-
 		// Order errors
 		case 'payments:order:permission-denied':
 		case 'core:order:permission-denied':
@@ -120,6 +118,11 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 			return 'This order is no longer pending';
 		case 'core:order:not-found':
 			return 'Order not found';
+
+		// Auth errors — from CommonErrorCode union
+		case 'global:auth:unauthenticated':
+		case 'unauthorized':
+			return 'Please sign in to continue';
 
 		// Common errors
 		case 'network_error':

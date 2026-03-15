@@ -13,7 +13,6 @@ import {
 	shouldClearPromo,
 } from '@/lib/checkout/error-messages';
 import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
-import { cancelPaymentSession } from '@/services/payment/cancel-payment-session';
 import { createCheckoutSession } from '@/services/payment/create-checkout-session';
 import { redeemPromoCode } from '@/services/promo-code/redeem-promo-code';
 
@@ -68,11 +67,13 @@ export function BuyButton({
 	function handleBuyClick() {
 		if (questionId) {
 			setShowQuestionModal(true);
-		} else if (isFreeTickets && promoCode) {
-			redeemFreeTickets();
-		} else {
-			proceedToCheckout();
+			return;
 		}
+		if (isFreeTickets && promoCode) {
+			redeemFreeTickets();
+			return;
+		}
+		proceedToCheckout();
 	}
 
 	/**
@@ -82,9 +83,9 @@ export function BuyButton({
 	function handleCorrectAnswer() {
 		if (isFreeTickets && promoCode) {
 			redeemFreeTickets();
-		} else {
-			proceedToCheckout();
+			return;
 		}
+		proceedToCheckout();
 	}
 
 	/**
@@ -151,20 +152,8 @@ export function BuyButton({
 				return;
 			}
 
-			// Step 2: Cancel any active payment session on this order before Stripe checkout.
-			// Idempotent — safe even if no session exists. Clears cross-method guards so
-			// Stripe checkout doesn't fail with "crypto-session-active".
-			const cancelResult = await cancelPaymentSession(result.order.id);
-
-			if (!cancelResult.success) {
-				// Cancel is the guard-clearing step for method switching.
-				// If it fails for any reason, we no longer know whether Stripe/crypto
-				// is still active on this order, so stop here with the real error.
-				toast.error(getPaymentErrorMessage(cancelResult.error));
-				return;
-			}
-
-			// Step 3: Create Stripe checkout session and redirect
+			// Step 2: Create Stripe checkout session and redirect.
+			// Backend auto-cancels incompatible sessions — no explicit cancel needed.
 			const checkoutResult = await createCheckoutSession({
 				orderId: result.order.id,
 				raffleId,

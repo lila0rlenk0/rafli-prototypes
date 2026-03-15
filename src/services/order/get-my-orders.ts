@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
@@ -15,6 +17,8 @@ import type { ServiceResponse } from '@/types/service-response';
 interface GetMyOrdersParams {
 	page?: number;
 	limit?: number;
+	/** When true, backend filters out stale pending orders (abandoned, expired sessions) */
+	excludeStale?: boolean;
 }
 
 /**
@@ -26,11 +30,15 @@ interface GetMyOrdersParams {
 export async function getMyOrders(
 	params: GetMyOrdersParams = {},
 ): Promise<ServiceResponse<OrdersResponse, OrderErrorCode>> {
-	const { page = 1, limit = 10 } = params;
+	const { page = 1, limit = 10, excludeStale } = params;
 
 	try {
 		const response = await authenticatedClient.get('/me/orders', {
-			params: { page, limit },
+			params: {
+				page,
+				limit,
+				...(excludeStale && { excludeStale: true }),
+			},
 			timeout: API_TIMEOUTS.QUERY,
 		});
 
@@ -44,24 +52,28 @@ export async function getMyOrders(
 
 		// Parse backend response format { total, orders }
 		const result = ordersBackendResponseSchema.safeParse(response.data);
-		if (result.success) {
-			const { total, orders } = result.data;
-
-			return success({
-				items: orders,
-				total,
-				page,
-				limit,
-				totalPages: Math.ceil(total / limit),
-			});
+		if (!result.success) {
+			// Invalid shape means the caller cannot safely distinguish "no orders"
+			// from "orders exist but the payload drifted". Fail closed and let callers
+			// decide whether creating new orders is still safe.
+			console.error('Orders response validation failed:', result.error);
+			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 
-		// Invalid shape means the caller cannot safely distinguish "no orders"
-		// from "orders exist but the payload drifted". Fail closed and let callers
-		// decide whether creating new orders is still safe.
-		console.error('Orders response validation failed:', result.error);
-		return failure(ORDER_ERROR_CODES.FETCH_FAILED);
+		const { total, orders } = result.data;
+
+		return success({
+			items: orders,
+			total,
+			page,
+			limit,
+			totalPages: Math.ceil(total / limit),
+		});
 	} catch (error) {
+		if (error instanceof ZodError) {
+			console.error('Orders response validation failed:', error);
+			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
+		}
 		return failure(mapOrderError(error));
 	}
 }

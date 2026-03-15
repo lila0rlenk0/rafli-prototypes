@@ -187,30 +187,39 @@ export const raffleSchema = z.object({
 	 * Structured crypto payment options — null when raffle doesn't accept crypto.
 	 * Backend computes per-chain selectable tokens with pricing, eliminating
 	 * client-side filtering that previously lived in tokens.ts.
+	 *
+	 * `.catch(null)` ensures graceful degradation: if backend returns
+	 * an older/incompatible shape, crypto is simply disabled for that raffle
+	 * instead of failing the entire raffle list validation.
 	 */
 	cryptoOptions: z
 		.object({
 			chains: z.array(
 				z.object({
 					chainId: z.number(),
+					/** Human-readable chain name from backend (e.g. 'Polygon Amoy', 'Arbitrum Sepolia') */
+					name: z.string(),
 					tokens: z.array(
 						z.object({
-							/** Token slug from TOKEN_REGISTRY (e.g. "usdc", "earnm") */
-							slug: z.string(),
-							/** Display name (e.g. "USDC", "EARNM") */
-							label: z.string(),
-							/**
-							 * Price per ticket as decimal string — null for stablecoins (1:1 USD).
-							 * Non-stablecoins require explicit pricing from the raffle config.
-							 */
-							pricePerTicket: z.string().nullable(),
+							/** Unique token identifier (e.g. 'usdc', 'earnm') — sent to backend as `token` in checkout payload */
+							tokenId: z.string(),
+							/** Token ticker symbol for display (e.g. 'USDC', 'EARNM') */
+							symbol: z.string(),
+							/** Per-ticket price in token units — null for stablecoins (1:1 USD) */
+							price: z.string().nullable(),
+							/** ERC20 contract address on this chain */
+							address: z.string(),
+							/** Token decimal places (6 for USDC, 18 for EARNM) */
+							decimals: z.number(),
+							/** Whether this token is a stablecoin (1:1 USD pricing) */
+							isStablecoin: z.boolean(),
 						}),
 					),
 				}),
 			),
 		})
 		.nullable()
-		.default(null),
+		.catch(null),
 });
 
 /**

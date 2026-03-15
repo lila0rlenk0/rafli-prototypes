@@ -6,12 +6,6 @@ import {
 } from './error-messages';
 
 describe('getPaymentErrorMessage', () => {
-	test('explains active crypto session guard', () => {
-		expect(getPaymentErrorMessage('payments:cancel:crypto-active')).toBe(
-			'A crypto payment is already in progress. Resume or finish it before switching payment methods',
-		);
-	});
-
 	test('maps checkout-failed to user-friendly message', () => {
 		expect(getPaymentErrorMessage('payments:checkout:failed')).toBe(
 			'Failed to create checkout session. Please try again',

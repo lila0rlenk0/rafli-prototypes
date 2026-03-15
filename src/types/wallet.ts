@@ -60,7 +60,8 @@ export const verifyWalletPayloadSchema = z.object({
 });
 
 /**
- * Schema for crypto checkout session returned by POST /payments/crypto/checkout
+ * Schema for crypto checkout session returned by POST /payments/crypto/checkout.
+ * `confirmDeadline` and `confirmationTarget` are always present — backend guarantees non-null.
  */
 export const cryptoCheckoutSessionSchema = z.object({
 	id: z.string(),
@@ -74,22 +75,12 @@ export const cryptoCheckoutSessionSchema = z.object({
 	treasuryAddress: evmAddressSchema,
 	orderId: z.string(),
 	expiresAt: z.string(),
-	/** Absolute deadline for tx hash submission — expiresAt + backend submit grace */
+	/** Absolute deadline for tx hash submission — always present (expiresAt + 10min) */
 	submitDeadline: z.string(),
-	/** Absolute deadline for confirming sessions — expiresAt + backend confirming grace */
+	/** Absolute deadline for on-chain confirmations — backend always provides this */
 	confirmDeadline: z.string(),
-});
-
-/**
- * Schema for creating a crypto checkout session
- */
-export const createCryptoCheckoutPayloadSchema = z.object({
-	orderId: z.string().min(1),
-	chainId: z.number(),
-	/** Verified wallet address — must be linked via EIP-191 first */
-	walletAddress: evmAddressSchema,
-	/** Token slug (e.g. 'usdc', 'usdt', 'earnm') — backend validates against registry */
-	token: z.string().min(1),
+	/** Number of on-chain confirmations required — from backend session, not FE config */
+	confirmationTarget: z.number(),
 });
 
 /**
@@ -120,6 +111,21 @@ export const walletsListResponseSchema = z.object({
 	wallets: z.array(walletResponseSchema),
 });
 
+/**
+ * Schema for the atomic crypto checkout response.
+ * POST /payments/crypto/atomic-checkout returns order + session in one call.
+ * `session` is null when order is $0 (fully discounted by promo — backend auto-completes).
+ */
+export const atomicCryptoCheckoutResponseSchema = z.object({
+	order: z.object({
+		id: z.string(),
+		totalAmount: z.string(),
+	}),
+	session: cryptoCheckoutSessionSchema.nullable(),
+	/** True when backend cancelled an incompatible session (Stripe or stale crypto) */
+	previousSessionCancelled: z.boolean(),
+});
+
 // ==========================================
 // Inferred Types
 // ==========================================
@@ -127,11 +133,11 @@ export const walletsListResponseSchema = z.object({
 export type WalletResponse = z.infer<typeof walletResponseSchema>;
 export type VerifyWalletPayload = z.infer<typeof verifyWalletPayloadSchema>;
 export type CryptoCheckoutSession = z.infer<typeof cryptoCheckoutSessionSchema>;
-export type CreateCryptoCheckoutPayload = z.infer<
-	typeof createCryptoCheckoutPayloadSchema
->;
 export type SubmitCryptoTxPayload = z.infer<typeof submitCryptoTxPayloadSchema>;
 export type ConfirmCryptoTxPayload = z.infer<
 	typeof confirmCryptoTxPayloadSchema
 >;
 export type WalletsListResponse = z.infer<typeof walletsListResponseSchema>;
+export type AtomicCryptoCheckoutResponse = z.infer<
+	typeof atomicCryptoCheckoutResponseSchema
+>;

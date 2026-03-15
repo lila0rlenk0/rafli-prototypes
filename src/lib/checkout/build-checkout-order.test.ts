@@ -25,17 +25,30 @@ function resetAllMocks() {
 	mockToastSuccess.mockReset();
 }
 
+/** Helper — builds a mock CheckoutOrderResponse with derived isFullyDiscounted */
+function mockCheckoutResponse(overrides: {
+	id?: string;
+	totalAmount?: string;
+	status?: string;
+}) {
+	const order = {
+		id: overrides.id ?? '11111111-1111-4111-8111-111111111111',
+		raffleId: RAFFLE_ID,
+		status: overrides.status ?? 'pending',
+		totalAmount: overrides.totalAmount ?? '10.0000',
+	};
+	return {
+		order,
+		isFullyDiscounted: parseFloat(order.totalAmount) === 0,
+	};
+}
+
 describe('buildCheckoutOrder', () => {
 	test('returns order from successful checkout', async () => {
 		resetAllMocks();
-		const order = {
-			id: '11111111-1111-4111-8111-111111111111',
-			raffleId: RAFFLE_ID,
-			status: 'pending',
-		};
 		mockCheckoutOrder.mockResolvedValueOnce({
 			success: true,
-			data: { order, isFullyDiscounted: false },
+			data: mockCheckoutResponse({}),
 		});
 
 		const result = await buildCheckoutOrder({
@@ -87,14 +100,13 @@ describe('buildCheckoutOrder', () => {
 
 	test('returns fully discounted result and toasts success', async () => {
 		resetAllMocks();
-		const order = {
-			id: '33333333-3333-4333-8333-333333333333',
-			raffleId: RAFFLE_ID,
-			status: 'completed',
-		};
 		mockCheckoutOrder.mockResolvedValueOnce({
 			success: true,
-			data: { order, isFullyDiscounted: true },
+			data: mockCheckoutResponse({
+				id: '33333333-3333-4333-8333-333333333333',
+				totalAmount: '0.0000',
+				status: 'completed',
+			}),
 		});
 
 		const result = await buildCheckoutOrder({

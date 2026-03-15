@@ -87,12 +87,6 @@ export const PAYMENT_ERROR_CODES = {
 	RAFFLE_USER_TICKET_LIMIT_EXCEEDED:
 		'payments:raffle:user-ticket-limit-exceeded',
 
-	// Cancel session errors
-	/** Cannot switch away while any crypto session is still active for this order */
-	CANCEL_CRYPTO_ACTIVE: 'payments:cancel:crypto-active',
-	/** Failed to cancel payment session (response validation) */
-	CANCEL_SESSION_FAILED: 'payments:cancel:session-failed',
-
 	// Generic fetch failure
 	FETCH_FAILED: 'fetch_failed',
 } as const;

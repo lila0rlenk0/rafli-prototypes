@@ -18,6 +18,9 @@ const BASE_SESSION: CryptoCheckoutSession = {
 	treasuryAddress: '0x8E93Ae06A3Aa1Dc901aF08D8B1029B95A3CE12D4',
 	orderId: 'order-1',
 	expiresAt: '2026-03-13T12:00:00.000Z',
+	submitDeadline: '2026-03-13T12:10:00.000Z',
+	confirmDeadline: '2026-03-13T12:15:00.000Z',
+	confirmationTarget: 12,
 };
 
 describe('formatPaymentAmount', () => {

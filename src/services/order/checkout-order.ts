@@ -1,6 +1,6 @@
 'use server';
 
-import { z, ZodError } from 'zod';
+import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
@@ -10,7 +10,7 @@ import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapOrderError } from '@/lib/errors/error-mapper';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
-import { orderSchema } from '@/types/order';
+import { orderSchema, type Order } from '@/types/order';
 import type { ServiceResponse } from '@/types/service-response';
 
 // ==========================================
@@ -19,13 +19,12 @@ import type { ServiceResponse } from '@/types/service-response';
 
 /**
  * Schema for atomic checkout response.
- * Backend atomically finds/creates order + validates/redeems promo.
+ *
+ * Backend returns a flat order object (not nested under `order` key)
+ * with an optional `promoRedemption` field. Fields not in orderSchema
+ * (like promoRedemption) are silently stripped by Zod's default behavior.
  */
-const checkoutOrderResponseSchema = z.object({
-	order: orderSchema,
-	/** True when promo covered the full order amount — backend auto-completed the order */
-	isFullyDiscounted: z.boolean(),
-});
+const checkoutOrderResponseSchema = orderSchema;
 
 // ==========================================
 // Types
@@ -38,8 +37,27 @@ export interface CheckoutOrderPayload {
 	promoCode?: string;
 }
 
-/** Response from the atomic checkout endpoint */
-export type CheckoutOrderResponse = z.infer<typeof checkoutOrderResponseSchema>;
+/** Parsed checkout response — order + derived fully-discounted flag */
+export interface CheckoutOrderResponse {
+	order: Order;
+	/** True when totalAmount is zero — promo covered entire order, backend auto-completed */
+	isFullyDiscounted: boolean;
+}
+
+// ==========================================
+// Helpers
+// ==========================================
+
+/**
+ * Derives whether the order was fully discounted from the totalAmount field.
+ * Backend returns totalAmount as a decimal string (e.g. "0.0000" for free orders).
+ *
+ * @param order - Validated order from checkout response
+ * @returns True when totalAmount parses to exactly 0
+ */
+function isOrderFullyDiscounted(order: Order): boolean {
+	return parseFloat(order.totalAmount) === 0;
+}
 
 // ==========================================
 // Server Action
@@ -68,20 +86,24 @@ export async function checkoutOrder(
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		const data = checkoutOrderResponseSchema.parse(response.data);
+		// Backend returns flat order object — validate and derive isFullyDiscounted
+		const order = checkoutOrderResponseSchema.parse(response.data);
 
 		// Track order created
 		await trackServer(
 			PURCHASE_EVENTS.ORDER_CREATED,
 			{
-				order_id: data.order.id,
+				order_id: order.id,
 				raffle_id: payload.raffleId,
 				quantity: payload.ticketQuantity,
 			},
 			{ userId },
 		);
 
-		return success(data);
+		return success({
+			order,
+			isFullyDiscounted: isOrderFullyDiscounted(order),
+		});
 	} catch (error) {
 		if (error instanceof ZodError) {
 			console.error('Checkout order response validation failed:', error);

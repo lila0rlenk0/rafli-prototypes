@@ -2,11 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import type { CryptoChainConfig } from '@/types/crypto-config';
 
-import {
-	getChainName,
-	getConfirmationTarget,
-	getTxExplorerUrl,
-} from './block-explorers';
+import { getChainName, getTxExplorerUrl } from './block-explorers';
 
 /** Minimal chain configs for testing */
 const CHAINS: CryptoChainConfig[] = [
@@ -29,18 +25,6 @@ const CHAINS: CryptoChainConfig[] = [
 		explorerTxUrl: 'https://polygonscan.com/tx/',
 	},
 ] as CryptoChainConfig[];
-
-describe('getConfirmationTarget', () => {
-	test('returns confirmation target from config', () => {
-		expect(getConfirmationTarget(42_161, CHAINS)).toBe(1);
-		expect(getConfirmationTarget(137, CHAINS)).toBe(128);
-		expect(getConfirmationTarget(1, CHAINS)).toBe(12);
-	});
-
-	test('returns null for unknown chains', () => {
-		expect(getConfirmationTarget(99_999, CHAINS)).toBeNull();
-	});
-});
 
 describe('getTxExplorerUrl', () => {
 	test('builds full explorer URL for known chains', () => {

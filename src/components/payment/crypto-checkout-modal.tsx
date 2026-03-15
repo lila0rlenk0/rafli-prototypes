@@ -37,6 +37,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import {
 	getPaymentErrorMessage,
 	getWalletErrorMessage,
@@ -51,6 +52,7 @@ import {
 	normalizeTxHash,
 } from '@/lib/web3/crypto-payment-flow';
 import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
+import { getSelectableCryptoChains } from '@/lib/web3/raffle-crypto-options';
 import { isTransactionNotFound, isUserRejection } from '@/lib/web3/errors';
 import { abandonOrder } from '@/services/payment/abandon-order';
 import { confirmCryptoTx } from '@/services/payment/confirm-crypto-tx';
@@ -246,6 +248,11 @@ export function CryptoCheckoutModal({
 	// Close/reset is delayed to match the Dialog exit animation.
 	// Keep the timer handle so reopen can cancel the stale reset before it wipes new state.
 	const closeResetTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+	// Timer handle for confirm retry delay (5s after transient failure).
+	// Stored in a ref so handleReset/handleClose can cancel it to prevent leaked state updates.
+	const confirmRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 
 	// Ref-based idempotency guard for submitCryptoTx effect.
 	// Unlike txSubmitted (state), this is synchronous — prevents duplicate backend
@@ -278,6 +285,12 @@ export function CryptoCheckoutModal({
 	// The ref is for idempotency; this state is for rendering the tracker row transition
 	// from "Verifying payment" → "Completing order" after backend accepts confirm.
 	const [finalizationRequested, setFinalizationRequested] = useState(false);
+	// Bumped on confirmCryptoTx transient failure to re-trigger the FE-driven
+	// finalization effect even when observedConfirmationCount doesn't change.
+	// Without this, a failed confirm on an L2 chain (confirmationTarget=1) would
+	// permanently stall — the effect deps plateau and never re-fire, leaving the
+	// user waiting for the 1-min cron fallback instead of retrying within seconds.
+	const [confirmRetryTick, setConfirmRetryTick] = useState(0);
 	// Guards the success transition — prevents double onSuccess() when both
 	// FE-driven confirm and polling detect COMPLETED in the same render cycle.
 	// Set synchronously before async state update to close the race window.
@@ -785,6 +798,58 @@ export function CryptoCheckoutModal({
 	const observedConfirmationCount =
 		getObservedConfirmationCount(confirmationCount);
 
+	/**
+	 * Handles wagmi's onReplaced event for speed-up/cancel tx replacements.
+	 *
+	 * Two paths:
+	 * 1. Wallet-cancelled before backend bound a hash → clean unwind to review step.
+	 * 2. Replacement tx (speed-up or repriced) → follow the new hash. If backend already
+	 *    accepted a different hash, the mismatch effect downstream will surface a support message.
+	 */
+	function handleTransactionReplaced(replacement: {
+		reason: 'cancelled' | 'replaced' | 'repriced';
+		transaction: { hash: `0x${string}` };
+	}) {
+		lastReplacementReason.current = replacement.reason;
+
+		// If the wallet cancelled before backend accepted any hash, unwind cleanly
+		// back to review — no payment tx remains to reconcile.
+		if (
+			replacement.reason === 'cancelled' &&
+			!backendTrackedTxHash.current &&
+			!txSubmittedToBackend.current
+		) {
+			setTxHash(undefined);
+			setTxSubmitted(false);
+			setSubmitRecoveryMode(null);
+			setFinalizationRequested(false);
+			setRetryBlocked(false);
+			setFundsAtRisk(false);
+			setErrorMessage(null);
+			payInFlight.current = false;
+			txConfirmRequested.current = false;
+			txConfirmInFlight.current = false;
+			reorgHandled.current = false;
+			toast.info('Transaction cancelled.');
+			setStep('review');
+			return;
+		}
+
+		// Follow the replacement hash while backend is still unbound.
+		// If backend already accepted a different hash, the mismatch effect below
+		// will stop the flow with a clear support message.
+		setTxHash(replacement.transaction.hash);
+		setSubmitRecoveryMode(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
+		submitRetriedHashes.current.delete(
+			normalizeTxHash(replacement.transaction.hash),
+		);
+		reorgHandled.current = false;
+		// Allow handlePay to run again if the replacement flow leads back to review.
+		// Without this, a terminal path that skips handleReset leaves payInFlight
+		// permanently true, silently blocking all future pay attempts.
+		payInFlight.current = false;
+	}
+
 	useWaitForTransactionReceipt({
 		hash: txHash,
 		chainId: selectedChainId ?? undefined,
@@ -793,46 +858,7 @@ export function CryptoCheckoutModal({
 		// Ethereum 12 blocks). Actual finalization is tracked via confirmationTarget.
 		confirmations: 1,
 		pollingInterval: 4_000,
-		onReplaced(replacement) {
-			lastReplacementReason.current = replacement.reason;
-
-			// If the wallet cancelled before backend accepted any hash, unwind cleanly
-			// back to review — no payment tx remains to reconcile.
-			if (
-				replacement.reason === 'cancelled' &&
-				!backendTrackedTxHash.current &&
-				!txSubmittedToBackend.current
-			) {
-				setTxHash(undefined);
-				setTxSubmitted(false);
-				setSubmitRecoveryMode(null);
-				setFinalizationRequested(false);
-				setRetryBlocked(false);
-				setFundsAtRisk(false);
-				setErrorMessage(null);
-				payInFlight.current = false;
-				txConfirmRequested.current = false;
-				txConfirmInFlight.current = false;
-				reorgHandled.current = false;
-				toast.info('Transaction cancelled.');
-				setStep('review');
-				return;
-			}
-
-			// Follow the replacement hash while backend is still unbound.
-			// If backend already accepted a different hash, the mismatch effect below
-			// will stop the flow with a clear support message.
-			setTxHash(replacement.transaction.hash);
-			setSubmitRecoveryMode(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
-			submitRetriedHashes.current.delete(
-				normalizeTxHash(replacement.transaction.hash),
-			);
-			reorgHandled.current = false;
-			// Allow handlePay to run again if the replacement flow leads back to review.
-			// Without this, a terminal path that skips handleReset leaves payInFlight
-			// permanently true, silently blocking all future pay attempts.
-			payInFlight.current = false;
-		},
+		onReplaced: handleTransactionReplaced,
 		query: {
 			enabled: confirmingEnabled,
 		},
@@ -990,16 +1016,18 @@ export function CryptoCheckoutModal({
 	// ==========================================
 
 	/**
-	 * Resolved chain IDs — filtered to chains the wagmi config supports
-	 * and that have at least one token available.
+	 * Resolved chain options — filtered to chains the current FE runtime can actually
+	 * drive and that still have at least one token. Keep this in the same helper the
+	 * outer CTA uses so the page cannot advertise a crypto path the modal cannot render.
 	 */
-	const resolvedChainIds = useMemo(() => {
-		const supportedChainIds = new Set<number>(SUPPORTED_WEB3_CHAIN_IDS);
-		return cryptoOptions.chains
-			.filter(c => supportedChainIds.has(c.chainId))
-			.filter(c => c.tokens.length > 0)
-			.map(c => c.chainId);
-	}, [cryptoOptions.chains]);
+	const selectableChains = useMemo(
+		() => getSelectableCryptoChains(cryptoOptions, SUPPORTED_WEB3_CHAIN_IDS),
+		[cryptoOptions],
+	);
+	const resolvedChainIds = useMemo(
+		() => selectableChains.map(chain => chain.chainId),
+		[selectableChains],
+	);
 
 	/**
 	 * Checks if current wallet address is already verified on backend
@@ -1216,12 +1244,18 @@ export function CryptoCheckoutModal({
 
 				if (!result.success) {
 					// Non-fatal — polling/cron will finalize eventually.
-					// Leave retry open for the next confirmation/poll tick instead of
-					// permanently downgrading this tx to cron-only after one transient error.
+					// Schedule a retry via confirmRetryTick so this effect re-fires even when
+					// observedConfirmationCount hasn't changed (common on L2 chains where
+					// confirmationTarget=1 and block count plateaus immediately).
+					// 5s delay stays below the poll interval to land before the next poll tick.
 					console.error(
-						'FE-driven confirm failed, falling back to cron:',
+						'FE-driven confirm failed, scheduling retry:',
 						result.error,
 					);
+					confirmRetryTimerRef.current = setTimeout(() => {
+						confirmRetryTimerRef.current = null;
+						setConfirmRetryTick(t => t + 1);
+					}, 5_000);
 					return;
 				}
 
@@ -1248,12 +1282,15 @@ export function CryptoCheckoutModal({
 		selectedChainId,
 		confirmationTarget,
 		observedConfirmationCount,
+		// confirmRetryTick bumps on transient failure to re-trigger this effect
+		// when observedConfirmationCount has already plateaued at the target.
+		confirmRetryTick,
 		transitionToSuccess,
 	]);
 
 	/**
 	 * Transition to success/failure when polling detects terminal state.
-	 * Order now includes cryptoSessionFailureReason directly — no separate session poll needed.
+	 * Order now includes nested cryptoSession object — no separate session poll needed.
 	 */
 	useEffect(() => {
 		if (!polledCheckoutStatus || step !== 'confirming') return;
@@ -1270,6 +1307,13 @@ export function CryptoCheckoutModal({
 				'Payment is still processing on the backend. Please check My Raffles shortly.',
 			);
 			setStep('failure');
+		} else if (polledCheckoutStatus.phase === CHECKOUT_PHASE.AWAITING_PAYMENT) {
+			// Session expired or was abandoned while we were confirming — no active tx
+			// to wait for. Transition to failure immediately instead of waiting for poll timeout.
+			if (!polledCheckoutStatus.crypto?.txHash) {
+				setErrorMessage('Payment session expired. Please try again.');
+				setStep('failure');
+			}
 		}
 	}, [polledCheckoutStatus, step, transitionToSuccess]);
 
@@ -1677,6 +1721,14 @@ export function CryptoCheckoutModal({
 			// Move to confirming before awaiting wallet broadcast.
 			// This keeps the UI in the pending state the moment the user approves,
 			// and avoids a stale "review" screen while wagmi starts producing tx data.
+			//
+			// Subtle sequence if user closes modal during wallet prompt:
+			// 1. handleClose sees step==='confirming' → preserves state (no reset)
+			// 2. User rejects wallet tx → catch block fires setStep('review')
+			// 3. Modal is hidden but internally reverts to review — safe because
+			//    no funds left the wallet and payInFlight ref is reset in catch.
+			// This is intentional: the confirming-preservation path is more important
+			// (real tx in-flight) than the brief invisible review snap-back on rejection.
 			setTxSubmitted(true);
 			setStep('confirming');
 
@@ -1735,6 +1787,11 @@ export function CryptoCheckoutModal({
 	 */
 	function handleReset() {
 		clearCloseResetTimeout();
+		// Cancel any pending confirm retry timer to prevent leaked state updates
+		if (confirmRetryTimerRef.current) {
+			clearTimeout(confirmRetryTimerRef.current);
+			confirmRetryTimerRef.current = null;
+		}
 		invalidatePreConfirmingFlow();
 		setStep('select-chain');
 		setSelectedChainId(null);
@@ -1750,6 +1807,7 @@ export function CryptoCheckoutModal({
 		setTxHash(undefined);
 		setSubmitRecoveryMode(null);
 		setFinalizationRequested(false);
+		setConfirmRetryTick(0);
 		// Reset ref guards so retried flow can submit again
 		walletReadyInFlight.current = false;
 		payInFlight.current = false;
@@ -1780,13 +1838,15 @@ export function CryptoCheckoutModal({
 		// Best-effort abandon: if user reached review but didn't send tx,
 		// tell backend to reclaim the order slot. Fire-and-forget — no await
 		// needed, failure is harmless (order will expire naturally).
-		if (session?.orderId) {
-			abandonOrder(session.orderId);
-		}
-
-		// Any pre-confirming bootstrap work belongs to the now-closing modal instance.
-		// Invalidate it immediately so late async completions cannot repopulate hidden state.
+		// Skip when a real tx was broadcast (fundsAtRisk/retryBlocked) — BE rejects
+		// abandon for active crypto sessions anyway, and user needs the session alive.
+		// Invalidate first — cancels in-flight wallet-ready work before firing the abandon,
+		// preventing late async completions from repopulating state into a closing modal.
 		invalidatePreConfirmingFlow();
+
+		if (session?.orderId && !fundsAtRisk && !retryBlocked) {
+			void abandonOrder(session.orderId);
+		}
 		clearCloseResetTimeout();
 
 		// 300ms matches Dialog close animation (data-[state=closed]:duration-300).
@@ -1870,6 +1930,7 @@ export function CryptoCheckoutModal({
 	function getStepTitle(): string {
 		switch (step) {
 			case 'select-chain':
+				if (resolvedChainIds.length === 0) return 'Crypto Unavailable';
 				return 'Select Network';
 			case 'select-token':
 				return 'Select Token';
@@ -1910,6 +1971,10 @@ export function CryptoCheckoutModal({
 	 * When token step is skipped, connect-wallet becomes step 2 and review becomes step 3.
 	 */
 	function getStepNumber(): number {
+		if (step === 'select-chain' && resolvedChainIds.length === 0) {
+			return 0;
+		}
+
 		const tokenShown = wasTokenStepShown();
 		switch (step) {
 			case 'select-chain':
@@ -1943,6 +2008,30 @@ export function CryptoCheckoutModal({
 	/** Returns 1-indexed step numbers for rendering progress dots */
 	function getStepNumbers(): number[] {
 		return Array.from({ length: getTotalSteps() }, (_, i) => i + 1);
+	}
+
+	/**
+	 * Defensive empty-state for backend/frontend deploy skew.
+	 *
+	 * The CTA is already hidden when no selectable chain survives, but keep the modal
+	 * resilient too so a stale client tree or forced-open state never traps the user
+	 * in an empty selector with no recovery path.
+	 */
+	function renderUnavailableChainState(): React.ReactNode {
+		return (
+			<div className="flex flex-col items-center gap-5 py-6">
+				<p className="text-center text-sm text-[#7B7B7B]">
+					Crypto payments are temporarily unavailable for this raffle in the
+					current app environment.
+				</p>
+				<Button
+					onClick={handleClose}
+					className="h-12 w-full border-2 border-black bg-black hover:bg-white hover:text-black"
+				>
+					Close
+				</Button>
+			</div>
+		);
 	}
 
 	// ==========================================
@@ -1981,7 +2070,10 @@ export function CryptoCheckoutModal({
 				</DialogHeader>
 
 				<div className="flex flex-col gap-4 pt-2">
-					{step === 'select-chain' && (
+					{step === 'select-chain' &&
+						resolvedChainIds.length === 0 &&
+						renderUnavailableChainState()}
+					{step === 'select-chain' && resolvedChainIds.length > 0 && (
 						<ChainSelector
 							cryptoChainIds={resolvedChainIds}
 							cryptoOptions={cryptoOptions}

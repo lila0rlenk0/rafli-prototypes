@@ -22,10 +22,16 @@ export function getOrderErrorMessage(errorCode: OrderErrorCode): string {
 			return 'Invalid ticket quantity';
 		case 'core:raffle:user-ticket-limit-exceeded':
 			return 'You reached the maximum tickets per user for this raffle';
+		case 'core:order:already-completed':
+			return 'This order has already been completed.';
 		case 'network_error':
 			return 'Network error. Please check your connection';
 		case 'timeout_error':
 			return 'Request timed out. Please try again';
+		case 'core:order:question-not-answered':
+			return 'Please answer the required question before purchasing';
+		case 'core:raffle:not-found':
+			return 'Raffle not found';
 		case 'global:auth:unauthenticated':
 		case 'unauthorized':
 			return 'Please sign in to continue';
@@ -54,7 +60,6 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		case 'payments:session:permission-denied':
 		case 'payments:crypto:permission-denied':
 			return 'You do not have access to this payment session';
-		case 'payments:session:already-completed':
 		case 'payments:crypto:already-completed':
 		case 'payments:order:already-paid':
 			return 'This order has already been paid';
@@ -81,6 +86,10 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 			return 'Selected token is not accepted for this raffle';
 		case 'payments:crypto:no-token-pricing':
 			return 'This token does not have pricing configured for this raffle';
+		case 'payments:crypto:wallet-mismatch':
+			return 'Connected wallet does not match your verified wallet';
+		case 'payments:crypto:invalid-tx-hash':
+			return 'Invalid transaction hash format';
 		case 'payments:crypto:tx-already-used':
 			return 'This transaction was already submitted';
 		case 'payments:crypto:already-confirming':
@@ -103,8 +112,6 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		// Checkout/confirm failures
 		case 'payments:checkout:failed':
 			return 'Failed to create checkout session. Please try again';
-		case 'payments:crypto:checkout-failed':
-			return 'Failed to start crypto checkout. Please try again';
 		case 'payments:crypto:confirm-failed':
 			return 'Failed to confirm transaction. Please contact support';
 		case 'fetch_failed':
@@ -129,6 +136,10 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 			return 'Network error. Please check your connection';
 		case 'timeout_error':
 			return 'Request timed out. Please try again';
+		case 'connection_aborted':
+			return 'Connection lost. Check your network and try again.';
+		case 'service_unavailable':
+			return 'Service temporarily unavailable. Please try again shortly.';
 		case 'validation_error':
 			return 'Invalid request. Please try again';
 		default:

@@ -36,40 +36,42 @@ export const paymentStatusSchema = z.enum([
 ]);
 
 /**
- * Schema for payment session from backend
+ * Schema for payment session from backend (matches BE PaymentSessionResponseDto).
+ * Removed fields that BE doesn't send: raffleId, ticketQuantity, stripePaymentIntentId, updatedAt.
  */
 export const paymentSessionSchema = z.object({
 	id: z.uuid(),
 	orderId: z.uuid(),
-	raffleId: z.uuid(),
 	userId: z.string(),
 	stripeSessionId: z.string(),
-	stripePaymentIntentId: z.string().nullable().optional(),
 	amount: z.string(), // Decimal as string
 	currency: z.string().length(3),
-	ticketQuantity: z.number().int().positive(),
 	status: paymentStatusSchema,
 	completedAt: z.string().nullable().optional(),
 	expiresAt: z.string(),
 	createdAt: z.string(),
-	updatedAt: z.string(),
 });
 
 /**
- * Schema for checkout session response
+ * Schema for checkout session response (matches BE CheckoutSessionResponseDto).
+ * `previousSessionCancelled` indicates BE auto-cancelled a stale/incompatible session.
+ * `expiresAt` is the Stripe session expiration timestamp.
  */
 export const checkoutSessionResponseSchema = z.object({
 	id: z.uuid(), // Payment session ID
 	checkoutUrl: z.url(),
 	orderId: z.uuid(),
+	expiresAt: z.string(),
+	previousSessionCancelled: z.boolean(),
 });
 
 /**
- * Schema for creating checkout session (request payload)
+ * Schema for creating checkout session (request payload).
+ * `publicSlug` is FE-only — used for URL construction, not sent to BE.
+ * BE accepts only { orderId, successUrl, cancelUrl }.
  */
 export const createCheckoutPayloadSchema = z.object({
 	orderId: z.uuid(),
-	raffleId: z.uuid(),
 	publicSlug: z.string().min(1),
 });
 

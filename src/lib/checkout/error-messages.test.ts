@@ -1,20 +1,31 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+	getOrderErrorMessage,
 	getPaymentErrorMessage,
 	getWalletErrorMessage,
 } from './error-messages';
+
+describe('getOrderErrorMessage', () => {
+	test('maps already-completed order error', () => {
+		expect(getOrderErrorMessage('core:order:already-completed')).toBe(
+			'This order has already been completed.',
+		);
+	});
+
+	test('falls back to generic message for unknown codes', () => {
+		expect(
+			getOrderErrorMessage(
+				'unknown:code' as Parameters<typeof getOrderErrorMessage>[0],
+			),
+		).toBe('Failed to create order. Please try again');
+	});
+});
 
 describe('getPaymentErrorMessage', () => {
 	test('maps checkout-failed to user-friendly message', () => {
 		expect(getPaymentErrorMessage('payments:checkout:failed')).toBe(
 			'Failed to create checkout session. Please try again',
-		);
-	});
-
-	test('maps crypto checkout-failed', () => {
-		expect(getPaymentErrorMessage('payments:crypto:checkout-failed')).toBe(
-			'Failed to start crypto checkout. Please try again',
 		);
 	});
 
@@ -27,6 +38,18 @@ describe('getPaymentErrorMessage', () => {
 	test('maps fetch_failed', () => {
 		expect(getPaymentErrorMessage('fetch_failed')).toBe(
 			'Failed to load payment data. Please try again',
+		);
+	});
+
+	test('maps connection_aborted', () => {
+		expect(getPaymentErrorMessage('connection_aborted')).toBe(
+			'Connection lost. Check your network and try again.',
+		);
+	});
+
+	test('maps service_unavailable', () => {
+		expect(getPaymentErrorMessage('service_unavailable')).toBe(
+			'Service temporarily unavailable. Please try again shortly.',
 		);
 	});
 

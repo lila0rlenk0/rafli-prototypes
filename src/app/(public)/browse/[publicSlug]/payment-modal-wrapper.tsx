@@ -46,7 +46,8 @@ export function PaymentModalWrapper({
 
 	return (
 		<PaymentStatusModal
-			raffleId={publicSlug}
+			key={params.session_id}
+			publicSlug={publicSlug}
 			stripeSessionId={params.session_id}
 			open={isModalOpen}
 			onOpenChange={handleOpenChange}

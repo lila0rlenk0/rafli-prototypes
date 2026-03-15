@@ -156,7 +156,6 @@ export function BuyButton({
 			// Backend auto-cancels incompatible sessions — no explicit cancel needed.
 			const checkoutResult = await createCheckoutSession({
 				orderId: result.order.id,
-				raffleId,
 				publicSlug,
 			});
 
@@ -165,6 +164,14 @@ export function BuyButton({
 				return;
 			}
 
+			// Defense-in-depth: validate checkout URL origin before redirect.
+			// Prevents open redirect if backend is ever compromised.
+			const checkoutUrl = new URL(checkoutResult.data.checkoutUrl);
+			if (checkoutUrl.origin !== 'https://checkout.stripe.com') {
+				console.error('Unexpected checkout URL origin:', checkoutUrl.origin);
+				toast.error('Invalid checkout URL. Please try again');
+				return;
+			}
 			window.location.href = checkoutResult.data.checkoutUrl;
 		} catch (error) {
 			console.error('Unexpected error during checkout:', error);

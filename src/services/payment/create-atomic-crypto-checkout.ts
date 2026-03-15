@@ -62,7 +62,7 @@ export async function createAtomicCryptoCheckout(
 				'Atomic crypto checkout response validation failed:',
 				error,
 			);
-			return failure(PAYMENT_ERROR_CODES.CRYPTO_CHECKOUT_FAILED);
+			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
 		}
 
 		return failure(mapPaymentError(error));

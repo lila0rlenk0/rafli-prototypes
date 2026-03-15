@@ -2,7 +2,7 @@
 
 import { Copy, Loader2Icon } from 'lucide-react';
 import Link from 'next/link';
-import { type ComponentProps, useEffect, useState } from 'react';
+import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { FaXTwitter } from 'react-icons/fa6';
 import { toast } from 'sonner';
 
@@ -13,22 +13,27 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import {
+	buildStripeVerificationReturnTo,
+	getStripeVerificationFailureCopy,
+	resolveStripeVerificationState,
+	type VerifiedStatus,
+} from '@/components/payment/payment-status-state';
 import { getStripeSessionStatus } from '@/services/payment/get-stripe-session-status';
+import type { PaymentErrorCode } from '@/types/errors';
 
 // ==========================================
 // Types
 // ==========================================
 
 interface PaymentStatusModalProps {
-	raffleId: string;
+	publicSlug: string;
 	/** Stripe checkout session ID — used to verify actual payment status */
 	stripeSessionId: string;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }
-
-/** Verified payment status from backend — 'loading' is FE-only initial state */
-type VerifiedStatus = 'loading' | 'paid' | 'unpaid' | 'expired';
 
 /**
  * Redirect verification poll interval.
@@ -36,6 +41,15 @@ type VerifiedStatus = 'loading' | 'paid' | 'unpaid' | 'expired';
  * so one-shot verification can briefly observe "unpaid" on a successful checkout.
  */
 const STRIPE_STATUS_POLL_INTERVAL_MS = 3_000;
+
+/**
+ * Maximum number of Stripe status polls before giving up.
+ * Safety net: prevents infinite polling if a Stripe webhook is permanently lost.
+ * 40 polls × 3s interval = ~120s — long enough for any legitimate webhook delay,
+ * short enough that users aren't stuck in a spinning modal forever.
+ * After this limit, the modal transitions to `verification-failed` with a retry button.
+ */
+const MAX_STRIPE_POLL_ATTEMPTS = 40;
 
 // ==========================================
 // Component
@@ -49,42 +63,58 @@ const STRIPE_STATUS_POLL_INTERVAL_MS = 3_000;
  * blindly showing "success" based on URL params alone.
  */
 export function PaymentStatusModal({
-	raffleId,
+	publicSlug,
 	stripeSessionId,
 	open,
 	onOpenChange,
 }: PaymentStatusModalProps) {
 	const [status, setStatus] = useState<VerifiedStatus>('loading');
+	const [verificationError, setVerificationError] =
+		useState<PaymentErrorCode | null>(null);
+	const [verificationAttempt, setVerificationAttempt] = useState(0);
+	// Track poll count across the recursive verifyStatus loop.
+	// Ref instead of state — only read inside the async loop, never triggers re-render.
+	const pollCountRef = useRef(0);
 
-	/** Checks if status has reached a terminal state that stops polling */
-	function isTerminalVerifiedStatus(
-		s: VerifiedStatus,
-	): s is 'expired' | 'paid' {
-		return s === 'paid' || s === 'expired';
-	}
+	const verificationFailureCopy =
+		getStripeVerificationFailureCopy(verificationError);
+	const signInHref = `/sign-in?returnTo=${encodeURIComponent(buildStripeVerificationReturnTo(publicSlug, stripeSessionId))}`;
 
 	// Verify Stripe session status until it reaches a terminal state.
 	// Why poll instead of one-shot:
 	// - Stripe can redirect the browser before our webhook persists `completed`
 	// - the first verification call can therefore still observe `unpaid`
 	// - continuing until paid/expired keeps the redirect screen honest without manual refresh
+	//
+	// Capped at MAX_STRIPE_POLL_ATTEMPTS (~120s) to prevent infinite polling
+	// if a Stripe webhook is permanently lost. After the cap, user sees
+	// `verification-failed` with a manual retry button.
 	useEffect(() => {
 		if (!open) return;
 
 		let cancelled = false;
 		let timerId: ReturnType<typeof globalThis.setTimeout> | null = null;
+		pollCountRef.current = 0;
 
 		async function verifyStatus() {
-			const result = await getStripeSessionStatus(stripeSessionId);
+			pollCountRef.current += 1;
+
+			const decision = resolveStripeVerificationState(
+				await getStripeSessionStatus(stripeSessionId),
+			);
 			if (cancelled) return;
 
-			const nextStatus = result.success ? result.data.status : 'unpaid';
+			setStatus(decision.status);
+			setVerificationError(decision.errorCode);
 
-			// On verification failure, stay conservative and keep polling.
-			// The next tick can still converge once the webhook or backend catches up.
-			setStatus(nextStatus);
+			if (!decision.shouldPoll) return;
 
-			if (isTerminalVerifiedStatus(nextStatus)) return;
+			// Safety net: stop polling after MAX_STRIPE_POLL_ATTEMPTS to avoid
+			// spinning indefinitely on a lost webhook. User can retry manually.
+			if (pollCountRef.current >= MAX_STRIPE_POLL_ATTEMPTS) {
+				setStatus('verification-failed');
+				return;
+			}
 
 			timerId = globalThis.setTimeout(() => {
 				void verifyStatus();
@@ -99,7 +129,7 @@ export function PaymentStatusModal({
 				globalThis.clearTimeout(timerId);
 			}
 		};
-	}, [open, stripeSessionId]);
+	}, [open, stripeSessionId, verificationAttempt]);
 
 	// ==========================================
 	// SVG Helpers
@@ -184,9 +214,11 @@ export function PaymentStatusModal({
 
 	/** Copies the raffle link to the clipboard */
 	function handleCopyLink() {
-		const link = `${window.location.origin}/browse/${raffleId}`;
-		navigator.clipboard.writeText(link);
-		toast.success('Raffle link copied to clipboard!');
+		const link = `${window.location.origin}/browse/${publicSlug}`;
+		void navigator.clipboard.writeText(link).then(
+			() => toast.success('Raffle link copied to clipboard!'),
+			() => toast.error('Could not copy link.'),
+		);
 	}
 
 	/**
@@ -194,9 +226,20 @@ export function PaymentStatusModal({
 	 */
 	function handleShare() {
 		const text = 'Check out this raffle';
-		const link = `${window.location.origin}/browse/${raffleId}`;
+		const link = `${window.location.origin}/browse/${publicSlug}`;
 		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
 		window.open(url, '_blank');
+	}
+
+	/**
+	 * Manual recovery for transient verification failures.
+	 * Keep this user-driven instead of auto-looping on errors so the modal never
+	 * mislabels an unrecoverable verification failure as "still processing".
+	 */
+	function handleRetryVerification() {
+		setStatus('loading');
+		setVerificationError(null);
+		setVerificationAttempt(prev => prev + 1);
 	}
 
 	// ==========================================
@@ -308,6 +351,55 @@ export function PaymentStatusModal({
 		);
 	}
 
+	/** Verification failed — recovery depends on the backend/client error class. */
+	function renderVerificationFailedContent(): React.ReactNode {
+		return (
+			<DialogHeader className="z-1 flex items-center justify-center space-y-2">
+				<DialogTitle className="font-clash-display text-2xl">
+					{verificationFailureCopy.title}
+				</DialogTitle>
+				<DialogDescription className="text-center text-black">
+					{verificationFailureCopy.description}
+				</DialogDescription>
+				<div className="my-6 flex w-full flex-col gap-2 sm:flex-row">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={() => onOpenChange(false)}
+						className="h-12 flex-1 border-2 border-black bg-white text-black hover:bg-black hover:text-white"
+					>
+						Close
+					</Button>
+					{verificationFailureCopy.requiresSignIn && (
+						<Button
+							asChild
+							className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
+						>
+							<Link href={signInHref}>Sign in to verify</Link>
+						</Button>
+					)}
+					{!verificationFailureCopy.requiresSignIn &&
+						verificationFailureCopy.canRetry && (
+							<Button
+								type="button"
+								onClick={handleRetryVerification}
+								className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
+							>
+								Retry verification
+							</Button>
+						)}
+				</div>
+				<Button
+					asChild
+					variant="outline"
+					className="h-12 w-full border-2 border-black bg-white text-black hover:bg-black hover:text-white"
+				>
+					<Link href="/my-raffles">View my raffles</Link>
+				</Button>
+			</DialogHeader>
+		);
+	}
+
 	/** Selects the correct content renderer based on verified status */
 	function renderContent(): React.ReactNode {
 		switch (status) {
@@ -319,6 +411,8 @@ export function PaymentStatusModal({
 				return renderUnpaidContent();
 			case 'expired':
 				return renderExpiredContent();
+			case 'verification-failed':
+				return renderVerificationFailedContent();
 		}
 	}
 

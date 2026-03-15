@@ -79,6 +79,10 @@ export function CryptoBuyButton({
 	// Without this, every click re-gates on questionId — forcing the user to re-answer
 	// if the crypto flow fails or wallet connect doesn't open.
 	const [questionAnswered, setQuestionAnswered] = useState(false);
+	// RainbowKit intentionally withholds modal open handlers until the provider tree
+	// is mounted and the connect modal can actually render. Track that separately so
+	// this CTA never invites a click path that must no-op.
+	const isConnectModalReady = !!openConnectModal;
 
 	const { isExpired: isTicketSyncExpired, isSynced: isTicketSyncComplete } =
 		usePollMyTicketCodes(
@@ -236,6 +240,7 @@ export function CryptoBuyButton({
 	 */
 	function getButtonText(): string {
 		if (isConfirming) return 'Transaction pending...';
+		if (!isConnected && !isConnectModalReady) return 'Preparing wallet...';
 		if (!isConnected) return 'Connect wallet to buy';
 		return 'Buy with crypto';
 	}
@@ -244,7 +249,7 @@ export function CryptoBuyButton({
 	 * Gets button icon — pulsing loader for confirming, wallet otherwise
 	 */
 	function getButtonIcon(): React.ReactNode {
-		if (isConfirming) {
+		if (isConfirming || (!isConnected && !isConnectModalReady)) {
 			return <Loader2Icon className="mr-2 size-4 animate-spin" />;
 		}
 		return <WalletIcon className="mr-2 size-4" />;
@@ -258,7 +263,21 @@ export function CryptoBuyButton({
 		if (isConfirming) {
 			return `${base} border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100`;
 		}
+		if (!isConnected && !isConnectModalReady) {
+			return `${base} cursor-not-allowed border-[#D4D4D4] bg-[#F5F5F5] text-[#7B7B7B] hover:bg-[#F5F5F5] hover:text-[#7B7B7B]`;
+		}
 		return `${base} border-black bg-white text-black hover:bg-black hover:text-white`;
+	}
+
+	/**
+	 * Disable the CTA while RainbowKit is not ready to open.
+	 *
+	 * Without this, the first tap during slow hydration silently returns from
+	 * startCryptoFlow and loses the user's intent to connect and continue checkout.
+	 */
+	function isButtonDisabled(): boolean {
+		if (isConfirming) return false;
+		return disabled || (!isConnected && !isConnectModalReady);
 	}
 
 	// ==========================================
@@ -269,7 +288,7 @@ export function CryptoBuyButton({
 		<>
 			<Button
 				onClick={handleClick}
-				disabled={disabled && !isConfirming}
+				disabled={isButtonDisabled()}
 				variant="outline"
 				className={getButtonClass()}
 			>

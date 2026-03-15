@@ -9,7 +9,8 @@ import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
 import { clientEnv } from '@/env/client';
 import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
-import { isWeb3Enabled } from '@/lib/web3/config';
+import { isWeb3Enabled, SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
+import { hasSelectableCryptoChains } from '@/lib/web3/raffle-crypto-options';
 import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
@@ -147,12 +148,15 @@ export function TicketPurchaseCard({
 	}
 
 	/**
-	 * Gets the ticket quantity for free tickets promo
+	 * Gets the ticket quantity for free tickets promo.
+	 * Accepts optional promo override for pre-setState contexts where appliedPromo hasn't settled.
+	 * @param promo - Optional promo to use instead of current appliedPromo state
 	 * @returns Number of free tickets from promo
 	 */
-	function getFreeTicketCount(): number {
-		if (!isFreeTicketsPromo() || !appliedPromo) return 0;
-		return Math.floor(parseFloat(appliedPromo.value));
+	function getFreeTicketCount(promo?: ValidatedPromoCode): number {
+		const source = promo ?? appliedPromo;
+		if (!source || source.type !== PROMO_CODE_TYPE.FREE_TICKETS) return 0;
+		return Math.floor(parseFloat(source.value));
 	}
 
 	/**
@@ -163,11 +167,9 @@ export function TicketPurchaseCard({
 		// Step 1: Store validated promo.
 		setAppliedPromo(promo);
 
-		// For free tickets, set quantity to match the promo value
+		// Step 2: Sync ticket quantity for free tickets.
 		if (promo.type === PROMO_CODE_TYPE.FREE_TICKETS) {
-			// Step 2: Sync ticket quantity for free tickets.
-			const freeCount = Math.floor(parseFloat(promo.value));
-			setTicketQuantity(freeCount);
+			setTicketQuantity(getFreeTicketCount(promo));
 		}
 	}
 
@@ -229,6 +231,13 @@ export function TicketPurchaseCard({
 	const isFree = isFreeTicketsPromo();
 	const freeTicketCount = isFree ? getFreeTicketCount() : 0;
 	const shouldShowClosingSoonWarning = isHydrated && isClosingSoon;
+	// Gate both warning copy and the CTA on the same resolved chain set the modal uses.
+	// Otherwise unsupported backend chains can still surface a crypto button that opens
+	// into an empty selector.
+	const hasSelectableCryptoPaymentOption =
+		hasSelectableCryptoChains(cryptoOptions, SUPPORTED_WEB3_CHAIN_IDS) &&
+		isWeb3Enabled &&
+		!isFree;
 
 	/**
 	 * Final-10-minute warning copy.
@@ -238,14 +247,17 @@ export function TicketPurchaseCard({
 	function getClosingSoonWarning(): string {
 		const baseMessage =
 			'Raffle closes soon. Purchases stay open until the countdown ends. Start checkout now to avoid missing the cutoff.';
-		const shouldMentionCrypto = !!cryptoOptions && isWeb3Enabled && !isFree;
 
-		if (!shouldMentionCrypto) return baseMessage;
+		if (!hasSelectableCryptoPaymentOption) return baseMessage;
 
 		return `${baseMessage} Crypto payments can take longer to confirm near the end.`;
 	}
 
-	// TODO: Remove once payment gateway integration is complete
+	// TODO(payments): Remove this production guard once Stripe + crypto payments
+	// are fully tested and treasury multisigs are deployed for all mainnet chains.
+	// Blocked by: BE treasury placeholder addresses (crypto.config.ts) and
+	// final QA on staging. Once removed, both BuyButton and CryptoBuyButton
+	// become available to production users.
 	if (clientEnv.NEXT_PUBLIC_APP_ENV === 'production') {
 		return (
 			<div className="mt-6 space-y-4">
@@ -352,7 +364,7 @@ export function TicketPurchaseCard({
 					/>
 
 					{/* Crypto buy button — only when raffle has crypto options AND Web3 is configured */}
-					{cryptoOptions && isWeb3Enabled && !isFree && (
+					{cryptoOptions && hasSelectableCryptoPaymentOption && (
 						<CryptoBuyButton
 							raffleId={raffleId}
 							endAt={endAt}

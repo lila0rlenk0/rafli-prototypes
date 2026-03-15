@@ -60,7 +60,8 @@ export const orderSchema = z.object({
 			id: z.string(),
 			status: cryptoPaymentStatusSchema,
 			txHash: z.string().nullable(),
-			failureReason: z.string().nullable(),
+			/** Capped at 512 chars — prevents UI overflow from backend-supplied diagnostic strings */
+			failureReason: z.string().max(512).nullable(),
 			completedAt: z.string().nullable(),
 			confirmationTarget: z.number(),
 			confirmDeadline: z.string(),

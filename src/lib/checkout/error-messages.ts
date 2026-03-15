@@ -112,6 +112,8 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		// Checkout/confirm failures
 		case 'payments:checkout:failed':
 			return 'Failed to create checkout session. Please try again';
+		case 'payments:checkout:not-found':
+			return 'Checkout session not found. Please start a new checkout';
 		case 'payments:crypto:confirm-failed':
 			return 'Failed to confirm transaction. Please contact support';
 		case 'fetch_failed':

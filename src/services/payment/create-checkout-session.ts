@@ -52,16 +52,20 @@ export async function createCheckoutSession(
 			return failure(PAYMENT_ERROR_CODES.CHECKOUT_FAILED);
 		}
 
-		const { orderId, raffleId, publicSlug } = validationResult.data;
+		const { orderId, publicSlug } = validationResult.data;
 
-		// Use publicSlug for URL construction (matches the page route)
-		const baseUrl = new URL(`/browse/${publicSlug}`, env.APP_URL);
+		// Use publicSlug for URL construction (matches the page route).
+		// encodeURIComponent prevents path traversal via malformed slugs.
+		const baseUrl = new URL(
+			`/browse/${encodeURIComponent(publicSlug)}`,
+			env.APP_URL,
+		);
 
+		// BE createCheckoutDtoSchema only accepts { orderId, successUrl, cancelUrl }
 		const response = await authenticatedClient.post(
 			'/payments/checkout',
 			{
 				orderId,
-				raffleId,
 				successUrl: baseUrl.toString(),
 				cancelUrl: baseUrl.toString(),
 			},
@@ -76,7 +80,6 @@ export async function createCheckoutSession(
 			PURCHASE_EVENTS.CHECKOUT_STARTED,
 			{
 				order_id: orderId,
-				raffle_id: raffleId,
 				session_id: checkoutSession.id,
 			},
 			{ userId },

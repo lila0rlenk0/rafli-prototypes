@@ -66,6 +66,8 @@ export const verifyWalletPayloadSchema = z.object({
 export const cryptoCheckoutSessionSchema = z.object({
 	id: z.string(),
 	amount: z.string(),
+	/** BE-stored wallet address — enables client-side match validation against connected wallet */
+	walletAddress: evmAddressSchema,
 	/** On-chain token units as integer string (e.g. "10000000" for 10 USDC at 6 decimals) */
 	amountRaw: bigIntStringSchema,
 	chainId: z.number(),

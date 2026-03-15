@@ -188,12 +188,24 @@ export function resolveCheckoutHydrationDecision({
 }
 
 /**
+ * Validates that a string looks like a valid EVM transaction hash.
+ * Must be 0x-prefixed + 64 hex chars (66 total). Matches the backend txHashSchema.
+ */
+function isValidTxHash(hash: string): hash is `0x${string}` {
+	return /^0x[0-9a-f]{64}$/i.test(hash);
+}
+
+/**
  * Mirrors backend tx-hash recovery from session polling into FE state.
  *
  * Polling owns whether backend has accepted a hash. The FE only adopts that
  * hash locally when it does not already have one; if a different local hash is
  * present we keep it so the replacement-mismatch guard can surface the conflict
  * instead of silently rewriting history.
+ *
+ * The polled hash is validated before casting to `0x${string}` — a malformed
+ * backend response must not feed invalid data into wagmi hooks that expect
+ * strict hex-prefixed hashes.
  */
 export function getPolledTxHashSyncDecision({
 	localTxHash,
@@ -201,9 +213,14 @@ export function getPolledTxHashSyncDecision({
 }: PolledTxHashSyncParams): PolledTxHashSyncDecision {
 	if (!polledTxHash) return { kind: 'noop' };
 
+	// Guard: reject malformed hashes from backend to prevent downstream wagmi errors.
+	// In practice backend always stores normalized 0x + 64 hex, but we validate
+	// defensively at the FE boundary.
+	if (!isValidTxHash(polledTxHash)) return { kind: 'noop' };
+
 	return {
 		kind: 'sync-backend-hash',
 		normalizedBackendHash: normalizeTxHash(polledTxHash),
-		adoptLocalTxHash: localTxHash ? undefined : (polledTxHash as `0x${string}`),
+		adoptLocalTxHash: localTxHash ? undefined : polledTxHash,
 	};
 }

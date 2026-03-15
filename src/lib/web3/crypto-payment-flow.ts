@@ -102,6 +102,9 @@ export function getCryptoTxSubmitOutcome(
 		case PAYMENT_ERROR_CODES.CRYPTO_ALREADY_COMPLETED:
 		case PAYMENT_ERROR_CODES.CRYPTO_ALREADY_CONFIRMING:
 		case PAYMENT_ERROR_CODES.CRYPTO_CONCURRENT_UPDATE:
+		// tx-already-used means hash IS registered (for another session) — polling the
+		// current order will surface the correct terminal state from backend.
+		case PAYMENT_ERROR_CODES.CRYPTO_TX_ALREADY_USED:
 			return CRYPTO_TX_SUBMIT_OUTCOME.POLL;
 		case PAYMENT_ERROR_CODES.CRYPTO_SUBMIT_FAILED:
 		case COMMON_ERROR_CODES.NETWORK_ERROR:
@@ -112,6 +115,8 @@ export function getCryptoTxSubmitOutcome(
 		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
 		case COMMON_ERROR_CODES.UNKNOWN_ERROR:
 			return CRYPTO_TX_SUBMIT_OUTCOME.RETRY;
+		// Bad hash format = unrecoverable, user must fix and retry
+		case PAYMENT_ERROR_CODES.CRYPTO_INVALID_TX_HASH:
 		default:
 			return CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL;
 	}

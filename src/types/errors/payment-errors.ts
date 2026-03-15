@@ -13,14 +13,14 @@ export const PAYMENT_ERROR_CODES = {
 	SESSION_NOT_FOUND: 'payments:session:not-found',
 	/** User doesn't have permission to access this session */
 	SESSION_PERMISSION_DENIED: 'payments:session:permission-denied',
-	/** Payment session already completed */
-	SESSION_ALREADY_COMPLETED: 'payments:session:already-completed',
 	/** Payment session has expired */
 	SESSION_EXPIRED: 'payments:session:expired',
 
 	// Checkout errors
 	/** Failed to create Stripe checkout session */
 	CHECKOUT_FAILED: 'payments:checkout:failed',
+	/** Checkout session not found — order may have been cancelled or never created */
+	CHECKOUT_NOT_FOUND: 'payments:checkout:not-found',
 	/** Stripe session completed during creation — race condition */
 	CHECKOUT_CONCURRENT_COMPLETION: 'payments:checkout:concurrent-completion',
 
@@ -35,6 +35,10 @@ export const PAYMENT_ERROR_CODES = {
 	// Cross-method guard errors
 	/** Active crypto session blocks Stripe checkout — cancel crypto first */
 	STRIPE_CRYPTO_SESSION_ACTIVE: 'payments:stripe:crypto-session-active',
+	/** Stripe session does not belong to current user */
+	STRIPE_PERMISSION_DENIED: 'payments:stripe:permission-denied',
+	/** Stripe session ID is unknown */
+	STRIPE_SESSION_NOT_FOUND: 'payments:stripe:session-not-found',
 	/** Active Stripe session blocks crypto checkout — cancel Stripe first */
 	CRYPTO_STRIPE_SESSION_ACTIVE: 'payments:crypto:stripe-session-active',
 
@@ -71,8 +75,6 @@ export const PAYMENT_ERROR_CODES = {
 	CRYPTO_CONFIRM_FAILED: 'payments:crypto:confirm-failed',
 	/** Crypto checkout session not found */
 	CRYPTO_SESSION_NOT_FOUND: 'payments:crypto:session-not-found',
-	/** Failed to create crypto checkout session */
-	CRYPTO_CHECKOUT_FAILED: 'payments:crypto:checkout-failed',
 	/** Order failed/cancelled during pending phase — cannot recover */
 	CRYPTO_ORDER_NOT_RECOVERABLE: 'payments:crypto:order-not-recoverable',
 	/** Race: status changed between read and update */
@@ -83,6 +85,10 @@ export const PAYMENT_ERROR_CODES = {
 	CRYPTO_PERMISSION_DENIED: 'payments:crypto:permission-denied',
 	/** Crypto payment already paid (duplicate of already-completed for session context) */
 	CRYPTO_ALREADY_PAID: 'payments:crypto:already-paid',
+	/** Connected wallet doesn't match session's stored wallet address */
+	CRYPTO_WALLET_MISMATCH: 'payments:crypto:wallet-mismatch',
+	/** Transaction hash fails BE format validation */
+	CRYPTO_INVALID_TX_HASH: 'payments:crypto:invalid-tx-hash',
 	/** User hit per-raffle ticket cap */
 	RAFFLE_USER_TICKET_LIMIT_EXCEEDED:
 		'payments:raffle:user-ticket-limit-exceeded',

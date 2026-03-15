@@ -42,6 +42,7 @@ describe('myFunction', () => {
 ## What to Test
 
 Priority order:
+
 1. Security-critical functions (validation, sanitization, auth)
 2. Pure utility functions (formatters, parsers, helpers)
 3. Business logic (calculations, transformations)

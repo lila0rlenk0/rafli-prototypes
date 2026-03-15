@@ -70,12 +70,15 @@ describe('getCryptoTxSubmitOutcome', () => {
 		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.POLL);
 	});
 
+	test('routes tx-already-used to poll — hash is registered, polling surfaces terminal state', () => {
+		expect(
+			getCryptoTxSubmitOutcome(PAYMENT_ERROR_CODES.CRYPTO_TX_ALREADY_USED),
+		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.POLL);
+	});
+
 	test('treats deterministic backend rejections as terminal', () => {
 		expect(
 			getCryptoTxSubmitOutcome(PAYMENT_ERROR_CODES.CRYPTO_SESSION_EXPIRED),
-		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL);
-		expect(
-			getCryptoTxSubmitOutcome(PAYMENT_ERROR_CODES.CRYPTO_TX_ALREADY_USED),
 		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL);
 		expect(
 			getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.GLOBAL_AUTH_UNAUTHENTICATED),

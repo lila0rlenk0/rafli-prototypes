@@ -211,27 +211,52 @@ describe('getPolledTxHashSyncDecision', () => {
 	});
 
 	test('adopts the backend hash when confirming recovery has no local hash yet', () => {
+		const validHash =
+			'0xAbC1230000000000000000000000000000000000000000000000000000000001';
 		expect(
 			getPolledTxHashSyncDecision({
 				localTxHash: undefined,
-				polledTxHash: '0xAbC123' as `0x${string}`,
+				polledTxHash: validHash as `0x${string}`,
 			}),
 		).toEqual({
 			kind: 'sync-backend-hash',
-			normalizedBackendHash: '0xabc123',
-			adoptLocalTxHash: '0xAbC123',
+			normalizedBackendHash: validHash.toLowerCase(),
+			adoptLocalTxHash: validHash,
 		});
 	});
 
 	test('keeps the local wallet hash when polling reports a different backend hash', () => {
+		const localHash =
+			'0xdef4560000000000000000000000000000000000000000000000000000000002';
+		const polledHash =
+			'0xAbC1230000000000000000000000000000000000000000000000000000000001';
 		expect(
 			getPolledTxHashSyncDecision({
-				localTxHash: '0xdef456',
-				polledTxHash: '0xAbC123',
+				localTxHash: localHash as `0x${string}`,
+				polledTxHash: polledHash,
 			}),
 		).toEqual({
 			kind: 'sync-backend-hash',
-			normalizedBackendHash: '0xabc123',
+			normalizedBackendHash: polledHash.toLowerCase(),
 		});
+	});
+
+	test('returns noop when polled hash is malformed (not 0x + 64 hex)', () => {
+		// Short hash — would previously be cast unsafely to `0x${string}`
+		expect(
+			getPolledTxHashSyncDecision({
+				localTxHash: undefined,
+				polledTxHash: '0xAbC123',
+			}),
+		).toEqual({ kind: 'noop' });
+
+		// Missing 0x prefix
+		expect(
+			getPolledTxHashSyncDecision({
+				localTxHash: undefined,
+				polledTxHash:
+					'abc1230000000000000000000000000000000000000000000000000000000001',
+			}),
+		).toEqual({ kind: 'noop' });
 	});
 });

@@ -26,9 +26,7 @@ test.describe('Sign In', () => {
 		await page.locator('#password').fill('wrongpassword12');
 		await page.getByRole('button', { name: 'Sign In' }).click();
 
-		await expect(
-			page.getByText('Invalid email or password.'),
-		).toBeVisible();
+		await expect(page.getByText('Invalid email or password.')).toBeVisible();
 	});
 
 	test('client-side validation for short password', async ({ page }) => {

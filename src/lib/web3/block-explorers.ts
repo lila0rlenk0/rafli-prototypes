@@ -1,6 +1,22 @@
 import type { CryptoChainConfig } from '@/types/crypto-config';
 
 // ==========================================
+// Validators
+// ==========================================
+
+/** Matches a valid EVM tx hash: 0x followed by exactly 64 hex characters */
+const TX_HASH_REGEX = /^0x[\da-f]{64}$/i;
+
+/**
+ * Validates that a string looks like a well-formed EVM transaction hash.
+ * Defense-in-depth: prevents malformed strings from being interpolated into
+ * explorer URLs (e.g. XSS via `javascript:` or path traversal).
+ */
+export function isValidTxHash(hash: string): boolean {
+	return TX_HASH_REGEX.test(hash);
+}
+
+// ==========================================
 // Helpers
 // ==========================================
 
@@ -10,7 +26,7 @@ import type { CryptoChainConfig } from '@/types/crypto-config';
  * @param txHash - Transaction hash
  * @param chainId - Chain ID to look up explorer
  * @param chains - Chain configs from GET /payments/crypto/config
- * @returns Full explorer URL, or null if chain has no known explorer
+ * @returns Full explorer URL, or null if chain has no known explorer or txHash is invalid
  */
 export function getTxExplorerUrl(
 	txHash: string | undefined,
@@ -18,9 +34,15 @@ export function getTxExplorerUrl(
 	chains: CryptoChainConfig[],
 ): string | null {
 	if (!txHash || !chainId) return null;
+	// Defense-in-depth: reject malformed hashes before URL interpolation
+	if (!isValidTxHash(txHash)) return null;
 	const chain = chains.find(c => c.chainId === chainId);
 	if (!chain?.explorerTxUrl) return null;
-	return `${chain.explorerTxUrl}${txHash}`;
+	// Backend now ships explorerTxUrl as the tx route prefix (`.../tx`) instead of
+	// a slash-terminated template. Normalize both `.../tx` and `.../tx/` so FE
+	// links survive deploy skew and older cached configs.
+	const explorerPrefix = chain.explorerTxUrl.replace(/\/+$/, '');
+	return `${explorerPrefix}/${encodeURIComponent(txHash)}`;
 }
 
 /**

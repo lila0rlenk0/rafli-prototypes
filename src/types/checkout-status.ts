@@ -54,7 +54,8 @@ const checkoutStatusCryptoSchema = z.object({
 	confirmationTarget: z.number(),
 	confirmDeadline: z.string(),
 	expiresAt: z.string(),
-	failureReason: z.string().nullable(),
+	/** Capped at 512 chars — prevents UI overflow from backend-supplied diagnostic strings */
+	failureReason: z.string().max(512).nullable(),
 	id: z.string(),
 	isActive: z.boolean(),
 	status: cryptoPaymentStatusSchema,

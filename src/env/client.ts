@@ -26,6 +26,7 @@ export const clientEnv = createEnv({
 		NEXT_PUBLIC_IPFS_GATEWAY_URL: z
 			.url()
 			.default('https://gateway.pinata.cloud/ipfs/'),
+		NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
 	},
 	runtimeEnv: {
 		NODE_ENV: process.env.NODE_ENV,
@@ -36,5 +37,6 @@ export const clientEnv = createEnv({
 		NEXT_PUBLIC_VRF_CONTRACT_ADDRESS:
 			process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS,
 		NEXT_PUBLIC_IPFS_GATEWAY_URL: process.env.NEXT_PUBLIC_IPFS_GATEWAY_URL,
+		NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
 	},
 });

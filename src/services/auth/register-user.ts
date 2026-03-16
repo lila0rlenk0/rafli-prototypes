@@ -4,6 +4,7 @@ import { AUTH_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapAuthError, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
 import { signUpInputSchema, type SignUpInput } from '@/types/auth';
 import {
 	AUTH_ERROR_CODES,
@@ -54,6 +55,10 @@ export async function registerUser(
 		return success(undefined);
 	} catch (error) {
 		const errorCode = mapAuthError(error);
+		captureServiceError(error, errorCode, {
+			service: 'auth',
+			action: 'register-user',
+		});
 
 		// Track failed sign-up (awaited to ensure completion in serverless)
 		await trackServer(AUTH_EVENTS.SIGN_UP_FAILED, {

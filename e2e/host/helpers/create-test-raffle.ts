@@ -25,7 +25,9 @@ async function pickCalendarDay(
 	target: Date,
 	reference: Date,
 ): Promise<void> {
-	const popover = page.locator('[data-slot="popover-content"]:visible').last();
+	const popover = page
+		.locator('[data-slot="popover-content"]:visible')
+		.last();
 	const calendar = popover.locator('[data-slot="calendar"]');
 
 	// Navigate forward month by month if needed

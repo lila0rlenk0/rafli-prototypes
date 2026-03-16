@@ -1,9 +1,6 @@
 'use client';
 
-import {
-	ToggleGroup,
-	ToggleGroupItem,
-} from '@/components/ui/toggle-group';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
@@ -49,9 +46,14 @@ interface CryptoConfigSectionProps {
 // Shared styles
 // ==========================================
 
-/** Base styles shared by all toggle items — overrides ToggleGroupItem defaults */
+/**
+ * Base styles shared by all toggle items.
+ * Resets ToggleGroupItem defaults and applies card-like selection styling.
+ * Uses `!important`-equivalent specificity via `data-[state]` selectors
+ * to override the toggleVariants outline preset.
+ */
 const TOGGLE_ITEM_BASE =
-	'h-auto min-w-0 rounded-xl border border-[#E5E5E5] bg-transparent px-4 py-3 text-sm font-normal shadow-none transition-all hover:border-gray-300 hover:bg-transparent data-[state=on]:border-black data-[state=on]:bg-gray-50 data-[state=on]:text-foreground disabled:border-[#E5E5E5] disabled:bg-gray-50 disabled:opacity-60';
+	'h-auto min-w-0 rounded-xl border border-[#E5E5E5] bg-transparent px-4 py-3 text-sm font-normal shadow-none transition-all hover:border-gray-300 hover:bg-transparent data-[state=on]:border-black data-[state=on]:bg-gray-50 data-[state=on]:text-foreground data-[state=off]:bg-transparent disabled:border-[#E5E5E5] disabled:bg-gray-50 disabled:opacity-60';
 
 // ==========================================
 // Component
@@ -178,9 +180,7 @@ export function CryptoConfigSection({
 			const availableIds = new Set(
 				nextChains.flatMap(c => c.tokens.map(t => t.tokenId)),
 			);
-			const prunedTokens = selectedTokenIds.filter(id =>
-				availableIds.has(id),
-			);
+			const prunedTokens = selectedTokenIds.filter(id => availableIds.has(id));
 			if (prunedTokens.length !== selectedTokenIds.length) {
 				onFieldChange('cryptoTokens', prunedTokens);
 				const prunedPricing = tokenPricing.filter(p =>
@@ -208,9 +208,7 @@ export function CryptoConfigSection({
 			if (nonStableDeselected.length > 0) {
 				onFieldChange(
 					'cryptoTokenPricing',
-					tokenPricing.filter(
-						p => !nonStableDeselected.includes(p.tokenId),
-					),
+					tokenPricing.filter(p => !nonStableDeselected.includes(p.tokenId)),
 				);
 			}
 		}
@@ -287,16 +285,13 @@ export function CryptoConfigSection({
 		}
 	}
 
-	/** Renders a chain icon badge */
+	/** Renders a chain icon badge — SVGs include their own circular background */
 	function renderChainIcon(chain: CryptoChainConfig) {
 		const icon = CHAIN_ICONS[chain.chainId];
 		if (!icon) return null;
 		return (
-			<span
-				className="flex size-5 items-center justify-center overflow-hidden rounded-full"
-				style={{ background: icon.iconBackground }}
-			>
-				<icon.icon className="size-3.5" />
+			<span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full">
+				<icon.icon className="size-6" />
 			</span>
 		);
 	}
@@ -378,7 +373,7 @@ export function CryptoConfigSection({
 								</div>
 								<ToggleGroup
 									type="multiple"
-									variant="outline"
+									variant="default"
 									value={chainToggleValue}
 									onValueChange={handleChainValueChange}
 									disabled={isAllChainsSelected()}
@@ -416,7 +411,7 @@ export function CryptoConfigSection({
 								</div>
 								<ToggleGroup
 									type="multiple"
-									variant="outline"
+									variant="default"
 									value={tokenToggleValue}
 									onValueChange={handleTokenValueChange}
 									disabled={isAllTokensSelected()}

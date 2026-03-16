@@ -10,6 +10,7 @@ import {
 	type PaymentErrorCode,
 	type PromoCodeErrorCode,
 	type RaffleErrorCode,
+	type ReportErrorCode,
 	type WalletErrorCode,
 	type ReviewErrorCode,
 	type TicketErrorCode,
@@ -592,6 +593,41 @@ export function mapCommentError(error: unknown): CommentErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as CommentErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps report errors to ReportErrorCode
+ *
+ * Accepts `moderation:*` and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns ReportErrorCode (either backend code or frontend fallback)
+ */
+export function mapReportError(error: unknown): ReportErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "moderation:report:duplicate", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('moderation:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as ReportErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (
+			mappedCode.startsWith('moderation:') ||
+			mappedCode.startsWith('global:')
+		) {
+			return mappedCode as ReportErrorCode;
 		}
 	}
 

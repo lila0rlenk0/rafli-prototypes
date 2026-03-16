@@ -1,3 +1,5 @@
+import { isAddressEqual, type Address } from 'viem';
+
 import { isValidTxHash } from '@/lib/web3/block-explorers';
 import { normalizeTxHash } from '@/lib/web3/crypto-payment-flow';
 import {
@@ -35,8 +37,8 @@ export type PolledTxHashSyncDecision =
 	  };
 
 interface ReviewSessionGuardParams {
-	connectedAddress: string | null;
-	sessionWalletAddress: string | null;
+	connectedAddress: Address | null;
+	sessionWalletAddress: Address | null;
 	/** Backend-provided submit deadline — replaces raw expiresAt + FE grace math */
 	submitDeadline: string | null | undefined;
 	now?: number;
@@ -105,9 +107,8 @@ export function getReviewSessionGuard({
 		return { kind: 'wallet-changed' };
 	}
 
-	// Compare case-insensitively — both values should already be checksummed,
-	// but we do not want formatting drift to bypass the wallet-binding guard.
-	if (connectedAddress.toLowerCase() !== sessionWalletAddress.toLowerCase()) {
+	// Compare via EIP-55 checksum — viem's isAddressEqual handles mixed-case safely
+	if (!isAddressEqual(connectedAddress, sessionWalletAddress)) {
 		return { kind: 'wallet-changed' };
 	}
 

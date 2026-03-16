@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { getAddress } from 'viem';
 
 import { CRYPTO_PAYMENT_STATUS } from '@/types/payment';
 
@@ -13,12 +14,17 @@ import {
 const SUBMIT_DEADLINE = '2026-03-13T12:10:00.000Z';
 const SUBMIT_DEADLINE_MS = new Date(SUBMIT_DEADLINE).getTime();
 
+/** Valid EVM addresses for test fixtures — getAddress returns checksummed Address type */
+const WALLET_A = getAddress('0x1234567890AbCdEf1234567890aBcDeF12345678');
+const WALLET_A_LOWER = getAddress('0x1234567890abcdef1234567890abcdef12345678');
+const WALLET_B = getAddress('0xdEaDbEeF00000000000000000000000000000001');
+
 describe('getReviewSessionGuard', () => {
 	test('allows send when wallet binding matches and submit grace is still open', () => {
 		expect(
 			getReviewSessionGuard({
-				connectedAddress: '0xabc',
-				sessionWalletAddress: '0xAbC',
+				connectedAddress: WALLET_A,
+				sessionWalletAddress: WALLET_A_LOWER,
 				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}).kind,
@@ -28,8 +34,8 @@ describe('getReviewSessionGuard', () => {
 	test('blocks send when the connected wallet changed', () => {
 		expect(
 			getReviewSessionGuard({
-				connectedAddress: '0xdef',
-				sessionWalletAddress: '0xabc',
+				connectedAddress: WALLET_B,
+				sessionWalletAddress: WALLET_A,
 				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}).kind,
@@ -39,8 +45,8 @@ describe('getReviewSessionGuard', () => {
 	test('blocks send when submit grace is exhausted', () => {
 		expect(
 			getReviewSessionGuard({
-				connectedAddress: '0xabc',
-				sessionWalletAddress: '0xabc',
+				connectedAddress: WALLET_A,
+				sessionWalletAddress: WALLET_A,
 				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS + 1,
 			}).kind,
@@ -50,8 +56,8 @@ describe('getReviewSessionGuard', () => {
 	test('returns missing-session when submitDeadline is null', () => {
 		expect(
 			getReviewSessionGuard({
-				connectedAddress: '0xabc',
-				sessionWalletAddress: '0xabc',
+				connectedAddress: WALLET_A,
+				sessionWalletAddress: WALLET_A,
 				submitDeadline: null,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}).kind,
@@ -62,7 +68,7 @@ describe('getReviewSessionGuard', () => {
 		expect(
 			getReviewSessionGuard({
 				connectedAddress: null,
-				sessionWalletAddress: '0xabc',
+				sessionWalletAddress: WALLET_A,
 				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS - 1,
 			}).kind,
@@ -72,7 +78,7 @@ describe('getReviewSessionGuard', () => {
 	test('returns wallet-changed when session wallet is null', () => {
 		expect(
 			getReviewSessionGuard({
-				connectedAddress: '0xabc',
+				connectedAddress: WALLET_A,
 				sessionWalletAddress: null,
 				submitDeadline: SUBMIT_DEADLINE,
 				now: SUBMIT_DEADLINE_MS - 1,

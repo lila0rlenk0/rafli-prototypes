@@ -3,7 +3,13 @@
 import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { erc20Abi, getAddress, zeroAddress, type Address } from 'viem';
+import {
+	erc20Abi,
+	getAddress,
+	isAddressEqual,
+	zeroAddress,
+	type Address,
+} from 'viem';
 import {
 	useAccount,
 	useBalance,
@@ -1037,8 +1043,8 @@ export function CryptoCheckoutModal({
 	 */
 	const isWalletVerified = useMemo(() => {
 		if (!address || !walletsData?.wallets) return false;
-		return walletsData.wallets.some(
-			w => w.address.toLowerCase() === address.toLowerCase(),
+		return walletsData.wallets.some(w =>
+			isAddressEqual(getAddress(w.address), address),
 		);
 	}, [address, walletsData]);
 
@@ -1753,7 +1759,8 @@ export function CryptoCheckoutModal({
 			const currentAddress = liveAddressRef.current;
 			if (
 				!currentAddress ||
-				currentAddress.toLowerCase() !== sessionWalletAddress?.toLowerCase()
+				!sessionWalletAddress ||
+				!isAddressEqual(currentAddress, sessionWalletAddress)
 			) {
 				returnToWalletStep('wallet-changed');
 				return;

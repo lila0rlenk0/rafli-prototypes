@@ -23,15 +23,9 @@ import { clientEnv } from '@/env/client';
 const prodChains = [mainnet, arbitrum, base, polygon] as const;
 
 /**
- * Development chains — prod chains + testnets for local/staging testing
+ * Development/staging chains — testnets only, no mainnets
  */
-const devChains = [
-	...prodChains,
-	sepolia,
-	arbitrumSepolia,
-	baseSepolia,
-	polygonAmoy,
-] as const;
+const devChains = [sepolia, arbitrumSepolia, baseSepolia, polygonAmoy] as const;
 
 /**
  * Select chain set based on environment

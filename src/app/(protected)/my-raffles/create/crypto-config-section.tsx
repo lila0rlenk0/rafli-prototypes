@@ -1,9 +1,13 @@
 'use client';
 
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+	MultiSelect,
+	type MultiSelectOption,
+} from '@/components/ui/multi-select';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
+import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
 import { useCryptoConfig } from '@/services/payment/use-crypto-config';
 import type {
 	CryptoChainConfig,
@@ -43,19 +47,6 @@ interface CryptoConfigSectionProps {
 }
 
 // ==========================================
-// Shared styles
-// ==========================================
-
-/**
- * Base styles shared by all toggle items.
- * Resets ToggleGroupItem defaults and applies card-like selection styling.
- * Uses `!important`-equivalent specificity via `data-[state]` selectors
- * to override the toggleVariants outline preset.
- */
-const TOGGLE_ITEM_BASE =
-	'h-auto min-w-0 rounded-xl border border-[#E5E5E5] bg-transparent px-4 py-3 text-sm font-normal shadow-none transition-all hover:border-gray-300 hover:bg-transparent data-[state=on]:border-black data-[state=on]:bg-gray-50 data-[state=on]:text-foreground data-[state=off]:bg-transparent disabled:border-[#E5E5E5] disabled:bg-gray-50 disabled:opacity-60';
-
-// ==========================================
 // Component
 // ==========================================
 
@@ -63,10 +54,7 @@ const TOGGLE_ITEM_BASE =
  * Crypto payment configuration section for raffle create/edit forms.
  *
  * Fetches global crypto config (chains + tokens) from backend,
- * then renders chain/token selectors and pricing inputs for non-stablecoins.
- *
- * Uses shadcn ToggleGroup (`type="multiple"`) for accessible multi-select
- * with keyboard navigation and proper ARIA attributes.
+ * then renders chain/token multi-select dropdowns and pricing inputs.
  *
  * Backend semantics: empty `cryptoChainIds` / `cryptoTokens` = "all allowed".
  * UI maps this as: all items selected = send empty array (all).
@@ -82,18 +70,26 @@ export function CryptoConfigSection({
 	// Fetch global config (cached 10min by useCryptoConfig)
 	const { data: cryptoConfig, isLoading } = useCryptoConfig();
 
+	// Filter backend chains to only those supported in this environment
+	const supportedChains = useMemo(
+		function filterSupportedChains() {
+			if (!cryptoConfig) return [];
+			return cryptoConfig.chains.filter(c =>
+				(SUPPORTED_WEB3_CHAIN_IDS as readonly number[]).includes(c.chainId),
+			);
+		},
+		[cryptoConfig],
+	);
+
 	// Compute available tokens based on selected chains.
 	// When no chains are selected (= all), show all tokens from all chains.
 	// When specific chains are selected, show the union of tokens across those chains.
 	const availableTokens = useMemo(
 		function computeAvailableTokens() {
-			if (!cryptoConfig) return [];
 			const chains =
 				selectedChainIds.length === 0
-					? cryptoConfig.chains
-					: cryptoConfig.chains.filter(c =>
-							selectedChainIds.includes(c.chainId),
-						);
+					? supportedChains
+					: supportedChains.filter(c => selectedChainIds.includes(c.chainId));
 
 			// Deduplicate tokens by tokenId — same token can appear on multiple chains
 			const seen = new Set<string>();
@@ -108,7 +104,7 @@ export function CryptoConfigSection({
 			}
 			return tokens;
 		},
-		[cryptoConfig, selectedChainIds],
+		[supportedChains, selectedChainIds],
 	);
 
 	// Identify non-stablecoin tokens that need pricing
@@ -126,26 +122,58 @@ export function CryptoConfigSection({
 	);
 
 	// ==========================================
+	// MultiSelect option builders
+	// ==========================================
+
+	/** Builds chain options with icons for the multi-select */
+	const chainOptions: MultiSelectOption[] = useMemo(
+		function buildChainOptions() {
+			return supportedChains.map(function mapChain(chain: CryptoChainConfig) {
+				const ChainIcon = CHAIN_ICONS[chain.chainId];
+				return {
+					value: chain.chainId.toString(),
+					label: chain.name,
+					icon: ChainIcon ? (
+						<ChainIcon variant="branded" size={20} className="shrink-0" />
+					) : undefined,
+				};
+			});
+		},
+		[supportedChains],
+	);
+
+	/** Builds token options with stablecoin/custom labels */
+	const tokenOptions: MultiSelectOption[] = useMemo(
+		function buildTokenOptions() {
+			return availableTokens.map(function mapToken(token: CryptoConfigToken) {
+				return {
+					value: token.tokenId,
+					label: token.symbol,
+					description: token.isStablecoin ? '1:1 USD' : 'Custom price',
+				};
+			});
+		},
+		[availableTokens],
+	);
+
+	// ==========================================
 	// Chain value bridging
 	// ==========================================
 
-	// ToggleGroup values are string[] — bridge to/from number[] for chainIds.
 	// In "all" mode (empty array), show all chains as visually selected.
-	const chainToggleValue = useMemo(
-		function computeChainToggleValue() {
-			if (!cryptoConfig) return [];
+	const chainSelectValue = useMemo(
+		function computeChainSelectValue() {
 			if (selectedChainIds.length === 0) {
-				// "All" mode — visually select everything
-				return cryptoConfig.chains.map(c => c.chainId.toString());
+				return supportedChains.map(c => c.chainId.toString());
 			}
 			return selectedChainIds.map(id => id.toString());
 		},
-		[cryptoConfig, selectedChainIds],
+		[supportedChains, selectedChainIds],
 	);
 
-	// Token toggle value — in "all" mode, visually select everything
-	const tokenToggleValue = useMemo(
-		function computeTokenToggleValue() {
+	// Token select value — in "all" mode, visually select everything
+	const tokenSelectValue = useMemo(
+		function computeTokenSelectValue() {
 			if (selectedTokenIds.length === 0) {
 				return availableTokens.map(t => t.tokenId);
 			}
@@ -163,20 +191,33 @@ export function CryptoConfigSection({
 		onFieldChange('acceptsCrypto', checked);
 	}
 
+	/** Selects all chains (empty array = "all" mode) */
+	function handleSelectAllChains() {
+		onFieldChange('cryptoChainIds', []);
+	}
+
+	/** Selects all tokens (empty array = "all" mode) and clears stale pricing */
+	function handleSelectAllTokens() {
+		onFieldChange('cryptoTokens', []);
+		onFieldChange('cryptoTokenPricing', []);
+	}
+
 	/**
-	 * Handles chain ToggleGroup value changes.
+	 * Handles chain multi-select value changes.
 	 * Converts string[] back to number[] and prunes orphaned tokens/pricing.
 	 */
 	function handleChainValueChange(values: string[]) {
-		const nextIds = values.map(Number);
+		// If all chains selected, store empty array (= "all" mode)
+		const allSelected = values.length === supportedChains.length;
+		const nextIds = allSelected ? [] : values.map(Number);
 		onFieldChange('cryptoChainIds', nextIds);
 
 		// Prune tokens no longer available on any selected chain
-		if (selectedTokenIds.length > 0 && cryptoConfig) {
+		if (selectedTokenIds.length > 0) {
 			const nextChains =
 				nextIds.length === 0
-					? cryptoConfig.chains
-					: cryptoConfig.chains.filter(c => nextIds.includes(c.chainId));
+					? supportedChains
+					: supportedChains.filter(c => nextIds.includes(c.chainId));
 			const availableIds = new Set(
 				nextChains.flatMap(c => c.tokens.map(t => t.tokenId)),
 			);
@@ -192,25 +233,33 @@ export function CryptoConfigSection({
 	}
 
 	/**
-	 * Handles token ToggleGroup value changes.
+	 * Handles token multi-select value changes.
 	 * Prunes pricing for deselected non-stablecoin tokens.
 	 */
 	function handleTokenValueChange(values: string[]) {
-		onFieldChange('cryptoTokens', values);
+		// If all tokens selected, store empty array (= "all" mode)
+		const allSelected = values.length === availableTokens.length;
+		const nextTokens = allSelected ? [] : values;
+		onFieldChange('cryptoTokens', nextTokens);
 
 		// Remove pricing for any non-stablecoin tokens that were deselected
-		const deselected = selectedTokenIds.filter(id => !values.includes(id));
-		if (deselected.length > 0) {
-			const nonStableDeselected = deselected.filter(id => {
-				const token = availableTokens.find(t => t.tokenId === id);
-				return token && !token.isStablecoin;
-			});
-			if (nonStableDeselected.length > 0) {
-				onFieldChange(
-					'cryptoTokenPricing',
-					tokenPricing.filter(p => !nonStableDeselected.includes(p.tokenId)),
-				);
+		if (!allSelected) {
+			const deselected = selectedTokenIds.filter(id => !values.includes(id));
+			if (deselected.length > 0) {
+				const nonStableDeselected = deselected.filter(id => {
+					const token = availableTokens.find(t => t.tokenId === id);
+					return token && !token.isStablecoin;
+				});
+				if (nonStableDeselected.length > 0) {
+					onFieldChange(
+						'cryptoTokenPricing',
+						tokenPricing.filter(p => !nonStableDeselected.includes(p.tokenId)),
+					);
+				}
 			}
+		} else {
+			// Switching to "all" mode — clear stale pricing
+			onFieldChange('cryptoTokenPricing', []);
 		}
 	}
 
@@ -240,74 +289,6 @@ export function CryptoConfigSection({
 	/** Gets the current price value for a token from form state */
 	function getTokenPrice(tokenId: string): string {
 		return tokenPricing.find(p => p.tokenId === tokenId)?.price ?? '';
-	}
-
-	/** Whether all chains are selected (empty array = all) */
-	function isAllChainsSelected(): boolean {
-		return selectedChainIds.length === 0;
-	}
-
-	/** Whether all tokens are selected (empty array = all) */
-	function isAllTokensSelected(): boolean {
-		return selectedTokenIds.length === 0;
-	}
-
-	/**
-	 * Toggles between "all chains" (empty array) and "explicit selection" mode.
-	 * When switching from "all" to explicit, pre-populate with all chain IDs
-	 * so the user can deselect the ones they don't want.
-	 */
-	function handleToggleAllChains() {
-		if (isAllChainsSelected() && cryptoConfig) {
-			onFieldChange(
-				'cryptoChainIds',
-				cryptoConfig.chains.map(c => c.chainId),
-			);
-		} else {
-			onFieldChange('cryptoChainIds', []);
-		}
-	}
-
-	/**
-	 * Toggles between "all tokens" (empty array) and "explicit selection" mode.
-	 * Same pattern as chain toggle — pre-populate with all token IDs.
-	 */
-	function handleToggleAllTokens() {
-		if (isAllTokensSelected()) {
-			onFieldChange(
-				'cryptoTokens',
-				availableTokens.map(t => t.tokenId),
-			);
-		} else {
-			// Switch back to "all" mode — clear explicit selections and stale pricing
-			onFieldChange('cryptoTokens', []);
-			onFieldChange('cryptoTokenPricing', []);
-		}
-	}
-
-	/** Renders a chain icon badge — SVGs include their own circular background */
-	function renderChainIcon(chain: CryptoChainConfig) {
-		const icon = CHAIN_ICONS[chain.chainId];
-		if (!icon) return null;
-		return (
-			<span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full">
-				<icon.icon className="size-6" />
-			</span>
-		);
-	}
-
-	/** Gets the "Restrict/Allow all" label for chains */
-	function getChainToggleLabel(): string {
-		return isAllChainsSelected()
-			? 'Restrict to specific chains'
-			: 'Allow all chains';
-	}
-
-	/** Gets the "Restrict/Allow all" label for tokens */
-	function getTokenToggleLabel(): string {
-		return isAllTokensSelected()
-			? 'Restrict to specific tokens'
-			: 'Allow all tokens';
 	}
 
 	// ==========================================
@@ -359,84 +340,49 @@ export function CryptoConfigSection({
 					{/* Config loaded */}
 					{cryptoConfig && (
 						<div className="flex flex-col gap-6">
-							{/* Chain selection — ToggleGroup with grid layout */}
-							<div className="flex flex-col gap-3">
-								<div className="flex items-center justify-between">
-									<label className="text-sm font-medium">Chains</label>
-									<button
-										type="button"
-										className="text-xs text-blue-600 hover:underline"
-										onClick={handleToggleAllChains}
-									>
-										{getChainToggleLabel()}
-									</button>
-								</div>
-								<ToggleGroup
-									type="multiple"
-									variant="default"
-									value={chainToggleValue}
-									onValueChange={handleChainValueChange}
-									disabled={isAllChainsSelected()}
-									className="grid w-full grid-cols-2 gap-2"
-								>
-									{cryptoConfig.chains.map(chain => (
-										<ToggleGroupItem
-											key={chain.chainId}
-											value={chain.chainId.toString()}
-											className={`${TOGGLE_ITEM_BASE} flex-row justify-start gap-2`}
+							{/* Chain + Token selectors — side by side */}
+							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+								{/* Chain selection */}
+								<div className="flex flex-col gap-2">
+									<div className="flex items-center justify-between">
+										<label className="text-sm font-medium">Chains</label>
+										<button
+											type="button"
+											disabled={selectedChainIds.length === 0}
+											className="text-primary cursor-pointer text-xs underline disabled:cursor-not-allowed disabled:opacity-50"
+											onClick={handleSelectAllChains}
 										>
-											{renderChainIcon(chain)}
-											<span className="text-sm">{chain.name}</span>
-										</ToggleGroupItem>
-									))}
-								</ToggleGroup>
-								{isAllChainsSelected() && (
-									<p className="text-xs text-gray-400">
-										All supported chains are enabled
-									</p>
-								)}
-							</div>
+											Select all
+										</button>
+									</div>
+									<MultiSelect
+										options={chainOptions}
+										value={chainSelectValue}
+										onValueChange={handleChainValueChange}
+										placeholder="Select chains..."
+									/>
+								</div>
 
-							{/* Token selection — ToggleGroup with 3-col grid */}
-							<div className="flex flex-col gap-3">
-								<div className="flex items-center justify-between">
-									<label className="text-sm font-medium">Tokens</label>
-									<button
-										type="button"
-										className="text-xs text-blue-600 hover:underline"
-										onClick={handleToggleAllTokens}
-									>
-										{getTokenToggleLabel()}
-									</button>
-								</div>
-								<ToggleGroup
-									type="multiple"
-									variant="default"
-									value={tokenToggleValue}
-									onValueChange={handleTokenValueChange}
-									disabled={isAllTokensSelected()}
-									className="grid w-full grid-cols-3 gap-2"
-								>
-									{availableTokens.map(token => (
-										<ToggleGroupItem
-											key={token.tokenId}
-											value={token.tokenId}
-											className={`${TOGGLE_ITEM_BASE} flex-col gap-1`}
+								{/* Token selection */}
+								<div className="flex flex-col gap-2">
+									<div className="flex items-center justify-between">
+										<label className="text-sm font-medium">Tokens</label>
+										<button
+											type="button"
+											disabled={selectedTokenIds.length === 0}
+											className="text-primary cursor-pointer text-xs underline disabled:cursor-not-allowed disabled:opacity-50"
+											onClick={handleSelectAllTokens}
 										>
-											<span className="text-sm font-medium">
-												{token.symbol}
-											</span>
-											<span className="text-xs text-gray-400">
-												{token.isStablecoin ? '1:1 USD' : 'Custom price'}
-											</span>
-										</ToggleGroupItem>
-									))}
-								</ToggleGroup>
-								{isAllTokensSelected() && (
-									<p className="text-xs text-gray-400">
-										All available tokens are enabled
-									</p>
-								)}
+											Select all
+										</button>
+									</div>
+									<MultiSelect
+										options={tokenOptions}
+										value={tokenSelectValue}
+										onValueChange={handleTokenValueChange}
+										placeholder="Select tokens..."
+									/>
+								</div>
 							</div>
 
 							{/* Non-stablecoin pricing */}

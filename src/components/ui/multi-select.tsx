@@ -47,10 +47,16 @@ export function MultiSelect({
 
 	/** Toggles a single option in/out of the selection */
 	function handleToggle(optionValue: string) {
+		if (isLastSelected(optionValue)) return;
 		const next = value.includes(optionValue)
 			? value.filter(v => v !== optionValue)
 			: [...value, optionValue];
 		onValueChange(next);
+	}
+
+	/** Whether this is the only selected option (can't deselect) */
+	function isLastSelected(optionValue: string): boolean {
+		return value.length === 1 && value[0] === optionValue;
 	}
 
 	/** Builds the trigger button label from current selection */
@@ -95,7 +101,12 @@ export function MultiSelect({
 							key={option.value}
 							type="button"
 							onClick={() => handleToggle(option.value)}
-							className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors"
+							className={cn(
+								'hover:bg-accent flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors',
+								isLastSelected(option.value)
+									? 'cursor-not-allowed opacity-50'
+									: 'cursor-pointer',
+							)}
 						>
 							<span
 								className={cn(

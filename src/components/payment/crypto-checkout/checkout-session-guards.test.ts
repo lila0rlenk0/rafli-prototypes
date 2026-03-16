@@ -3,10 +3,10 @@ import { describe, expect, test } from 'bun:test';
 import { CRYPTO_PAYMENT_STATUS } from '@/types/payment';
 
 import {
+	getHydratedCheckoutStep,
 	getPaySessionRevalidationDecision,
 	getPolledTxHashSyncDecision,
 	getReviewSessionGuard,
-	resolveCheckoutHydrationDecision,
 } from './checkout-session-guards';
 
 /** Backend-provided submit deadline — 10 minutes after some base time */
@@ -136,58 +136,29 @@ describe('getPaySessionRevalidationDecision', () => {
 	});
 });
 
-describe('resolveCheckoutHydrationDecision', () => {
-	test('uses review fallback for read failures', () => {
-		expect(
-			resolveCheckoutHydrationDecision({
-				sessionReadSucceeded: false,
-			}),
-		).toEqual({ kind: 'review-fallback' });
+describe('getHydratedCheckoutStep', () => {
+	test('maps pending status to review step', () => {
+		expect(getHydratedCheckoutStep(CRYPTO_PAYMENT_STATUS.PENDING)).toBe(
+			'review',
+		);
 	});
 
-	test('maps successful reads to authoritative FE steps', () => {
-		expect(
-			resolveCheckoutHydrationDecision({
-				sessionReadSucceeded: true,
-				serverStatus: CRYPTO_PAYMENT_STATUS.PENDING,
-			}),
-		).toEqual({
-			kind: 'apply-server-state',
-			nextStep: 'review',
-		});
-		expect(
-			resolveCheckoutHydrationDecision({
-				sessionReadSucceeded: true,
-				serverStatus: CRYPTO_PAYMENT_STATUS.CONFIRMING,
-			}),
-		).toEqual({
-			kind: 'apply-server-state',
-			nextStep: 'confirming',
-		});
+	test('maps confirming status to confirming step', () => {
+		expect(getHydratedCheckoutStep(CRYPTO_PAYMENT_STATUS.CONFIRMING)).toBe(
+			'confirming',
+		);
 	});
 
-	test('maps completed session to success step', () => {
-		expect(
-			resolveCheckoutHydrationDecision({
-				sessionReadSucceeded: true,
-				serverStatus: CRYPTO_PAYMENT_STATUS.COMPLETED,
-			}),
-		).toEqual({
-			kind: 'apply-server-state',
-			nextStep: 'success',
-		});
+	test('maps completed status to success step', () => {
+		expect(getHydratedCheckoutStep(CRYPTO_PAYMENT_STATUS.COMPLETED)).toBe(
+			'success',
+		);
 	});
 
-	test('maps failed session to failure step', () => {
-		expect(
-			resolveCheckoutHydrationDecision({
-				sessionReadSucceeded: true,
-				serverStatus: CRYPTO_PAYMENT_STATUS.FAILED,
-			}),
-		).toEqual({
-			kind: 'apply-server-state',
-			nextStep: 'failure',
-		});
+	test('maps failed status to failure step', () => {
+		expect(getHydratedCheckoutStep(CRYPTO_PAYMENT_STATUS.FAILED)).toBe(
+			'failure',
+		);
 	});
 });
 
@@ -221,7 +192,7 @@ describe('getPolledTxHashSyncDecision', () => {
 		).toEqual({
 			kind: 'sync-backend-hash',
 			normalizedBackendHash: validHash.toLowerCase(),
-			adoptLocalTxHash: validHash,
+			adoptLocalTxHash: validHash.toLowerCase(),
 		});
 	});
 

@@ -12,6 +12,7 @@ import {
 const BASE_SESSION: CryptoCheckoutSession = {
 	id: 'session-1',
 	amount: '10.00',
+	walletAddress: '0x8E93Ae06A3Aa1Dc901aF08D8B1029B95A3CE12D4',
 	amountRaw: '10000000',
 	chainId: 1,
 	tokenAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',

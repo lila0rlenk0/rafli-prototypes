@@ -178,13 +178,13 @@ describe('shouldClearPromo', () => {
 		'core:promo:order-already-discounted',
 		'global:validation:invalid-argument',
 		'invalid_code',
-	])('returns true for deterministic error: %s', code => {
+	])('returns true for deterministic error: %s', (code: string) => {
 		expect(shouldClearPromo(code)).toBe(true);
 	});
 
 	test.each(['network_error', 'timeout_error', 'unknown:code'])(
 		'returns false for transient/unknown error: %s',
-		code => {
+		(code: string) => {
 			expect(shouldClearPromo(code)).toBe(false);
 		},
 	);

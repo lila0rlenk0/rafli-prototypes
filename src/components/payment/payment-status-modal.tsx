@@ -228,7 +228,7 @@ export function PaymentStatusModal({
 		const text = 'Check out this raffle';
 		const link = `${window.location.origin}/browse/${publicSlug}`;
 		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
-		window.open(url, '_blank');
+		window.open(url, '_blank', 'noopener,noreferrer');
 	}
 
 	/**

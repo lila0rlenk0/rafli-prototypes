@@ -4,6 +4,16 @@ import { z } from 'zod';
 // Constants
 // ==========================================
 
+/**
+ * Stripe payment session statuses — BE-authoritative.
+ *
+ * State transitions (matches BE payment_sessions table):
+ *   pending   → completed  (Stripe webhook `checkout.session.completed` fires)
+ *   pending   → expired    (Stripe session TTL exceeded, webhook `checkout.session.expired`)
+ *   pending   → failed     (payment attempt failed — card declined, etc.)
+ *   expired   → completed  (cancel-race recovery: webhook arrives after FE sees expiry)
+ *   completed and failed are terminal.
+ */
 export const PAYMENT_STATUS = {
 	PENDING: 'pending',
 	COMPLETED: 'completed',
@@ -15,9 +25,7 @@ export const PAYMENT_STATUS = {
 // Types from Constants
 // ==========================================
 
-/**
- * Represents the status of a payment session
- */
+/** Union of Stripe PAYMENT_STATUS values — use instead of raw string literals. */
 export type PaymentStatus =
 	(typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 
@@ -79,10 +87,13 @@ export const createCheckoutPayloadSchema = z.object({
 // Inferred Types
 // ==========================================
 
+/** Stripe payment session entity from BE — used in order detail and status checks. */
 export type PaymentSession = z.infer<typeof paymentSessionSchema>;
+/** Response from POST /payments/checkout — contains Stripe redirect URL. */
 export type CheckoutSessionResponse = z.infer<
 	typeof checkoutSessionResponseSchema
 >;
+/** FE payload for creating a Stripe checkout session. `publicSlug` is FE-only for URL construction. */
 export type CreateCheckoutPayload = z.infer<typeof createCheckoutPayloadSchema>;
 
 // ==========================================
@@ -90,9 +101,19 @@ export type CreateCheckoutPayload = z.infer<typeof createCheckoutPayloadSchema>;
 // ==========================================
 
 /**
- * Status values for crypto payment sessions — must match backend CryptoSessionStatus.
- * Backend enum: pending → confirming → completed | failed
- * Note: 'expired' does not exist as a session status — backend moves expired sessions to 'failed'.
+ * Crypto payment session statuses — must match BE `CryptoSessionStatus` enum exactly.
+ *
+ * State transitions (matches BE crypto_payment_sessions table):
+ *   pending    → confirming  (tx hash submitted via POST /payments/crypto/submit)
+ *   pending    → failed      (submit deadline exceeded, or user abandoned)
+ *   confirming → completed   (on-chain confirmations ≥ target, verified by cron or FE confirm)
+ *   confirming → failed      (tx reverted, wrong amount, confirm deadline exceeded)
+ *   failed     → confirming  (grace-period reactivation: tx found on-chain after soft failure,
+ *                              excludes user_cancelled/user_abandoned failure reasons)
+ *   completed is terminal. failed is terminal unless grace-period reactivation applies.
+ *
+ * Note: 'expired' does not exist as a session status — BE moves expired sessions to 'failed'
+ * with failureReason 'session_expired'. No separate expired state in the state machine.
  */
 export const CRYPTO_PAYMENT_STATUS = {
 	/** Session created, awaiting tx hash submission via POST /crypto/submit */
@@ -105,6 +126,7 @@ export const CRYPTO_PAYMENT_STATUS = {
 	FAILED: 'failed',
 } as const;
 
+/** Union of crypto CRYPTO_PAYMENT_STATUS values — use instead of raw string literals. */
 export type CryptoPaymentStatus =
 	(typeof CRYPTO_PAYMENT_STATUS)[keyof typeof CRYPTO_PAYMENT_STATUS];
 

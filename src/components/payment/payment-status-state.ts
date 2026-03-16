@@ -122,5 +122,5 @@ export function buildStripeVerificationReturnTo(
 	publicSlug: string,
 	stripeSessionId: string,
 ): string {
-	return `/browse/${publicSlug}?session_id=${stripeSessionId}`;
+	return `/browse/${encodeURIComponent(publicSlug)}?session_id=${encodeURIComponent(stripeSessionId)}`;
 }

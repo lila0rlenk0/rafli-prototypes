@@ -102,10 +102,12 @@ export function getCryptoTxSubmitOutcome(
 		case PAYMENT_ERROR_CODES.CRYPTO_ALREADY_COMPLETED:
 		case PAYMENT_ERROR_CODES.CRYPTO_ALREADY_CONFIRMING:
 		case PAYMENT_ERROR_CODES.CRYPTO_CONCURRENT_UPDATE:
-		// tx-already-used means hash IS registered (for another session) — polling the
-		// current order will surface the correct terminal state from backend.
-		case PAYMENT_ERROR_CODES.CRYPTO_TX_ALREADY_USED:
 			return CRYPTO_TX_SUBMIT_OUTCOME.POLL;
+		// tx-already-used means this hash is bound to a *different* session/order.
+		// Polling the current order will never converge to completed — terminal failure
+		// with a specific message is more honest than a 5-minute poll timeout.
+		case PAYMENT_ERROR_CODES.CRYPTO_TX_ALREADY_USED:
+			return CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL;
 		case PAYMENT_ERROR_CODES.CRYPTO_SUBMIT_FAILED:
 		case COMMON_ERROR_CODES.NETWORK_ERROR:
 		case COMMON_ERROR_CODES.TIMEOUT_ERROR:

@@ -17,16 +17,11 @@ import { getCheckoutStatus } from './get-checkout-status';
  * Terminal checkout phases that stop polling.
  * Once checkout reaches one of these, no further fetches are needed.
  *
- * PROCESSING is included because the backend only returns it when order status
- * is neither pending/completed/failed — an edge case during Stripe webhook reconciliation.
- * For crypto flows, backend never returns PROCESSING (crypto has explicit status transitions).
- * Treating it as terminal is safe: the crypto modal's confirming step maps it to failure,
- * and Stripe's own redirect modal handles post-processing states separately.
+ * Must match BE `CheckoutPhase` terminal values exactly.
  */
 const TERMINAL_PHASES = [
 	CHECKOUT_PHASE.COMPLETED,
 	CHECKOUT_PHASE.FAILED,
-	CHECKOUT_PHASE.PROCESSING,
 ] as const;
 
 /**

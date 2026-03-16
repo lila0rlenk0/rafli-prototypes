@@ -3,15 +3,16 @@ import type { CommonErrorCode } from './common-errors';
 /**
  * Wallet Error Codes
  *
- * Wallet-specific error codes matching backend "auth:wallet:*" error codes
+ * Wallet-specific error codes matching BE "auth:wallet:*" error responses.
+ * Returned by POST /auth/verify-wallet and GET /me/wallets endpoints.
  */
 
 export const WALLET_ERROR_CODES = {
 	/** Wallet not verified on backend */
 	NOT_VERIFIED: 'auth:wallet:not-verified',
-	/** EIP-191 signature is invalid */
+	/** EIP-191 signature verification failed — recovered address doesn't match claimed address */
 	SIGNATURE_INVALID: 'auth:wallet:signature-invalid',
-	/** Signature payload is malformed / not a valid EIP-191 signature */
+	/** Signature payload is malformed — not a valid hex-encoded ECDSA signature */
 	INVALID_SIGNATURE: 'auth:wallet:invalid-signature',
 	/** Signature timestamp expired */
 	SIGNATURE_EXPIRED: 'auth:wallet:signature-expired',
@@ -31,9 +32,7 @@ export const WALLET_ERROR_CODES = {
 	FETCH_FAILED: 'fetch_failed',
 } as const;
 
-/**
- * Wallet error code type
- */
+/** Union of all error codes that wallet service actions can return. */
 export type WalletErrorCode =
 	| (typeof WALLET_ERROR_CODES)[keyof typeof WALLET_ERROR_CODES]
 	| CommonErrorCode;

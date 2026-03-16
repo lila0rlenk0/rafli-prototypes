@@ -1,6 +1,6 @@
 'use server';
 
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
@@ -14,18 +14,26 @@ import {
 } from '@/types/wallet';
 
 // ==========================================
+// Schema
+// ==========================================
+
+/** Schema for the atomic crypto checkout request payload */
+export const atomicCryptoCheckoutPayloadSchema = z.object({
+	raffleId: z.string(),
+	ticketQuantity: z.number().int().positive(),
+	promoCode: z.string().optional(),
+	chainId: z.number().int().positive(),
+	walletAddress: z.string().min(1),
+	token: z.string().min(1),
+});
+
+// ==========================================
 // Types
 // ==========================================
 
-/** Payload for the atomic crypto checkout endpoint */
-export interface AtomicCryptoCheckoutPayload {
-	raffleId: string;
-	ticketQuantity: number;
-	promoCode?: string;
-	chainId: number;
-	walletAddress: string;
-	token: string;
-}
+export type AtomicCryptoCheckoutPayload = z.infer<
+	typeof atomicCryptoCheckoutPayloadSchema
+>;
 
 // ==========================================
 // Server Action

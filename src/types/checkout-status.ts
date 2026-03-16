@@ -10,9 +10,19 @@ import { cryptoPaymentStatusSchema, paymentStatusSchema } from './payment';
 /**
  * Checkout lifecycle phases — backend unifies order + session state into a single phase.
  * Replaces FE's multi-endpoint hydration (getOrder + getCryptoSession + guards).
+ *
+ * Must match BE `CheckoutPhase` exactly: 'awaiting_payment' | 'completed' | 'confirming' | 'failed'.
+ *
+ * State transitions (BE-authoritative, derived from order + session state):
+ *   awaiting_payment → confirming  (crypto tx hash submitted via POST /payments/crypto/submit)
+ *   awaiting_payment → completed   (Stripe webhook confirms, or $0 promo auto-completes order)
+ *   awaiting_payment → failed      (session expires, order cancelled, or abandon)
+ *   confirming       → completed   (on-chain confirmations reach target, verified by cron or FE confirm)
+ *   confirming       → failed      (tx reverted, wrong amount, or confirm deadline exceeded)
+ *   completed and failed are terminal — no further transitions.
  */
 export const CHECKOUT_PHASE = {
-	/** Order created, no payment session yet */
+	/** Order created, no payment session yet or session pending */
 	AWAITING_PAYMENT: 'awaiting_payment',
 	/** Crypto tx submitted, awaiting on-chain confirmations */
 	CONFIRMING: 'confirming',
@@ -20,16 +30,17 @@ export const CHECKOUT_PHASE = {
 	COMPLETED: 'completed',
 	/** Payment failed, session expired, or order cancelled */
 	FAILED: 'failed',
-	/** Backend is still reconciling order/session state */
-	PROCESSING: 'processing',
 } as const;
 
+/** Union of checkout lifecycle phases — derived from CHECKOUT_PHASE constant. */
 export type CheckoutPhase =
 	(typeof CHECKOUT_PHASE)[keyof typeof CHECKOUT_PHASE];
 
 // ==========================================
 // Schemas
 // ==========================================
+
+// Sub-schemas — not exported; composed into checkoutStatusSchema only.
 
 /**
  * Schema for the unified checkout status endpoint.
@@ -54,8 +65,8 @@ const checkoutStatusCryptoSchema = z.object({
 	confirmationTarget: z.number(),
 	confirmDeadline: z.string(),
 	expiresAt: z.string(),
-	/** Capped at 512 chars — prevents UI overflow from backend-supplied diagnostic strings */
-	failureReason: z.string().max(512).nullable(),
+	/** Unbounded text — BE column is `text()`. Truncate at display-time if needed. */
+	failureReason: z.string().nullable(),
 	id: z.string(),
 	isActive: z.boolean(),
 	status: cryptoPaymentStatusSchema,
@@ -80,7 +91,6 @@ export const checkoutStatusSchema = z.object({
 		CHECKOUT_PHASE.CONFIRMING,
 		CHECKOUT_PHASE.COMPLETED,
 		CHECKOUT_PHASE.FAILED,
-		CHECKOUT_PHASE.PROCESSING,
 	]),
 	/** Latest Stripe session snapshot — null if Stripe was never opened */
 	stripe: checkoutStatusStripeSchema.nullable(),
@@ -90,4 +100,5 @@ export const checkoutStatusSchema = z.object({
 // Inferred Types
 // ==========================================
 
+/** Unified checkout status from GET /payments/checkout-status/:orderId. */
 export type CheckoutStatus = z.infer<typeof checkoutStatusSchema>;

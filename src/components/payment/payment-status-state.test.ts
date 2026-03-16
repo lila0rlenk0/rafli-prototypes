@@ -22,6 +22,32 @@ describe('resolveStripeVerificationState', () => {
 		});
 	});
 
+	test('does not poll for paid status', () => {
+		expect(
+			resolveStripeVerificationState({
+				success: true,
+				data: { orderId: 'order_1', status: 'paid' },
+			}),
+		).toEqual({
+			status: 'paid',
+			errorCode: null,
+			shouldPoll: false,
+		});
+	});
+
+	test('does not poll for expired status', () => {
+		expect(
+			resolveStripeVerificationState({
+				success: true,
+				data: { orderId: 'order_1', status: 'expired' },
+			}),
+		).toEqual({
+			status: 'expired',
+			errorCode: null,
+			shouldPoll: false,
+		});
+	});
+
 	test('treats verification failures as terminal non-polling states', () => {
 		expect(
 			resolveStripeVerificationState({

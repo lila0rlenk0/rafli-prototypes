@@ -221,15 +221,21 @@ export function CryptoBuyButton({
 	}, []);
 
 	/**
-	 * Crypto success means the order completed, but ticket codes may still be
-	 * issuing asynchronously. Refresh immediately for raffle counters, then keep a
-	 * background sync alive until the bought tickets actually appear.
+	 * Accepts the confirmed quantity from the modal (the session's actual quantity)
+	 * instead of closing over the parent's ticketQuantity prop, which can drift
+	 * during the 30-120s confirming window if the user changes the ticket selector.
+	 *
+	 * Refresh immediately for raffle counters, then keep a background sync alive
+	 * until the bought tickets actually appear.
 	 */
-	const handleCryptoSuccess = useCallback(() => {
-		resolvedTicketSyncTarget.current = null;
-		router.refresh();
-		setTicketSyncTarget(myTicketsTotal + ticketQuantity);
-	}, [myTicketsTotal, router, ticketQuantity]);
+	const handleCryptoSuccess = useCallback(
+		(confirmedQuantity: number) => {
+			resolvedTicketSyncTarget.current = null;
+			router.refresh();
+			setTicketSyncTarget(myTicketsTotal + confirmedQuantity);
+		},
+		[myTicketsTotal, router],
+	);
 
 	// ==========================================
 	// Button Text

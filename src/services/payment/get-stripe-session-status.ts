@@ -43,7 +43,7 @@ export async function getStripeSessionStatus(
 ): Promise<ServiceResponse<StripeSessionStatus, PaymentErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/payments/stripe/sessions/${sessionId}/status`,
+			`/payments/stripe/sessions/${encodeURIComponent(sessionId)}/status`,
 			{ timeout: API_TIMEOUTS.QUERY },
 		);
 

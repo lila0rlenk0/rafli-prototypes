@@ -49,6 +49,8 @@ export async function abandonOrder(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			console.error('Abandon order response validation failed:', error);
+			// FETCH_FAILED is the closest generic code — abandon is best-effort so callers
+			// treat all failures the same (fire-and-forget), making a dedicated code unnecessary.
 			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
 		}
 

@@ -48,14 +48,21 @@ export const walletResponseSchema = z.object({
 });
 
 /**
- * Schema for wallet verification payload (EIP-191 signature)
+ * Schema for wallet verification payload (EIP-191 signature).
+ * Sent to POST /auth/verify-wallet — backend verifies signature against expected message.
+ *
+ * Expected message format (EIP-191 personal_sign):
+ *   "Link wallet {checksumAddress} to Raffles account {userId} at {timestamp}"
+ * Backend reconstructs this from address + userId + timestamp, then recovers signer.
  */
 export const verifyWalletPayloadSchema = z.object({
 	/** EVM wallet address — 0x prefix + 40 hex chars */
 	address: evmAddressSchema,
+	/** EIP-191 plaintext message signed by the wallet — must match BE reconstruction exactly */
 	message: z.string().min(1),
+	/** Hex-encoded ECDSA signature from wallet — BE recovers signer address from this */
 	signature: z.string().min(1),
-	/** ISO 8601 timestamp string — backend parses with `new Date(timestamp)` */
+	/** ISO 8601 timestamp string — backend parses with `new Date(timestamp)`, rejects if >5min old */
 	timestamp: z.string().min(1),
 });
 
@@ -132,14 +139,21 @@ export const atomicCryptoCheckoutResponseSchema = z.object({
 // Inferred Types
 // ==========================================
 
+/** Verified wallet entity from GET /me/wallets. */
 export type WalletResponse = z.infer<typeof walletResponseSchema>;
+/** Payload for POST /auth/verify-wallet — EIP-191 signed message + metadata. */
 export type VerifyWalletPayload = z.infer<typeof verifyWalletPayloadSchema>;
+/** Crypto session from POST /payments/crypto/checkout — contains on-chain payment details. */
 export type CryptoCheckoutSession = z.infer<typeof cryptoCheckoutSessionSchema>;
+/** Payload for POST /payments/crypto/submit — tx hash submission after on-chain send. */
 export type SubmitCryptoTxPayload = z.infer<typeof submitCryptoTxPayloadSchema>;
+/** Payload for POST /payments/crypto/confirm — FE-driven early finalization when confirmations reach target. */
 export type ConfirmCryptoTxPayload = z.infer<
 	typeof confirmCryptoTxPayloadSchema
 >;
+/** Response from GET /me/wallets — array of verified wallets for the current user. */
 export type WalletsListResponse = z.infer<typeof walletsListResponseSchema>;
+/** Response from POST /payments/crypto/atomic-checkout — order + session created atomically. */
 export type AtomicCryptoCheckoutResponse = z.infer<
 	typeof atomicCryptoCheckoutResponseSchema
 >;

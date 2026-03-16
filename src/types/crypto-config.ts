@@ -53,6 +53,9 @@ export const cryptoConfigSchema = z.object({
 // Inferred Types
 // ==========================================
 
+/** Single token entry from GET /payments/crypto/config — metadata for payment UI rendering. */
 export type CryptoConfigToken = z.infer<typeof cryptoConfigTokenSchema>;
+/** Chain entry with deployed tokens — drives chain/token selector UI in crypto checkout. */
 export type CryptoChainConfig = z.infer<typeof cryptoChainConfigSchema>;
+/** Top-level crypto config from GET /payments/crypto/config — cached on FE startup. */
 export type CryptoConfig = z.infer<typeof cryptoConfigSchema>;

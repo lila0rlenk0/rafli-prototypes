@@ -53,6 +53,7 @@ import {
 } from '@/lib/web3/crypto-payment-flow';
 import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
 import { getSelectableCryptoChains } from '@/lib/web3/raffle-crypto-options';
+import { isValidTxHash } from '@/lib/web3/block-explorers';
 import { isTransactionNotFound, isUserRejection } from '@/lib/web3/errors';
 import { abandonOrder } from '@/services/payment/abandon-order';
 import { confirmCryptoTx } from '@/services/payment/confirm-crypto-tx';
@@ -102,7 +103,8 @@ interface CryptoCheckoutModalProps {
 	/** Structured crypto options from raffle — chains with selectable tokens */
 	cryptoOptions: RaffleCryptoOptions;
 	userId?: string | null;
-	onSuccess?: () => void;
+	/** Called on successful payment — passes the session's ticket quantity for sync targeting */
+	onSuccess?: (confirmedQuantity: number) => void;
 	/** Notifies parent when confirming state changes — used to show persistent "pending" button */
 	onConfirmingChange?: (isConfirming: boolean) => void;
 }
@@ -227,6 +229,11 @@ export function CryptoCheckoutModal({
 	// This ref is always current — read it after any async gap to detect wallet drift.
 	const liveAddressRef = useRef(checksummedAddress);
 	liveAddressRef.current = checksummedAddress;
+	// Same pattern for chain ID — switchChainAsync can resolve on some connectors
+	// without actually switching (e.g. user dismisses prompt). Reading the live ref
+	// after await catches this edge case before writeContractAsync fires on the wrong chain.
+	const liveChainIdRef = useRef(connectedChainId);
+	liveChainIdRef.current = connectedChainId;
 	const { signMessageAsync } = useSignMessage();
 	const { switchChainAsync } = useSwitchChain();
 	const { writeContractAsync, reset: resetWriteContract } = useWriteContract();
@@ -308,6 +315,10 @@ export function CryptoCheckoutModal({
 	// FE-driven confirm and polling detect COMPLETED in the same render cycle.
 	// Set synchronously before async state update to close the race window.
 	const successTransitioned = useRef(false);
+	// Captures the ticket quantity at checkout creation time so transitionToSuccess
+	// reports the actual purchased quantity, not the parent's live slider value
+	// which can drift during the 30-120s confirming window.
+	const confirmedTicketQuantity = useRef(ticketQuantity);
 
 	// Guards reorg detection — prevents concurrent handlePossibleReorg executions
 	// when txFailureCount increments multiple times while balance refetch is pending.
@@ -436,7 +447,10 @@ export function CryptoCheckoutModal({
 		if (successTransitioned.current) return;
 		successTransitioned.current = true;
 		setStep('success');
-		onSuccess?.();
+		// Pass the checkout-time quantity captured in confirmedTicketQuantity ref,
+		// not the parent's live ticketQuantity prop which can drift during the
+		// 30-120s confirming window if the user changes the ticket selector.
+		onSuccess?.(confirmedTicketQuantity.current);
 	}, [onSuccess]);
 
 	/**
@@ -532,7 +546,14 @@ export function CryptoCheckoutModal({
 				submitDeadline: serverSession.submitDeadline,
 				confirmDeadline: serverSession.confirmDeadline,
 			};
-			const recoveredTxHash = serverSession.txHash as `0x${string}` | null;
+			// Validate txHash format before casting — backend returns plain string, but wagmi
+			// hooks (useWaitForTransactionReceipt, useTransactionConfirmations) expect strict
+			// `0x${string}`. Reject malformed hashes at hydration rather than propagating them
+			// into hook state where they'd cause silent RPC failures.
+			const recoveredTxHash: `0x${string}` | null =
+				serverSession.txHash && isValidTxHash(serverSession.txHash)
+					? (serverSession.txHash as `0x${string}`)
+					: null;
 
 			// Backend checkout recovery can return stored chain/token values instead of
 			// the user's latest FE selection. Always overwrite with server truth so
@@ -960,10 +981,12 @@ export function CryptoCheckoutModal({
 			rawSymbol === undefined
 		)
 			return undefined;
+		// erc20Abi is fully typed — useReadContract infers balanceOf→bigint,
+		// decimals→number, symbol→string. No cast needed after the undefined guard above.
 		return {
-			value: rawBalance as bigint,
-			decimals: rawDecimals as number,
-			symbol: rawSymbol as string,
+			value: rawBalance,
+			decimals: rawDecimals,
+			symbol: rawSymbol,
 		};
 	}, [rawBalance, rawDecimals, rawSymbol]);
 
@@ -1200,6 +1223,11 @@ export function CryptoCheckoutModal({
 	}, [
 		step,
 		txHash,
+		// Proxy dep: the body reads backendTrackedTxHash.current (a ref, not reactive).
+		// Including the polled hash here triggers a re-evaluation after each poll tick
+		// that updates backendTrackedTxHash via the hash-sync effect above.
+		// Without this, the effect would only fire on txHash changes and miss backend
+		// hash updates from polling (e.g. cron assigned a different hash).
 		polledCheckoutStatus?.crypto?.txHash,
 		failBackendTrackedReplacement,
 	]);
@@ -1305,11 +1333,6 @@ export function CryptoCheckoutModal({
 				polledCheckoutStatus.crypto?.failureReason ?? FALLBACK_FAILURE_MESSAGE;
 			setErrorMessage(reason);
 			setStep('failure');
-		} else if (polledCheckoutStatus.phase === CHECKOUT_PHASE.PROCESSING) {
-			setErrorMessage(
-				'Payment is still processing on the backend. Please check My Raffles shortly.',
-			);
-			setStep('failure');
 		} else if (polledCheckoutStatus.phase === CHECKOUT_PHASE.AWAITING_PAYMENT) {
 			// Session expired or was abandoned while we were confirming — no active tx
 			// to wait for. Transition to failure immediately instead of waiting for poll timeout.
@@ -1317,6 +1340,9 @@ export function CryptoCheckoutModal({
 				setErrorMessage('Payment session expired. Please try again.');
 				setStep('failure');
 			}
+			// else: txHash present but phase is awaiting_payment — this transient state
+			// means the backend hasn't advanced to confirming yet (e.g. cron hasn't run).
+			// Safe to continue polling; the cron or next poll tick will move to confirming.
 		}
 	}, [polledCheckoutStatus, step, transitionToSuccess]);
 
@@ -1329,6 +1355,20 @@ export function CryptoCheckoutModal({
 		if (!isPollingExpired || step !== 'confirming') return;
 		failConfirmingWindowExpired();
 	}, [failConfirmingWindowExpired, isPollingExpired, step]);
+
+	/**
+	 * Cancel the confirm-retry timer when leaving the confirming step.
+	 * Without this, a 5s retry timer set in requestConfirmation() can fire
+	 * after polling transitions to terminal state, causing a spurious
+	 * confirmCryptoTx call on an already-completed or failed session.
+	 */
+	useEffect(() => {
+		if (step === 'confirming') return;
+		if (confirmRetryTimerRef.current) {
+			clearTimeout(confirmRetryTimerRef.current);
+			confirmRetryTimerRef.current = null;
+		}
+	}, [step]);
 
 	/**
 	 * Reorg detection — only fires when the RPC specifically reports that the
@@ -1562,6 +1602,10 @@ export function CryptoCheckoutModal({
 				return;
 			}
 
+			// Snapshot the quantity at checkout creation time — the parent's ticketQuantity
+			// prop can drift during the 30-120s confirming window if the user changes the slider.
+			confirmedTicketQuantity.current = ticketQuantity;
+
 			// Atomic checkout: creates order + crypto session in one backend call.
 			// Backend handles order reuse, promo redemption, and cross-method cancellation.
 			const checkoutResult = await createAtomicCryptoCheckout({
@@ -1587,7 +1631,7 @@ export function CryptoCheckoutModal({
 			// $0 order — promo covered entire amount, backend auto-completed
 			if (!checkoutResult.data.session) {
 				toast.success('Promo applied. Tickets claimed successfully!');
-				onSuccess?.();
+				onSuccess?.(confirmedTicketQuantity.current);
 				onOpenChange(false);
 				return;
 			}
@@ -1715,6 +1759,16 @@ export function CryptoCheckoutModal({
 			// Switch chain if wallet is on a different network
 			if (!isCorrectChain) {
 				await switchChainAsync({ chainId: selectedChainId });
+			}
+
+			// Re-validate chain after async switch — some connectors resolve the switch
+			// promise even when the user dismisses the prompt without changing chains.
+			// Without this, writeContractAsync would fire on the wrong network.
+			if (liveChainIdRef.current !== selectedChainId) {
+				toast.error('Please switch to the correct network and try again.');
+				payInFlight.current = false;
+				setIsProcessing(false);
+				return;
 			}
 
 			// Re-validate wallet binding after async chain switch.

@@ -4,18 +4,15 @@ import type { OrderErrorCode } from './order-errors';
 /**
  * Payment Error Codes
  *
- * Payment-specific error codes that match backend "payments:*" error codes
+ * Payment-specific error codes matching BE "payments:*" error responses.
+ * Covers both Stripe and crypto checkout flows.
+ *
+ * PaymentErrorCode union includes OrderErrorCode + CommonErrorCode because
+ * payment service actions can surface order-level errors (e.g. order not found)
+ * and transport-level errors (e.g. network timeout) alongside payment-specific ones.
  */
 
 export const PAYMENT_ERROR_CODES = {
-	// Session errors
-	/** Payment session not found */
-	SESSION_NOT_FOUND: 'payments:session:not-found',
-	/** User doesn't have permission to access this session */
-	SESSION_PERMISSION_DENIED: 'payments:session:permission-denied',
-	/** Payment session has expired */
-	SESSION_EXPIRED: 'payments:session:expired',
-
 	// Checkout errors
 	/** Failed to create Stripe checkout session */
 	CHECKOUT_FAILED: 'payments:checkout:failed',
@@ -61,7 +58,7 @@ export const PAYMENT_ERROR_CODES = {
 	CRYPTO_NO_TOKEN_PRICING: 'payments:crypto:no-token-pricing',
 	/** Crypto checkout session expired */
 	CRYPTO_SESSION_EXPIRED: 'payments:crypto:session-expired',
-	/** Crypto payment already completed */
+	/** Crypto payment already completed — returned by submit/confirm endpoints when session is done */
 	CRYPTO_ALREADY_COMPLETED: 'payments:crypto:already-completed',
 	/** txHash already submitted and awaiting on-chain confirmation */
 	CRYPTO_ALREADY_CONFIRMING: 'payments:crypto:already-confirming',
@@ -83,7 +80,7 @@ export const PAYMENT_ERROR_CODES = {
 	CRYPTO_CHAIN_MISMATCH: 'payments:crypto:chain-mismatch',
 	/** Crypto session not owned by requesting user */
 	CRYPTO_PERMISSION_DENIED: 'payments:crypto:permission-denied',
-	/** Crypto payment already paid (duplicate of already-completed for session context) */
+	/** Crypto payment already paid — returned by atomic-checkout when order already has a completed session */
 	CRYPTO_ALREADY_PAID: 'payments:crypto:already-paid',
 	/** Connected wallet doesn't match session's stored wallet address */
 	CRYPTO_WALLET_MISMATCH: 'payments:crypto:wallet-mismatch',
@@ -93,12 +90,37 @@ export const PAYMENT_ERROR_CODES = {
 	RAFFLE_USER_TICKET_LIMIT_EXCEEDED:
 		'payments:raffle:user-ticket-limit-exceeded',
 
-	// Generic fetch failure
+	// Abandon errors
+	/** Cannot abandon order while crypto tx is confirming or submitted */
+	ABANDON_CRYPTO_ACTIVE: 'payments:abandon:crypto-active',
+
+	// Wallet errors (from atomic crypto checkout pre-flight)
+	/** Wallet address format invalid or not found in backend wallet registry */
+	CRYPTO_INVALID_WALLET: 'payments:crypto:invalid-wallet',
+
+	// Internal server guards — normally unreachable from FE but kept for type exhaustiveness.
+	// If surfaced, mapPaymentError maps them to generic codes; these constants exist so
+	// any future explicit handling can reference them without magic strings.
+	/** Stripe amount fails backend format validation */
+	AMOUNT_INVALID_FORMAT: 'payments:amount:invalid-format',
+	/** Stripe amount exceeds backend ceiling */
+	AMOUNT_TOO_LARGE: 'payments:amount:too-large',
+	/** Crypto amount scaling produced invalid result */
+	CRYPTO_INVALID_AMOUNT_FORMAT: 'payments:crypto:invalid-amount-format',
+	/** Crypto token price format invalid on raffle config */
+	CRYPTO_INVALID_PRICE_FORMAT: 'payments:crypto:invalid-price-format',
+	/** Crypto ticket quantity out of valid range */
+	CRYPTO_INVALID_TICKET_QUANTITY: 'payments:crypto:invalid-ticket-quantity',
+	/** Crypto computed amount is zero (should not happen after promo check) */
+	CRYPTO_ZERO_AMOUNT: 'payments:crypto:zero-amount',
+
+	// Generic fetch failure — used when Zod parse fails on response (schema mismatch)
 	FETCH_FAILED: 'fetch_failed',
 } as const;
 
 /**
- * Payment error code type
+ * Union of all error codes that payment service actions can return.
+ * Includes payment-specific codes, order-level codes, and common transport errors.
  */
 export type PaymentErrorCode =
 	| (typeof PAYMENT_ERROR_CODES)[keyof typeof PAYMENT_ERROR_CODES]

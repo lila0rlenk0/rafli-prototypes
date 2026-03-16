@@ -70,10 +70,10 @@ describe('getCryptoTxSubmitOutcome', () => {
 		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.POLL);
 	});
 
-	test('routes tx-already-used to poll — hash is registered, polling surfaces terminal state', () => {
+	test('treats tx-already-used as terminal — hash belongs to a different session', () => {
 		expect(
 			getCryptoTxSubmitOutcome(PAYMENT_ERROR_CODES.CRYPTO_TX_ALREADY_USED),
-		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.POLL);
+		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL);
 	});
 
 	test('treats deterministic backend rejections as terminal', () => {

@@ -1,6 +1,6 @@
 'use server';
 
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
@@ -26,16 +26,18 @@ import type { ServiceResponse } from '@/types/service-response';
  */
 const checkoutOrderResponseSchema = orderSchema;
 
+/** Schema for the checkout order request payload */
+export const checkoutOrderPayloadSchema = z.object({
+	raffleId: z.string(),
+	ticketQuantity: z.number().int().positive(),
+	promoCode: z.string().optional(),
+});
+
 // ==========================================
 // Types
 // ==========================================
 
-/** Payload for the atomic checkout endpoint — validated server-side, no FE schema needed */
-export interface CheckoutOrderPayload {
-	raffleId: string;
-	ticketQuantity: number;
-	promoCode?: string;
-}
+export type CheckoutOrderPayload = z.infer<typeof checkoutOrderPayloadSchema>;
 
 /** Parsed checkout response — order + derived fully-discounted flag */
 export interface CheckoutOrderResponse {
@@ -96,6 +98,7 @@ export async function checkoutOrder(
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 
+		console.error('Checkout order error:', error);
 		const errorCode = mapOrderError(error);
 
 		// Fire-and-forget — analytics failures must not mask the original checkout error

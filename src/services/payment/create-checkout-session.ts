@@ -11,13 +11,11 @@ import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
-import type {
-	CheckoutSessionResponse,
-	CreateCheckoutPayload,
-} from '@/types/payment';
 import {
 	checkoutSessionResponseSchema,
 	createCheckoutPayloadSchema,
+	type CheckoutSessionResponse,
+	type CreateCheckoutPayload,
 } from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -75,8 +73,8 @@ export async function createCheckoutSession(
 		// Validate response structure
 		const checkoutSession = checkoutSessionResponseSchema.parse(response.data);
 
-		// Track checkout started (awaited to ensure completion in serverless)
-		await trackServer(
+		// Fire-and-forget — analytics latency must not delay checkout redirect
+		void trackServer(
 			PURCHASE_EVENTS.CHECKOUT_STARTED,
 			{
 				order_id: orderId,

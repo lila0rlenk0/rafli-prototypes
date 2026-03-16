@@ -9,8 +9,11 @@ import type {
 // ==========================================
 
 /**
- * Maps order error codes to user-friendly messages
- * Shared between card and crypto checkout flows
+ * Maps order error codes to user-friendly messages.
+ * Shared between card and crypto checkout flows.
+ *
+ * @param errorCode - Order error code from checkoutOrder service action
+ * @returns Human-readable error string for toast/UI display
  */
 export function getOrderErrorMessage(errorCode: OrderErrorCode): string {
 	switch (errorCode) {
@@ -32,6 +35,8 @@ export function getOrderErrorMessage(errorCode: OrderErrorCode): string {
 			return 'Please answer the required question before purchasing';
 		case 'core:raffle:not-found':
 			return 'Raffle not found';
+		case 'core:order:not-found':
+			return 'Order not found';
 		case 'global:auth:unauthenticated':
 		case 'unauthorized':
 			return 'Please sign in to continue';
@@ -45,19 +50,19 @@ export function getOrderErrorMessage(errorCode: OrderErrorCode): string {
 // ==========================================
 
 /**
- * Maps payment error codes to user-friendly messages
- * Shared between Stripe and crypto checkout flows
+ * Maps payment error codes to user-friendly messages.
+ * Shared between Stripe and crypto checkout flows.
+ *
+ * @param errorCode - Payment error code from any payment service action
+ * @returns Human-readable error string for toast/UI display
  */
 export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 	switch (errorCode) {
-		// Session errors (shared Stripe + crypto)
-		case 'payments:session:not-found':
+		// Session errors
 		case 'payments:crypto:session-not-found':
 			return 'Payment session not found. Please start a new checkout';
-		case 'payments:session:expired':
 		case 'payments:crypto:session-expired':
 			return 'Checkout session expired. Please try again';
-		case 'payments:session:permission-denied':
 		case 'payments:crypto:permission-denied':
 			return 'You do not have access to this payment session';
 		case 'payments:crypto:already-completed':
@@ -91,7 +96,7 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		case 'payments:crypto:invalid-tx-hash':
 			return 'Invalid transaction hash format';
 		case 'payments:crypto:tx-already-used':
-			return 'This transaction was already submitted';
+			return 'This transaction was already used for another payment. Please start a new checkout';
 		case 'payments:crypto:already-confirming':
 			return 'Transaction already submitted and awaiting confirmation';
 		case 'payments:crypto:submit-failed':
@@ -109,6 +114,12 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		case 'payments:raffle:user-ticket-limit-exceeded':
 			return 'You reached the maximum tickets per user for this raffle';
 
+		// Stripe session errors
+		case 'payments:stripe:permission-denied':
+			return 'You do not have access to this checkout session';
+		case 'payments:stripe:session-not-found':
+			return 'Checkout session not found. Please start a new checkout';
+
 		// Checkout/confirm failures
 		case 'payments:checkout:failed':
 			return 'Failed to create checkout session. Please try again';
@@ -119,6 +130,14 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		case 'fetch_failed':
 			return 'Failed to load payment data. Please try again';
 
+		// Abandon errors
+		case 'payments:abandon:crypto-active':
+			return 'Cannot close checkout while a crypto transaction is in progress';
+
+		// Wallet pre-flight errors (from atomic crypto checkout)
+		case 'payments:crypto:invalid-wallet':
+			return 'Wallet address is invalid or not linked to your account';
+
 		// Order errors
 		case 'payments:order:permission-denied':
 		case 'core:order:permission-denied':
@@ -127,6 +146,8 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 			return 'This order is no longer pending';
 		case 'core:order:not-found':
 			return 'Order not found';
+		case 'core:raffle:not-found':
+			return 'Raffle not found';
 
 		// Auth errors — from CommonErrorCode union
 		case 'global:auth:unauthenticated':
@@ -154,8 +175,11 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 // ==========================================
 
 /**
- * Maps wallet error codes to user-friendly messages
- * Used across wallet verification, linking, and unlinking flows
+ * Maps wallet error codes to user-friendly messages.
+ * Used across wallet verification, linking, and unlinking flows.
+ *
+ * @param errorCode - Wallet error code from verifyWallet/getWallets service actions
+ * @returns Human-readable error string for toast/UI display
  */
 export function getWalletErrorMessage(errorCode: WalletErrorCode): string {
 	switch (errorCode) {
@@ -195,8 +219,11 @@ export function getWalletErrorMessage(errorCode: WalletErrorCode): string {
 // ==========================================
 
 /**
- * Maps promo code error codes to user-friendly messages
- * Shared between card and crypto checkout flows
+ * Maps promo code error codes to user-friendly messages.
+ * Shared between card and crypto checkout flows.
+ *
+ * @param errorCode - Promo error code string from redeemPromoCode service action
+ * @returns Human-readable error string for toast/UI display
  */
 export function getPromoErrorMessage(errorCode: string): string {
 	switch (errorCode) {
@@ -245,6 +272,9 @@ export function getPromoErrorMessage(errorCode: string): string {
 /**
  * Determines if promo should be cleared from UI after an error.
  * Only clear for deterministic business errors, not transient network issues.
+ *
+ * @param errorCode - Error code from a failed promo redemption attempt
+ * @returns True if the promo input should be cleared (invalid code), false if retryable
  */
 export function shouldClearPromo(errorCode: string): boolean {
 	switch (errorCode) {

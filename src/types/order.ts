@@ -1,9 +1,21 @@
 import { z } from 'zod';
 
+import { cryptoPaymentStatusSchema } from './payment';
+
 // ==========================================
 // Constants
 // ==========================================
 
+/**
+ * Order lifecycle statuses — BE-authoritative.
+ *
+ * State transitions:
+ *   pending   → completed  (payment verified via Stripe webhook or crypto on-chain confirmation)
+ *   pending   → completed  (direct: $0 promo order, free_tickets promo)
+ *   pending   → failed     (payment session expired, abandoned, or verification failed)
+ *   completed → refunded   (host-initiated refund — rare, manual process)
+ *   failed and refunded are terminal.
+ */
 export const ORDER_STATUS = {
 	PENDING: 'pending',
 	COMPLETED: 'completed',
@@ -15,9 +27,7 @@ export const ORDER_STATUS = {
 // Types from Constants
 // ==========================================
 
-/**
- * Represents the status of an order
- */
+/** Union of ORDER_STATUS values — use instead of raw string literals. */
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 
 // ==========================================
@@ -49,8 +59,23 @@ export const orderSchema = z.object({
 	status: orderStatusSchema,
 	createdAt: z.string(), // ISO datetime
 	updatedAt: z.string(), // ISO datetime
-	raffleName: z.string().optional().default('N/A'), // Optional, defaults to N/A
+	raffleName: z.string().optional().default('N/A'), // Not in all endpoints — FE defaults to 'N/A' for display
 	raffleSlug: z.string().optional(), // Optional slug for linking
+	/** Nested crypto session summary — null when no crypto session exists for this order.
+	 * Matches BE CryptoSessionSummaryDto shape exactly. */
+	cryptoSession: z
+		.object({
+			id: z.string(),
+			status: cryptoPaymentStatusSchema,
+			txHash: z.string().nullable(),
+			/** BE column is `varchar(500)` — may need display-time truncation for edge cases. */
+			failureReason: z.string().nullable(),
+			completedAt: z.string().nullable(),
+			confirmationTarget: z.number(),
+			confirmDeadline: z.string(),
+		})
+		.nullable()
+		.optional(),
 });
 
 /**
@@ -66,7 +91,9 @@ export const createOrderPayloadSchema = z.object({
 // Inferred Types
 // ==========================================
 
+/** Order entity from BE — used across order listing, checkout status, and payment flows. */
 export type Order = z.infer<typeof orderSchema>;
+/** Payload for POST /orders/checkout — creates or reuses a pending order. */
 export type CreateOrderPayload = z.infer<typeof createOrderPayloadSchema>;
 
 // ==========================================
@@ -93,13 +120,13 @@ export const ordersBackendResponseSchema = z.object({
 	orders: z.array(orderWithRaffleSchema),
 });
 
-/**
- * Normalized orders response for UI consumption
- */
-export interface OrdersResponse {
-	items: OrderWithRaffle[];
-	total: number;
-	page: number;
-	limit: number;
-	totalPages: number;
-}
+/** FE-normalized wrapper over ordersBackendResponseSchema — produced in get-my-orders.ts. */
+export const ordersResponseSchema = z.object({
+	items: z.array(orderWithRaffleSchema),
+	total: z.number(),
+	page: z.number(),
+	limit: z.number(),
+	totalPages: z.number(),
+});
+
+export type OrdersResponse = z.infer<typeof ordersResponseSchema>;

@@ -11,13 +11,11 @@ import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
-import type {
-	CheckoutSessionResponse,
-	CreateCheckoutPayload,
-} from '@/types/payment';
 import {
 	checkoutSessionResponseSchema,
 	createCheckoutPayloadSchema,
+	type CheckoutSessionResponse,
+	type CreateCheckoutPayload,
 } from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -52,16 +50,20 @@ export async function createCheckoutSession(
 			return failure(PAYMENT_ERROR_CODES.CHECKOUT_FAILED);
 		}
 
-		const { orderId, raffleId, publicSlug } = validationResult.data;
+		const { orderId, publicSlug } = validationResult.data;
 
-		// Use publicSlug for URL construction (matches the page route)
-		const baseUrl = new URL(`/browse/${publicSlug}`, env.APP_URL);
+		// Use publicSlug for URL construction (matches the page route).
+		// encodeURIComponent prevents path traversal via malformed slugs.
+		const baseUrl = new URL(
+			`/browse/${encodeURIComponent(publicSlug)}`,
+			env.APP_URL,
+		);
 
+		// BE createCheckoutDtoSchema only accepts { orderId, successUrl, cancelUrl }
 		const response = await authenticatedClient.post(
 			'/payments/checkout',
 			{
 				orderId,
-				raffleId,
 				successUrl: baseUrl.toString(),
 				cancelUrl: baseUrl.toString(),
 			},
@@ -71,12 +73,11 @@ export async function createCheckoutSession(
 		// Validate response structure
 		const checkoutSession = checkoutSessionResponseSchema.parse(response.data);
 
-		// Track checkout started (awaited to ensure completion in serverless)
-		await trackServer(
+		// Fire-and-forget — analytics latency must not delay checkout redirect
+		void trackServer(
 			PURCHASE_EVENTS.CHECKOUT_STARTED,
 			{
 				order_id: orderId,
-				raffle_id: raffleId,
 				session_id: checkoutSession.id,
 			},
 			{ userId },

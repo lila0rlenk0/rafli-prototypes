@@ -8,7 +8,6 @@ import {
 	useCallback,
 	useContext,
 	useMemo,
-	useRef,
 	useState,
 } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
@@ -99,9 +98,6 @@ export function EditFormProvider({
 		defaultValues,
 	});
 
-	// Store original default values for comparison (only set once on mount)
-	const originalDefaultsRef = useRef(defaultValues);
-
 	// Compute restrictions based on raffle state
 	const restrictions = useMemo(() => computeRestrictions(raffle), [raffle]);
 
@@ -144,33 +140,6 @@ export function EditFormProvider({
 
 	const isFirstStep = currentStep === 0;
 	const isLastStep = currentStep === totalSteps - 1;
-
-	/**
-	 * Checks if form has any changes compared to original default values
-	 * Checks new image uploads first, then compares each field
-	 */
-	function hasFormChanges(
-		formData: EditFormData,
-		originalDefaults: EditFormData,
-	): boolean {
-		// New images are always a change
-		if (formData.coverImage && formData.coverImage.length > 0) return true;
-
-		// Compare each field (excluding coverImage which is handled above)
-		return (
-			formData.title !== originalDefaults.title ||
-			formData.description !== originalDefaults.description ||
-			formData.price !== originalDefaults.price ||
-			formData.category !== originalDefaults.category ||
-			formData.startDate !== originalDefaults.startDate ||
-			formData.endDate !== originalDefaults.endDate ||
-			formData.pricePerTicket !== originalDefaults.pricePerTicket ||
-			formData.numberOfWinners !== originalDefaults.numberOfWinners ||
-			formData.minParticipants !== originalDefaults.minParticipants ||
-			formData.maxParticipants !== originalDefaults.maxParticipants ||
-			formData.checkInQuestion !== originalDefaults.checkInQuestion
-		);
-	}
 
 	/**
 	 * Maps server error codes to user-facing messages and optional form field targets
@@ -218,40 +187,28 @@ export function EditFormProvider({
 			setIsUpdating(true);
 
 			try {
-				// First check if form has any changes compared to original defaults
+				// First check if form has any changes compared to original raffle
 				// Button should be disabled if no changes, but double-check here as safety
-				if (!hasFormChanges(data, originalDefaultsRef.current)) {
-					setIsUpdating(false);
-					return;
-				}
-
-				// Category is now stored as UUID directly from the backend
-				if (!data.category) {
-					toast.error('Invalid category selected');
-					setIsUpdating(false);
-					return;
-				}
-
-				// checkInQuestion now stores the question UUID directly
-				if (!data.checkInQuestion) {
-					toast.error('Please select a check-in question');
-					setIsUpdating(false);
-					return;
-				}
-
-				// Check if there are any field changes (excluding images)
+				const hasNewImages = data.coverImage && data.coverImage.length > 0;
 				const hasFieldChanges = hasRaffleChanges(
 					raffle,
 					data,
 					data.category,
 					data.checkInQuestion,
 				);
-				const hasNewImages = data.coverImage && data.coverImage.length > 0;
+				if (!hasNewImages && !hasFieldChanges) {
+					return;
+				}
 
-				// If no field changes and no new images, nothing to save
-				// Button should be disabled if no changes, but double-check here as safety
-				if (!hasFieldChanges && !hasNewImages) {
-					setIsUpdating(false);
+				// Category is now stored as UUID directly from the backend
+				if (!data.category) {
+					toast.error('Invalid category selected');
+					return;
+				}
+
+				// checkInQuestion now stores the question UUID directly
+				if (!data.checkInQuestion) {
+					toast.error('Please select a check-in question');
 					return;
 				}
 
@@ -276,7 +233,6 @@ export function EditFormProvider({
 							// Tickets step = index 1 (minParticipants, endDate live there)
 							setCurrentStep(1);
 						}
-						setIsUpdating(false);
 						return;
 					}
 				}
@@ -335,6 +291,7 @@ export function EditFormProvider({
 			} catch (error) {
 				console.error('Update raffle error:', error);
 				toast.error('Something went wrong. Please try again');
+			} finally {
 				setIsUpdating(false);
 			}
 		},

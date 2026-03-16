@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { ComponentProps } from 'react';
 
 import { getSession } from '@/lib/auth/session';
+import { extractCryptoFormFields } from '@/lib/utils/crypto-form';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { getQuestions } from '@/services/raffle/get-questions';
@@ -63,6 +64,12 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 	// Use questionId directly (UUID)
 	const checkInQuestion = raffle.questionId || '';
 
+	// Reverse-map cryptoOptions (backend response) back to form input fields.
+	// Empty arrays = "all allowed" (backend semantics), but when hydrating
+	// from an existing raffle, we preserve the explicit selection so the host
+	// sees exactly which chains/tokens were configured.
+	const crypto = extractCryptoFormFields(raffle.cryptoOptions);
+
 	return {
 		title: raffle.title,
 		description: raffle.description,
@@ -76,6 +83,7 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 		minParticipants: raffle.minParticipants,
 		maxParticipants: raffle.maxParticipants,
 		checkInQuestion,
+		...crypto,
 	};
 }
 

@@ -14,15 +14,23 @@ import { getCheckoutStatus } from './get-checkout-status';
 // ==========================================
 
 /**
- * Terminal checkout phases that stop polling.
- * Once checkout reaches one of these, no further fetches are needed.
+ * Determines if polling should stop for the given checkout status.
  *
- * Must match BE `CheckoutPhase` terminal values exactly.
+ * COMPLETED is always terminal. FAILED is terminal only when `canRetry` is false —
+ * backend supports grace-period reactivation (failed → confirming) when a submitted tx
+ * is later found on-chain by the cron. When `canRetry` is true on a FAILED phase,
+ * the session may still recover, so we keep polling to detect the transition.
+ *
+ * @param data - Latest polled checkout status, or undefined if no data yet
+ * @returns True if polling should stop
  */
-const TERMINAL_PHASES = [
-	CHECKOUT_PHASE.COMPLETED,
-	CHECKOUT_PHASE.FAILED,
-] as const;
+function shouldStopPolling(data: CheckoutStatus | undefined): boolean {
+	if (!data) return false;
+	if (data.phase === CHECKOUT_PHASE.COMPLETED) return true;
+	// FAILED + canRetry → grace-period reactivation possible, keep polling
+	if (data.phase === CHECKOUT_PHASE.FAILED && !data.canRetry) return true;
+	return false;
+}
 
 /**
  * Polling interval in milliseconds.
@@ -52,12 +60,6 @@ export function pollCheckoutStatusKey(orderId: string | null) {
 	return ['checkout-status', 'poll', orderId] as const;
 }
 
-/** Checks if checkout has reached a terminal phase recognized by the FE */
-function isTerminalPhase(phase: string | undefined): boolean {
-	if (!phase) return false;
-	return (TERMINAL_PHASES as readonly string[]).includes(phase);
-}
-
 // ==========================================
 // Hook
 // ==========================================
@@ -70,8 +72,12 @@ function isTerminalPhase(phase: string | undefined): boolean {
  * Backend returns `phase`, `canRetry`, `canSwitchMethod`, and merged session data.
  *
  * Stops when:
- * 1. Phase reaches completed/failed (normal path)
- * 2. MAX_POLL_DURATION_MS exceeded (safety net)
+ * 1. Phase reaches completed (always terminal)
+ * 2. Phase reaches failed AND canRetry is false (hard-terminal, no grace period)
+ * 3. MAX_POLL_DURATION_MS exceeded (safety net)
+ *
+ * Keeps polling when failed + canRetry — backend grace-period reactivation may
+ * transition the session back to confirming if the tx is found on-chain.
  *
  * @param orderId - Order to poll (pass null to disable)
  * @param maxDurationMs - Optional max polling window (default 5min)
@@ -128,8 +134,8 @@ export function usePollCheckoutStatus(
 		// Polling itself is already the retry strategy — disable hidden retries
 		retry: false,
 		refetchInterval: function computeRefetchInterval(q) {
-			// Step 1: Stop on terminal phase
-			if (isTerminalPhase(q.state.data?.phase)) return false;
+			// Step 1: Stop on terminal phase (respects canRetry for grace-period)
+			if (shouldStopPolling(q.state.data)) return false;
 
 			// Step 2: Stop after max duration
 			if (startedAtRef.current > 0) {
@@ -143,6 +149,6 @@ export function usePollCheckoutStatus(
 
 	return {
 		...query,
-		isExpired: isExpired && !isTerminalPhase(query.data?.phase),
+		isExpired: isExpired && !shouldStopPolling(query.data),
 	};
 }

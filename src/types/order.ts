@@ -68,7 +68,7 @@ export const orderSchema = z.object({
 			id: z.string(),
 			status: cryptoPaymentStatusSchema,
 			txHash: z.string().nullable(),
-			/** Unbounded text — BE column is `text()`. Truncate at display-time if needed. */
+			/** BE column is `varchar(500)` — may need display-time truncation for edge cases. */
 			failureReason: z.string().nullable(),
 			completedAt: z.string().nullable(),
 			confirmationTarget: z.number(),

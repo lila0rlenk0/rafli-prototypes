@@ -39,7 +39,7 @@ export async function abandonOrder(
 ): Promise<ServiceResponse<AbandonOrderResponse, PaymentErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
-			`/payments/orders/${orderId}/abandon`,
+			`/payments/orders/${encodeURIComponent(orderId)}/abandon`,
 			{},
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);

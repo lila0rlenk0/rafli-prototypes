@@ -1290,13 +1290,16 @@ export function CryptoCheckoutModal({
 					return;
 				}
 
-				txConfirmRequested.current = true;
-				setFinalizationRequested(true);
-
 				// Backend confirmed — session status 'completed' means tickets created.
 				// successTransitioned ref prevents double onSuccess() when polling
 				// also detects COMPLETED in the same render cycle.
 				if (result.data.status === CRYPTO_PAYMENT_STATUS.COMPLETED) {
+					// Only lock the idempotency guard on COMPLETED — non-terminal statuses
+					// (e.g. backend returned FAILED during grace-period) should remain
+					// retryable so the next confirmRetryTick or confirmation-count change
+					// can re-trigger this effect.
+					txConfirmRequested.current = true;
+					setFinalizationRequested(true);
 					transitionToSuccess();
 				}
 				// Any other status: cron/polling will handle the final transition
@@ -1329,6 +1332,11 @@ export function CryptoCheckoutModal({
 		if (polledCheckoutStatus.phase === CHECKOUT_PHASE.COMPLETED) {
 			transitionToSuccess();
 		} else if (polledCheckoutStatus.phase === CHECKOUT_PHASE.FAILED) {
+			// canRetry on a FAILED phase means backend grace-period reactivation is possible —
+			// the cron may find the tx on-chain and transition back to confirming.
+			// Stay in confirming step and let polling detect the recovery.
+			if (polledCheckoutStatus.canRetry) return;
+
 			const reason =
 				polledCheckoutStatus.crypto?.failureReason ?? FALLBACK_FAILURE_MESSAGE;
 			setErrorMessage(reason);
@@ -1993,6 +2001,12 @@ export function CryptoCheckoutModal({
 	/**
 	 * Gets the dialog title for current step
 	 */
+	/** Dialog title class — adds left padding when back button is visible to prevent overlap */
+	function getDialogTitleClass(): string {
+		const base = 'font-clash-display text-xl';
+		return showBackButton() ? `${base} pl-7` : base;
+	}
+
 	function getStepTitle(): string {
 		switch (step) {
 			case 'select-chain':
@@ -2119,9 +2133,7 @@ export function CryptoCheckoutModal({
 							<ArrowLeft className="size-4" />
 						</button>
 					)}
-					<DialogTitle
-						className={`font-clash-display text-xl ${showBackButton() ? 'pl-7' : ''}`}
-					>
+					<DialogTitle className={getDialogTitleClass()}>
 						{getStepTitle()}
 					</DialogTitle>
 

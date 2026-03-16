@@ -1,3 +1,4 @@
+import { isValidTxHash } from '@/lib/web3/block-explorers';
 import {
 	getCryptoSessionGraceDeadline,
 	normalizeTxHash,
@@ -185,14 +186,6 @@ export function resolveCheckoutHydrationDecision({
 		kind: 'apply-server-state',
 		nextStep: getHydratedCheckoutStep(serverStatus),
 	};
-}
-
-/**
- * Validates that a string looks like a valid EVM transaction hash.
- * Must be 0x-prefixed + 64 hex chars (66 total). Matches the backend txHashSchema.
- */
-function isValidTxHash(hash: string): hash is `0x${string}` {
-	return /^0x[0-9a-f]{64}$/i.test(hash);
 }
 
 /**

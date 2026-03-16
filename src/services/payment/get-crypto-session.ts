@@ -63,7 +63,7 @@ export async function getCryptoSession(
 ): Promise<ServiceResponse<CryptoSessionResponse, PaymentErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/payments/crypto/sessions/${sessionId}`,
+			`/payments/crypto/sessions/${encodeURIComponent(sessionId)}`,
 			{ timeout: API_TIMEOUTS.QUERY },
 		);
 

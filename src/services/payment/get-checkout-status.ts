@@ -32,7 +32,7 @@ export async function getCheckoutStatus(
 ): Promise<ServiceResponse<CheckoutStatus, PaymentErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/payments/checkout-status/${orderId}`,
+			`/payments/checkout-status/${encodeURIComponent(orderId)}`,
 			{ timeout: API_TIMEOUTS.QUERY },
 		);
 

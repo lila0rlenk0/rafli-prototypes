@@ -1,6 +1,8 @@
 import { getAddress, isAddress } from 'viem';
 import { z } from 'zod';
 
+import { orderStatusSchema } from './order';
+
 // ==========================================
 // Shared Validators
 // ==========================================
@@ -49,7 +51,7 @@ export const walletResponseSchema = z.object({
 
 /**
  * Schema for wallet verification payload (EIP-191 signature).
- * Sent to POST /auth/verify-wallet — backend verifies signature against expected message.
+ * Sent to POST /me/wallets/verify — backend verifies signature against expected message.
  *
  * Expected message format (EIP-191 personal_sign):
  *   "Link wallet {checksumAddress} to Raffles account {userId} at {timestamp}"
@@ -121,13 +123,33 @@ export const walletsListResponseSchema = z.object({
 });
 
 /**
+ * Schema for POST /payments/crypto/atomic-checkout request payload.
+ * Combines order fields (raffle, quantity, promo) with crypto session fields
+ * (chain, wallet, token) — backend creates both atomically.
+ */
+export const atomicCryptoCheckoutPayloadSchema = z.object({
+	raffleId: z.string().uuid(),
+	ticketQuantity: z.number().int().positive(),
+	promoCode: z.string().optional(),
+	chainId: z.number(),
+	walletAddress: evmAddressSchema,
+	token: z.string().min(1),
+});
+
+/**
  * Schema for the atomic crypto checkout response.
  * POST /payments/crypto/atomic-checkout returns order + session in one call.
  * `session` is null when order is $0 (fully discounted by promo — backend auto-completes).
+ *
+ * Order shape is intentionally minimal — FE only needs `id` for session binding,
+ * `totalAmount` for the $0 promo check, and `status` for completed-order detection.
+ * Extra fields (promoRedemption, currency, etc.) are silently stripped by Zod.
  */
 export const atomicCryptoCheckoutResponseSchema = z.object({
 	order: z.object({
 		id: z.string(),
+		/** Order status — 'completed' when $0 promo auto-completes, 'pending' otherwise */
+		status: orderStatusSchema,
 		totalAmount: z.string(),
 	}),
 	session: cryptoCheckoutSessionSchema.nullable(),
@@ -141,7 +163,7 @@ export const atomicCryptoCheckoutResponseSchema = z.object({
 
 /** Verified wallet entity from GET /me/wallets. */
 export type WalletResponse = z.infer<typeof walletResponseSchema>;
-/** Payload for POST /auth/verify-wallet — EIP-191 signed message + metadata. */
+/** Payload for POST /me/wallets/verify — EIP-191 signed message + metadata. */
 export type VerifyWalletPayload = z.infer<typeof verifyWalletPayloadSchema>;
 /** Crypto session from POST /payments/crypto/checkout — contains on-chain payment details. */
 export type CryptoCheckoutSession = z.infer<typeof cryptoCheckoutSessionSchema>;
@@ -153,6 +175,10 @@ export type ConfirmCryptoTxPayload = z.infer<
 >;
 /** Response from GET /me/wallets — array of verified wallets for the current user. */
 export type WalletsListResponse = z.infer<typeof walletsListResponseSchema>;
+/** Payload for POST /payments/crypto/atomic-checkout — order + crypto session creation. */
+export type AtomicCryptoCheckoutPayload = z.infer<
+	typeof atomicCryptoCheckoutPayloadSchema
+>;
 /** Response from POST /payments/crypto/atomic-checkout — order + session created atomically. */
 export type AtomicCryptoCheckoutResponse = z.infer<
 	typeof atomicCryptoCheckoutResponseSchema

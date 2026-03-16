@@ -98,6 +98,9 @@ export const PAYMENT_ERROR_CODES = {
 	/** Wallet address format invalid or not found in backend wallet registry */
 	CRYPTO_INVALID_WALLET: 'payments:crypto:invalid-wallet',
 
+	/** Platform treasury wallet not configured for the selected chain — deploy/config error */
+	CRYPTO_TREASURY_NOT_CONFIGURED: 'payments:crypto:treasury-not-configured',
+
 	// Internal server guards — normally unreachable from FE but kept for type exhaustiveness.
 	// If surfaced, mapPaymentError maps them to generic codes; these constants exist so
 	// any future explicit handling can reference them without magic strings.

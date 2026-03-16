@@ -35,7 +35,7 @@ describe('resolveStripeVerificationState', () => {
 		});
 	});
 
-	test('does not poll for expired status', () => {
+	test('keeps polling for expired status (cancel-race recovery window)', () => {
 		expect(
 			resolveStripeVerificationState({
 				success: true,
@@ -44,7 +44,7 @@ describe('resolveStripeVerificationState', () => {
 		).toEqual({
 			status: 'expired',
 			errorCode: null,
-			shouldPoll: false,
+			shouldPoll: true,
 		});
 	});
 

@@ -137,8 +137,12 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		// Wallet pre-flight errors (from atomic crypto checkout)
 		case 'payments:crypto:invalid-wallet':
 			return 'Wallet address is invalid or not linked to your account';
+		case 'payments:crypto:treasury-not-configured':
+			return 'Crypto payments are temporarily unavailable for this network. Please try another';
+		case 'payments:crypto:zero-amount':
+			return 'Order amount is zero — no payment needed';
 
-		// Order errors
+		// Order errors (surfaced by atomic crypto checkout which creates orders internally)
 		case 'payments:order:permission-denied':
 		case 'core:order:permission-denied':
 			return 'You do not have access to this order';
@@ -148,6 +152,14 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 			return 'Order not found';
 		case 'core:raffle:not-found':
 			return 'Raffle not found';
+		case 'core:raffle:sold-out':
+			return 'Not enough tickets available';
+		case 'core:raffle:not-active':
+			return 'This raffle is not currently active';
+		case 'core:raffle:user-ticket-limit-exceeded':
+			return 'You reached the maximum tickets per user for this raffle';
+		case 'core:order:question-not-answered':
+			return 'Please answer the required question before purchasing';
 
 		// Auth errors — from CommonErrorCode union
 		case 'global:auth:unauthenticated':

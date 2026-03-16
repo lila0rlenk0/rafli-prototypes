@@ -1,6 +1,6 @@
 'use server';
 
-import { z, ZodError } from 'zod';
+import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
@@ -10,7 +10,11 @@ import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapOrderError } from '@/lib/errors/error-mapper';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
-import { orderSchema, type Order } from '@/types/order';
+import {
+	orderSchema,
+	type CreateOrderPayload,
+	type Order,
+} from '@/types/order';
 import type { ServiceResponse } from '@/types/service-response';
 
 // ==========================================
@@ -26,18 +30,12 @@ import type { ServiceResponse } from '@/types/service-response';
  */
 const checkoutOrderResponseSchema = orderSchema;
 
-/** Schema for the checkout order request payload */
-export const checkoutOrderPayloadSchema = z.object({
-	raffleId: z.string(),
-	ticketQuantity: z.number().int().positive(),
-	promoCode: z.string().optional(),
-});
-
 // ==========================================
 // Types
 // ==========================================
 
-export type CheckoutOrderPayload = z.infer<typeof checkoutOrderPayloadSchema>;
+/** Payload for the checkout order request — inferred from Zod schema in types/order.ts */
+export type CheckoutOrderPayload = CreateOrderPayload;
 
 /** Parsed checkout response — order + derived fully-discounted flag */
 export interface CheckoutOrderResponse {

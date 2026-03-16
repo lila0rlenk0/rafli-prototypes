@@ -38,25 +38,34 @@ interface StripeVerificationState {
 /**
  * Converts a single verification attempt into UI state.
  *
- * Only explicit backend `unpaid` responses keep the polling loop alive.
- * Any transport/auth/ownership failure is terminal for this attempt because
- * continuing to render "processing" would be dishonest and can loop forever.
+ * `unpaid` and `expired` keep the polling loop alive:
+ * - `unpaid`: payment not yet received — standard polling reason.
+ * - `expired`: Stripe session expired, but the Stripe `checkout.session.completed`
+ *   webhook can still arrive after expiry (cancel-race recovery). If the webhook
+ *   lands, backend transitions the order to `completed`. Stopping the poll here
+ *   would hide that recovery from the user — they'd see "expired" permanently
+ *   even though their payment succeeded seconds later.
+ *
+ * `paid` is terminal-success; any transport/auth failure is terminal-error.
  */
 export function resolveStripeVerificationState(
 	result: ServiceResponse<StripeSessionStatus, PaymentErrorCode>,
 ): StripeVerificationState {
-	if (result.success) {
+	if (!result.success) {
 		return {
-			status: result.data.status,
-			errorCode: null,
-			shouldPoll: result.data.status === 'unpaid',
+			status: 'verification-failed',
+			errorCode: result.error,
+			shouldPoll: false,
 		};
 	}
 
+	/** Keep polling for unpaid (awaiting payment) and expired (cancel-race recovery window) */
+	const shouldPoll =
+		result.data.status === 'unpaid' || result.data.status === 'expired';
 	return {
-		status: 'verification-failed',
-		errorCode: result.error,
-		shouldPoll: false,
+		status: result.data.status,
+		errorCode: null,
+		shouldPoll,
 	};
 }
 

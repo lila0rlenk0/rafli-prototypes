@@ -11,8 +11,11 @@ const TX_HASH_REGEX = /^0x[\da-f]{64}$/i;
  * Validates that a string looks like a well-formed EVM transaction hash.
  * Defense-in-depth: prevents malformed strings from being interpolated into
  * explorer URLs (e.g. XSS via `javascript:` or path traversal).
+ *
+ * Returns a type predicate so callers get `0x${string}` narrowing without
+ * needing an unsafe `as` cast after validation.
  */
-export function isValidTxHash(hash: string): boolean {
+export function isValidTxHash(hash: string): hash is `0x${string}` {
 	return TX_HASH_REGEX.test(hash);
 }
 

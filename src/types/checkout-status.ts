@@ -20,6 +20,9 @@ import { cryptoPaymentStatusSchema, paymentStatusSchema } from './payment';
  *   confirming       → completed   (on-chain confirmations reach target, verified by cron or FE confirm)
  *   confirming       → failed      (tx reverted, wrong amount, or confirm deadline exceeded)
  *   completed and failed are terminal — no further transitions.
+ *
+ * Note: BE maps `refunded` orders to `failed` phase (see get-checkout-status.query.ts).
+ * FE can distinguish via `orderStatus === 'refunded'` when needed for display copy.
  */
 export const CHECKOUT_PHASE = {
 	/** Order created, no payment session yet or session pending */
@@ -65,7 +68,7 @@ const checkoutStatusCryptoSchema = z.object({
 	confirmationTarget: z.number(),
 	confirmDeadline: z.string(),
 	expiresAt: z.string(),
-	/** Unbounded text — BE column is `text()`. Truncate at display-time if needed. */
+	/** BE column is `varchar(500)` — may need display-time truncation for edge cases. */
 	failureReason: z.string().nullable(),
 	id: z.string(),
 	isActive: z.boolean(),

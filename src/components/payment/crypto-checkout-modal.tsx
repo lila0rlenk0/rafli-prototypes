@@ -18,10 +18,10 @@ import {
 
 import { ChainSelector } from '@/components/payment/crypto-checkout/chain-selector';
 import {
+	getHydratedCheckoutStep,
 	getPolledTxHashSyncDecision,
 	getPaySessionRevalidationDecision,
 	getReviewSessionGuard,
-	resolveCheckoutHydrationDecision,
 } from '@/components/payment/crypto-checkout/checkout-session-guards';
 import { ConfirmingStep } from '@/components/payment/crypto-checkout/confirming-step';
 import { ReviewStep } from '@/components/payment/crypto-checkout/review-step';
@@ -46,7 +46,6 @@ import {
 import {
 	CRYPTO_TX_SUBMIT_OUTCOME,
 	getObservedConfirmationCount,
-	getCryptoSessionGraceDeadline,
 	getCryptoSessionGraceWindowMs,
 	getCryptoTxSubmitOutcome,
 	normalizeTxHash,
@@ -701,19 +700,10 @@ export function CryptoCheckoutModal({
 			const sessionResult = await getCryptoSession(checkoutSession.id);
 			if (!isPreConfirmingFlowCurrent(flowVersion)) return false;
 
-			const hydrationDecision = sessionResult.success
-				? resolveCheckoutHydrationDecision({
-						serverStatus: sessionResult.data.status,
-						sessionReadSucceeded: true,
-					})
-				: resolveCheckoutHydrationDecision({
-						sessionReadSucceeded: false,
-					});
-
-			if (hydrationDecision.kind === 'review-fallback') {
-				// Read failures always fall back to review. That is conservative because
-				// `handlePay()` re-reads the session before any wallet prompt, so the FE
-				// never broadcasts based only on this stale local snapshot.
+			// Inline hydration decision — if session read failed, fall back to review.
+			// handlePay() re-reads the session authoritatively before any wallet prompt,
+			// so the FE never broadcasts based only on this stale local snapshot.
+			if (!sessionResult.success) {
 				applyCheckoutSessionState({
 					checkoutSession,
 					checksummedAddress,
@@ -727,16 +717,13 @@ export function CryptoCheckoutModal({
 				return true;
 			}
 
-			// TypeScript cannot infer from the decision helper that only successful reads
-			// reach this branch. Narrow explicitly before consuming the authoritative payload.
-			if (!sessionResult.success) return false;
-
+			const nextStep = getHydratedCheckoutStep(sessionResult.data.status);
 			const outcome = applyServerHydration({
 				serverSession: sessionResult.data,
 				checkoutSession,
 				checksummedAddress,
 				fallbackToken,
-				nextStep: hydrationDecision.nextStep,
+				nextStep,
 			});
 			return outcome !== 'failure';
 		},
@@ -843,17 +830,8 @@ export function CryptoCheckoutModal({
 			!backendTrackedTxHash.current &&
 			!txSubmittedToBackend.current
 		) {
-			setTxHash(undefined);
-			setTxSubmitted(false);
-			setSubmitRecoveryMode(null);
-			setFinalizationRequested(false);
-			setRetryBlocked(false);
-			setFundsAtRisk(false);
-			setErrorMessage(null);
+			applyCheckoutRuntimeState({ txHash: undefined, txSubmitted: false });
 			payInFlight.current = false;
-			txConfirmRequested.current = false;
-			txConfirmInFlight.current = false;
-			reorgHandled.current = false;
 			toast.info('Transaction cancelled.');
 			setStep('review');
 			return;
@@ -1021,11 +999,10 @@ export function CryptoCheckoutModal({
 		step === 'confirming' && (!!txHash || submitRecoveryMode !== null);
 	// orderId is derived from atomic checkout response — stored as internal state
 	const orderId = session?.orderId ?? null;
-	const { data: polledCheckoutStatus, isExpired: isPollingExpired } =
-		usePollCheckoutStatus(
-			shouldPollConfirmingState ? orderId : null,
-			confirmingPollWindowMs,
-		);
+	const { data: polledCheckoutStatus } = usePollCheckoutStatus(
+		shouldPollConfirmingState ? orderId : null,
+		confirmingPollWindowMs,
+	);
 
 	/**
 	 * Gets tokens for a chain from the raffle's pre-computed crypto options.
@@ -1355,16 +1332,6 @@ export function CryptoCheckoutModal({
 	}, [polledCheckoutStatus, step, transitionToSuccess]);
 
 	/**
-	 * Polling timeout — transitions to failure when polling exceeds max duration.
-	 * Safety net for cases where backend never moves order to terminal status
-	 * (e.g. tx validation stuck, session expired without cleanup).
-	 */
-	useEffect(() => {
-		if (!isPollingExpired || step !== 'confirming') return;
-		failConfirmingWindowExpired();
-	}, [failConfirmingWindowExpired, isPollingExpired, step]);
-
-	/**
 	 * Cancel the confirm-retry timer when leaving the confirming step.
 	 * Without this, a 5s retry timer set in requestConfirmation() can fire
 	 * after polling transitions to terminal state, causing a spurious
@@ -1469,7 +1436,7 @@ export function CryptoCheckoutModal({
 		// After tx submission, use the longer confirming deadline;
 		// before submission, use the shorter submit deadline.
 		const deadline = txHash ? session.confirmDeadline : session.submitDeadline;
-		const msUntilExpiry = getCryptoSessionGraceDeadline(deadline) - Date.now();
+		const msUntilExpiry = getCryptoSessionGraceWindowMs(deadline);
 
 		// Already beyond the backend grace window — transition immediately
 		if (msUntilExpiry <= 0) {
@@ -1998,15 +1965,13 @@ export function CryptoCheckoutModal({
 	// Step Metadata
 	// ==========================================
 
-	/**
-	 * Gets the dialog title for current step
-	 */
 	/** Dialog title class — adds left padding when back button is visible to prevent overlap */
 	function getDialogTitleClass(): string {
 		const base = 'font-clash-display text-xl';
 		return showBackButton() ? `${base} pl-7` : base;
 	}
 
+	/** Gets the dialog title for the current checkout step */
 	function getStepTitle(): string {
 		switch (step) {
 			case 'select-chain':

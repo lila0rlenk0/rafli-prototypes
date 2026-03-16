@@ -34,10 +34,7 @@ const VALID_RAFFLE: Raffle = {
 	revenueAmount: '500.00',
 	hostId: 'host-1',
 	questionId: null,
-	acceptsCrypto: false,
-	cryptoChainIds: [],
-	cryptoTokens: [],
-	cryptoTokenPricing: [],
+	cryptoOptions: null,
 	createdAt: '2026-01-01T00:00:00Z',
 	updatedAt: '2026-01-15T00:00:00Z',
 };

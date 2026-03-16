@@ -2,7 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { getCryptoSummary } from '@/lib/utils/crypto-form';
 import { formatDate } from '@/lib/utils/date-format';
+import { hasRaffleChanges } from '@/lib/utils/raffle-diff';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useMemo } from 'react';
@@ -35,79 +37,26 @@ export function ReviewStep() {
 		startDate,
 		endDate,
 		pricePerTicket,
-		numberOfWinners,
 		minParticipants,
 		maxParticipants,
-		checkInQuestion,
 	} = formValues;
 
 	/**
-	 * Checks if form has any changes
-	 * Compares current form values with original raffle data
-	 * Uses useMemo to recalculate when form values change
+	 * Checks if form has any changes compared to the original raffle.
+	 * Delegates to shared diff utility — single source of truth for comparison logic.
 	 */
 	const hasChanges = useMemo(() => {
-		// Check for new images (new uploads)
-		// If coverImage array has items, it means user uploaded new images
-		if (coverImage && coverImage.length > 0) {
-			return true;
-		}
+		// New image uploads are always a change
+		if (coverImage && coverImage.length > 0) return true;
 
-		// Ensure all values are defined before comparison
-		if (
-			!description ||
-			price === undefined ||
-			price === null ||
-			!category ||
-			!startDate ||
-			!endDate ||
-			pricePerTicket === undefined ||
-			pricePerTicket === null ||
-			numberOfWinners === undefined ||
-			numberOfWinners === null ||
-			minParticipants === undefined ||
-			minParticipants === null ||
-			maxParticipants === undefined ||
-			maxParticipants === null ||
-			!checkInQuestion
-		) {
-			return false;
-		}
-
-		// Check field changes
-		// Normalize dates for comparison - extract date part from ISO string
-		const originalStartDate = originalRaffle.startAt.split('T')[0];
-		const originalEndDate = originalRaffle.endAt.split('T')[0];
-
-		// Category is now stored as UUID directly
-		const originalCategoryId = originalRaffle.categoryId || '';
-
-		// Question ID is also stored as UUID directly
-		const originalCheckInQuestionId = originalRaffle.questionId || '';
-
-		// Compare price values (handle floating point precision)
-		const currentPrice = parseFloat(price.toString());
-		const originalPrice = parseFloat(originalRaffle.declaredValueAmount);
-		const priceChanged = Math.abs(currentPrice - originalPrice) > 0.0001;
-
-		// Compare ticket price values (handle floating point precision)
-		const currentTicketPrice = parseFloat(pricePerTicket.toString());
-		const originalTicketPrice = parseFloat(originalRaffle.ticketPriceAmount);
-		const ticketPriceChanged =
-			Math.abs(currentTicketPrice - originalTicketPrice) > 0.0001;
-
-		return (
-			description !== originalRaffle.description ||
-			priceChanged ||
-			category !== originalCategoryId ||
-			startDate !== originalStartDate ||
-			endDate !== originalEndDate ||
-			ticketPriceChanged ||
-			numberOfWinners !== originalRaffle.numberOfWinners ||
-			minParticipants !== originalRaffle.minParticipants ||
-			maxParticipants !== originalRaffle.maxParticipants ||
-			checkInQuestion !== originalCheckInQuestionId
+		// Delegate field-level comparison to the shared diff utility
+		return hasRaffleChanges(
+			originalRaffle,
+			formValues,
+			category,
+			formValues.checkInQuestion,
 		);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- formValues is watched via individual fields below
 	}, [
 		coverImage,
 		description,
@@ -116,10 +65,14 @@ export function ReviewStep() {
 		startDate,
 		endDate,
 		pricePerTicket,
-		numberOfWinners,
+		formValues.numberOfWinners,
 		minParticipants,
 		maxParticipants,
-		checkInQuestion,
+		formValues.checkInQuestion,
+		formValues.acceptsCrypto,
+		formValues.cryptoChainIds,
+		formValues.cryptoTokens,
+		formValues.cryptoTokenPricing,
 		originalRaffle,
 	]);
 
@@ -332,6 +285,17 @@ export function ReviewStep() {
 					<label className="text-sm text-[#B4B4B4]">Active time period</label>
 					<p className="wrap-break-words text-sm font-medium">
 						{getActivePeriod()}
+					</p>
+				</div>
+
+				<div className="flex min-w-0 flex-col gap-2">
+					<label className="text-sm text-[#B4B4B4]">Payment</label>
+					<p className="truncate text-sm font-medium">
+						{getCryptoSummary(
+							formValues.acceptsCrypto,
+							formValues.cryptoChainIds,
+							formValues.cryptoTokens,
+						)}
 					</p>
 				</div>
 			</div>

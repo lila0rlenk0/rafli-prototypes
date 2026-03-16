@@ -53,6 +53,21 @@ export function WalletStep({
 		return isWalletVerified ? 'Continue' : 'Verify Wallet';
 	}
 
+	/**
+	 * Renders verification badge — green checkmark if verified, amber text if not
+	 */
+	function renderVerificationBadge(): React.ReactNode {
+		if (isWalletVerified) {
+			return (
+				<span className="flex items-center gap-1 text-sm font-medium text-green-600">
+					<ShieldCheck className="size-3.5" />
+					Verified
+				</span>
+			);
+		}
+		return <span className="text-sm text-amber-600">Needs verification</span>;
+	}
+
 	return (
 		<div className="flex flex-col items-center gap-5">
 			<p className="text-center text-sm text-[#7B7B7B]">{getStatusText()}</p>
@@ -96,16 +111,7 @@ export function WalletStep({
 						{/* Verification status */}
 						<div className="flex items-center justify-between">
 							<span className="text-sm text-[#7B7B7B]">Status</span>
-							{isWalletVerified ? (
-								<span className="flex items-center gap-1 text-sm font-medium text-green-600">
-									<ShieldCheck className="size-3.5" />
-									Verified
-								</span>
-							) : (
-								<span className="text-sm text-amber-600">
-									Needs verification
-								</span>
-							)}
+							{renderVerificationBadge()}
 						</div>
 
 						{/* Native token balance — needed for gas fees */}

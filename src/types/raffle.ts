@@ -241,6 +241,18 @@ export const raffleGalleryResponseSchema = paginationMetadataSchema.extend({
 });
 
 /**
+ * Schema for a single token pricing entry (non-stablecoin).
+ * Backend requires one entry per non-stablecoin token in `cryptoTokens`.
+ * Price string must be a positive decimal that doesn't exceed the token's on-chain decimals.
+ */
+export const tokenPricingEntrySchema = z.object({
+	/** Lowercase token registry key (e.g. "earnm") */
+	tokenId: z.string().min(1).max(20),
+	/** Positive decimal string — per-ticket price in token units */
+	price: z.string().regex(/^\d+(\.\d+)?$/),
+});
+
+/**
  * Schema for creating a raffle (input form)
  */
 export const createRaffleInputSchema = z.object({
@@ -256,7 +268,24 @@ export const createRaffleInputSchema = z.object({
 	maxParticipants: z.number(),
 	checkInQuestion: z.string(),
 	timezone: z.string(),
+	// Crypto payment config — mirrors form fields
+	acceptsCrypto: z.boolean(),
+	cryptoChainIds: z.array(z.number()),
+	cryptoTokens: z.array(z.string()),
+	cryptoTokenPricing: z.array(tokenPricingEntrySchema),
 });
+
+/** Reusable crypto input fields shared by create and update payload schemas */
+const cryptoPayloadFields = {
+	/** Whether this raffle accepts crypto payments */
+	acceptsCrypto: z.boolean().optional(),
+	/** EVM chain IDs to restrict. Empty array = all supported chains allowed. */
+	cryptoChainIds: z.array(z.number().int().positive()).optional(),
+	/** Token IDs to restrict (lowercased). Empty array = all tokens allowed. */
+	cryptoTokens: z.array(z.string().min(1).max(20)).optional(),
+	/** Per-ticket pricing for non-stablecoin tokens. Required when non-stablecoins are in `cryptoTokens`. */
+	cryptoTokenPricing: z.array(tokenPricingEntrySchema).optional(),
+};
 
 /**
  * Schema for the payload sent to create a raffle
@@ -282,6 +311,7 @@ export const createRafflePayloadSchema = z.object({
 	ticketPriceCurrency: z.string().length(3),
 	timezone: z.string().min(1).max(50).optional(),
 	title: z.string().min(3).max(200),
+	...cryptoPayloadFields,
 });
 
 export const uploadCoverResponseSchema = z.object({
@@ -314,6 +344,7 @@ export const updateRafflePayloadSchema = z.object({
 	numberOfWinners: z.number().int().min(1).max(100).optional(),
 	minParticipants: z.number().int().min(0).optional(),
 	maxParticipants: z.number().int().min(0).max(1_000_000).optional(),
+	...cryptoPayloadFields,
 });
 
 // ==========================================
@@ -333,6 +364,7 @@ export type RaffleCryptoOptions = NonNullable<Raffle['cryptoOptions']>;
 
 export type RaffleCoverResponse = z.infer<typeof raffleCoverResponseSchema>;
 export type RaffleGalleryResponse = z.infer<typeof raffleGalleryResponseSchema>;
+export type TokenPricingEntry = z.infer<typeof tokenPricingEntrySchema>;
 export type CreateRaffleInput = z.infer<typeof createRaffleInputSchema>;
 export type CreateRafflePayload = z.infer<typeof createRafflePayloadSchema>;
 export type UpdateRafflePayload = z.infer<typeof updateRafflePayloadSchema>;

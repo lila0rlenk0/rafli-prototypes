@@ -1,27 +1,18 @@
 'use server';
 
-import { z, ZodError } from 'zod';
+import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
-import { cryptoPaymentStatusSchema } from '@/types/payment';
+import {
+	cryptoTxMutationResponseSchema,
+	type CryptoTxMutationResponse,
+} from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
 import type { SubmitCryptoTxPayload } from '@/types/wallet';
-
-/**
- * Schema for crypto tx submission response.
- * Backend returns session ID and updated status (transitions to 'confirming').
- * Uses shared cryptoPaymentStatusSchema for consistent enum validation.
- */
-const cryptoTxSubmitResponseSchema = z.object({
-	id: z.string(),
-	status: cryptoPaymentStatusSchema,
-});
-
-type CryptoTxSubmitResponse = z.infer<typeof cryptoTxSubmitResponseSchema>;
 
 /**
  * Submits a crypto transaction hash for verification
@@ -34,7 +25,7 @@ type CryptoTxSubmitResponse = z.infer<typeof cryptoTxSubmitResponseSchema>;
  */
 export async function submitCryptoTx(
 	payload: SubmitCryptoTxPayload,
-): Promise<ServiceResponse<CryptoTxSubmitResponse, PaymentErrorCode>> {
+): Promise<ServiceResponse<CryptoTxMutationResponse, PaymentErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
 			'/payments/crypto/submit',
@@ -42,7 +33,7 @@ export async function submitCryptoTx(
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		const data = cryptoTxSubmitResponseSchema.parse(response.data);
+		const data = cryptoTxMutationResponseSchema.parse(response.data);
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {

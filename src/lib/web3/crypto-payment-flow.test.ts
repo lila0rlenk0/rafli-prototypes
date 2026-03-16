@@ -3,7 +3,6 @@ import { describe, expect, test } from 'bun:test';
 import {
 	CRYPTO_TX_SUBMIT_OUTCOME,
 	getObservedConfirmationCount,
-	getCryptoSessionGraceDeadline,
 	getCryptoSessionGraceWindowMs,
 	getCryptoTxSubmitOutcome,
 	normalizeTxHash,
@@ -83,16 +82,6 @@ describe('getCryptoTxSubmitOutcome', () => {
 		expect(
 			getCryptoTxSubmitOutcome(COMMON_ERROR_CODES.GLOBAL_AUTH_UNAUTHENTICATED),
 		).toBe(CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL);
-	});
-});
-
-describe('getCryptoSessionGraceDeadline', () => {
-	test('parses backend deadline into millisecond timestamp', () => {
-		const deadline = '2026-03-13T12:10:00.000Z';
-
-		expect(getCryptoSessionGraceDeadline(deadline)).toBe(
-			new Date(deadline).getTime(),
-		);
 	});
 });
 

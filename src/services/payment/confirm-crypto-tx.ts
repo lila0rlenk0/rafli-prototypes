@@ -1,27 +1,18 @@
 'use server';
 
-import { z, ZodError } from 'zod';
+import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
-import { cryptoPaymentStatusSchema } from '@/types/payment';
+import {
+	cryptoTxMutationResponseSchema,
+	type CryptoTxMutationResponse,
+} from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
 import type { ConfirmCryptoTxPayload } from '@/types/wallet';
-
-/**
- * Schema for crypto tx confirmation response.
- * Backend returns session status — 'completed' means tickets were created immediately,
- * any other status means the cron will handle it (no-op from FE perspective).
- */
-const confirmCryptoTxResponseSchema = z.object({
-	id: z.string(),
-	status: cryptoPaymentStatusSchema,
-});
-
-type ConfirmCryptoTxResponse = z.infer<typeof confirmCryptoTxResponseSchema>;
 
 /**
  * Requests backend to finalize a crypto payment immediately.
@@ -38,7 +29,7 @@ type ConfirmCryptoTxResponse = z.infer<typeof confirmCryptoTxResponseSchema>;
  */
 export async function confirmCryptoTx(
 	payload: ConfirmCryptoTxPayload,
-): Promise<ServiceResponse<ConfirmCryptoTxResponse, PaymentErrorCode>> {
+): Promise<ServiceResponse<CryptoTxMutationResponse, PaymentErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
 			'/payments/crypto/confirm',
@@ -46,7 +37,7 @@ export async function confirmCryptoTx(
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		const data = confirmCryptoTxResponseSchema.parse(response.data);
+		const data = cryptoTxMutationResponseSchema.parse(response.data);
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {

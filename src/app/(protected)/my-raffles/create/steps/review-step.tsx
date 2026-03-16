@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { cn } from '@/lib/utils';
+import { getCryptoSummary } from '@/lib/utils/crypto-form';
 import { formatDate } from '@/lib/utils/date-format';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -226,6 +227,17 @@ export function ReviewStep() {
 						</p>
 					</div>
 				)}
+
+				<div className="flex min-w-0 flex-col gap-2">
+					<label className="text-sm text-[#B4B4B4]">Payment</label>
+					<p className="truncate text-sm font-medium">
+						{getCryptoSummary(
+							formValues.acceptsCrypto,
+							formValues.cryptoChainIds,
+							formValues.cryptoTokens,
+						)}
+					</p>
+				</div>
 			</div>
 
 			{shouldShowStartNowWarning() && (

@@ -43,16 +43,6 @@ export function normalizeTxHash(hash: string): string {
 }
 
 /**
- * Parses a backend-provided grace deadline into an absolute millisecond timestamp.
- *
- * Backend now returns `submitDeadline` and `confirmDeadline` directly on session
- * responses, eliminating the need for FE-side grace constant duplication.
- */
-export function getCryptoSessionGraceDeadline(deadline: string): number {
-	return new Date(deadline).getTime();
-}
-
-/**
  * Converts a backend-provided deadline into remaining milliseconds.
  * Clamped at zero so callers can pass directly into timeout logic.
  */
@@ -60,7 +50,7 @@ export function getCryptoSessionGraceWindowMs(
 	deadline: string,
 	now = Date.now(),
 ): number {
-	return Math.max(0, getCryptoSessionGraceDeadline(deadline) - now);
+	return Math.max(0, new Date(deadline).getTime() - now);
 }
 
 /**

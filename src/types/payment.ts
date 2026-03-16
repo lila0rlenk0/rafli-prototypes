@@ -140,3 +140,17 @@ export const cryptoPaymentStatusSchema = z.enum([
 	CRYPTO_PAYMENT_STATUS.COMPLETED,
 	CRYPTO_PAYMENT_STATUS.FAILED,
 ]);
+
+/**
+ * Shared response schema for crypto tx mutations (submit + confirm).
+ * Both endpoints return the same `{ id, status }` shape.
+ */
+export const cryptoTxMutationResponseSchema = z.object({
+	id: z.string(),
+	status: cryptoPaymentStatusSchema,
+});
+
+/** Response from POST /payments/crypto/submit or /payments/crypto/confirm */
+export type CryptoTxMutationResponse = z.infer<
+	typeof cryptoTxMutationResponseSchema
+>;

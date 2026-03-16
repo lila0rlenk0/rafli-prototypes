@@ -27,7 +27,7 @@ import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { Question } from '@/types/question';
 import { useRaffleDraft } from './hooks/use-raffle-draft';
 import { SaveDraftModal } from './save-draft-modal';
-import { raffleFormSchema } from './schema';
+import { CRYPTO_FORM_DEFAULTS, raffleFormSchema } from './schema';
 import { STEPS } from './steps';
 
 type RaffleFormData = z.infer<typeof raffleFormSchema>;
@@ -147,6 +147,7 @@ export function MultiStepFormProvider({
 			minParticipants: 0,
 			maxParticipants: 0,
 			checkInQuestion: '',
+			...CRYPTO_FORM_DEFAULTS,
 		},
 	});
 
@@ -168,7 +169,11 @@ export function MultiStepFormProvider({
 			!isNaN(formValues.numberOfWinners) ||
 			formValues.minParticipants !== 0 ||
 			formValues.maxParticipants !== 0 ||
-			formValues.checkInQuestion !== ''
+			formValues.checkInQuestion !== '' ||
+			formValues.acceptsCrypto !== false ||
+			formValues.cryptoChainIds.length > 0 ||
+			formValues.cryptoTokens.length > 0 ||
+			formValues.cryptoTokenPricing.length > 0
 		);
 	}
 
@@ -195,6 +200,11 @@ export function MultiStepFormProvider({
 			minParticipants: draft.minParticipants,
 			maxParticipants: draft.maxParticipants,
 			checkInQuestion: draft.checkInQuestion || '',
+			// Restore crypto config — fallback to defaults for older drafts
+			acceptsCrypto: draft.acceptsCrypto ?? false,
+			cryptoChainIds: draft.cryptoChainIds ?? [],
+			cryptoTokens: draft.cryptoTokens ?? [],
+			cryptoTokenPricing: draft.cryptoTokenPricing ?? [],
 		});
 
 		setCurrentStep(draft.currentStep);
@@ -278,6 +288,11 @@ export function MultiStepFormProvider({
 				minParticipants: values.minParticipants,
 				maxParticipants: values.maxParticipants,
 				checkInQuestion: values.checkInQuestion,
+				// Crypto config persists across draft saves
+				acceptsCrypto: values.acceptsCrypto,
+				cryptoChainIds: values.cryptoChainIds,
+				cryptoTokens: values.cryptoTokens,
+				cryptoTokenPricing: values.cryptoTokenPricing,
 				currentStep,
 			},
 			currentStep,
@@ -409,6 +424,11 @@ export function MultiStepFormProvider({
 					maxParticipants: data.maxParticipants,
 					checkInQuestion: data.checkInQuestion,
 					timezone: userTimezone,
+					// Crypto config — only sent when enabled
+					acceptsCrypto: data.acceptsCrypto,
+					cryptoChainIds: data.cryptoChainIds,
+					cryptoTokens: data.cryptoTokens,
+					cryptoTokenPricing: data.cryptoTokenPricing,
 				});
 
 				if (!result.success) {
@@ -496,6 +516,7 @@ export function MultiStepFormProvider({
 					minParticipants: 0,
 					maxParticipants: 0,
 					checkInQuestion: '',
+					...CRYPTO_FORM_DEFAULTS,
 				});
 				setCurrentStep(0);
 				setPendingPromoCodes([]);

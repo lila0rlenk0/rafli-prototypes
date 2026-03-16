@@ -107,6 +107,17 @@ export function ConfirmingStep({
 	}
 
 	/**
+	 * Returns text styling for a phase label.
+	 * Pending phases are dimmed; active/done phases are bold black.
+	 */
+	function getPhaseTextClass(status: PhaseStatus): string {
+		const base = 'text-sm';
+		return status === 'pending'
+			? `${base} text-[#B4B4B4]`
+			: `${base} font-medium text-black`;
+	}
+
+	/**
 	 * Renders the connecting line between two phase dots.
 	 * Filled (black) when the next phase is done or active; gray when pending.
 	 */
@@ -137,13 +148,7 @@ export function ConfirmingStep({
 						<div className="flex items-center gap-3">
 							{renderDot(phase.status)}
 							<div className="flex flex-col">
-								<span
-									className={`text-sm ${
-										phase.status === 'pending'
-											? 'text-[#B4B4B4]'
-											: 'font-medium text-black'
-									}`}
-								>
+								<span className={getPhaseTextClass(phase.status)}>
 									{phase.label}
 								</span>
 								{phase.detail && (

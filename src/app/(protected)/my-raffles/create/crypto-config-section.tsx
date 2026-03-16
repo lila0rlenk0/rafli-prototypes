@@ -7,6 +7,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
+import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
 import { useCryptoConfig } from '@/services/payment/use-crypto-config';
 import type {
 	CryptoChainConfig,
@@ -69,18 +70,26 @@ export function CryptoConfigSection({
 	// Fetch global config (cached 10min by useCryptoConfig)
 	const { data: cryptoConfig, isLoading } = useCryptoConfig();
 
+	// Filter backend chains to only those supported in this environment
+	const supportedChains = useMemo(
+		function filterSupportedChains() {
+			if (!cryptoConfig) return [];
+			return cryptoConfig.chains.filter(c =>
+				SUPPORTED_WEB3_CHAIN_IDS.includes(c.chainId),
+			);
+		},
+		[cryptoConfig],
+	);
+
 	// Compute available tokens based on selected chains.
 	// When no chains are selected (= all), show all tokens from all chains.
 	// When specific chains are selected, show the union of tokens across those chains.
 	const availableTokens = useMemo(
 		function computeAvailableTokens() {
-			if (!cryptoConfig) return [];
 			const chains =
 				selectedChainIds.length === 0
-					? cryptoConfig.chains
-					: cryptoConfig.chains.filter(c =>
-							selectedChainIds.includes(c.chainId),
-						);
+					? supportedChains
+					: supportedChains.filter(c => selectedChainIds.includes(c.chainId));
 
 			// Deduplicate tokens by tokenId — same token can appear on multiple chains
 			const seen = new Set<string>();
@@ -95,7 +104,7 @@ export function CryptoConfigSection({
 			}
 			return tokens;
 		},
-		[cryptoConfig, selectedChainIds],
+		[supportedChains, selectedChainIds],
 	);
 
 	// Identify non-stablecoin tokens that need pricing
@@ -119,10 +128,7 @@ export function CryptoConfigSection({
 	/** Builds chain options with icons for the multi-select */
 	const chainOptions: MultiSelectOption[] = useMemo(
 		function buildChainOptions() {
-			if (!cryptoConfig) return [];
-			return cryptoConfig.chains.map(function mapChain(
-				chain: CryptoChainConfig,
-			) {
+			return supportedChains.map(function mapChain(chain: CryptoChainConfig) {
 				const chainIcon = CHAIN_ICONS[chain.chainId];
 				return {
 					value: chain.chainId.toString(),
@@ -138,7 +144,7 @@ export function CryptoConfigSection({
 				};
 			});
 		},
-		[cryptoConfig],
+		[supportedChains],
 	);
 
 	/** Builds token options with stablecoin/custom labels */
@@ -162,13 +168,12 @@ export function CryptoConfigSection({
 	// In "all" mode (empty array), show all chains as visually selected.
 	const chainSelectValue = useMemo(
 		function computeChainSelectValue() {
-			if (!cryptoConfig) return [];
 			if (selectedChainIds.length === 0) {
-				return cryptoConfig.chains.map(c => c.chainId.toString());
+				return supportedChains.map(c => c.chainId.toString());
 			}
 			return selectedChainIds.map(id => id.toString());
 		},
-		[cryptoConfig, selectedChainIds],
+		[supportedChains, selectedChainIds],
 	);
 
 	// Token select value — in "all" mode, visually select everything
@@ -208,17 +213,16 @@ export function CryptoConfigSection({
 	 */
 	function handleChainValueChange(values: string[]) {
 		// If all chains selected, store empty array (= "all" mode)
-		const allSelected =
-			cryptoConfig && values.length === cryptoConfig.chains.length;
+		const allSelected = values.length === supportedChains.length;
 		const nextIds = allSelected ? [] : values.map(Number);
 		onFieldChange('cryptoChainIds', nextIds);
 
 		// Prune tokens no longer available on any selected chain
-		if (selectedTokenIds.length > 0 && cryptoConfig) {
+		if (selectedTokenIds.length > 0) {
 			const nextChains =
 				nextIds.length === 0
-					? cryptoConfig.chains
-					: cryptoConfig.chains.filter(c => nextIds.includes(c.chainId));
+					? supportedChains
+					: supportedChains.filter(c => nextIds.includes(c.chainId));
 			const availableIds = new Set(
 				nextChains.flatMap(c => c.tokens.map(t => t.tokenId)),
 			);
@@ -254,9 +258,7 @@ export function CryptoConfigSection({
 				if (nonStableDeselected.length > 0) {
 					onFieldChange(
 						'cryptoTokenPricing',
-						tokenPricing.filter(
-							p => !nonStableDeselected.includes(p.tokenId),
-						),
+						tokenPricing.filter(p => !nonStableDeselected.includes(p.tokenId)),
 					);
 				}
 			}

@@ -69,8 +69,7 @@ export function ChainSelector({
 									className="flex size-6 items-center justify-center overflow-hidden rounded-full"
 									style={{ background: icon.iconBackground }}
 								>
-									{/* eslint-disable-next-line @next/next/no-img-element */}
-									<img alt={chainName} src={icon.iconUrl} className="size-4" />
+									<icon.icon className="size-4" />
 								</span>
 							)}
 							<span className="text-sm font-medium">{chainName}</span>

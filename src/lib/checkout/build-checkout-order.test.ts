@@ -119,4 +119,58 @@ describe('buildCheckoutOrder', () => {
 		expect(result?.isFullyDiscounted).toBe(true);
 		expect(mockToastSuccess).toHaveBeenCalledTimes(1);
 	});
+
+	test('does not call onPromoInvalid for non-promo errors', async () => {
+		resetAllMocks();
+		mockCheckoutOrder.mockResolvedValueOnce({
+			success: false,
+			error: 'network_error',
+		});
+		const onPromoInvalid = mock();
+
+		await buildCheckoutOrder({
+			raffleId: RAFFLE_ID,
+			ticketQuantity: 2,
+			promoCode: 'CODE',
+			onPromoInvalid,
+		});
+
+		expect(onPromoInvalid).not.toHaveBeenCalled();
+		expect(mockToastError).toHaveBeenCalledTimes(1);
+	});
+
+	test('does not toast success for non-discounted orders', async () => {
+		resetAllMocks();
+		mockCheckoutOrder.mockResolvedValueOnce({
+			success: true,
+			data: mockCheckoutResponse({ totalAmount: '10.0000' }),
+		});
+
+		await buildCheckoutOrder({
+			raffleId: RAFFLE_ID,
+			ticketQuantity: 2,
+		});
+
+		expect(mockToastSuccess).not.toHaveBeenCalled();
+	});
+
+	test('passes correct params to checkoutOrder', async () => {
+		resetAllMocks();
+		mockCheckoutOrder.mockResolvedValueOnce({
+			success: true,
+			data: mockCheckoutResponse({}),
+		});
+
+		await buildCheckoutOrder({
+			raffleId: RAFFLE_ID,
+			ticketQuantity: 3,
+			promoCode: 'SAVE10',
+		});
+
+		expect(mockCheckoutOrder).toHaveBeenCalledWith({
+			raffleId: RAFFLE_ID,
+			ticketQuantity: 3,
+			promoCode: 'SAVE10',
+		});
+	});
 });

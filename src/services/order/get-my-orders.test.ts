@@ -75,4 +75,73 @@ describe('getMyOrders', () => {
 		expect(consoleSpy).toHaveBeenCalledTimes(1);
 		consoleSpy.mockRestore();
 	});
+
+	test('passes excludeStale param to API', async () => {
+		mockGet.mockReset();
+		mockGet.mockResolvedValueOnce(mockAxiosResponse({ total: 0, orders: [] }));
+
+		await getMyOrders({ page: 1, limit: 10, excludeStale: true });
+
+		expect(mockGet).toHaveBeenCalledWith(
+			'/me/orders',
+			expect.objectContaining({
+				params: expect.objectContaining({ excludeStale: true }),
+			}),
+		);
+	});
+
+	test('uses default params when called with no args', async () => {
+		mockGet.mockReset();
+		mockGet.mockResolvedValueOnce(mockAxiosResponse({ total: 0, orders: [] }));
+
+		await getMyOrders();
+
+		expect(mockGet).toHaveBeenCalledWith(
+			'/me/orders',
+			expect.objectContaining({
+				params: { page: 1, limit: 10 },
+			}),
+		);
+	});
+
+	test('returns totalPages 0 for empty orders', async () => {
+		mockGet.mockReset();
+		mockGet.mockResolvedValueOnce(mockAxiosResponse({ total: 0, orders: [] }));
+
+		const result = await getMyOrders({ page: 1, limit: 10 });
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.totalPages).toBe(0);
+			expect(result.data.items).toHaveLength(0);
+		}
+	});
+
+	test('calculates totalPages for pagination boundary', async () => {
+		mockGet.mockReset();
+		const orders = Array.from({ length: 10 }, (_, i) => ({
+			id: `${i}1111111-1111-4111-8111-111111111111`,
+			raffleId: '22222222-2222-4222-8222-222222222222',
+			userId: 'user-1',
+			ticketQuantity: 1,
+			unitPrice: '10.00',
+			totalAmount: '10.00',
+			currency: 'USD',
+			promoCode: null,
+			status: 'pending',
+			createdAt: '2026-03-13T12:00:00.000Z',
+			updatedAt: '2026-03-13T12:00:00.000Z',
+			raffleName: 'Test Raffle',
+			raffleSlug: 'test-raffle',
+		}));
+		mockGet.mockResolvedValueOnce(mockAxiosResponse({ total: 20, orders }));
+
+		const result = await getMyOrders({ page: 1, limit: 10 });
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.totalPages).toBe(2);
+			expect(result.data.total).toBe(20);
+		}
+	});
 });

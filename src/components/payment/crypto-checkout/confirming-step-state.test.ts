@@ -86,4 +86,38 @@ describe('buildConfirmingPhases', () => {
 		]);
 		expect(phases[1]?.detail).toBe('128 / 128 blocks');
 	});
+
+	test('shows intermediate confirmation count', () => {
+		const phases = buildConfirmingPhases({
+			txHash: '0xabc',
+			confirmations: 5,
+			confirmationTarget: 12,
+			finalizationRequested: false,
+		});
+
+		expect(phases.map(phase => phase.status)).toEqual([
+			'done',
+			'active',
+			'pending',
+			'pending',
+		]);
+		expect(phases[1]?.detail).toBe('5 / 12 blocks');
+	});
+
+	test('shows confirmation count of 1 at start', () => {
+		const phases = buildConfirmingPhases({
+			txHash: '0xabc',
+			confirmations: 1,
+			confirmationTarget: 12,
+			finalizationRequested: false,
+		});
+
+		expect(phases.map(phase => phase.status)).toEqual([
+			'done',
+			'active',
+			'pending',
+			'pending',
+		]);
+		expect(phases[1]?.detail).toBe('1 / 12 blocks');
+	});
 });

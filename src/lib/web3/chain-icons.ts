@@ -1,7 +1,7 @@
 /**
- * Chain icon metadata for crypto checkout UI.
+ * Chain icon components for crypto checkout UI.
  *
- * SVG data URIs sourced from RainbowKit's bundled chain icons
+ * React SVG components sourced from RainbowKit's bundled chain icons
  * (@rainbow-me/rainbowkit/dist/*). We extract them here because
  * RainbowKit only exposes icons via ConnectButton.Custom for the
  * currently connected chain — we need icons for all chains in the selector.
@@ -9,36 +9,19 @@
  * Testnets reuse their mainnet parent's icon.
  */
 
+import type { ComponentProps, ComponentType } from 'react';
+
+import { ArbitrumIcon } from '@/assets/icons/chains/arbitrum-icon';
+import { BaseIcon } from '@/assets/icons/chains/base-icon';
+import { EthereumIcon } from '@/assets/icons/chains/ethereum-icon';
+import { PolygonIcon } from '@/assets/icons/chains/polygon-icon';
+
 interface ChainIcon {
-	/** Data URI for the chain's logo SVG */
-	iconUrl: string;
+	/** React SVG component for the chain's logo */
+	icon: ComponentType<ComponentProps<'svg'>>;
 	/** Background color for the icon container */
 	iconBackground: string;
 }
-
-// ==========================================
-// RainbowKit Official SVGs
-// ==========================================
-
-/** Ethereum — from @rainbow-me/rainbowkit/dist/ethereum-*.js */
-const ETHEREUM_ICON =
-	'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2228%22%20height%3D%2228%22%20fill%3D%22none%22%3E%3Cpath%20fill%3D%22%2325292E%22%20fill-rule%3D%22evenodd%22%20d%3D%22M14%2028a14%2014%200%201%200%200-28%2014%2014%200%200%200%200%2028Z%22%20clip-rule%3D%22evenodd%22%2F%3E%3Cpath%20fill%3D%22url(%23a)%22%20fill-opacity%3D%22.3%22%20fill-rule%3D%22evenodd%22%20d%3D%22M14%2028a14%2014%200%201%200%200-28%2014%2014%200%200%200%200%2028Z%22%20clip-rule%3D%22evenodd%22%2F%3E%3Cpath%20fill%3D%22url(%23b)%22%20d%3D%22M8.19%2014.77%2014%2018.21l5.8-3.44-5.8%208.19-5.81-8.19Z%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22m14%2016.93-5.81-3.44L14%204.34l5.81%209.15L14%2016.93Z%22%2F%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22a%22%20x1%3D%220%22%20x2%3D%2214%22%20y1%3D%220%22%20y2%3D%2228%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%23fff%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23fff%22%20stop-opacity%3D%220%22%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D%22b%22%20x1%3D%2214%22%20x2%3D%2214%22%20y1%3D%2214.77%22%20y2%3D%2222.96%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%23fff%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23fff%22%20stop-opacity%3D%22.9%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3C%2Fsvg%3E%0A';
-
-/** Arbitrum — from @rainbow-me/rainbowkit/dist/arbitrum-*.js */
-const ARBITRUM_ICON =
-	'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2028%2028%22%3E%3Cg%20transform%3D%22translate(0%2C0)%20scale(0.7)%22%3E%3Cg%20clip-path%3D%22url(%23a)%22%3E%3Cpath%20fill%3D%22%2396BEDC%22%20d%3D%22M0%200h40v40H0z%22%2F%3E%3Cpath%20fill%3D%22url(%23b)%22%20fill-opacity%3D%22.3%22%20d%3D%22M0%200h40v40H0z%22%2F%3E%3Cpath%20fill%3D%22%232D374B%22%20fill-rule%3D%22evenodd%22%20d%3D%22M20%202.5C10.335%202.5%202.5%2010.335%202.5%2020c0%203.293.91%206.373%202.49%209.004L0%2031v9h10v-5.637A17.42%2017.42%200%200%200%2020%2037.5c9.665%200%2017.5-7.835%2017.5-17.5S29.665%202.5%2020%202.5Z%22%20clip-rule%3D%22evenodd%22%2F%3E%3Cmask%20id%3D%22c%22%20width%3D%2238%22%20height%3D%2238%22%20x%3D%220%22%20y%3D%222%22%20maskUnits%3D%22userSpaceOnUse%22%20style%3D%22mask-type%3Aalpha%22%3E%3Cpath%20fill%3D%22%232D374B%22%20fill-rule%3D%22evenodd%22%20d%3D%22M20%202.5C10.335%202.5%202.5%2010.335%202.5%2020a17.42%2017.42%200%200%200%203.137%2010H0v10h10v-5.637A17.42%2017.42%200%200%200%2020%2037.5c9.665%200%2017.5-7.835%2017.5-17.5S29.665%202.5%2020%202.5Z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fmask%3E%3Cg%20mask%3D%22url(%23c)%22%3E%3Cpath%20fill%3D%22%2328A0F0%22%20d%3D%22m26.873%2037.192-6.75-10.615%203.782-6.416%208.672%2013.676-5.704%203.355ZM34.126%2032.79l3.471-5.786-9.238-14.423-3.299%205.596%209.066%2014.613Z%22%2F%3E%3Cpath%20fill%3D%22url(%23d)%22%20fill-opacity%3D%22.2%22%20d%3D%22M0%2020C0%208.954%208.954%200%2020%200s20%208.954%2020%2020-8.954%2020-20%2020H0V20Z%22%2F%3E%3C%2Fg%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22m.52%2040.315-4.387-2.524L-4.2%2036.6l15.267-23.715c1.042-1.702%203.314-2.25%205.422-2.22l2.475.065L.519%2040.315ZM27.38%2010.73l-6.523.024L-2.9%2050%202%2053.5l6.358-10.597%201.402-2.379L27.38%2010.73Z%22%2F%3E%3C%2Fg%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22b%22%20x1%3D%220%22%20x2%3D%2220%22%20y1%3D%220%22%20y2%3D%2240%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%23fff%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23fff%22%20stop-opacity%3D%220%22%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D%22d%22%20x1%3D%220%22%20x2%3D%2220%22%20y1%3D%220%22%20y2%3D%2240%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22%23fff%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23fff%22%20stop-opacity%3D%220%22%2F%3E%3C%2FlinearGradient%3E%3CclipPath%20id%3D%22a%22%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M0%200h40v40H0z%22%2F%3E%3C%2FclipPath%3E%3C%2Fdefs%3E%3C%2Fg%3E%3C%2Fsvg%3E';
-
-/** Base — from @rainbow-me/rainbowkit/dist/base-*.js */
-const BASE_ICON =
-	'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2228%22%20height%3D%2228%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cpath%20fill%3D%22%230052FF%22%20fill-rule%3D%22nonzero%22%20d%3D%22M14%2028a14%2014%200%201%200%200-28%2014%2014%200%200%200%200%2028Z%22%2F%3E%3Cpath%20fill%3D%22%23FFF%22%20d%3D%22M13.967%2023.86c5.445%200%209.86-4.415%209.86-9.86%200-5.445-4.415-9.86-9.86-9.86-5.166%200-9.403%203.974-9.825%209.03h14.63v1.642H4.142c.413%205.065%204.654%209.047%209.826%209.047Z%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E';
-
-/** Polygon — from @rainbow-me/rainbowkit/dist/polygon-*.js */
-const POLYGON_ICON =
-	'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%20width%3D%2228%22%20height%3D%2228%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22A%22%20x1%3D%22-18.275%25%22%20x2%3D%2284.959%25%22%20y1%3D%228.219%25%22%20y2%3D%2271.393%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23a229c5%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%237b3fe4%22%2F%3E%3C%2FlinearGradient%3E%3Ccircle%20id%3D%22B%22%20cx%3D%2214%22%20cy%3D%2214%22%20r%3D%2214%22%2F%3E%3C%2Fdefs%3E%3Cg%20fill-rule%3D%22evenodd%22%3E%3Cmask%20id%3D%22C%22%20fill%3D%22%23fff%22%3E%3Cuse%20xlink%3Ahref%3D%22%23B%22%2F%3E%3C%2Fmask%3E%3Cg%20fill-rule%3D%22nonzero%22%3E%3Cpath%20fill%3D%22url(%23A)%22%20d%3D%22M-1.326-1.326h30.651v30.651H-1.326z%22%20mask%3D%22url(%23C)%22%2F%3E%3Cpath%20fill%3D%22%23fff%22%20d%3D%22M18.049%2017.021l3.96-2.287a.681.681%200%200%200%20.34-.589V9.572a.683.683%200%200%200-.34-.59l-3.96-2.286a.682.682%200%200%200-.68%200l-3.96%202.287a.682.682%200%200%200-.34.589v8.173L10.29%2019.35l-2.777-1.604v-3.207l2.777-1.604%201.832%201.058V11.84l-1.492-.861a.681.681%200%200%200-.68%200l-3.96%202.287a.681.681%200%200%200-.34.589v4.573c0%20.242.13.468.34.59l3.96%202.286a.68.68%200%200%200%20.68%200l3.96-2.286a.682.682%200%200%200%20.34-.589v-8.174l.05-.028%202.728-1.575%202.777%201.603v3.208l-2.777%201.603-1.83-1.056v2.151l1.49.86a.68.68%200%200%200%20.68%200z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E';
-
-// ==========================================
-// Chain Icon Map
-// ==========================================
 
 /**
  * Chain icons indexed by chain ID.
@@ -46,18 +29,18 @@ const POLYGON_ICON =
  */
 export const CHAIN_ICONS: Record<number, ChainIcon> = {
 	// Ethereum mainnet + Sepolia testnet
-	1: { iconUrl: ETHEREUM_ICON, iconBackground: '#25292E' },
-	11_155_111: { iconUrl: ETHEREUM_ICON, iconBackground: '#25292E' },
+	1: { icon: EthereumIcon, iconBackground: '#25292E' },
+	11_155_111: { icon: EthereumIcon, iconBackground: '#25292E' },
 
 	// Arbitrum mainnet + Sepolia testnet
-	42_161: { iconUrl: ARBITRUM_ICON, iconBackground: '#96BEDC' },
-	421_614: { iconUrl: ARBITRUM_ICON, iconBackground: '#96BEDC' },
+	42_161: { icon: ArbitrumIcon, iconBackground: '#96BEDC' },
+	421_614: { icon: ArbitrumIcon, iconBackground: '#96BEDC' },
 
 	// Base mainnet + Sepolia testnet
-	8453: { iconUrl: BASE_ICON, iconBackground: '#0052FF' },
-	84_532: { iconUrl: BASE_ICON, iconBackground: '#0052FF' },
+	8453: { icon: BaseIcon, iconBackground: '#0052FF' },
+	84_532: { icon: BaseIcon, iconBackground: '#0052FF' },
 
 	// Polygon mainnet + Amoy testnet
-	137: { iconUrl: POLYGON_ICON, iconBackground: '#7B3FE4' },
-	80_002: { iconUrl: POLYGON_ICON, iconBackground: '#7B3FE4' },
+	137: { icon: PolygonIcon, iconBackground: '#7B3FE4' },
+	80_002: { icon: PolygonIcon, iconBackground: '#7B3FE4' },
 };

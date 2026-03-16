@@ -87,6 +87,40 @@ describe('formatTokenBalance', () => {
 			}),
 		).toBe('0.1235');
 	});
+
+	test('formats 8-decimal token balance to two decimals', () => {
+		expect(
+			formatTokenBalance({
+				value: 1_000_000_00n,
+				decimals: 8,
+				symbol: 'WBTC',
+			}),
+		).toBe('1.00');
+	});
+
+	test('formats zero balance', () => {
+		expect(
+			formatTokenBalance({
+				value: 0n,
+				decimals: 6,
+				symbol: 'USDC',
+			}),
+		).toBe('0.00');
+	});
+});
+
+describe('formatPaymentAmount — additional cases', () => {
+	test('trims trailing zeros to two decimals', () => {
+		expect(formatPaymentAmount({ ...BASE_SESSION, amount: '10.000000' })).toBe(
+			'10.00',
+		);
+	});
+
+	test('formats very small amount', () => {
+		expect(formatPaymentAmount({ ...BASE_SESSION, amount: '0.0001' })).toBe(
+			'0.0001',
+		);
+	});
 });
 
 describe('truncateAddress', () => {

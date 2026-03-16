@@ -3,7 +3,9 @@ import { describe, expect, test } from 'bun:test';
 import {
 	getOrderErrorMessage,
 	getPaymentErrorMessage,
+	getPromoErrorMessage,
 	getWalletErrorMessage,
+	shouldClearPromo,
 } from './error-messages';
 
 describe('getOrderErrorMessage', () => {
@@ -94,4 +96,96 @@ describe('getWalletErrorMessage', () => {
 			),
 		).toBe('Wallet operation failed. Please try again');
 	});
+});
+
+describe('getPromoErrorMessage', () => {
+	test('maps not-found error', () => {
+		expect(getPromoErrorMessage('core:promo:not-found')).toBe(
+			'Promo code not found',
+		);
+	});
+
+	test('maps expired error', () => {
+		expect(getPromoErrorMessage('core:promo:expired')).toBe(
+			'This promo code has expired',
+		);
+	});
+
+	test('maps max-uses-reached error', () => {
+		expect(getPromoErrorMessage('core:promo:max-uses-reached')).toBe(
+			'This promo code has reached its usage limit',
+		);
+	});
+
+	test('maps deactivated error', () => {
+		expect(getPromoErrorMessage('core:promo:deactivated')).toBe(
+			'This promo code is no longer active',
+		);
+	});
+
+	test('maps already-redeemed error', () => {
+		expect(getPromoErrorMessage('core:promo:already-redeemed')).toBe(
+			'You already used this promo code',
+		);
+	});
+
+	test('maps host-cannot-redeem error', () => {
+		expect(getPromoErrorMessage('core:promo:host-cannot-redeem')).toBe(
+			'You cannot use codes on your own raffle',
+		);
+	});
+
+	test('maps raffle-mismatch error', () => {
+		expect(getPromoErrorMessage('core:promo:raffle-mismatch')).toBe(
+			'This code is not valid for this raffle',
+		);
+	});
+
+	test('maps order-already-discounted error', () => {
+		expect(getPromoErrorMessage('core:promo:order-already-discounted')).toBe(
+			'This order already has a promo code',
+		);
+	});
+
+	test('maps invalid-argument error', () => {
+		expect(getPromoErrorMessage('global:validation:invalid-argument')).toBe(
+			'Invalid promo code request',
+		);
+	});
+
+	test('maps invalid_code error', () => {
+		expect(getPromoErrorMessage('invalid_code')).toBe(
+			'Invalid promo code request',
+		);
+	});
+
+	test('falls back to generic message for unknown codes', () => {
+		expect(getPromoErrorMessage('unknown:code')).toBe(
+			'Failed to redeem code. Please try again',
+		);
+	});
+});
+
+describe('shouldClearPromo', () => {
+	test.each([
+		'core:promo:not-found',
+		'core:promo:expired',
+		'core:promo:max-uses-reached',
+		'core:promo:deactivated',
+		'core:promo:already-redeemed',
+		'core:promo:host-cannot-redeem',
+		'core:promo:raffle-mismatch',
+		'core:promo:order-already-discounted',
+		'global:validation:invalid-argument',
+		'invalid_code',
+	])('returns true for deterministic error: %s', code => {
+		expect(shouldClearPromo(code)).toBe(true);
+	});
+
+	test.each(['network_error', 'timeout_error', 'unknown:code'])(
+		'returns false for transient/unknown error: %s',
+		code => {
+			expect(shouldClearPromo(code)).toBe(false);
+		},
+	);
 });

@@ -2,15 +2,8 @@ import type { ClientErrorCode } from './client-errors';
 import type { CommonErrorCode } from './common-errors';
 
 /**
- * Comment Error Codes
- *
- * Comment-specific error codes that match backend "core:*" error codes
- * for comment endpoints (create, vote, delete, fetch).
- */
-
-/**
- * Comment error codes constant object
- * Contains core/comment error codes used in the application
+ * Comment error codes — maps to backend "core:comment:*" error codes
+ * for create, vote, delete, and fetch operations.
  */
 export const COMMENT_ERROR_CODES = {
 	// Core comment errors
@@ -26,6 +19,10 @@ export const COMMENT_ERROR_CODES = {
 	RAFFLE_NOT_COMMENTABLE: 'core:comment:raffle-not-commentable',
 	/** Comment is deleted — returned when trying to vote on deleted comment */
 	DELETED: 'core:comment:deleted',
+	/** User tried to vote on their own comment */
+	SELF_VOTE: 'core:comment:self-vote',
+	/** Comment body failed validation (too short, too long, etc.) */
+	INVALID_BODY: 'core:comment:invalid-body',
 
 	// Generic fetch failure (Zod validation, etc.)
 	FETCH_FAILED: 'fetch_failed',

@@ -49,6 +49,11 @@ export async function createRaffle(
 			coverMediaUrl: '',
 			galleryMediaUrls: [],
 			timezone: input.timezone,
+			// Crypto config — backend ignores these when acceptsCrypto is false
+			acceptsCrypto: input.acceptsCrypto,
+			cryptoChainIds: input.cryptoChainIds,
+			cryptoTokens: input.cryptoTokens,
+			cryptoTokenPricing: input.cryptoTokenPricing,
 		};
 
 		// Validate payload before sending

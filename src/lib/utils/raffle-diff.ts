@@ -1,4 +1,10 @@
-import type { Raffle, UpdateRafflePayload } from '@/types/raffle';
+import type {
+	Raffle,
+	TokenPricingEntry,
+	UpdateRafflePayload,
+} from '@/types/raffle';
+
+import { extractCryptoFormFields } from './crypto-form';
 
 /**
  * Form data structure for edit form
@@ -15,6 +21,11 @@ interface EditFormData {
 	minParticipants: number;
 	maxParticipants: number;
 	checkInQuestion: string;
+	// Crypto config
+	acceptsCrypto: boolean;
+	cryptoChainIds: number[];
+	cryptoTokens: string[];
+	cryptoTokenPricing: TokenPricingEntry[];
 }
 
 /**
@@ -56,16 +67,20 @@ export function computeRaffleDiff(
 		diff.categoryId = categoryId;
 	}
 
-	// Compare start date (convert form date string to ISO)
-	const currentStartAt = new Date(current.startDate).toISOString();
-	if (currentStartAt !== original.startAt) {
-		diff.startAt = currentStartAt;
+	// Compare start date — form stores YYYY-MM-DD, original stores full ISO.
+	// Compare date portion only to avoid false positives from time components.
+	// When changed, send full ISO (UTC midnight) so backend gets a valid datetime.
+	const currentStartDate = current.startDate;
+	const originalStartDate = original.startAt.split('T')[0];
+	if (currentStartDate !== originalStartDate) {
+		diff.startAt = new Date(current.startDate).toISOString();
 	}
 
-	// Compare end date (convert form date string to ISO)
-	const currentEndAt = new Date(current.endDate).toISOString();
-	if (currentEndAt !== original.endAt) {
-		diff.endAt = currentEndAt;
+	// Compare end date — same date-only comparison strategy as start date
+	const currentEndDate = current.endDate;
+	const originalEndDate = original.endAt.split('T')[0];
+	if (currentEndDate !== originalEndDate) {
+		diff.endAt = new Date(current.endDate).toISOString();
 	}
 
 	// Compare ticket price
@@ -93,6 +108,38 @@ export function computeRaffleDiff(
 	const originalQuestionId = original.questionId || '';
 	if (checkInQuestionId !== originalQuestionId) {
 		diff.questionId = checkInQuestionId;
+	}
+
+	// Compare crypto config — extract original values from cryptoOptions
+	const originalCrypto = extractCryptoFormFields(original.cryptoOptions);
+
+	if (current.acceptsCrypto !== originalCrypto.acceptsCrypto) {
+		diff.acceptsCrypto = current.acceptsCrypto;
+	}
+
+	// Compare chain IDs (sorted for stable comparison)
+	const currentChainIds = [...current.cryptoChainIds].sort();
+	const originalChainIds = [...originalCrypto.cryptoChainIds].sort();
+	if (JSON.stringify(currentChainIds) !== JSON.stringify(originalChainIds)) {
+		diff.cryptoChainIds = current.cryptoChainIds;
+	}
+
+	// Compare token IDs (sorted for stable comparison)
+	const currentTokenIds = [...current.cryptoTokens].sort();
+	const originalTokenIds = [...originalCrypto.cryptoTokens].sort();
+	if (JSON.stringify(currentTokenIds) !== JSON.stringify(originalTokenIds)) {
+		diff.cryptoTokens = current.cryptoTokens;
+	}
+
+	// Compare token pricing (sorted by tokenId for stable comparison)
+	const currentPricing = [...current.cryptoTokenPricing].sort((a, b) =>
+		a.tokenId.localeCompare(b.tokenId),
+	);
+	const originalPricing = [...originalCrypto.cryptoTokenPricing].sort((a, b) =>
+		a.tokenId.localeCompare(b.tokenId),
+	);
+	if (JSON.stringify(currentPricing) !== JSON.stringify(originalPricing)) {
+		diff.cryptoTokenPricing = current.cryptoTokenPricing;
 	}
 
 	return diff;

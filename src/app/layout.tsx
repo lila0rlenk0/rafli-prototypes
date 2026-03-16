@@ -2,6 +2,7 @@ import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import { Suspense } from 'react';
 
 import { Toaster } from '@/components/ui/sonner';
 
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
  * Application-wide layout providing fonts, analytics, and toast notifications.
  * Wraps all pages with MixpanelProvider for autocapture analytics.
  */
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
@@ -38,10 +39,12 @@ export default function RootLayout({
 			<body
 				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} font-sans antialiased`}
 			>
-				<Providers>
-					{children}
-					<Toaster />
-				</Providers>
+				<Suspense>
+					<Providers>
+						{children}
+						<Toaster />
+					</Providers>
+				</Suspense>
 			</body>
 		</html>
 	);

@@ -6,6 +6,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { CircleDashed, Clock, DollarSign, InfoIcon, X } from 'lucide-react';
 import { useMemo } from 'react';
+import { CryptoConfigSection } from '../crypto-config-section';
 import { useMultiStepForm } from '../multi-step-form-provider';
 import { PromoCodesSection } from '../promo-codes-section';
 
@@ -156,6 +157,11 @@ export function TicketsStep() {
 		setValue('minParticipants', 0);
 		setValue('maxParticipants', 0);
 		setValue('checkInQuestion', '');
+		// Reset crypto config to defaults
+		setValue('acceptsCrypto', false);
+		setValue('cryptoChainIds', []);
+		setValue('cryptoTokens', []);
+		setValue('cryptoTokenPricing', []);
 		clearPendingPromoCodes();
 	}
 
@@ -379,6 +385,17 @@ export function TicketsStep() {
 					</div>
 				)}
 			</div>
+
+			{/* Crypto payment config */}
+			<CryptoConfigSection
+				acceptsCrypto={form.watch('acceptsCrypto')}
+				cryptoChainIds={form.watch('cryptoChainIds')}
+				cryptoTokens={form.watch('cryptoTokens')}
+				cryptoTokenPricing={form.watch('cryptoTokenPricing')}
+				onFieldChange={(field, value) =>
+					form.setValue(field, value, { shouldDirty: true })
+				}
+			/>
 
 			{/* Promo codes section */}
 			<PromoCodesSection />

@@ -1,4 +1,5 @@
 import { stripMarkdown } from '@/lib/utils/strip-markdown';
+import { tokenPricingEntrySchema } from '@/types/raffle';
 import { z } from 'zod';
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -11,6 +12,29 @@ const fileSchema = z
 		file => ACCEPTED_IMAGE_TYPES.includes(file.type),
 		'Only PNG, JPEG and MP3 files are accepted',
 	);
+
+/**
+ * Crypto config fields shared between create and edit form schemas.
+ * Kept as a plain object so it can be spread into both `.object()` calls.
+ *
+ * - `acceptsCrypto` toggles the entire crypto section
+ * - `cryptoChainIds` / `cryptoTokens`: empty array = "all allowed" (backend semantics)
+ * - `cryptoTokenPricing`: required for each non-stablecoin in `cryptoTokens`
+ */
+export const cryptoFormFields = {
+	acceptsCrypto: z.boolean(),
+	cryptoChainIds: z.array(z.number()),
+	cryptoTokens: z.array(z.string()),
+	cryptoTokenPricing: z.array(tokenPricingEntrySchema),
+};
+
+/** Default values for crypto form fields */
+export const CRYPTO_FORM_DEFAULTS = {
+	acceptsCrypto: false,
+	cryptoChainIds: [] as number[],
+	cryptoTokens: [] as string[],
+	cryptoTokenPricing: [] as { tokenId: string; price: string }[],
+};
 
 export const raffleFormSchema = z
 	.object({
@@ -83,6 +107,9 @@ export const raffleFormSchema = z
 					.max(1_000_000, 'Max participants cannot exceed 1,000,000'),
 			),
 		checkInQuestion: z.string().min(1, 'Check-in question is required'),
+
+		// Step 2: Crypto payment config
+		...cryptoFormFields,
 	})
 	.refine(
 		data => {
@@ -189,6 +216,11 @@ export const raffleDraftSchema = z.object({
 	minParticipants: z.number(),
 	maxParticipants: z.number(),
 	checkInQuestion: z.string(),
+	// Crypto config — serializable (no File objects)
+	acceptsCrypto: z.boolean(),
+	cryptoChainIds: z.array(z.number()),
+	cryptoTokens: z.array(z.string()),
+	cryptoTokenPricing: z.array(tokenPricingEntrySchema),
 	savedAt: z.string(),
 	currentStep: z.number(),
 });

@@ -6,6 +6,9 @@ import {
 	useQueryClient,
 } from '@tanstack/react-query';
 
+import { toast } from 'sonner';
+
+import { getVoteErrorMessage } from '@/lib/comment/error-messages';
 import { serviceError, type ServiceError } from '@/lib/query/errors';
 import type {
 	ListCommentsResponse,
@@ -23,48 +26,6 @@ interface VoteCommentVariables {
 	raffleId: string;
 }
 
-/**
- * Calculates the new vote score after a vote toggle
- *
- * Backend toggles votes: voting the same direction twice removes the vote.
- * We need to predict the new score for optimistic updates.
- *
- * @param currentScore - Current vote score
- * @param currentVote - Current user vote (null if none)
- * @param newVoteType - The vote being cast
- * @returns Predicted new score
- */
-function predictVoteScore(
-	currentScore: number,
-	currentVote: 'upvote' | 'downvote' | null,
-	newVoteType: VoteType,
-): number {
-	// Step 1: Remove existing vote effect (if any)
-	let score = currentScore;
-	if (currentVote === 'upvote') score -= 1;
-	if (currentVote === 'downvote') score += 1;
-
-	// Step 2: Apply new vote (unless toggling off — same direction)
-	if (currentVote !== newVoteType) {
-		if (newVoteType === 'upvote') score += 1;
-		if (newVoteType === 'downvote') score -= 1;
-	}
-
-	return score;
-}
-
-/**
- * Predicts the new userVote after a toggle
- *
- * Same direction = remove vote (null), different direction = apply new vote.
- */
-function predictUserVote(
-	currentVote: 'upvote' | 'downvote' | null,
-	newVoteType: VoteType,
-): 'upvote' | 'downvote' | null {
-	return currentVote === newVoteType ? null : newVoteType;
-}
-
 /** Type alias for the infinite query data shape */
 type InfiniteCommentsData = InfiniteData<ListCommentsResponse, number>;
 
@@ -77,6 +38,48 @@ type InfiniteCommentsData = InfiniteData<ListCommentsResponse, number>;
  * @returns React Query mutation result
  */
 export function useVoteComment() {
+	/**
+	 * Calculates the new vote score after a vote toggle
+	 *
+	 * Backend toggles votes: voting the same direction twice removes the vote.
+	 * We need to predict the new score for optimistic updates.
+	 *
+	 * @param currentScore - Current vote score
+	 * @param currentVote - Current user vote (null if none)
+	 * @param newVoteType - The vote being cast
+	 * @returns Predicted new score
+	 */
+	function predictVoteScore(
+		currentScore: number,
+		currentVote: 'upvote' | 'downvote' | null,
+		newVoteType: VoteType,
+	): number {
+		// Step 1: Remove existing vote effect (if any)
+		let score = currentScore;
+		if (currentVote === 'upvote') score -= 1;
+		if (currentVote === 'downvote') score += 1;
+
+		// Step 2: Apply new vote (unless toggling off — same direction)
+		if (currentVote !== newVoteType) {
+			if (newVoteType === 'upvote') score += 1;
+			if (newVoteType === 'downvote') score -= 1;
+		}
+
+		return score;
+	}
+
+	/**
+	 * Predicts the new userVote after a toggle
+	 *
+	 * Same direction = remove vote (null), different direction = apply new vote.
+	 */
+	function predictUserVote(
+		currentVote: 'upvote' | 'downvote' | null,
+		newVoteType: VoteType,
+	): 'upvote' | 'downvote' | null {
+		return currentVote === newVoteType ? null : newVoteType;
+	}
+
 	const queryClient = useQueryClient();
 
 	return useMutation<
@@ -85,7 +88,7 @@ export function useVoteComment() {
 		VoteCommentVariables,
 		{ previousData: Map<string, InfiniteCommentsData | undefined> }
 	>({
-		mutationFn: async function vote(variables: VoteCommentVariables) {
+		mutationFn: async function vote(variables) {
 			const result = await voteComment(variables.commentId, variables.type);
 			if (!result.success) throw serviceError(result.error);
 			return result.data;
@@ -134,20 +137,17 @@ export function useVoteComment() {
 
 			return { previousData };
 		},
-		onError(_error, _variables, context) {
-			// Step 4: Rollback — restore all cached data from snapshot
+		onError(error, _variables, context) {
+			// Step 4: Rollback — restore all cached data from snapshot + notify user
+			toast.error(getVoteErrorMessage(error.code));
+
 			if (!context?.previousData) return;
 
-			const queryCache = queryClient.getQueryCache();
-			const commentQueries = queryCache.findAll({
-				queryKey: ['comment'],
-			});
-
-			for (const query of commentQueries) {
-				const key = JSON.stringify(query.queryKey);
-				const previous = context.previousData.get(key);
+			// Iterate snapshot entries directly — ensures every snapshotted query
+			// is restored even if the query was unmounted between onMutate and onError
+			for (const [key, previous] of context.previousData.entries()) {
 				if (previous !== undefined) {
-					queryClient.setQueryData(query.queryKey, previous);
+					queryClient.setQueryData(JSON.parse(key), previous);
 				}
 			}
 		},

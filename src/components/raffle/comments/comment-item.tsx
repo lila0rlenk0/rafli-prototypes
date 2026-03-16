@@ -6,11 +6,14 @@ import { toast } from 'sonner';
 import { MoreHorizontalIcon, TrashIcon } from 'lucide-react';
 
 import type { Comment, VoteType } from '@/types/comment';
+import { REPORT_CONTENT_TYPE } from '@/types/report';
 
+import { ReportMenuItem } from '@/components/report/report-menu-item';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatTimeAgo } from '@/lib/utils/format-time-ago';
@@ -55,24 +58,28 @@ export function CommentItem({
 	const [showReplyInput, setShowReplyInput] = useState(false);
 	const deleteMutation = useDeleteComment();
 
-	/** Whether the current user can delete this comment */
-	function canDelete(): boolean {
-		if (comment.isDeleted) return false;
-		// Raffle host can delete any comment
-		if (isOwner) return true;
-		// Comment author can delete their own
-		return currentUserId === comment.author.id;
+	// Compute display values and permissions once per render
+	const authorName = comment.author.name ?? 'Anonymous';
+	const authorInitial = authorName.charAt(0).toUpperCase();
+
+	/** Whether the current user can delete — host can delete any, author can delete own */
+	const deletable =
+		!comment.isDeleted && (isOwner || currentUserId === comment.author.id);
+
+	/** Whether the current user can report — authenticated non-authors only */
+	const reportable =
+		!comment.isDeleted &&
+		isAuthenticated &&
+		currentUserId !== comment.author.id;
+
+	/** Toggles the reply input visibility */
+	function handleToggleReply() {
+		setShowReplyInput(prev => !prev);
 	}
 
-	/** Gets the author display name */
-	function getAuthorName(): string {
-		return comment.author.name ?? 'Anonymous';
-	}
-
-	/** Gets the first initial for avatar fallback */
-	function getAuthorInitial(): string {
-		const name = getAuthorName();
-		return name.charAt(0).toUpperCase();
+	/** Hides reply input after a successful reply */
+	function handleReplySuccess() {
+		setShowReplyInput(false);
 	}
 
 	/** Handles delete — uses Radix DropdownMenu (portal-based, no overflow clipping) */
@@ -91,13 +98,13 @@ export function CommentItem({
 				{comment.author.avatar ? (
 					<Image
 						src={comment.author.avatar}
-						alt={getAuthorName()}
+						alt={authorName}
 						fill
 						sizes="32px"
 						className="object-cover"
 					/>
 				) : (
-					getAuthorInitial()
+					authorInitial
 				)}
 			</div>
 
@@ -105,7 +112,7 @@ export function CommentItem({
 			<div className="min-w-0 flex-1">
 				{/* Header: name + host badge + time */}
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-semibold">{getAuthorName()}</span>
+					<span className="text-sm font-semibold">{authorName}</span>
 					{comment.isHost && (
 						<span className="rounded bg-[#DFFFED] px-1.5 py-0.5 text-[10px] font-medium text-black">
 							Host
@@ -140,30 +147,38 @@ export function CommentItem({
 						{!isReply && isAuthenticated && (
 							<button
 								type="button"
-								onClick={function toggleReply() {
-									setShowReplyInput(prev => !prev);
-								}}
+								onClick={handleToggleReply}
 								className="text-xs font-medium text-gray-500 hover:text-gray-700"
 							>
 								Reply
 							</button>
 						)}
 
-						{/* Delete dropdown — portal-based to avoid overflow clipping */}
-						{canDelete() && (
+						{/* Actions dropdown — portal-based to avoid overflow clipping */}
+						{(deletable || reportable) && (
 							<DropdownMenu>
 								<DropdownMenuTrigger className="rounded p-0.5 text-gray-400 outline-none hover:text-gray-600">
 									<MoreHorizontalIcon className="size-4" />
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="start">
-									<DropdownMenuItem
-										onClick={handleDelete}
-										disabled={deleteMutation.isPending}
-										className="text-red-600 focus:bg-red-50 focus:text-red-600"
-									>
-										<TrashIcon className="size-3" />
-										Delete comment
-									</DropdownMenuItem>
+									{deletable && (
+										<DropdownMenuItem
+											onClick={handleDelete}
+											disabled={deleteMutation.isPending}
+											className="text-red-600 focus:bg-red-50 focus:text-red-600"
+										>
+											<TrashIcon className="size-3" />
+											Delete comment
+										</DropdownMenuItem>
+									)}
+									{deletable && reportable && <DropdownMenuSeparator />}
+									{reportable && (
+										<ReportMenuItem
+											contentType={REPORT_CONTENT_TYPE.COMMENT}
+											contentId={comment.id}
+											raffleId={raffleId}
+										/>
+									)}
 								</DropdownMenuContent>
 							</DropdownMenu>
 						)}
@@ -178,9 +193,7 @@ export function CommentItem({
 							parentId={comment.id}
 							autoFocus
 							placeholder="Write a reply..."
-							onSuccess={function onReplySuccess() {
-								setShowReplyInput(false);
-							}}
+							onSuccess={handleReplySuccess}
 						/>
 					</div>
 				)}

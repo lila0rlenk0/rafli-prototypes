@@ -4,7 +4,10 @@ import { notFound, redirect } from 'next/navigation';
 
 import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
-import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
+import {
+	PROMO_MANAGEABLE_STATUSES,
+	type PromoManageableStatus,
+} from '@/types/raffle';
 
 import { PromoCodesContent } from './promo-codes-content';
 
@@ -27,19 +30,10 @@ export default async function PromoCodesPage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
 	/**
-	 * Statuses that allow promo code management (create/deactivate)
-	 */
-	const MANAGEABLE_STATUSES: RaffleStatus[] = [
-		RAFFLE_STATUS.DRAFT,
-		RAFFLE_STATUS.QUEUED,
-		RAFFLE_STATUS.LIVE,
-	];
-
-	/**
 	 * Checks if raffle status allows promo code management
 	 */
-	function isManageableStatus(status: RaffleStatus): boolean {
-		return MANAGEABLE_STATUSES.includes(status);
+	function isManageableStatus(status: string): boolean {
+		return PROMO_MANAGEABLE_STATUSES.includes(status as PromoManageableStatus);
 	}
 
 	// Step 1: Require authenticated session.

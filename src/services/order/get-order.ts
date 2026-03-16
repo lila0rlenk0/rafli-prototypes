@@ -24,9 +24,10 @@ type GetOrderResponse = ServiceResponse<Order, OrderErrorCode>;
  */
 export async function getOrder(orderId: string): Promise<GetOrderResponse> {
 	try {
-		const response = await authenticatedClient.get(`/orders/${orderId}`, {
-			timeout: API_TIMEOUTS.QUERY,
-		});
+		const response = await authenticatedClient.get(
+			`/orders/${encodeURIComponent(orderId)}`,
+			{ timeout: API_TIMEOUTS.QUERY },
+		);
 
 		// Validate response structure
 		const order = orderSchema.parse(response.data);

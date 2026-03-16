@@ -21,7 +21,7 @@ interface ChainSelectorProps {
 
 /**
  * Chain selector step for crypto checkout.
- * Displays supported chains with icons from CHAIN_ICONS map.
+ * Displays supported chains with icons from @web3icons/react.
  * Chain names and token labels come from raffle's cryptoOptions (backend-resolved).
  */
 export function ChainSelector({
@@ -53,7 +53,7 @@ export function ChainSelector({
 		<div className="flex flex-col gap-3">
 			<p className="text-sm text-[#7B7B7B]">Choose which network to pay on</p>
 			{cryptoChainIds.map(chainId => {
-				const icon = CHAIN_ICONS[chainId];
+				const ChainIcon = CHAIN_ICONS[chainId];
 				const chainName = getChainName(chainId);
 
 				return (
@@ -64,13 +64,8 @@ export function ChainSelector({
 						onClick={() => onSelectChain(chainId)}
 					>
 						<span className="flex items-center gap-3">
-							{icon && (
-								<span
-									className="flex size-6 items-center justify-center overflow-hidden rounded-full"
-									style={{ background: icon.iconBackground }}
-								>
-									<icon.icon className="size-4" />
-								</span>
+							{ChainIcon && (
+								<ChainIcon variant="branded" size={24} className="shrink-0" />
 							)}
 							<span className="text-sm font-medium">{chainName}</span>
 						</span>

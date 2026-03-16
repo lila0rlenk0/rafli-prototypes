@@ -1,46 +1,41 @@
 /**
- * Chain icon components for crypto checkout UI.
+ * Chain icon components using @web3icons/react.
  *
- * React SVG components sourced from RainbowKit's bundled chain icons
- * (@rainbow-me/rainbowkit/dist/*). We extract them here because
- * RainbowKit only exposes icons via ConnectButton.Custom for the
- * currently connected chain — we need icons for all chains in the selector.
- *
- * Testnets reuse their mainnet parent's icon.
+ * Maps chain IDs to their branded SVG network icon components.
+ * Testnets get their own icons when available, otherwise fall back
+ * to their mainnet parent's icon.
  */
 
-import type { ComponentProps, ComponentType } from 'react';
+import type { ComponentType } from 'react';
 
-import { ArbitrumIcon } from '@/assets/icons/chains/arbitrum-icon';
-import { BaseIcon } from '@/assets/icons/chains/base-icon';
-import { EthereumIcon } from '@/assets/icons/chains/ethereum-icon';
-import { PolygonIcon } from '@/assets/icons/chains/polygon-icon';
+import {
+	NetworkArbitrumOne,
+	NetworkArbitrumSepolia,
+	NetworkBase,
+	NetworkBaseSepolia,
+	NetworkEthereum,
+	NetworkPolygon,
+	NetworkPolygonAmoy,
+	NetworkSepolia,
+} from '@web3icons/react';
 
-interface ChainIcon {
-	/** React SVG component for the chain's logo */
-	icon: ComponentType<ComponentProps<'svg'>>;
-	/** Background color for the icon container */
-	iconBackground: string;
-}
+import type { IconComponentProps } from '@web3icons/react';
 
-/**
- * Chain icons indexed by chain ID.
- * Testnets reuse their mainnet parent's icon.
- */
-export const CHAIN_ICONS: Record<number, ChainIcon> = {
+/** Chain icon component indexed by chain ID */
+export const CHAIN_ICONS: Record<number, ComponentType<IconComponentProps>> = {
 	// Ethereum mainnet + Sepolia testnet
-	1: { icon: EthereumIcon, iconBackground: '#25292E' },
-	11_155_111: { icon: EthereumIcon, iconBackground: '#25292E' },
+	1: NetworkEthereum,
+	11_155_111: NetworkSepolia,
 
 	// Arbitrum mainnet + Sepolia testnet
-	42_161: { icon: ArbitrumIcon, iconBackground: '#96BEDC' },
-	421_614: { icon: ArbitrumIcon, iconBackground: '#96BEDC' },
+	42_161: NetworkArbitrumOne,
+	421_614: NetworkArbitrumSepolia,
 
 	// Base mainnet + Sepolia testnet
-	8453: { icon: BaseIcon, iconBackground: '#0052FF' },
-	84_532: { icon: BaseIcon, iconBackground: '#0052FF' },
+	8_453: NetworkBase,
+	84_532: NetworkBaseSepolia,
 
 	// Polygon mainnet + Amoy testnet
-	137: { icon: PolygonIcon, iconBackground: '#7B3FE4' },
-	80_002: { icon: PolygonIcon, iconBackground: '#7B3FE4' },
+	137: NetworkPolygon,
+	80_002: NetworkPolygonAmoy,
 };

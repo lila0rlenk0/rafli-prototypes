@@ -129,17 +129,12 @@ export function CryptoConfigSection({
 	const chainOptions: MultiSelectOption[] = useMemo(
 		function buildChainOptions() {
 			return supportedChains.map(function mapChain(chain: CryptoChainConfig) {
-				const chainIcon = CHAIN_ICONS[chain.chainId];
+				const ChainIcon = CHAIN_ICONS[chain.chainId];
 				return {
 					value: chain.chainId.toString(),
 					label: chain.name,
-					icon: chainIcon ? (
-						<span
-							className="flex size-5 items-center justify-center overflow-hidden rounded-full"
-							style={{ background: chainIcon.iconBackground }}
-						>
-							<chainIcon.icon className="size-3.5" />
-						</span>
+					icon: ChainIcon ? (
+						<ChainIcon variant="branded" size={20} className="shrink-0" />
 					) : undefined,
 				};
 			});

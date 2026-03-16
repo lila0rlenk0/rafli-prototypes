@@ -75,7 +75,7 @@ export function CryptoConfigSection({
 		function filterSupportedChains() {
 			if (!cryptoConfig) return [];
 			return cryptoConfig.chains.filter(c =>
-				SUPPORTED_WEB3_CHAIN_IDS.includes(c.chainId),
+				(SUPPORTED_WEB3_CHAIN_IDS as readonly number[]).includes(c.chainId),
 			);
 		},
 		[cryptoConfig],

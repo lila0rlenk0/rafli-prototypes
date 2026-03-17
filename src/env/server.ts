@@ -17,11 +17,13 @@ export const env = createEnv({
 		// Server-to-server secret: backend validates this before trusting X-Client-IP
 		S2S_SECRET: z.string().min(32),
 		MIXPANEL_TOKEN: z.string(),
+		SENTRY_DSN: z.string().url().optional(),
 	},
 	runtimeEnv: {
 		BACKEND_URL: process.env.BACKEND_URL,
 		APP_URL: process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL,
 		S2S_SECRET: process.env.S2S_SECRET,
 		MIXPANEL_TOKEN: process.env.MIXPANEL_TOKEN,
+		SENTRY_DSN: process.env.SENTRY_DSN,
 	},
 });

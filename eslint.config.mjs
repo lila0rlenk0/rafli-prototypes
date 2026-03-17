@@ -1,5 +1,6 @@
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
+import prettierConfig from 'eslint-config-prettier';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 const eslintConfig = defineConfig([
@@ -19,6 +20,8 @@ const eslintConfig = defineConfig([
 			'@typescript-eslint/no-explicit-any': 'warn',
 		},
 	},
+	// Disable ESLint rules that conflict with Prettier — must be last
+	prettierConfig,
 ]);
 
 export default eslintConfig;

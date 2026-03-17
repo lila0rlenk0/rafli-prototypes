@@ -57,7 +57,7 @@ function ButtonGroupText({
 	);
 
 	if (asChild) {
-		return <Slot className={sharedClassName} {...props} />;
+		return <Slot ref={ref} className={sharedClassName} {...props} />;
 	}
 
 	return <div ref={ref} className={sharedClassName} {...props} />;

@@ -10,6 +10,8 @@ import {
 	type PaymentErrorCode,
 	type PromoCodeErrorCode,
 	type RaffleErrorCode,
+	type ReportErrorCode,
+	type WalletErrorCode,
 	type ReviewErrorCode,
 	type TicketErrorCode,
 	type UpdateErrorCode,
@@ -81,26 +83,26 @@ function extractErrorCode(error: unknown): string | null {
 	return null;
 }
 
+/** Hoisted to module scope to avoid re-allocation on every call */
+const SIMPLE_CODE_MAP: Record<string, string> = {
+	unauthenticated: 'global:auth:unauthenticated',
+	permission_denied: 'forbidden',
+	not_found: 'not_found',
+	invalid_argument: 'validation_error',
+	// better-auth plugin codes
+	PASSWORD_COMPROMISED: 'auth:password:compromised',
+};
+
 /**
- * Maps simple backend codes to full error codes
+ * Normalizes simple backend codes to their full qualified equivalents.
+ * Some endpoints return shorthand codes like "unauthenticated" instead of
+ * "global:auth:unauthenticated" — this maps those to canonical form so
+ * prefix-based routing in domain mappers works correctly.
  *
- * Some endpoints return simple codes like "unauthenticated" instead of
- * full codes like "global:auth:unauthenticated". This normalizes them.
- *
- * @param code - Simple code from backend
- * @returns Full error code or original if no mapping
+ * @param code - Raw code from backend response
+ * @returns Normalized code, or original if no mapping exists
  */
 function mapSimpleCode(code: string): string {
-	const SIMPLE_CODE_MAP: Record<string, string> = {
-		// Simple code → Full backend code
-		unauthenticated: 'global:auth:unauthenticated',
-		permission_denied: 'forbidden',
-		not_found: 'not_found',
-		invalid_argument: 'validation_error',
-		// better-auth plugin codes
-		PASSWORD_COMPROMISED: 'auth:password:compromised',
-	};
-
 	return SIMPLE_CODE_MAP[code] || code;
 }
 
@@ -163,50 +165,6 @@ function mapCommonError(
 
 	// Catch-all for unhandled cases
 	return COMMON_ERROR_CODES.UNKNOWN_ERROR;
-}
-
-/**
- * Generic error mapper (deprecated)
- *
- * @deprecated Use service-specific mappers: mapAuthError, mapRaffleError, etc.
- */
-export function mapBackendError<TErrorCode extends string>(
-	error: unknown,
-	errorCodeMap: Record<string, TErrorCode>,
-	defaultErrorCode: TErrorCode,
-): TErrorCode {
-	if (!(error instanceof AxiosError)) {
-		return defaultErrorCode;
-	}
-
-	const backendCode = error.response?.data?.message as string | undefined;
-
-	if (backendCode && backendCode in errorCodeMap) {
-		return errorCodeMap[backendCode];
-	}
-
-	const status = error.response?.status;
-	if (status === 401) {
-		return COMMON_ERROR_CODES.UNAUTHORIZED as TErrorCode;
-	}
-	if (status === 403) {
-		return COMMON_ERROR_CODES.FORBIDDEN as TErrorCode;
-	}
-	if (status === 500) {
-		return COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR as TErrorCode;
-	}
-	if (status === 503) {
-		return COMMON_ERROR_CODES.SERVICE_UNAVAILABLE as TErrorCode;
-	}
-
-	if (error.code === 'ECONNABORTED') {
-		return COMMON_ERROR_CODES.TIMEOUT_ERROR as TErrorCode;
-	}
-	if (error.code === 'ERR_NETWORK') {
-		return COMMON_ERROR_CODES.NETWORK_ERROR as TErrorCode;
-	}
-
-	return defaultErrorCode;
 }
 
 /**
@@ -303,10 +261,44 @@ export function mapOrderError(error: unknown): OrderErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('core:order:') ||
-			extractedCode.startsWith('core:raffle:') ||
+			mappedCode.startsWith('core:raffle:') ||
 			mappedCode.startsWith('global:')
 		) {
 			return mappedCode as OrderErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps wallet errors to WalletErrorCode
+ *
+ * Accepts `auth:wallet:*` and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns WalletErrorCode (either backend code or frontend fallback)
+ */
+export function mapWalletError(error: unknown): WalletErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		if (
+			extractedCode.startsWith('auth:wallet:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as WalletErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (
+			mappedCode.startsWith('auth:wallet:') ||
+			mappedCode.startsWith('global:')
+		) {
+			return mappedCode as WalletErrorCode;
 		}
 	}
 
@@ -327,9 +319,11 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 
 	if (extractedCode) {
 		// Backend code with known prefix - use directly
-		// Examples: "payments:checkout:failed", "global:auth:unauthenticated"
+		// Examples: "payments:checkout:failed", "core:order:not-found", "global:auth:unauthenticated"
+		// Accepts core:* because crypto checkout can return core:order:* errors
 		if (
 			extractedCode.startsWith('payments:') ||
+			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
 		) {
 			return extractedCode as PaymentErrorCode;
@@ -339,6 +333,7 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('payments:') ||
+			mappedCode.startsWith('core:') ||
 			mappedCode.startsWith('global:')
 		) {
 			return mappedCode as PaymentErrorCode;
@@ -598,6 +593,41 @@ export function mapCommentError(error: unknown): CommentErrorCode {
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as CommentErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps report errors to ReportErrorCode
+ *
+ * Accepts `moderation:*` and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns ReportErrorCode (either backend code or frontend fallback)
+ */
+export function mapReportError(error: unknown): ReportErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "moderation:report:duplicate", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('moderation:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as ReportErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (
+			mappedCode.startsWith('moderation:') ||
+			mappedCode.startsWith('global:')
+		) {
+			return mappedCode as ReportErrorCode;
 		}
 	}
 

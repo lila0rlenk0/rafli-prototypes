@@ -19,6 +19,7 @@ import {
 	X,
 } from 'lucide-react';
 import { useMemo } from 'react';
+import { CryptoConfigSection } from '../../../create/crypto-config-section';
 import { useEditForm } from '../edit-form-provider';
 import { PromoCodesSection } from '../promo-codes-section';
 
@@ -136,7 +137,8 @@ export function TicketsStep() {
 		Boolean(endDate) &&
 		Boolean(pricePerTicket && pricePerTicket >= 0.5) &&
 		Boolean(numberOfWinners && numberOfWinners > 0) &&
-		Boolean(minParticipants && minParticipants > 0) &&
+		typeof minParticipants === 'number' &&
+		minParticipants >= 0 &&
 		typeof maxParticipants === 'number' &&
 		maxParticipants >= 0 &&
 		Boolean(checkInQuestion) &&
@@ -163,6 +165,11 @@ export function TicketsStep() {
 		setValue('minParticipants', 0);
 		setValue('maxParticipants', 0);
 		setValue('checkInQuestion', '');
+		// Reset crypto config to defaults
+		setValue('acceptsCrypto', false);
+		setValue('cryptoChainIds', []);
+		setValue('cryptoTokens', []);
+		setValue('cryptoTokenPricing', []);
 	}
 
 	// Handle continue with validation
@@ -413,6 +420,17 @@ export function TicketsStep() {
 					</div>
 				)}
 			</div>
+
+			{/* Crypto payment config */}
+			<CryptoConfigSection
+				acceptsCrypto={form.watch('acceptsCrypto')}
+				cryptoChainIds={form.watch('cryptoChainIds')}
+				cryptoTokens={form.watch('cryptoTokens')}
+				cryptoTokenPricing={form.watch('cryptoTokenPricing')}
+				onFieldChange={(field, value) =>
+					form.setValue(field, value, { shouldDirty: true })
+				}
+			/>
 
 			{/* Promo codes section */}
 			<PromoCodesSection />

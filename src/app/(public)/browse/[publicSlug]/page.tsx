@@ -37,6 +37,8 @@ import {
 	type CommentableStatus,
 	CONCLUDED_STATUSES,
 	type ConcludedStatus,
+	PROMO_MANAGEABLE_STATUSES,
+	type PromoManageableStatus,
 	RAFFLE_STATUS,
 	UPDATE_MANAGEABLE_STATUSES,
 	type UpdateManageableStatus,
@@ -51,6 +53,7 @@ import { BugIcon } from '@/assets/icons/bug-icon';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
+import { ReportRaffleButton } from './report-raffle-button';
 
 interface PageProps {
 	params: Promise<{
@@ -59,22 +62,6 @@ interface PageProps {
 	searchParams: Promise<{
 		session_id?: string;
 	}>;
-}
-
-/**
- * Gets the category name from a list of categories by ID
- *
- * @param categories - List of available categories
- * @param categoryId - The category ID to look up
- * @returns The category name or 'Other' if not found
- */
-function getCategoryName(
-	categories: Category[],
-	categoryId: string | undefined,
-): string {
-	if (!categoryId) return 'Other';
-	const category = categories.find(c => c.id === categoryId);
-	return category?.name || 'Other';
 }
 
 /**
@@ -89,6 +76,22 @@ function getCategoryName(
  */
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;
+
+	/**
+	 * Gets the category name from a list of categories by ID
+	 *
+	 * @param categories - List of available categories
+	 * @param categoryId - The category ID to look up
+	 * @returns The category name or 'Other' if not found
+	 */
+	function getCategoryName(
+		categories: Category[],
+		categoryId: string | undefined,
+	): string {
+		if (!categoryId) return 'Other';
+		const category = categories.find(c => c.id === categoryId);
+		return category?.name || 'Other';
+	}
 
 	// Step 1: Fetch raffle + categories in parallel.
 	const [response, categoriesResponse] = await Promise.all([
@@ -230,20 +233,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const hostAvatarUrl = raffle.host?.avatar ?? null;
 
 	/**
-	 * Statuses that allow promo code management
-	 */
-	const MANAGEABLE_STATUSES = [
-		RAFFLE_STATUS.DRAFT,
-		RAFFLE_STATUS.QUEUED,
-		RAFFLE_STATUS.LIVE,
-	] as const;
-
-	/**
 	 * Check if raffle status allows promo code management
 	 */
 	function isManageableStatus(): boolean {
-		return MANAGEABLE_STATUSES.includes(
-			raffle.status as (typeof MANAGEABLE_STATUSES)[number],
+		return PROMO_MANAGEABLE_STATUSES.includes(
+			raffle.status as PromoManageableStatus,
 		);
 	}
 
@@ -337,10 +331,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	 * @returns Formatted string with label
 	 */
 	function getHostRafflesCount(): string {
-		let count = 0;
-		if (raffle.host?.totalRaffles) {
-			count = raffle.host.totalRaffles;
-		}
+		const count = raffle.host?.totalRaffles ?? 0;
 		return `${count} Raffles`;
 	}
 
@@ -386,7 +377,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			<div className="flex w-full flex-col gap-8 lg:flex-row">
 				<div className="w-full space-y-4">
 					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
-						<h2 className="text-3xl font-bold text-gray-900">{raffle.title}</h2>
+						<div className="flex items-start justify-between gap-2">
+							<h2 className="text-3xl font-bold text-gray-900">
+								{raffle.title}
+							</h2>
+							{isAuthenticated && !isOwner && (
+								<ReportRaffleButton raffleId={raffle.id} />
+							)}
+						</div>
 
 						<Link
 							href={getHostProfileUrl()}
@@ -633,12 +631,16 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									<TicketPurchaseCard
 										raffleId={raffle.id}
 										publicSlug={publicSlug}
+										endAt={raffle.endAt}
 										price={ticketPrice}
 										currency={raffle.ticketPriceCurrency}
 										availableTickets={availableTickets}
 										disabled={showEditButton || disablePurchase}
 										questionId={raffle.questionId}
 										isAuthenticated={isAuthenticated}
+										cryptoOptions={raffle.cryptoOptions}
+										myTicketsTotal={myTicketsTotal}
+										userId={currentUserId}
 									/>
 								</Suspense>
 

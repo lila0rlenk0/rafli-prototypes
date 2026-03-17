@@ -1,9 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
+import type { RaffleStatus } from '@/types/raffle';
+import {
+	getAutoRefreshTimeoutMs,
+	resolveRaffleAutoRefreshPhase,
+} from '@/components/raffle/raffle-auto-refresh-state';
 
 /** Polling interval in milliseconds — fast enough to feel responsive, slow enough to avoid hammering */
 const POLL_INTERVAL_MS = 15_000;
@@ -35,34 +39,33 @@ export function RaffleAutoRefresh({
 	hasWinners,
 }: RaffleAutoRefreshProps) {
 	const router = useRouter();
+	const phase = resolveRaffleAutoRefreshPhase({ status, endAt, hasWinners });
+	// Once a phase exhausts its budget, stop refreshing until the server moves the raffle
+	// into a different phase (or a steady state).
+	const [phaseTimedOut, setPhaseTimedOut] = useState(false);
 
 	useEffect(() => {
-		/**
-		 * Determines if the raffle is in a transitional state that warrants polling.
-		 * Checked each interval so polling self-disables once the transition resolves.
-		 */
-		function shouldPoll(): boolean {
-			// Live raffle past its end time — backend cron hasn't picked it up yet
-			if (status === RAFFLE_STATUS.LIVE && new Date(endAt) <= new Date())
-				return true;
+		if (!phase) return;
 
-			// Draw initiated but VRF hasn't resolved winners yet
-			if (status === RAFFLE_STATUS.ENDED && !hasWinners) return true;
+		const timeout = setTimeout(() => {
+			setPhaseTimedOut(true);
+		}, getAutoRefreshTimeoutMs(phase));
 
-			// Brief fulfilling state before completion
-			if (status === RAFFLE_STATUS.FULFILLING) return true;
+		return function cleanup() {
+			clearTimeout(timeout);
+			setPhaseTimedOut(false);
+		};
+	}, [phase]);
 
-			return false;
-		}
-
-		if (!shouldPoll()) return;
+	useEffect(() => {
+		if (!phase || phaseTimedOut) return;
 
 		const interval = setInterval(() => {
 			router.refresh();
 		}, POLL_INTERVAL_MS);
 
 		return () => clearInterval(interval);
-	}, [status, endAt, hasWinners, router]);
+	}, [phase, phaseTimedOut, router]);
 
 	// Pure side-effect — no UI
 	return null;

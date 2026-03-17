@@ -23,6 +23,10 @@ export const ORDER_ERROR_CODES = {
 	INVALID_QUANTITY: 'core:order:invalid-quantity',
 	/** Order already completed */
 	ALREADY_COMPLETED: 'core:order:already-completed',
+	/** Required raffle question not answered before purchase */
+	QUESTION_NOT_ANSWERED: 'core:order:question-not-answered',
+	/** Raffle not found (deleted or invalid ID) */
+	RAFFLE_NOT_FOUND: 'core:raffle:not-found',
 
 	// Generic fetch failure (Zod validation, etc.)
 	FETCH_FAILED: 'fetch_failed',

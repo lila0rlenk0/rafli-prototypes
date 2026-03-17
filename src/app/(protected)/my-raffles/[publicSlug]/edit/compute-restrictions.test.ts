@@ -34,6 +34,7 @@ function makeRaffle(
 		revenueAmount: '0',
 		hostId: 'host-1',
 		questionId: null,
+		cryptoOptions: null,
 		createdAt: '2026-02-01T00:00:00Z',
 		updatedAt: '2026-02-01T00:00:00Z',
 		...overrides,

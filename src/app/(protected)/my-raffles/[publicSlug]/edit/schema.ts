@@ -1,6 +1,8 @@
 import { stripMarkdown } from '@/lib/utils/strip-markdown';
 import { z } from 'zod';
 
+import { cryptoFormFields } from '../../create/schema';
+
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'audio/mp3'];
 
@@ -100,6 +102,9 @@ export const editFormSchema = z
 					.max(1_000_000, 'Max participants cannot exceed 1,000,000'),
 			),
 		checkInQuestion: z.string().min(1, 'Check-in question is required'),
+
+		// Step 2: Crypto payment config
+		...cryptoFormFields,
 	})
 	.refine(
 		data => {

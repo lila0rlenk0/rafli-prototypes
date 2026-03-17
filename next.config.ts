@@ -30,6 +30,18 @@ const nextConfig: NextConfig = {
 		minimumCacheTTL: 86_400,
 		remotePatterns: [
 			{
+				// Primary CDN — raffly.win subdomains (e.g. cdn.raffly.win).
+				protocol: 'https',
+				hostname: '*.raffly.win',
+				pathname: '/**',
+			},
+			{
+				// Primary CDN — rafli.win subdomains (e.g. cdn.rafli.win).
+				protocol: 'https',
+				hostname: '*.rafli.win',
+				pathname: '/**',
+			},
+			{
 				// CloudFront CDN in front of S3 media buckets.
 				// Wildcard covers all distributions (varies per environment).
 				protocol: 'https',

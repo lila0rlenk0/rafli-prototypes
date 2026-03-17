@@ -1,9 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { RAFFLE_STATUS } from '@/types/raffle';
 import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
 import { useEditForm } from './edit-form-provider';
+import { PublishRaffleButton } from './publish-raffle-button';
 
 /**
  * FormHeader Component for Edit Form
@@ -13,7 +16,10 @@ import { useEditForm } from './edit-form-provider';
  */
 export function FormHeader() {
 	const router = useRouter();
-	const { currentStep, totalSteps, previousStep } = useEditForm();
+	const { currentStep, totalSteps, previousStep, originalRaffle } =
+		useEditForm();
+
+	const isDraft = originalRaffle.status === RAFFLE_STATUS.DRAFT;
 
 	const progress = ((currentStep + 1) / totalSteps) * 100;
 
@@ -49,6 +55,7 @@ export function FormHeader() {
 					>
 						Previous page
 					</Button>
+					{isDraft && <PublishRaffleButton />}
 					<Button
 						variant="ghost"
 						size="icon"

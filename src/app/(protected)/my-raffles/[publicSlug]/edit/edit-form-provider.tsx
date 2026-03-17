@@ -31,6 +31,8 @@ import { STEPS } from './steps';
 
 type EditFormData = z.infer<typeof editFormSchema>;
 
+type PublishMode = 'now' | 'schedule';
+
 interface EditFormContextType {
 	currentStep: number;
 	totalSteps: number;
@@ -42,6 +44,8 @@ interface EditFormContextType {
 	isLastStep: boolean;
 	onSubmit: (data: EditFormData) => void;
 	isUpdating: boolean;
+	isPublishing: boolean;
+	handlePublish: (mode: PublishMode) => void;
 	restrictions: FieldRestrictions;
 	originalRaffle: Raffle;
 	existingCoverUrl: string | null;
@@ -89,6 +93,7 @@ export function EditFormProvider({
 	const router = useRouter();
 	const [currentStep, setCurrentStep] = useState(0);
 	const [isUpdating, setIsUpdating] = useState(false);
+	const [isPublishing, setIsPublishing] = useState(false);
 
 	const totalSteps = STEPS.length;
 
@@ -299,6 +304,49 @@ export function EditFormProvider({
 	);
 
 	/**
+	 * Publishes a draft raffle immediately or schedules it
+	 * 'now': sets startAt to today then publishes → live
+	 * 'schedule': publishes directly → queued (startAt already future)
+	 */
+	const handlePublish = useCallback(
+		async (mode: PublishMode) => {
+			setIsPublishing(true);
+
+			try {
+				if (mode === 'now') {
+					const today = new Date().toISOString().split('T')[0];
+					const updateResult = await updateRaffle(raffle.id, {
+						startAt: today,
+					});
+					if (!updateResult.success) {
+						const { message } = getRaffleServerError(updateResult.error);
+						toast.error(message);
+						return;
+					}
+				}
+
+				const result = await publishRaffle(raffle.id);
+				if (!result.success) {
+					const { message } = getRaffleServerError(result.error);
+					toast.error(message);
+					return;
+				}
+
+				toast.info(
+					'Your raffle is being published. It may take 1-2 minutes to go live.',
+				);
+				router.push('/my-raffles');
+			} catch (error) {
+				console.error('Publish raffle error:', error);
+				toast.error('Something went wrong. Please try again');
+			} finally {
+				setIsPublishing(false);
+			}
+		},
+		[raffle.id, router],
+	);
+
+	/**
 	 * Handles form submission
 	 * Advances to the next step or triggers raffle update on the last step
 	 *
@@ -328,6 +376,8 @@ export function EditFormProvider({
 				isLastStep,
 				onSubmit: handleSubmit,
 				isUpdating,
+				isPublishing,
+				handlePublish,
 				restrictions,
 				originalRaffle: raffle,
 				existingCoverUrl,

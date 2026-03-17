@@ -36,6 +36,8 @@ export const RAFFLE_ERROR_CODES = {
 	MISSING_FIELDS: 'core:raffle:missing-fields',
 	/** Raffle cannot be cancelled in its current state */
 	NOT_CANCELLABLE: 'core:raffle:not-cancellable',
+	/** Crypto payment configuration is invalid or incomplete */
+	INVALID_CRYPTO_CONFIG: 'core:raffle:invalid-crypto-config',
 
 	// Gallery errors
 	/** Maximum gallery images limit exceeded */

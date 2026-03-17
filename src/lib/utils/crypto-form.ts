@@ -78,25 +78,32 @@ export function extractCryptoFormFields(
  * Used in both create and edit review steps.
  *
  * @param acceptsCrypto - Whether crypto payments are enabled
- * @param cryptoChainIds - Selected chain IDs (empty = all)
- * @param cryptoTokens - Selected token IDs (empty = all)
+ * @param cryptoChainIds - Selected chain IDs
+ * @param cryptoTokens - Selected token IDs
+ * @param totalChains - Total available chains (to detect "all selected")
+ * @param totalTokens - Total available tokens (to detect "all selected")
  * @returns Summary string like "All chains · 3 token(s)" or "Card only"
  */
 export function getCryptoSummary(
 	acceptsCrypto: boolean,
 	cryptoChainIds: number[],
 	cryptoTokens: string[],
+	totalChains?: number,
+	totalTokens?: number,
 ): string {
 	if (!acceptsCrypto) return 'Card only';
 
-	const chains =
-		cryptoChainIds.length === 0
-			? 'All chains'
-			: `${cryptoChainIds.length} chain(s)`;
-	const tokens =
-		cryptoTokens.length === 0
-			? 'All tokens'
-			: `${cryptoTokens.length} token(s)`;
+	/** Checks if all items are selected */
+	function isAll(count: number, total?: number): boolean {
+		return total !== undefined && count === total;
+	}
+
+	const chains = isAll(cryptoChainIds.length, totalChains)
+		? 'All chains'
+		: `${cryptoChainIds.length} chain(s)`;
+	const tokens = isAll(cryptoTokens.length, totalTokens)
+		? 'All tokens'
+		: `${cryptoTokens.length} token(s)`;
 
 	return `${chains} \u00B7 ${tokens}`;
 }

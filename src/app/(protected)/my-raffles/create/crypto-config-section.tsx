@@ -29,9 +29,9 @@ import { useMemo } from 'react';
 interface CryptoConfigSectionProps {
 	/** Whether crypto payments are enabled */
 	acceptsCrypto: boolean;
-	/** Selected chain IDs (empty = all chains) */
+	/** Selected chain IDs */
 	cryptoChainIds: number[];
-	/** Selected token IDs (empty = all tokens) */
+	/** Selected token IDs */
 	cryptoTokens: string[];
 	/** Per-ticket pricing for non-stablecoin tokens */
 	cryptoTokenPricing: TokenPricingEntry[];
@@ -56,9 +56,8 @@ interface CryptoConfigSectionProps {
  * Fetches global crypto config (chains + tokens) from backend,
  * then renders chain/token multi-select dropdowns and pricing inputs.
  *
- * Backend semantics: empty `cryptoChainIds` / `cryptoTokens` = "all allowed".
- * UI maps this as: all items selected = send empty array (all).
- * Partial selection = send selected IDs only.
+ * Always sends explicit arrays — never empty. Selecting all items
+ * sends every ID, partial selection sends only selected IDs.
  */
 export function CryptoConfigSection({
 	acceptsCrypto,
@@ -81,15 +80,15 @@ export function CryptoConfigSection({
 		[cryptoConfig],
 	);
 
+	/** Whether all supported chains are selected */
+	const allChainsSelected = selectedChainIds.length >= supportedChains.length;
+
 	// Compute available tokens based on selected chains.
-	// When no chains are selected (= all), show all tokens from all chains.
-	// When specific chains are selected, show the union of tokens across those chains.
 	const availableTokens = useMemo(
 		function computeAvailableTokens() {
-			const chains =
-				selectedChainIds.length === 0
-					? supportedChains
-					: supportedChains.filter(c => selectedChainIds.includes(c.chainId));
+			const chains = allChainsSelected
+				? supportedChains
+				: supportedChains.filter(c => selectedChainIds.includes(c.chainId));
 
 			// Deduplicate tokens by tokenId — same token can appear on multiple chains
 			const seen = new Set<string>();
@@ -104,16 +103,12 @@ export function CryptoConfigSection({
 			}
 			return tokens;
 		},
-		[supportedChains, selectedChainIds],
+		[supportedChains, selectedChainIds, allChainsSelected],
 	);
 
 	// Identify non-stablecoin tokens that need pricing
 	const nonStablecoinTokens = useMemo(
 		function filterNonStablecoins() {
-			if (selectedTokenIds.length === 0) {
-				// "All tokens" mode — every non-stablecoin needs pricing
-				return availableTokens.filter(t => !t.isStablecoin);
-			}
 			return availableTokens.filter(
 				t => !t.isStablecoin && selectedTokenIds.includes(t.tokenId),
 			);
@@ -160,27 +155,14 @@ export function CryptoConfigSection({
 	// Chain value bridging
 	// ==========================================
 
-	// In "all" mode (empty array), show all chains as visually selected.
 	const chainSelectValue = useMemo(
 		function computeChainSelectValue() {
-			if (selectedChainIds.length === 0) {
-				return supportedChains.map(c => c.chainId.toString());
-			}
 			return selectedChainIds.map(id => id.toString());
 		},
-		[supportedChains, selectedChainIds],
+		[selectedChainIds],
 	);
 
-	// Token select value — in "all" mode, visually select everything
-	const tokenSelectValue = useMemo(
-		function computeTokenSelectValue() {
-			if (selectedTokenIds.length === 0) {
-				return availableTokens.map(t => t.tokenId);
-			}
-			return selectedTokenIds;
-		},
-		[availableTokens, selectedTokenIds],
-	);
+	const tokenSelectValue = selectedTokenIds;
 
 	// ==========================================
 	// Handlers
@@ -191,15 +173,20 @@ export function CryptoConfigSection({
 		onFieldChange('acceptsCrypto', checked);
 	}
 
-	/** Selects all chains (empty array = "all" mode) */
+	/** Selects all supported chains explicitly */
 	function handleSelectAllChains() {
-		onFieldChange('cryptoChainIds', []);
+		onFieldChange(
+			'cryptoChainIds',
+			supportedChains.map(c => c.chainId),
+		);
 	}
 
-	/** Selects all tokens (empty array = "all" mode) and clears stale pricing */
+	/** Selects all available tokens explicitly */
 	function handleSelectAllTokens() {
-		onFieldChange('cryptoTokens', []);
-		onFieldChange('cryptoTokenPricing', []);
+		onFieldChange(
+			'cryptoTokens',
+			availableTokens.map(t => t.tokenId),
+		);
 	}
 
 	/**
@@ -207,17 +194,14 @@ export function CryptoConfigSection({
 	 * Converts string[] back to number[] and prunes orphaned tokens/pricing.
 	 */
 	function handleChainValueChange(values: string[]) {
-		// If all chains selected, store empty array (= "all" mode)
-		const allSelected = values.length === supportedChains.length;
-		const nextIds = allSelected ? [] : values.map(Number);
+		const nextIds = values.map(Number);
 		onFieldChange('cryptoChainIds', nextIds);
 
 		// Prune tokens no longer available on any selected chain
 		if (selectedTokenIds.length > 0) {
-			const nextChains =
-				nextIds.length === 0
-					? supportedChains
-					: supportedChains.filter(c => nextIds.includes(c.chainId));
+			const nextChains = supportedChains.filter(c =>
+				nextIds.includes(c.chainId),
+			);
 			const availableIds = new Set(
 				nextChains.flatMap(c => c.tokens.map(t => t.tokenId)),
 			);
@@ -237,29 +221,21 @@ export function CryptoConfigSection({
 	 * Prunes pricing for deselected non-stablecoin tokens.
 	 */
 	function handleTokenValueChange(values: string[]) {
-		// If all tokens selected, store empty array (= "all" mode)
-		const allSelected = values.length === availableTokens.length;
-		const nextTokens = allSelected ? [] : values;
-		onFieldChange('cryptoTokens', nextTokens);
+		onFieldChange('cryptoTokens', values);
 
 		// Remove pricing for any non-stablecoin tokens that were deselected
-		if (!allSelected) {
-			const deselected = selectedTokenIds.filter(id => !values.includes(id));
-			if (deselected.length > 0) {
-				const nonStableDeselected = deselected.filter(id => {
-					const token = availableTokens.find(t => t.tokenId === id);
-					return token && !token.isStablecoin;
-				});
-				if (nonStableDeselected.length > 0) {
-					onFieldChange(
-						'cryptoTokenPricing',
-						tokenPricing.filter(p => !nonStableDeselected.includes(p.tokenId)),
-					);
-				}
+		const deselected = selectedTokenIds.filter(id => !values.includes(id));
+		if (deselected.length > 0) {
+			const nonStableDeselected = deselected.filter(id => {
+				const token = availableTokens.find(t => t.tokenId === id);
+				return token && !token.isStablecoin;
+			});
+			if (nonStableDeselected.length > 0) {
+				onFieldChange(
+					'cryptoTokenPricing',
+					tokenPricing.filter(p => !nonStableDeselected.includes(p.tokenId)),
+				);
 			}
-		} else {
-			// Switching to "all" mode — clear stale pricing
-			onFieldChange('cryptoTokenPricing', []);
 		}
 	}
 
@@ -348,7 +324,7 @@ export function CryptoConfigSection({
 										<label className="text-sm font-medium">Chains</label>
 										<button
 											type="button"
-											disabled={selectedChainIds.length === 0}
+											disabled={allChainsSelected}
 											className="text-primary cursor-pointer text-xs underline disabled:cursor-not-allowed disabled:opacity-50"
 											onClick={handleSelectAllChains}
 										>
@@ -369,7 +345,9 @@ export function CryptoConfigSection({
 										<label className="text-sm font-medium">Tokens</label>
 										<button
 											type="button"
-											disabled={selectedTokenIds.length === 0}
+											disabled={
+												selectedTokenIds.length === availableTokens.length
+											}
 											className="text-primary cursor-pointer text-xs underline disabled:cursor-not-allowed disabled:opacity-50"
 											onClick={handleSelectAllTokens}
 										>

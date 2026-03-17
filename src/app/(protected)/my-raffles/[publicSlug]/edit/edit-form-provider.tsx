@@ -304,6 +304,24 @@ export function EditFormProvider({
 	);
 
 	/**
+	 * Maps publish error codes to user-facing messages
+	 */
+	function getPublishErrorMessage(code: RaffleErrorCode): string {
+		switch (code) {
+			case RAFFLE_ERROR_CODES.NOT_DRAFT:
+				return 'Raffle is not in draft status and cannot be published';
+			case RAFFLE_ERROR_CODES.PERMISSION_DENIED:
+				return 'You do not have permission to publish this raffle';
+			case RAFFLE_ERROR_CODES.MISSING_FIELDS:
+				return 'Some required fields are missing. Complete all steps before publishing.';
+			case RAFFLE_ERROR_CODES.INVALID_CRYPTO_CONFIG:
+				return 'Crypto payment configuration is incomplete. Ensure all tokens have pricing set.';
+			default:
+				return 'Failed to publish raffle';
+		}
+	}
+
+	/**
 	 * Publishes a draft raffle immediately or schedules it
 	 * 'now': sets startAt to today then publishes → live
 	 * 'schedule': publishes directly → queued (startAt already future)
@@ -313,22 +331,29 @@ export function EditFormProvider({
 			setIsPublishing(true);
 
 			try {
+				// For 'now': update startAt to current time so backend transitions to live
+				// Skip if startAt is already today or past
 				if (mode === 'now') {
-					const today = new Date().toISOString().split('T')[0];
-					const updateResult = await updateRaffle(raffle.id, {
-						startAt: today,
-					});
-					if (!updateResult.success) {
-						const { message } = getRaffleServerError(updateResult.error);
-						toast.error(message);
-						return;
+					const startDate = new Date(raffle.startAt);
+					startDate.setHours(0, 0, 0, 0);
+					const today = new Date();
+					today.setHours(0, 0, 0, 0);
+
+					if (startDate > today) {
+						const updateResult = await updateRaffle(raffle.id, {
+							startAt: new Date().toISOString(),
+						});
+						if (!updateResult.success) {
+							const { message } = getRaffleServerError(updateResult.error);
+							toast.error(message);
+							return;
+						}
 					}
 				}
 
 				const result = await publishRaffle(raffle.id);
 				if (!result.success) {
-					const { message } = getRaffleServerError(result.error);
-					toast.error(message);
+					toast.error(getPublishErrorMessage(result.error));
 					return;
 				}
 

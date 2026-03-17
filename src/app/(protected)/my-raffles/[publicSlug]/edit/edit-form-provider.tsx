@@ -368,7 +368,7 @@ export function EditFormProvider({
 				setIsPublishing(false);
 			}
 		},
-		[raffle.id, router],
+		[raffle.id, raffle.startAt, router],
 	);
 
 	/**

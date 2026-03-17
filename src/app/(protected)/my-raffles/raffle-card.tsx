@@ -4,12 +4,14 @@ import { Eye } from 'lucide-react';
 import Link from 'next/link';
 
 import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
+import { PublishSplitButton } from '@/components/raffle/publish-split-button';
 import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { Button } from '@/components/ui/button';
 import { ImageCarousel } from '@/components/ui/image-carousel';
 import { isAutoCancelled } from '@/lib/utils/cancellation-reason';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
+import { usePublishRaffle } from '@/services/raffle/use-publish-raffle';
 import {
 	isEnrolledRaffle,
 	RAFFLE_STATUS,
@@ -66,6 +68,10 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 		raffle.maxParticipants,
 	);
 	const showEditButton = shouldShowEditButton();
+	const { isPublishing, handlePublish } = usePublishRaffle({
+		raffleId: raffle.id,
+		startAt: raffle.startAt,
+	});
 
 	/**
 	 * Gets cancellation badge label and color for cancelled raffles.
@@ -187,17 +193,24 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 				</div>
 
 				{showEditButton ? (
-					<div className="mt-4 flex gap-2">
-						<EditRaffleButton publicSlug={raffle.publicSlugOrCode} />
-						<Link href={`/browse/${raffle.publicSlugOrCode}`}>
-							<Button
-								variant="outline"
-								className="cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
-							>
-								<Eye className="size-4" />
-								Preview
-							</Button>
-						</Link>
+					<div className="mt-4 flex flex-col gap-2">
+						<div className="flex gap-2">
+							<EditRaffleButton publicSlug={raffle.publicSlugOrCode} />
+							<Link href={`/browse/${raffle.publicSlugOrCode}`}>
+								<Button
+									variant="outline"
+									className="cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
+								>
+									<Eye className="size-4" />
+									Preview
+								</Button>
+							</Link>
+						</div>
+						<PublishSplitButton
+							isPublishing={isPublishing}
+							onPublish={handlePublish}
+							className="w-full"
+						/>
 					</div>
 				) : (
 					<Link

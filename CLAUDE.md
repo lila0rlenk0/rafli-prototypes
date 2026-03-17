@@ -68,6 +68,7 @@ NEVER: Expose secrets to client
 
 @docs/verification.md
 @docs/coding-standards.md
+@docs/observability.md
 
 ## Philosophy
 

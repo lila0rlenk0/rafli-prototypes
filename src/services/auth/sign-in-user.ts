@@ -5,6 +5,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { setAuthCookies } from '@/lib/auth/session';
 import { failure, mapAuthError, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
 import { signInInputSchema, type SignInInput } from '@/types/auth';
 import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -55,6 +56,10 @@ export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 		return success(undefined);
 	} catch (error) {
 		const errorCode = mapAuthError(error);
+		captureServiceError(error, errorCode, {
+			service: 'auth',
+			action: 'sign-in-user',
+		});
 
 		// Track failed sign-in (awaited to ensure completion in serverless)
 		await trackServer(AUTH_EVENTS.SIGN_IN_FAILED, {

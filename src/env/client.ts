@@ -27,6 +27,7 @@ export const clientEnv = createEnv({
 			.url()
 			.default('https://gateway.pinata.cloud/ipfs/'),
 		NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
+		NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
 	},
 	runtimeEnv: {
 		NODE_ENV: process.env.NODE_ENV,
@@ -39,5 +40,6 @@ export const clientEnv = createEnv({
 		NEXT_PUBLIC_IPFS_GATEWAY_URL: process.env.NEXT_PUBLIC_IPFS_GATEWAY_URL,
 		NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:
 			process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+		NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
 	},
 });

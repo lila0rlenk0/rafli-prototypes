@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
 import { env } from '@/env/server';
 import type { NextConfig } from 'next';
 
@@ -90,4 +92,16 @@ const nextConfig: NextConfig = {
 	},
 };
 
-export default nextConfig;
+// TODO: Configure SENTRY_ORG, SENTRY_PROJECT, and SENTRY_AUTH_TOKEN env vars
+// before merging. Source map uploads won't work until these are set.
+export default withSentryConfig(nextConfig, {
+	org: process.env.SENTRY_ORG,
+	project: process.env.SENTRY_PROJECT,
+	authToken: process.env.SENTRY_AUTH_TOKEN,
+
+	// Disable Sentry SDK telemetry
+	telemetry: false,
+
+	// Silence source map upload warnings when env vars are not set (local dev)
+	silent: !process.env.SENTRY_AUTH_TOKEN,
+});

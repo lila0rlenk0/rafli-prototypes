@@ -100,15 +100,15 @@ export function TicketsStep() {
 		return end > start;
 	}, [startDate, endDate]);
 
-	// Check if there's at least 30 days between start and end
-	// TODO: Temporary rule - remove when no longer needed
-	const hasMinimum30DaysGap = useMemo(() => {
+	// Check if end date is within 6 months from start date
+	const isEndDateWithin6Months = useMemo(() => {
 		if (!startDate || !endDate) return true; // Don't validate if dates are not set
 		const start = new Date(startDate);
 		const end = new Date(endDate);
-		const diffTime = end.getTime() - start.getTime();
-		const diffDays = diffTime / (1000 * 60 * 60 * 24);
-		return diffDays >= 30;
+		// 6 months max — clone start and add 6 months to get the upper bound
+		const maxEnd = new Date(start);
+		maxEnd.setMonth(maxEnd.getMonth() + 6);
+		return end <= maxEnd;
 	}, [startDate, endDate]);
 
 	// Check if start date is today
@@ -139,7 +139,7 @@ export function TicketsStep() {
 		maxParticipants >= 0 &&
 		Boolean(checkInQuestion) &&
 		isDateRangeValid &&
-		hasMinimum30DaysGap &&
+		isEndDateWithin6Months &&
 		!errors.startDate &&
 		!errors.endDate &&
 		!errors.pricePerTicket &&
@@ -229,9 +229,9 @@ export function TicketsStep() {
 						{startDate &&
 							endDate &&
 							isDateRangeValid &&
-							!hasMinimum30DaysGap && (
+							!isEndDateWithin6Months && (
 								<span className="text-sm text-red-500">
-									There must be at least 30 days between start and end date
+									End date must be within 6 months of start date
 								</span>
 							)}
 					</div>

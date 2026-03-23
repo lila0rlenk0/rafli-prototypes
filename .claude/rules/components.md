@@ -1,0 +1,88 @@
+---
+paths:
+  - 'src/components/**'
+  - 'src/app/**/*.tsx'
+---
+
+# Components
+
+Server Components first architecture. UI organized by domain.
+
+## Directory
+
+- `ui/` — base primitives (Button, Input, Card), some generated via shadcn
+- `auth/`, `raffle/`, `host/`, `payment/`, `filters/`, `promo-code/`, `mode/`, `order/`, `fulfillment/`, `notifications/`, `report/`, `verification/` — domain components
+
+## Server vs Client
+
+- Server Components — static content, data fetching, SEO-critical, no browser APIs
+- Client Components — interactive UI, React hooks, browser APIs. Mark with `'use client'`
+- Never add `'use client'` without interactivity requirement
+
+## Runtime Data in Layouts
+
+Runtime data (`cookies()`, `headers()`, `searchParams`, `getSession()`) blocks streaming. Extract and wrap in Suspense.
+
+```tsx
+// bad — blocks entire route tree
+export default async function Layout({ children }) {
+	const session = await getSession();
+	return <Nav user={session.user}>{children}</Nav>;
+}
+
+// good — enables streaming
+async function LayoutContent({ children }) {
+	const session = await getSession();
+	return <Nav user={session.user}>{children}</Nav>;
+}
+
+export default function Layout({ children }) {
+	return (
+		<Suspense fallback={<Spinner />}>
+			<LayoutContent>{children}</LayoutContent>
+		</Suspense>
+	);
+}
+```
+
+## Loading States
+
+- Page-level — create `loading.tsx` sibling to `page.tsx`
+- Component-level — wrap async children in `<Suspense fallback={<Skeleton />}>`
+
+## Data Fetching in Server Components
+
+Parallelize independent fetches — never await sequentially when data is independent.
+
+```tsx
+// bad — getRaffle waits for getSession to finish
+const session = await getSession();
+const raffleResult = await getRaffle(slug);
+
+// good — both start immediately
+const [session, raffleResult] = await Promise.all([
+	getSession(),
+	getRaffle(slug),
+]);
+```
+
+## RSC Serialization
+
+Only pass fields the client component actually uses — everything crossing the Server/Client boundary is serialized into HTML.
+
+```tsx
+// bad — serializes all 50 user fields
+<Profile user={user} />
+
+// good — serializes only what's needed
+<Profile name={user.name} avatarUrl={user.avatarUrl} />
+```
+
+## Performance
+
+- `useMemo` for expensive calculations, `useCallback` for callback stability
+- Use functional `setState` updates when new state depends on previous state — prevents stale closures and stabilizes callbacks
+- Wrap non-urgent server action calls in `useTransition` / `startTransition`
+- Debounce frequent events (scroll, input)
+- `next/image` for images, `next/dynamic` for heavy client components
+- Prefer composition over prop drilling

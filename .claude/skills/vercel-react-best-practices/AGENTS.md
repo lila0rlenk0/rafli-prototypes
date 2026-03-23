@@ -4,11 +4,17 @@
 Vercel Engineering  
 January 2026
 
-> **Note:**  
-> This document is mainly for agents and LLMs to follow when maintaining,  
-> generating, or refactoring React and Next.js codebases at Vercel. Humans  
-> may also find it useful, but guidance here is optimized for automation  
+> **Note:**
+> This document is mainly for agents and LLMs to follow when maintaining,
+> generating, or refactoring React and Next.js codebases at Vercel. Humans
+> may also find it useful, but guidance here is optimized for automation
 > and consistency by AI-assisted workflows.
+
+> **Project Override:**
+> This project uses **React Query** (`@tanstack/react-query`), not SWR.
+> Sections 4.1 (Deduplicate Global Event Listeners) and 4.2 (Use SWR for
+> Automatic Deduplication) are reference-only — apply the underlying
+> principles using React Query patterns documented in `.claude/rules/services.md`.
 
 ---
 

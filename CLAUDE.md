@@ -1,121 +1,76 @@
 # Rafli
 
-Next.js raffle platform with Clean Architecture.
+Next.js raffle platform. Clean Architecture with Zod-first types.
+
+## Stack
+
+- Next.js App Router, React, TypeScript
+- Tailwind CSS v4 (CSS-first config in `globals.css`, no `tailwind.config`)
+- Bun runtime and package manager — never npm/yarn/pnpm
+- `@tanstack/react-query` v5, Zustand, Zod
+- Custom JWT auth (no NextAuth, no middleware)
 
 ## Commands
 
-```bash
-bun run dev      # development server
-bun run format   # format code (Prettier)
-bun run lint     # lint (REQUIRED after changes)
-bun run build    # production build
-```
+- `bun run dev` — development server
+- `bun run format && bun run lint && bun run test` — required after every change
+- `bun run format:check` — CI check (no writes)
+- `bun run test:e2e` — Playwright E2E tests
+- `bun run build` — production build
 
 ## Architecture
 
 ```
 src/
-├── app/         # Next.js App Router (pages, layouts, routes)
-├── components/  # UI layer (Server + Client components)
-├── services/    # Data layer (server actions, API calls)
-├── types/       # Domain layer (Zod schemas, type definitions)
-├── lib/         # Infrastructure (utilities, clients, errors)
-├── providers/   # React context providers
-├── store/       # Zustand client state
-└── env/         # Environment configuration
+  app/           — Next.js App Router (pages, layouts, routes)
+  components/    — UI (Server + Client components)
+  services/      — Server actions wrapping API calls
+  types/         — Zod schemas, inferred types, error codes
+  lib/           — Utilities, API clients, errors, auth, cache, hooks
+  providers/     — React context providers
+  store/         — Zustand client state (vanilla createStore + provider)
+  env/           — @t3-oss/env-nextjs parsed environment variables
 ```
 
 ## Golden Rules
 
-CRITICAL: Server Components by default
-CRITICAL: All API calls via server actions (`'use server'`)
-CRITICAL: Zod schema-first type definitions
-ALWAYS: `ServiceResponse<T, E>` for all service returns
-ALWAYS: Run `bun run lint` before completing tasks
-ALWAYS: Write code and comments in English
-ALWAYS: Use Bun, never npm/yarn/pnpm
-ALWAYS: Use underscores in large numbers (1_000_000)
-ALWAYS: Run `bun run format && bun run lint` before completing tasks
-ALWAYS: Use `@/env/server` or `@/env/client` for environment variables
-NEVER: Skip format/lint verification
-NEVER: Use `any` types without justification
-NEVER: Use `process.env` directly (use parsed env from `@/env/`)
-NEVER: Expose secrets to client
+- Server Components by default
+- All API calls via server actions (`'use server'`)
+- Zod schema-first — define schema, infer type with `z.infer<>`
+- `ServiceResponse<T, E>` for all service returns — `success(data)` / `failure(errorCode)`
+- Use `function` declarations, not arrow functions (arrows OK in hook callbacks and shadcn/ui primitives)
+- Use `@/env/server` or `@/env/client` for environment variables — never `process.env` directly
+- Use underscores in large numbers (`1_000_000`)
+- Write code and comments in English
+- JSDoc with `@returns` on all exports
+- No `any` without justification
 
-## Formatting (Prettier)
+## Auth Model
 
-- Tabs for indentation (not spaces)
-- Single quotes: `'string'` not `"string"`
-- No parens on single-param arrows: `x => x` not `(x) => x`
-- Tailwind classes auto-sorted by plugin
+Cookie-based custom JWT. Three cookies: `raffly-token` (httpOnly JWT), `raffly-session` (client-readable user JSON), `raffly-user-mode` (participant/host). Session helpers in `@/lib/auth/session`: `getSession()`, `getCurrentUser` (cache-wrapped), `requireAuth()`, `requireEmailVerification()`.
 
-## Conventions
+## Caching
 
-- **Imports**: Direct paths, no barrel exports (`@/components/ui/button`)
-- **Functions**: Use `function` declarations, not arrow functions
-- **Documentation**: JSDoc on all exports
-- **Errors**: Typed error codes via `ServiceResponse`, never throw raw
+- Revalidation TTLs in `@/lib/api/config` — `MY_RAFFLES: 60s`, `RAFFLE_DETAIL: 300s`, `CATEGORIES: 3_600s`. Cache tags exist for `MY_RAFFLES` and `RAFFLE_DETAIL` only
+- Revalidation helpers in `@/lib/cache/revalidation`
+- React Query — `staleTime: Infinity`, all auto-refetch disabled, manual invalidation on mutation
 
-## Layer Guidelines
+## Imports
 
-@src/components/CLAUDE.md
-@src/services/CLAUDE.md
-@src/types/CLAUDE.md
-@src/lib/CLAUDE.md
-@src/env/CLAUDE.md
+- Direct paths preferred (`@/components/ui/button`)
+- Barrel re-exports (`index.ts`) only for cohesive modules (`@/lib/errors`, `@/types/errors`)
+- `lucide-react` uses barrel imports — relies on `optimizePackageImports` in `next.config.ts` for tree-shaking
 
-## Reference
+## Next.js
 
-@docs/verification.md
-@docs/coding-standards.md
-@docs/observability.md
+Before any Next.js work, find and read the relevant doc in `node_modules/next/dist/docs/`. Training data is outdated — the docs are the source of truth.
 
-## Philosophy
+## Git
 
-In all interactions, be extremely concise and sacrifice grammar for the sake of concision.
-Deliver the simplest excellent viable solution that meets the requirements, deferring edge cases and enhancements until real evidence demands them.
-Excellence at minimum viable complexity.
+- Read-only by default — no git operations unless explicitly requested
+- Use `gh` CLI for all GitHub operations
+- Conventional Commits — derive type, scope, message from the diff
 
-The codebase will outlive you. Every shortcut becomes someone else's burden. Every hack compounds into technical debt that slows the whole team down.
-You are not just writing code. You are shaping the future of this project. The patterns you establish will be copied. The corners you cut will be cut again.
-Fight entropy. Leave the codebase better than you found it.
+## AGENTS.md
 
-# Development Approach
-
-- Map full solution architecture, internalize todo's tasks, then build
-- Never keep deprecated/legacy code when implementing
-- Always remove dead code. Keep implementation clean.
-
-# Communication Style
-
-- Extreme concision over grammar in all responses and commits
-- End plans with unresolved questions (if any):
-  - Only blockers - things preventing implementation
-  - Only binary choices - pick A or B
-  - No speculative "what if" scenarios
-  - No architecture philosophy debates
-  - Max 3 questions - if more, you're overthinking
-
-# Planning Philosophy
-
-- Default to simplest solution that works excellent
-- No speculative features or "nice-to-haves"
-- No premature optimization or abstraction
-- Build for current requirements only - iterate later if needed
-- If plan exceeds 5 steps, challenge each one's necessity
-- Avoid over-engineering
-
-# Markdown Reports
-
-- Never create summary/report markdown files unless explicitly requested
-- If requested:
-  - Ask where to place it first
-  - Max 50 lines total
-  - Minimal markdown syntax - readable in VSCode plain view
-  - Headers: `#`, `##`, `###`
-  - Lists: `-` only
-  - Code blocks: ` ``` ` with language
-  - Inline code: `` ` `` for variables, functions, paths
-  - Plain text otherwise
-  - No: tables, nested lists, excessive formatting, badges, horizontal rules
-  - Format for IDE reading, not GitHub rendering
+@AGENTS.md

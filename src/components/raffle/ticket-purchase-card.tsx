@@ -7,7 +7,6 @@ import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
 import { CryptoBuyButton } from '@/app/(public)/browse/[publicSlug]/crypto-buy-button';
 import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
-import { clientEnv } from '@/env/client';
 import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
 import { isWeb3Enabled, SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
 import { hasSelectableCryptoChains } from '@/lib/web3/raffle-crypto-options';
@@ -251,27 +250,6 @@ export function TicketPurchaseCard({
 		if (!hasSelectableCryptoPaymentOption) return baseMessage;
 
 		return `${baseMessage} Crypto payments can take longer to confirm near the end.`;
-	}
-
-	// TODO(payments): Remove this production guard once Stripe + crypto payments
-	// are fully tested and treasury multisigs are deployed for all mainnet chains.
-	// Blocked by: BE treasury placeholder addresses (crypto.config.ts) and
-	// final QA on staging. Once removed, both BuyButton and CryptoBuyButton
-	// become available to production users.
-	if (clientEnv.NEXT_PUBLIC_APP_ENV === 'production') {
-		return (
-			<div className="mt-6 space-y-4">
-				<Separator className="my-4 bg-[#B4B4B4]" />
-				<div className="rounded-lg border border-dashed border-[#B4B4B4] p-6 text-center">
-					<p className="font-clash-display text-lg font-semibold">
-						Coming Soon
-					</p>
-					<p className="mt-1 text-sm text-[#7B7B7B]">
-						Ticket purchases will be available shortly.
-					</p>
-				</div>
-			</div>
-		);
 	}
 
 	return (

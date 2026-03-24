@@ -1,5 +1,6 @@
 'use client';
 
+import { useBlobUrl } from '@/lib/hooks/use-blob-url';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Image from 'next/image';
@@ -97,21 +98,11 @@ export function ImageLightbox({
 	// Get current image source
 	const currentImage = images[currentIndex];
 
-	// Generate preview URL for the current image
-	const imageUrl = useMemo(() => {
-		if (!currentImage) return null;
-		if (typeof currentImage === 'string') return currentImage;
-		return URL.createObjectURL(currentImage);
-	}, [currentImage]);
-
-	// Cleanup blob URL when component unmounts or image changes
-	useEffect(() => {
-		return () => {
-			if (imageUrl && currentImage instanceof File) {
-				URL.revokeObjectURL(imageUrl);
-			}
-		};
-	}, [imageUrl, currentImage]);
+	// Derive preview URL: strings pass through, Files get a managed blob URL
+	const blobUrl = useBlobUrl(
+		currentImage instanceof File ? currentImage : null,
+	);
+	const imageUrl = typeof currentImage === 'string' ? currentImage : blobUrl;
 
 	if (!imageUrl) return null;
 

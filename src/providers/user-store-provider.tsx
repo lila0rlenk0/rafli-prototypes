@@ -50,14 +50,24 @@ export function UserStoreProvider({
 	const permissionsKey = permissions.join('||');
 
 	/**
-	 * Sync permissions and initialize mode after hydration completes
+	 * Sync permissions and initialize mode after hydration completes.
 	 * Waits for Zustand persist to finish hydrating from localStorage
-	 * before calling initializeMode() to prevent mode revert race condition
+	 * before calling initializeMode() to prevent mode revert race condition.
+	 *
+	 * Derives the permissions array from permissionsKey inside the effect
+	 * so the linter sees the correct dependency (the stable string key)
+	 * instead of the unstable array reference from server renders.
 	 */
 	useEffect(() => {
+		// Reconstruct permissions from the serialized key — avoids closing over
+		// the permissions prop whose array reference changes on every server render
+		const derived = permissionsKey
+			? (permissionsKey.split('||') as Permission[])
+			: [];
+
 		function syncAndInitialize() {
 			const state = store.getState();
-			state.setPermissions(permissions);
+			state.setPermissions(derived);
 			state.initializeMode();
 		}
 
@@ -70,7 +80,6 @@ export function UserStoreProvider({
 			});
 			return unsubscribe;
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- permissionsKey is the value-based dep for permissions
 	}, [permissionsKey, store]);
 
 	return (

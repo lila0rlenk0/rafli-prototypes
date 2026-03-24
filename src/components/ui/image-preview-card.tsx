@@ -1,9 +1,9 @@
 'use client';
 
+import { useBlobUrl } from '@/lib/hooks/use-blob-url';
 import { cn } from '@/lib/utils';
 import { Image as ImageIcon, Trash2 } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
 
 interface ImagePreviewCardProps {
 	/** File for new uploads, URL for existing, null for empty */
@@ -39,34 +39,9 @@ export function ImagePreviewCard({
 	onUpload,
 	className,
 }: ImagePreviewCardProps) {
-	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-	useEffect(() => {
-		// Handle null or undefined src
-		if (!src) {
-			// Safe to set state here: this only runs when `src` prop changes,
-			// preventing cascading renders. This is the recommended pattern for resetting
-			// state when a prop changes.
-			// eslint-disable-next-line react-hooks/set-state-in-effect
-			setPreviewUrl(null);
-			return;
-		}
-
-		// Handle string URLs (existing images)
-		if (typeof src === 'string') {
-			setPreviewUrl(src);
-			return;
-		}
-
-		// Handle File objects (new uploads)
-		const url = URL.createObjectURL(src);
-		setPreviewUrl(url);
-
-		// Cleanup: revoke the URL when component unmounts or src changes
-		return () => {
-			URL.revokeObjectURL(url);
-		};
-	}, [src]);
+	// Derive the preview URL: strings pass through, Files get a managed blob URL
+	const blobUrl = useBlobUrl(src instanceof File ? src : null);
+	const previewUrl = typeof src === 'string' ? src : blobUrl;
 
 	/**
 	 * Checks if the card is interactive (clickable)

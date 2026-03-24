@@ -2,8 +2,8 @@
 
 import { Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
 
+import { useBlobUrl } from '@/lib/hooks/use-blob-url';
 import { cn } from '@/lib/utils';
 
 interface ImagePreviewProps {
@@ -20,27 +20,7 @@ interface ImagePreviewProps {
  * preventing ERR_FILE_NOT_FOUND errors when navigating between form steps.
  */
 export function ImagePreview({ file, alt, className }: ImagePreviewProps) {
-	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-	useEffect(() => {
-		if (!file) {
-			// Safe to set state here: this only runs when `file` prop changes to null/undefined,
-			// preventing cascading renders. This is the recommended pattern for resetting
-			// state when a prop changes.
-			// eslint-disable-next-line react-hooks/set-state-in-effect
-			setPreviewUrl(null);
-			return;
-		}
-
-		// Create a new blob URL every time the component mounts or file changes
-		const url = URL.createObjectURL(file);
-		setPreviewUrl(url);
-
-		// Cleanup: revoke the URL when component unmounts or file changes
-		return () => {
-			URL.revokeObjectURL(url);
-		};
-	}, [file]);
+	const previewUrl = useBlobUrl(file ?? null);
 
 	if (!previewUrl) {
 		return (

@@ -40,7 +40,11 @@ const SplitText: React.FC<SplitTextProps> = ({
 	const ref = useRef<HTMLParagraphElement>(null);
 	const animationCompletedRef = useRef(false);
 	const onCompleteRef = useRef(onLetterAnimationComplete);
-	const [fontsLoaded, setFontsLoaded] = useState<boolean>(false);
+	// Initialize synchronously if fonts are already loaded (avoids an extra render),
+	// otherwise the effect below will resolve the async font-ready promise.
+	const [fontsLoaded, setFontsLoaded] = useState<boolean>(
+		() => document.fonts.status === 'loaded',
+	);
 
 	// Keep callback ref updated
 	useEffect(() => {
@@ -48,17 +52,19 @@ const SplitText: React.FC<SplitTextProps> = ({
 	}, [onLetterAnimationComplete]);
 
 	useEffect(() => {
-		if (document.fonts.status === 'loaded') {
-			// Sync state with external font loading status - this is the recommended pattern
-			// for initializing state based on external system state
-			// eslint-disable-next-line react-hooks/set-state-in-effect
-			setFontsLoaded(true);
-		} else {
-			document.fonts.ready.then(() => {
-				setFontsLoaded(true);
-			});
-		}
-	}, []);
+		// Already loaded synchronously via useState initializer
+		if (fontsLoaded) return;
+
+		// Wait for fonts to finish loading, with cancellation guard
+		// to prevent setState on unmounted component
+		let cancelled = false;
+		document.fonts.ready.then(() => {
+			if (!cancelled) setFontsLoaded(true);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [fontsLoaded]);
 
 	useGSAP(
 		() => {

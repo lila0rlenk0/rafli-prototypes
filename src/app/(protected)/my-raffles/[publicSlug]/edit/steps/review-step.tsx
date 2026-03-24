@@ -7,7 +7,6 @@ import { formatDate } from '@/lib/utils/date-format';
 import { hasRaffleChanges } from '@/lib/utils/raffle-diff';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
-import { useMemo } from 'react';
 import { useEditForm } from '../edit-form-provider';
 
 /**
@@ -41,40 +40,17 @@ export function ReviewStep() {
 		maxParticipants,
 	} = formValues;
 
-	/**
-	 * Checks if form has any changes compared to the original raffle.
-	 * Delegates to shared diff utility — single source of truth for comparison logic.
-	 */
-	const hasChanges = useMemo(() => {
-		// New image uploads are always a change
-		if (coverImage && coverImage.length > 0) return true;
-
-		// Delegate field-level comparison to the shared diff utility
-		return hasRaffleChanges(
+	// No useMemo needed: form.watch() returns a fresh reference on every field change,
+	// triggering a re-render. A plain derivation avoids the stale-deps bug where new
+	// form fields would silently be excluded from the comparison.
+	const hasChanges =
+		(coverImage && coverImage.length > 0) ||
+		hasRaffleChanges(
 			originalRaffle,
 			formValues,
 			category,
 			formValues.checkInQuestion,
 		);
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- formValues is watched via individual fields below
-	}, [
-		coverImage,
-		description,
-		price,
-		category,
-		startDate,
-		endDate,
-		pricePerTicket,
-		formValues.numberOfWinners,
-		minParticipants,
-		maxParticipants,
-		formValues.checkInQuestion,
-		formValues.acceptsCrypto,
-		formValues.cryptoChainIds,
-		formValues.cryptoTokens,
-		formValues.cryptoTokenPricing,
-		originalRaffle,
-	]);
 
 	/**
 	 * Gets the main cover image source

@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/accordion';
 import { BackLink } from '@/components/ui/back-link';
 import { ImageCarousel } from '@/components/ui/image-carousel';
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { CollapsibleDescription } from '@/components/raffle/collapsible-description';
 import { getSession } from '@/lib/auth/session';
 import { getCancellationReason } from '@/lib/utils/cancellation-reason';
 import { getCategories } from '@/services/raffle/get-categories';
@@ -443,13 +443,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</div>
 						)}
 
-						<div className="flex min-w-0 flex-col gap-2">
-							<label className="text-sm text-[#B4B4B4]">Description</label>
-							<MarkdownRenderer
-								content={raffle.description || ''}
-								className="text-sm"
-							/>
-						</div>
+						<CollapsibleDescription content={raffle.description || ''} />
 
 						<div className="flex flex-wrap gap-2">
 							<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">

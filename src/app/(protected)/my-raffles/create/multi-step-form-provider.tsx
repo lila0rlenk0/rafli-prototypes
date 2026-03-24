@@ -496,7 +496,7 @@ export function MultiStepFormProvider({
 					if (!publishResult.success) {
 						console.error('Auto-publish failed:', publishResult.error);
 						toast.warning(
-							'Raffle created as draft. Please publish it manually.',
+							'Raffle created as draft. Please go live manually from your dashboard.',
 						);
 					}
 				}

@@ -20,8 +20,8 @@ interface OptionConfig {
 }
 
 const OPTIONS: OptionConfig[] = [
-	{ label: 'Publish Now', mode: 'now' },
-	{ label: 'Schedule', mode: 'schedule' },
+	{ label: 'Go Live Now', mode: 'now' },
+	{ label: 'Schedule for Later', mode: 'schedule' },
 ];
 
 interface PublishSplitButtonProps {
@@ -46,7 +46,7 @@ export function PublishSplitButton({
 	const [selected, setSelected] = useState<PublishMode>('now');
 
 	function getSelectedLabel(): string {
-		return OPTIONS.find(o => o.mode === selected)?.label ?? 'Publish Now';
+		return OPTIONS.find(o => o.mode === selected)?.label ?? 'Go Live Now';
 	}
 
 	function handleMainClick() {

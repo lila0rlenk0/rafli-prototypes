@@ -279,7 +279,7 @@ export function EditFormProvider({
 						if (!publishResult.success) {
 							console.error('Auto-publish failed:', publishResult.error);
 							toast.warning(
-								'Raffle updated but could not go live. Please publish it manually.',
+								'Raffle updated but could not go live. Please go live manually from your dashboard.',
 							);
 						}
 					}

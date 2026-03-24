@@ -16,15 +16,15 @@ import { updateRaffle } from './update-raffle';
 function getPublishErrorMessage(code: RaffleErrorCode): string {
 	switch (code) {
 		case RAFFLE_ERROR_CODES.NOT_DRAFT:
-			return 'Raffle is not in draft status and cannot be published';
+			return 'Raffle is not in draft status and cannot go live';
 		case RAFFLE_ERROR_CODES.PERMISSION_DENIED:
-			return 'You do not have permission to publish this raffle';
+			return 'You do not have permission to make this raffle go live';
 		case RAFFLE_ERROR_CODES.MISSING_FIELDS:
-			return 'Some required fields are missing. Complete all steps before publishing.';
+			return 'Some required fields are missing. Complete all steps before going live.';
 		case RAFFLE_ERROR_CODES.INVALID_CRYPTO_CONFIG:
 			return 'Crypto payment configuration is incomplete. Ensure all tokens have pricing set.';
 		default:
-			return 'Failed to publish raffle';
+			return 'Failed to go live';
 	}
 }
 
@@ -81,9 +81,12 @@ export function usePublishRaffle({
 					return;
 				}
 
-				toast.info(
-					'Your raffle is being published. It may take 1-2 minutes to go live.',
-				);
+				// Feedback matches the selected mode so hosts know what to expect
+				const message =
+					mode === 'now'
+						? 'Your raffle is going live! It may take 1-2 minutes.'
+						: 'Your raffle is scheduled. It will go live at the start time you set.';
+				toast.info(message);
 				router.push(redirectTo);
 			} catch (error) {
 				console.error('Publish raffle error:', error);

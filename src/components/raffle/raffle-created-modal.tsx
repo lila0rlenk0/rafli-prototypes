@@ -134,7 +134,7 @@ export function RaffleCreatedModal({
 							</>
 						) : (
 							<>
-								Your raffle has been saved as a draft and will go live on{' '}
+								Your raffle is scheduled and will go live on{' '}
 								{formattedStartDate}. You can review or edit it anytime before
 								it starts.
 							</>

@@ -2,9 +2,10 @@
 
 import { Button } from '@/components/ui/button';
 import { browserClient } from '@/lib/api/client-browser';
+import { mapAuthError } from '@/lib/errors';
 import { setAuthCookiesClient } from '@/lib/auth/session-client';
+import { captureServiceError } from '@/lib/sentry/capture';
 import { validateReturnTo } from '@/lib/utils/validate-return-to';
-import { AxiosError } from 'axios';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -65,11 +66,11 @@ export function CallbackHandler() {
 				router.push(returnTo);
 				router.refresh();
 			} catch (err) {
-				if (err instanceof AxiosError) {
-					console.error('Token exchange failed:', err.response?.status);
-				} else {
-					console.error('Callback error:', err);
-				}
+				const errorCode = mapAuthError(err);
+				captureServiceError(err, errorCode, {
+					service: 'auth',
+					action: 'oauth-callback-token-exchange',
+				});
 				setError('An unexpected error occurred. Please try again.');
 				setIsProcessing(false);
 			}

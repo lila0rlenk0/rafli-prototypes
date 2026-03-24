@@ -65,7 +65,7 @@ export function StickyBuyTicketsCta() {
 	}
 
 	return (
-		<div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white px-4 pt-3 pb-[env(safe-area-inset-bottom)] lg:hidden">
+		<div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
 			<Button
 				onClick={handleClick}
 				className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"

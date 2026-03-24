@@ -100,7 +100,7 @@ export function CommentSection({
 			>
 				<AccordionItem value="comments" className="border-none">
 					<AccordionTrigger className="px-8 py-4 hover:no-underline">
-						<div className="flex flex-1 items-center justify-between">
+						<div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<div className="flex items-center gap-3">
 								<h3 className="font-clash-display text-3xl font-semibold">
 									Comments

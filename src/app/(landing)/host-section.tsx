@@ -76,7 +76,9 @@ export function HostSection() {
 								variant="outline"
 								className="hover:text-background h-[60px] w-full border-2 border-black text-lg text-black/95 hover:bg-black sm:w-[238px]"
 							>
-								<Link href="/sign-up">Become a host</Link>
+								<Link href="https://forms.gle/786eAKmUcSZ1WCnD6">
+									Become a host
+								</Link>
 							</Button>
 						</div>
 

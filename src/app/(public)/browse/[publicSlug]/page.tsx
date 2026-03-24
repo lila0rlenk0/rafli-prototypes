@@ -370,7 +370,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		<div className="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
 			<BackLink fallbackHref="/browse" label="Back to Raffle Browse" />
 
-			<div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[1fr_24rem] lg:gap-8">
+			<div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_24rem] lg:gap-8">
 				{/* Title + description card — mobile order 1, desktop left column */}
 				<div className="order-1 flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8 lg:col-start-1">
 					<div className="flex items-start justify-between gap-2">

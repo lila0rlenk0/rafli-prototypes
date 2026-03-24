@@ -14,6 +14,8 @@ type DropzoneContextType = {
 	maxSize?: DropzoneOptions['maxSize'];
 	minSize?: DropzoneOptions['minSize'];
 	maxFiles?: DropzoneOptions['maxFiles'];
+	/** Optional hint shown inside the dropzone (e.g. dimension recommendation) */
+	hint?: string;
 };
 
 const renderBytes = (bytes: number) => {
@@ -36,6 +38,8 @@ const DropzoneContext = createContext<DropzoneContextType | undefined>(
 export type DropzoneProps = Omit<DropzoneOptions, 'onDrop'> & {
 	src?: File[];
 	className?: string;
+	/** Optional hint shown inside the dropzone (e.g. "Recommended: 1200×675px") */
+	hint?: string;
 	onDrop?: (
 		acceptedFiles: File[],
 		fileRejections: FileRejection[],
@@ -54,6 +58,7 @@ export const Dropzone = ({
 	disabled,
 	src,
 	className,
+	hint,
 	children,
 	...props
 }: DropzoneProps) => {
@@ -79,7 +84,7 @@ export const Dropzone = ({
 	return (
 		<DropzoneContext.Provider
 			key={JSON.stringify(src)}
-			value={{ src, accept, maxSize, minSize, maxFiles }}
+			value={{ src, accept, maxSize, minSize, maxFiles, hint }}
 		>
 			<Button
 				className={cn(
@@ -120,7 +125,7 @@ export const DropzoneContent = ({
 	children,
 	className,
 }: DropzoneContentProps) => {
-	const { src } = useDropzoneContext();
+	const { src, hint } = useDropzoneContext();
 
 	if (!src) {
 		return null;
@@ -143,8 +148,11 @@ export const DropzoneContent = ({
 				Click to upload or drag an drop
 			</p>
 			<p className="text-muted-foreground w-full text-xs text-wrap">
-				PNG JPEG MP3 up to 5mb
+				PNG, JPEG, WebP up to 5MB
 			</p>
+			{hint && (
+				<p className="text-muted-foreground mt-1 text-xs text-wrap">{hint}</p>
+			)}
 		</div>
 	);
 };
@@ -158,7 +166,8 @@ export const DropzoneEmptyState = ({
 	children,
 	className,
 }: DropzoneEmptyStateProps) => {
-	const { src, accept, maxSize, minSize, maxFiles } = useDropzoneContext();
+	const { src, accept, maxSize, minSize, maxFiles, hint } =
+		useDropzoneContext();
 
 	if (src) {
 		return null;
@@ -196,6 +205,9 @@ export const DropzoneEmptyState = ({
 			</p>
 			{caption && (
 				<p className="text-muted-foreground text-xs text-wrap">{caption}.</p>
+			)}
+			{hint && (
+				<p className="text-muted-foreground mt-1 text-xs text-wrap">{hint}</p>
 			)}
 		</div>
 	);

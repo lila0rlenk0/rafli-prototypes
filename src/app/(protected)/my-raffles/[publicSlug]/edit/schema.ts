@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { cryptoFormFields } from '../../create/schema';
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'audio/mp3'];
+const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 /**
  * Schema for edit-mode field restrictions
@@ -24,7 +24,7 @@ const fileSchema = z
 	.refine(file => file.size <= MAX_FILE_SIZE, 'File size must be less than 5MB')
 	.refine(
 		file => ACCEPTED_IMAGE_TYPES.includes(file.type),
-		'Only PNG, JPEG and MP3 files are accepted',
+		'Only PNG, JPEG and WebP files are accepted',
 	);
 
 /**

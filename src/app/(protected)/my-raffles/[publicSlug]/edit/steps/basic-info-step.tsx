@@ -195,10 +195,11 @@ export function BasicInfoStep() {
 					accept={{
 						'image/png': ['.png'],
 						'image/jpeg': ['.jpg', '.jpeg'],
-						'audio/mp3': ['.mp3'],
+						'image/webp': ['.webp'],
 					}}
 					maxSize={MAX_FILE_SIZE}
 					maxFiles={4}
+					hint="Recommended: 1200×675px (16:9). Keep the subject centered."
 					onDrop={acceptedFiles => {
 						setValue('coverImage', [...(coverImage || []), ...acceptedFiles]);
 					}}

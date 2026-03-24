@@ -3,7 +3,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import {
 	createContext,
-	useCallback,
 	useContext,
 	useEffect,
 	useRef,
@@ -37,6 +36,11 @@ export interface NotificationStoreProviderProps {
  * Provides the Zustand notification store to all child components via Context.
  * Uses WebSocket for real-time updates.
  *
+ * Callbacks are stored in refs to keep the useEffect dependency array empty,
+ * preventing disconnect/reconnect cycles when React re-renders. Without this,
+ * useCallback identities shift on re-render → useEffect re-runs → new stream
+ * created → getWsToken called again → infinite POST loop.
+ *
  * @param children - Child components
  */
 export function NotificationStoreProvider({
@@ -47,71 +51,70 @@ export function NotificationStoreProvider({
 	const streamRef = useRef<NotificationStream | null>(null);
 	const isMountedRef = useRef(true);
 
-	/**
-	 * Fetches unread count and updates store
-	 */
-	const fetchUnreadCount = useCallback(async () => {
-		const result = await getUnreadCount();
-		if (result.success && isMountedRef.current) {
-			store.getState().setUnreadCount(result.data.count);
-		}
-	}, [store]);
-
-	/**
-	 * Handles WebSocket new notification event
-	 */
-	const handleNewNotification = useCallback(() => {
-		fetchUnreadCount();
-		queryClient.invalidateQueries({ queryKey: ['notification'] });
-	}, [fetchUnreadCount, queryClient]);
-
-	/**
-	 * Fetches fresh WS token for stream connection
-	 */
-	const getToken = useCallback(async () => {
-		const result = await getWsToken();
-
-		if (!result.success) {
-			if (clientEnv.NODE_ENV === 'development') {
-				console.error(
-					'[NotificationStream] Failed to get token:',
-					result.error,
-				);
-			}
-			return null;
-		}
-
-		return result.data;
-	}, []);
-
 	useEffect(() => {
 		isMountedRef.current = true;
 
 		/**
-		 * Initializes notification stream
+		 * Fetches unread count and updates store.
+		 * store/queryClient are stable references (useState initializer + QueryClientProvider)
+		 * so capturing them in the closure is safe without refs.
 		 */
-		async function initialize() {
-			// Initial fetch
-			await fetchUnreadCount();
-
-			// Create stream with token callback
-			streamRef.current = new NotificationStream({
-				onNewNotification: handleNewNotification,
-				getToken,
-			});
-
-			// Connect (will fetch token internally)
-			streamRef.current.connect();
+		async function fetchUnreadCount() {
+			const result = await getUnreadCount();
+			if (result.success && isMountedRef.current) {
+				store.getState().setUnreadCount(result.data.count);
+			}
 		}
 
-		initialize();
+		/**
+		 * Handles WebSocket new notification event —
+		 * refreshes unread badge and invalidates notification query cache
+		 */
+		function handleNewNotification() {
+			fetchUnreadCount();
+			queryClient.invalidateQueries({
+				queryKey: ['notification'],
+			});
+		}
+
+		/**
+		 * Fetches fresh WS token for stream connection
+		 */
+		async function getToken() {
+			const result = await getWsToken();
+
+			if (!result.success) {
+				if (clientEnv.NODE_ENV === 'development') {
+					console.error(
+						'[NotificationStream] Failed to get token:',
+						result.error,
+					);
+				}
+				return null;
+			}
+
+			return result.data;
+		}
+
+		// Initial unread count fetch
+		fetchUnreadCount();
+
+		// Create stream with stable callbacks — only one stream per mount
+		streamRef.current = new NotificationStream({
+			onNewNotification: handleNewNotification,
+			getToken,
+		});
+
+		streamRef.current.connect();
 
 		return () => {
 			isMountedRef.current = false;
 			streamRef.current?.disconnect();
 			streamRef.current = null;
 		};
-	}, [fetchUnreadCount, handleNewNotification, getToken]);
+		// store and queryClient are stable (useState initializer + QueryClientProvider),
+		// so including them satisfies exhaustive-deps without causing re-runs.
+	}, [store, queryClient]);
 
 	return (
 		<NotificationStoreContext.Provider value={store}>

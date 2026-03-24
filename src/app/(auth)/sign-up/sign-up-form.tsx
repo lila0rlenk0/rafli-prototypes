@@ -23,7 +23,7 @@ import {
 	type AuthErrorCode,
 } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader } from 'lucide-react';
+import { Loader, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition, type ComponentProps } from 'react';
@@ -203,7 +203,7 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 					or do it via other accounts
 				</FieldSeparator>
 				<Field className="flex flex-col space-y-4">
-					<div className="flex w-full items-center justify-center">
+					<div className="flex w-full items-center justify-center gap-3">
 						<Button
 							variant="outline"
 							type="button"
@@ -217,6 +217,17 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 								<FaGoogle className="size-6" />
 							)}
 							<span className="sr-only">Login with Google</span>
+						</Button>
+						<Button
+							variant="outline"
+							type="button"
+							className="size-12! w-fit bg-white/95"
+							asChild
+						>
+							<Link href={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}>
+								<Mail className="size-6" />
+								<span className="sr-only">Sign in with magic link</span>
+							</Link>
 						</Button>
 					</div>
 					<FieldDescription className="text-center">

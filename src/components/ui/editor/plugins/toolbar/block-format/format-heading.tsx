@@ -6,7 +6,14 @@ import { useToolbarContext } from '@/components/ui/editor/context/toolbar-contex
 import { blockTypeToBlockName } from '@/components/ui/editor/plugins/toolbar/block-format/block-format-data';
 import { SelectItem } from '@/components/ui/select';
 
-export function FormatHeading({ levels = [] }: { levels: HeadingTagType[] }) {
+// Stable empty array for default prop — prevents new reference on each render
+const EMPTY_LEVELS: HeadingTagType[] = [];
+
+export function FormatHeading({
+	levels = EMPTY_LEVELS,
+}: {
+	levels: HeadingTagType[];
+}) {
 	const { activeEditor, blockType } = useToolbarContext();
 
 	const formatHeading = (headingSize: HeadingTagType) => {

@@ -100,8 +100,11 @@ function ComponentPickerMenu({
 	);
 }
 
+// Stable empty array for default prop — prevents new reference on each render
+const EMPTY_OPTIONS: Array<ComponentPickerOption> = [];
+
 export function ComponentPickerMenuPlugin({
-	baseOptions = [],
+	baseOptions = EMPTY_OPTIONS,
 	dynamicOptionsFn,
 }: {
 	baseOptions?: Array<ComponentPickerOption>;

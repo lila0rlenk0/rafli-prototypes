@@ -29,6 +29,26 @@ interface ImageCarouselProps {
 	priority?: boolean;
 }
 
+// Hoisted to module scope — avoids re-creating the variants object on every render,
+// which would cause framer-motion to see a new reference each time.
+const slideVariants = {
+	enter: (dir: number) => ({
+		x: dir > 0 ? '100%' : '-100%',
+		opacity: 0,
+	}),
+	center: {
+		x: 0,
+		opacity: 1,
+	},
+	exit: (dir: number) => ({
+		x: dir > 0 ? '-100%' : '100%',
+		opacity: 0,
+	}),
+};
+
+// Stable empty array for default galleryImages prop — prevents new reference on each render
+const EMPTY_GALLERY: string[] = [];
+
 /**
  * ImageCarousel Component
  *
@@ -47,7 +67,7 @@ interface ImageCarouselProps {
  */
 export function ImageCarousel({
 	coverImage,
-	galleryImages = [],
+	galleryImages = EMPTY_GALLERY,
 	images: imagesProp,
 	alt,
 	aspectRatio = 'aspect-4/3',
@@ -121,21 +141,6 @@ export function ImageCarousel({
 
 	const showNavigation = shouldShowNavigation(images.length);
 	const currentImageUrl = images[currentIndex];
-
-	const slideVariants = {
-		enter: (dir: number) => ({
-			x: dir > 0 ? '100%' : '-100%',
-			opacity: 0,
-		}),
-		center: {
-			x: 0,
-			opacity: 1,
-		},
-		exit: (dir: number) => ({
-			x: dir > 0 ? '-100%' : '100%',
-			opacity: 0,
-		}),
-	};
 
 	return (
 		<div

@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/accordion';
 import { BackLink } from '@/components/ui/back-link';
 import { ImageCarousel } from '@/components/ui/image-carousel';
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { CollapsibleDescription } from '@/components/raffle/collapsible-description';
 import { getSession } from '@/lib/auth/session';
 import { getCancellationReason } from '@/lib/utils/cancellation-reason';
 import { getCategories } from '@/services/raffle/get-categories';
@@ -54,6 +54,7 @@ import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
 import { ReportRaffleButton } from './report-raffle-button';
+import { StickyBuyTicketsCta } from './sticky-buy-tickets-cta';
 
 interface PageProps {
 	params: Promise<{
@@ -369,93 +370,86 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		<div className="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
 			<BackLink fallbackHref="/browse" label="Back to Raffle Browse" />
 
-			<div className="flex w-full flex-col gap-8 lg:flex-row">
-				<div className="w-full space-y-4">
-					<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
-						<div className="flex items-start justify-between gap-2">
-							<h2 className="text-3xl font-bold text-gray-900">
-								{raffle.title}
-							</h2>
-							{isAuthenticated && !isOwner && (
-								<ReportRaffleButton raffleId={raffle.id} />
-							)}
-						</div>
-
-						<Link
-							href={getHostProfileUrl()}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="group flex w-fit items-center gap-3"
-						>
-							<div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
-								{hostAvatarUrl ? (
-									<Image
-										src={hostAvatarUrl}
-										alt={getHostName()}
-										fill
-										sizes="48px"
-										className="object-cover"
-									/>
-								) : (
-									getHostInitial()
-								)}
-							</div>
-							<div className="flex min-w-0 flex-col font-medium">
-								<span className="truncate text-sm group-hover:underline">
-									by {getHostName()}
-								</span>
-								<span className="text-xs">{getHostRafflesCount()}</span>
-							</div>
-						</Link>
-
-						<ImageCarousel
-							coverImage={raffle.coverMediaUrl}
-							galleryImages={raffle.galleryMediaUrls}
-							alt={raffle.title}
-							aspectRatio="aspect-video"
-							maxHeight="max-h-96"
-							className="border border-[#E5E5E5]"
-							sizes="(max-width: 1024px) 100vw, 736px"
-							priority
-						/>
-
-						{raffle.galleryMediaUrls.length > 0 && (
-							<div className="grid grid-cols-3 gap-4">
-								{raffle.galleryMediaUrls.map((image, index) => (
-									<div
-										key={index}
-										className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
-									>
-										<Image
-											src={image}
-											alt={`Gallery ${index + 1}`}
-											fill
-											sizes="33vw"
-											className="object-cover"
-										/>
-									</div>
-								))}
-							</div>
+			<div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[1fr_24rem] lg:gap-8">
+				{/* Title + description card — mobile order 1, desktop left column */}
+				<div className="order-1 flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8 lg:col-start-1">
+					<div className="flex items-start justify-between gap-2">
+						<h2 className="text-3xl font-bold text-gray-900">{raffle.title}</h2>
+						{isAuthenticated && !isOwner && (
+							<ReportRaffleButton raffleId={raffle.id} />
 						)}
-
-						<div className="flex min-w-0 flex-col gap-2">
-							<label className="text-sm text-[#B4B4B4]">Description</label>
-							<MarkdownRenderer
-								content={raffle.description || ''}
-								className="text-sm"
-							/>
-						</div>
-
-						<div className="flex flex-wrap gap-2">
-							<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
-								<span className="text-sm capitalize">
-									{getCategoryName(categories, raffle.categoryId)}
-								</span>
-							</div>
-						</div>
 					</div>
 
-					{/* Updates from host */}
+					<Link
+						href={getHostProfileUrl()}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="group flex w-fit items-center gap-3"
+					>
+						<div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
+							{hostAvatarUrl ? (
+								<Image
+									src={hostAvatarUrl}
+									alt={getHostName()}
+									fill
+									sizes="48px"
+									className="object-cover"
+								/>
+							) : (
+								getHostInitial()
+							)}
+						</div>
+						<div className="flex min-w-0 flex-col font-medium">
+							<span className="truncate text-sm group-hover:underline">
+								by {getHostName()}
+							</span>
+							<span className="text-xs">{getHostRafflesCount()}</span>
+						</div>
+					</Link>
+
+					<ImageCarousel
+						coverImage={raffle.coverMediaUrl}
+						galleryImages={raffle.galleryMediaUrls}
+						alt={raffle.title}
+						aspectRatio="aspect-video"
+						maxHeight="max-h-96"
+						className="border border-[#E5E5E5]"
+						sizes="(max-width: 1024px) 100vw, 736px"
+						priority
+					/>
+
+					{raffle.galleryMediaUrls.length > 0 && (
+						<div className="grid grid-cols-3 gap-4">
+							{raffle.galleryMediaUrls.map((image, index) => (
+								<div
+									key={index}
+									className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
+								>
+									<Image
+										src={image}
+										alt={`Gallery ${index + 1}`}
+										fill
+										sizes="33vw"
+										className="object-cover"
+									/>
+								</div>
+							))}
+						</div>
+					)}
+
+					<CollapsibleDescription content={raffle.description || ''} />
+
+					<div className="flex flex-wrap gap-2">
+						<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
+							<span className="text-sm capitalize">
+								{getCategoryName(categories, raffle.categoryId)}
+							</span>
+						</div>
+					</div>
+				</div>
+
+				{/* Updates from host — mobile order 3, desktop left column */}
+				<div className="order-3 lg:col-start-1">
 					<RaffleUpdatesCard
 						raffleId={raffle.id}
 						hostName={raffle.host?.name ?? 'Host'}
@@ -467,82 +461,84 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							/>
 						}
 					/>
+				</div>
 
-					{/* Comment section — visible for live through completed statuses */}
-					{isCommentable && (
+				{/* Comment section — mobile order 4, desktop left column */}
+				{isCommentable && (
+					<div className="order-4 lg:col-start-1">
 						<CommentSection
 							raffleId={raffle.id}
 							isAuthenticated={isAuthenticated}
 							isOwner={isOwner}
 							currentUserId={currentUserId}
 						/>
-					)}
-
-					<div className="flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6">
-						<h3 className="font-clash-display text-3xl font-semibold">
-							Have a question?
-						</h3>
-						<Accordion type="single" collapsible className="w-full space-y-4">
-							<AccordionItem value="how-it-works" className="border-none">
-								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
-									How it works?
-								</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
-									The raffle is a simple and fair way to win prizes. You can
-									purchase tickets to increase your chances of winning. The
-									winner will be randomly selected when the raffle ends.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem value="rules-eligibility" className="border-none">
-								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
-									Rules and Eligibility
-								</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
-									Participants must be 18 years or older to enter. You can
-									purchase multiple tickets to increase your chances of winning.
-									Winners will be notified via email and must provide additional
-									details to claim their prize. All sales are final and
-									non-refundable.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem
-								value="partial-fulfillment"
-								className="border-none"
-							>
-								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
-									What if minimum participants aren&apos;t reached?
-								</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground space-y-3 px-4 pt-4 text-sm">
-									<p>
-										Every raffle sets a minimum number of participants. If the
-										raffle ends before reaching that minimum, it concludes under{' '}
-										<strong>Partial Participation</strong>.
-									</p>
-									<p>
-										When this happens, winners are still selected using the same
-										provably fair process (VRF). However, instead of receiving
-										the declared physical prize, winners receive a{' '}
-										<strong>cash distribution</strong> from the revenue.
-									</p>
-									<p>
-										The revenue is automatically split: the platform takes a
-										small fee and the remainder is distributed equally among all
-										winners. No host involvement is needed — the distribution
-										happens automatically.
-									</p>
-									<p>
-										You can always check the raffle details to see the current
-										number of participants versus the minimum required before
-										purchasing a ticket.
-									</p>
-								</AccordionContent>
-							</AccordionItem>
-						</Accordion>
 					</div>
+				)}
+
+				{/* FAQ — mobile order 5, desktop left column */}
+				<div className="order-5 flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6 lg:col-start-1">
+					<h3 className="font-clash-display text-3xl font-semibold">
+						Have a question?
+					</h3>
+					<Accordion type="single" collapsible className="w-full space-y-4">
+						<AccordionItem value="how-it-works" className="border-none">
+							<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
+								How it works?
+							</AccordionTrigger>
+							<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
+								The raffle is a simple and fair way to win prizes. You can
+								purchase tickets to increase your chances of winning. The winner
+								will be randomly selected when the raffle ends.
+							</AccordionContent>
+						</AccordionItem>
+
+						<AccordionItem value="rules-eligibility" className="border-none">
+							<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
+								Rules and Eligibility
+							</AccordionTrigger>
+							<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
+								Participants must be 18 years or older to enter. You can
+								purchase multiple tickets to increase your chances of winning.
+								Winners will be notified via email and must provide additional
+								details to claim their prize. All sales are final and
+								non-refundable.
+							</AccordionContent>
+						</AccordionItem>
+
+						<AccordionItem value="partial-fulfillment" className="border-none">
+							<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
+								What if minimum participants aren&apos;t reached?
+							</AccordionTrigger>
+							<AccordionContent className="text-muted-foreground space-y-3 px-4 pt-4 text-sm">
+								<p>
+									Every raffle sets a minimum number of participants. If the
+									raffle ends before reaching that minimum, it concludes under{' '}
+									<strong>Partial Participation</strong>.
+								</p>
+								<p>
+									When this happens, winners are still selected using the same
+									provably fair process (VRF). However, instead of receiving the
+									declared physical prize, winners receive a{' '}
+									<strong>cash distribution</strong> from the revenue.
+								</p>
+								<p>
+									The revenue is automatically split: the platform takes a small
+									fee and the remainder is distributed equally among all
+									winners. No host involvement is needed — the distribution
+									happens automatically.
+								</p>
+								<p>
+									You can always check the raffle details to see the current
+									number of participants versus the minimum required before
+									purchasing a ticket.
+								</p>
+							</AccordionContent>
+						</AccordionItem>
+					</Accordion>
 				</div>
-				<div className="w-full space-y-2 lg:w-sm lg:shrink-0">
+
+				{/* Right sidebar — mobile order 2 (after title), desktop right column spanning all rows */}
+				<div className="order-2 space-y-2 lg:col-start-2 lg:row-start-1 lg:row-end-[-1]">
 					{shouldShowWinnerCard() && myWinning && (
 						<>
 							<RaffleWonCard
@@ -608,7 +604,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					)}
 
 					{shouldShowActiveCard() && (
-						<div className="h-fit rounded-2xl border border-black bg-white p-8">
+						<div
+							id="checkout-section"
+							className="h-fit rounded-2xl border border-black bg-white p-8"
+						>
 							<RaffleFireIcon className="mx-auto size-12" />
 
 							<h2 className="font-clash-display my-8 text-center text-xl font-semibold text-nowrap">
@@ -700,6 +699,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				publicSlug={publicSlug}
 				searchParams={searchParams}
 			/>
+
+			{shouldShowActiveCard() && <StickyBuyTicketsCta />}
 		</div>
 	);
 }

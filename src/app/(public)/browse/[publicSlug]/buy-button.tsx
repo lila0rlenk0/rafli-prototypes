@@ -195,6 +195,7 @@ export function BuyButton({
 	return (
 		<>
 			<Button
+				id="checkout-action"
 				onClick={handleBuyClick}
 				disabled={isLoading || disabled}
 				className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"

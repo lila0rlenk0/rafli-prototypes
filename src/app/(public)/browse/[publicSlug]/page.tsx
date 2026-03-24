@@ -555,6 +555,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								myTicketCodes={myTicketCodes}
 								myTicketsTotal={myTicketsTotal}
 								isAuthenticated={isAuthenticated}
+								publicSlug={publicSlug}
 							/>
 						</>
 					)}
@@ -645,6 +646,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							myTicketCodes={myTicketCodes}
 							myTicketsTotal={myTicketsTotal}
 							isAuthenticated={isAuthenticated}
+							publicSlug={publicSlug}
 						/>
 					)}
 

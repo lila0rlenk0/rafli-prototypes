@@ -196,7 +196,10 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	const roleTag = getRoleTag();
 
 	return (
-		<div className="group relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
+		<div
+			data-testid="raffle-card"
+			className="group relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black"
+		>
 			<div className="relative z-10">
 				<ImageCarousel
 					coverImage={raffle.coverMediaUrl}
@@ -209,7 +212,10 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 			</div>
 
 			<div className="flex flex-1 flex-col p-4">
-				<h3 className="mb-2 text-xl font-bold tracking-tight text-gray-900">
+				<h3
+					data-testid="raffle-card-title"
+					className="mb-2 min-h-14 text-xl font-bold tracking-tight text-gray-900"
+				>
 					<Link
 						href={`/browse/${raffle.publicSlugOrCode}`}
 						className="line-clamp-2 after:absolute after:inset-0"

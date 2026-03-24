@@ -45,22 +45,14 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 		return Math.min((current / max) * 100, 100);
 	}
 
-	/**
-	 * Determines if edit button should be shown
-	 * Only for draft/queued raffles in host mode
-	 * Returns false if mode is not yet initialized
-	 */
+	/** Show edit button only for draft raffles in host mode (backend restricts updates to draft). */
 	function shouldShowEditButton(): boolean {
 		if (mode === null) {
 			return false;
 		}
 
 		const isHostMode = mode === USER_MODE.HOST;
-		const isEditable =
-			raffle.status === RAFFLE_STATUS.DRAFT ||
-			raffle.status === RAFFLE_STATUS.QUEUED;
-
-		return isHostMode && isEditable;
+		return isHostMode && raffle.status === RAFFLE_STATUS.DRAFT;
 	}
 
 	const progress = calculateProgress(
@@ -68,10 +60,6 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 		raffle.maxParticipants,
 	);
 	const showEditButton = shouldShowEditButton();
-	const { isPublishing, handlePublish } = usePublishRaffle({
-		raffleId: raffle.id,
-		startAt: raffle.startAt,
-	});
 
 	/**
 	 * Gets cancellation badge label and color for cancelled raffles.
@@ -193,25 +181,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 				</div>
 
 				{showEditButton ? (
-					<div className="mt-4 flex flex-col gap-2">
-						<div className="flex gap-2">
-							<EditRaffleButton publicSlug={raffle.publicSlugOrCode} />
-							<Link href={`/browse/${raffle.publicSlugOrCode}`}>
-								<Button
-									variant="outline"
-									className="cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
-								>
-									<Eye className="size-4" />
-									Preview
-								</Button>
-							</Link>
-						</div>
-						<PublishSplitButton
-							isPublishing={isPublishing}
-							onPublish={handlePublish}
-							className="w-full"
-						/>
-					</div>
+					<DraftRaffleActions raffle={raffle} />
 				) : (
 					<Link
 						href={`/browse/${raffle.publicSlugOrCode}`}
@@ -228,6 +198,39 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 					publicSlug={raffle.publicSlugOrCode}
 				/>
 			</div>
+		</div>
+	);
+}
+
+/**
+ * Draft-only actions (edit, preview, publish).
+ * Isolated so usePublishRaffle hook is only mounted for draft cards.
+ */
+function DraftRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
+	const { isPublishing, handlePublish } = usePublishRaffle({
+		raffleId: raffle.id,
+		startAt: raffle.startAt,
+	});
+
+	return (
+		<div className="mt-4 flex flex-col gap-2">
+			<div className="flex gap-2">
+				<EditRaffleButton publicSlug={raffle.publicSlugOrCode} />
+				<Link href={`/browse/${raffle.publicSlugOrCode}`}>
+					<Button
+						variant="outline"
+						className="cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
+					>
+						<Eye className="size-4" />
+						Preview
+					</Button>
+				</Link>
+			</div>
+			<PublishSplitButton
+				isPublishing={isPublishing}
+				onPublish={handlePublish}
+				className="w-full"
+			/>
 		</div>
 	);
 }

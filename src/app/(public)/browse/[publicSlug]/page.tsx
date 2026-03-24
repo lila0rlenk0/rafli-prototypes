@@ -194,16 +194,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	/**
-	 * Check if edit button should be shown
-	 * Only for own raffles with draft/queued status
+	 * Check if edit button should be shown.
+	 * Only for own draft raffles — backend restricts updates to draft status.
 	 */
 	function shouldShowEditButton(): boolean {
-		const isOwner = isOwnRaffle();
-		const isEditable =
-			raffle.status === RAFFLE_STATUS.DRAFT ||
-			raffle.status === RAFFLE_STATUS.QUEUED;
-
-		return isOwner && isEditable;
+		return isOwnRaffle() && raffle.status === RAFFLE_STATUS.DRAFT;
 	}
 
 	/**

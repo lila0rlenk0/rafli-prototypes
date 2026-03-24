@@ -177,6 +177,8 @@ export const raffleSchema = z.object({
 	commitTxHash: z.string().nullable().optional(),
 	vrfRequestId: z.string().nullable().optional(),
 	vrfFulfillTxHash: z.string().nullable().optional(),
+	/** Backend flag — true while draw process is running. Blocks cancellation even when status is still `live`. */
+	isProcessingCompletion: z.boolean().optional(),
 	isPartialParticipation: z.boolean().optional(),
 	platformFeePercent: z.string().optional(),
 	platformFeeAmount: z.string().nullable().optional(),

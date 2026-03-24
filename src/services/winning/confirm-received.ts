@@ -20,7 +20,7 @@ type ConfirmReceivedServiceResponse = ServiceResponse<
 /**
  * Confirms that the winner has received the prize
  *
- * Can be called when winning status is 'delivered'.
+ * Can be called when winning status is 'sent' or 'delivered'.
  * Transitions status to 'received' and enables reviews.
  *
  * @param winningId - The UUID of the winning entry

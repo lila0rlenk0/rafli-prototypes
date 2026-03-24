@@ -267,12 +267,8 @@ export function EditFormProvider({
 					}
 				}
 
-				// Auto-publish if start date changed to today or past and raffle is draft/queued
-				const isDraftOrQueued =
-					raffle.status === RAFFLE_STATUS.DRAFT ||
-					raffle.status === RAFFLE_STATUS.QUEUED;
-
-				if (isDraftOrQueued) {
+				// Queued raffles are already published — calling publishRaffle would fail with not-draft.
+				if (raffle.status === RAFFLE_STATUS.DRAFT) {
 					const startDate = new Date(data.startDate);
 					const today = new Date();
 					today.setHours(0, 0, 0, 0);

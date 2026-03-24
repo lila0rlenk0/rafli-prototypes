@@ -1,9 +1,17 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { use, useState } from 'react';
 
-import { PaymentStatusModal } from '@/components/payment/payment-status-modal';
+// Lazy-load — only needed after Stripe redirect (session_id present in URL)
+const PaymentStatusModal = dynamic(
+	() =>
+		import('@/components/payment/payment-status-modal').then(m => ({
+			default: m.PaymentStatusModal,
+		})),
+	{ ssr: false },
+);
 
 interface PaymentModalWrapperProps {
 	publicSlug: string;

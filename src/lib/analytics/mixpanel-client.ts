@@ -7,26 +7,34 @@
  * Server-side handles: business events (sign-up, purchase, raffle creation)
  *
  * Privacy: capture_text_content disabled, no user-entered data collected
+ *
+ * The `mixpanel-browser` package is dynamically imported inside `initMixpanel()`
+ * to keep it out of the initial client bundle. It only loads after hydration
+ * when the MixpanelProvider effect fires.
  */
-
-import mixpanel from 'mixpanel-browser';
 
 import { clientEnv } from '@/env/client';
 
+type MixpanelLib = typeof import('mixpanel-browser').default;
+
 const TOKEN = clientEnv.NEXT_PUBLIC_MIXPANEL_TOKEN;
 let initialized = false;
+let mp: MixpanelLib | null = null;
 
 /**
- * Initialize Mixpanel with autocapture for UX analytics
+ * Initialize Mixpanel with autocapture for UX analytics.
+ * Dynamically imports `mixpanel-browser` to defer its bundle weight.
  */
-export function initMixpanel(): void {
+export async function initMixpanel(): Promise<void> {
 	if (!TOKEN || initialized || typeof window === 'undefined') return;
 
+	const { default: mixpanel } = await import('mixpanel-browser');
 	mixpanel.init(TOKEN, {
 		debug: process.env.NODE_ENV === 'development',
 		persistence: 'localStorage',
 	});
 
+	mp = mixpanel;
 	initialized = true;
 }
 
@@ -37,11 +45,11 @@ export function identify(
 	userId: string,
 	properties?: Record<string, unknown>,
 ): void {
-	if (!initialized) return;
+	if (!mp) return;
 
-	mixpanel.identify(userId);
+	mp.identify(userId);
 	if (properties) {
-		mixpanel.people.set(properties);
+		mp.people.set(properties);
 	}
 }
 
@@ -49,8 +57,8 @@ export function identify(
  * Reset identity on sign out
  */
 export function reset(): void {
-	if (!initialized) return;
-	mixpanel.reset();
+	if (!mp) return;
+	mp.reset();
 }
 
 /**
@@ -60,6 +68,6 @@ export function track(
 	event: string,
 	properties?: Record<string, unknown>,
 ): void {
-	if (!initialized) return;
-	mixpanel.track(event, properties);
+	if (!mp) return;
+	mp.track(event, properties);
 }

@@ -43,11 +43,12 @@ export function MixpanelProvider({ children }: MixpanelProviderProps) {
 	const identifiedUserId = useRef<string | null>(null);
 	const lastPathnameRef = useRef<string | null>(null);
 
-	// Initialize once
+	// Initialize once — initMixpanel dynamically imports mixpanel-browser,
+	// so the bundle is deferred until after hydration
 	useEffect(() => {
 		if (initialized.current) return;
-		initMixpanel();
 		initialized.current = true;
+		initMixpanel();
 	}, []);
 
 	// Handle user identification based on session cookie

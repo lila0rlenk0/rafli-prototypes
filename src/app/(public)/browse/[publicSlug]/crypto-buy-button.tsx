@@ -2,15 +2,25 @@
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Loader2Icon, WalletIcon } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAccount } from 'wagmi';
 
-import { CryptoCheckoutModal } from '@/components/payment/crypto-checkout-modal';
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { usePollMyTicketCodes } from '@/services/ticket/use-poll-my-ticket-codes';
 import type { RaffleCryptoOptions } from '@/types/raffle';
+
+// Lazy-load the crypto checkout modal — pulls in wagmi, viem, and web3 stack.
+// Only loaded when user clicks "Pay with Crypto".
+const CryptoCheckoutModal = dynamic(
+	() =>
+		import('@/components/payment/crypto-checkout-modal').then(m => ({
+			default: m.CryptoCheckoutModal,
+		})),
+	{ ssr: false },
+);
 
 // ==========================================
 // Types

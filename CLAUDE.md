@@ -65,12 +65,4 @@ Cookie-based custom JWT. Three cookies: `raffly-token` (httpOnly JWT), `raffly-s
 
 Before any Next.js work, find and read the relevant doc in `node_modules/next/dist/docs/`. Training data is outdated — the docs are the source of truth.
 
-## Git
-
-- Read-only by default — no git operations unless explicitly requested
-- Use `gh` CLI for all GitHub operations
-- Conventional Commits — derive type, scope, message from the diff
-
-## AGENTS.md
-
 @AGENTS.md

@@ -23,15 +23,6 @@ Infrastructure utilities. API clients, error handling, auth, caching, analytics,
 - `utils/` — general utilities (date formatting, etc.)
 - `utils.ts` — Tailwind `cn()` helper
 
-## React Query Defaults
-
-Configured in `@/lib/query/client`:
-
-- `staleTime: Infinity` — data never auto-stales
-- All auto-refetch disabled (`refetchOnMount`, `refetchOnWindowFocus`, `refetchOnReconnect` all false)
-- GC time: 5 minutes
-- Queries must be manually invalidated on mutation via `queryClient.invalidateQueries()`
-
 ## Per-Request Deduplication
 
 `getCurrentUser` in `@/lib/auth/session` is wrapped with `React.cache()` — multiple calls within one server request execute only once. Prefer `getCurrentUser` over raw `getSession()` in server components to avoid redundant JWT decoding.

@@ -27,14 +27,16 @@ interface PageProps {
 export default async function CreateUpdatePage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
-	// Get session for ownership verification
-	const session = await getSession();
+	// Parallel fetch — session and raffle are independent
+	const [session, raffleResult] = await Promise.all([
+		getSession(),
+		getRaffle(publicSlug),
+	]);
+
 	if (!session?.user?.id) {
 		redirect('/my-raffles');
 	}
 
-	// Fetch raffle data
-	const raffleResult = await getRaffle(publicSlug);
 	if (!raffleResult.success) {
 		notFound();
 	}

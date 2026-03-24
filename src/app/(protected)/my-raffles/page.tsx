@@ -47,8 +47,8 @@ function filterParticipantStatus(status: string): string {
  * - Participant mode: Shows raffles user has enrolled in (via /me/enrolled-raffles)
  */
 export default async function MyRafflesPage({ searchParams }: PageProps) {
-	const params = await searchParams;
-	const mode = await getUserModeCookie();
+	// Parallel fetch — searchParams and cookie read are independent
+	const [params, mode] = await Promise.all([searchParams, getUserModeCookie()]);
 	const isHost = mode === USER_MODE.HOST;
 
 	// Default to 'live' status when no status param (Live tab is active by default)
@@ -130,7 +130,7 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 			<PageHeader />
 
 			<div className="relative mb-8 flex w-full items-center justify-center">
-				<Suspense>
+				<Suspense fallback={null}>
 					<StatusTabs />
 				</Suspense>
 

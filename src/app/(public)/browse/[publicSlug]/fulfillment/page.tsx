@@ -23,14 +23,16 @@ interface PageProps {
 export default async function FulfillmentPage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
-	// Auth check
-	const session = await getSession();
+	// Parallel fetch — session and raffle are independent
+	const [session, raffleResult] = await Promise.all([
+		getSession(),
+		getRaffle(publicSlug),
+	]);
+
 	if (!session?.user?.id) {
 		redirect('/sign-in');
 	}
 
-	// Fetch raffle
-	const raffleResult = await getRaffle(publicSlug);
 	if (!raffleResult.success) {
 		redirect(`/browse/${publicSlug}`);
 	}

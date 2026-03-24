@@ -36,14 +36,16 @@ export default async function PromoCodesPage({ params }: PageProps) {
 		return PROMO_MANAGEABLE_STATUSES.includes(status as PromoManageableStatus);
 	}
 
-	// Step 1: Require authenticated session.
-	const session = await getSession();
+	// Parallel fetch — session and raffle are independent
+	const [session, raffleResult] = await Promise.all([
+		getSession(),
+		getRaffle(publicSlug),
+	]);
+
 	if (!session?.user?.id) {
 		redirect('/my-raffles');
 	}
 
-	// Step 2: Fetch raffle data.
-	const raffleResult = await getRaffle(publicSlug);
 	if (!raffleResult.success) {
 		notFound();
 	}

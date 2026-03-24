@@ -43,11 +43,9 @@ const SIDEBAR_ITEMS = [
  * sections for personal info, address, payment details, login, and host info.
  */
 export default async function ProfilePage() {
-	const session = await getSession();
+	// Parallel fetch — session and profile are independent
+	const [session, meResult] = await Promise.all([getSession(), getMe()]);
 	const user = session?.user;
-
-	// Fetch full user profile data including avatar and bio
-	const meResult = await getMe();
 	const userProfile = meResult.success ? meResult.data : null;
 
 	return (

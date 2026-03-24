@@ -7,6 +7,9 @@ import { ReactNode, useState } from 'react';
 import { Logo } from '@/assets/logo';
 import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { Button } from '@/components/ui/button';
+
+const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 
 interface NavbarProps {
 	children: ReactNode;
@@ -60,6 +63,14 @@ export function Navbar({ children }: NavbarProps) {
 
 					{/* Desktop: Right side icons */}
 					<div className="hidden items-center gap-3 sm:flex sm:gap-8">
+						<a
+							href={FEEDBACK_FORM_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="rounded-full border border-black px-4 py-2 text-sm font-medium text-black"
+						>
+							Help us improve
+						</a>
 						<ModeSwitchButton />
 						<NotificationBell />
 						<Link href="/profile">
@@ -127,6 +138,17 @@ export function Navbar({ children }: NavbarProps) {
 							<div className="mt-4">
 								<ModeSwitchButton />
 							</div>
+
+							<Button asChild className="bg-dark hover:bg-dark/90 h-14 text-lg">
+								<a
+									href={FEEDBACK_FORM_URL}
+									target="_blank"
+									rel="noopener noreferrer"
+									onClick={closeMenu}
+								>
+									Help us improve
+								</a>
+							</Button>
 						</div>
 					</div>
 				)}

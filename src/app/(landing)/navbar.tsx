@@ -6,6 +6,8 @@ import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { ComponentProps, useState } from 'react';
 
+const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
+
 interface NavbarProps {
 	showDecoration?: boolean;
 }
@@ -57,13 +59,23 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 						</div>
 					</div>
 
-					{/* Desktop: Enter the App button */}
-					<Button
-						asChild
-						className="bg-dark hover:bg-dark/90 hidden h-12 px-6 text-base md:flex"
-					>
-						<Link href="/sign-in">Enter the App</Link>
-					</Button>
+					{/* Desktop: Right side buttons */}
+					<div className="hidden items-center gap-4 md:flex">
+						<a
+							href={FEEDBACK_FORM_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="rounded-full border border-black px-4 py-2 text-sm font-medium text-black"
+						>
+							Help us improve
+						</a>
+						<Button
+							asChild
+							className="bg-dark hover:bg-dark/90 h-12 px-6 text-base"
+						>
+							<Link href="/sign-in">Enter the App</Link>
+						</Button>
+					</div>
 
 					{/* Mobile: Hamburger menu button */}
 					<button
@@ -119,6 +131,16 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 							<Link href="/sign-in" onClick={closeMenu}>
 								Enter the App
 							</Link>
+						</Button>
+						<Button asChild className="bg-dark hover:bg-dark/90 h-14 text-lg">
+							<a
+								href={FEEDBACK_FORM_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+								onClick={closeMenu}
+							>
+								Help us improve
+							</a>
 						</Button>
 					</div>
 				</div>

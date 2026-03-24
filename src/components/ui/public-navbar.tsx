@@ -11,6 +11,8 @@ import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button } from '@/components/ui/button';
 
+const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
+
 interface PublicNavbarProps {
 	children: ReactNode;
 	isAuthenticated: boolean;
@@ -89,6 +91,14 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 
 					{/* Desktop: Right side */}
 					<div className="hidden items-center gap-3 sm:flex sm:gap-8">
+						<a
+							href={FEEDBACK_FORM_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="rounded-full border border-black px-4 py-2 text-sm font-medium text-black"
+						>
+							Help us improve
+						</a>
 						{isAuthenticated ? (
 							<>
 								<ModeSwitchButton />
@@ -182,6 +192,17 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 									</Link>
 								</Button>
 							)}
+
+							<Button asChild className="bg-dark hover:bg-dark/90 h-14 text-lg">
+								<a
+									href={FEEDBACK_FORM_URL}
+									target="_blank"
+									rel="noopener noreferrer"
+									onClick={closeMenu}
+								>
+									Help us improve
+								</a>
+							</Button>
 						</div>
 					</div>
 				)}

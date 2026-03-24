@@ -54,6 +54,7 @@ import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
 import { ReportRaffleButton } from './report-raffle-button';
+import { StickyBuyTicketsCta } from './sticky-buy-tickets-cta';
 
 interface PageProps {
 	params: Promise<{
@@ -607,7 +608,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					)}
 
 					{shouldShowActiveCard() && (
-						<div className="h-fit rounded-2xl border border-black bg-white p-8">
+						<div
+							id="checkout-section"
+							className="h-fit rounded-2xl border border-black bg-white p-8"
+						>
 							<RaffleFireIcon className="mx-auto size-12" />
 
 							<h2 className="font-clash-display my-8 text-center text-xl font-semibold text-nowrap">
@@ -699,6 +703,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				publicSlug={publicSlug}
 				searchParams={searchParams}
 			/>
+
+			{shouldShowActiveCard() && <StickyBuyTicketsCta />}
 		</div>
 	);
 }

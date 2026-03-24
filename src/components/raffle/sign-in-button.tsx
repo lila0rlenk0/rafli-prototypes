@@ -37,6 +37,7 @@ export function SignInToBuyButton() {
 
 	return (
 		<Button
+			id="checkout-action"
 			asChild
 			className="hover:bg-background w-full cursor-pointer border-2 border-black bg-black hover:text-black"
 		>

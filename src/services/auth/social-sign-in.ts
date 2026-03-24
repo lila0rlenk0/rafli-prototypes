@@ -10,7 +10,8 @@
  */
 
 import { browserClient } from '@/lib/api/client-browser';
-import { failure, success } from '@/lib/errors';
+import { failure, mapAuthError, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
 import {
 	socialSignInInputSchema,
 	socialSignInResponseSchema,
@@ -62,7 +63,12 @@ export async function initiateSocialSignIn(
 		}
 
 		return success(responseValidation.data);
-	} catch {
-		return failure(AUTH_ERROR_CODES.SOCIAL_LOGIN_FAILED);
+	} catch (error) {
+		const errorCode = mapAuthError(error);
+		captureServiceError(error, errorCode, {
+			service: 'auth',
+			action: 'social-sign-in',
+		});
+		return failure(errorCode);
 	}
 }

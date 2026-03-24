@@ -53,16 +53,16 @@ export function CollapsibleDescription({
 					ref={contentRef}
 					className={
 						!isExpanded && isOverflowing
-							? 'max-h-32 overflow-hidden'
+							? 'max-h-32 overflow-hidden lg:max-h-none lg:overflow-visible'
 							: undefined
 					}
 				>
 					<MarkdownRenderer content={content} className="text-sm" />
 				</div>
 
-				{/* Gradient fade overlay when collapsed */}
+				{/* Gradient fade overlay when collapsed — mobile only */}
 				{!isExpanded && isOverflowing && (
-					<div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+					<div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent lg:hidden" />
 				)}
 			</div>
 
@@ -70,7 +70,7 @@ export function CollapsibleDescription({
 				<button
 					type="button"
 					onClick={handleToggle}
-					className="cursor-pointer self-start text-sm font-medium text-black underline underline-offset-2"
+					className="cursor-pointer self-start text-sm font-medium text-black underline underline-offset-2 lg:hidden"
 				>
 					{getToggleLabel()}
 				</button>

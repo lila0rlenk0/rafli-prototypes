@@ -54,6 +54,7 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'core:raffle:invalid-dates',
 	'core:raffle:not-draft',
 	'core:raffle:not-cancellable',
+	'core:raffle:not-queued',
 	'core:raffle:missing-fields',
 	'core:raffle:min-participants-must-exceed-winners',
 	'core:raffle:not-active',

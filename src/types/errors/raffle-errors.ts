@@ -36,6 +36,8 @@ export const RAFFLE_ERROR_CODES = {
 	MISSING_FIELDS: 'core:raffle:missing-fields',
 	/** Raffle cannot be cancelled in its current state */
 	NOT_CANCELLABLE: 'core:raffle:not-cancellable',
+	/** Raffle is not in queued status (cannot be activated) */
+	NOT_QUEUED: 'core:raffle:not-queued',
 	/** Crypto payment configuration is invalid or incomplete */
 	INVALID_CRYPTO_CONFIG: 'core:raffle:invalid-crypto-config',
 

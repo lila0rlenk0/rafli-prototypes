@@ -1,7 +1,10 @@
 'use client';
 
-import { Eye } from 'lucide-react';
+import { Eye, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
 import { PublishSplitButton } from '@/components/raffle/publish-split-button';
@@ -11,6 +14,7 @@ import { ImageCarousel } from '@/components/ui/image-carousel';
 import { isAutoCancelled } from '@/lib/utils/cancellation-reason';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
+import { activateRaffle } from '@/services/raffle/activate-raffle';
 import { usePublishRaffle } from '@/services/raffle/use-publish-raffle';
 import {
 	isEnrolledRaffle,
@@ -60,6 +64,8 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 		raffle.maxParticipants,
 	);
 	const showEditButton = shouldShowEditButton();
+	const showQueuedActions =
+		mode === USER_MODE.HOST && raffle.status === RAFFLE_STATUS.QUEUED;
 
 	/**
 	 * Gets cancellation badge label and color for cancelled raffles.
@@ -182,6 +188,8 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 
 				{showEditButton ? (
 					<DraftRaffleActions raffle={raffle} />
+				) : showQueuedActions ? (
+					<QueuedRaffleActions raffle={raffle} />
 				) : (
 					<Link
 						href={`/browse/${raffle.publicSlugOrCode}`}
@@ -231,6 +239,55 @@ function DraftRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 				onPublish={handlePublish}
 				className="w-full"
 			/>
+		</div>
+	);
+}
+
+/**
+ * Queued raffle actions — "Go Live Now" to skip waiting for the scheduled startAt.
+ * Calls POST /raffles/:id/activate which transitions queued→live immediately.
+ */
+function QueuedRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
+	const router = useRouter();
+	const [isActivating, setIsActivating] = useState(false);
+
+	const handleActivate = useCallback(async () => {
+		setIsActivating(true);
+		try {
+			const result = await activateRaffle(raffle.id);
+			if (!result.success) {
+				toast.error('Failed to activate raffle. Please try again.');
+				return;
+			}
+			toast.success('Raffle is now live!');
+			// Server action already revalidated — refresh to pick up new status
+			router.refresh();
+		} catch {
+			toast.error('Something went wrong. Please try again.');
+		} finally {
+			setIsActivating(false);
+		}
+	}, [raffle.id, router]);
+
+	return (
+		<div className="mt-4 flex flex-col gap-2">
+			<Link href={`/browse/${raffle.publicSlugOrCode}`} className="block">
+				<Button
+					variant="outline"
+					className="w-full cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
+				>
+					<Eye className="size-4" />
+					Preview
+				</Button>
+			</Link>
+			<Button
+				onClick={handleActivate}
+				disabled={isActivating}
+				className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black"
+			>
+				<Zap className="size-4" />
+				{isActivating ? 'Activating...' : 'Go Live Now'}
+			</Button>
 		</div>
 	);
 }

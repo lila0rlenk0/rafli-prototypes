@@ -132,8 +132,10 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 		});
 	}
 
+	const isClickableCard = !showEditButton && !showQueuedActions;
+
 	return (
-		<div className="group flex max-w-70 min-w-70 flex-col overflow-hidden rounded-[24px] border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
+		<div className="group relative flex max-w-70 min-w-70 flex-col overflow-hidden rounded-[24px] border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
 			<ImageCarousel
 				coverImage={raffle.coverMediaUrl}
 				galleryImages={raffle.galleryMediaUrls}
@@ -144,7 +146,16 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 
 			<div className="flex flex-1 flex-col p-4">
 				<h3 className="mb-2 h-16 text-xl font-bold tracking-tight text-gray-900">
-					{raffle.title}
+					{isClickableCard ? (
+						<Link
+							href={`/browse/${raffle.publicSlugOrCode}`}
+							className="line-clamp-2 after:absolute after:inset-0"
+						>
+							{raffle.title}
+						</Link>
+					) : (
+						raffle.title
+					)}
 				</h3>
 
 				{cancelledBadge && (
@@ -194,7 +205,7 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 				) : (
 					<Link
 						href={`/browse/${raffle.publicSlugOrCode}`}
-						className="mt-0 block"
+						className="relative z-10 mt-0 block"
 					>
 						<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
 							Details
@@ -202,10 +213,12 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 					</Link>
 				)}
 
-				<RaffleShareButtons
-					title={raffle.title}
-					publicSlug={raffle.publicSlugOrCode}
-				/>
+				<div className="relative z-10">
+					<RaffleShareButtons
+						title={raffle.title}
+						publicSlug={raffle.publicSlugOrCode}
+					/>
+				</div>
 			</div>
 		</div>
 	);

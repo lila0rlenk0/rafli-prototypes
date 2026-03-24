@@ -11,18 +11,34 @@ import type { ErrorEvent, EventHint } from '@sentry/nextjs';
  * Any error code NOT in this set passes through to Sentry.
  */
 const EXPECTED_ERROR_CODES = new Set<string>([
-	// Auth — user mistakes
+	// Auth — user mistakes (credentials, validation, expected states)
 	'auth:user:invalid-credentials',
 	'auth:user:already-exists',
+	'auth:user:not-found',
+	'auth:user:already-host',
+	'auth:email:invalid',
 	'auth:token:expired',
 	'auth:password:compromised',
 	'auth:password:not-set',
 	'auth:password:invalid',
+	'auth:password:same',
+	'auth:password-reset:failed',
 	'auth:social:failed',
 	'auth:social:provider-error',
 	'auth:social:callback-failed',
 	'auth:social:token-exchange-failed',
-	'auth:password-reset:failed',
+	'auth:session:expired',
+	'auth:session:invalid',
+	'auth:permission:denied',
+
+	// Auth — profile/account (user-triggered states)
+	'auth:username:taken',
+	'auth:username:invalid',
+	'auth:bio:too-long',
+	'auth:profile:not-found',
+	'auth:account:already-deleted',
+	'auth:account:deleted',
+	'auth:account:deletion-blocked',
 
 	// Wallet — signature/validation
 	'auth:wallet:not-verified',

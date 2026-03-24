@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -27,6 +28,11 @@ interface ImageCarouselProps {
 	 * Use on the primary above-the-fold carousel of a page.
 	 */
 	priority?: boolean;
+	/**
+	 * Called when the current image is clicked with the index in the combined image array.
+	 * Useful for opening a lightbox from the carousel.
+	 */
+	onImageClick?: (index: number) => void;
 }
 
 // Hoisted to module scope — avoids re-creating the variants object on every render,
@@ -75,6 +81,7 @@ export function ImageCarousel({
 	className = '',
 	sizes = '(max-width: 768px) 100vw, 50vw',
 	priority = false,
+	onImageClick,
 }: ImageCarouselProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [direction, setDirection] = useState(0);
@@ -159,7 +166,10 @@ export function ImageCarousel({
 							x: { type: 'spring', stiffness: 200, damping: 20 },
 							opacity: { duration: 0.2 },
 						}}
-						className="absolute inset-0"
+						className={cn('absolute inset-0', onImageClick && 'cursor-pointer')}
+						onClick={
+							onImageClick ? () => onImageClick(currentIndex) : undefined
+						}
 					>
 						<Image
 							src={currentImageUrl}

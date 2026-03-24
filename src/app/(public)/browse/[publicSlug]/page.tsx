@@ -22,8 +22,8 @@ import {
 	AccordionTrigger,
 } from '@/components/ui/accordion';
 import { BackLink } from '@/components/ui/back-link';
-import { ImageCarousel } from '@/components/ui/image-carousel';
 import { CollapsibleDescription } from '@/components/raffle/collapsible-description';
+import { RaffleImageGallery } from '@/components/raffle/raffle-image-gallery';
 import { getSession } from '@/lib/auth/session';
 import { getCancellationReason } from '@/lib/utils/cancellation-reason';
 import { getCategories } from '@/services/raffle/get-categories';
@@ -407,35 +407,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</div>
 					</Link>
 
-					<ImageCarousel
+					<RaffleImageGallery
 						coverImage={raffle.coverMediaUrl}
 						galleryImages={raffle.galleryMediaUrls}
 						alt={raffle.title}
-						aspectRatio="aspect-video"
-						maxHeight="max-h-96"
-						className="border border-[#E5E5E5]"
-						sizes="(max-width: 1024px) 100vw, 736px"
-						priority
 					/>
-
-					{raffle.galleryMediaUrls.length > 0 && (
-						<div className="grid grid-cols-3 gap-4">
-							{raffle.galleryMediaUrls.map((image, index) => (
-								<div
-									key={index}
-									className="relative flex aspect-square max-h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
-								>
-									<Image
-										src={image}
-										alt={`Gallery ${index + 1}`}
-										fill
-										sizes="33vw"
-										className="object-cover"
-									/>
-								</div>
-							))}
-						</div>
-					)}
 
 					<CollapsibleDescription content={raffle.description || ''} />
 

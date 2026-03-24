@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 
 /** Height threshold (px) above which the description is collapsible */
-const COLLAPSED_HEIGHT = 160;
+const COLLAPSED_HEIGHT = 128;
 
 interface CollapsibleDescriptionProps {
 	content: string;
@@ -53,7 +53,7 @@ export function CollapsibleDescription({
 					ref={contentRef}
 					className={
 						!isExpanded && isOverflowing
-							? 'max-h-40 overflow-hidden'
+							? 'max-h-32 overflow-hidden'
 							: undefined
 					}
 				>

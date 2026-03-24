@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Zap } from 'lucide-react';
+import { Eye, Pencil, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -15,6 +15,7 @@ import { isAutoCancelled } from '@/lib/utils/cancellation-reason';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { activateRaffle } from '@/services/raffle/activate-raffle';
+import { unpublishRaffle } from '@/services/raffle/unpublish-raffle';
 import { usePublishRaffle } from '@/services/raffle/use-publish-raffle';
 import {
 	isEnrolledRaffle,
@@ -244,12 +245,13 @@ function DraftRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 }
 
 /**
- * Queued raffle actions — "Go Live Now" to skip waiting for the scheduled startAt.
- * Calls POST /raffles/:id/activate which transitions queued→live immediately.
+ * Queued raffle actions — Edit (unpublish→draft then navigate) and Go Live Now.
+ * Mirrors DraftRaffleActions layout: [Edit] [Preview] on top, action button below.
  */
 function QueuedRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 	const router = useRouter();
 	const [isActivating, setIsActivating] = useState(false);
+	const [isUnpublishing, setIsUnpublishing] = useState(false);
 
 	const handleActivate = useCallback(async () => {
 		setIsActivating(true);
@@ -269,20 +271,53 @@ function QueuedRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 		}
 	}, [raffle.id, router]);
 
+	/**
+	 * Unpublishes the raffle (queued→draft) then navigates to the edit page.
+	 * The backend must revert to draft before the update endpoint accepts changes.
+	 */
+	const handleEdit = useCallback(async () => {
+		setIsUnpublishing(true);
+		try {
+			const result = await unpublishRaffle(raffle.id);
+			if (!result.success) {
+				toast.error('Failed to revert raffle to draft. Please try again.');
+				return;
+			}
+			router.push(`/my-raffles/${raffle.publicSlugOrCode}/edit`);
+		} catch {
+			toast.error('Something went wrong. Please try again.');
+		} finally {
+			setIsUnpublishing(false);
+		}
+	}, [raffle.id, raffle.publicSlugOrCode, router]);
+
+	const isBusy = isActivating || isUnpublishing;
+
 	return (
 		<div className="mt-4 flex flex-col gap-2">
-			<Link href={`/browse/${raffle.publicSlugOrCode}`} className="block">
+			<div className="flex gap-2">
 				<Button
-					variant="outline"
-					className="w-full cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
+					onClick={handleEdit}
+					disabled={isBusy}
+					className="hover:bg-background flex flex-1 cursor-pointer items-center gap-2 border-2 border-black bg-black transition-colors duration-150 hover:text-black"
 				>
-					<Eye className="size-4" />
-					Preview
+					<Pencil className="size-4" />
+					{isUnpublishing ? 'Reverting...' : 'Edit'}
 				</Button>
-			</Link>
+				<Link href={`/browse/${raffle.publicSlugOrCode}`}>
+					<Button
+						variant="outline"
+						disabled={isBusy}
+						className="cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
+					>
+						<Eye className="size-4" />
+						Preview
+					</Button>
+				</Link>
+			</div>
 			<Button
 				onClick={handleActivate}
-				disabled={isActivating}
+				disabled={isBusy}
 				className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black"
 			>
 				<Zap className="size-4" />

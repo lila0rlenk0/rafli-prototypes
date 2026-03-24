@@ -149,7 +149,7 @@ export default async function HostProfilePage({
 			<PageHeader />
 
 			<div className="relative mb-8 flex w-full items-center justify-center">
-				<Suspense>
+				<Suspense fallback={null}>
 					<StatusTabs />
 				</Suspense>
 			</div>

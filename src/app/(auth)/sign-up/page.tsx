@@ -25,7 +25,7 @@ export default function SignUpPage() {
 			</div>
 			<div className="z-1 flex flex-col p-6 md:p-10">
 				<div className="flex flex-1 items-center justify-center">
-					<Suspense>
+					<Suspense fallback={null}>
 						<SignUpForm />
 					</Suspense>
 				</div>

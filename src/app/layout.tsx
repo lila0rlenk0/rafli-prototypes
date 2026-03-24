@@ -39,7 +39,7 @@ export default async function RootLayout({
 			<body
 				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} font-sans antialiased`}
 			>
-				<Suspense>
+				<Suspense fallback={null}>
 					<Providers>
 						{children}
 						<Toaster />

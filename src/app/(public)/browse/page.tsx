@@ -122,7 +122,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				<h2 className="font-clash-display text-3xl font-semibold">
 					Browse all active raffles
 				</h2>
-				<Suspense>
+				<Suspense fallback={null}>
 					<FilterBar categories={categories} />
 				</Suspense>
 			</div>

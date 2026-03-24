@@ -2,7 +2,6 @@
 
 import { ExternalLink, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 
 import {
 	Accordion,
@@ -21,8 +20,7 @@ import {
 	getIpfsUrl,
 	getVrfContractUrl,
 } from '@/lib/verification-links';
-import { verifyWinner } from '@/services/verification/verify-winner';
-import type { WinnerVerification as WinnerVerificationData } from '@/types/verification';
+import { useWinnerVerification } from '@/services/verification/use-winner-verification';
 
 import { VerifiedBadge } from './verified-badge';
 
@@ -47,25 +45,13 @@ export function WinnerVerification({
 	manifestHash,
 	commitTxHash,
 }: WinnerVerificationProps) {
-	const [verification, setVerification] =
-		useState<WinnerVerificationData | null>(null);
-	const [verified, setVerified] = useState<boolean | null>(null);
-	const [error, setError] = useState(false);
+	const { data: verification, isError } = useWinnerVerification(
+		raffleId,
+		position,
+	);
 
-	useEffect(() => {
-		async function fetchVerification() {
-			const result = await verifyWinner(raffleId, position);
-			if (result.success) {
-				setVerification(result.data);
-				setVerified(result.data.merkleVerified);
-			} else {
-				setError(true);
-				setVerified(false);
-			}
-		}
-
-		fetchVerification();
-	}, [raffleId, position]);
+	// Derive verified state from query data — null while loading
+	const verified = verification ? verification.merkleVerified : null;
 
 	/**
 	 * Truncates a hex string for display
@@ -89,7 +75,7 @@ export function WinnerVerification({
 		return `#${ticketId.toLocaleString()}`;
 	}
 
-	if (error && !verification) {
+	if (isError && !verification) {
 		return <VerifiedBadge verified={false} />;
 	}
 

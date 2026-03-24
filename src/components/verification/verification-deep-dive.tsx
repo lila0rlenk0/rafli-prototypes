@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import {
 	Accordion,
@@ -31,7 +31,7 @@ import {
 	getIpfsUrl,
 	getVrfContractUrl,
 } from '@/lib/verification-links';
-import { getRaffleVerification } from '@/services/verification/get-raffle-verification';
+import { useRaffleVerification } from '@/services/verification/use-raffle-verification';
 import type {
 	RaffleVerificationData,
 	WinnerVerification,
@@ -48,30 +48,9 @@ interface VerificationDeepDiveProps {
  * Shows manifest, blockchain proofs, winners, and formulas.
  */
 export function VerificationDeepDive({ raffleId }: VerificationDeepDiveProps) {
-	const [data, setData] = useState<RaffleVerificationData | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const { data, isLoading, isError } = useRaffleVerification(raffleId);
 
-	useEffect(() => {
-		async function fetchData() {
-			setLoading(true);
-			setError(null);
-
-			const response = await getRaffleVerification(raffleId);
-
-			if (response.success) {
-				setData(response.data);
-			} else {
-				setError('Failed to load verification data');
-			}
-
-			setLoading(false);
-		}
-
-		fetchData();
-	}, [raffleId]);
-
-	if (loading) {
+	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center py-12">
 				<Loader2 className="size-8 animate-spin text-neutral-400" />
@@ -79,13 +58,11 @@ export function VerificationDeepDive({ raffleId }: VerificationDeepDiveProps) {
 		);
 	}
 
-	if (error || !data) {
+	if (isError || !data) {
 		return (
 			<div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
 				<AlertCircle className="mx-auto mb-2 size-8 text-red-600" />
-				<p className="text-red-600">
-					{error || 'Verification data not available'}
-				</p>
+				<p className="text-red-600">Verification data not available</p>
 				<Link
 					href="/verify"
 					className="mt-4 inline-block text-sm text-red-700 underline hover:no-underline"

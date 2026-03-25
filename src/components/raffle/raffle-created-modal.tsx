@@ -108,6 +108,7 @@ export function RaffleCreatedModal({
 	}
 
 	function handleViewMyRaffles() {
+		onOpenChange(false);
 		router.push('/my-raffles');
 	}
 

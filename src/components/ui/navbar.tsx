@@ -38,7 +38,7 @@ export function Navbar({ children }: NavbarProps) {
 	return (
 		<>
 			<nav className="bg-background sticky top-0 z-20 border-b border-[#e6e8ec]">
-				<div className="mx-auto flex h-14 w-full max-w-[1300px] items-center justify-between px-4 sm:h-16 sm:px-6">
+				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between px-4 sm:h-16 sm:px-6 2xl:px-20">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">
 							<Logo className="h-5 w-auto sm:h-6" />
@@ -161,7 +161,7 @@ export function Navbar({ children }: NavbarProps) {
 				)}
 			</nav>
 
-			<div className="mx-auto mt-6 max-w-[1400px] overflow-auto px-4 pb-10 sm:mt-10 sm:px-0">
+			<div className="mx-auto mt-6 max-w-[1920px] overflow-auto px-4 pb-10 sm:mt-10 sm:px-6 2xl:px-20">
 				{children}
 			</div>
 		</>

@@ -62,15 +62,22 @@ export function Navbar({ children }: NavbarProps) {
 					</div>
 
 					{/* Desktop: Right side icons */}
-					<div className="hidden items-center gap-3 sm:flex sm:gap-8">
-						<a
-							href={FEEDBACK_FORM_URL}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="rounded-full border border-black px-4 py-2 text-sm font-medium text-black"
+					<div className="hidden items-center gap-3 sm:flex sm:gap-4">
+						<Button
+							asChild
+							variant="outline"
+							size="default"
+							className="border-black text-black"
 						>
-							Help us improve
-						</a>
+							<a
+								href={FEEDBACK_FORM_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+								data-testid="help-us-improve-button"
+							>
+								Help us improve
+							</a>
+						</Button>
 						<ModeSwitchButton />
 						<NotificationBell />
 						<Link href="/profile">

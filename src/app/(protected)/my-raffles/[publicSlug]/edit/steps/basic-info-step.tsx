@@ -37,6 +37,7 @@ export function BasicInfoStep() {
 		formState: { errors, touchedFields },
 		watch,
 		setValue,
+		getValues,
 		trigger,
 	} = form;
 
@@ -77,17 +78,6 @@ export function BasicInfoStep() {
 		(coverImage && coverImage.length > 0),
 	);
 
-	// Check if all fields in this step are filled and valid
-	const isCurrentStepValid =
-		Boolean(title) &&
-		Boolean(description) &&
-		Boolean(price && price >= 0.5) &&
-		Boolean(category) &&
-		!errors.title &&
-		!errors.description &&
-		!errors.price &&
-		!errors.category;
-
 	// Clear only this step's fields (except images)
 	function handleClearAll() {
 		setValue('title', '');
@@ -97,19 +87,23 @@ export function BasicInfoStep() {
 		setValue('coverImage', []);
 	}
 
-	// Handle continue with validation
+	/** Validates current step fields before advancing */
 	async function handleContinue() {
-		// Trigger validation for current step fields
-		const isValid = await trigger([
-			'title',
-			'description',
-			'price',
-			'category',
-		]);
+		const fields = ['title', 'description', 'price', 'category'] as const;
+		const isValid = await trigger([...fields]);
 
-		if (isValid) {
-			nextStep();
+		if (!isValid) {
+			for (const field of fields) {
+				setValue(field, getValues(field), { shouldTouch: true });
+			}
+			requestAnimationFrame(() => {
+				const firstError = document.querySelector('.text-red-500');
+				firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			});
+			return;
 		}
+
+		nextStep();
 	}
 
 	/**
@@ -281,7 +275,9 @@ export function BasicInfoStep() {
 					<Combobox
 						options={categoryOptions}
 						value={category}
-						onValueChange={value => setValue('category', value)}
+						onValueChange={value =>
+							setValue('category', value, { shouldValidate: true })
+						}
 						placeholder="Select category"
 						searchPlaceholder="Search category..."
 						emptyText="No category found."
@@ -298,8 +294,7 @@ export function BasicInfoStep() {
 				<Button
 					type="button"
 					onClick={handleContinue}
-					disabled={!isCurrentStepValid}
-					className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
+					className="cursor-pointer"
 				>
 					Continue
 				</Button>

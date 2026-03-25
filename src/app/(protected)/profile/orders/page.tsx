@@ -47,7 +47,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 			</div>
 
 			<div className="rounded-2xl bg-white p-8">
-				<h1 className="mb-6 text-xl font-semibold">Order History</h1>
+				<h1 className="mb-6 text-xl font-semibold">Payment History</h1>
 
 				<OrdersTable orders={orders} />
 

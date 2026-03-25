@@ -20,8 +20,10 @@ import {
 	resolveStripeVerificationState,
 	type VerifiedStatus,
 } from '@/components/payment/payment-status-state';
+import { useUserStore } from '@/providers/user-store-provider';
 import { getStripeSessionStatus } from '@/services/payment/get-stripe-session-status';
 import type { PaymentErrorCode } from '@/types/errors';
+import { USER_MODE } from '@/types/user-mode';
 
 // ==========================================
 // Types
@@ -68,6 +70,9 @@ export function PaymentStatusModal({
 	open,
 	onOpenChange,
 }: PaymentStatusModalProps) {
+	const mode = useUserStore(s => s.mode);
+	const isParticipant = mode === USER_MODE.PARTICIPANT;
+
 	const [status, setStatus] = useState<VerifiedStatus>('loading');
 	const [verificationError, setVerificationError] =
 		useState<PaymentErrorCode | null>(null);
@@ -277,14 +282,16 @@ export function PaymentStatusModal({
 						Winners will be announced once the draw closes.
 					</DialogDescription>
 
-					<div className="my-6">
-						<Link
-							href="/my-raffles"
-							className="rounded-full border border-black px-12 py-3 text-sm font-semibold"
-						>
-							View my raffles
-						</Link>
-					</div>
+					{isParticipant && (
+						<div className="my-6">
+							<Link
+								href="/my-raffles"
+								className="rounded-full border border-black px-12 py-3 text-sm font-semibold"
+							>
+								View my raffles
+							</Link>
+						</div>
+					)}
 				</DialogHeader>
 				<div className="z-1 flex w-full flex-col items-center justify-center gap-4">
 					<p className="text-xl font-medium">Share your raffle!</p>
@@ -323,14 +330,16 @@ export function PaymentStatusModal({
 					<br />
 					This usually takes a few seconds. Please check back shortly.
 				</DialogDescription>
-				<div className="my-6">
-					<Link
-						href="/my-raffles"
-						className="rounded-full border border-black px-12 py-3 text-sm font-semibold"
-					>
-						View my raffles
-					</Link>
-				</div>
+				{isParticipant && (
+					<div className="my-6">
+						<Link
+							href="/my-raffles"
+							className="rounded-full border border-black px-12 py-3 text-sm font-semibold"
+						>
+							View my raffles
+						</Link>
+					</div>
+				)}
 			</DialogHeader>
 		);
 	}
@@ -389,13 +398,15 @@ export function PaymentStatusModal({
 							</Button>
 						)}
 				</div>
-				<Button
-					asChild
-					variant="outline"
-					className="h-12 w-full border-2 border-black bg-white text-black hover:bg-black hover:text-white"
-				>
-					<Link href="/my-raffles">View my raffles</Link>
-				</Button>
+				{isParticipant && (
+					<Button
+						asChild
+						variant="outline"
+						className="h-12 w-full border-2 border-black bg-white text-black hover:bg-black hover:text-white"
+					>
+						<Link href="/my-raffles">View my raffles</Link>
+					</Button>
+				)}
 			</DialogHeader>
 		);
 	}

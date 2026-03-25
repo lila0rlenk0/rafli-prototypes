@@ -30,6 +30,7 @@ export function BasicInfoStep() {
 		formState: { errors, touchedFields },
 		watch,
 		setValue,
+		getValues,
 		trigger,
 	} = form;
 
@@ -81,17 +82,6 @@ export function BasicInfoStep() {
 		(coverImage && coverImage.length > 0),
 	);
 
-	// Check if all fields in this step are filled and valid
-	const isCurrentStepValid =
-		Boolean(title) &&
-		Boolean(description) &&
-		Boolean(price && price >= 0.5) &&
-		Boolean(category) &&
-		!errors.title &&
-		!errors.description &&
-		!errors.price &&
-		!errors.category;
-
 	// Clear only this step's fields
 	function handleClearAll() {
 		setValue('title', '');
@@ -127,20 +117,24 @@ export function BasicInfoStep() {
 		if (input) (input as HTMLInputElement).click();
 	}
 
-	// Handle continue with validation
-	const handleContinue = async () => {
-		// Trigger validation for current step fields
-		const isValid = await trigger([
-			'title',
-			'description',
-			'price',
-			'category',
-		]);
+	/** Validates current step fields before advancing */
+	async function handleContinue() {
+		const fields = ['title', 'description', 'price', 'category'] as const;
+		const isValid = await trigger([...fields]);
 
-		if (isValid) {
-			nextStep();
+		if (!isValid) {
+			for (const field of fields) {
+				setValue(field, getValues(field), { shouldTouch: true });
+			}
+			requestAnimationFrame(() => {
+				const firstError = document.querySelector('.text-red-500');
+				firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			});
+			return;
 		}
-	};
+
+		nextStep();
+	}
 
 	return (
 		<div className="flex w-full flex-col gap-8 rounded-2xl bg-white p-8">
@@ -249,7 +243,9 @@ export function BasicInfoStep() {
 					<Combobox
 						options={categoryOptions}
 						value={category}
-						onValueChange={value => setValue('category', value)}
+						onValueChange={value =>
+							setValue('category', value, { shouldValidate: true })
+						}
 						placeholder="Select category"
 						searchPlaceholder="Search category..."
 						emptyText="No category found."
@@ -266,8 +262,7 @@ export function BasicInfoStep() {
 				<Button
 					type="button"
 					onClick={handleContinue}
-					disabled={!isCurrentStepValid}
-					className="cursor-pointer px-6 disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
+					className="cursor-pointer px-6"
 				>
 					Continue
 				</Button>

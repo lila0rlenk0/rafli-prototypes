@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
 
-const BECOME_HOST_FORM_URL = 'https://forms.google.com/placeholder';
+const BECOME_HOST_FORM_URL = 'https://forms.gle/RqihwzjyBcjjwUa97';
 
 /**
  * ModeSwitchButton Component
@@ -53,9 +53,10 @@ export function ModeSwitchButton() {
 		return (
 			<Button
 				variant="outline"
-				size="sm"
+				size="default"
 				disabled
-				className="flex cursor-not-allowed items-center gap-2 border-black text-black opacity-50"
+				className="cursor-not-allowed border-black text-black opacity-50"
+				data-testid="mode-switch-button"
 			>
 				<span className="hidden sm:inline">Loading...</span>
 				<span className="sm:hidden">...</span>
@@ -65,14 +66,21 @@ export function ModeSwitchButton() {
 
 	if (!canSwitchMode()) {
 		return (
-			<a
-				href={BECOME_HOST_FORM_URL}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="rounded-full border border-black bg-black px-4 py-2 text-white"
+			<Button
+				asChild
+				variant="default"
+				size="default"
+				className="bg-black text-white hover:bg-black/90"
 			>
-				Become a Host
-			</a>
+				<a
+					href={BECOME_HOST_FORM_URL}
+					target="_blank"
+					rel="noopener noreferrer"
+					data-testid="become-a-host-button"
+				>
+					Become a Host
+				</a>
+			</Button>
 		);
 	}
 
@@ -82,11 +90,12 @@ export function ModeSwitchButton() {
 			onClick={handleModeSwitch}
 			disabled={isSwitching}
 			variant="outline"
-			size="sm"
+			size="default"
 			className={cn(
-				'flex items-center gap-2 border-black text-black data-[mode=participant]:bg-black data-[mode=participant]:text-white',
+				'border-black text-black data-[mode=participant]:bg-black data-[mode=participant]:text-white',
 				isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
 			)}
+			data-testid="mode-switch-button"
 		>
 			<span className="hidden sm:inline">{getButtonText()}</span>
 			<span className="sm:hidden">Switch Mode</span>

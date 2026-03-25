@@ -52,7 +52,7 @@ export function HeroSection() {
 						variant="outline"
 						className="hover:text-background h-[60px] w-full border-2 border-black text-lg text-black/95 hover:bg-black sm:w-[238px]"
 					>
-						<Link href="https://forms.gle/786eAKmUcSZ1WCnD6">
+						<Link href="https://forms.gle/RqihwzjyBcjjwUa97">
 							Become a host
 						</Link>
 					</Button>

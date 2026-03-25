@@ -26,6 +26,7 @@ import type { Category } from '@/types/category';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { Question } from '@/types/question';
 import { useRaffleDraft } from './hooks/use-raffle-draft';
+import { RestoreDraftModal } from './restore-draft-modal';
 import { SaveDraftModal } from './save-draft-modal';
 import { CRYPTO_FORM_DEFAULTS, raffleFormSchema } from './schema';
 import { STEPS } from './steps';
@@ -89,6 +90,7 @@ export function MultiStepFormProvider({
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [showExitModal, setShowExitModal] = useState(false);
 	const [draftLoaded, setDraftLoaded] = useState(false);
+	const [showRestoreModal, setShowRestoreModal] = useState(false);
 	const [createdRaffle, setCreatedRaffle] = useState<{
 		publicSlug: string;
 		raffleStartDate: string;
@@ -180,12 +182,21 @@ export function MultiStepFormProvider({
 	const hasUnsavedChanges = checkHasUnsavedChanges();
 
 	/**
-	 * Loads draft data into form on mount
-	 * Shows toast about re-uploading images
-	 * Draft is only cleared on successful raffle creation
+	 * Shows restore modal when a draft is detected on mount
+	 * The user decides whether to continue the draft or start fresh
 	 */
 	useEffect(() => {
 		if (isDraftLoading || draftLoaded || !hasDraft || !draft) return;
+
+		setShowRestoreModal(true);
+		setDraftLoaded(true);
+	}, [isDraftLoading, draftLoaded, hasDraft, draft]);
+
+	/**
+	 * Loads draft data into form when user chooses to continue
+	 */
+	const handleContinueDraft = useCallback(() => {
+		if (!draft) return;
 
 		form.reset({
 			title: draft.title,
@@ -200,7 +211,6 @@ export function MultiStepFormProvider({
 			minParticipants: draft.minParticipants,
 			maxParticipants: draft.maxParticipants,
 			checkInQuestion: draft.checkInQuestion || '',
-			// Restore crypto config — fallback to defaults for older drafts
 			acceptsCrypto: draft.acceptsCrypto ?? false,
 			cryptoChainIds: draft.cryptoChainIds ?? [],
 			cryptoTokens: draft.cryptoTokens ?? [],
@@ -208,10 +218,15 @@ export function MultiStepFormProvider({
 		});
 
 		setCurrentStep(draft.currentStep);
-		setDraftLoaded(true);
-
 		toast.info('Draft restored. Please re-upload your images if needed.');
-	}, [isDraftLoading, draftLoaded, hasDraft, draft, form]);
+	}, [draft, form]);
+
+	/**
+	 * Clears the draft when user chooses to start fresh
+	 */
+	const handleStartFresh = useCallback(() => {
+		clearDraft();
+	}, [clearDraft]);
 
 	/**
 	 * Adds beforeunload event listener when form has unsaved changes
@@ -598,6 +613,12 @@ export function MultiStepFormProvider({
 				onStay={handleStay}
 				onSaveDraft={handleSaveDraft}
 				onLeaveWithoutSaving={handleLeaveWithoutSaving}
+			/>
+			<RestoreDraftModal
+				open={showRestoreModal}
+				onOpenChange={setShowRestoreModal}
+				onContinueDraft={handleContinueDraft}
+				onStartFresh={handleStartFresh}
 			/>
 		</MultiStepFormContext.Provider>
 	);

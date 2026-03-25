@@ -222,11 +222,27 @@ export function MultiStepFormProvider({
 	}, [draft, form]);
 
 	/**
-	 * Clears the draft when user chooses to start fresh
+	 * Clears the draft and resets all form fields when user chooses to start fresh
 	 */
 	const handleStartFresh = useCallback(() => {
 		clearDraft();
-	}, [clearDraft]);
+		form.reset({
+			title: '',
+			description: '',
+			price: NaN,
+			category: '',
+			coverImage: [],
+			startDate: '',
+			endDate: '',
+			pricePerTicket: NaN,
+			numberOfWinners: NaN,
+			minParticipants: 0,
+			maxParticipants: 0,
+			checkInQuestion: '',
+			...CRYPTO_FORM_DEFAULTS,
+		});
+		setCurrentStep(0);
+	}, [clearDraft, form]);
 
 	/**
 	 * Adds beforeunload event listener when form has unsaved changes

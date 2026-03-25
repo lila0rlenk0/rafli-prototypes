@@ -23,6 +23,7 @@ export function TicketsStep() {
 		formState: { errors, touchedFields },
 		watch,
 		setValue,
+		getValues,
 		trigger,
 	} = form;
 
@@ -126,28 +127,6 @@ export function TicketsStep() {
 
 	const todayDate = getTodayDate();
 
-	// Check if all fields in this step are filled and valid
-	// Note: minParticipants=0 and maxParticipants=0 mean unlimited
-	const isCurrentStepValid =
-		Boolean(startDate) &&
-		Boolean(endDate) &&
-		Boolean(pricePerTicket && pricePerTicket >= 0.5) &&
-		Boolean(numberOfWinners && numberOfWinners > 0) &&
-		typeof minParticipants === 'number' &&
-		minParticipants >= 0 &&
-		typeof maxParticipants === 'number' &&
-		maxParticipants >= 0 &&
-		Boolean(checkInQuestion) &&
-		isDateRangeValid &&
-		isEndDateWithin6Months &&
-		!errors.startDate &&
-		!errors.endDate &&
-		!errors.pricePerTicket &&
-		!errors.numberOfWinners &&
-		!errors.minParticipants &&
-		!errors.maxParticipants &&
-		!errors.checkInQuestion;
-
 	/** Clears only this step's fields and pending promo codes */
 	function handleClearAll() {
 		setValue('startDate', '');
@@ -167,7 +146,7 @@ export function TicketsStep() {
 
 	/** Validates current step fields before advancing */
 	async function handleContinue() {
-		const isValid = await trigger([
+		const fields = [
 			'startDate',
 			'endDate',
 			'pricePerTicket',
@@ -175,11 +154,21 @@ export function TicketsStep() {
 			'minParticipants',
 			'maxParticipants',
 			'checkInQuestion',
-		]);
+		] as const;
+		const isValid = await trigger([...fields]);
 
-		if (isValid) {
-			nextStep();
+		if (!isValid) {
+			for (const field of fields) {
+				setValue(field, getValues(field), { shouldTouch: true });
+			}
+			requestAnimationFrame(() => {
+				const firstError = document.querySelector('.text-red-500');
+				firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			});
+			return;
 		}
+
+		nextStep();
 	}
 
 	return (
@@ -195,7 +184,9 @@ export function TicketsStep() {
 						</label>
 						<DatePicker
 							value={startDate}
-							onValueChange={value => setValue('startDate', value)}
+							onValueChange={value =>
+								setValue('startDate', value, { shouldValidate: true })
+							}
 							placeholder="Select start date"
 							minDate={todayDate}
 						/>
@@ -212,7 +203,9 @@ export function TicketsStep() {
 						</label>
 						<DatePicker
 							value={endDate}
-							onValueChange={value => setValue('endDate', value)}
+							onValueChange={value =>
+								setValue('endDate', value, { shouldValidate: true })
+							}
 							placeholder="Select end date"
 							minDate={todayDate}
 						/>
@@ -423,7 +416,9 @@ export function TicketsStep() {
 							label: q.text,
 						}))}
 						value={checkInQuestion}
-						onValueChange={value => setValue('checkInQuestion', value)}
+						onValueChange={value =>
+							setValue('checkInQuestion', value, { shouldValidate: true })
+						}
 						placeholder="Select question"
 						searchPlaceholder="Search question..."
 						emptyText="No question found."
@@ -454,8 +449,7 @@ export function TicketsStep() {
 				<Button
 					type="button"
 					onClick={handleContinue}
-					disabled={!isCurrentStepValid}
-					className="cursor-pointer px-6 disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
+					className="cursor-pointer px-6"
 				>
 					Continue
 				</Button>

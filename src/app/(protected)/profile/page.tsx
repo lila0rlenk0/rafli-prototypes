@@ -68,6 +68,7 @@ export default async function ProfilePage() {
 					{/* Personal Information */}
 					<PersonalInformationSection
 						user={user}
+						profileName={userProfile?.name ?? null}
 						avatarUrl={userProfile?.avatarUrl ?? null}
 						bio={userProfile?.bio ?? null}
 					/>

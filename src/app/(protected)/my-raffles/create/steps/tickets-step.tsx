@@ -184,7 +184,9 @@ export function TicketsStep() {
 						</label>
 						<DatePicker
 							value={startDate}
-							onValueChange={value => setValue('startDate', value)}
+							onValueChange={value =>
+								setValue('startDate', value, { shouldValidate: true })
+							}
 							placeholder="Select start date"
 							minDate={todayDate}
 						/>
@@ -201,7 +203,9 @@ export function TicketsStep() {
 						</label>
 						<DatePicker
 							value={endDate}
-							onValueChange={value => setValue('endDate', value)}
+							onValueChange={value =>
+								setValue('endDate', value, { shouldValidate: true })
+							}
 							placeholder="Select end date"
 							minDate={todayDate}
 						/>
@@ -412,7 +416,9 @@ export function TicketsStep() {
 							label: q.text,
 						}))}
 						value={checkInQuestion}
-						onValueChange={value => setValue('checkInQuestion', value)}
+						onValueChange={value =>
+							setValue('checkInQuestion', value, { shouldValidate: true })
+						}
 						placeholder="Select question"
 						searchPlaceholder="Search question..."
 						emptyText="No question found."

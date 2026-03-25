@@ -243,7 +243,9 @@ export function BasicInfoStep() {
 					<Combobox
 						options={categoryOptions}
 						value={category}
-						onValueChange={value => setValue('category', value)}
+						onValueChange={value =>
+							setValue('category', value, { shouldValidate: true })
+						}
 						placeholder="Select category"
 						searchPlaceholder="Search category..."
 						emptyText="No category found."

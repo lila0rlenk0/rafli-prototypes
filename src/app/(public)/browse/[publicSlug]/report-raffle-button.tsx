@@ -5,6 +5,11 @@ import { useState } from 'react';
 
 import { ReportContentModal } from '@/components/report/report-content-modal';
 import { Button } from '@/components/ui/button';
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { REPORT_CONTENT_TYPE } from '@/types/report';
 
 interface ReportRaffleButtonProps {
@@ -28,15 +33,20 @@ export function ReportRaffleButton({ raffleId }: ReportRaffleButtonProps) {
 
 	return (
 		<>
-			<Button
-				variant="ghost"
-				size="icon"
-				onClick={handleOpen}
-				className="size-8 shrink-0 text-gray-400 hover:text-gray-600"
-				aria-label="Report raffle"
-			>
-				<FlagIcon className="size-4" />
-			</Button>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={handleOpen}
+						className="size-8 shrink-0 text-gray-400 hover:text-gray-600"
+						aria-label="Report raffle"
+					>
+						<FlagIcon className="size-4" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>Report raffle</TooltipContent>
+			</Tooltip>
 
 			<ReportContentModal
 				open={open}

@@ -114,19 +114,6 @@ export function RaffleInfoCard({
 		);
 	}
 
-	/**
-	 * Estimates per-winner amount if raffle ends with current sales
-	 * Uses frontend estimate since backend values are null during active raffle
-	 * @returns Formatted estimated per-winner amount
-	 */
-	function getEstimatedPerWinner(): string {
-		const revenue = parseFloat(raffle.revenueAmount);
-		const feePercent = parseFloat(raffle.platformFeePercent ?? '10');
-		const net = revenue * (1 - feePercent / 100);
-		const perWinner = net / raffle.numberOfWinners;
-		return formatCurrency(perWinner, raffle.ticketPriceCurrency);
-	}
-
 	return (
 		<div
 			className="mt-8 rounded-2xl border border-black bg-white p-8 data-[authenticated=false]:md:w-84"
@@ -217,15 +204,6 @@ export function RaffleInfoCard({
 							{raffle.numberOfWinners.toLocaleString()}
 						</p>
 					</div>
-
-					{isBelowMinParticipants() && (
-						<div className="flex items-center justify-between">
-							<h3 className="text-sm font-medium text-[#7B7B7B]">
-								Est. per winner
-							</h3>
-							<p className="text-sm font-medium">{getEstimatedPerWinner()}</p>
-						</div>
-					)}
 				</div>
 
 				{/* My Tickets Section - Only shown for authenticated users */}

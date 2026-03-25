@@ -10,11 +10,14 @@ interface ProvidersClientProps {
 }
 
 /**
- * Root Providers Client Tree
+ * Root client provider tree.
  *
  * QueryProvider is outermost — single QueryClient for both app queries and wagmi.
- * Web3Provider no longer creates its own QueryClient; it reuses the app's.
- * This avoids the nested-QueryClientProvider problem where one overrides the other.
+ * Web3Provider reuses the app's QueryClient instead of creating its own.
+ * This avoids the nested-QueryClientProvider problem where the innermost
+ * provider overrides the app's configured defaults (staleTime, refetch policies).
+ *
+ * @returns provider tree wrapping children
  */
 export function ProvidersClient({
 	children,

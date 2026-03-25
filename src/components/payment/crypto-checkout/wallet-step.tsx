@@ -29,6 +29,15 @@ interface WalletStepProps {
  * Wallet connect + verify step for crypto checkout.
  * Uses ConnectButton.Custom for consistent styling within the modal.
  * Shows wallet address, verification status, and gas balance.
+ *
+ * ConnectButton.Custom render props (from RainbowKit docs):
+ * - mounted: boolean — whether the widget has hydrated
+ * - authenticationStatus: 'loading' | 'unauthenticated' | 'authenticated' | undefined
+ * - openConnectModal: () => void — opens the wallet selection modal
+ * - account: { address, displayName, displayBalance, ... } | undefined
+ * - chain: { id, name, unsupported, ... } | undefined
+ *
+ * @returns wallet connection step UI
  */
 export function WalletStep({
 	address,
@@ -38,7 +47,7 @@ export function WalletStep({
 	onWalletReady,
 }: WalletStepProps) {
 	/**
-	 * Gets status label text based on wallet verification
+	 * @returns status label text based on wallet verification state
 	 */
 	function getStatusText(): string {
 		return isWalletVerified
@@ -47,14 +56,14 @@ export function WalletStep({
 	}
 
 	/**
-	 * Gets button label — "Continue" if already verified, else "Verify Wallet"
+	 * @returns "Continue" if already verified, else "Verify Wallet"
 	 */
 	function getButtonText(): string {
 		return isWalletVerified ? 'Continue' : 'Verify Wallet';
 	}
 
 	/**
-	 * Renders verification badge — green checkmark if verified, amber text if not
+	 * @returns green checkmark badge if verified, amber text if not
 	 */
 	function renderVerificationBadge(): React.ReactNode {
 		if (isWalletVerified) {
@@ -72,7 +81,9 @@ export function WalletStep({
 		<div className="flex flex-col items-center gap-5">
 			<p className="text-center text-sm text-[#7B7B7B]">{getStatusText()}</p>
 
-			{/* Custom connect button — styled to match app */}
+			{/* Custom connect button — styled to match app.
+			    RainbowKit docs: check mounted + authenticationStatus for readiness,
+			    guard openConnectModal with optional chaining. */}
 			{!address && (
 				<ConnectButton.Custom>
 					{({ openConnectModal, mounted, authenticationStatus }) => {
@@ -83,14 +94,29 @@ export function WalletStep({
 						const canOpenModal = isReady && !!openConnectModal;
 
 						return (
-							<Button
-								onClick={() => openConnectModal?.()}
-								disabled={!canOpenModal}
-								variant="outline"
-								className="h-12 w-full border-2 border-black bg-white text-black hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:border-[#D4D4D4] disabled:bg-[#F5F5F5] disabled:text-[#7B7B7B] disabled:hover:bg-[#F5F5F5] disabled:hover:text-[#7B7B7B]"
+							// Hide from assistive tech until RainbowKit is ready
+							// (recommended pattern from RainbowKit docs)
+							<div
+								{...(!isReady && {
+									'aria-hidden': true,
+									style: {
+										opacity: 0,
+										pointerEvents: 'none' as const,
+										userSelect: 'none' as const,
+										width: '100%',
+									},
+								})}
+								className="w-full"
 							>
-								{canOpenModal ? 'Connect Wallet' : 'Preparing wallet...'}
-							</Button>
+								<Button
+									onClick={() => openConnectModal?.()}
+									disabled={!canOpenModal}
+									variant="outline"
+									className="h-12 w-full border-2 border-black bg-white text-black hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:border-[#D4D4D4] disabled:bg-[#F5F5F5] disabled:text-[#7B7B7B] disabled:hover:bg-[#F5F5F5] disabled:hover:text-[#7B7B7B]"
+								>
+									{canOpenModal ? 'Connect Wallet' : 'Preparing wallet...'}
+								</Button>
+							</div>
 						);
 					}}
 				</ConnectButton.Custom>

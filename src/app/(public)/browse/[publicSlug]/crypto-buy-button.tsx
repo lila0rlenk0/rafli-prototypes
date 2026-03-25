@@ -5,7 +5,7 @@ import { Loader2Icon, WalletIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
@@ -69,7 +69,7 @@ export function CryptoBuyButton({
 }: CryptoBuyButtonProps) {
 	const router = useRouter();
 	const { openConnectModal } = useConnectModal();
-	const { isConnected } = useAccount();
+	const { isConnected } = useConnection();
 
 	const [showQuestionModal, setShowQuestionModal] = useState(false);
 	const [showCryptoModal, setShowCryptoModal] = useState(false);

@@ -86,6 +86,25 @@ const nextConfig: NextConfig = {
 				: []),
 		],
 	},
+	// WalletConnect's dependency tree (via @walletconnect/ethereum-provider) pulls in
+	// Node.js-only modules: pino logger, LokiJS persistence, and text encoding polyfill.
+	// These are never executed in the browser but webpack tries to bundle them for client
+	// chunks, causing build warnings. Marking them as externals skips them entirely.
+	webpack: (config) => {
+		const wcExternals = ['pino-pretty', 'lokijs', 'encoding'];
+		// webpack externals can be an array, string, function, object, or RegExp.
+		// Next.js always provides an array, but preserve any existing value defensively
+		// so Sentry or other wrappers don't silently lose their externals logic.
+		config.externals = [
+			...(Array.isArray(config.externals)
+				? config.externals
+				: config.externals
+					? [config.externals]
+					: []),
+			...wcExternals,
+		];
+		return config;
+	},
 	cacheComponents: true,
 	async headers() {
 		return [

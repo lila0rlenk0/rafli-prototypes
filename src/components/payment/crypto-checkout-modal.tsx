@@ -11,8 +11,8 @@ import {
 	type Address,
 } from 'viem';
 import {
-	useAccount,
 	useBalance,
+	useConnection,
 	useReadContract,
 	useSignMessage,
 	useSwitchChain,
@@ -220,7 +220,7 @@ export function CryptoCheckoutModal({
 	const chains = cryptoConfig?.chains ?? [];
 
 	// Wagmi hooks
-	const { address, chainId: connectedChainId } = useAccount();
+	const { address, chainId: connectedChainId } = useConnection();
 	// Canonical connected wallet address used across verification and session guards.
 	// wagmi can expose lowercase addresses depending on connector state; normalizing
 	// once here keeps wallet-binding checks and server payloads consistent.

@@ -14,11 +14,13 @@ interface ProvidersProps {
 const WAGMI_COOKIE_KEY = 'wagmi.store';
 
 /**
- * Root Providers Server Wrapper
+ * Root Providers Server Wrapper.
  *
  * Reads only wagmi's persisted SSR cookie and forwards that single value into
  * the client provider tree. Never serialize the full request cookie header into
  * client props — auth/session cookies must stay server-only.
+ *
+ * @returns client provider tree with wagmi SSR state hydrated
  */
 export async function Providers({ children }: ProvidersProps) {
 	const wagmiCookieValue =

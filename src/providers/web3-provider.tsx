@@ -17,11 +17,12 @@ import {
 // ==========================================
 
 /**
- * Custom RainbowKit theme matching app's light design system
- * Derives from lightTheme() and overrides key tokens:
- * - Black accent to match app's border/button style (#0F0F0F)
+ * Custom RainbowKit theme matching app's light design system.
+ *
+ * Overrides:
+ * - Black accent (#0F0F0F) to match app's border/button style
  * - Large border radius for rounded cards/buttons
- * - System font stack (app uses Clash Display for headings but system for body)
+ * - System font stack (app uses Clash Display for headings, system for body)
  */
 const appTheme = lightTheme({
 	accentColor: '#0F0F0F',
@@ -34,18 +35,22 @@ const appTheme = lightTheme({
 // Component
 // ==========================================
 
+interface Web3ProviderProps {
+	children: React.ReactNode;
+	wagmiCookieValue?: string | null;
+}
+
 /**
- * Web3Provider Component
- *
  * Wraps children with wagmi + RainbowKit for wallet connectivity.
- * Shares the app's QueryClient (from QueryProvider in providers.tsx) — wagmi
- * uses namespaced query keys internally so there are no cache collisions.
+ *
+ * Shares the app's QueryClient (from QueryProvider above in the tree) —
+ * wagmi uses namespaced query keys internally so there are no cache collisions.
  * A separate QueryClient would override the app's configured defaults
  * (staleTime: Infinity, refetch disabled) since React Query uses the innermost
  * QueryClientProvider, breaking either app queries or wagmi polling.
  *
- * `wagmiCookieValue` is only the serialized `wagmi.store` payload from the
- * server-rendered request. Rebuild the single-cookie string locally so wagmi
+ * `wagmiCookieValue` is the serialized `wagmi.store` payload from the
+ * server-rendered request. Rebuilt as a single-cookie string locally so wagmi
  * can hydrate without exposing unrelated request cookies to client JavaScript.
  *
  * Wagmi hooks that need polling (e.g. useTransactionConfirmations) explicitly
@@ -54,16 +59,15 @@ const appTheme = lightTheme({
  * Renders children directly (no-op) when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
  * is not configured — ensures card payments and the rest of the app work
  * even without Web3 infrastructure.
+ *
+ * @returns children wrapped in Web3 providers, or bare children when disabled
  */
-interface Web3ProviderProps {
-	children: React.ReactNode;
-	wagmiCookieValue?: string | null;
-}
-
 export function Web3Provider({
 	children,
 	wagmiCookieValue,
 }: Web3ProviderProps) {
+	// Reconstruct the single cookie string wagmi expects for SSR hydration.
+	// Only recompute when the server-forwarded cookie value changes.
 	const initialState = useMemo(
 		() =>
 			wagmiCookieValue && wagmiConfig
@@ -75,8 +79,8 @@ export function Web3Provider({
 		[wagmiCookieValue],
 	);
 
-	// No WalletConnect project ID → skip Web3 providers entirely
-	// This keeps the app functional for card-only payments
+	// No WalletConnect project ID → skip Web3 providers entirely.
+	// Keeps the app functional for card-only payments.
 	if (!isWeb3Enabled || !wagmiConfig) {
 		return <>{children}</>;
 	}

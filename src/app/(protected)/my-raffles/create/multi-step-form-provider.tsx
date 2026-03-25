@@ -1,7 +1,6 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import {
 	createContext,
 	ReactNode,
@@ -84,7 +83,6 @@ export function MultiStepFormProvider({
 	questions,
 	categories,
 }: MultiStepFormProviderProps) {
-	const router = useRouter();
 	const [currentStep, setCurrentStep] = useState(0);
 	const [isCreating, setIsCreating] = useState(false);
 	const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,6 +120,9 @@ export function MultiStepFormProvider({
 
 	/** Stores the href the user tried to navigate to before being intercepted */
 	const pendingNavigationRef = useRef<string | null>(null);
+
+	/** When true, bypasses the beforeunload dialog (user already confirmed exit) */
+	const isLeavingRef = useRef(false);
 
 	const {
 		draft,
@@ -252,6 +253,7 @@ export function MultiStepFormProvider({
 		if (!hasUnsavedChanges) return;
 
 		function handleBeforeUnload(event: BeforeUnloadEvent) {
+			if (isLeavingRef.current) return;
 			event.preventDefault();
 		}
 
@@ -298,7 +300,8 @@ export function MultiStepFormProvider({
 	}, [hasUnsavedChanges]);
 
 	/**
-	 * Saves current form data as draft and navigates to target
+	 * Saves current form data as draft and navigates to target.
+	 * Uses full page navigation to ensure clean state on return.
 	 */
 	const handleSaveDraft = useCallback(() => {
 		const values = form.getValues();
@@ -329,10 +332,11 @@ export function MultiStepFormProvider({
 			currentStep,
 		);
 		toast.success('Draft saved successfully!');
+		isLeavingRef.current = true;
 		const target = pendingNavigationRef.current || '/my-raffles';
 		pendingNavigationRef.current = null;
-		router.push(target);
-	}, [form, saveDraft, currentStep, router]);
+		window.location.href = target;
+	}, [form, saveDraft, currentStep]);
 
 	/**
 	 * Closes the exit modal and clears pending navigation
@@ -343,13 +347,16 @@ export function MultiStepFormProvider({
 	}, []);
 
 	/**
-	 * Navigates to pending target without saving draft
+	 * Clears draft and navigates to pending target without saving.
+	 * Uses full page navigation to ensure clean state on return.
 	 */
 	const handleLeaveWithoutSaving = useCallback(() => {
+		clearDraft();
+		isLeavingRef.current = true;
 		const target = pendingNavigationRef.current || '/my-raffles';
 		pendingNavigationRef.current = null;
-		router.push(target);
-	}, [router]);
+		window.location.href = target;
+	}, [clearDraft]);
 
 	/**
 	 * Advances to the next step in the form

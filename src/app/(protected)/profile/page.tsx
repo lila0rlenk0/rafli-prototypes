@@ -49,7 +49,7 @@ export default async function ProfilePage() {
 	const userProfile = meResult.success ? meResult.data : null;
 
 	return (
-		<div className="flex flex-col gap-8 px-4">
+		<div className="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
 			{/* Main Content Layout */}
 			<div className="flex w-full flex-col gap-10 md:flex-row">
 				{/* Left Sidebar */}

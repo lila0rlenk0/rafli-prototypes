@@ -7,7 +7,6 @@ import {
 	FieldError,
 	FieldGroup,
 	FieldLabel,
-	FieldSeparator,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -24,7 +23,7 @@ import {
 	type AuthErrorCode,
 } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader, Mail } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState, useTransition, type ComponentProps } from 'react';
@@ -86,28 +85,34 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 type SignInMode = 'password' | 'magic-link-email' | 'magic-link-sent';
 
 export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
-	const [mode, setMode] = useState<SignInMode>('password');
+	// Magic link is the primary sign-in method — password is the fallback
+	const [mode, setMode] = useState<SignInMode>('magic-link-email');
 	const [magicLinkEmail, setMagicLinkEmail] = useState('');
+	const [isSocialPending, setIsSocialPending] = useState(false);
+	const [socialError, setSocialError] = useState<string | null>(null);
 	const searchParams = useSearchParams();
 	const returnTo = useMemo(
 		() => validateReturnTo(searchParams.get('returnTo')),
 		[searchParams],
 	);
 
-	function switchToPassword() {
-		setMode('password');
-		setMagicLinkEmail('');
-	}
+	// Shared across both sign-in modes — lifted here to avoid duplication
+	async function handleGoogleSignIn() {
+		setIsSocialPending(true);
+		setSocialError(null);
 
-	if (mode === 'password') {
-		return (
-			<PasswordSignInForm
-				className={className}
-				returnTo={returnTo}
-				onSwitchToMagicLink={() => setMode('magic-link-email')}
-				{...props}
-			/>
-		);
+		const result = await initiateSocialSignIn({
+			provider: 'google',
+			callbackURL: buildOAuthCallbackUrl(window.location.origin, returnTo),
+		});
+
+		if (!result.success) {
+			setSocialError(getErrorMessage(result.error));
+			setIsSocialPending(false);
+			return;
+		}
+
+		window.location.href = result.data.url;
 	}
 
 	if (mode === 'magic-link-email') {
@@ -119,7 +124,31 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 					setMagicLinkEmail(email);
 					setMode('magic-link-sent');
 				}}
-				onBack={switchToPassword}
+				onSwitchToPassword={() => {
+					setMode('password');
+					setSocialError(null);
+				}}
+				onGoogleSignIn={handleGoogleSignIn}
+				isSocialPending={isSocialPending}
+				socialError={socialError}
+				{...props}
+			/>
+		);
+	}
+
+	if (mode === 'password') {
+		return (
+			<PasswordSignInForm
+				className={className}
+				returnTo={returnTo}
+				onSwitchToMagicLink={() => {
+					setMode('magic-link-email');
+					setMagicLinkEmail('');
+					setSocialError(null);
+				}}
+				onGoogleSignIn={handleGoogleSignIn}
+				isSocialPending={isSocialPending}
+				socialError={socialError}
 				{...props}
 			/>
 		);
@@ -130,7 +159,10 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 			className={className}
 			email={magicLinkEmail}
 			returnTo={returnTo}
-			onBack={() => setMode('magic-link-email')}
+			onBack={() => {
+				setMode('magic-link-email');
+				setMagicLinkEmail('');
+			}}
 		/>
 	);
 }
@@ -140,12 +172,18 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 interface PasswordSignInFormProps extends ComponentProps<'form'> {
 	returnTo: string;
 	onSwitchToMagicLink: () => void;
+	onGoogleSignIn: () => void;
+	isSocialPending: boolean;
+	socialError: string | null;
 }
 
 function PasswordSignInForm({
 	className,
 	returnTo,
 	onSwitchToMagicLink,
+	onGoogleSignIn,
+	isSocialPending,
+	socialError,
 	...props
 }: PasswordSignInFormProps) {
 	const {
@@ -158,7 +196,6 @@ function PasswordSignInForm({
 		resolver: zodResolver(passwordFormSchema),
 	});
 	const [isPending, startTransition] = useTransition();
-	const [isSocialPending, setIsSocialPending] = useState(false);
 	const [hasLoginError, setHasLoginError] = useState(false);
 	const router = useRouter();
 
@@ -178,24 +215,6 @@ function PasswordSignInForm({
 			router.push(returnTo);
 			router.refresh();
 		});
-	}
-
-	async function handleGoogleSignIn() {
-		setIsSocialPending(true);
-		setHasLoginError(false);
-
-		const result = await initiateSocialSignIn({
-			provider: 'google',
-			callbackURL: buildOAuthCallbackUrl(window.location.origin, returnTo),
-		});
-
-		if (!result.success) {
-			setError('root', { message: getErrorMessage(result.error) });
-			setIsSocialPending(false);
-			return;
-		}
-
-		window.location.href = result.data.url;
 	}
 
 	const isDisabled = isPending || isSocialPending;
@@ -248,7 +267,18 @@ function PasswordSignInForm({
 					/>
 					<FieldError errors={[errors.password]} />
 				</Field>
+				<button
+					type="button"
+					onClick={onSwitchToMagicLink}
+					disabled={isDisabled}
+					className="text-muted-foreground w-fit text-sm underline-offset-4 hover:underline"
+				>
+					Login with a magic link
+				</button>
 				<FieldError errors={[errors.root]} />
+				{socialError && (
+					<p className="text-destructive text-sm">{socialError}</p>
+				)}
 				{hasLoginError && (
 					<p className="text-muted-foreground text-xs">
 						Just signed up? Check your inbox for the verification email.
@@ -263,46 +293,11 @@ function PasswordSignInForm({
 						{isPending ? 'Signing in...' : 'Sign In'}
 					</Button>
 				</Field>
-				<FieldSeparator className="my-1">
-					or do it via other accounts
-				</FieldSeparator>
-				<Field className="flex flex-col space-y-4">
-					<div className="flex w-full items-center justify-center gap-3">
-						<Button
-							variant="outline"
-							type="button"
-							className="size-12! w-fit bg-white/95"
-							onClick={handleGoogleSignIn}
-							disabled={isDisabled}
-						>
-							{isSocialPending ? (
-								<Loader className="animate-spin" />
-							) : (
-								<FaGoogle className="size-6" />
-							)}
-							<span className="sr-only">Login with Google</span>
-						</Button>
-						<Button
-							variant="outline"
-							type="button"
-							className="size-12! w-fit bg-white/95"
-							onClick={onSwitchToMagicLink}
-							disabled={isDisabled}
-						>
-							<Mail className="size-6" />
-							<span className="sr-only">Login with magic link</span>
-						</Button>
-					</div>
-					<FieldDescription className="text-center">
-						Don&apos;t have an account?{' '}
-						<Link
-							href={`/sign-up?returnTo=${encodeURIComponent(returnTo)}`}
-							className="text-black"
-						>
-							Sign up
-						</Link>
-					</FieldDescription>
-				</Field>
+				<SignInFooter
+					returnTo={returnTo}
+					onGoogleSignIn={onGoogleSignIn}
+					isSocialPending={isSocialPending}
+				/>
 			</FieldGroup>
 		</form>
 	);
@@ -313,14 +308,20 @@ function PasswordSignInForm({
 interface MagicLinkEmailStepProps extends ComponentProps<'form'> {
 	returnTo: string;
 	onLinkSent: (email: string) => void;
-	onBack: () => void;
+	onSwitchToPassword: () => void;
+	onGoogleSignIn: () => void;
+	isSocialPending: boolean;
+	socialError: string | null;
 }
 
 function MagicLinkEmailStep({
 	className,
 	returnTo,
 	onLinkSent,
-	onBack,
+	onSwitchToPassword,
+	onGoogleSignIn,
+	isSocialPending,
+	socialError,
 	...props
 }: MagicLinkEmailStepProps) {
 	const {
@@ -328,6 +329,7 @@ function MagicLinkEmailStep({
 		handleSubmit,
 		formState: { errors },
 		setError,
+		clearErrors,
 	} = useForm<MagicLinkEmailFormType>({
 		resolver: zodResolver(magicLinkEmailSchema),
 	});
@@ -335,6 +337,7 @@ function MagicLinkEmailStep({
 
 	async function handleSendLink(data: MagicLinkEmailFormType) {
 		setIsPending(true);
+		clearErrors('root');
 
 		// callbackURL reuses the existing OAuth callback page.
 		// After magic link verification, Better-Auth sets session cookie and redirects here.
@@ -351,6 +354,8 @@ function MagicLinkEmailStep({
 		onLinkSent(data.email);
 	}
 
+	const isDisabled = isPending || isSocialPending;
+
 	return (
 		<form
 			className={cn(CARD_CLASS, className)}
@@ -362,14 +367,14 @@ function MagicLinkEmailStep({
 
 				<div className="my-6 flex flex-col items-center gap-1 text-center">
 					<h1 className="font-clash-display line text-4xl font-semibold">
-						Sign in with email
+						Ready to sign in?
 					</h1>
 					<p className="text-muted-foreground">
-						We&apos;ll send a sign-in link to your email
+						You one step forward to big win!
 					</p>
 				</div>
 				<Field>
-					<FieldLabel htmlFor="magic-link-email">Email</FieldLabel>
+					<FieldLabel htmlFor="magic-link-email">Enter your email</FieldLabel>
 					<Input
 						id="magic-link-email"
 						type="email"
@@ -381,27 +386,79 @@ function MagicLinkEmailStep({
 					/>
 					<FieldError errors={[errors.email]} />
 				</Field>
+				<button
+					type="button"
+					onClick={onSwitchToPassword}
+					disabled={isDisabled}
+					className="text-muted-foreground w-fit text-sm underline-offset-4 hover:underline"
+				>
+					Login with a password
+				</button>
 				<FieldError errors={[errors.root]} />
+				{socialError && (
+					<p className="text-destructive text-sm">{socialError}</p>
+				)}
 				<Field className="mt-4">
 					<Button
 						type="submit"
-						disabled={isPending}
+						disabled={isDisabled}
 						className="font-clash-display px-6 py-4 text-lg font-semibold"
 					>
-						{isPending ? 'Sending...' : 'Send Magic Link'}
+						{isPending ? 'Sending...' : 'Sign In'}
 					</Button>
 				</Field>
-				<FieldDescription className="mt-2 text-center">
-					<button
-						type="button"
-						onClick={onBack}
-						className="text-black underline-offset-4 hover:underline"
-					>
-						Use password instead
-					</button>
-				</FieldDescription>
+				<SignInFooter
+					returnTo={returnTo}
+					onGoogleSignIn={onGoogleSignIn}
+					isSocialPending={isSocialPending}
+				/>
 			</FieldGroup>
 		</form>
+	);
+}
+
+// === Shared Footer (Google OAuth + Sign Up link) ===
+
+interface SignInFooterProps {
+	returnTo: string;
+	onGoogleSignIn: () => void;
+	isSocialPending: boolean;
+}
+
+/** Google OAuth button + "Don't have an account? Sign Up" — shared by both sign-in modes. */
+function SignInFooter({
+	returnTo,
+	onGoogleSignIn,
+	isSocialPending,
+}: SignInFooterProps) {
+	return (
+		<Field className="flex flex-col space-y-4">
+			<div className="flex w-full items-center justify-center gap-3">
+				<Button
+					variant="outline"
+					type="button"
+					className="size-12! w-fit bg-white/95"
+					onClick={onGoogleSignIn}
+					disabled={isSocialPending}
+				>
+					{isSocialPending ? (
+						<Loader className="animate-spin" />
+					) : (
+						<FaGoogle className="size-6" />
+					)}
+					<span className="sr-only">Login with Google</span>
+				</Button>
+			</div>
+			<FieldDescription className="text-center">
+				Don&apos;t have an account?{' '}
+				<Link
+					href={`/sign-up?returnTo=${encodeURIComponent(returnTo)}`}
+					className="font-semibold text-black"
+				>
+					Sign Up
+				</Link>
+			</FieldDescription>
+		</Field>
 	);
 }
 

@@ -35,6 +35,15 @@ export default defineConfig({
 			dependencies: ['setup'],
 		},
 		{
+			name: 'mobile',
+			use: {
+				...devices['Pixel 7'],
+				storageState: AUTH_FILE,
+			},
+			testDir: './e2e/mobile',
+			dependencies: ['setup'],
+		},
+		{
 			name: 'host-setup',
 			testMatch: /host\.setup\.ts/,
 		},

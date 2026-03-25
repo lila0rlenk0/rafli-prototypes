@@ -59,6 +59,13 @@ const nextConfig: NextConfig = {
 				hostname: '*.s3.us-east-1.amazonaws.com',
 				pathname: '/**',
 			},
+			{
+				// Google OAuth profile avatars — stored as raw external URLs
+				// on the user record when signing in via Google.
+				protocol: 'https',
+				hostname: 'lh3.googleusercontent.com',
+				pathname: '/**',
+			},
 			// Local dev: MinIO serves images on the backend port.
 			// `unoptimized: isLocal` skips the optimization pipeline but Next.js 16
 			// still validates hostnames against remotePatterns — without this entry

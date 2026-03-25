@@ -242,18 +242,16 @@ export function RaffleInfoCard({
 							</div>
 
 							<div className="grid w-full grid-cols-1 gap-2 md:w-84 md:grid-cols-2">
-								{myTicketCodes
-									.slice(0, MAX_VISIBLE_TICKETS)
-									.map(ticket => (
-										<div
-											key={ticket.ticketCode}
-											className="flex items-center justify-center rounded-lg bg-[#F9FFB5] px-2 py-2 text-nowrap"
-										>
-											<span className="text-xs font-medium">
-												{ticket.ticketCode}
-											</span>
-										</div>
-									))}
+								{myTicketCodes.slice(0, MAX_VISIBLE_TICKETS).map(ticket => (
+									<div
+										key={ticket.ticketCode}
+										className="flex items-center justify-center rounded-lg bg-[#F9FFB5] px-2 py-2 text-nowrap"
+									>
+										<span className="text-xs font-medium">
+											{ticket.ticketCode}
+										</span>
+									</div>
+								))}
 							</div>
 
 							{myTicketsTotal > MAX_VISIBLE_TICKETS && (

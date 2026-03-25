@@ -38,6 +38,7 @@ export function TicketsStep() {
 		formState: { errors, touchedFields },
 		watch,
 		setValue,
+		getValues,
 		trigger,
 	} = form;
 
@@ -130,28 +131,6 @@ export function TicketsStep() {
 
 	const todayDate = getTodayDate();
 
-	// Check if all fields in this step are filled and valid
-	// Note: maxParticipants=0 means unlimited, so we allow it as valid
-	const isCurrentStepValid =
-		Boolean(startDate) &&
-		Boolean(endDate) &&
-		Boolean(pricePerTicket && pricePerTicket >= 0.5) &&
-		Boolean(numberOfWinners && numberOfWinners > 0) &&
-		typeof minParticipants === 'number' &&
-		minParticipants >= 0 &&
-		typeof maxParticipants === 'number' &&
-		maxParticipants >= 0 &&
-		Boolean(checkInQuestion) &&
-		isDateRangeValid &&
-		isEndDateWithin6Months &&
-		!errors.startDate &&
-		!errors.endDate &&
-		!errors.pricePerTicket &&
-		!errors.numberOfWinners &&
-		!errors.minParticipants &&
-		!errors.maxParticipants &&
-		!errors.checkInQuestion;
-
 	// Clear only this step's fields (respecting restrictions)
 	function handleClearAll() {
 		if (!restrictions.startDateLocked) {
@@ -172,10 +151,9 @@ export function TicketsStep() {
 		setValue('cryptoTokenPricing', []);
 	}
 
-	// Handle continue with validation
+	/** Validates current step fields before advancing */
 	async function handleContinue() {
-		// Trigger validation for current step fields
-		const isValid = await trigger([
+		const fields = [
 			'startDate',
 			'endDate',
 			'pricePerTicket',
@@ -183,11 +161,21 @@ export function TicketsStep() {
 			'minParticipants',
 			'maxParticipants',
 			'checkInQuestion',
-		]);
+		] as const;
+		const isValid = await trigger([...fields]);
 
-		if (isValid) {
-			nextStep();
+		if (!isValid) {
+			for (const field of fields) {
+				setValue(field, getValues(field), { shouldTouch: true });
+			}
+			requestAnimationFrame(() => {
+				const firstError = document.querySelector('.text-red-500');
+				firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			});
+			return;
 		}
+
+		nextStep();
 	}
 
 	return (
@@ -489,8 +477,7 @@ export function TicketsStep() {
 				<Button
 					type="button"
 					onClick={handleContinue}
-					disabled={!isCurrentStepValid}
-					className="cursor-pointer disabled:cursor-not-allowed disabled:bg-black disabled:opacity-70"
+					className="cursor-pointer"
 				>
 					Continue
 				</Button>

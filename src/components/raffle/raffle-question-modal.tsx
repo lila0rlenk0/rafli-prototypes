@@ -161,19 +161,19 @@ export function RaffleQuestionModal({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
-				className="max-w-3xl border border-[#0F0F0FF2] bg-white px-32 py-24"
+				className="max-w-3xl border border-[#0F0F0FF2] bg-white px-6 py-8 sm:px-32 sm:py-24"
 				showCloseButton={true}
 			>
-				<ColoredCards className="absolute right-0 bottom-0 -z-1 rounded-br-xl" />
+				<ColoredCards className="absolute right-0 bottom-0 -z-1 w-48 rounded-br-xl sm:w-auto" />
 
-				<DialogHeader className="flex items-center justify-center space-y-4">
+				<DialogHeader className="flex items-center justify-center gap-4">
 					<div className="flex justify-center pb-2">
-						<QuestionMarkIcon />
+						<QuestionMarkIcon className="size-20 sm:size-[110px]" />
 					</div>
-					<DialogTitle className="font-clash-display text-3xl font-semibold text-[#182135]">
+					<DialogTitle className="font-clash-display text-2xl font-semibold text-[#182135] sm:text-3xl">
 						Quick check before you join
 					</DialogTitle>
-					<DialogDescription className="max-w-md text-center text-base text-black">
+					<DialogDescription className="max-w-md text-center text-sm text-black sm:text-base">
 						The host added a short question for participants. Answer it to
 						continue — it helps keep raffles fair and real.
 					</DialogDescription>
@@ -190,14 +190,14 @@ export function RaffleQuestionModal({
 						<RadioGroup
 							value={selectedOptionId}
 							onValueChange={setSelectedOptionId}
-							className="mx-auto max-w-40"
+							className="mx-auto w-full max-w-md"
 						>
 							{getSortedOptions(question.options).map(option => (
-								<div key={option.id} className="flex items-center space-x-3">
+								<div key={option.id} className="flex items-center gap-3">
 									<RadioGroupItem
 										value={option.id}
 										id={option.id}
-										className="size-4 border-gray-300"
+										className="size-4 shrink-0 border-gray-300"
 									/>
 									<Label
 										htmlFor={option.id}
@@ -213,7 +213,7 @@ export function RaffleQuestionModal({
 							<Button
 								onClick={handleSubmit}
 								disabled={isLoading || !selectedOptionId}
-								className="hover:bg-background h-12 w-full max-w-xs cursor-pointer border-2 border-black bg-black hover:text-black"
+								className="hover:bg-background h-12 w-full cursor-pointer border-2 border-black bg-black hover:text-black"
 							>
 								{isLoading && (
 									<Loader2Icon className="mr-2 size-4 animate-spin" />
@@ -234,8 +234,6 @@ export function RaffleQuestionModal({
 function QuestionMarkIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg
-			width="110"
-			height="110"
 			viewBox="0 0 110 110"
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg"

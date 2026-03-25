@@ -1,6 +1,7 @@
 import { AuthUser } from '@/types/auth';
 import { EditableAvatar } from './editable-avatar';
 import { EditableBio } from './editable-bio';
+import { EditableName } from './editable-name';
 
 /**
  * Props for the PersonalInformationSection component
@@ -94,10 +95,7 @@ export function PersonalInformationSection({
 			/>
 
 			<div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
-				<div className="flex flex-col gap-1">
-					<span className="text-sm">Full Name</span>
-					<span className="text-lg font-semibold">{getUserName()}</span>
-				</div>
+				<EditableName name={getUserName()} />
 				<div className="flex flex-col gap-1">
 					<span className="text-sm">Email</span>
 					<span className="max-w-xs truncate text-lg font-semibold">

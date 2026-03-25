@@ -24,8 +24,8 @@ test.describe('Create Raffle — Auto-Publish (Live)', () => {
 			.catch(() => false);
 
 		if (!isInLive) {
-			// Raffle might still be in Created tab (publish can be async)
-			await page.getByRole('button', { name: 'Created' }).click();
+			// Raffle might still be in Scheduled tab (publish can be async)
+			await page.getByRole('button', { name: 'Scheduled' }).click();
 			await expect(page.getByText(title).first()).toBeVisible({
 				timeout: 10_000,
 			});

@@ -20,8 +20,8 @@ test.describe('Create Raffle — Scheduled (Queued)', () => {
 		await page.getByRole('button', { name: 'View my raffles' }).click();
 		await expect(page).toHaveURL('/my-raffles');
 
-		// Switch to Created tab to find draft/queued raffle
-		await page.getByRole('button', { name: 'Created' }).click();
+		// Switch to Scheduled tab to find draft/queued raffle
+		await page.getByRole('button', { name: 'Scheduled' }).click();
 
 		// Verify raffle appears
 		await expect(page.getByText(title).first()).toBeVisible({

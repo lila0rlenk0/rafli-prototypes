@@ -15,6 +15,7 @@
 		"test:e2e:headed": "bunx playwright test --headed"
 	},
 	"dependencies": {
+		"@coinbase/wallet-sdk": "^4.3.7",
 		"@gsap/react": "^2.1.2",
 		"@hookform/resolvers": "^5.2.2",
 		"@lexical/code": "^0.39.0",
@@ -45,6 +46,7 @@
 		"@sentry/nextjs": "^10.45.0",
 		"@t3-oss/env-nextjs": "^0.13.11",
 		"@tanstack/react-query": "^5.95.0",
+		"@walletconnect/ethereum-provider": "^2.23.8",
 		"@web3icons/react": "^4.1.17",
 		"axios": "^1.13.6",
 		"class-variance-authority": "^0.7.1",

@@ -1,4 +1,13 @@
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { getDefaultConfig, type WalletList } from '@rainbow-me/rainbowkit';
+import {
+	baseAccount,
+	metaMaskWallet,
+	phantomWallet,
+	rainbowWallet,
+	safeWallet,
+	trustWallet,
+	walletConnectWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 import { cookieStorage, createStorage } from 'wagmi';
 import {
 	arbitrum,
@@ -78,11 +87,35 @@ const wagmiStorage = createStorage({
 });
 
 /**
+ * Explicit wallet list for the RainbowKit connect modal.
+ *
+ * getDefaultConfig only shows Safe, Rainbow, Base Account, MetaMask, and
+ * WalletConnect by default. Listing wallets explicitly surfaces dedicated
+ * options for popular providers (Phantom, Trust) so users see a familiar
+ * entry point instead of having to go through the generic WalletConnect QR.
+ *
+ * Format: WalletList — array of { groupName, wallets } groups.
+ * walletConnectWallet is last in "Other" — it acts as a catch-all for any
+ * WC-compatible wallet not explicitly listed.
+ */
+const wallets: WalletList = [
+	{
+		groupName: 'Popular',
+		wallets: [metaMaskWallet, baseAccount, phantomWallet, rainbowWallet],
+	},
+	{
+		groupName: 'Other',
+		wallets: [trustWallet, safeWallet, walletConnectWallet],
+	},
+];
+
+/**
  * Combined wagmi + RainbowKit configuration.
  *
  * Uses getDefaultConfig which bundles createConfig + RainbowKit connector setup.
- * In wagmi v3, connector SDKs are optional peer deps — @walletconnect/ethereum-provider,
- * @coinbase/wallet-sdk, and @metamask/sdk must be installed separately in package.json.
+ * Connector SDKs are optional peer deps of @wagmi/connectors —
+ * @walletconnect/ethereum-provider, @base-org/account, @coinbase/wallet-sdk,
+ * and @metamask/sdk must be installed for their respective wallets to work.
  * getDefaultConfig dynamically imports them at runtime via wagmi's connector factories.
  *
  * Only initialized when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is set —
@@ -97,6 +130,7 @@ export const wagmiConfig = isWeb3Enabled
 			projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
 			chains: configuredChains,
 			storage: wagmiStorage,
+			wallets,
 			// Required for Next.js App Router — delays store hydration to
 			// avoid server/client mismatch on first render
 			ssr: true,

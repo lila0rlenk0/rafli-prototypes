@@ -115,7 +115,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 			<MagicLinkEmailStep
 				className={className}
 				returnTo={returnTo}
-				onLinkSent={(email) => {
+				onLinkSent={email => {
 					setMagicLinkEmail(email);
 					setMode('magic-link-sent');
 				}}
@@ -251,8 +251,7 @@ function PasswordSignInForm({
 				<FieldError errors={[errors.root]} />
 				{hasLoginError && (
 					<p className="text-muted-foreground text-xs">
-						Just signed up? Check your inbox for the verification
-						email.
+						Just signed up? Check your inbox for the verification email.
 					</p>
 				)}
 				<Field className="mt-4">
@@ -291,9 +290,7 @@ function PasswordSignInForm({
 							disabled={isDisabled}
 						>
 							<Mail className="size-6" />
-							<span className="sr-only">
-								Login with magic link
-							</span>
+							<span className="sr-only">Login with magic link</span>
 						</Button>
 					</div>
 					<FieldDescription className="text-center">
@@ -341,10 +338,7 @@ function MagicLinkEmailStep({
 
 		// callbackURL reuses the existing OAuth callback page.
 		// After magic link verification, Better-Auth sets session cookie and redirects here.
-		const callbackURL = buildOAuthCallbackUrl(
-			window.location.origin,
-			returnTo,
-		);
+		const callbackURL = buildOAuthCallbackUrl(window.location.origin, returnTo);
 
 		const result = await sendMagicLink(data.email, callbackURL);
 
@@ -427,18 +421,15 @@ function MagicLinkSentStep({
 	...props
 }: MagicLinkSentStepProps) {
 	const [isResending, setIsResending] = useState(false);
-	const [resendStatus, setResendStatus] = useState<
-		'idle' | 'sent' | 'error'
-	>('idle');
+	const [resendStatus, setResendStatus] = useState<'idle' | 'sent' | 'error'>(
+		'idle',
+	);
 
 	async function handleResend() {
 		setIsResending(true);
 		setResendStatus('idle');
 
-		const callbackURL = buildOAuthCallbackUrl(
-			window.location.origin,
-			returnTo,
-		);
+		const callbackURL = buildOAuthCallbackUrl(window.location.origin, returnTo);
 		const result = await sendMagicLink(email, callbackURL);
 
 		setIsResending(false);
@@ -456,15 +447,12 @@ function MagicLinkSentStep({
 					</h1>
 					<p className="text-muted-foreground">
 						We sent a sign-in link to{' '}
-						<span className="font-medium text-black">
-							{email}
-						</span>
+						<span className="font-medium text-black">{email}</span>
 					</p>
 				</div>
 
 				<p className="text-muted-foreground text-sm">
-					Click the link in the email to sign in. You can close this
-					tab.
+					Click the link in the email to sign in. You can close this tab.
 				</p>
 
 				<div className="mt-2 flex flex-col items-center gap-1">

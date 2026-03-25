@@ -42,9 +42,7 @@ export function VerifyEmailHandler({ token }: VerifyEmailHandlerProps) {
 
 				// Auto-sign-in: backend returned a JWT token
 				if (result.data.token) {
-					const cookieResult = await setAuthCookiesClient(
-						result.data.token,
-					);
+					const cookieResult = await setAuthCookiesClient(result.data.token);
 
 					if (!cookieResult.success) {
 						// Email verified but cookie setting failed — redirect to sign-in

@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
 
-const BECOME_HOST_FORM_URL = 'https://forms.google.com/placeholder';
+const BECOME_HOST_FORM_URL = 'https://forms.gle/RqihwzjyBcjjwUa97';
 
 /**
  * ModeSwitchButton Component

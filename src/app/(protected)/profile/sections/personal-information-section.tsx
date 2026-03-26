@@ -8,6 +8,8 @@ import { EditableName } from './editable-name';
  */
 interface PersonalInformationSectionProps {
 	user?: AuthUser;
+	/** Fresh name from API — preferred over JWT-decoded user.name which may be stale */
+	profileName?: string | null;
 	avatarUrl?: string | null;
 	bio?: string | null;
 }
@@ -24,6 +26,7 @@ interface PersonalInformationSectionProps {
  */
 export function PersonalInformationSection({
 	user,
+	profileName,
 	avatarUrl,
 	bio,
 }: PersonalInformationSectionProps) {
@@ -36,6 +39,8 @@ export function PersonalInformationSection({
 	 * @returns The user's name or 'Participant' as fallback
 	 */
 	function getUserName(): string {
+		// Prefer API name over JWT name — JWT is stale until re-login
+		if (profileName) return profileName;
 		if (!user) return 'Participant';
 
 		return user.name;

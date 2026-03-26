@@ -32,21 +32,20 @@ const NAME_MAX_LENGTH = 100;
  */
 export function EditableName({ name }: EditableNameProps) {
 	const [isEditing, setIsEditing] = useState(false);
+	// Last confirmed name — updated on successful save, avoids stale JWT prop
+	const [savedName, setSavedName] = useState(name);
 	const [nameValue, setNameValue] = useState(name);
 	const [isUpdating, setIsUpdating] = useState(false);
 
-	/**
-	 * Enters edit mode, resetting input to current server value
-	 */
 	function handleEditClick() {
-		setNameValue(name);
+		setNameValue(savedName);
 		setIsEditing(true);
 	}
 
 	function handleCancelClick() {
 		if (isUpdating) return;
 		setIsEditing(false);
-		setNameValue(name);
+		setNameValue(savedName);
 	}
 
 	async function handleSaveClick() {
@@ -66,7 +65,7 @@ export function EditableName({ name }: EditableNameProps) {
 		}
 
 		// Skip API call if nothing changed
-		if (trimmed === name) {
+		if (trimmed === savedName) {
 			setIsEditing(false);
 			return;
 		}
@@ -81,9 +80,13 @@ export function EditableName({ name }: EditableNameProps) {
 				return;
 			}
 
+			// Update local state with server-confirmed name so UI reflects
+			// the change immediately — revalidatePath refreshes the server
+			// component but this avoids a flash of the stale JWT name
+			const confirmedName = result.data.name;
+			setSavedName(confirmedName);
+			setNameValue(confirmedName);
 			toast.success('Name updated successfully!');
-
-			// updateMe already revalidates profile cache internally
 			setIsEditing(false);
 		} catch (error) {
 			console.error('Unexpected error during name update:', error);
@@ -115,54 +118,55 @@ export function EditableName({ name }: EditableNameProps) {
 
 	if (isEditing) {
 		return (
-			<div className="relative flex flex-col gap-1">
+			<div className="flex flex-col gap-1">
 				<span className="text-sm">Full Name</span>
-				<Input
-					value={nameValue}
-					onChange={handleNameChange}
-					onKeyDown={handleKeyDown}
-					maxLength={NAME_MAX_LENGTH}
-					disabled={isUpdating}
-					className="text-lg font-semibold"
-					autoFocus
-				/>
-				<div className="absolute top-0 right-0 flex gap-1">
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						onClick={handleCancelClick}
+				<div className="flex items-center gap-1">
+					<Input
+						value={nameValue}
+						onChange={handleNameChange}
+						onKeyDown={handleKeyDown}
+						maxLength={NAME_MAX_LENGTH}
 						disabled={isUpdating}
-						aria-label="Cancel editing"
-					>
-						<X className="size-4" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						onClick={handleSaveClick}
-						disabled={
-							isUpdating ||
-							trimmedLength === 0 ||
-							trimmedLength > NAME_MAX_LENGTH
-						}
-						aria-label="Save name"
-					>
-						{isUpdating ? (
-							<div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-						) : (
-							<Check className="size-4" />
-						)}
-					</Button>
+						className="text-lg font-semibold"
+						autoFocus
+					/>
+					<div className="flex gap-1">
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							onClick={handleCancelClick}
+							disabled={isUpdating}
+							aria-label="Cancel editing"
+						>
+							<X className="size-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							onClick={handleSaveClick}
+							disabled={
+								isUpdating ||
+								trimmedLength === 0 ||
+								trimmedLength > NAME_MAX_LENGTH
+							}
+							aria-label="Save name"
+						>
+							{isUpdating ? (
+								<div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+							) : (
+								<Check className="size-4" />
+							)}
+						</Button>
+					</div>
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="relative flex flex-col gap-1">
-			<span className="text-sm">Full Name</span>
-			<span className="text-lg font-semibold">{name}</span>
-			<div className="absolute top-0 right-0">
+		<div className="flex flex-col gap-1">
+			<div className="flex items-center justify-between">
+				<span className="text-sm">Full Name</span>
 				<Button
 					variant="ghost"
 					size="icon-sm"
@@ -172,6 +176,7 @@ export function EditableName({ name }: EditableNameProps) {
 					<Pencil className="size-4" />
 				</Button>
 			</div>
+			<span className="truncate text-lg font-semibold">{nameValue}</span>
 		</div>
 	);
 }

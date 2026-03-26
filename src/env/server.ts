@@ -26,4 +26,5 @@ export const env = createEnv({
 		MIXPANEL_TOKEN: process.env.MIXPANEL_TOKEN,
 		SENTRY_DSN: process.env.SENTRY_DSN,
 	},
+	skipValidation: process.env.CI === 'true',
 });

@@ -8,9 +8,9 @@ import type { NextConfig } from 'next';
  * When local, images are served from MinIO (Encore local storage) and
  * next/image optimization is disabled to avoid private IP errors.
  */
-const backendUrl = new URL(env.BACKEND_URL);
+const backendUrl = env.BACKEND_URL ? new URL(env.BACKEND_URL) : null;
 const isLocal =
-	backendUrl.hostname === 'localhost' || backendUrl.hostname === '127.0.0.1';
+	backendUrl?.hostname === 'localhost' || backendUrl?.hostname === '127.0.0.1';
 
 const nextConfig: NextConfig = {
 	experimental: {
@@ -90,7 +90,7 @@ const nextConfig: NextConfig = {
 	// Node.js-only modules: pino logger, LokiJS persistence, and text encoding polyfill.
 	// These are never executed in the browser but webpack tries to bundle them for client
 	// chunks, causing build warnings. Marking them as externals skips them entirely.
-	webpack: (config) => {
+	webpack: config => {
 		const wcExternals = ['pino-pretty', 'lokijs', 'encoding'];
 		// webpack externals can be an array, string, function, object, or RegExp.
 		// Next.js always provides an array, but preserve any existing value defensively
@@ -106,6 +106,22 @@ const nextConfig: NextConfig = {
 		return config;
 	},
 	cacheComponents: true,
+	// TODO: Replace these external redirects with dedicated pages once we have
+	// our own Terms of Service and Privacy Policy content.
+	async redirects() {
+		return [
+			{
+				source: '/terms',
+				destination: 'https://www.earnm.com/terms',
+				permanent: false,
+			},
+			{
+				source: '/policy',
+				destination: 'https://www.earnm.com/earnm-privacy-policy',
+				permanent: false,
+			},
+		];
+	},
 	async headers() {
 		return [
 			{

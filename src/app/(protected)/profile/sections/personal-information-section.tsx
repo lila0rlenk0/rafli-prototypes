@@ -18,11 +18,9 @@ interface PersonalInformationSectionProps {
  * PersonalInformationSection Component
  *
  * Displays the user's personal information including avatar,
- * full name, email, and bio. Shows a placeholder avatar with
- * user initials when no avatar image is available.
+ * full name, email, and bio.
  *
- * @param user - Optional authenticated user object containing
- *               name, email, and other profile information
+ * @returns Profile card with avatar, name, email, and editable bio
  */
 export function PersonalInformationSection({
 	user,
@@ -31,32 +29,19 @@ export function PersonalInformationSection({
 	bio,
 }: PersonalInformationSectionProps) {
 	/**
-	 * Gets the user's display name
-	 *
-	 * Returns the user's name if available, otherwise returns
-	 * a default placeholder name.
-	 *
 	 * @returns The user's name or 'Participant' as fallback
 	 */
 	function getUserName(): string {
-		// Prefer API name over JWT name — JWT is stale until re-login
 		if (profileName) return profileName;
 		if (!user) return 'Participant';
-
 		return user.name;
 	}
 
 	/**
-	 * Generates user initials from their name
-	 *
-	 * Extracts the first letter of each word in the user's name,
-	 * takes up to 2 characters, and converts them to uppercase.
-	 *
-	 * @returns Uppercase initials (max 2 characters) or empty string
+	 * @returns Uppercase initials (max 2 characters)
 	 */
 	function getUserInitials(): string {
 		const userName = getUserName();
-
 		return userName
 			.split(' ')
 			.map(word => word[0])
@@ -66,23 +51,15 @@ export function PersonalInformationSection({
 	}
 
 	/**
-	 * Gets the user's email address
-	 *
-	 * Returns the user's email if available, otherwise returns
-	 * 'N/A' as a placeholder.
-	 *
 	 * @returns The user's email or 'N/A' if not available
 	 */
 	function getUserEmail(): string {
 		if (!user) return 'N/A';
-
 		return user.email;
 	}
 
 	/**
-	 * Gets the user's avatar image URL
-	 *
-	 * @returns The avatar image URL or null if not available
+	 * @returns The avatar image URL or null
 	 */
 	function getUserAvatarUrl(): string | null {
 		return avatarUrl ?? null;
@@ -90,26 +67,30 @@ export function PersonalInformationSection({
 
 	return (
 		<div
-			className="relative flex w-full flex-col gap-4 rounded-2xl bg-white p-8"
+			className="relative flex w-full flex-col gap-8 rounded-3xl bg-white px-10 py-15"
 			id="personal-information"
 		>
 			<EditableAvatar
 				avatarUrl={getUserAvatarUrl()}
 				initials={getUserInitials()}
-				size={85}
+				size={120}
 			/>
 
-			<div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
-				<EditableName name={getUserName()} />
-				<div className="flex flex-col gap-1">
-					<span className="text-sm">Email</span>
-					<span className="max-w-xs truncate text-lg font-semibold">
-						{getUserEmail()}
-					</span>
+			<div className="flex flex-col gap-8">
+				<div className="flex items-center gap-[202px]">
+					<EditableName name={getUserName()} />
+					<div className="flex w-[438px] flex-col gap-2">
+						<span className="text-sm leading-relaxed text-[#7B7B7B]">
+							Email
+						</span>
+						<span className="truncate text-base font-medium text-black/95">
+							{getUserEmail()}
+						</span>
+					</div>
 				</div>
-			</div>
 
-			<EditableBio bio={bio} />
+				<EditableBio bio={bio} />
+			</div>
 		</div>
 	);
 }

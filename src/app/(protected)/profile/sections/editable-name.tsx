@@ -118,8 +118,8 @@ export function EditableName({ name }: EditableNameProps) {
 
 	if (isEditing) {
 		return (
-			<div className="flex flex-col gap-1">
-				<span className="text-sm">Full Name</span>
+			<div className="flex w-[184px] flex-col gap-2">
+				<span className="text-sm leading-relaxed text-black/95">Full Name</span>
 				<div className="flex items-center gap-1">
 					<Input
 						value={nameValue}
@@ -127,7 +127,7 @@ export function EditableName({ name }: EditableNameProps) {
 						onKeyDown={handleKeyDown}
 						maxLength={NAME_MAX_LENGTH}
 						disabled={isUpdating}
-						className="text-lg font-semibold"
+						className="text-[22px] font-semibold"
 						autoFocus
 					/>
 					<div className="flex gap-1">
@@ -164,9 +164,9 @@ export function EditableName({ name }: EditableNameProps) {
 	}
 
 	return (
-		<div className="flex flex-col gap-1">
+		<div className="flex w-[184px] flex-col gap-2">
 			<div className="flex items-center justify-between">
-				<span className="text-sm">Full Name</span>
+				<span className="text-sm leading-relaxed text-black/95">Full Name</span>
 				<Button
 					variant="ghost"
 					size="icon-sm"
@@ -176,7 +176,9 @@ export function EditableName({ name }: EditableNameProps) {
 					<Pencil className="size-4" />
 				</Button>
 			</div>
-			<span className="truncate text-lg font-semibold">{nameValue}</span>
+			<span className="truncate text-[22px] leading-none font-semibold text-black/95">
+				{nameValue}
+			</span>
 		</div>
 	);
 }

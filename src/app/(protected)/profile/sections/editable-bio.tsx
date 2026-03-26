@@ -99,66 +99,71 @@ export function EditableBio({ bio }: EditableBioProps) {
 
 	if (isEditing) {
 		return (
-			<div className="relative flex flex-col gap-2">
-				<span className="text-sm">Bio</span>
-				<div className="relative">
-					<Textarea
-						value={bioValue}
-						onChange={handleBioChange}
-						maxLength={BIO_MAX_LENGTH}
-						rows={4}
-						placeholder="Tell us about yourself..."
-						disabled={isUpdating}
-						className="mt-2 resize-y pr-12 pb-6"
-					/>
-					<span className="text-muted-foreground absolute right-3 bottom-2 text-sm">
-						{bioValue.length}/{BIO_MAX_LENGTH}
-					</span>
-				</div>
-				<div className="absolute top-0 right-0 flex gap-1">
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						onClick={handleCancelClick}
-						disabled={isUpdating}
-						aria-label="Cancel editing"
-					>
-						<X className="size-4" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						onClick={handleSaveClick}
-						disabled={isUpdating || bioValue.length > BIO_MAX_LENGTH}
-						aria-label="Save bio"
-					>
-						{isUpdating ? (
-							<div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-						) : (
-							<Check className="size-4" />
-						)}
-					</Button>
+			<div className="flex items-start gap-[22px]">
+				<div className="flex w-[778px] flex-col gap-2">
+					<span className="text-sm leading-relaxed text-[#7B7B7B]">Bio</span>
+					<div className="relative">
+						<Textarea
+							value={bioValue}
+							onChange={handleBioChange}
+							maxLength={BIO_MAX_LENGTH}
+							rows={4}
+							placeholder="Tell us about yourself..."
+							disabled={isUpdating}
+							className="resize-y pr-12 pb-6"
+						/>
+						<span className="text-muted-foreground absolute right-3 bottom-2 text-sm">
+							{bioValue.length}/{BIO_MAX_LENGTH}
+						</span>
+					</div>
+					<div className="flex gap-1">
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							onClick={handleCancelClick}
+							disabled={isUpdating}
+							aria-label="Cancel editing"
+						>
+							<X className="size-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							onClick={handleSaveClick}
+							disabled={isUpdating || bioValue.length > BIO_MAX_LENGTH}
+							aria-label="Save bio"
+						>
+							{isUpdating ? (
+								<div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+							) : (
+								<Check className="size-4" />
+							)}
+						</Button>
+					</div>
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="relative flex flex-col gap-1">
-			<span className="text-sm">Bio</span>
-			<span data-bio={!!bio} className="data-[bio=false]:text-muted-foreground">
-				{bio ? bio : 'No bio yet'}
-			</span>
-			<div className="absolute top-0 right-0">
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					onClick={handleEditClick}
-					aria-label="Edit bio"
+		<div className="flex items-center gap-[22px]">
+			<div className="flex w-[778px] flex-col gap-2">
+				<span className="text-sm leading-relaxed text-[#7B7B7B]">Bio</span>
+				<span
+					data-bio={!!bio}
+					className="data-[bio=false]:text-muted-foreground text-base font-medium text-black/95"
 				>
-					<Pencil className="size-4" />
-				</Button>
+					{bio ? bio : 'No bio.'}
+				</span>
 			</div>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onClick={handleEditClick}
+				aria-label="Edit bio"
+			>
+				<Pencil className="size-6" />
+			</Button>
 		</div>
 	);
 }

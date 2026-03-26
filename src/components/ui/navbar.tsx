@@ -6,6 +6,7 @@ import { ReactNode, useState } from 'react';
 
 import { Logo } from '@/assets/logo';
 import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
+import { ModeSwitchToggle } from '@/components/mode/mode-switch-toggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button } from '@/components/ui/button';
 
@@ -120,6 +121,8 @@ export function Navbar({ children }: NavbarProps) {
 						</div>
 
 						<div className="flex flex-col gap-8 px-6 pt-8">
+							<ModeSwitchToggle />
+
 							<Link
 								href="/browse"
 								className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
@@ -135,6 +138,13 @@ export function Navbar({ children }: NavbarProps) {
 								My raffles
 							</Link>
 							<Link
+								href="/profile/notifications"
+								className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
+								onClick={closeMenu}
+							>
+								Notifications
+							</Link>
+							<Link
 								href="/profile"
 								className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
 								onClick={closeMenu}
@@ -142,20 +152,15 @@ export function Navbar({ children }: NavbarProps) {
 								Profile
 							</Link>
 
-							<div className="mt-4">
-								<ModeSwitchButton />
-							</div>
-
-							<Button asChild className="bg-dark hover:bg-dark/90 h-14 text-lg">
-								<a
-									href={FEEDBACK_FORM_URL}
-									target="_blank"
-									rel="noopener noreferrer"
-									onClick={closeMenu}
-								>
-									Help us improve
-								</a>
-							</Button>
+							<a
+								href={FEEDBACK_FORM_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+								onClick={closeMenu}
+								className="flex h-14 items-center justify-center rounded-full border border-black text-lg text-black"
+							>
+								Help us improve
+							</a>
 						</div>
 					</div>
 				)}

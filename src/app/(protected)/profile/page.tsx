@@ -22,15 +22,15 @@ const SIDEBAR_ITEMS = [
 		sectionId: 'personal-information',
 	},
 	{
-		label: 'Address Information',
+		label: 'Password',
 		sectionId: 'security',
 	},
 	{
-		label: 'Payment Details',
+		label: 'Email Preferences',
 		sectionId: 'email-preferences',
 	},
 	{
-		label: 'Login',
+		label: 'Payment History',
 		sectionId: 'payment-history',
 	},
 ];

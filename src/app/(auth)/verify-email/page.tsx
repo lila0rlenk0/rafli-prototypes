@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { VerifyEmailHandler } from './verify-email-handler';
@@ -24,9 +25,9 @@ export default async function VerifyEmailPage({
 					<p className="text-red-600">
 						Invalid verification link. No token provided.
 					</p>
-					<a href="/sign-in" className="text-black underline">
+					<Link href="/sign-in" className="text-black underline">
 						Go to Sign In
-					</a>
+					</Link>
 				</div>
 			</div>
 		);

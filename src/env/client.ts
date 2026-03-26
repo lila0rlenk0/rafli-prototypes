@@ -42,4 +42,5 @@ export const clientEnv = createEnv({
 			process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
 		NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
 	},
+	skipValidation: process.env.CI === 'true',
 });

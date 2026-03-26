@@ -197,7 +197,7 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 								target="_blank"
 								rel="noopener noreferrer"
 								onClick={closeMenu}
-								className="flex h-14 items-center justify-center rounded-full border border-black text-lg text-black"
+								className="flex h-14 items-center justify-center rounded-full border border-black text-lg font-semibold text-black"
 							>
 								Help us improve
 							</a>

@@ -42,11 +42,11 @@ export function ModeSwitchToggle() {
 				className="flex h-12 w-full items-center overflow-hidden rounded-full border border-black opacity-50"
 				data-testid="mode-switch-toggle"
 			>
-				<div className="flex flex-1 items-center justify-center text-sm text-black">
+				<div className="flex flex-1 items-center justify-center text-sm font-semibold text-black">
 					Host
 				</div>
 				<div className="h-full w-px bg-black" />
-				<div className="flex flex-1 items-center justify-center text-sm text-black">
+				<div className="flex flex-1 items-center justify-center text-sm font-semibold text-black">
 					Participant
 				</div>
 			</div>
@@ -59,7 +59,7 @@ export function ModeSwitchToggle() {
 				href={BECOME_HOST_FORM_URL}
 				target="_blank"
 				rel="noopener noreferrer"
-				className="flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white"
+				className="flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white"
 				data-testid="become-a-host-button"
 			>
 				Become a Host
@@ -78,7 +78,7 @@ export function ModeSwitchToggle() {
 				onClick={() => handleSwitch(USER_MODE.HOST)}
 				disabled={isSwitching}
 				className={cn(
-					'flex flex-1 items-center justify-center text-sm font-medium transition-colors',
+					'flex flex-1 items-center justify-center text-sm font-semibold transition-colors',
 					isHost ? 'bg-black text-white' : 'bg-transparent text-black',
 					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
 				)}
@@ -90,7 +90,7 @@ export function ModeSwitchToggle() {
 				onClick={() => handleSwitch(USER_MODE.PARTICIPANT)}
 				disabled={isSwitching}
 				className={cn(
-					'flex flex-1 items-center justify-center text-sm font-medium transition-colors',
+					'flex flex-1 items-center justify-center text-sm font-semibold transition-colors',
 					!isHost ? 'bg-black text-white' : 'bg-transparent text-black',
 					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
 				)}

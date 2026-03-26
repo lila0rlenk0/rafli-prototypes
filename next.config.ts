@@ -106,6 +106,22 @@ const nextConfig: NextConfig = {
 		return config;
 	},
 	cacheComponents: true,
+	// TODO: Replace these external redirects with dedicated pages once we have
+	// our own Terms of Service and Privacy Policy content.
+	async redirects() {
+		return [
+			{
+				source: '/terms',
+				destination: 'https://www.earnm.com/terms',
+				permanent: false,
+			},
+			{
+				source: '/policy',
+				destination: 'https://www.earnm.com/earnm-privacy-policy',
+				permanent: false,
+			},
+		];
+	},
 	async headers() {
 		return [
 			{

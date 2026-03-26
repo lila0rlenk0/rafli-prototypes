@@ -56,7 +56,7 @@ export function Navbar({ children }: NavbarProps) {
 				isScrolled ? 'bg-background' : 'bg-transparent',
 			)}
 		>
-				<div className="container mx-auto flex h-14 items-center justify-between px-4 sm:h-16">
+				<div className="mx-auto flex h-14 w-full items-center justify-between px-4 sm:h-16 sm:px-6 2xl:px-20">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">
 							<Logo className="h-5 w-auto sm:h-6" />
@@ -183,7 +183,7 @@ export function Navbar({ children }: NavbarProps) {
 				)}
 			</nav>
 
-			<div className="container mx-auto mt-6 overflow-auto px-4 pb-10 sm:mt-10">
+			<div className="mx-auto mt-6 overflow-auto px-4 pb-10 sm:mt-10 sm:px-6 2xl:px-20">
 				{children}
 			</div>
 		</>

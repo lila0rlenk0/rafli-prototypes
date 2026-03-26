@@ -4,16 +4,10 @@ Clear, pragmatic workflow for contributing code. Follow this process for feature
 
 ## Branching Strategy
 
-- Long‑lived branches: `main` (production) and `staging` (staging environment).
+- Default branch: `main`.
 - Always branch from `main` for any work (feature, fix, hotfix, chore).
-- Open first PR from your feature branch → `staging` (do NOT delete the branch after merging to `staging`).
-- After verification on staging, open a second PR from the same branch → `main`.
-- No direct commits to `main` or `staging`. PRs only; branches are protected.
-
-Why this flow
-
-- Keeps `main` production‑safe; `staging` is the integration gate.
-- Allows iterative staging validation without losing the feature branch.
+- Open PRs from your feature branch → `main`.
+- No direct commits to `main`. PRs only; branch is protected.
 
 ## Branch Naming
 
@@ -43,26 +37,19 @@ Rules
 1. Prepare branch
 
 - Rebase on latest `main`: `git fetch && git rebase origin/main`
-- Ensure quality gates pass locally: `encore test && pnpm check-types && pnpm eslint:fix`
+- Ensure quality gates pass locally: `bun run format && bun run lint && bun run test`
 
-2. PR → staging
+2. PR → main
 
-- Open PR from `your-branch` to `staging` using the appropriate template.
-- Do NOT delete the branch after merge; keep it for the next PR to `main`.
-- Staging deploy happens from `staging` merges; validate behavior end‑to‑end.
-
-3. Verify in staging
-
-- Run manual/automated checks; confirm migrations, topics, and config behave as expected.
-- Update docs (service README + wiki) if not already done.
-
-4. PR → main
-
-- Open PR from `your-branch` to `main` (link the staging PR for context).
-- Rebase onto latest `main` first if there were new changes: `git rebase origin/main`.
+- Open PR from `your-branch` to `main`.
 - Production deploy happens from `main` merges.
+
+3. Verify
+
+- Run manual/automated checks; confirm migrations and config behave as expected.
+- Update docs if not already done.
 
 Merge strategy
 
 - Prefer “Squash and merge” for feature branches to keep history clean.
-- Keep the feature branch until both PRs (→ staging and → main) are complete; then delete if unused.
+- Delete the feature branch after merge.

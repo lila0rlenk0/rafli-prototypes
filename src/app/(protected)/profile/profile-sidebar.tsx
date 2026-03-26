@@ -27,7 +27,7 @@ interface ProfileSidebarProps {
  */
 export function ProfileSidebar({ items }: ProfileSidebarProps) {
 	return (
-		<div className="flex h-fit min-w-fit flex-col rounded-3xl border border-black bg-white/95 py-10 pr-10 pl-8">
+		<div className="sticky top-8 flex h-fit min-w-fit flex-col rounded-3xl border border-black bg-white/95 py-10 pr-10 pl-8">
 			<SettingsIcon className="size-15" />
 
 			<div className="mt-6 flex flex-col gap-6">

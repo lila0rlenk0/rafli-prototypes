@@ -49,15 +49,23 @@ export default async function ProfilePage() {
 	const userProfile = meResult.success ? meResult.data : null;
 
 	return (
-		<div className="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
+		<div className="container mx-auto flex max-w-6xl flex-col gap-6 px-4">
 			{/* Main Content Layout */}
-			<div className="flex w-full flex-col gap-8 md:flex-row">
+			<div className="flex w-full flex-col gap-6 md:flex-row md:gap-8">
+				{/* Header — mobile: stacked above sidebar, desktop: hidden (shown inside content) */}
+				<div className="flex flex-col gap-6 md:hidden">
+					<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
+						My Profile
+					</h1>
+					<SignOutButton className="w-full" />
+				</div>
+
 				{/* Left Sidebar */}
 				<ProfileSidebar items={SIDEBAR_ITEMS} />
 
 				{/* Right Content Sections */}
 				<div className="flex w-full max-w-[922px] flex-col gap-6">
-					<div className="flex items-center justify-between">
+					<div className="hidden items-center justify-between md:flex">
 						<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
 							My Profile
 						</h1>

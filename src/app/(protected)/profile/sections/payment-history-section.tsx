@@ -51,7 +51,10 @@ export async function PaymentHistorySection() {
 	 */
 	function renderOrderRow(order: OrderWithRaffle) {
 		return (
-			<div key={order.id} className="flex items-center justify-between py-3">
+			<div
+				key={order.id}
+				className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+			>
 				<div className="flex flex-col gap-0.5">
 					<span className="text-base font-medium">{order.raffleName}</span>
 					<span className="text-muted-foreground text-sm">
@@ -73,10 +76,10 @@ export async function PaymentHistorySection() {
 
 	return (
 		<div
-			className="relative flex w-full flex-col gap-6 rounded-3xl bg-white px-10 py-15"
+			className="relative flex w-full flex-col gap-6 rounded-3xl bg-white px-6 py-10 md:px-10 md:py-15"
 			id="payment-history"
 		>
-			<div className="flex items-center gap-2">
+			<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 				<h3 className="font-clash-display flex-1 text-2xl leading-[1.1] font-semibold tracking-[0.12px] text-black">
 					Payment History
 				</h3>

@@ -67,7 +67,7 @@ export function PersonalInformationSection({
 
 	return (
 		<div
-			className="relative flex w-full flex-col gap-8 rounded-3xl bg-white px-10 py-15"
+			className="relative flex w-full flex-col gap-8 rounded-3xl bg-white px-6 py-10 md:px-10 md:py-15"
 			id="personal-information"
 		>
 			<EditableAvatar
@@ -77,9 +77,9 @@ export function PersonalInformationSection({
 			/>
 
 			<div className="flex flex-col gap-8">
-				<div className="flex items-center gap-[202px]">
+				<div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-[202px]">
 					<EditableName name={getUserName()} />
-					<div className="flex w-[438px] flex-col gap-2">
+					<div className="flex flex-col gap-2 md:w-[438px]">
 						<span className="text-sm leading-relaxed text-[#7B7B7B]">
 							Email
 						</span>

@@ -100,7 +100,7 @@ export function EditableBio({ bio }: EditableBioProps) {
 	if (isEditing) {
 		return (
 			<div className="flex items-start gap-[22px]">
-				<div className="flex w-[778px] flex-col gap-2">
+				<div className="flex min-w-0 flex-1 flex-col gap-2 md:w-[778px]">
 					<span className="text-sm leading-relaxed text-[#7B7B7B]">Bio</span>
 					<div className="relative">
 						<Textarea
@@ -147,7 +147,7 @@ export function EditableBio({ bio }: EditableBioProps) {
 
 	return (
 		<div className="flex items-center gap-[22px]">
-			<div className="flex w-[778px] flex-col gap-2">
+			<div className="flex min-w-0 flex-1 flex-col gap-2 md:w-[778px]">
 				<span className="text-sm leading-relaxed text-[#7B7B7B]">Bio</span>
 				<span
 					data-bio={!!bio}

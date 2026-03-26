@@ -108,7 +108,7 @@ export function ChangePasswordForm() {
 	return (
 		<form
 			onSubmit={handleSubmit(handleChangePassword)}
-			className="flex w-[352px] flex-col gap-6"
+			className="flex w-full flex-col gap-4 md:w-[352px] md:gap-6"
 		>
 			<FieldGroup className="gap-3">
 				<Field>
@@ -160,7 +160,7 @@ export function ChangePasswordForm() {
 				type="submit"
 				variant="outline"
 				disabled={isPending}
-				className="w-fit border-black text-base font-semibold text-black hover:bg-black hover:text-white"
+				className="w-full border-black text-base font-semibold text-black hover:bg-black hover:text-white md:w-fit"
 			>
 				{isPending ? 'Changing...' : 'Change Password'}
 			</Button>

@@ -206,7 +206,7 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 				)}
 			</nav>
 
-			<div className="relative z-[16] mx-auto mt-6 max-w-[1920px] overflow-auto px-2 pb-10 sm:mt-10 sm:px-6 2xl:px-20">
+			<div className="relative z-[16] mx-auto mt-6 max-w-[1920px] overflow-auto px-4 pb-10 sm:mt-10 sm:px-6 2xl:px-20">
 				{children}
 			</div>
 		</>

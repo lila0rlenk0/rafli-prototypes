@@ -115,10 +115,7 @@ export function RaffleInfoCard({
 	}
 
 	return (
-		<div
-			className="mt-8 rounded-2xl border border-black bg-white p-8 data-[authenticated=false]:md:w-84"
-			data-authenticated={isAuthenticated}
-		>
+		<div className="mt-8 rounded-2xl border border-black bg-white p-8">
 			<div className="space-y-6">
 				{/* Title */}
 				<div className="flex w-full items-center justify-center">

@@ -3,7 +3,7 @@ import {
 	parseRaffleSortOption,
 } from '@/app/(protected)/lib/parse-search-params';
 import { BugIcon } from '@/assets/icons/bug-icon';
-import { FilterBar } from '@/components/filters';
+import { FilterBar, StickyFilterSection } from '@/components/filters';
 import {
 	PublicRaffleCard,
 	type RaffleRole,
@@ -117,15 +117,17 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				</p>
 			</div>
 
-			{/* Filter Bar */}
-			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="font-clash-display text-3xl font-semibold">
-					Browse all active raffles
-				</h2>
-				<Suspense fallback={null}>
-					<FilterBar categories={categories} />
-				</Suspense>
-			</div>
+			{/* Filter Bar — sticky on mobile after scrolling past */}
+			<StickyFilterSection>
+				<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+					<h2 className="font-clash-display text-3xl font-semibold">
+						Browse all active raffles
+					</h2>
+					<Suspense fallback={null}>
+						<FilterBar categories={categories} />
+					</Suspense>
+				</div>
+			</StickyFilterSection>
 
 			{/* Grid Section */}
 			{raffles && raffles.length > 0 ? (

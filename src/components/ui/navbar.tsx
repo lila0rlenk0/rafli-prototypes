@@ -183,7 +183,7 @@ export function Navbar({ children }: NavbarProps) {
 				)}
 			</nav>
 
-			<div className="mx-auto mt-6 max-w-[1440px] overflow-auto px-4 pb-10 sm:mt-10">
+			<div className="mx-auto mt-6 max-w-[1440px] overflow-x-hidden px-4 pb-10 sm:mt-10">
 				{children}
 			</div>
 		</>

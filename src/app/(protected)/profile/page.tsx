@@ -49,7 +49,7 @@ export default async function ProfilePage() {
 	const userProfile = meResult.success ? meResult.data : null;
 
 	return (
-		<div className="container mx-auto flex max-w-6xl flex-col gap-6 px-4">
+		<div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
 			{/* Main Content Layout */}
 			<div className="flex w-full flex-col gap-6 lg:flex-row lg:gap-8">
 				{/* Header — mobile/tablet: stacked above content, desktop: hidden (shown inside content) */}

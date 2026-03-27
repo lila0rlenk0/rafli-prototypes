@@ -76,7 +76,7 @@ export async function PaymentHistorySection() {
 
 	return (
 		<div
-			className="relative flex w-full flex-col gap-6 rounded-3xl bg-white px-6 py-10 md:px-10 md:py-15"
+			className="relative flex w-full flex-col gap-6 overflow-hidden rounded-3xl bg-white px-6 py-10 md:px-10 md:py-15"
 			id="payment-history"
 		>
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-center">

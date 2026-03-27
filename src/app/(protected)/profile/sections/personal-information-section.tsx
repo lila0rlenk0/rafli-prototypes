@@ -67,7 +67,7 @@ export function PersonalInformationSection({
 
 	return (
 		<div
-			className="relative flex w-full flex-col gap-8 rounded-3xl bg-white px-6 py-10 md:px-10 md:py-15"
+			className="relative flex w-full flex-col gap-8 overflow-hidden rounded-3xl bg-white px-6 py-10 md:px-10 md:py-15"
 			id="personal-information"
 		>
 			<EditableAvatar

@@ -64,7 +64,7 @@ export default async function ProfilePage() {
 				<ProfileSidebar items={SIDEBAR_ITEMS} />
 
 				{/* Right Content Sections */}
-				<div className="flex w-full flex-col gap-6 lg:max-w-[922px]">
+				<div className="flex min-w-0 flex-1 flex-col gap-6">
 					<div className="hidden items-center justify-between lg:flex">
 						<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
 							My Profile

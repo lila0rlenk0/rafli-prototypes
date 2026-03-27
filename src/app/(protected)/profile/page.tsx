@@ -51,21 +51,21 @@ export default async function ProfilePage() {
 	return (
 		<div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
 			{/* Main Content Layout */}
-			<div className="flex w-full flex-col gap-6 lg:flex-row lg:gap-8">
-				{/* Header — mobile/tablet: stacked above content, desktop: hidden (shown inside content) */}
-				<div className="flex flex-col gap-6 lg:hidden">
+			<div className="flex w-full flex-col gap-6 md:flex-row md:gap-8">
+				{/* Header — mobile only: stacked above content */}
+				<div className="flex flex-col gap-6 md:hidden">
 					<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
 						My Profile
 					</h1>
 					<SignOutButton className="w-full sm:w-fit" />
 				</div>
 
-				{/* Left Sidebar — hidden on mobile/tablet */}
+				{/* Left Sidebar — visible from tablet (md) onwards */}
 				<ProfileSidebar items={SIDEBAR_ITEMS} />
 
 				{/* Right Content Sections */}
 				<div className="flex min-w-0 flex-1 flex-col gap-6">
-					<div className="hidden items-center justify-between lg:flex">
+					<div className="hidden items-center justify-between md:flex">
 						<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
 							My Profile
 						</h1>

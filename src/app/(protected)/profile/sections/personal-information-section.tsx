@@ -77,9 +77,9 @@ export function PersonalInformationSection({
 			/>
 
 			<div className="flex flex-col gap-8">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:gap-[202px]">
+				<div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:gap-[202px]">
 					<EditableName name={getUserName()} />
-					<div className="flex min-w-0 flex-1 flex-col gap-2">
+					<div className="flex min-w-0 flex-col gap-2">
 						<span className="text-sm leading-relaxed text-[#7B7B7B]">
 							Email
 						</span>

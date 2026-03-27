@@ -129,7 +129,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 
 			{/* Grid Section — negative margins on mobile to go edge-to-edge */}
 			{raffles && raffles.length > 0 ? (
-				<div className="-mx-4 grid grid-cols-2 gap-2 px-2 sm:mx-0 sm:gap-6 sm:px-0 lg:grid-cols-3 xl:grid-cols-4">
+				<div className="-mx-2 grid grid-cols-2 gap-2 px-1 sm:mx-0 sm:gap-6 sm:px-0 lg:grid-cols-3 xl:grid-cols-4">
 					{raffles.map(raffle => (
 						<PublicRaffleCard
 							key={raffle.id}

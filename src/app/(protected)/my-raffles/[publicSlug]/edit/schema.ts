@@ -68,7 +68,9 @@ export const editFormSchema = z
 
 		// Step 2: Active time period & Tickets
 		startDate: z.string().min(1, 'Start date is required'),
+		startTime: z.string().min(1, 'Start time is required'),
 		endDate: z.string().min(1, 'End date is required'),
+		endTime: z.string().min(1, 'End time is required'),
 		pricePerTicket: z
 			.number()
 			.or(z.nan())
@@ -110,8 +112,14 @@ export const editFormSchema = z
 		data => {
 			if (!data.startDate || !data.endDate) return true;
 
-			const start = new Date(data.startDate);
-			const end = new Date(data.endDate);
+			// Build full datetime from date + time for accurate comparison
+			const [sy, sm, sd] = data.startDate.split('-').map(Number);
+			const [sh, smin] = (data.startTime || '00:00').split(':').map(Number);
+			const start = new Date(sy, sm - 1, sd, sh, smin);
+
+			const [ey, em, ed] = data.endDate.split('-').map(Number);
+			const [eh, emin] = (data.endTime || '00:00').split(':').map(Number);
+			const end = new Date(ey, em - 1, ed, eh, emin);
 
 			return end > start;
 		},

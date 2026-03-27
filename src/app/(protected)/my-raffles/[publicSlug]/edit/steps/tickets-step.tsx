@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
+import { TimePicker } from '@/components/ui/time-picker';
 import {
 	Tooltip,
 	TooltipContent,
@@ -14,6 +15,7 @@ import {
 	CircleDashed,
 	Clock,
 	DollarSign,
+	Globe,
 	InfoIcon,
 	Lock,
 	X,
@@ -44,7 +46,9 @@ export function TicketsStep() {
 
 	// Watch fields from this step only
 	const startDate = watch('startDate');
+	const startTime = watch('startTime');
 	const endDate = watch('endDate');
+	const endTime = watch('endTime');
 	const pricePerTicket = watch('pricePerTicket');
 	const numberOfWinners = watch('numberOfWinners');
 	const minParticipants = watch('minParticipants');
@@ -54,7 +58,9 @@ export function TicketsStep() {
 	// Check if any field in this step is filled
 	const hasFilledFields = Boolean(
 		startDate ||
+		startTime ||
 		endDate ||
+		endTime ||
 		(pricePerTicket && pricePerTicket > 0) ||
 		(numberOfWinners && numberOfWinners > 0) ||
 		(minParticipants && minParticipants > 0) ||
@@ -97,24 +103,34 @@ export function TicketsStep() {
 		);
 	}
 
-	// Check if end date is after start date
+	/**
+	 * Builds a local Date from separate date (YYYY-MM-DD) and time (HH:mm) strings
+	 * Falls back to midnight if time is missing
+	 */
+	function buildDateTime(date: string, time: string): Date {
+		const [y, m, d] = date.split('-').map(Number);
+		const [h, min] = (time || '00:00').split(':').map(Number);
+		return new Date(y, m - 1, d, h, min);
+	}
+
+	// Check if end datetime is after start datetime
 	const isDateRangeValid = useMemo(() => {
-		if (!startDate || !endDate) return true; // Don't validate if dates are not set
-		const start = new Date(startDate);
-		const end = new Date(endDate);
+		if (!startDate || !endDate) return true;
+		const start = buildDateTime(startDate, startTime);
+		const end = buildDateTime(endDate, endTime);
 		return end > start;
-	}, [startDate, endDate]);
+	}, [startDate, startTime, endDate, endTime]);
 
 	// Check if end date is within 6 months from start date
 	const isEndDateWithin6Months = useMemo(() => {
-		if (!startDate || !endDate) return true; // Don't validate if dates are not set
-		const start = new Date(startDate);
-		const end = new Date(endDate);
+		if (!startDate || !endDate) return true;
+		const start = buildDateTime(startDate, startTime);
+		const end = buildDateTime(endDate, endTime);
 		// 6 months max — clone start and add 6 months to get the upper bound
 		const maxEnd = new Date(start);
 		maxEnd.setMonth(maxEnd.getMonth() + 6);
 		return end <= maxEnd;
-	}, [startDate, endDate]);
+	}, [startDate, startTime, endDate, endTime]);
 
 	// Check if start date is today
 	const isStartDateToday = checkIfStartDateIsToday(startDate);
@@ -135,8 +151,10 @@ export function TicketsStep() {
 	function handleClearAll() {
 		if (!restrictions.startDateLocked) {
 			setValue('startDate', '');
+			setValue('startTime', '');
 		}
 		setValue('endDate', '');
+		setValue('endTime', '');
 		if (!restrictions.priceLocked) {
 			setValue('pricePerTicket', NaN);
 		}
@@ -155,7 +173,9 @@ export function TicketsStep() {
 	async function handleContinue() {
 		const fields = [
 			'startDate',
+			'startTime',
 			'endDate',
+			'endTime',
 			'pricePerTicket',
 			'numberOfWinners',
 			'minParticipants',
@@ -220,6 +240,29 @@ export function TicketsStep() {
 					</div>
 
 					<div className="flex flex-col gap-2">
+						<label htmlFor="startTime" className="font-medium">
+							Start Time
+						</label>
+						<TimePicker
+							value={startTime}
+							onValueChange={value =>
+								setValue('startTime', value, {
+									shouldValidate: true,
+								})
+							}
+							placeholder="Select start time"
+							disabled={restrictions.startDateLocked}
+						/>
+						{touchedFields.startTime && errors.startTime && (
+							<span className="text-sm text-red-500">
+								{errors.startTime.message}
+							</span>
+						)}
+					</div>
+				</div>
+
+				<div className="grid grid-cols-2 gap-4">
+					<div className="flex flex-col gap-2">
 						<label htmlFor="endDate" className="font-medium">
 							End Date
 						</label>
@@ -250,7 +293,48 @@ export function TicketsStep() {
 								</span>
 							)}
 					</div>
+
+					<div className="flex flex-col gap-2">
+						<label htmlFor="endTime" className="font-medium">
+							End Time
+						</label>
+						<TimePicker
+							value={endTime}
+							onValueChange={value =>
+								setValue('endTime', value, {
+									shouldValidate: true,
+								})
+							}
+							placeholder="Select end time"
+						/>
+						{touchedFields.endTime && errors.endTime && (
+							<span className="text-sm text-red-500">
+								{errors.endTime.message}
+							</span>
+						)}
+					</div>
 				</div>
+
+				{endDate && endTime && (
+					<div className="flex items-center gap-2 text-xs text-gray-500">
+						<Globe className="size-3.5 shrink-0" />
+						<span>
+							Times are in your local timezone (
+							{Intl.DateTimeFormat().resolvedOptions().timeZone}).
+							{(() => {
+								const utc = buildDateTime(endDate, endTime);
+								const utcLabel = utc.toLocaleString('en-US', {
+									timeZone: 'UTC',
+									month: 'short',
+									day: 'numeric',
+									hour: 'numeric',
+									minute: '2-digit',
+								});
+								return ` Ends ${utcLabel} UTC.`;
+							})()}
+						</span>
+					</div>
+				)}
 
 				{restrictions.startDateLocked && (
 					<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">

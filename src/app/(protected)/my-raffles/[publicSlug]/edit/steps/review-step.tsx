@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { getCryptoSummary } from '@/lib/utils/crypto-form';
-import { formatDate } from '@/lib/utils/date-format';
+import { formatDateTime } from '@/lib/utils/date-format';
 import { hasRaffleChanges } from '@/lib/utils/raffle-diff';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -34,7 +34,9 @@ export function ReviewStep() {
 		category,
 		coverImage,
 		startDate,
+		startTime,
 		endDate,
+		endTime,
 		pricePerTicket,
 		minParticipants,
 		maxParticipants,
@@ -145,26 +147,19 @@ export function ReviewStep() {
 	 * Gets the active time period as a formatted date range
 	 */
 	function getActivePeriod() {
-		return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+		return `${formatDateTime(startDate, startTime)} - ${formatDateTime(endDate, endTime)}`;
 	}
 
 	/**
-	 * Checks if the raffle will start now based on start date
+	 * Checks if the raffle will start now based on start datetime
+	 * Combines date + time for accurate comparison
 	 */
 	function checkWillStartNow() {
 		if (!startDate) return false;
-
 		const [year, month, day] = startDate.split('-').map(Number);
-		const start = new Date(year, month - 1, day);
-
-		const today = new Date();
-		const todayNormalized = new Date(
-			today.getFullYear(),
-			today.getMonth(),
-			today.getDate(),
-		);
-
-		return start <= todayNormalized;
+		const [h, min] = (startTime || '00:00').split(':').map(Number);
+		const start = new Date(year, month - 1, day, h, min);
+		return start <= new Date();
 	}
 
 	const willStartNow = checkWillStartNow();

@@ -73,7 +73,9 @@ export const raffleFormSchema = z
 
 		// Step 2: Active time period & Tickets
 		startDate: z.string().min(1, 'Start date is required'),
+		startTime: z.string().min(1, 'Start time is required'),
 		endDate: z.string().min(1, 'End date is required'),
+		endTime: z.string().min(1, 'End time is required'),
 		pricePerTicket: z
 			.number()
 			.or(z.nan())
@@ -115,23 +117,18 @@ export const raffleFormSchema = z
 		data => {
 			if (!data.startDate) return true;
 
-			// Parse the date string and normalize to local midnight
+			// Parse date and combine with time for full datetime comparison
 			const [year, month, day] = data.startDate.split('-').map(Number);
-			const start = new Date(year, month - 1, day);
+			const [hours, minutes] = (data.startTime || '00:00')
+				.split(':')
+				.map(Number);
+			const start = new Date(year, month - 1, day, hours, minutes);
 
-			// Get today's date normalized to local midnight
-			const today = new Date();
-			const todayNormalized = new Date(
-				today.getFullYear(),
-				today.getMonth(),
-				today.getDate(),
-			);
-
-			// Start date must be today or later
-			return start >= todayNormalized;
+			// Start datetime must be now or later
+			return start >= new Date();
 		},
 		{
-			message: 'Start date cannot be before today',
+			message: 'Start date and time cannot be in the past',
 			path: ['startDate'],
 		},
 	)
@@ -139,23 +136,16 @@ export const raffleFormSchema = z
 		data => {
 			if (!data.endDate) return true;
 
-			// Parse the date string and normalize to local midnight
+			// Parse date and combine with time for full datetime comparison
 			const [year, month, day] = data.endDate.split('-').map(Number);
-			const end = new Date(year, month - 1, day);
+			const [hours, minutes] = (data.endTime || '00:00').split(':').map(Number);
+			const end = new Date(year, month - 1, day, hours, minutes);
 
-			// Get today's date normalized to local midnight
-			const today = new Date();
-			const todayNormalized = new Date(
-				today.getFullYear(),
-				today.getMonth(),
-				today.getDate(),
-			);
-
-			// End date must be today or later
-			return end >= todayNormalized;
+			// End datetime must be in the future
+			return end > new Date();
 		},
 		{
-			message: 'End date cannot be before today',
+			message: 'End date and time cannot be in the past',
 			path: ['endDate'],
 		},
 	)
@@ -163,8 +153,14 @@ export const raffleFormSchema = z
 		data => {
 			if (!data.startDate || !data.endDate) return true;
 
-			const start = new Date(data.startDate);
-			const end = new Date(data.endDate);
+			// Build full datetime from date + time for accurate comparison
+			const [sy, sm, sd] = data.startDate.split('-').map(Number);
+			const [sh, smin] = (data.startTime || '00:00').split(':').map(Number);
+			const start = new Date(sy, sm - 1, sd, sh, smin);
+
+			const [ey, em, ed] = data.endDate.split('-').map(Number);
+			const [eh, emin] = (data.endTime || '00:00').split(':').map(Number);
+			const end = new Date(ey, em - 1, ed, eh, emin);
 
 			return end > start;
 		},
@@ -210,7 +206,9 @@ export const raffleDraftSchema = z.object({
 	price: z.number(),
 	category: z.string(),
 	startDate: z.string(),
+	startTime: z.string(),
 	endDate: z.string(),
+	endTime: z.string(),
 	pricePerTicket: z.number(),
 	numberOfWinners: z.number(),
 	minParticipants: z.number(),

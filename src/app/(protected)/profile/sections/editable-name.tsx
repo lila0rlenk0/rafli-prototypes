@@ -118,7 +118,7 @@ export function EditableName({ name }: EditableNameProps) {
 
 	if (isEditing) {
 		return (
-			<div className="flex w-full flex-col gap-2 md:w-[184px]">
+			<div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[184px]">
 				<span className="text-sm leading-relaxed text-black/95">Full Name</span>
 				<div className="flex items-center gap-1">
 					<Input
@@ -164,7 +164,7 @@ export function EditableName({ name }: EditableNameProps) {
 	}
 
 	return (
-		<div className="flex w-full flex-col gap-2 md:w-[184px]">
+		<div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[184px]">
 			<div className="flex items-center justify-between">
 				<span className="text-sm leading-relaxed text-black/95">Full Name</span>
 				<Button

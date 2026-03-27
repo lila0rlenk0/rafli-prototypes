@@ -79,9 +79,7 @@ export function ModeSwitchButton() {
 				disabled={isSwitching}
 				className={cn(
 					'relative z-10 flex h-full flex-1 items-center justify-center rounded-full text-sm font-semibold transition-colors',
-					isHost
-						? 'bg-black/95 text-white'
-						: 'bg-transparent text-black/95',
+					isHost ? 'bg-black/95 text-white' : 'bg-transparent text-black/95',
 					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
 				)}
 			>
@@ -92,9 +90,7 @@ export function ModeSwitchButton() {
 				disabled={isSwitching}
 				className={cn(
 					'relative z-10 flex h-full flex-1 items-center justify-center rounded-full text-sm font-semibold transition-colors',
-					!isHost
-						? 'bg-black/95 text-white'
-						: 'bg-transparent text-black/95',
+					!isHost ? 'bg-black/95 text-white' : 'bg-transparent text-black/95',
 					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
 				)}
 			>

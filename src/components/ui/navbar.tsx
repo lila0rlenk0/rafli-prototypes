@@ -51,11 +51,11 @@ export function Navbar({ children }: NavbarProps) {
 	return (
 		<>
 			<nav
-			className={cn(
-				'sticky top-0 z-20 border-b border-black transition-[background-color] duration-500 ease-in-out',
-				isScrolled ? 'bg-background' : 'bg-transparent',
-			)}
-		>
+				className={cn(
+					'sticky top-0 z-20 border-b border-black transition-[background-color] duration-500 ease-in-out',
+					isScrolled ? 'bg-background' : 'bg-transparent',
+				)}
+			>
 				<div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-4 sm:h-16">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">

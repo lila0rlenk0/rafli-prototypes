@@ -198,7 +198,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	return (
 		<div
 			data-testid="raffle-card"
-			className="group relative flex w-full flex-col overflow-hidden rounded-xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black sm:rounded-2xl"
+			className="group relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black"
 		>
 			<div className="relative z-10">
 				<ImageCarousel
@@ -206,15 +206,15 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 					galleryImages={raffle.galleryMediaUrls}
 					alt={raffle.title}
 					maxHeight=""
-					className="mb-2 sm:mb-4"
-					sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
+					className="mb-4"
+					sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
 				/>
 			</div>
 
-			<div className="flex flex-1 flex-col p-2.5 sm:p-4">
+			<div className="flex flex-1 flex-col p-4">
 				<h3
 					data-testid="raffle-card-title"
-					className="mb-1 min-h-9 text-sm font-bold tracking-tight text-gray-900 sm:mb-2 sm:min-h-14 sm:text-xl"
+					className="mb-2 min-h-14 text-xl font-bold tracking-tight text-gray-900"
 				>
 					<Link
 						href={`/browse/${raffle.publicSlugOrCode}`}
@@ -224,24 +224,22 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 					</Link>
 				</h3>
 
-				<div className="mb-2 flex items-center justify-between sm:mb-3">
-					<div className="flex items-center gap-1 sm:gap-2">
-						<span className="text-xs text-[#7B7B7B] sm:text-sm">
-							{getTimeRemaining()}
-						</span>
+				<div className="mb-3 flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<span className="text-sm text-[#7B7B7B]">{getTimeRemaining()}</span>
 						{roleTag && (
 							<span
-								className={`hidden items-center rounded-full px-2.5 py-0.5 text-xs font-medium sm:inline-flex ${roleTag.className}`}
+								className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roleTag.className}`}
 							>
 								{roleTag.label}
 							</span>
 						)}
 					</div>
 					<span
-						className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium sm:gap-1.5 sm:px-2.5 sm:text-xs ${statusTag.className}`}
+						className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusTag.className}`}
 					>
-						<statusTag.icon className="size-3 sm:size-3.5" />
-						<span className="hidden sm:inline">{statusTag.label}</span>
+						<statusTag.icon className="size-3.5" />
+						{statusTag.label}
 					</span>
 				</div>
 
@@ -249,27 +247,23 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 					<ProvablyFairBadge className="mb-2" />
 				)}
 
-				<div className="mb-2 flex flex-col sm:mb-4">
+				<div className="mb-4 flex flex-col">
 					<div className="flex items-center justify-between">
-						<p className="text-muted-foreground text-xs sm:text-sm">Ticket</p>
-						<p className="text-sm font-semibold sm:text-xl">
-							${getTicketPrice()}
-						</p>
+						<p className="text-muted-foreground">Ticket prize</p>
+						<p className="text-xl font-semibold">${getTicketPrice()}</p>
 					</div>
 					<div className="flex items-center justify-between">
-						<p className="text-muted-foreground text-xs sm:text-sm">Prize</p>
-						<p className="text-sm font-semibold sm:text-xl">
-							${getPrizeValue()}
-						</p>
+						<p className="text-muted-foreground">Prize value</p>
+						<p className="text-xl font-semibold">${getPrizeValue()}</p>
 					</div>
 				</div>
 
-				<div className="mb-1 flex items-center justify-between text-[10px] sm:mb-2 sm:text-sm">
+				<div className="mb-2 flex items-center justify-between text-sm">
 					<span className="text-[#7B7B7B]">{getParticipantsDisplay()}</span>
 					<span className="text-[#7B7B7B]">{getFillStatus()}</span>
 				</div>
 
-				<div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 sm:mb-6 sm:h-[11px]">
+				<div className="mb-6 h-[11px] w-full overflow-hidden rounded-full bg-gray-100">
 					<div
 						className="bg-primary h-full transition-all duration-300 ease-out"
 						style={{ width: `${progress}%` }}
@@ -278,9 +272,9 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 
 				<Link
 					href={`/browse/${raffle.publicSlugOrCode}`}
-					className="relative z-10 mt-auto block"
+					className="relative z-10 mt-0 block"
 				>
-					<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-2 text-xs font-semibold text-white hover:bg-white hover:text-black sm:py-4 sm:text-sm">
+					<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
 						Details
 					</Button>
 				</Link>

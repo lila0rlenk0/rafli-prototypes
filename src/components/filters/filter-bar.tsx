@@ -85,9 +85,11 @@ export function FilterBar({ categories }: FilterBarProps) {
 	}
 
 	return (
-		<div className="flex items-center gap-4">
+		<div className="flex items-center gap-2 overflow-x-auto sm:gap-4">
 			{/* Filters Label */}
-			<p className="text-sm leading-6 font-semibold text-[#182135]">Filters</p>
+			<p className="shrink-0 text-xs leading-6 font-semibold text-[#182135] sm:text-sm">
+				Filters
+			</p>
 
 			{/* Category Filter */}
 			<FilterSelect

@@ -106,20 +106,20 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const { raffles } = response.data;
 
 	return (
-		<div className="z-10 container mx-auto px-4 py-8">
+		<div className="z-10 container mx-auto py-2 sm:px-4 sm:py-8">
 			{/* Header Section */}
-			<div className="mb-20">
-				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-semibold sm:text-5xl">
+			<div className="mb-4 sm:mb-20">
+				<h1 className="font-clash-display mb-1 text-2xl leading-tight font-semibold sm:mb-4 sm:text-5xl sm:leading-8">
 					Pick the prize you actually want
 				</h1>
-				<p className="text-lg font-medium">
+				<p className="text-sm font-medium sm:text-lg">
 					Get in, make a few clicks, and you&apos;re in the draw.
 				</p>
 			</div>
 
 			{/* Filter Bar */}
-			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="font-clash-display text-3xl font-semibold">
+			<div className="mb-3 flex w-full flex-col gap-2 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+				<h2 className="font-clash-display text-lg font-semibold sm:text-3xl">
 					Browse all active raffles
 				</h2>
 				<Suspense fallback={null}>
@@ -127,9 +127,9 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				</Suspense>
 			</div>
 
-			{/* Grid Section */}
+			{/* Grid Section — negative margins on mobile to go edge-to-edge */}
 			{raffles && raffles.length > 0 ? (
-				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+				<div className="-mx-4 grid grid-cols-2 gap-2 px-2 sm:mx-0 sm:gap-6 sm:px-0 lg:grid-cols-3 xl:grid-cols-4">
 					{raffles.map(raffle => (
 						<PublicRaffleCard
 							key={raffle.id}

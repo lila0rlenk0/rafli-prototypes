@@ -120,7 +120,9 @@ export function TicketsStep() {
 		if (!startDate || !endDate) return true;
 		const start = buildDateTime(startDate, startTime);
 		const end = buildDateTime(endDate, endTime);
-		return end > start;
+		// Minimum 24 hours between start and end
+		const MS_PER_DAY = 86_400_000;
+		return end.getTime() - start.getTime() >= MS_PER_DAY;
 	}, [startDate, startTime, endDate, endTime]);
 
 	// Check if end date is within 6 months from start date
@@ -264,7 +266,7 @@ export function TicketsStep() {
 						)}
 						{startDate && endDate && !isDateRangeValid && (
 							<span className="text-sm text-red-500">
-								End date must be after start date
+								End date must be at least 24 hours after start date
 							</span>
 						)}
 						{startDate &&

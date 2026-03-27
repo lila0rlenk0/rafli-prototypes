@@ -121,10 +121,12 @@ export const editFormSchema = z
 			const [eh, emin] = (data.endTime || '00:00').split(':').map(Number);
 			const end = new Date(ey, em - 1, ed, eh, emin);
 
-			return end > start;
+			// Minimum 24 hours between start and end
+			const MS_PER_DAY = 86_400_000;
+			return end.getTime() - start.getTime() >= MS_PER_DAY;
 		},
 		{
-			message: 'End date must be after start date',
+			message: 'End date must be at least 24 hours after start date',
 			path: ['endDate'],
 		},
 	)

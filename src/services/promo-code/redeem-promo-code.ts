@@ -2,7 +2,10 @@
 
 import { ZodError, z } from 'zod';
 
+import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import {
 	PROMO_CODE_ERROR_CODES,
@@ -62,6 +65,9 @@ export type RedeemPromoCodeResponse = z.infer<
 export async function redeemPromoCode(
 	payload: RedeemPromoCodePayload,
 ): Promise<ServiceResponse<RedeemPromoCodeResponse, PromoCodeErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		// Step 1: Validate payload.
 		const validationResult = redeemPromoCodePayloadSchema.safeParse(payload);
@@ -84,6 +90,20 @@ export async function redeemPromoCode(
 
 		// Step 3: Validate response and return success.
 		const validated = redeemPromoCodeResponseSchema.parse(response.data);
+
+		// Track promo code redeemed (awaited to ensure completion in serverless)
+		await trackServer(
+			PROMO_CODE_EVENTS.REDEEMED,
+			{
+				code: validationResult.data.code,
+				raffle_id: validationResult.data.raffleId,
+				type: validated.type,
+				tickets_granted: validated.ticketsGranted,
+				discount_amount: validated.discountAmount,
+			},
+			{ userId },
+		);
+
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {

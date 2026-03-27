@@ -2,8 +2,11 @@
 
 import { z, ZodError } from 'zod';
 
+import { PURCHASE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
@@ -37,6 +40,9 @@ type AbandonOrderResponse = z.infer<typeof abandonOrderResponseSchema>;
 export async function abandonOrder(
 	orderId: string,
 ): Promise<ServiceResponse<AbandonOrderResponse, PaymentErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			`/payments/orders/${encodeURIComponent(orderId)}/abandon`,
@@ -45,6 +51,14 @@ export async function abandonOrder(
 		);
 
 		const data = abandonOrderResponseSchema.parse(response.data);
+
+		// Fire-and-forget — abandon is best-effort, analytics must not block
+		void trackServer(
+			PURCHASE_EVENTS.ORDER_ABANDONED,
+			{ order_id: orderId },
+			{ userId },
+		);
+
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {

@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import {
 	PROMO_CODE_ERROR_CODES,
@@ -26,6 +29,9 @@ export async function validatePromoCode(
 	raffleId: string,
 	code: string,
 ): Promise<ServiceResponse<ValidatePromoCodeResponse, PromoCodeErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const normalizedCode = code.trim().toUpperCase();
 
@@ -42,6 +48,18 @@ export async function validatePromoCode(
 
 		// Step 3: Validate response and return success.
 		const validated = validatePromoCodeResponseSchema.parse(response.data);
+
+		// Fire-and-forget — validation is a read-like operation, don't block
+		void trackServer(
+			PROMO_CODE_EVENTS.VALIDATED,
+			{
+				code: normalizedCode,
+				raffle_id: raffleId,
+				valid: validated.valid,
+			},
+			{ userId },
+		);
+
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {

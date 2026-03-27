@@ -2,8 +2,11 @@
 
 import { ZodError } from 'zod';
 
+import { PURCHASE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -35,6 +38,9 @@ import {
 export async function createAtomicCryptoCheckout(
 	payload: AtomicCryptoCheckoutPayload,
 ): Promise<ServiceResponse<AtomicCryptoCheckoutResponse, PaymentErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			'/payments/crypto/atomic-checkout',
@@ -43,6 +49,19 @@ export async function createAtomicCryptoCheckout(
 		);
 
 		const data = atomicCryptoCheckoutResponseSchema.parse(response.data);
+
+		// Track crypto checkout started (awaited to ensure completion in serverless)
+		await trackServer(
+			PURCHASE_EVENTS.CRYPTO_CHECKOUT_STARTED,
+			{
+				order_id: data.order.id,
+				raffle_id: payload.raffleId,
+				chain_id: payload.chainId,
+				amount: data.order.totalAmount,
+			},
+			{ userId },
+		);
+
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {

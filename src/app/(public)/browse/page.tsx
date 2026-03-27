@@ -117,17 +117,18 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				</p>
 			</div>
 
-			{/* Filter Bar — sticky on mobile after scrolling past */}
-			<StickyFilterSection>
-				<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<h2 className="font-clash-display text-3xl font-semibold">
-						Browse all active raffles
-					</h2>
+			{/* Filter Bar */}
+			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<h2 className="font-clash-display text-3xl font-semibold">
+					Browse all active raffles
+				</h2>
+				{/* Filters — sticky on mobile after scrolling past */}
+				<StickyFilterSection>
 					<Suspense fallback={null}>
 						<FilterBar categories={categories} />
 					</Suspense>
-				</div>
-			</StickyFilterSection>
+				</StickyFilterSection>
+			</div>
 
 			{/* Grid Section */}
 			{raffles && raffles.length > 0 ? (

@@ -2,8 +2,11 @@
 
 import { z, ZodError } from 'zod';
 
+import { PURCHASE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
@@ -41,6 +44,9 @@ export type StripeSessionStatus = z.infer<typeof stripeSessionStatusSchema>;
 export async function getStripeSessionStatus(
 	sessionId: string,
 ): Promise<ServiceResponse<StripeSessionStatus, PaymentErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.get(
 			`/payments/stripe/sessions/${encodeURIComponent(sessionId)}/status`,
@@ -48,6 +54,19 @@ export async function getStripeSessionStatus(
 		);
 
 		const data = stripeSessionStatusSchema.parse(response.data);
+
+		// Track purchase completed when Stripe confirms payment
+		if (data.status === 'paid') {
+			void trackServer(
+				PURCHASE_EVENTS.COMPLETED,
+				{
+					order_id: data.orderId,
+					payment_method: 'stripe',
+				},
+				{ userId },
+			);
+		}
+
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {

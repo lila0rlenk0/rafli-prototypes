@@ -81,10 +81,29 @@ export const PURCHASE_EVENTS = {
 	ORDER_FAILED: 'Order Failed',
 	/** Stripe checkout session initiated */
 	CHECKOUT_STARTED: 'Checkout Started',
-	/** Payment completed successfully */
+	/** Payment completed successfully (Stripe or crypto) */
 	COMPLETED: 'Purchase Completed',
 	/** Checkout/payment failed (includes error_code property) */
 	FAILED: 'Purchase Failed',
+	/** Crypto checkout session created atomically with order */
+	CRYPTO_CHECKOUT_STARTED: 'Crypto Checkout Started',
+	/** Crypto transaction hash submitted for verification */
+	CRYPTO_TX_SUBMITTED: 'Crypto Transaction Submitted',
+	/** Crypto transaction confirmed on-chain and payment finalized */
+	CRYPTO_TX_CONFIRMED: 'Crypto Transaction Confirmed',
+	/** User abandoned a pending order without completing payment */
+	ORDER_ABANDONED: 'Order Abandoned',
+} as const;
+
+/**
+ * Promo code events
+ * Tracked server-side - measures promo effectiveness and revenue impact
+ */
+export const PROMO_CODE_EVENTS = {
+	/** Promo code successfully validated (includes validity result) */
+	VALIDATED: 'Promo Code Validated',
+	/** Promo code successfully redeemed (discount applied or tickets granted) */
+	REDEEMED: 'Promo Code Redeemed',
 } as const;
 
 /**

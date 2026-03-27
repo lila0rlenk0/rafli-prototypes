@@ -2,8 +2,11 @@
 
 import { ZodError } from 'zod';
 
+import { PURCHASE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -27,6 +30,9 @@ import type { SubmitCryptoTxPayload } from '@/types/wallet';
 export async function submitCryptoTx(
 	payload: SubmitCryptoTxPayload,
 ): Promise<ServiceResponse<CryptoTxMutationResponse, PaymentErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			'/payments/crypto/submit',
@@ -35,6 +41,17 @@ export async function submitCryptoTx(
 		);
 
 		const data = cryptoTxMutationResponseSchema.parse(response.data);
+
+		// Track crypto tx submitted (awaited to ensure completion in serverless)
+		await trackServer(
+			PURCHASE_EVENTS.CRYPTO_TX_SUBMITTED,
+			{
+				session_id: payload.sessionId,
+				tx_hash: payload.txHash,
+			},
+			{ userId },
+		);
+
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {

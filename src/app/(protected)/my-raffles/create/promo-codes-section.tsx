@@ -156,8 +156,8 @@ export function PromoCodesSection() {
 					<div className="flex w-full items-start gap-2 rounded-lg bg-[#FEFFE3] p-4">
 						<Info className="mt-0.5 size-4 shrink-0 text-[#B7CE00]" />
 						<p className="text-sm">
-							These are configurations only. Actual promo codes will be
-							generated once your raffle goes live.
+							These are configurations only. Promo codes will be generated once
+							your raffle is scheduled (enters the queue).
 						</p>
 					</div>
 				)}

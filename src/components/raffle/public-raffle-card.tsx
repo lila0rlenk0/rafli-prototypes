@@ -198,7 +198,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	return (
 		<div
 			data-testid="raffle-card"
-			className="group relative flex w-full flex-col overflow-hidden rounded-2xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black"
+			className="group relative flex w-full flex-col overflow-hidden rounded-xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black sm:rounded-2xl"
 		>
 			<div className="relative z-10">
 				<ImageCarousel
@@ -206,15 +206,16 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 					galleryImages={raffle.galleryMediaUrls}
 					alt={raffle.title}
 					maxHeight=""
-					className="mb-4"
-					sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+					className="mb-1.5 sm:mb-4"
+					sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
 				/>
 			</div>
 
-			<div className="flex flex-1 flex-col p-4">
+			<div className="flex flex-1 flex-col px-2 pb-2.5 sm:p-4">
+				{/* Title — 2 lines max, readable on small screens */}
 				<h3
 					data-testid="raffle-card-title"
-					className="mb-2 min-h-14 text-xl font-bold tracking-tight text-gray-900"
+					className="mb-1 min-h-8 text-[13px] leading-4 font-bold tracking-tight text-gray-900 sm:mb-2 sm:min-h-14 sm:text-xl sm:leading-normal"
 				>
 					<Link
 						href={`/browse/${raffle.publicSlugOrCode}`}
@@ -224,57 +225,72 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 					</Link>
 				</h3>
 
-				<div className="mb-3 flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<span className="text-sm text-[#7B7B7B]">{getTimeRemaining()}</span>
+				{/* Time remaining + status — compact on mobile */}
+				<div className="mb-1.5 flex items-center justify-between sm:mb-3">
+					<div className="flex items-center gap-1 sm:gap-2">
+						<span className="text-[11px] text-[#7B7B7B] sm:text-sm">
+							{getTimeRemaining()}
+						</span>
 						{roleTag && (
 							<span
-								className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roleTag.className}`}
+								className={`hidden items-center rounded-full px-2.5 py-0.5 text-xs font-medium sm:inline-flex ${roleTag.className}`}
 							>
 								{roleTag.label}
 							</span>
 						)}
 					</div>
 					<span
-						className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusTag.className}`}
+						className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium sm:gap-1.5 sm:px-2.5 sm:text-xs ${statusTag.className}`}
 					>
-						<statusTag.icon className="size-3.5" />
-						{statusTag.label}
+						<statusTag.icon className="size-2.5 sm:size-3.5" />
+						<span className="hidden sm:inline">{statusTag.label}</span>
 					</span>
 				</div>
 
 				{raffle.status === RAFFLE_STATUS.COMPLETED && (
-					<ProvablyFairBadge className="mb-2" />
+					<ProvablyFairBadge className="mb-1.5 sm:mb-2" />
 				)}
 
-				<div className="mb-4 flex flex-col">
+				{/* Pricing — shortened labels on mobile */}
+				<div className="mb-1.5 flex flex-col gap-0.5 sm:mb-4 sm:gap-0">
 					<div className="flex items-center justify-between">
-						<p className="text-muted-foreground">Ticket prize</p>
-						<p className="text-xl font-semibold">${getTicketPrice()}</p>
+						<p className="text-muted-foreground text-[11px] sm:text-sm">
+							Ticket
+						</p>
+						<p className="text-xs font-semibold sm:text-xl">
+							${getTicketPrice()}
+						</p>
 					</div>
 					<div className="flex items-center justify-between">
-						<p className="text-muted-foreground">Prize value</p>
-						<p className="text-xl font-semibold">${getPrizeValue()}</p>
+						<p className="text-muted-foreground text-[11px] sm:text-sm">
+							Prize
+						</p>
+						<p className="text-xs font-semibold sm:text-xl">
+							${getPrizeValue()}
+						</p>
 					</div>
 				</div>
 
-				<div className="mb-2 flex items-center justify-between text-sm">
+				{/* Participants + fill status */}
+				<div className="mb-1 flex items-center justify-between text-[10px] sm:mb-2 sm:text-sm">
 					<span className="text-[#7B7B7B]">{getParticipantsDisplay()}</span>
 					<span className="text-[#7B7B7B]">{getFillStatus()}</span>
 				</div>
 
-				<div className="mb-6 h-[11px] w-full overflow-hidden rounded-full bg-gray-100">
+				{/* Progress bar — thinner on mobile */}
+				<div className="mb-2.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 sm:mb-6 sm:h-[11px]">
 					<div
 						className="bg-primary h-full transition-all duration-300 ease-out"
 						style={{ width: `${progress}%` }}
 					/>
 				</div>
 
+				{/* Details button — min 44px touch target on mobile (Apple HIG) */}
 				<Link
 					href={`/browse/${raffle.publicSlugOrCode}`}
-					className="relative z-10 mt-0 block"
+					className="relative z-10 mt-auto block"
 				>
-					<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
+					<Button className="min-h-11 w-full cursor-pointer rounded-full border-2 border-black bg-black text-xs font-semibold text-white hover:bg-white hover:text-black sm:py-4 sm:text-sm">
 						Details
 					</Button>
 				</Link>

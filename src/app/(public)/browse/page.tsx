@@ -106,20 +106,20 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const { raffles } = response.data;
 
 	return (
-		<div className="z-10 container mx-auto px-4 py-8">
+		<div className="z-10 container mx-auto py-4 sm:py-8">
 			{/* Header Section */}
-			<div className="mb-20">
-				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-semibold sm:text-5xl">
+			<div className="mb-5 sm:mb-20">
+				<h1 className="font-clash-display mb-1 text-2xl leading-tight font-semibold sm:mb-4 sm:text-5xl sm:leading-8">
 					Pick the prize you actually want
 				</h1>
-				<p className="text-lg font-medium">
+				<p className="text-sm font-medium text-[#7B7B7B] sm:text-lg sm:text-black">
 					Get in, make a few clicks, and you&apos;re in the draw.
 				</p>
 			</div>
 
-			{/* Filter Bar */}
-			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="font-clash-display text-3xl font-semibold">
+			{/* Sticky Filter Bar — sticks below navbar on scroll */}
+			<div className="bg-background -mx-2 mb-4 flex w-[calc(100%+1rem)] flex-col gap-2 border-b border-transparent px-2 py-2 max-sm:sticky max-sm:top-0 max-sm:z-10 max-sm:border-[#e6e8ec] sm:static sm:mx-0 sm:mb-8 sm:w-full sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:border-none sm:px-0 sm:py-0">
+				<h2 className="font-clash-display text-lg font-semibold sm:text-3xl">
 					Browse all active raffles
 				</h2>
 				<Suspense fallback={null}>
@@ -127,9 +127,9 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				</Suspense>
 			</div>
 
-			{/* Grid Section */}
+			{/* Grid Section — 2-column on mobile */}
 			{raffles && raffles.length > 0 ? (
-				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+				<div className="grid grid-cols-2 gap-2.5 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
 					{raffles.map(raffle => (
 						<PublicRaffleCard
 							key={raffle.id}

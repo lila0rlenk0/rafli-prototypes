@@ -274,7 +274,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 					href={`/browse/${raffle.publicSlugOrCode}`}
 					className="relative z-10 mt-0 block"
 				>
-					<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
+					<Button className="min-h-11 w-full cursor-pointer rounded-full border-2 border-black bg-black font-semibold text-white hover:bg-white hover:text-black">
 						Details
 					</Button>
 				</Link>

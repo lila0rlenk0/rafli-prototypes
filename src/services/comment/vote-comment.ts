@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { COMMENT_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapCommentError, success } from '@/lib/errors';
 import {
 	voteResponseSchema,
@@ -26,12 +29,23 @@ export async function voteComment(
 	commentId: string,
 	type: VoteType,
 ): Promise<ServiceResponse<VoteResponse, CommentErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			`/comments/${commentId}/vote`,
 			{ voteType: type },
 		);
 		const validated = voteResponseSchema.parse(response.data);
+
+		// Fire-and-forget — don't block vote UX
+		void trackServer(
+			COMMENT_EVENTS.VOTED,
+			{ comment_id: commentId, direction: type },
+			{ userId },
+		);
+
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {

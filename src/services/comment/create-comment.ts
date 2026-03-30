@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { COMMENT_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapCommentError, success } from '@/lib/errors';
 import {
 	commentSchema,
@@ -23,12 +26,23 @@ export async function createComment(
 	raffleId: string,
 	payload: CreateCommentPayload,
 ): Promise<ServiceResponse<Comment, CommentErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/comments`,
 			payload,
 		);
 		const validated = commentSchema.parse(response.data);
+
+		// Fire-and-forget — don't block comment UX
+		void trackServer(
+			COMMENT_EVENTS.CREATED,
+			{ raffle_id: raffleId, is_reply: false },
+			{ userId },
+		);
+
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {

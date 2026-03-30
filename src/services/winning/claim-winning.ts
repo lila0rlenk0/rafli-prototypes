@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { WINNING_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { revalidateWinningPaths } from '@/lib/cache/revalidation';
 import { failure, mapWinningError, success } from '@/lib/errors';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
@@ -33,6 +36,9 @@ export async function claimWinning(
 	payload: ClaimWinningPayload,
 	publicSlug?: string,
 ): Promise<ClaimWinningServiceResponse> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			`/winnings/${raffleId}/claim`,
@@ -41,6 +47,16 @@ export async function claimWinning(
 
 		const validated = winningSchema.parse(response.data);
 		revalidateWinningPaths(publicSlug);
+
+		// Track winning claimed (awaited — important for fulfillment funnel)
+		await trackServer(
+			WINNING_EVENTS.CLAIMED,
+			{
+				winning_id: validated.id,
+				raffle_id: validated.raffleId,
+			},
+			{ userId },
+		);
 
 		return success(validated);
 	} catch (error) {

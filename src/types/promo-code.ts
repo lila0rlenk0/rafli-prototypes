@@ -61,6 +61,8 @@ export const promoCodeSchema = z.object({
 	type: promoCodeTypeSchema,
 	value: z.string(),
 	maxUses: z.number(),
+	// 0 = unlimited — same convention as maxUses
+	maxRedemptionsPerUser: z.number().default(0),
 	usedCount: z.number(),
 	isActive: z.boolean(),
 	expiresAt: z.string().nullable(),
@@ -128,6 +130,8 @@ export const bulkCreatePromoCodesInputSchema = z
 		type: promoCodeTypeSchema,
 		value: z.number().positive(),
 		maxUses: z.number().int().min(0).max(10_000).default(1),
+		// 0 = unlimited — mirrors maxUses convention
+		maxRedemptionsPerUser: z.number().int().min(0).max(10_000).default(0),
 		expiresAt: z.string().optional(),
 	})
 	.refine(
@@ -231,6 +235,16 @@ export function formatPromoCodeUsage(code: PromoCode): string {
 	// Step 1: Normalize max uses for display.
 	const maxDisplay = code.maxUses === 0 ? '∞' : code.maxUses.toString();
 	return `${code.usedCount}/${maxDisplay}`;
+}
+
+/**
+ * Formats a usage limit for display (0 = unlimited → ∞)
+ * Used for both max uses per code and per-user redemption limits
+ *
+ * @returns Human-readable limit string
+ */
+export function formatUsageLimit(limit: number): string {
+	return limit === 0 ? '∞' : String(limit);
 }
 
 // ==========================================

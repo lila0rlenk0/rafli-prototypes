@@ -14,7 +14,11 @@ import {
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { PROMO_CODE_TYPE, type PromoCodeType } from '@/types/promo-code';
+import {
+	formatUsageLimit,
+	PROMO_CODE_TYPE,
+	type PromoCodeType,
+} from '@/types/promo-code';
 import { DollarSign, Info, Percent, Plus, Ticket, Trash2 } from 'lucide-react';
 
 import { useMultiStepForm } from './multi-step-form-provider';
@@ -104,13 +108,6 @@ export function PromoCodesSection() {
 	}
 
 	/**
-	 * Formats max uses for display
-	 */
-	function formatMaxUses(maxUses: number): string {
-		return maxUses === 0 ? '∞' : String(maxUses);
-	}
-
-	/**
 	 * Formats expiration for display
 	 */
 	function formatExpiration(expiresAt?: string): string {
@@ -173,6 +170,7 @@ export function PromoCodesSection() {
 										<th className="pb-3 font-medium">Value</th>
 										<th className="pb-3 font-medium">Codes</th>
 										<th className="pb-3 font-medium">Max Uses</th>
+										<th className="pb-3 font-medium">Per User</th>
 										<th className="pb-3 font-medium">Expires</th>
 										<th className="pb-3 font-medium">Status</th>
 										<th className="pb-3 text-right font-medium" />
@@ -196,7 +194,12 @@ export function PromoCodesSection() {
 												{formatValue(batch.type, batch.value)}
 											</td>
 											<td className="py-4">{batch.count}</td>
-											<td className="py-4">{formatMaxUses(batch.maxUses)}</td>
+											<td className="py-4">
+												{formatUsageLimit(batch.maxUses)}
+											</td>
+											<td className="py-4">
+												{formatUsageLimit(batch.maxRedemptionsPerUser)}
+											</td>
 											<td className="py-4">
 												{formatExpiration(batch.expiresAt)}
 											</td>
@@ -274,8 +277,9 @@ export function PromoCodesSection() {
 										{batch.count} code{batch.count !== 1 ? 's' : ''}
 									</div>
 									<div className="mt-1 text-xs text-gray-500">
-										Max uses: {formatMaxUses(batch.maxUses)} &middot; Expires:{' '}
-										{formatExpiration(batch.expiresAt)}
+										Max uses: {formatUsageLimit(batch.maxUses)} &middot; Per
+										user: {formatUsageLimit(batch.maxRedemptionsPerUser)}{' '}
+										&middot; Expires: {formatExpiration(batch.expiresAt)}
 									</div>
 									<p className="mt-2 text-xs text-amber-600">
 										Will be generated when your raffle goes live

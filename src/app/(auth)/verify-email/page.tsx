@@ -25,9 +25,17 @@ export default async function VerifyEmailPage({
 					<p className="text-red-600">
 						Invalid verification link. No token provided.
 					</p>
-					<Link href="/sign-in" className="text-black underline">
-						Go to Sign In
-					</Link>
+					<div className="flex gap-3">
+						<Link
+							href="/auth/resend-verification"
+							className="text-black underline"
+						>
+							Resend Verification Email
+						</Link>
+						<Link href="/sign-in" className="text-black underline">
+							Go to Sign In
+						</Link>
+					</div>
 				</div>
 			</div>
 		);

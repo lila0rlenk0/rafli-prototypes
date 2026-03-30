@@ -29,9 +29,10 @@ import {
 } from '@/types/promo-code';
 
 /**
- * Form schema for creating promo codes
+ * Form schema for creating promo codes.
+ * Exported for unit testing — not intended for external consumption.
  */
-const createPromoCodeFormSchema = z
+export const createPromoCodeFormSchema = z
 	.object({
 		count: z.number().int().min(1).max(100),
 		type: z.enum([
@@ -40,7 +41,10 @@ const createPromoCodeFormSchema = z
 			PROMO_CODE_TYPE.DISCOUNT_PERCENT,
 		]),
 		value: z.number().positive('Value must be positive'),
+		unlimitedUses: z.boolean(),
 		maxUses: z.number().int().min(0).max(10_000),
+		unlimitedPerUser: z.boolean(),
+		maxRedemptionsPerUser: z.number().int().min(0).max(10_000),
 		noExpiration: z.boolean(),
 		expiresAt: z.string().optional(),
 	})
@@ -70,7 +74,16 @@ const createPromoCodeFormSchema = z
 			return !!data.expiresAt;
 		},
 		{ message: 'Expiration date is required', path: ['expiresAt'] },
-	);
+	)
+	// Prevent 0 (API's "unlimited" convention) when user didn't check unlimited
+	.refine(data => data.unlimitedUses || data.maxUses >= 1, {
+		message: 'Max uses must be at least 1',
+		path: ['maxUses'],
+	})
+	.refine(data => data.unlimitedPerUser || data.maxRedemptionsPerUser >= 1, {
+		message: 'Max redemptions per user must be at least 1',
+		path: ['maxRedemptionsPerUser'],
+	});
 
 type CreatePromoCodeFormData = z.infer<typeof createPromoCodeFormSchema>;
 
@@ -82,6 +95,7 @@ export interface CreatePromoCodeData {
 	type: PromoCodeType;
 	value: number;
 	maxUses: number;
+	maxRedemptionsPerUser: number;
 	expiresAt?: string;
 }
 
@@ -126,7 +140,10 @@ export function CreatePromoCodeModal({
 				? PROMO_CODE_TYPE.FREE_TICKETS
 				: PROMO_CODE_TYPE.DISCOUNT_FIXED,
 			value: 1,
+			unlimitedUses: false,
 			maxUses: 1,
+			unlimitedPerUser: true,
+			maxRedemptionsPerUser: 0,
 			noExpiration: true,
 			expiresAt: undefined,
 		},
@@ -134,12 +151,30 @@ export function CreatePromoCodeModal({
 
 	const watchType = form.watch('type');
 	const watchNoExpiration = form.watch('noExpiration');
+	const watchUnlimitedUses = form.watch('unlimitedUses');
+	const watchUnlimitedPerUser = form.watch('unlimitedPerUser');
 
 	useEffect(() => {
 		if (!allowFreeTickets && watchType === PROMO_CODE_TYPE.FREE_TICKETS) {
 			form.setValue('type', PROMO_CODE_TYPE.DISCOUNT_FIXED);
 		}
 	}, [allowFreeTickets, watchType, form]);
+
+	// Reset to sensible default when toggling off unlimited
+	useEffect(() => {
+		if (!watchUnlimitedUses && form.getValues('maxUses') === 0) {
+			form.setValue('maxUses', 1);
+		}
+	}, [watchUnlimitedUses, form]);
+
+	useEffect(() => {
+		if (
+			!watchUnlimitedPerUser &&
+			form.getValues('maxRedemptionsPerUser') === 0
+		) {
+			form.setValue('maxRedemptionsPerUser', 1);
+		}
+	}, [watchUnlimitedPerUser, form]);
 
 	/**
 	 * Returns label for value input based on type
@@ -184,7 +219,10 @@ export function CreatePromoCodeModal({
 				count: data.count,
 				type: data.type,
 				value: data.value,
-				maxUses: data.maxUses,
+				maxUses: data.unlimitedUses ? 0 : data.maxUses,
+				maxRedemptionsPerUser: data.unlimitedPerUser
+					? 0
+					: data.maxRedemptionsPerUser,
 				expiresAt:
 					data.noExpiration || !data.expiresAt
 						? undefined
@@ -471,17 +509,62 @@ export function CreatePromoCodeModal({
 						)}
 					</div>
 
-					{/* Max Uses Input */}
+					{/* Max Uses Per Code */}
 					<div className="space-y-2">
-						<Label htmlFor="maxUses">Max uses per code</Label>
-						<Input
-							id="maxUses"
-							type="number"
-							min={0}
-							max={10_000}
-							{...form.register('maxUses', { valueAsNumber: true })}
-						/>
-						<p className="text-xs text-gray-500">Set to 0 for unlimited uses</p>
+						<Label>Max uses per code</Label>
+						<div className="flex items-center gap-2">
+							<input
+								type="checkbox"
+								id="unlimitedUses"
+								{...form.register('unlimitedUses')}
+								className="size-4 rounded border-gray-300"
+							/>
+							<Label htmlFor="unlimitedUses" className="cursor-pointer">
+								Unlimited uses
+							</Label>
+						</div>
+						{!watchUnlimitedUses && (
+							<Input
+								id="maxUses"
+								type="number"
+								min={1}
+								max={10_000}
+								{...form.register('maxUses', { valueAsNumber: true })}
+							/>
+						)}
+						<p className="text-xs text-gray-500">
+							How many times each code can be redeemed in total
+						</p>
+					</div>
+
+					{/* Max Redemptions Per User */}
+					<div className="space-y-2">
+						<Label>Per-user redemption limit</Label>
+						<div className="flex items-center gap-2">
+							<input
+								type="checkbox"
+								id="unlimitedPerUser"
+								{...form.register('unlimitedPerUser')}
+								className="size-4 rounded border-gray-300"
+							/>
+							<Label htmlFor="unlimitedPerUser" className="cursor-pointer">
+								Unlimited per user
+							</Label>
+						</div>
+						{!watchUnlimitedPerUser && (
+							<Input
+								id="maxRedemptionsPerUser"
+								type="number"
+								min={1}
+								max={10_000}
+								{...form.register('maxRedemptionsPerUser', {
+									valueAsNumber: true,
+								})}
+							/>
+						)}
+						<p className="text-xs text-gray-500">
+							How many codes from this batch a single user can redeem
+						</p>
 					</div>
 
 					{/* Expiration */}

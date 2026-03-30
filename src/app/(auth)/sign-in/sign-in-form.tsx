@@ -281,7 +281,13 @@ function PasswordSignInForm({
 				)}
 				{hasLoginError && (
 					<p className="text-muted-foreground text-xs">
-						Just signed up? Check your inbox for the verification email.
+						Just signed up? Check your inbox for the verification email.{' '}
+						<Link
+							href="/auth/resend-verification"
+							className="text-black underline"
+						>
+							Resend it
+						</Link>
 					</p>
 				)}
 				<Field className="mt-4">
@@ -456,6 +462,15 @@ function SignInFooter({
 					className="font-semibold text-black"
 				>
 					Sign Up
+				</Link>
+			</FieldDescription>
+			<FieldDescription className="text-center">
+				Haven&apos;t verified your account?{' '}
+				<Link
+					href="/auth/resend-verification"
+					className="font-semibold text-black"
+				>
+					Resend verification
 				</Link>
 			</FieldDescription>
 		</Field>

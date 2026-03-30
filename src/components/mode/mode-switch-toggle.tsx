@@ -67,6 +67,11 @@ export function ModeSwitchToggle() {
 				rel="noopener noreferrer"
 				className="flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white"
 				data-testid="become-a-host-button"
+				onClick={() =>
+					track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, {
+						source: 'mobile_menu',
+					})
+				}
 			>
 				Become a Host
 			</a>

@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
+import { PURCHASE_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import {
 	getPaymentErrorMessage,
 	getPromoErrorMessage,
@@ -65,6 +67,11 @@ export function BuyButton({
 	 * Routes to appropriate flow based on ticket type
 	 */
 	function handleBuyClick() {
+		track(PURCHASE_EVENTS.TICKET_SELECTION_VIEWED, {
+			raffle_id: raffleId,
+			quantity: ticketQuantity,
+			payment_method: 'stripe',
+		});
 		if (questionId) {
 			setShowQuestionModal(true);
 			return;

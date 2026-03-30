@@ -85,6 +85,8 @@ export const RAFFLE_EVENTS = {
  * Tracked server-side - critical for revenue attribution
  */
 export const PURCHASE_EVENTS = {
+	/** User clicked buy/checkout button — intent to purchase before order creation */
+	TICKET_SELECTION_VIEWED: 'Ticket Selection Viewed',
 	/** User initiated purchase flow */
 	STARTED: 'Purchase Started',
 	/** Order successfully created (pending payment) */
@@ -188,4 +190,15 @@ export const PROFILE_EVENTS = {
 	VIEWED: 'Profile Viewed',
 	/** User switched between host and participant mode */
 	MODE_SWITCHED: 'Mode Switched',
+	/** User clicked "Become a Host" CTA (exits to Google Form) */
+	HOST_APPLICATION_STARTED: 'Host Application Started',
+} as const;
+
+/**
+ * Notification events
+ * Tracked client-side - measures notification engagement
+ */
+export const NOTIFICATION_EVENTS = {
+	/** User clicked on an in-app notification */
+	TAPPED: 'Notification Tapped',
 } as const;

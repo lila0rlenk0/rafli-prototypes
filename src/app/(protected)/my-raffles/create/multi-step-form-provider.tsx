@@ -16,6 +16,8 @@ import { z } from 'zod';
 
 import type { CreatePromoCodeData } from '@/components/promo-code/create-promo-code-modal';
 import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { bulkCreatePromoCodes } from '@/services/promo-code/bulk-create-promo-codes';
 import { createRaffle } from '@/services/raffle/create-raffle';
 import { publishRaffle } from '@/services/raffle/publish-raffle';
@@ -594,10 +596,14 @@ export function MultiStepFormProvider({
 			if (isLastStep) {
 				handleCreateRaffle(data);
 			} else {
+				track(RAFFLE_EVENTS.CREATE_STEP_COMPLETED, {
+					step_name: STEPS[currentStep].title,
+					step_number: currentStep + 1,
+				});
 				nextStep();
 			}
 		},
-		[isLastStep, handleCreateRaffle, nextStep],
+		[isLastStep, handleCreateRaffle, nextStep, currentStep],
 	);
 
 	return (

@@ -1,6 +1,11 @@
 'use server';
 
+import { ZodError } from 'zod';
+
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapRaffleError } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
@@ -9,7 +14,6 @@ import {
 	type AnswerResponse,
 } from '@/types/raffle-question';
 import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
 
 /**
  * Response type for submitting a raffle answer
@@ -31,6 +35,9 @@ export async function submitRaffleAnswer(
 	raffleId: string,
 	optionId: string,
 ): Promise<SubmitRaffleAnswerResponse> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/answer`,
@@ -38,6 +45,16 @@ export async function submitRaffleAnswer(
 		);
 
 		const validated = answerResponseSchema.parse(response.data);
+
+		// Fire-and-forget — don't block answer UX
+		void trackServer(
+			RAFFLE_EVENTS.QUESTION_ANSWERED,
+			{
+				raffle_id: raffleId,
+				correct: validated.correct,
+			},
+			{ userId },
+		);
 
 		return success(validated);
 	} catch (error) {

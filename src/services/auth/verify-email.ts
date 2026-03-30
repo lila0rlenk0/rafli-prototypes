@@ -1,5 +1,7 @@
 'use server';
 
+import { ACCOUNT_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -38,6 +40,15 @@ export async function verifyEmail(
 
 		if (!response.data.success) {
 			return failure(mapAuthError(new Error('Verification failed')));
+		}
+
+		// Fire-and-forget — verification is complete, tracking must not block redirect
+		if (response.data.user?.id) {
+			void trackServer(
+				ACCOUNT_EVENTS.EMAIL_VERIFIED,
+				{},
+				{ userId: response.data.user.id },
+			);
 		}
 
 		return success(response.data);

@@ -52,8 +52,12 @@ export const RAFFLE_EVENTS = {
 	LIST_FILTERED: 'Raffle List Filtered',
 	/** User sorted raffle list */
 	LIST_SORTED: 'Raffle List Sorted',
-	/** User shared a raffle */
+	/** User shared a raffle (includes method: twitter/copy_link) */
 	SHARED: 'Raffle Shared',
+	/** User filtered raffle list by category or sort */
+	FILTERED: 'Raffle Filtered',
+	/** User answered a raffle gating question */
+	QUESTION_ANSWERED: 'Raffle Question Answered',
 	/** User started raffle creation wizard */
 	CREATE_STARTED: 'Raffle Create Started',
 	/** User completed a step in creation wizard */
@@ -125,6 +129,54 @@ export const WINNING_EVENTS = {
 	MARKED_SENT: 'Prize Marked Sent',
 	/** Host marked prize as delivered (starts 48hr auto-confirm) */
 	MARKED_DELIVERED: 'Prize Marked Delivered',
+	/** Winner submitted shipping info to claim prize */
+	CLAIMED: 'Winning Claimed',
+	/** Winner confirmed prize was received */
+	CONFIRMED_RECEIVED: 'Winning Confirmed Received',
+} as const;
+
+/**
+ * Comment events
+ * Tracked server-side - measures community engagement
+ */
+export const COMMENT_EVENTS = {
+	/** User created a comment or reply */
+	CREATED: 'Comment Created',
+	/** User voted on a comment */
+	VOTED: 'Comment Voted',
+} as const;
+
+/**
+ * Review events
+ * Tracked server-side - measures trust ecosystem health
+ */
+export const REVIEW_EVENTS = {
+	/** User created a review for a raffle host */
+	CREATED: 'Review Created',
+} as const;
+
+/**
+ * Account health events
+ * Tracked server-side - measures signup-to-verified funnel and security
+ */
+export const ACCOUNT_EVENTS = {
+	/** User completed email verification */
+	EMAIL_VERIFIED: 'Email Verified',
+	/** User requested a password reset email */
+	PASSWORD_RESET_REQUESTED: 'Password Reset Requested',
+	/** User completed password reset with new password */
+	PASSWORD_RESET_COMPLETED: 'Password Reset Completed',
+	/** User verified and linked an EVM wallet */
+	WALLET_VERIFIED: 'Wallet Verified',
+} as const;
+
+/**
+ * Content moderation events
+ * Tracked server-side - measures trust and safety
+ */
+export const MODERATION_EVENTS = {
+	/** User reported content for moderation */
+	CONTENT_REPORTED: 'Content Reported',
 } as const;
 
 /**

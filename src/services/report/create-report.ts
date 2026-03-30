@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { MODERATION_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapReportError, success } from '@/lib/errors';
 import { REPORT_ERROR_CODES, type ReportErrorCode } from '@/types/errors';
 import {
@@ -25,6 +28,9 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function createReport(
 	payload: CreateReportPayload,
 ): Promise<ServiceResponse<UserReportResponse, ReportErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		// Step 1: Validate payload before sending to backend
 		const parsed = createReportSchema.safeParse(payload);
@@ -37,6 +43,17 @@ export async function createReport(
 
 		// Step 3: Validate response shape
 		const validated = userReportResponseSchema.parse(response.data);
+
+		// Fire-and-forget — report submission must not be delayed by analytics
+		void trackServer(
+			MODERATION_EVENTS.CONTENT_REPORTED,
+			{
+				content_type: parsed.data.contentType,
+				content_id: parsed.data.contentId,
+			},
+			{ userId },
+		);
+
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {

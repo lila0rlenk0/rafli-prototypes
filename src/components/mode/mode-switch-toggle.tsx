@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
+import { PROFILE_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
@@ -30,6 +32,10 @@ export function ModeSwitchToggle() {
 		target: typeof USER_MODE.HOST | typeof USER_MODE.PARTICIPANT,
 	) {
 		if (target === mode || isSwitching) return;
+		track(PROFILE_EVENTS.MODE_SWITCHED, {
+			from_mode: mode,
+			to_mode: target,
+		});
 		startTransition(async () => {
 			await switchMode();
 			router.refresh();

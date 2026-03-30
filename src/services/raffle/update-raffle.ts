@@ -2,8 +2,11 @@
 
 import { ZodError } from 'zod';
 
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { Raffle, UpdateRafflePayload } from '@/types/raffle';
@@ -29,6 +32,9 @@ export async function updateRaffle(
 	raffleId: string,
 	payload: UpdateRafflePayload,
 ): Promise<UpdateRaffleResponse> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		// Validate payload before sending
 		const validationResult = updateRafflePayloadSchema.safeParse(payload);
@@ -53,6 +59,16 @@ export async function updateRaffle(
 
 		// Validate response structure
 		const raffle = raffleSchema.parse(response.data);
+
+		// Fire-and-forget — update is frequent, don't block
+		void trackServer(
+			RAFFLE_EVENTS.UPDATED,
+			{
+				raffle_id: raffle.id,
+				fields_changed: Object.keys(validationResult.data),
+			},
+			{ userId },
+		);
 
 		return success(raffle);
 	} catch (error) {

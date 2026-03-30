@@ -66,6 +66,14 @@ export const RAFFLE_EVENTS = {
 	COVER_UPLOADED: 'Raffle Cover Uploaded',
 	/** Gallery images uploaded to raffle */
 	GALLERY_UPLOADED: 'Raffle Gallery Uploaded',
+	/** Host published a draft raffle to live/queued */
+	PUBLISHED: 'Raffle Published',
+	/** Host reverted a published raffle back to draft */
+	UNPUBLISHED: 'Raffle Unpublished',
+	/** Host updated a draft raffle */
+	UPDATED: 'Raffle Updated',
+	/** Host posted an update to raffle participants */
+	UPDATE_POSTED: 'Raffle Update Posted',
 } as const;
 
 /**
@@ -104,6 +112,19 @@ export const PROMO_CODE_EVENTS = {
 	VALIDATED: 'Promo Code Validated',
 	/** Promo code successfully redeemed (discount applied or tickets granted) */
 	REDEEMED: 'Promo Code Redeemed',
+	/** Host bulk created promo codes for a raffle */
+	BULK_CREATED: 'Promo Codes Created',
+} as const;
+
+/**
+ * Winning/fulfillment events
+ * Tracked server-side - measures fulfillment speed and trust
+ */
+export const WINNING_EVENTS = {
+	/** Host marked prize as sent with proof URL */
+	MARKED_SENT: 'Prize Marked Sent',
+	/** Host marked prize as delivered (starts 48hr auto-confirm) */
+	MARKED_DELIVERED: 'Prize Marked Delivered',
 } as const;
 
 /**

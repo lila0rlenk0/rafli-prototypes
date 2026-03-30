@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { PROFILE_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
@@ -33,6 +35,12 @@ export function ModeSwitchButton() {
 	 * then refreshes server components so they re-render with the new mode
 	 */
 	function handleModeSwitch() {
+		const target =
+			mode === USER_MODE.HOST ? USER_MODE.PARTICIPANT : USER_MODE.HOST;
+		track(PROFILE_EVENTS.MODE_SWITCHED, {
+			from_mode: mode,
+			to_mode: target,
+		});
 		startTransition(async () => {
 			await switchMode();
 			router.refresh();

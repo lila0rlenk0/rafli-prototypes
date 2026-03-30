@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { revalidateMyRaffles } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
@@ -21,6 +24,9 @@ type UnpublishRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
 export async function unpublishRaffle(
 	raffleId: string,
 ): Promise<UnpublishRaffleResponse> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/unpublish`,
@@ -30,6 +36,13 @@ export async function unpublishRaffle(
 
 		// Revalidate my-raffles so the card reflects the reverted draft status
 		revalidateMyRaffles();
+
+		// Fire-and-forget — unpublish is not revenue-critical
+		void trackServer(
+			RAFFLE_EVENTS.UNPUBLISHED,
+			{ raffle_id: validatedData.id },
+			{ userId },
+		);
 
 		return success(validatedData);
 	} catch (error) {

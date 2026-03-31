@@ -29,38 +29,39 @@ export function MarkdownRenderer({
 	const components: Components = {
 		// Headings - matching editor-theme.ts heading styles
 		h1: ({ children }: { children?: React.ReactNode }) => (
-			<h1 className="mb-4 scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+			<h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
 				{children}
 			</h1>
 		),
 		h2: ({ children }: { children?: React.ReactNode }) => (
-			<h2 className="mt-6 mb-4 scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+			<h2 className="mt-3 mb-2 scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
 				{children}
 			</h2>
 		),
 		h3: ({ children }: { children?: React.ReactNode }) => (
-			<h3 className="mt-6 mb-4 scroll-m-20 text-2xl font-semibold tracking-tight">
+			<h3 className="mt-3 mb-2 scroll-m-20 text-2xl font-semibold tracking-tight">
 				{children}
 			</h3>
 		),
 		h4: ({ children }: { children?: React.ReactNode }) => (
-			<h4 className="mt-6 mb-4 scroll-m-20 text-xl font-semibold tracking-tight">
+			<h4 className="mt-3 mb-2 scroll-m-20 text-xl font-semibold tracking-tight">
 				{children}
 			</h4>
 		),
 		h5: ({ children }: { children?: React.ReactNode }) => (
-			<h5 className="mt-6 mb-4 scroll-m-20 text-lg font-semibold tracking-tight">
+			<h5 className="mt-3 mb-2 scroll-m-20 text-lg font-semibold tracking-tight">
 				{children}
 			</h5>
 		),
 		h6: ({ children }: { children?: React.ReactNode }) => (
-			<h6 className="mt-6 mb-4 scroll-m-20 text-base font-semibold tracking-tight">
+			<h6 className="mt-3 mb-2 scroll-m-20 text-base font-semibold tracking-tight">
 				{children}
 			</h6>
 		),
 		// Paragraphs - matching editor-theme.ts paragraph style
+		// Capped vertical spacing to prevent hosts from creating excessive whitespace
 		p: ({ children }: { children?: React.ReactNode }) => (
-			<p className="mb-4 leading-7 not-first:mt-6">{children}</p>
+			<p className="mb-2 leading-7 not-first:mt-2">{children}</p>
 		),
 		// Lists - matching editor-theme.ts list styles
 		ul: ({ children }: { children?: React.ReactNode }) => (

@@ -45,7 +45,7 @@ export function ModeSwitchToggle() {
 	if (mode === null) {
 		return (
 			<div
-				className="flex h-12 w-full items-center overflow-hidden rounded-full border border-black opacity-50"
+				className="flex h-[38px] w-full items-center overflow-hidden rounded-full border border-black opacity-50"
 				data-testid="mode-switch-toggle"
 			>
 				<div className="flex flex-1 items-center justify-center text-sm font-semibold text-black">
@@ -65,7 +65,7 @@ export function ModeSwitchToggle() {
 				href={BECOME_HOST_FORM_URL}
 				target="_blank"
 				rel="noopener noreferrer"
-				className="flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white"
+				className="flex h-[38px] w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white"
 				data-testid="become-a-host-button"
 				onClick={() =>
 					track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, {
@@ -82,7 +82,7 @@ export function ModeSwitchToggle() {
 
 	return (
 		<div
-			className="flex h-12 w-full overflow-hidden rounded-full border border-black"
+			className="flex h-[38px] w-full overflow-hidden rounded-full border border-black"
 			data-testid="mode-switch-toggle"
 		>
 			<button

@@ -253,16 +253,14 @@ export function TicketPurchaseCard({
 	}
 
 	return (
-		<div className="mt-6 space-y-4">
+		<div className="mt-0 space-y-4">
 			{/* Price per ticket - hide for free tickets */}
 			{!isFree && (
 				<div className="flex items-center justify-between">
-					<div className="-mb-4 flex items-baseline gap-1">
-						<p className="font-clash-display text-3xl font-semibold">
-							{formatPrice(price, currency)}
-						</p>
-						<p className="text-sm text-[#7B7B7B]">per ticket</p>
-					</div>
+					<p className="text-sm text-[#929292]">Per ticket</p>
+					<p className="font-clash-display text-2xl font-semibold lg:text-3xl">
+						{formatPrice(price, currency)}
+					</p>
 				</div>
 			)}
 
@@ -288,6 +286,16 @@ export function TicketPurchaseCard({
 				<p className="text-sm text-[#7B7B7B]">Sign in to apply promo codes</p>
 			)}
 
+			{/* Mobile: Selected Tickets row */}
+			{!isFree && (
+				<div className="flex items-center justify-between lg:hidden">
+					<p className="text-sm text-[#929292]">Selected Tickets</p>
+					<p className="font-clash-display text-3xl font-semibold">
+						{ticketQuantity}
+					</p>
+				</div>
+			)}
+
 			<Separator className="my-4 bg-[#B4B4B4]" />
 
 			{/* Price breakdown */}
@@ -306,7 +314,7 @@ export function TicketPurchaseCard({
 
 			{/* Total price */}
 			<div className="flex items-center justify-between">
-				<p className="text-sm text-[#7B7B7B]">Total</p>
+				<p className="text-sm text-[#929292]">Total</p>
 				<p className="font-clash-display text-3xl font-semibold">
 					{isFree ? 'FREE' : formatPrice(total, currency)}
 				</p>

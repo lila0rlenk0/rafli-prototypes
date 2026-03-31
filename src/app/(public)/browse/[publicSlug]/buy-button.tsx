@@ -196,7 +196,7 @@ export function BuyButton({
 		if (isLoading) return 'Processing...';
 		if (isFreeTickets)
 			return `Claim free ticket${ticketQuantity > 1 ? 's' : ''}`;
-		return `Buy ticket${ticketQuantity > 1 ? 's' : ''}`;
+		return 'Enter Now!';
 	}
 
 	return (

@@ -4,7 +4,7 @@ import { formatCurrency } from '@/lib/utils/format-currency';
 import { formatDate } from '@/lib/utils/date-format';
 import type { Raffle } from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
-import { InfoIcon } from 'lucide-react';
+import { CheckCircle2Icon, InfoIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
@@ -115,7 +115,7 @@ export function RaffleInfoCard({
 	}
 
 	return (
-		<div className="mt-8 rounded-2xl border border-black bg-white p-8">
+		<div className="mt-4 rounded-3xl border border-black bg-white px-4 py-6 lg:mt-8 lg:rounded-2xl lg:p-8">
 			<div className="space-y-6">
 				{/* Title */}
 				<div className="flex w-full items-center justify-center">
@@ -213,33 +213,76 @@ export function RaffleInfoCard({
 								<h3 className="text-sm font-medium text-[#7B7B7B]">
 									My Tickets
 								</h3>
-								<p>{getMyTotalTickets()}</p>
+								<div className="flex items-center gap-2">
+									<p>{getMyTotalTickets()}</p>
+									{myTicketsTotal > 0 && (
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Link
+													href={`/browse/${publicSlug}/ticket-ids`}
+													aria-label="View ticket codes"
+												>
+													<InfoIcon className="size-5 text-[#7B7B7B]" />
+												</Link>
+											</TooltipTrigger>
+											<TooltipContent
+												side="left"
+												className="max-w-64 space-y-1 p-3"
+											>
+												<p className="mb-2 text-xs font-semibold">
+													Your ticket codes
+												</p>
+												{myTicketCodes
+													.slice(0, MAX_VISIBLE_TICKETS)
+													.map(ticket => (
+														<span
+															key={ticket.ticketCode}
+															className="mr-1 inline-block rounded bg-[#F9FFB5] px-2 py-0.5 text-xs font-medium text-black"
+														>
+															{ticket.ticketCode}
+														</span>
+													))}
+												{myTicketsTotal > MAX_VISIBLE_TICKETS && (
+													<p className="mt-1 text-xs text-[#7B7B7B]">
+														+{myTicketsTotal - MAX_VISIBLE_TICKETS} more
+													</p>
+												)}
+											</TooltipContent>
+										</Tooltip>
+									)}
+								</div>
 							</div>
-
-							<div className="grid w-full grid-cols-1 gap-2 md:w-84 md:grid-cols-2">
-								{myTicketCodes.slice(0, MAX_VISIBLE_TICKETS).map(ticket => (
-									<div
-										key={ticket.ticketCode}
-										className="flex items-center justify-center rounded-lg bg-[#F9FFB5] px-2 py-2 text-nowrap"
-									>
-										<span className="text-xs font-medium">
-											{ticket.ticketCode}
-										</span>
-									</div>
-								))}
-							</div>
-
-							{myTicketsTotal > MAX_VISIBLE_TICKETS && (
-								<Link
-									href={`/browse/${publicSlug}/ticket-ids`}
-									className="text-primary text-sm font-medium hover:underline"
-								>
-									View all {myTicketsTotal.toLocaleString()} tickets
-								</Link>
-							)}
 						</div>
 					</>
 				)}
+
+				<Separator className="my-4 bg-[#B4B4B4]" />
+
+				{/* Transparency Section */}
+				<div className="space-y-4 text-center">
+					<h3 className="font-semibold">Rafli ensures transparency by</h3>
+					<div className="inline-flex flex-col gap-2 text-left">
+						<div className="flex items-start gap-2">
+							<CheckCircle2Icon className="mt-0.5 size-5 shrink-0 text-green-500" />
+							<p className="text-sm">
+								Selecting the winner by code, verified on-chain
+							</p>
+						</div>
+						<div className="flex items-start gap-2">
+							<CheckCircle2Icon className="mt-0.5 size-5 shrink-0 text-green-500" />
+							<p className="text-sm">
+								Auto-refunding participants if the minimum threshold isn&apos;t
+								reached.
+							</p>
+						</div>
+						<div className="flex items-start gap-2">
+							<CheckCircle2Icon className="mt-0.5 size-5 shrink-0 text-green-500" />
+							<p className="text-sm">
+								Verifying host identity and previous raffles
+							</p>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	);

@@ -94,8 +94,11 @@ export const winningSchema = z.object({
  * Schema for list winnings response
  */
 export const listWinningsResponseSchema = z.object({
-	winnings: z.array(winningSchema),
+	limit: z.number(),
+	page: z.number(),
 	total: z.number(),
+	totalPages: z.number(),
+	winnings: z.array(winningSchema),
 });
 
 // ==========================================

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 		template: '%s | Rafli',
 	},
 	description:
-		'Become a verified host to run prize draws, or join any raffle to win real prizes. Fair, transparent, and trusted.',
+		'Rafli is a raffle platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now to win real prizes!',
 	keywords: [
 		'raffle',
 		'prize draw',
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 		siteName: 'Rafli',
 		title: 'Rafli – Fair Raffles & Real Prizes',
 		description:
-			'Become a verified host to run prize draws, or join any raffle to win real prizes. Fair, transparent, and trusted.',
+			'Rafli is a raffle platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now to win real prizes!',
 		images: [
 			{
 				url: '/web-app-manifest-512x512.png',
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
 		card: 'summary',
 		title: 'Rafli – Fair Raffles & Real Prizes',
 		description:
-			'Become a verified host to run prize draws, or join any raffle to win real prizes. Fair, transparent, and trusted.',
+			'Rafli is a raffle platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now to win real prizes!',
 		images: ['/web-app-manifest-512x512.png'],
 	},
 	appleWebApp: {

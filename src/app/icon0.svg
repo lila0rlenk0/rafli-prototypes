@@ -1,3 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="24" height="24"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="24" height="24" viewBox="0 0 24 24"><image width="24" height="24" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAF0SURBVHgB7VWxTgJBEJ2jRiWxwUIjf+DVQgLlUYgNiVSS6zWxkUQLsNQSrMHSxEZtsMNErfkDJVpgY9Rgjzera2aXWe82gQqmud3NzHvzdmb2nPu34RAmaDGYsE0pQfP4CIprKUgvOlB0U1A/3IOvzw/W19GLPAgc0XlpZZUN2NnIQffhVjlD3/pVh40ZUdAKstst5KD/3AMucxtwluCufSnAOZL2+ZkVOEsgQXUS/FLCKOAsAQ2gJHMLCWtwlsArlZW9JMHiu+vZP/B4QNh/6UGYOdxTYeqUg9OWWNNi47m3VQa/UoVICtAa1x0RQK8gSdavJHNU2DypiaQiK6CG1xCfT4jZwKtKLv8o4brMr9TA36/aEcgsKeDN47uoiU6Cii+6T0ps6FPBzcTgd9L1TuKGM2YLjoASVCeJ9FT8B47mlbaVPSXJ5AsjOGwNTOBuOguNAMyUEM4GHUijAnTK5DcV6di2JnDpo4MbFYzTZv/kUPsGp33cbh+2w7wAAAAASUVORK5CYII="></image></svg><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
-@media (prefers-color-scheme: dark) { :root { filter: none; } }
-</style></svg>
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <path d="M 50 0 A 25 25 0 0 1 50 50 Z" fill="black"/>
+  <path d="M 100 50 A 25 25 0 0 1 50 50 Z" fill="black"/>
+  <path d="M 50 100 A 25 25 0 0 1 50 50 Z" fill="black"/>
+  <path d="M 0 50 A 25 25 0 0 1 50 50 Z" fill="black"/>
+</svg>

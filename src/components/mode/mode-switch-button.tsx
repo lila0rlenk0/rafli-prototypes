@@ -85,6 +85,9 @@ export function ModeSwitchButton() {
 					target="_blank"
 					rel="noopener noreferrer"
 					data-testid="become-a-host-button"
+					onClick={() =>
+						track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, { source: 'navbar' })
+					}
 				>
 					Become a Host
 				</a>

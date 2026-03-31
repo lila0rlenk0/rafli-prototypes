@@ -1893,7 +1893,7 @@ export function CryptoCheckoutModal({
 		invalidatePreConfirmingFlow();
 
 		if (session?.orderId && !fundsAtRisk && !retryBlocked) {
-			void abandonOrder(session.orderId);
+			void abandonOrder(session.orderId, 'crypto');
 		}
 		clearCloseResetTimeout();
 

@@ -39,6 +39,7 @@ type AbandonOrderResponse = z.infer<typeof abandonOrderResponseSchema>;
  */
 export async function abandonOrder(
 	orderId: string,
+	paymentMethod?: string,
 ): Promise<ServiceResponse<AbandonOrderResponse, PaymentErrorCode>> {
 	const session = await getSession();
 	const userId = session?.user?.id;
@@ -55,7 +56,10 @@ export async function abandonOrder(
 		// Fire-and-forget — abandon is best-effort, analytics must not block
 		void trackServer(
 			PURCHASE_EVENTS.ORDER_ABANDONED,
-			{ order_id: orderId },
+			{
+				order_id: orderId,
+				...(paymentMethod && { payment_method: paymentMethod }),
+			},
 			{ userId },
 		);
 

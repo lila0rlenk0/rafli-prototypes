@@ -3,6 +3,8 @@ import {
 	parseRaffleSortOption,
 } from '@/app/(protected)/lib/parse-search-params';
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { FeaturedRaffleCard } from '@/components/browse/featured-raffle-card';
+import { HeroSection } from '@/components/browse/hero-section';
 import { FilterBar, StickyFilterSection } from '@/components/filters';
 import {
 	PublicRaffleCard,
@@ -29,7 +31,7 @@ interface PageProps {
  * Browse Raffles Page
  *
  * Public-facing page displaying all available raffles with filtering and sorting.
- * Supports URL-based filtering by status, category, sort order, and pagination.
+ * Features a hero section, featured raffle cards, and a filterable grid of all raffles.
  */
 export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
@@ -105,24 +107,41 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 
 	const { raffles } = response.data;
 
+	// Calculate total prize value for hero stats
+	const totalPrizeValue = raffles.reduce(
+		(sum, r) => sum + Number(r.declaredValueAmount),
+		0,
+	);
+
+	// Pick up to 2 featured raffles (first two from the list)
+	const featuredRaffles = raffles.slice(0, 2);
+
 	return (
 		<div className="z-10 container mx-auto px-4 py-8">
-			{/* Header Section */}
-			<div className="mb-20">
-				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-semibold sm:text-5xl">
-					Pick the prize you actually want
-				</h1>
-				<p className="text-lg font-medium">
-					Get in, make a few clicks, and you&apos;re in the draw.
-				</p>
+			{/* Hero Section */}
+			<div className="mb-16">
+				<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
 			</div>
 
-			{/* Filter Bar */}
+			{/* Featured Raffle Cards */}
+			{featuredRaffles.length > 0 && (
+				<div className="mb-16 grid grid-cols-1 gap-8 lg:grid-cols-2">
+					{featuredRaffles.map((raffle, i) => (
+						<FeaturedRaffleCard
+							key={raffle.id}
+							raffle={raffle}
+							variant={i === 0 ? 'blue' : 'green'}
+						/>
+					))}
+				</div>
+			)}
+
+			{/* Section Title + Filter Bar */}
 			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="font-clash-display text-3xl font-semibold">
-					Browse all active raffles
+				<h2 className="font-clash-display text-3xl font-semibold tracking-[0.36px] sm:text-4xl">
+					See what&apos;s up for grabs right now!
 				</h2>
-				{/* Filters — sticky on mobile after scrolling past */}
+				{/* Filters -- sticky on mobile after scrolling past */}
 				<StickyFilterSection>
 					<Suspense fallback={null}>
 						<FilterBar categories={categories} />

@@ -10,7 +10,7 @@ export function MarqueeBanner() {
 	const message = 'Share selected raffle on X and get a free tickets!';
 
 	return (
-		<div className="relative z-[19] overflow-hidden border-b border-black bg-[#f6ff8b]">
+		<div className="sticky top-14 z-[19] overflow-hidden border-b border-black bg-[#f6ff8b] sm:top-16">
 			<div className="flex animate-marquee items-center gap-2 whitespace-nowrap py-3">
 				{Array.from({ length: 8 }).map((_, i) => (
 					<span key={i} className="flex items-center gap-2">

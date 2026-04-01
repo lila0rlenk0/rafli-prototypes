@@ -118,7 +118,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const featuredRaffles = raffles.slice(0, 2);
 
 	return (
-		<div className="z-10 py-8">
+		<div className="z-10 pt-0 pb-8 sm:py-8">
 			{/* Hero Section */}
 			<div className="mb-10 sm:mb-16">
 				<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />

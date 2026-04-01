@@ -73,7 +73,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	return (
 		<div
 			data-testid="raffle-card"
-			className="group relative flex w-full flex-col overflow-hidden border border-transparent transition-colors duration-150 hover:border-black"
+			className="group relative flex w-full flex-col overflow-hidden border border-transparent transition-colors duration-150 sm:hover:border-black"
 		>
 			{/* Image Header */}
 			<div className="relative h-[140px] w-full overflow-hidden rounded-t-2xl bg-gray-100">

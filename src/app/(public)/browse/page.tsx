@@ -3,6 +3,7 @@ import {
 	parseRaffleSortOption,
 } from '@/app/(protected)/lib/parse-search-params';
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { BrowseTabs } from '@/components/browse/browse-tabs';
 import { FeaturedRaffleCard } from '@/components/browse/featured-raffle-card';
 import { HeroSection } from '@/components/browse/hero-section';
 import { FilterBar, StickyFilterSection } from '@/components/filters';
@@ -123,53 +124,60 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
 			</div>
 
-			{/* Featured Raffle Cards */}
-			{featuredRaffles.length > 0 && (
-				<div className="mb-10 flex flex-col gap-6 sm:mb-16 lg:grid lg:grid-cols-2 lg:gap-8">
-					{featuredRaffles.map((raffle, i) => (
-						<FeaturedRaffleCard
-							key={raffle.id}
-							raffle={raffle}
-							variant={i === 0 ? 'blue' : 'green'}
-						/>
-					))}
-				</div>
-			)}
+			{/* Section Title — visible on all breakpoints, above tabs on mobile */}
+			<h2 className="font-clash-display mb-8 text-[32px] font-semibold leading-none tracking-[0.16px] sm:mb-10 sm:text-4xl sm:tracking-[0.36px]">
+				See what&apos;s up for grabs right now!
+			</h2>
 
-			{/* Section Title + Filter Bar */}
-			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="font-clash-display text-[32px] font-semibold leading-none tracking-[0.16px] sm:whitespace-nowrap sm:text-4xl sm:tracking-[0.36px]">
-					See what&apos;s up for grabs right now!
-				</h2>
-				{/* Filters -- sticky on mobile after scrolling past */}
-				<StickyFilterSection>
-					<Suspense fallback={null}>
-						<FilterBar categories={categories} />
-					</Suspense>
-				</StickyFilterSection>
-			</div>
+			<BrowseTabs
+				featuredContent={
+					featuredRaffles.length > 0 ? (
+						<div className="mb-10 flex flex-col gap-6 sm:mb-16 lg:grid lg:grid-cols-2 lg:gap-8">
+							{featuredRaffles.map((raffle, i) => (
+								<FeaturedRaffleCard
+									key={raffle.id}
+									raffle={raffle}
+									variant={i === 0 ? 'blue' : 'green'}
+								/>
+							))}
+						</div>
+					) : null
+				}
+				allRafflesContent={
+					<>
+						{/* Filter Bar */}
+						<div className="mb-8">
+							<StickyFilterSection>
+								<Suspense fallback={null}>
+									<FilterBar categories={categories} />
+								</Suspense>
+							</StickyFilterSection>
+						</div>
 
-			{/* Grid Section */}
-			{raffles && raffles.length > 0 ? (
-				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{raffles.map(raffle => (
-						<PublicRaffleCard
-							key={raffle.id}
-							raffle={raffle}
-							role={getRaffleRole(raffle)}
-						/>
-					))}
-				</div>
-			) : (
-				<div className="flex flex-col items-center justify-center py-20 text-center">
-					<h3 className="text-xl font-semibold text-gray-900">
-						No raffles found
-					</h3>
-					<p className="mt-2 text-gray-500">
-						Check back later for new opportunities to win!
-					</p>
-				</div>
-			)}
+						{/* Grid Section */}
+						{raffles && raffles.length > 0 ? (
+							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+								{raffles.map(raffle => (
+									<PublicRaffleCard
+										key={raffle.id}
+										raffle={raffle}
+										role={getRaffleRole(raffle)}
+									/>
+								))}
+							</div>
+						) : (
+							<div className="flex flex-col items-center justify-center py-20 text-center">
+								<h3 className="text-xl font-semibold text-gray-900">
+									No raffles found
+								</h3>
+								<p className="mt-2 text-gray-500">
+									Check back later for new opportunities to win!
+								</p>
+							</div>
+						)}
+					</>
+				}
+			/>
 		</div>
 	);
 }

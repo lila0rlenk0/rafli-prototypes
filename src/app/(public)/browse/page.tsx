@@ -124,11 +124,6 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
 			</div>
 
-			{/* Section Title — visible on all breakpoints, above tabs on mobile */}
-			<h2 className="font-clash-display mb-8 text-[32px] font-semibold leading-none tracking-[0.16px] sm:mb-10 sm:text-4xl sm:tracking-[0.36px]">
-				See what&apos;s up for grabs right now!
-			</h2>
-
 			<BrowseTabs
 				featuredContent={
 					featuredRaffles.length > 0 ? (

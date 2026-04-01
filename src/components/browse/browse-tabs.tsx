@@ -4,18 +4,22 @@ import { useState, type ReactNode } from 'react';
 
 interface BrowseTabsProps {
 	featuredContent: ReactNode;
-	allRafflesContent: ReactNode;
+	filtersContent: ReactNode;
+	gridContent: ReactNode;
 }
 
 /**
  * BrowseTabs Component
  *
  * Mobile-only tabs that switch between "Featured" and "All Raffles" views.
+ * Filters are always visible. When "Featured" is active on mobile, the all
+ * raffles grid also shows below the featured cards so users see it on scroll.
  * On desktop (sm+), both sections are visible without tabs.
  */
 export function BrowseTabs({
 	featuredContent,
-	allRafflesContent,
+	filtersContent,
+	gridContent,
 }: BrowseTabsProps) {
 	const [activeTab, setActiveTab] = useState<'featured' | 'all'>('featured');
 
@@ -47,15 +51,24 @@ export function BrowseTabs({
 				</button>
 			</div>
 
-			{/* Mobile: show active tab content only */}
+			{/* Filters — always visible */}
+			<div className="mb-8">{filtersContent}</div>
+
+			{/* Mobile: Featured tab shows featured + grid below; All tab shows grid only */}
 			<div className="sm:hidden">
-				{activeTab === 'featured' ? featuredContent : allRafflesContent}
+				{activeTab === 'featured' && (
+					<>
+						{featuredContent}
+						{gridContent}
+					</>
+				)}
+				{activeTab === 'all' && gridContent}
 			</div>
 
 			{/* Desktop: show both sections */}
 			<div className="hidden sm:block">
 				{featuredContent}
-				{allRafflesContent}
+				{gridContent}
 			</div>
 		</>
 	);

@@ -65,7 +65,7 @@ export function PublicNavbar({ children, isAuthenticated, topBanner }: PublicNav
 			{/* Background strip — solid bg, z-10 so decorative shapes (z-[15]) show above */}
 			<div className="bg-background sticky top-0 z-10 h-14 sm:h-16" />
 
-			<nav className="bg-background sticky top-0 z-20 -mt-14 border-b border-[#e6e8ec] sm:-mt-16">
+			<nav className="bg-background sticky top-0 z-20 -mt-14 border-b border-black sm:-mt-16">
 				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between px-4 sm:h-16 sm:px-6 2xl:px-20">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">
@@ -134,7 +134,7 @@ export function PublicNavbar({ children, isAuthenticated, topBanner }: PublicNav
 				{/* Mobile menu overlay */}
 				{isMenuOpen && (
 					<div className="fixed inset-0 z-50 bg-[#beffdb] sm:hidden">
-						<div className="flex items-center justify-between border-b border-[#e6e8ec] px-4 py-4">
+						<div className="flex items-center justify-between border-b border-black px-4 py-4">
 							<Link href="/browse" onClick={closeMenu}>
 								<Logo className="h-5 w-auto" />
 							</Link>

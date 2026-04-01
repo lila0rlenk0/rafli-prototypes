@@ -143,39 +143,34 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 						</div>
 					) : null
 				}
-				allRafflesContent={
-					<>
-						{/* Filter Bar */}
-						<div className="mb-8">
-							<StickyFilterSection>
-								<Suspense fallback={null}>
-									<FilterBar categories={categories} />
-								</Suspense>
-							</StickyFilterSection>
+				filtersContent={
+					<StickyFilterSection>
+						<Suspense fallback={null}>
+							<FilterBar categories={categories} />
+						</Suspense>
+					</StickyFilterSection>
+				}
+				gridContent={
+					raffles && raffles.length > 0 ? (
+						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+							{raffles.map(raffle => (
+								<PublicRaffleCard
+									key={raffle.id}
+									raffle={raffle}
+									role={getRaffleRole(raffle)}
+								/>
+							))}
 						</div>
-
-						{/* Grid Section */}
-						{raffles && raffles.length > 0 ? (
-							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-								{raffles.map(raffle => (
-									<PublicRaffleCard
-										key={raffle.id}
-										raffle={raffle}
-										role={getRaffleRole(raffle)}
-									/>
-								))}
-							</div>
-						) : (
-							<div className="flex flex-col items-center justify-center py-20 text-center">
-								<h3 className="text-xl font-semibold text-gray-900">
-									No raffles found
-								</h3>
-								<p className="mt-2 text-gray-500">
-									Check back later for new opportunities to win!
-								</p>
-							</div>
-						)}
-					</>
+					) : (
+						<div className="flex flex-col items-center justify-center py-20 text-center">
+							<h3 className="text-xl font-semibold text-gray-900">
+								No raffles found
+							</h3>
+							<p className="mt-2 text-gray-500">
+								Check back later for new opportunities to win!
+							</p>
+						</div>
+					)
 				}
 			/>
 		</div>

@@ -66,7 +66,7 @@ export function PublicNavbar({ children, isAuthenticated, topBanner }: PublicNav
 			<div className="bg-background sticky top-0 z-10 h-14 sm:h-16" />
 
 			<nav className="bg-background sticky top-0 z-20 -mt-14 border-b border-black sm:-mt-16">
-				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between px-4 sm:h-16 sm:px-6 2xl:px-20">
+				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between px-3 sm:h-16 sm:px-8 2xl:px-[90px]">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">
 							<Logo className="h-5 w-auto sm:h-6" />
@@ -209,7 +209,7 @@ export function PublicNavbar({ children, isAuthenticated, topBanner }: PublicNav
 
 			{topBanner}
 
-			<div className="relative z-[16] mx-auto mt-6 max-w-[1920px] overflow-auto px-2 pb-10 sm:mt-10 sm:px-6 2xl:px-20">
+			<div className="relative z-[16] mx-auto mt-6 max-w-[1920px] overflow-auto px-3 pb-10 sm:mt-10 sm:px-8 2xl:px-[90px]">
 				{children}
 			</div>
 		</>

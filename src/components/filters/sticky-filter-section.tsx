@@ -95,7 +95,7 @@ export function StickyFilterSection({ children }: StickyFilterSectionProps) {
 				ref={barRef}
 				className={
 					isSticky
-						? 'bg-background fixed top-14 left-0 z-[100] w-full border-b border-black px-4 py-3 shadow-sm sm:static sm:z-auto sm:w-auto sm:border-none sm:px-0 sm:py-0 sm:shadow-none'
+						? 'bg-background fixed top-14 left-0 z-[100] w-full border-b border-black px-3 py-3 shadow-sm sm:static sm:z-auto sm:w-auto sm:border-none sm:px-0 sm:py-0 sm:shadow-none'
 						: ''
 				}
 			>

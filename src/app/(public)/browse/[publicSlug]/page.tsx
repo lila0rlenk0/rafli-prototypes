@@ -1,7 +1,8 @@
+import { CommentSection } from '@/components/raffle/comments/comment-section';
 import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeline';
 import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
-import { LiveFeedSection } from '@/components/raffle/live-feed-section';
 import { MobileCountdownBanner } from '@/components/raffle/mobile-countdown-banner';
+import { RaffleUpdatesCard } from '@/components/raffle/raffle-updates-card';
 import { RaffleAutoRefresh } from '@/components/raffle/raffle-auto-refresh';
 import { RaffleCancelledCard } from '@/components/raffle/raffle-cancelled-card';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
@@ -31,7 +32,6 @@ import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import { getMe } from '@/services/user/get-me';
 import { getMyWinnings } from '@/services/winning/get-my-winnings';
-import { getUpdates } from '@/services/update/get-updates';
 import type { Category } from '@/types/category';
 import {
 	COMMENTABLE_STATUSES,
@@ -45,7 +45,6 @@ import {
 	type UpdateManageableStatus,
 } from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
-import type { Update } from '@/types/update';
 import type { Winning } from '@/types/winning';
 import { InfoIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -102,14 +101,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		getRaffle(publicSlug),
 		getCategories(),
 	]);
-
-	// Fetch updates early — needed for LiveFeedSection
-	const updatesResponse = response.success
-		? await getUpdates(response.data.id)
-		: null;
-	const updates: Update[] = updatesResponse?.success
-		? updatesResponse.data.items
-		: [];
 
 	// Filter active categories only
 	const categories = categoriesResponse.success
@@ -510,35 +501,32 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						)}
 					</div>
 
-					{/* Combined live feed + host updates section */}
-					<div className="order-2 lg:order-3">
-						{isCommentable ? (
-							<LiveFeedSection
+					{/* Updates from host */}
+					<div className="order-3">
+						<RaffleUpdatesCard
+							raffleId={raffle.id}
+							hostName={raffle.host?.name ?? 'Host'}
+							actionSlot={
+								<PostUpdateButton
+									publicSlug={publicSlug}
+									isOwner={isOwner}
+									canManageUpdates={canManageUpdates}
+								/>
+							}
+						/>
+					</div>
+
+					{/* Comment section */}
+					{isCommentable && (
+						<div className="order-4">
+							<CommentSection
 								raffleId={raffle.id}
 								isAuthenticated={isAuthenticated}
 								isOwner={isOwner}
 								currentUserId={currentUserId}
-								updates={updates}
-								hostName={raffle.host?.name ?? 'Host'}
-								actionSlot={
-									<PostUpdateButton
-										publicSlug={publicSlug}
-										isOwner={isOwner}
-										canManageUpdates={canManageUpdates}
-									/>
-								}
 							/>
-						) : (
-							<LiveFeedSection
-								raffleId={raffle.id}
-								isAuthenticated={false}
-								isOwner={isOwner}
-								currentUserId={currentUserId}
-								updates={updates}
-								hostName={raffle.host?.name ?? 'Host'}
-							/>
-						)}
-					</div>
+						</div>
+					)}
 
 					{/* FAQ */}
 					<div className="order-5 flex w-full flex-col gap-5 rounded-3xl bg-white px-4 py-6 lg:overflow-hidden lg:p-8">

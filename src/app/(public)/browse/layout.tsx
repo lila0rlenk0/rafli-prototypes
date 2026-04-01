@@ -44,11 +44,10 @@ async function PublicBrowseLayoutContent({
 		: [];
 
 	const content = (
-		<PublicNavbar isAuthenticated={isAuthenticated}>
-			{/* Marquee breaks out of the content container's padding */}
-			<div className="-mx-2 -mt-6 sm:-mx-6 sm:-mt-10 2xl:-mx-20 mb-6 sm:mb-10">
-				<MarqueeBanner />
-			</div>
+		<PublicNavbar
+			isAuthenticated={isAuthenticated}
+			topBanner={<MarqueeBanner />}
+		>
 			{children}
 		</PublicNavbar>
 	);

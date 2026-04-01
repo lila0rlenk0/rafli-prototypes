@@ -17,6 +17,7 @@ const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 interface PublicNavbarProps {
 	children: ReactNode;
 	isAuthenticated: boolean;
+	topBanner?: ReactNode;
 }
 
 /**
@@ -30,7 +31,7 @@ interface PublicNavbarProps {
  * @param children - Child components to render in the content area
  * @param isAuthenticated - Whether the user is currently authenticated
  */
-export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
+export function PublicNavbar({ children, isAuthenticated, topBanner }: PublicNavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -205,6 +206,8 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 					</div>
 				)}
 			</nav>
+
+			{topBanner}
 
 			<div className="relative z-[16] mx-auto mt-6 max-w-[1920px] overflow-auto px-2 pb-10 sm:mt-10 sm:px-6 2xl:px-20">
 				{children}

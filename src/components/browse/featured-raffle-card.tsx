@@ -27,9 +27,9 @@ const VARIANT_CONFIG = {
 /**
  * FeaturedRaffleCard Component
  *
- * Large horizontal card for promoted/featured raffles on the browse page.
- * Displays with a colored background (blue or green variant), badge, prize info,
- * host details, stats, CTA button, and a product image.
+ * Large card for promoted/featured raffles on the browse page.
+ * Mobile: vertical layout (text top, image bottom).
+ * Desktop: horizontal layout (text left, image right).
  */
 export function FeaturedRaffleCard({
 	raffle,
@@ -61,9 +61,10 @@ export function FeaturedRaffleCard({
 	return (
 		<Link
 			href={`/browse/${raffle.publicSlugOrCode}`}
-			className={`${config.bg} flex w-full items-start justify-between rounded-3xl border border-black p-6 sm:p-8 transition-shadow hover:shadow-lg`}
+			className={`${config.bg} flex w-full flex-col gap-6 rounded-3xl border border-black p-6 transition-colors hover:border-2 sm:flex-row sm:items-start sm:justify-between sm:p-8`}
 		>
-			<div className="flex flex-col gap-6 max-w-[60%]">
+			{/* Text content */}
+			<div className="flex flex-col gap-6 sm:max-w-[60%]">
 				<div className="flex flex-col gap-2">
 					<span
 						className={`${config.badgeBg} w-fit rounded-[10px] px-2 py-0.5 text-sm font-semibold text-[#121211]`}
@@ -71,7 +72,7 @@ export function FeaturedRaffleCard({
 						{config.badgeLabel}
 					</span>
 					<div className="flex flex-col gap-2">
-						<h3 className="font-clash-display text-xl font-semibold leading-tight tracking-[0.12px] text-[#182135] sm:text-2xl">
+						<h3 className="font-clash-display text-2xl font-semibold leading-tight tracking-[0.12px] text-[#182135]">
 							{raffle.title}
 						</h3>
 						<div className="flex flex-wrap items-center gap-2">
@@ -93,14 +94,16 @@ export function FeaturedRaffleCard({
 					</span>
 				</div>
 			</div>
+
+			{/* Cover image - below text on mobile, right side on desktop */}
 			{raffle.coverMediaUrl && (
-				<div className="relative hidden size-[140px] flex-shrink-0 overflow-hidden rounded-3xl sm:block sm:size-[182px]">
+				<div className="relative h-[133px] w-full flex-shrink-0 overflow-hidden rounded-3xl sm:h-[182px] sm:w-[182px]">
 					<Image
 						src={raffle.coverMediaUrl}
 						alt={raffle.title}
 						fill
 						className="object-cover"
-						sizes="182px"
+						sizes="(max-width: 640px) 100vw, 182px"
 					/>
 				</div>
 			)}

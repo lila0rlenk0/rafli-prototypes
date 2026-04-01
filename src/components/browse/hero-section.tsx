@@ -8,8 +8,8 @@ interface HeroSectionProps {
 /**
  * HeroSection Component
  *
- * Displays the browse page hero with headline, subtitle, and dynamic stat badges
- * showing active raffle count, total prize value, and reward assets distributed.
+ * Displays the browse page hero with headline, subtitle, and dynamic stat badges.
+ * Responsive: 40px heading on mobile, 64px on desktop. Badges stack vertically on mobile.
  */
 export function HeroSection({ raffles, totalPrizeValue }: HeroSectionProps) {
 	const activeCount = raffles.length;
@@ -17,14 +17,14 @@ export function HeroSection({ raffles, totalPrizeValue }: HeroSectionProps) {
 	return (
 		<div className="flex flex-col gap-6">
 			<div className="flex flex-col gap-4">
-				<p className="text-base font-medium text-[rgba(15,15,15,0.95)]">
+				<p className="text-sm font-normal text-[rgba(15,15,15,0.95)] sm:text-base sm:font-medium">
 					Real prizes. Verified draws. Enter in seconds.
 				</p>
-				<h1 className="font-clash-display text-5xl font-semibold leading-none sm:text-[64px]">
+				<h1 className="font-clash-display text-[40px] font-semibold leading-none tracking-[0.4px] sm:text-[64px] sm:tracking-normal">
 					Your $1 could win!
 				</h1>
 			</div>
-			<div className="flex flex-wrap items-center gap-4">
+			<div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
 				<StatBadge>
 					<span className="font-semibold">{activeCount} active raffles</span>
 				</StatBadge>

@@ -117,15 +117,15 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const featuredRaffles = raffles.slice(0, 2);
 
 	return (
-		<div className="z-10 container mx-auto px-4 py-8">
+		<div className="z-10 py-8">
 			{/* Hero Section */}
-			<div className="mb-16">
+			<div className="mb-10 sm:mb-16">
 				<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
 			</div>
 
 			{/* Featured Raffle Cards */}
 			{featuredRaffles.length > 0 && (
-				<div className="mb-16 grid grid-cols-1 gap-8 lg:grid-cols-2">
+				<div className="mb-10 flex flex-col gap-6 sm:mb-16 lg:grid lg:grid-cols-2 lg:gap-8">
 					{featuredRaffles.map((raffle, i) => (
 						<FeaturedRaffleCard
 							key={raffle.id}
@@ -138,7 +138,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 
 			{/* Section Title + Filter Bar */}
 			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="font-clash-display text-3xl font-semibold tracking-[0.36px] sm:text-4xl">
+				<h2 className="font-clash-display text-[32px] font-semibold leading-none tracking-[0.16px] sm:whitespace-nowrap sm:text-4xl sm:tracking-[0.36px]">
 					See what&apos;s up for grabs right now!
 				</h2>
 				{/* Filters -- sticky on mobile after scrolling past */}

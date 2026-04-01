@@ -18,7 +18,7 @@ interface PublicRaffleCardProps {
  * Redesigned raffle card for the browse page grid.
  * Features a cover image header, title with optional role badge,
  * host info with verified badge, price/time row, progress bar,
- * and an outlined Details button.
+ * and an outlined Details button. Hover shows 1px black border.
  */
 export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	const isUnlimited = raffle.maxParticipants === 0;
@@ -73,10 +73,10 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	return (
 		<div
 			data-testid="raffle-card"
-			className="group relative flex w-full flex-col overflow-hidden transition-shadow duration-150 hover:shadow-lg"
+			className="group relative flex w-full flex-col overflow-hidden border border-transparent transition-colors duration-150 hover:border-black"
 		>
 			{/* Image Header */}
-			<div className="relative h-[130px] w-full overflow-hidden rounded-t-2xl bg-gray-100">
+			<div className="relative h-[140px] w-full overflow-hidden rounded-t-2xl bg-gray-100">
 				{raffle.coverMediaUrl ? (
 					<Image
 						src={raffle.coverMediaUrl}
@@ -116,7 +116,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 						</div>
 
 						{/* Host + Verified Badge */}
-						<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2 sm:justify-between">
 							<span className="text-sm text-[#121211]">by {hostName}</span>
 							<span className="inline-flex items-center gap-1 rounded-[10px] border border-black px-1 py-0.5 text-xs text-[#121211]">
 								<CheckCircle className="size-3.5" />

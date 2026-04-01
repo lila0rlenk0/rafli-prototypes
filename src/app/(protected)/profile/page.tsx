@@ -22,7 +22,7 @@ const SIDEBAR_ITEMS = [
 		sectionId: 'personal-information',
 	},
 	{
-		label: 'Security',
+		label: 'Password',
 		sectionId: 'security',
 	},
 	{
@@ -49,16 +49,24 @@ export default async function ProfilePage() {
 	const userProfile = meResult.success ? meResult.data : null;
 
 	return (
-		<div className="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
+		<div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
 			{/* Main Content Layout */}
-			<div className="flex w-full flex-col gap-10 md:flex-row">
-				{/* Left Sidebar */}
+			<div className="flex w-full flex-col gap-6 md:flex-row md:gap-8">
+				{/* Header — mobile only: stacked above content */}
+				<div className="flex flex-col gap-6 md:hidden">
+					<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
+						My Profile
+					</h1>
+					<SignOutButton className="w-full sm:w-fit" />
+				</div>
+
+				{/* Left Sidebar — visible from tablet (md) onwards */}
 				<ProfileSidebar items={SIDEBAR_ITEMS} />
 
 				{/* Right Content Sections */}
-				<div className="flex w-full max-w-195 flex-col gap-8">
-					<div className="flex items-center justify-between">
-						<h1 className="font-clash-display text-3xl font-semibold text-black">
+				<div className="flex min-w-0 flex-1 flex-col gap-6">
+					<div className="hidden items-center justify-between md:flex">
+						<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
 							My Profile
 						</h1>
 

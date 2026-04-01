@@ -9,17 +9,19 @@ import type { OrderWithRaffle } from '@/types/order';
  * PaymentHistorySection Component
  *
  * Server component displaying the last 5 orders in the profile.
- * Shows "View all" link when there are more orders.
+ * Shows "View All" link when there are more orders.
+ *
+ * @returns Card with payment history table
  */
 export async function PaymentHistorySection() {
-	// excludeStale hides abandoned/expired pending orders — profile summary
-	// should only show meaningful orders (completed, recent active, etc.)
 	const result = await getMyOrders({ page: 1, limit: 5, excludeStale: true });
 
 	const orders = result.success ? result.data.items : [];
 
 	/**
 	 * Formats decimal string to currency display
+	 *
+	 * @returns Formatted currency string (e.g. "$1.00")
 	 */
 	function formatAmount(amount: string, currency: string): string {
 		const value = parseFloat(amount);
@@ -31,10 +33,12 @@ export async function PaymentHistorySection() {
 
 	/**
 	 * Formats ISO date to readable format
+	 *
+	 * @returns Formatted date string (e.g. "March 25, 2026")
 	 */
 	function formatDate(date: string): string {
 		return new Date(date).toLocaleDateString('en-US', {
-			month: 'short',
+			month: 'long',
 			day: 'numeric',
 			year: 'numeric',
 		});
@@ -42,24 +46,29 @@ export async function PaymentHistorySection() {
 
 	/**
 	 * Renders a single order row
+	 *
+	 * @returns Order row with name, date, amount, and status badge
 	 */
 	function renderOrderRow(order: OrderWithRaffle) {
 		return (
 			<div
 				key={order.id}
-				className="flex flex-col gap-2 border-b border-gray-100 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"
+				className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
 			>
-				<div className="flex flex-col gap-1">
-					<span className="font-medium">{order.raffleName}</span>
+				<div className="flex flex-col gap-0.5">
+					<span className="text-base font-medium">{order.raffleName}</span>
 					<span className="text-muted-foreground text-sm">
 						{formatDate(order.createdAt)}
 					</span>
 				</div>
 				<div className="flex items-center gap-3">
-					<span className="font-medium">
+					<span className="text-base font-medium">
 						{formatAmount(order.totalAmount, order.currency)}
 					</span>
-					<OrderStatusBadge status={order.status} />
+					<OrderStatusBadge
+						status={order.status}
+						className="w-[88px] justify-center"
+					/>
 				</div>
 			</div>
 		);
@@ -67,14 +76,20 @@ export async function PaymentHistorySection() {
 
 	return (
 		<div
-			className="relative flex w-full flex-col gap-4 rounded-2xl bg-white p-8"
+			className="relative flex w-full flex-col gap-6 overflow-hidden rounded-3xl bg-white px-6 py-10 md:px-10 md:py-15"
 			id="payment-history"
 		>
-			<div className="flex items-center justify-between">
-				<h2 className="text-lg font-semibold">Payment History</h2>
+			<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+				<h3 className="font-clash-display flex-1 text-2xl leading-[1.1] font-semibold tracking-[0.12px] text-black">
+					Payment History
+				</h3>
 				<Link href="/profile/orders">
-					<Button className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white hover:bg-white hover:text-black">
-						View all
+					<Button
+						variant="outline"
+						size="sm"
+						className="border-black text-sm font-semibold text-black/95 hover:bg-black hover:text-white"
+					>
+						View All
 					</Button>
 				</Link>
 			</div>

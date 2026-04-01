@@ -2,13 +2,14 @@
 
 import { Menu, User, X } from 'lucide-react';
 import Link from 'next/link';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 import { Logo } from '@/assets/logo';
 import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
 import { ModeSwitchToggle } from '@/components/mode/mode-switch-toggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 
@@ -21,6 +22,17 @@ interface NavbarProps {
  */
 export function Navbar({ children }: NavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [isScrolled, setIsScrolled] = useState(false);
+
+	useEffect(function watchScroll() {
+		function handleScroll() {
+			setIsScrolled(window.scrollY > 10);
+		}
+
+		handleScroll();
+		window.addEventListener('scroll', handleScroll, { passive: true });
+		return () => window.removeEventListener('scroll', handleScroll);
+	}, []);
 
 	/**
 	 * Toggles the mobile menu open/closed state
@@ -38,8 +50,13 @@ export function Navbar({ children }: NavbarProps) {
 
 	return (
 		<>
-			<nav className="bg-background sticky top-0 z-20 border-b border-[#e6e8ec]">
-				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between px-4 sm:h-16 sm:px-6 2xl:px-20">
+			<nav
+				className={cn(
+					'sticky top-0 z-20 border-b border-black transition-[background-color] duration-500 ease-in-out',
+					isScrolled ? 'bg-background' : 'bg-transparent',
+				)}
+			>
+				<div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-4 sm:h-16">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">
 							<Logo className="h-5 w-auto sm:h-6" />
@@ -166,7 +183,7 @@ export function Navbar({ children }: NavbarProps) {
 				)}
 			</nav>
 
-			<div className="mx-auto mt-6 max-w-[1920px] overflow-auto px-4 pb-10 sm:mt-10 sm:px-6 2xl:px-20">
+			<div className="mx-auto mt-6 max-w-[1440px] overflow-x-hidden px-4 pb-10 sm:mt-10">
 				{children}
 			</div>
 		</>

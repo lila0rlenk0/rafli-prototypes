@@ -15,7 +15,7 @@ import {
 	type AuthErrorCode,
 } from '@/types/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -38,6 +38,8 @@ type FormType = z.infer<typeof formSchema>;
 
 /**
  * Maps error codes to user-friendly messages
+ *
+ * @returns Human-readable error message
  */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
@@ -66,7 +68,9 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
  * ChangePasswordForm Component
  *
  * Form for authenticated users to change their password.
- * Validates current password and checks new password against HIBP.
+ * Always displays the three password fields inline.
+ *
+ * @returns Password change form with current, new, and confirm fields
  */
 export function ChangePasswordForm() {
 	const {
@@ -79,7 +83,6 @@ export function ChangePasswordForm() {
 		resolver: zodResolver(formSchema),
 	});
 	const [isPending, startTransition] = useTransition();
-	const [isOpen, setIsOpen] = useState(false);
 
 	/**
 	 * Handles form submission
@@ -99,31 +102,23 @@ export function ChangePasswordForm() {
 
 			toast.success('Password changed successfully!');
 			reset();
-			setIsOpen(false);
 		});
 	}
 
-	if (!isOpen) {
-		return (
-			<Button
-				variant="outline"
-				onClick={() => setIsOpen(true)}
-				className="w-fit"
-			>
-				Change Password
-			</Button>
-		);
-	}
-
 	return (
-		<form onSubmit={handleSubmit(handleChangePassword)} className="space-y-4">
+		<form
+			onSubmit={handleSubmit(handleChangePassword)}
+			className="flex w-full flex-col gap-4 sm:max-w-md md:gap-6"
+		>
 			<FieldGroup className="gap-3">
 				<Field>
-					<FieldLabel htmlFor="currentPassword">Current Password</FieldLabel>
+					<FieldLabel htmlFor="currentPassword" className="text-[#7B7B7B]">
+						Current Password
+					</FieldLabel>
 					<Input
 						id="currentPassword"
 						type="password"
-						placeholder="********"
+						placeholder="**********"
 						required
 						aria-invalid={!!errors.currentPassword}
 						{...register('currentPassword')}
@@ -131,11 +126,13 @@ export function ChangePasswordForm() {
 					<FieldError errors={[errors.currentPassword]} />
 				</Field>
 				<Field>
-					<FieldLabel htmlFor="newPassword">New Password</FieldLabel>
+					<FieldLabel htmlFor="newPassword" className="text-[#7B7B7B]">
+						New Password
+					</FieldLabel>
 					<Input
 						id="newPassword"
 						type="password"
-						placeholder="********"
+						placeholder="**********"
 						required
 						aria-invalid={!!errors.newPassword}
 						{...register('newPassword')}
@@ -143,13 +140,13 @@ export function ChangePasswordForm() {
 					<FieldError errors={[errors.newPassword]} />
 				</Field>
 				<Field>
-					<FieldLabel htmlFor="confirmPassword">
-						Confirm New Password
+					<FieldLabel htmlFor="confirmPassword" className="text-[#7B7B7B]">
+						New Password
 					</FieldLabel>
 					<Input
 						id="confirmPassword"
 						type="password"
-						placeholder="********"
+						placeholder="**********"
 						required
 						aria-invalid={!!errors.confirmPassword}
 						{...register('confirmPassword')}
@@ -157,23 +154,16 @@ export function ChangePasswordForm() {
 					<FieldError errors={[errors.confirmPassword]} />
 				</Field>
 				<FieldError errors={[errors.root]} />
-				<div className="flex gap-2">
-					<Button type="submit" disabled={isPending}>
-						{isPending ? 'Changing...' : 'Change Password'}
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						onClick={() => {
-							reset();
-							setIsOpen(false);
-						}}
-						disabled={isPending}
-					>
-						Cancel
-					</Button>
-				</div>
 			</FieldGroup>
+
+			<Button
+				type="submit"
+				variant="outline"
+				disabled={isPending}
+				className="w-full border-black text-base font-semibold text-black hover:bg-black hover:text-white sm:w-fit"
+			>
+				{isPending ? 'Changing...' : 'Change Password'}
+			</Button>
 		</form>
 	);
 }

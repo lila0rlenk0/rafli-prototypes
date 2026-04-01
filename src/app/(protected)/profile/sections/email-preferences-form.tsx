@@ -9,27 +9,21 @@ import type { EmailPreferences } from '@/types/email-preferences';
 
 /**
  * Category configuration for email preference toggles
+ *
+ * Maps Figma design categories to backend preference keys.
+ * "Marketing emails" maps to raffleLifecycle (product updates),
+ * "Security emails" maps to hostNotifications (account security).
  */
 const PREFERENCE_CATEGORIES = [
 	{
 		key: 'raffleLifecycle' as const,
-		label: 'Raffle Updates',
-		description: 'Published, live, ended, winners selected notifications',
-	},
-	{
-		key: 'prizeUpdates' as const,
-		label: 'Prize Updates',
-		description: 'Shipping/delivery status, claim reminders',
+		label: 'Marketing emails',
+		description: 'Receive emails about new products, features, and more.',
 	},
 	{
 		key: 'hostNotifications' as const,
-		label: 'Host Notifications',
-		description: 'Winner claimed, delivery confirmed, fulfillment reminders',
-	},
-	{
-		key: 'reviewNotifications' as const,
-		label: 'Reviews',
-		description: 'New reviews, rate experience reminders',
+		label: 'Security emails',
+		description: 'Receive emails about your account security.',
 	},
 ] as const;
 
@@ -41,6 +35,8 @@ interface EmailPreferencesFormProps {
  * Client form for toggling email notification preferences
  *
  * Each switch triggers an individual PATCH with optimistic update + rollback on failure.
+ *
+ * @returns List of email preference toggles
  */
 export function EmailPreferencesForm({
 	preferences,
@@ -82,15 +78,17 @@ export function EmailPreferencesForm({
 	}
 
 	return (
-		<div className="flex flex-col gap-4">
-			{PREFERENCE_CATEGORIES.map(function renderCategory(category) {
+		<div className="flex flex-col">
+			{PREFERENCE_CATEGORIES.map(function renderCategory(category, index) {
 				return (
 					<div
 						key={category.key}
-						className="flex items-center justify-between gap-4 py-2"
+						className={`flex items-center justify-between gap-4 py-3 ${
+							index > 0 ? 'border-t border-gray-100' : ''
+						}`}
 					>
 						<div className="flex flex-col gap-0.5">
-							<span className="text-sm font-medium">{category.label}</span>
+							<span className="text-base font-medium">{category.label}</span>
 							<span className="text-muted-foreground text-sm">
 								{category.description}
 							</span>

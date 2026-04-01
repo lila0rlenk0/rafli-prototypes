@@ -32,7 +32,7 @@ export function ProfileSection({
 	showEditIcon = true,
 }: ProfileSectionProps) {
 	return (
-		<div className="rounded-3xl bg-white p-[60px]" id={id}>
+		<div className="rounded-3xl bg-white px-6 py-10 md:px-10 md:py-15" id={id}>
 			<div className="mb-6 flex items-start justify-between">
 				<div className="flex flex-col gap-3">
 					<h3 className="font-clash-display text-[28px] font-semibold tracking-[0.14px] text-black">

@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { PROFILE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
 import { cn } from '@/lib/utils';
@@ -15,13 +14,10 @@ const BECOME_HOST_FORM_URL = 'https://forms.gle/RqihwzjyBcjjwUa97';
 /**
  * ModeSwitchButton Component
  *
- * Displays different UI based on user permissions and mode state:
- * - Loading (mode null): Disabled button
- * - No permission: "Become a Host" external link
- * - Has permission: "Switch to [opposite mode] Mode" button
+ * Compact pill toggle for switching between Host and Participant modes.
+ * Active mode shows black background with white text; inactive is transparent.
  *
- * On switch: awaits cookie write then triggers server re-render
- * so server-rendered content (raffle lists, tabs) reflects the new mode
+ * @returns Pill toggle, "Become a Host" link, or loading state
  */
 export function ModeSwitchButton() {
 	const mode = useUserStore(state => state.mode);
@@ -31,12 +27,12 @@ export function ModeSwitchButton() {
 	const [isSwitching, startTransition] = useTransition();
 
 	/**
-	 * Handles mode switch: updates store, awaits cookie sync,
-	 * then refreshes server components so they re-render with the new mode
+	 * Switches to the given target mode if it differs from the current mode
 	 */
-	function handleModeSwitch() {
-		const target =
-			mode === USER_MODE.HOST ? USER_MODE.PARTICIPANT : USER_MODE.HOST;
+	function handleSwitch(
+		target: typeof USER_MODE.HOST | typeof USER_MODE.PARTICIPANT,
+	) {
+		if (target === mode || isSwitching) return;
 		track(PROFILE_EVENTS.MODE_SWITCHED, {
 			from_mode: mode,
 			to_mode: target,
@@ -47,69 +43,68 @@ export function ModeSwitchButton() {
 		});
 	}
 
-	/**
-	 * Gets button label showing the mode user will switch TO
-	 */
-	function getButtonText(): string {
-		const target =
-			mode === USER_MODE.HOST ? USER_MODE.PARTICIPANT : USER_MODE.HOST;
-		return `Switch to ${target.charAt(0).toUpperCase() + target.slice(1)} Mode`;
-	}
-
-	// Loading state while mode initializes
 	if (mode === null) {
 		return (
-			<Button
-				variant="outline"
-				size="default"
-				disabled
-				className="cursor-not-allowed border-black text-black opacity-50"
+			<div
+				className="flex h-9 w-[267px] items-center overflow-hidden rounded-full border border-black/95 opacity-50"
 				data-testid="mode-switch-button"
 			>
-				<span className="hidden sm:inline">Loading...</span>
-				<span className="sm:hidden">...</span>
-			</Button>
+				<div className="flex flex-1 items-center justify-center text-sm font-semibold text-black/95">
+					Host
+				</div>
+				<div className="flex flex-1 items-center justify-center text-sm font-semibold text-black/95">
+					Participant
+				</div>
+			</div>
 		);
 	}
 
 	if (!canSwitchMode()) {
 		return (
-			<Button
-				asChild
-				variant="default"
-				size="default"
-				className="bg-black text-white hover:bg-black/90"
+			<a
+				href={BECOME_HOST_FORM_URL}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="flex h-9 items-center justify-center rounded-full bg-black px-6 text-sm font-semibold text-white"
+				data-testid="become-a-host-button"
+				onClick={() =>
+					track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, { source: 'navbar' })
+				}
 			>
-				<a
-					href={BECOME_HOST_FORM_URL}
-					target="_blank"
-					rel="noopener noreferrer"
-					data-testid="become-a-host-button"
-					onClick={() =>
-						track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, { source: 'navbar' })
-					}
-				>
-					Become a Host
-				</a>
-			</Button>
+				Become a Host
+			</a>
 		);
 	}
 
+	const isHost = mode === USER_MODE.HOST;
+
 	return (
-		<Button
-			data-mode={mode}
-			onClick={handleModeSwitch}
-			disabled={isSwitching}
-			variant="outline"
-			size="default"
-			className={cn(
-				'border-black text-black data-[mode=participant]:bg-black data-[mode=participant]:text-white',
-				isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
-			)}
+		<div
+			className="relative flex h-9 w-[267px] items-center overflow-hidden rounded-full border border-black/95"
 			data-testid="mode-switch-button"
 		>
-			<span className="hidden sm:inline">{getButtonText()}</span>
-			<span className="sm:hidden">Switch Mode</span>
-		</Button>
+			<button
+				onClick={() => handleSwitch(USER_MODE.HOST)}
+				disabled={isSwitching}
+				className={cn(
+					'relative z-10 flex h-full flex-1 items-center justify-center rounded-full text-sm font-semibold transition-colors',
+					isHost ? 'bg-black/95 text-white' : 'bg-transparent text-black/95',
+					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
+				)}
+			>
+				Host
+			</button>
+			<button
+				onClick={() => handleSwitch(USER_MODE.PARTICIPANT)}
+				disabled={isSwitching}
+				className={cn(
+					'relative z-10 flex h-full flex-1 items-center justify-center rounded-full text-sm font-semibold transition-colors',
+					!isHost ? 'bg-black/95 text-white' : 'bg-transparent text-black/95',
+					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
+				)}
+			>
+				Participant
+			</button>
+		</div>
 	);
 }

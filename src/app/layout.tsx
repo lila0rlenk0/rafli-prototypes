@@ -17,7 +17,53 @@ const clashDisplay = localFont({
 });
 
 export const metadata: Metadata = {
-	title: 'Rafli',
+	metadataBase: new URL('https://www.rafli.win'),
+	title: {
+		default: 'Rafli – Fair Raffles & Real Prizes',
+		template: '%s | Rafli',
+	},
+	description:
+		'Rafli is a raffle platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now to win real prizes!',
+	keywords: [
+		'raffle',
+		'prize draw',
+		'win prizes',
+		'fair raffle',
+		'verified host',
+		'real prizes',
+		'online raffle',
+	],
+	openGraph: {
+		type: 'website',
+		locale: 'en_US',
+		url: 'https://www.rafli.win',
+		siteName: 'Rafli',
+		title: 'Rafli – Fair Raffles & Real Prizes',
+		description:
+			'Rafli is a raffle platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now to win real prizes!',
+		images: [
+			{
+				url: '/web-app-manifest-512x512.png',
+				width: 512,
+				height: 512,
+				alt: 'Rafli logo',
+			},
+		],
+	},
+	twitter: {
+		card: 'summary',
+		title: 'Rafli – Fair Raffles & Real Prizes',
+		description:
+			'Rafli is a raffle platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now to win real prizes!',
+		images: ['/web-app-manifest-512x512.png'],
+	},
+	appleWebApp: {
+		title: 'Rafli',
+	},
+	robots: {
+		index: true,
+		follow: true,
+	},
 };
 
 /**
@@ -33,9 +79,6 @@ export default async function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<head>
-				<meta name="apple-mobile-web-app-title" content="Rafli" />
-			</head>
 			<body
 				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} font-sans antialiased`}
 			>

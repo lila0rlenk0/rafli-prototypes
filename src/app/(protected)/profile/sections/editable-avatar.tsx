@@ -41,7 +41,7 @@ interface EditableAvatarProps {
 export function EditableAvatar({
 	avatarUrl,
 	initials,
-	size = 85,
+	size = 120,
 }: EditableAvatarProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isHovered, setIsHovered] = useState(false);

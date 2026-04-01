@@ -12,7 +12,6 @@ import { PrizeBreakdownCard } from '@/components/raffle/prize-breakdown-card';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RevenueBreakdownCard } from '@/components/raffle/revenue-breakdown-card';
 import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
-import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
 import { RaffleWonCard } from '@/components/raffle/raffle-won-card';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
 import { WinnersList } from '@/components/raffle/winners-list';
@@ -56,6 +55,8 @@ import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
 import { ReportRaffleButton } from './report-raffle-button';
+import { CopyRaffleLinkButton } from './copy-raffle-link-button';
+import { ShareOnXButton } from './share-on-x-button';
 import { StickyBuyTicketsCta } from './sticky-buy-tickets-cta';
 
 interface PageProps {
@@ -409,6 +410,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									Participant
 								</span>
 							)}
+							<CopyRaffleLinkButton publicSlug={publicSlug} />
 							{isAuthenticated && !isOwner && (
 								<ReportRaffleButton raffleId={raffle.id} />
 							)}
@@ -674,7 +676,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								The raffle is active!
 							</h2>
 
-							<RaffleCountdown endAt={raffle.endAt} />
+							<div className="mb-4">
+								<RaffleCountdown endAt={raffle.endAt} />
+							</div>
 
 							<RaffleExpiredGate endAt={raffle.endAt}>
 								<Suspense
@@ -705,7 +709,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								)}
 							</RaffleExpiredGate>
 
-							<RaffleShareButtons
+							<ShareOnXButton
 								title={raffle.title}
 								publicSlug={raffle.publicSlugOrCode}
 							/>

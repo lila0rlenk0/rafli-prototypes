@@ -253,7 +253,7 @@ export function TicketPurchaseCard({
 	}
 
 	return (
-		<div className="mt-0 space-y-4">
+		<div className="mt-0 space-y-4 lg:space-y-2">
 			{/* Price per ticket - hide for free tickets */}
 			{!isFree && (
 				<div className="flex items-center justify-between">

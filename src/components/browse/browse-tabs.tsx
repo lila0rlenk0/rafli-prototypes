@@ -32,7 +32,7 @@ export function BrowseTabs({
 			</h2>
 
 			{/* Mobile tabs — hidden on sm+ */}
-			<div className="mb-6 flex items-center gap-6 sm:hidden">
+			<div className="mb-6 flex items-center justify-center gap-6 sm:hidden">
 				<button
 					type="button"
 					onClick={() => setActiveTab('featured')}

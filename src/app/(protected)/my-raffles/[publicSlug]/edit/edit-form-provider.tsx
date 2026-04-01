@@ -269,12 +269,12 @@ export function EditFormProvider({
 
 				// Queued raffles are already published — calling publishRaffle would fail with not-draft.
 				if (raffle.status === RAFFLE_STATUS.DRAFT) {
-					const startDate = new Date(data.startDate);
-					const today = new Date();
-					today.setHours(0, 0, 0, 0);
-					startDate.setHours(0, 0, 0, 0);
+					// Combine date + time for accurate comparison
+					const startDateTime = new Date(
+						`${data.startDate}T${data.startTime || '00:00'}`,
+					);
 
-					if (startDate <= today) {
+					if (startDateTime <= new Date()) {
 						const publishResult = await publishRaffle(raffle.id);
 						if (!publishResult.success) {
 							console.error('Auto-publish failed:', publishResult.error);

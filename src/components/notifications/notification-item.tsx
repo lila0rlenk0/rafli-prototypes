@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 
 import { getNavigationPath } from '@/components/notifications/get-navigation-path';
 import { NotificationIcon } from '@/components/notifications/notification-icon';
+import { NOTIFICATION_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { cn } from '@/lib/utils';
 import { formatTimeAgo } from '@/lib/utils/format-time-ago';
 import { useNotificationStore } from '@/providers/notification-store-provider';
@@ -35,6 +37,10 @@ export function NotificationItem({
 	 * Marks as read (optimistic) and navigates if applicable
 	 */
 	async function handleClick() {
+		track(NOTIFICATION_EVENTS.TAPPED, {
+			notification_type: notification.type,
+		});
+
 		// Optimistic update
 		if (!notification.read) {
 			decrementUnreadCount();

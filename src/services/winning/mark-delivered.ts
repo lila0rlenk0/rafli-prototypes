@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { WINNING_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { revalidateWinningPaths } from '@/lib/cache/revalidation';
 import { failure, mapWinningError, success } from '@/lib/errors';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
@@ -28,6 +31,9 @@ export async function markDelivered(
 	winningId: string,
 	publicSlug?: string,
 ): Promise<MarkDeliveredServiceResponse> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			`/winnings/${winningId}/mark-delivered`,
@@ -35,6 +41,16 @@ export async function markDelivered(
 
 		const validated = winningSchema.parse(response.data);
 		revalidateWinningPaths(publicSlug);
+
+		// Fire-and-forget — fulfillment tracking must not block UX
+		void trackServer(
+			WINNING_EVENTS.MARKED_DELIVERED,
+			{
+				winning_id: validated.id,
+				raffle_id: validated.raffleId,
+			},
+			{ userId },
+		);
 
 		return success(validated);
 	} catch (error) {

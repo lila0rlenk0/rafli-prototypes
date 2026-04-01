@@ -227,25 +227,25 @@ export function TicketSelector({
 			{/* Bundle buttons */}
 			<div className="flex items-center justify-between gap-2">
 				<button
-					onClick={() => handleBundle(3)}
+					onClick={() => handleBundle(10)}
 					disabled={bundleDisabled}
 					className="disabled:hover:bg-background flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30"
 				>
-					<p className="text-sm">+3 Tickets</p>
+					<p className="text-sm">+10 Tickets</p>
 				</button>
 				<button
-					onClick={() => handleBundle(6)}
+					onClick={() => handleBundle(25)}
 					disabled={bundleDisabled}
 					className="disabled:hover:bg-background flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30"
 				>
-					<p className="text-sm">+6 Tickets</p>
+					<p className="text-sm">+25 Tickets</p>
 				</button>
 				<button
-					onClick={() => handleBundle(9)}
+					onClick={() => handleBundle(50)}
 					disabled={bundleDisabled}
 					className="disabled:hover:bg-background flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30"
 				>
-					<p className="text-sm">+9 Tickets</p>
+					<p className="text-sm">+50 Tickets</p>
 				</button>
 			</div>
 		</div>

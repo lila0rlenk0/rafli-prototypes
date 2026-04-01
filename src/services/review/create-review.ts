@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { REVIEW_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapReviewError, success } from '@/lib/errors';
 import { REVIEW_ERROR_CODES, type ReviewErrorCode } from '@/types/errors';
 import {
@@ -26,10 +29,24 @@ type CreateReviewServiceResponse = ServiceResponse<Review, ReviewErrorCode>;
 export async function createReview(
 	payload: CreateReviewPayload,
 ): Promise<CreateReviewServiceResponse> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post('/reviews', payload);
 
 		const validated = reviewSchema.parse(response.data);
+
+		// Fire-and-forget — don't block review submission
+		void trackServer(
+			REVIEW_EVENTS.CREATED,
+			{
+				raffle_id: payload.raffleId,
+				host_id: payload.hostId,
+				rating: payload.rating,
+			},
+			{ userId },
+		);
 
 		return success(validated);
 	} catch (error) {

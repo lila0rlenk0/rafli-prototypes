@@ -3,6 +3,8 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import type { Category } from '@/types/category';
 import { RAFFLE_SORT_OPTION } from '@/types/raffle';
 import { FilterSelect, type FilterOption } from './filter-select';
@@ -74,6 +76,7 @@ export function FilterBar({ categories }: FilterBarProps) {
 	 * Handles category filter change
 	 */
 	function handleCategoryChange(value: string): void {
+		track(RAFFLE_EVENTS.FILTERED, { category: value || 'all', sort });
 		updateFilters('category', value);
 	}
 
@@ -81,6 +84,7 @@ export function FilterBar({ categories }: FilterBarProps) {
 	 * Handles sort option change
 	 */
 	function handleSortChange(value: string): void {
+		track(RAFFLE_EVENTS.FILTERED, { category: category || 'all', sort: value });
 		updateFilters('sort', value);
 	}
 

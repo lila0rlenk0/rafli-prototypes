@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { type Raffle, raffleSchema } from '@/types/raffle';
@@ -26,6 +29,9 @@ type PublishRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
 export async function publishRaffle(
 	raffleId: string,
 ): Promise<PublishRaffleResponse> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/publish`,
@@ -33,6 +39,18 @@ export async function publishRaffle(
 
 		// Validate response data structure
 		const validatedData = raffleSchema.parse(response.data);
+
+		// Track raffle published (awaited to ensure completion in serverless)
+		await trackServer(
+			RAFFLE_EVENTS.PUBLISHED,
+			{
+				raffle_id: validatedData.id,
+				category_id: validatedData.categoryId,
+				ticket_price: validatedData.ticketPriceAmount,
+				max_participants: validatedData.maxParticipants,
+			},
+			{ userId },
+		);
 
 		return success(validatedData);
 	} catch (error) {

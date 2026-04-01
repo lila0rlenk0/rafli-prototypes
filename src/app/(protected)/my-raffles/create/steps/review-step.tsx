@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { cn } from '@/lib/utils';
 import { getCryptoSummary } from '@/lib/utils/crypto-form';
-import { formatDate } from '@/lib/utils/date-format';
+import { formatDateTime } from '@/lib/utils/date-format';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useMultiStepForm } from '../multi-step-form-provider';
@@ -27,7 +27,9 @@ export function ReviewStep() {
 		category,
 		coverImage,
 		startDate,
+		startTime,
 		endDate,
+		endTime,
 		pricePerTicket,
 		minParticipants,
 		maxParticipants,
@@ -97,7 +99,7 @@ export function ReviewStep() {
 	 * Gets the active time period as a formatted date range
 	 */
 	function getActivePeriod() {
-		return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+		return `${formatDateTime(startDate, startTime)} - ${formatDateTime(endDate, endTime)}`;
 	}
 
 	/**
@@ -116,9 +118,12 @@ export function ReviewStep() {
 
 	/**
 	 * Checks if the raffle should show the start now warning
+	 * Combines date + time for accurate comparison
 	 */
 	function shouldShowStartNowWarning() {
-		return startDate && new Date(startDate) < new Date();
+		if (!startDate) return false;
+		const start = new Date(`${startDate}T${startTime || '00:00'}`);
+		return start <= new Date();
 	}
 
 	return (

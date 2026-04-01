@@ -4,6 +4,9 @@ import { Copy } from 'lucide-react';
 import { FaXTwitter } from 'react-icons/fa6';
 import { toast } from 'sonner';
 
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
+
 interface RaffleShareButtonsProps {
 	title: string;
 	publicSlug: string;
@@ -27,6 +30,10 @@ export function RaffleShareButtons({
 	function handleCopyLink() {
 		const link = `${window.location.origin}/browse/${publicSlug}`;
 		navigator.clipboard.writeText(link);
+		track(RAFFLE_EVENTS.SHARED, {
+			raffle_slug: publicSlug,
+			method: 'copy_link',
+		});
 		toast.success('Raffle link copied to clipboard!');
 	}
 
@@ -38,6 +45,7 @@ export function RaffleShareButtons({
 		const text = `Check out this raffle: ${title}`;
 		const link = `${window.location.origin}/browse/${publicSlug}`;
 		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+		track(RAFFLE_EVENTS.SHARED, { raffle_slug: publicSlug, method: 'twitter' });
 		window.open(url, '_blank');
 	}
 

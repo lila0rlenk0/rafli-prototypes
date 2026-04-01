@@ -16,6 +16,8 @@ import { z } from 'zod';
 
 import type { CreatePromoCodeData } from '@/components/promo-code/create-promo-code-modal';
 import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { bulkCreatePromoCodes } from '@/services/promo-code/bulk-create-promo-codes';
 import { createRaffle } from '@/services/raffle/create-raffle';
 import { publishRaffle } from '@/services/raffle/publish-raffle';
@@ -144,7 +146,9 @@ export function MultiStepFormProvider({
 			category: '',
 			coverImage: [],
 			startDate: '',
+			startTime: '',
 			endDate: '',
+			endTime: '',
 			pricePerTicket: NaN,
 			numberOfWinners: NaN,
 			minParticipants: 0,
@@ -206,7 +210,9 @@ export function MultiStepFormProvider({
 			category: draft.category,
 			coverImage: [],
 			startDate: draft.startDate,
+			startTime: draft.startTime,
 			endDate: draft.endDate,
+			endTime: draft.endTime,
 			pricePerTicket: draft.pricePerTicket || NaN,
 			numberOfWinners: draft.numberOfWinners || NaN,
 			minParticipants: draft.minParticipants,
@@ -234,7 +240,9 @@ export function MultiStepFormProvider({
 			category: '',
 			coverImage: [],
 			startDate: '',
+			startTime: '',
 			endDate: '',
+			endTime: '',
 			pricePerTicket: NaN,
 			numberOfWinners: NaN,
 			minParticipants: 0,
@@ -312,7 +320,9 @@ export function MultiStepFormProvider({
 				price: isNaN(values.price) ? 0 : values.price,
 				category: values.category,
 				startDate: values.startDate,
+				startTime: values.startTime,
 				endDate: values.endDate,
+				endTime: values.endTime,
 				pricePerTicket: isNaN(values.pricePerTicket)
 					? 0
 					: values.pricePerTicket,
@@ -454,8 +464,9 @@ export function MultiStepFormProvider({
 					description: data.description,
 					price: data.price,
 					category: data.category,
-					startDate: data.startDate,
-					endDate: data.endDate,
+					// Combine date + time into a single datetime string (YYYY-MM-DDTHH:mm)
+					startDate: `${data.startDate}T${data.startTime || '00:00'}`,
+					endDate: `${data.endDate}T${data.endTime || '00:00'}`,
 					pricePerTicket: data.pricePerTicket,
 					numberOfWinners: data.numberOfWinners,
 					minParticipants: data.minParticipants,
@@ -523,13 +534,10 @@ export function MultiStepFormProvider({
 					}
 				}
 
-				// Auto-publish only if cover was uploaded (required for publish)
-				const startDate = new Date(data.startDate);
-				const today = new Date();
-				today.setHours(0, 0, 0, 0);
-				startDate.setHours(0, 0, 0, 0);
+				// Auto-publish only if start datetime is now or in the past and cover was uploaded
+				const startDateTime = new Date(data.startDate);
 
-				if (startDate <= today && coverUploaded) {
+				if (startDateTime <= new Date() && coverUploaded) {
 					const publishResult = await publishRaffle(raffleId);
 					if (!publishResult.success) {
 						console.error('Auto-publish failed:', publishResult.error);
@@ -548,7 +556,9 @@ export function MultiStepFormProvider({
 					category: '',
 					coverImage: [],
 					startDate: '',
+					startTime: '',
 					endDate: '',
+					endTime: '',
 					pricePerTicket: NaN,
 					numberOfWinners: NaN,
 					minParticipants: 0,
@@ -586,10 +596,14 @@ export function MultiStepFormProvider({
 			if (isLastStep) {
 				handleCreateRaffle(data);
 			} else {
+				track(RAFFLE_EVENTS.CREATE_STEP_COMPLETED, {
+					step_name: STEPS[currentStep].title,
+					step_number: currentStep + 1,
+				});
 				nextStep();
 			}
 		},
-		[isLastStep, handleCreateRaffle, nextStep],
+		[isLastStep, handleCreateRaffle, nextStep, currentStep],
 	);
 
 	return (

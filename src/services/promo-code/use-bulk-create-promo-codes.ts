@@ -21,6 +21,7 @@ interface BulkCreatePayload {
 		type: PromoCodeType;
 		value: number;
 		maxUses?: number;
+		maxRedemptionsPerUser?: number;
 		expiresAt?: string;
 	};
 }

@@ -15,7 +15,9 @@ interface EditFormData {
 	price: number;
 	category: string;
 	startDate: string;
+	startTime: string;
 	endDate: string;
+	endTime: string;
 	pricePerTicket: number;
 	numberOfWinners: number;
 	minParticipants: number;
@@ -67,20 +69,21 @@ export function computeRaffleDiff(
 		diff.categoryId = categoryId;
 	}
 
-	// Compare start date — form stores YYYY-MM-DD, original stores full ISO.
-	// Compare date portion only to avoid false positives from time components.
-	// When changed, send full ISO (UTC midnight) so backend gets a valid datetime.
-	const currentStartDate = current.startDate;
-	const originalStartDate = original.startAt.split('T')[0];
-	if (currentStartDate !== originalStartDate) {
-		diff.startAt = new Date(current.startDate).toISOString();
+	// Compare start datetime — form stores date (YYYY-MM-DD) + time (HH:mm) separately.
+	// Combine into a local datetime string and compare against the original ISO.
+	const currentStartISO = new Date(
+		`${current.startDate}T${current.startTime || '00:00'}`,
+	).toISOString();
+	if (currentStartISO !== original.startAt) {
+		diff.startAt = currentStartISO;
 	}
 
-	// Compare end date — same date-only comparison strategy as start date
-	const currentEndDate = current.endDate;
-	const originalEndDate = original.endAt.split('T')[0];
-	if (currentEndDate !== originalEndDate) {
-		diff.endAt = new Date(current.endDate).toISOString();
+	// Compare end datetime — same strategy as start
+	const currentEndISO = new Date(
+		`${current.endDate}T${current.endTime || '00:00'}`,
+	).toISOString();
+	if (currentEndISO !== original.endAt) {
+		diff.endAt = currentEndISO;
 	}
 
 	// Compare ticket price

@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import {
 	formatPromoCodeUsage,
 	formatPromoCodeValue,
+	formatUsageLimit,
 	getPromoCodeStatus,
 	PROMO_CODE_STATUS,
 	PROMO_CODE_TYPE,
@@ -185,6 +186,7 @@ export function PromoCodesTable({
 							<th className="pb-3 font-medium">Type</th>
 							<th className="pb-3 font-medium">Value</th>
 							<th className="pb-3 font-medium">Usage</th>
+							<th className="pb-3 font-medium">Per User</th>
 							<th className="pb-3 font-medium">Status</th>
 							<th className="pb-3 font-medium">Expires</th>
 							<th className="pb-3 text-right font-medium" />
@@ -220,6 +222,9 @@ export function PromoCodesTable({
 									{formatPromoCodeValue(code)}
 								</td>
 								<td className="py-4">{formatPromoCodeUsage(code)}</td>
+								<td className="py-4">
+									{formatUsageLimit(code.maxRedemptionsPerUser)}
+								</td>
 								<td className="py-4">
 									<PromoCodeStatusBadge code={code} />
 								</td>
@@ -332,7 +337,8 @@ export function PromoCodesTable({
 						</div>
 
 						<div className="mt-2 text-xs text-gray-500">
-							{formatPromoCodeUsage(code)} used
+							{formatPromoCodeUsage(code)} used • Per user:{' '}
+							{formatUsageLimit(code.maxRedemptionsPerUser)}
 							{code.expiresAt &&
 								` • Expires ${formatExpiration(code.expiresAt)}`}
 							{!code.expiresAt && ' • Never expires'}

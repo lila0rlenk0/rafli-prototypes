@@ -9,6 +9,8 @@ import { useConnection } from 'wagmi';
 
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
+import { PURCHASE_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { usePollMyTicketCodes } from '@/services/ticket/use-poll-my-ticket-codes';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
@@ -179,6 +181,12 @@ export function CryptoBuyButton({
 			setShowCryptoModal(true);
 			return;
 		}
+
+		track(PURCHASE_EVENTS.TICKET_SELECTION_VIEWED, {
+			raffle_id: raffleId,
+			quantity: ticketQuantity,
+			payment_method: 'crypto',
+		});
 
 		// Gate on raffle question — skip if already answered this session
 		if (questionId && !questionAnswered) {

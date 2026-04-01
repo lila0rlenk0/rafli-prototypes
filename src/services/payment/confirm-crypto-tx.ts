@@ -2,13 +2,17 @@
 
 import { ZodError } from 'zod';
 
+import { PURCHASE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
 import { captureServiceError } from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import {
+	CRYPTO_PAYMENT_STATUS,
 	cryptoTxMutationResponseSchema,
 	type CryptoTxMutationResponse,
 } from '@/types/payment';
@@ -31,6 +35,9 @@ import type { ConfirmCryptoTxPayload } from '@/types/wallet';
 export async function confirmCryptoTx(
 	payload: ConfirmCryptoTxPayload,
 ): Promise<ServiceResponse<CryptoTxMutationResponse, PaymentErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		const response = await authenticatedClient.post(
 			'/payments/crypto/confirm',
@@ -39,6 +46,29 @@ export async function confirmCryptoTx(
 		);
 
 		const data = cryptoTxMutationResponseSchema.parse(response.data);
+
+		// Track crypto tx confirmed (awaited to ensure completion in serverless)
+		await trackServer(
+			PURCHASE_EVENTS.CRYPTO_TX_CONFIRMED,
+			{
+				session_id: payload.sessionId,
+				tx_hash: payload.txHash,
+			},
+			{ userId },
+		);
+
+		// Track purchase completed when crypto payment is finalized
+		if (data.status === CRYPTO_PAYMENT_STATUS.COMPLETED) {
+			void trackServer(
+				PURCHASE_EVENTS.COMPLETED,
+				{
+					session_id: payload.sessionId,
+					payment_method: 'crypto',
+				},
+				{ userId },
+			);
+		}
+
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {

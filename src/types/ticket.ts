@@ -71,28 +71,33 @@ export const ticketLedgerEntrySchema = z.object({
 });
 
 /**
- * Schema for ticket balance per raffle
- * Groups all entries for a single raffle
+ * Schema for ticket balance per raffle.
+ * Two modes:
+ * - With raffleId param: entries populated with individual ledger rows.
+ * - Without raffleId (aggregate): entries is empty [], only totals returned.
  */
 export const ticketBalanceSchema = z.object({
 	raffleId: z.string(),
 	totalTickets: z.number(),
-	entries: z.array(ticketLedgerEntrySchema),
+	entries: z.array(ticketLedgerEntrySchema), // empty in aggregate mode (no raffleId param)
 });
 
 /**
  * Schema for tickets query parameters
  * Used when fetching user ticket balances
+ * Optional raffleId returns individual ledger entries for that raffle;
+ * omitting it returns aggregate balances with entries: []
  */
-export const ticketsQuerySchema = z.object({
+export const ticketsQuerySchema = paginationQuerySchema.extend({
 	raffleId: z.string().optional(),
 });
 
 /**
  * Schema for tickets response
  * Returned by GET /me/tickets
+ * Includes pagination metadata — totalRaffles is the domain-specific total count
  */
-export const ticketsResponseSchema = z.object({
+export const ticketsResponseSchema = paginationMetadataSchema.extend({
 	balances: z.array(ticketBalanceSchema),
 	totalRaffles: z.number(),
 });

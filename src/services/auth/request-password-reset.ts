@@ -1,5 +1,7 @@
 'use server';
 
+import { ACCOUNT_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { failure, success } from '@/lib/errors';
 import { mapAuthError } from '@/lib/errors';
@@ -25,6 +27,9 @@ export async function requestPasswordReset(
 ): Promise<RequestPasswordResetResponse> {
 	try {
 		await baseClient.post('/auth/forget-password', input);
+
+		// Fire-and-forget — no userId available (unauthenticated flow)
+		void trackServer(ACCOUNT_EVENTS.PASSWORD_RESET_REQUESTED, {});
 
 		return success(undefined);
 	} catch (error) {

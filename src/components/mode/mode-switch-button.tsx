@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
+import { PROFILE_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
@@ -31,6 +33,10 @@ export function ModeSwitchButton() {
 		target: typeof USER_MODE.HOST | typeof USER_MODE.PARTICIPANT,
 	) {
 		if (target === mode || isSwitching) return;
+		track(PROFILE_EVENTS.MODE_SWITCHED, {
+			from_mode: mode,
+			to_mode: target,
+		});
 		startTransition(async () => {
 			await switchMode();
 			router.refresh();
@@ -61,6 +67,9 @@ export function ModeSwitchButton() {
 				rel="noopener noreferrer"
 				className="flex h-9 items-center justify-center rounded-full bg-black px-6 text-sm font-semibold text-white"
 				data-testid="become-a-host-button"
+				onClick={() =>
+					track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, { source: 'navbar' })
+				}
 			>
 				Become a Host
 			</a>

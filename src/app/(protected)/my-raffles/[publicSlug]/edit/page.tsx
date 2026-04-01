@@ -55,8 +55,19 @@ interface PageProps {
  */
 function mapRaffleToFormData(raffle: Raffle): EditFormData {
 	// Parse dates from ISO string to YYYY-MM-DD format for DatePicker
+	// and extract HH:mm time portion for time inputs
 	const startDate = raffle.startAt.split('T')[0];
+	const startTime = new Date(raffle.startAt).toLocaleTimeString('en-GB', {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false,
+	});
 	const endDate = raffle.endAt.split('T')[0];
+	const endTime = new Date(raffle.endAt).toLocaleTimeString('en-GB', {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false,
+	});
 
 	// Use categoryId directly (UUID) instead of converting to slug
 	const category = raffle.categoryId || '';
@@ -77,7 +88,9 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 		category,
 		coverImage: [], // Images are handled separately via existing URLs
 		startDate,
+		startTime,
 		endDate,
+		endTime,
 		pricePerTicket: parseFloat(raffle.ticketPriceAmount),
 		numberOfWinners: raffle.numberOfWinners,
 		minParticipants: raffle.minParticipants,

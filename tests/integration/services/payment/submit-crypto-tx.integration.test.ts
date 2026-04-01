@@ -6,9 +6,19 @@ import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
 
 const mockPost = mock();
 
+mock.module('server-only', () => ({}));
+
 mock.module('@/lib/api/client', () => ({
 	authenticatedClient: { get: mock(), post: mockPost },
 	baseClient: { get: mock() },
+}));
+
+mock.module('@/lib/auth/session', () => ({
+	getSession: mock(() => Promise.resolve({ user: { id: 'user-1' } })),
+}));
+
+mock.module('@/lib/analytics/mixpanel-server', () => ({
+	trackServer: mock(() => Promise.resolve()),
 }));
 
 const { submitCryptoTx } = await import('@/services/payment/submit-crypto-tx');

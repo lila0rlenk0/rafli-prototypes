@@ -2,7 +2,10 @@
 
 import { ZodError } from 'zod';
 
+import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import {
 	PROMO_CODE_ERROR_CODES,
@@ -23,6 +26,7 @@ interface BulkCreatePromoCodesPayload {
 	type: PromoCodeType;
 	value: number;
 	maxUses?: number;
+	maxRedemptionsPerUser?: number;
 	expiresAt?: string;
 }
 
@@ -37,6 +41,9 @@ export async function bulkCreatePromoCodes(
 	raffleId: string,
 	payload: BulkCreatePromoCodesPayload,
 ): Promise<ServiceResponse<BulkCreatePromoCodesResponse, PromoCodeErrorCode>> {
+	const session = await getSession();
+	const userId = session?.user?.id;
+
 	try {
 		// Step 1: Send create request to backend.
 		const response = await authenticatedClient.post(
@@ -45,6 +52,17 @@ export async function bulkCreatePromoCodes(
 		);
 		// Step 2: Validate response shape.
 		const validated = bulkCreatePromoCodesResponseSchema.parse(response.data);
+
+		// Fire-and-forget — promo creation is not latency-sensitive
+		void trackServer(
+			PROMO_CODE_EVENTS.BULK_CREATED,
+			{
+				raffle_id: raffleId,
+				count: payload.count,
+				type: payload.type,
+			},
+			{ userId },
+		);
 
 		// Step 3: Return typed success.
 		return success(validated);

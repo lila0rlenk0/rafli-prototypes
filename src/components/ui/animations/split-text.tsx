@@ -42,8 +42,9 @@ const SplitText: React.FC<SplitTextProps> = ({
 	const onCompleteRef = useRef(onLetterAnimationComplete);
 	// Initialize synchronously if fonts are already loaded (avoids an extra render),
 	// otherwise the effect below will resolve the async font-ready promise.
+	// Guard against SSR where `document` is not defined.
 	const [fontsLoaded, setFontsLoaded] = useState<boolean>(
-		() => document.fonts.status === 'loaded',
+		() => typeof document !== 'undefined' && document.fonts.status === 'loaded',
 	);
 
 	// Keep callback ref updated

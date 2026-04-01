@@ -76,6 +76,11 @@ export function VerifyEmailHandler({ token }: VerifyEmailHandlerProps) {
 			<div className="flex flex-col items-center gap-4 text-center">
 				<p className="text-red-600">{error}</p>
 				<div className="flex gap-3">
+					<Button asChild variant="outline">
+						<Link href="/auth/resend-verification">
+							Resend Verification Email
+						</Link>
+					</Button>
 					<Button asChild>
 						<Link href="/sign-in">Go to Sign In</Link>
 					</Button>

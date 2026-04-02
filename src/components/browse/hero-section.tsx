@@ -20,7 +20,7 @@ export function HeroSection({ raffles, totalPrizeValue }: HeroSectionProps) {
 				<p className="text-sm font-normal text-[rgba(15,15,15,0.95)] sm:text-base sm:font-medium">
 					Real prizes. Verified draws. Enter in seconds.
 				</p>
-				<h1 className="font-clash-display text-[40px] font-semibold leading-none tracking-[0.4px] sm:text-[64px] sm:tracking-normal">
+				<h1 className="font-clash-display text-[40px] leading-none font-semibold tracking-[0.4px] sm:text-[64px] sm:tracking-normal">
 					Your $1 could win!
 				</h1>
 			</div>
@@ -30,7 +30,10 @@ export function HeroSection({ raffles, totalPrizeValue }: HeroSectionProps) {
 				</StatBadge>
 				<StatBadge>
 					<span className="font-semibold">
-						${totalPrizeValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+						$
+						{totalPrizeValue.toLocaleString('en-US', {
+							maximumFractionDigits: 0,
+						})}
 					</span>{' '}
 					in prizes live now
 				</StatBadge>

@@ -72,7 +72,7 @@ export function FeaturedRaffleCard({
 						{config.badgeLabel}
 					</span>
 					<div className="flex flex-col gap-2">
-						<h3 className="font-clash-display text-2xl font-semibold leading-tight tracking-[0.12px] text-[#182135]">
+						<h3 className="font-clash-display text-2xl leading-tight font-semibold tracking-[0.12px] text-[#182135]">
 							{raffle.title}
 						</h3>
 						<div className="flex flex-wrap items-center gap-2">
@@ -84,11 +84,11 @@ export function FeaturedRaffleCard({
 						</div>
 					</div>
 					<p className="text-sm text-[#7b7b7b]">
-						{raffle.participantsCount} participants &middot; $
-						{getTicketPrice()}/ticket &middot; {getTimeRemaining()}
+						{raffle.participantsCount} participants &middot; ${getTicketPrice()}
+						/ticket &middot; {getTimeRemaining()}
 					</p>
 				</div>
-				<div className="bg-[#141416] flex w-full items-center justify-center rounded-full px-6 py-4">
+				<div className="flex w-full items-center justify-center rounded-full bg-[#141416] px-6 py-4">
 					<span className="text-base font-semibold text-[#fcfcfd]">
 						Enter now!
 					</span>

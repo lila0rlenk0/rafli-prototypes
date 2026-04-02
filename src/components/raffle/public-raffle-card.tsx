@@ -67,8 +67,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	}
 
 	const roleTag = getRoleTag();
-	const hostName =
-		raffle.host?.name || raffle.host?.username || 'Unknown';
+	const hostName = raffle.host?.name || raffle.host?.username || 'Unknown';
 
 	return (
 		<div
@@ -98,7 +97,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 				<div className="flex flex-col gap-2">
 					<div className="flex flex-col gap-2">
 						<div className="flex items-center gap-2">
-							<h3 className="text-lg font-semibold leading-none text-[rgba(15,15,15,0.95)]">
+							<h3 className="text-lg leading-none font-semibold text-[rgba(15,15,15,0.95)]">
 								<Link
 									href={`/browse/${raffle.publicSlugOrCode}`}
 									className="line-clamp-1 after:absolute after:inset-0"
@@ -128,7 +127,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 					{/* Price + Time Remaining */}
 					<div className="flex flex-col gap-2">
 						<div className="flex items-center justify-between">
-							<span className="font-clash-display text-2xl font-semibold leading-tight tracking-[0.12px] text-[#182135]">
+							<span className="font-clash-display text-2xl leading-tight font-semibold tracking-[0.12px] text-[#182135]">
 								${getTicketPrice()}
 							</span>
 							<div className="flex items-center gap-1 text-[#7b7b7b]">

@@ -27,7 +27,7 @@ export function BrowseTabs({
 	return (
 		<>
 			{/* Section Title */}
-			<h2 className="font-clash-display mb-8 text-[32px] font-semibold leading-none tracking-[0.16px] sm:mb-10 sm:text-4xl sm:tracking-[0.36px]">
+			<h2 className="font-clash-display mb-8 text-[32px] leading-none font-semibold tracking-[0.16px] sm:mb-10 sm:text-4xl sm:tracking-[0.36px]">
 				See what&apos;s up for grabs right now!
 			</h2>
 

@@ -31,7 +31,11 @@ interface PublicNavbarProps {
  * @param children - Child components to render in the content area
  * @param isAuthenticated - Whether the user is currently authenticated
  */
-export function PublicNavbar({ children, isAuthenticated, topBanner }: PublicNavbarProps) {
+export function PublicNavbar({
+	children,
+	isAuthenticated,
+	topBanner,
+}: PublicNavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const pathname = usePathname();
 	const searchParams = useSearchParams();

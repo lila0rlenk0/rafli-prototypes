@@ -1,10 +1,17 @@
 'use client';
 
-import { FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, FileText, X } from 'lucide-react';
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { ImageLightbox } from '@/components/ui/image-lightbox';
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 import { isImageType } from '@/lib/utils/mime';
 import type { AdminKycDocument } from '@/types/admin-kyc';
 import { getDocumentPurposeLabel } from '@/types/kyc-submission';
@@ -14,45 +21,78 @@ interface DocumentViewerProps {
 }
 
 /**
+ * Checks whether a MIME type is a PDF.
+ * Extracted for readability in conditional branches.
+ */
+function isPdfType(contentType: string): boolean {
+	return contentType === 'application/pdf';
+}
+
+/**
  * DocumentViewer Component
  *
- * Grid of document thumbnails with lightbox for image documents.
- * PDFs show a file icon with download link instead.
- * Reuses the existing ImageLightbox component for image viewing.
+ * Grid of document thumbnails with inline preview for all file types.
+ * Images render via Next.js Image in a fullscreen dialog.
+ * PDFs render in a native browser iframe — no download required.
+ * Keyboard navigation (ArrowLeft/ArrowRight/Escape) supported.
  *
- * @returns Grid of document cards with lightbox modal
+ * @returns Grid of document cards with preview dialog
  */
 export function DocumentViewer({ documents }: DocumentViewerProps) {
-	const [lightboxOpen, setLightboxOpen] = useState(false);
+	const [previewOpen, setPreviewOpen] = useState(false);
 	const [currentIndex, setCurrentIndex] = useState(0);
 
-	// Filter to image-only URLs for the lightbox — PDFs are excluded so the
-	// lightbox doesn't navigate to null entries. Includes an index map so
-	// clicking an image at document index N resolves to the correct lightbox index.
-	const { imageUrls, docIndexToImageIndex } = useMemo(() => {
-		const urls: (string | null)[] = [];
-		const indexMap = new Map<number, number>();
+	// Only documents with a valid URL are previewable — memoized so
+	// useCallback/useEffect deps remain stable across renders
+	const previewableIndices = useMemo(
+		() => documents.map((doc, i) => (doc.url ? i : -1)).filter(i => i !== -1),
+		[documents],
+	);
 
-		documents.forEach(function mapDocToUrl(doc, docIndex) {
-			if (isImageType(doc.contentType) && doc.url) {
-				indexMap.set(docIndex, urls.length);
-				urls.push(doc.url);
-			}
-		});
+	// Position of the currently previewed document within the previewable set.
+	// -1 when dialog is closed and currentIndex points to a non-previewable doc
+	// (safe — navigation guards check pos > 0 / pos < length - 1).
+	const currentPosition = previewableIndices.indexOf(currentIndex);
 
-		return { imageUrls: urls, docIndexToImageIndex: indexMap };
-	}, [documents]);
+	const hasPrevious = currentPosition > 0;
+	const hasNext = currentPosition < previewableIndices.length - 1;
 
 	/**
-	 * Opens the lightbox at the correct image-only index.
-	 * Only works for image documents — PDFs use download links.
+	 * Opens the preview dialog for a given document index.
+	 * No-op if the document has no URL (signed URL generation failed).
 	 */
-	function handleImageClick(docIndex: number) {
-		const imageIndex = docIndexToImageIndex.get(docIndex);
-		if (imageIndex === undefined) return;
-		setCurrentIndex(imageIndex);
-		setLightboxOpen(true);
+	function handleDocumentClick(index: number) {
+		if (!documents[index].url) return;
+		setCurrentIndex(index);
+		setPreviewOpen(true);
 	}
+
+	/** Navigate to the previous previewable document */
+	const goToPrevious = useCallback(() => {
+		if (currentPosition > 0) {
+			setCurrentIndex(previewableIndices[currentPosition - 1]);
+		}
+	}, [previewableIndices, currentPosition]);
+
+	/** Navigate to the next previewable document */
+	const goToNext = useCallback(() => {
+		if (currentPosition < previewableIndices.length - 1) {
+			setCurrentIndex(previewableIndices[currentPosition + 1]);
+		}
+	}, [previewableIndices, currentPosition]);
+
+	// Keyboard navigation — arrows cycle through documents, Escape handled by Dialog
+	useEffect(() => {
+		if (!previewOpen) return;
+
+		function handleKeyDown(event: KeyboardEvent) {
+			if (event.key === 'ArrowLeft') goToPrevious();
+			if (event.key === 'ArrowRight') goToNext();
+		}
+
+		window.addEventListener('keydown', handleKeyDown);
+		return () => window.removeEventListener('keydown', handleKeyDown);
+	}, [previewOpen, goToPrevious, goToNext]);
 
 	if (documents.length === 0) {
 		return (
@@ -62,40 +102,52 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 		);
 	}
 
+	const currentDoc = documents[currentIndex];
+	const currentPurpose = currentDoc
+		? getDocumentPurposeLabel(currentDoc.purpose)
+		: '';
+
 	return (
 		<>
+			{/* Thumbnail grid — all documents are clickable for preview */}
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{documents.map(function renderDocument(doc, index) {
-					const imageUrl = isImageType(doc.contentType) ? doc.url : null;
+					const isImage = isImageType(doc.contentType);
+					const hasUrl = Boolean(doc.url);
 
 					return (
 						<div
 							key={doc.id}
 							className="border-border flex flex-col overflow-hidden rounded-lg border"
 						>
-							{/* Thumbnail or file icon */}
-							{imageUrl ? (
-								<button
-									type="button"
-									onClick={() => handleImageClick(index)}
-									className="bg-muted relative aspect-[4/3] w-full cursor-pointer overflow-hidden transition-opacity hover:opacity-80"
-									aria-label={`View ${getDocumentPurposeLabel(doc.purpose)}`}
-								>
+							{/* Thumbnail — clickable if URL exists */}
+							<button
+								type="button"
+								onClick={() => handleDocumentClick(index)}
+								disabled={!hasUrl}
+								className={cn(
+									'bg-muted relative aspect-[4/3] w-full overflow-hidden transition-opacity',
+									hasUrl && 'cursor-pointer hover:opacity-80',
+									!hasUrl && 'cursor-not-allowed opacity-60',
+								)}
+								aria-label={`Preview ${getDocumentPurposeLabel(doc.purpose)}`}
+							>
+								{isImage && doc.url ? (
 									<Image
-										src={imageUrl}
+										src={doc.url}
 										alt={doc.originalFilename}
 										fill
 										sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
 										className="object-cover"
-										// Signed URLs change on every request — skip optimization
+										// Signed URLs change per request — skip optimization cache
 										unoptimized
 									/>
-								</button>
-							) : (
-								<div className="bg-muted flex aspect-[4/3] w-full items-center justify-center">
-									<FileText className="text-muted-foreground size-12" />
-								</div>
-							)}
+								) : (
+									<div className="flex size-full items-center justify-center">
+										<FileText className="text-muted-foreground size-12" />
+									</div>
+								)}
+							</button>
 
 							{/* Document info */}
 							<div className="flex flex-col gap-1 p-3">
@@ -105,31 +157,170 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 								<span className="text-muted-foreground truncate text-xs">
 									{doc.originalFilename}
 								</span>
-								{/* Download link for non-image documents (PDFs) */}
-								{!imageUrl && doc.url && (
-									<a
-										href={doc.url}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="mt-1 text-xs font-medium underline underline-offset-4"
-									>
-										Download
-									</a>
-								)}
 							</div>
 						</div>
 					);
 				})}
 			</div>
 
-			{/* Lightbox for image documents — reuses existing ImageLightbox */}
-			<ImageLightbox
-				images={imageUrls}
-				currentIndex={currentIndex}
-				open={lightboxOpen}
-				onOpenChange={setLightboxOpen}
-				onNavigate={setCurrentIndex}
-			/>
+			{/* Fullscreen preview dialog — renders images or PDFs inline */}
+			<Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+				<DialogContent
+					className="flex h-[90vh] max-w-[90vw] flex-col items-center justify-center border-none bg-black/95 p-0"
+					showCloseButton={false}
+				>
+					<DialogTitle className="sr-only">
+						{currentPurpose} Preview
+					</DialogTitle>
+					<DialogDescription className="sr-only">
+						Viewing document {currentPosition + 1} of{' '}
+						{previewableIndices.length}
+					</DialogDescription>
+
+					{/* Top-right controls: download + close */}
+					<div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+						{/* Download button — opens the signed URL in a new tab */}
+						{currentDoc?.url && (
+							<a
+								href={currentDoc.url}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="flex size-10 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30"
+								aria-label={`Download ${currentPurpose}`}
+							>
+								<Download className="size-5 text-white" />
+							</a>
+						)}
+						<DialogClose className="flex size-10 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30">
+							<X className="size-5 text-white" />
+							<span className="sr-only">Close</span>
+						</DialogClose>
+					</div>
+
+					{/* Document label — bottom-left for context */}
+					<div className="absolute bottom-4 left-4 z-10 rounded-md bg-black/60 px-3 py-1.5">
+						<p className="text-xs font-medium text-white">{currentPurpose}</p>
+						<p className="text-xs text-white/70">
+							{currentDoc?.originalFilename}
+						</p>
+					</div>
+
+					{/* Main preview area */}
+					<div className="relative flex h-full w-full items-center justify-center p-8">
+						{/* Previous button */}
+						{hasPrevious && (
+							<button
+								type="button"
+								onClick={goToPrevious}
+								className="absolute left-4 z-10 flex size-10 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30"
+								aria-label="Previous document"
+							>
+								<ChevronLeft className="size-6 text-white" />
+							</button>
+						)}
+
+						{/* Render based on content type */}
+						{currentDoc?.url && (
+							<DocumentPreview
+								url={currentDoc.url}
+								contentType={currentDoc.contentType}
+								filename={currentDoc.originalFilename}
+							/>
+						)}
+
+						{/* Next button */}
+						{hasNext && (
+							<button
+								type="button"
+								onClick={goToNext}
+								className="absolute right-4 z-10 flex size-10 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30"
+								aria-label="Next document"
+							>
+								<ChevronRight className="size-6 text-white" />
+							</button>
+						)}
+					</div>
+
+					{/* Dot indicators */}
+					{previewableIndices.length > 1 && (
+						<div className="absolute bottom-4 flex gap-2">
+							{previewableIndices.map(function renderDot(docIndex, dotIndex) {
+								const isActive = currentPosition === dotIndex;
+								return (
+									<button
+										key={docIndex}
+										type="button"
+										onClick={() => setCurrentIndex(docIndex)}
+										className={cn(
+											'size-2 rounded-full transition-colors',
+											isActive ? 'bg-white' : 'bg-white/40 hover:bg-white/60',
+										)}
+										aria-label={`Go to document ${dotIndex + 1}`}
+									/>
+								);
+							})}
+						</div>
+					)}
+				</DialogContent>
+			</Dialog>
 		</>
+	);
+}
+
+// ─── Internal Preview Renderer ──────────────────────────────────────────────
+
+interface DocumentPreviewProps {
+	url: string;
+	contentType: string;
+	filename: string;
+}
+
+/**
+ * Renders the correct preview element based on content type.
+ * - Images → Next.js Image with object-contain (same as ImageLightbox)
+ * - PDFs → native browser iframe viewer (no download, no plugins needed)
+ *
+ * All modern browsers ship a built-in PDF renderer that works inside iframes.
+ * The iframe src points to the signed URL — the browser handles rendering.
+ */
+function DocumentPreview({ url, contentType, filename }: DocumentPreviewProps) {
+	if (isImageType(contentType)) {
+		return (
+			<div className="relative h-full w-full">
+				<Image
+					src={url}
+					alt={filename}
+					fill
+					sizes="90vw"
+					className="object-contain"
+					// Signed URLs change per request — skip Next.js image cache
+					unoptimized
+				/>
+			</div>
+		);
+	}
+
+	if (isPdfType(contentType)) {
+		return (
+			// iframe fills the preview area — browser's native PDF viewer renders
+			// zoom, page navigation, and search controls. #toolbar=1 ensures the
+			// browser's PDF toolbar is visible (Chrome, Edge, Firefox).
+			<iframe
+				src={`${url}#toolbar=1`}
+				title={`PDF preview: ${filename}`}
+				className="h-full w-full rounded-md bg-white"
+			/>
+		);
+	}
+
+	// Fallback for unknown types — shouldn't happen given ACCEPTED_DOC_TYPES,
+	// but handles future-proofing gracefully
+	return (
+		<div className="flex flex-col items-center gap-3">
+			<FileText className="size-16 text-white/60" />
+			<p className="text-sm text-white/80">
+				Preview not available for this file type
+			</p>
+		</div>
 	);
 }

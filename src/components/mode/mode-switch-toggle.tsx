@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
@@ -8,8 +9,6 @@ import { track } from '@/lib/analytics/mixpanel-client';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
-
-const BECOME_HOST_FORM_URL = 'https://forms.gle/RqihwzjyBcjjwUa97';
 
 /**
  * Full-width toggle for switching between Host and Participant modes on mobile.
@@ -59,22 +58,22 @@ export function ModeSwitchToggle() {
 		);
 	}
 
+	function handleBecomeHostClick() {
+		track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, {
+			source: 'mobile_menu',
+		});
+	}
+
 	if (!canSwitchMode()) {
 		return (
-			<a
-				href={BECOME_HOST_FORM_URL}
-				target="_blank"
-				rel="noopener noreferrer"
+			<Link
+				href="/verification"
 				className="flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white"
 				data-testid="become-a-host-button"
-				onClick={() =>
-					track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, {
-						source: 'mobile_menu',
-					})
-				}
+				onClick={handleBecomeHostClick}
 			>
 				Become a Host
-			</a>
+			</Link>
 		);
 	}
 

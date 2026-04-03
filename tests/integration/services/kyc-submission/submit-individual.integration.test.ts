@@ -1,0 +1,186 @@
+import { describe, expect, mock, spyOn, test } from 'bun:test';
+
+import { COMMON_ERROR_CODES, KYC_SUBMISSION_ERROR_CODES } from '@/types/errors';
+
+import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+
+// ─── Mock Dependencies ───────────────────────────────────────────────────────
+
+const mockPost = mock();
+
+mock.module('@/lib/api/client', () => ({
+	authenticatedClient: {
+		get: mock(),
+		post: mockPost,
+		patch: mock(),
+	},
+}));
+
+mock.module('@/lib/sentry/capture', () => ({
+	captureServiceError: mock(),
+}));
+
+// Import AFTER mocking — dynamic import ensures mocks are in place
+const { submitIndividual } = await import(
+	'@/services/kyc-submission/submit-individual'
+);
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Valid input matching kybIndividualInputSchema */
+function validInput() {
+	return {
+		fullLegalName: 'John Doe',
+		dateOfBirth: '1990-01-01',
+		email: 'john@example.com',
+		phoneNumber: '+1234567890',
+		residentialAddress: '123 Main St',
+		identityDocType: 'passport',
+		addressDocType: 'utility_bill',
+		plannedCategories: ['electronics'],
+	};
+}
+
+/** Valid response matching kycSubmissionResponseSchema */
+const VALID_RESPONSE = {
+	id: 'sub-1',
+	type: 'kyb_individual',
+	status: 'pending',
+	submittedAt: '2026-04-02T12:00:00Z',
+};
+
+// ─── Tests ──────────────────────────────────────────────────────────────────
+
+describe('submitIndividual', () => {
+	describe('input validation', () => {
+		test('returns validation_error for null input', async () => {
+			// Server actions are public — callers can send arbitrary payloads.
+			// safeParse must reject null before reaching the API client.
+			const result = await submitIndividual(null as never);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+			}
+			// Must not reach the backend
+			expect(mockPost).not.toHaveBeenCalled();
+		});
+
+		test('returns validation_error for empty object', async () => {
+			const result = await submitIndividual({} as never);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+			}
+			expect(mockPost).not.toHaveBeenCalled();
+		});
+
+		test('returns validation_error for invalid identityDocType', async () => {
+			const result = await submitIndividual({
+				...validInput(),
+				identityDocType: 'invalid_type',
+			} as never);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+			}
+			expect(mockPost).not.toHaveBeenCalled();
+		});
+
+		test('returns validation_error for empty plannedCategories', async () => {
+			const result = await submitIndividual({
+				...validInput(),
+				plannedCategories: [],
+			} as never);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+			}
+			expect(mockPost).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('successful submission', () => {
+		test('returns parsed response on valid input', async () => {
+			mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
+
+			const result = await submitIndividual(validInput());
+
+			expect(result.success).toBe(true);
+			if (result.success) {
+				expect(result.data.id).toBe('sub-1');
+				expect(result.data.status).toBe('pending');
+			}
+		});
+
+		test('sends validated data to correct endpoint', async () => {
+			mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
+			const input = validInput();
+
+			await submitIndividual(input);
+
+			expect(mockPost).toHaveBeenCalledWith(
+				'/verification/kyb-individual',
+				expect.objectContaining({ fullLegalName: 'John Doe' }),
+				expect.any(Object),
+			);
+		});
+	});
+
+	describe('backend errors', () => {
+		test('maps RFC 7807 already-pending error', async () => {
+			mockPost.mockRejectedValueOnce(
+				mockAxiosError({
+					status: 409,
+					data: {
+						type: 'urn:raffles:problem:core:verification:already-pending',
+					},
+				}),
+			);
+
+			const result = await submitIndividual(validInput());
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe('core:verification:already-pending');
+			}
+		});
+
+		test('maps network error', async () => {
+			mockPost.mockRejectedValueOnce(
+				mockAxiosError({ code: 'ERR_NETWORK' }),
+			);
+
+			const result = await submitIndividual(validInput());
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(COMMON_ERROR_CODES.NETWORK_ERROR);
+			}
+		});
+	});
+
+	describe('response validation', () => {
+		test('returns FETCH_FAILED on invalid response shape', async () => {
+			const consoleSpy = spyOn(console, 'error').mockImplementation(
+				() => {},
+			);
+			mockPost.mockResolvedValueOnce(
+				mockAxiosResponse({ invalid: true }),
+			);
+
+			const result = await submitIndividual(validInput());
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(
+					KYC_SUBMISSION_ERROR_CODES.FETCH_FAILED,
+				);
+			}
+			consoleSpy.mockRestore();
+		});
+	});
+});

@@ -6,7 +6,7 @@ import { isJwtExpired } from './lib/auth/jwt';
  * Protected routes that require authentication
  * Note: /browse is intentionally NOT protected - it's publicly accessible
  */
-const protectedRoutes = ['/my-raffles', '/profile'];
+const protectedRoutes = ['/my-raffles', '/profile', '/admin', '/verification'];
 
 /**
  * Auth routes that should redirect to /browse if user is already authenticated
@@ -14,7 +14,6 @@ const protectedRoutes = ['/my-raffles', '/profile'];
 const authRoutes = [
 	'/sign-in',
 	'/sign-up',
-	'/forgot-password',
 	'/forgot-password',
 	'/reset-password',
 ];

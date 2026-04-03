@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
@@ -8,8 +9,6 @@ import { track } from '@/lib/analytics/mixpanel-client';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
-
-const BECOME_HOST_FORM_URL = 'https://forms.gle/RqihwzjyBcjjwUa97';
 
 /**
  * ModeSwitchButton Component
@@ -59,20 +58,20 @@ export function ModeSwitchButton() {
 		);
 	}
 
+	function handleBecomeHostClick() {
+		track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, { source: 'navbar' });
+	}
+
 	if (!canSwitchMode()) {
 		return (
-			<a
-				href={BECOME_HOST_FORM_URL}
-				target="_blank"
-				rel="noopener noreferrer"
+			<Link
+				href="/verification"
 				className="flex h-9 items-center justify-center rounded-full bg-black px-6 text-sm font-semibold text-white"
 				data-testid="become-a-host-button"
-				onClick={() =>
-					track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, { source: 'navbar' })
-				}
+				onClick={handleBecomeHostClick}
 			>
 				Become a Host
-			</a>
+			</Link>
 		);
 	}
 

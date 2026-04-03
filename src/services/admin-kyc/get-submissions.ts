@@ -1,0 +1,59 @@
+'use server';
+
+import { ZodError } from 'zod';
+
+import { authenticatedClient } from '@/lib/api/client';
+import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
+import { failure, mapAdminKycError, success } from '@/lib/errors';
+import { parsePermissions, PERMISSIONS } from '@/lib/permissions';
+import { captureServiceError } from '@/lib/sentry/capture';
+import type { AdminKycListResponse, AdminKycQuery } from '@/types/admin-kyc';
+import { adminKycListResponseSchema } from '@/types/admin-kyc';
+import {
+	ADMIN_KYC_ERROR_CODES,
+	COMMON_ERROR_CODES,
+	type AdminKycErrorCode,
+} from '@/types/errors';
+import type { ServiceResponse } from '@/types/service-response';
+
+/**
+ * Fetches paginated KYC submissions for admin review.
+ * Supports filtering by status and verification type.
+ *
+ * @param query - Optional filters: page, limit, status, type
+ * @returns ServiceResponse with paginated list of submissions
+ */
+export async function getAdminSubmissions(
+	query?: AdminKycQuery,
+): Promise<ServiceResponse<AdminKycListResponse, AdminKycErrorCode>> {
+	try {
+		// Defense-in-depth: verify admin:kyc:review permission before calling backend.
+		// The layout gate hides the UI, but server actions are directly callable.
+		const session = await getSession();
+		const permissions = parsePermissions(session?.user?.permissions);
+		if (!permissions.includes(PERMISSIONS.KYC_REVIEW)) {
+			return failure(COMMON_ERROR_CODES.FORBIDDEN);
+		}
+
+		const response = await authenticatedClient.get('/admin/verification', {
+			params: query,
+			timeout: API_TIMEOUTS.QUERY,
+		});
+
+		const parsed = adminKycListResponseSchema.parse(response.data);
+		return success(parsed);
+	} catch (error) {
+		if (error instanceof ZodError) {
+			console.error('Admin submissions response validation failed:', error);
+			return failure(ADMIN_KYC_ERROR_CODES.FETCH_FAILED);
+		}
+
+		const errorCode = mapAdminKycError(error);
+		captureServiceError(error, errorCode, {
+			service: 'admin-kyc',
+			action: 'get-submissions',
+		});
+		return failure(errorCode);
+	}
+}

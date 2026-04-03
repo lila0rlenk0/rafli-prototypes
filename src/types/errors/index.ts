@@ -21,3 +21,5 @@ export * from './promo-code-errors';
 export * from './wallet-errors';
 export * from './comment-errors';
 export * from './report-errors';
+export * from './kyc-submission-errors';
+export * from './admin-kyc-errors';

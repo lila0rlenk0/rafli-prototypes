@@ -7,14 +7,34 @@ import { useState } from 'react';
 
 interface SignOutButtonProps {
 	className?: string;
+	/** Visual style — defaults to the red filled button used on the profile page */
+	variant?: 'default' | 'ghost' | 'outline';
 }
 
+/** Base styles shared across all variants */
+const BASE_STYLES =
+	'inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-6 py-4 text-base font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50';
+
+/** Per-variant color overrides */
+const VARIANT_STYLES: Record<
+	NonNullable<SignOutButtonProps['variant']>,
+	string
+> = {
+	default: 'bg-[#E5484D] text-white hover:bg-[#D93D42]',
+	ghost: 'bg-transparent text-black hover:bg-black/5',
+	outline: 'border border-black/20 bg-transparent text-black hover:bg-black/5',
+};
+
 /**
- * Sign-out button styled to match the profile page design
+ * Sign-out button with variant support for different contexts.
+ * Default red filled style for profile, ghost/outline for admin navbar.
  *
- * @returns Red filled button with rounded-full shape
+ * @returns Styled button that signs out and resets the user store
  */
-export function SignOutButton({ className }: SignOutButtonProps) {
+export function SignOutButton({
+	className,
+	variant = 'default',
+}: SignOutButtonProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const reset = useUserStore(state => state.reset);
 
@@ -34,10 +54,7 @@ export function SignOutButton({ className }: SignOutButtonProps) {
 		<button
 			onClick={handleSignOut}
 			disabled={isLoading}
-			className={cn(
-				'inline-flex h-11 cursor-pointer items-center justify-center rounded-full bg-[#E5484D] px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-[#D93D42] disabled:pointer-events-none disabled:opacity-50',
-				className,
-			)}
+			className={cn(BASE_STYLES, VARIANT_STYLES[variant], className)}
 			type="button"
 		>
 			{isLoading ? 'Signing out...' : 'Sign out'}

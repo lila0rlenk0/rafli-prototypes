@@ -52,7 +52,7 @@ export function SuccessScreen() {
 
 				<div className="flex w-full flex-col gap-3 pt-2">
 					<Button asChild className="w-full">
-						<Link href="/">Back to Home</Link>
+						<Link href="/browse">Back to Browse</Link>
 					</Button>
 					<Button asChild variant="outline" className="w-full">
 						<Link href="/my-raffles">Go to My Raffles</Link>

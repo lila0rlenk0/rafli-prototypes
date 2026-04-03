@@ -26,6 +26,12 @@ interface DatePickerProps {
 	className?: string;
 	disabled?: boolean;
 	minDate?: Date;
+	/** Show month/year dropdowns instead of arrows — ideal for birth dates */
+	captionLayout?: 'label' | 'dropdown';
+	/** First selectable year when captionLayout is "dropdown" */
+	fromYear?: number;
+	/** Last selectable year when captionLayout is "dropdown" */
+	toYear?: number;
 }
 
 export function DatePicker({
@@ -35,6 +41,9 @@ export function DatePicker({
 	className,
 	disabled = false,
 	minDate,
+	captionLayout,
+	fromYear,
+	toYear,
 }: DatePickerProps) {
 	const [open, setOpen] = React.useState(false);
 	const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
@@ -111,6 +120,9 @@ export function DatePicker({
 					selected={selectedDate}
 					onSelect={handleSelect}
 					disabled={minDate ? isDateDisabled : undefined}
+					captionLayout={captionLayout}
+					fromYear={fromYear}
+					toYear={toYear}
 					className="rounded-md"
 				/>
 			</PopoverContent>

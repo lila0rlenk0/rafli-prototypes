@@ -104,6 +104,9 @@ export function WinnerDetailsStep() {
 							onValueChange={handleDateOfBirthChange}
 							placeholder="Select your date of birth"
 							className="bg-transparent"
+							captionLayout="dropdown"
+							fromYear={1920}
+							toYear={new Date().getFullYear()}
 						/>
 						{fieldErrors.dateOfBirth && (
 							<FieldError>{fieldErrors.dateOfBirth.message}</FieldError>

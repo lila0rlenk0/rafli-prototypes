@@ -11,7 +11,7 @@ import {
 	formatFieldValue,
 	formatNullableDate,
 } from '@/lib/utils/format-field';
-import { isImageType } from '@/lib/utils/mime';
+import { getPdfPreviewUrl, isImageType, isPdfType } from '@/lib/utils/mime';
 import { getSubmissionDetail } from '@/services/kyc-submission/get-submission-detail';
 import {
 	getDocumentPurposeLabel,
@@ -28,6 +28,7 @@ interface SubmissionDetailPageProps {
  */
 function DocumentCard({ doc }: { doc: KycDocument }) {
 	const isImage = isImageType(doc.contentType) && doc.url;
+	const isPdf = isPdfType(doc.contentType) && doc.url;
 
 	return (
 		<div className="border-border flex flex-col overflow-hidden rounded-lg border">
@@ -46,6 +47,21 @@ function DocumentCard({ doc }: { doc: KycDocument }) {
 						className="object-cover"
 						// Signed URLs change on every request — skip Next.js image optimization
 						unoptimized
+					/>
+				</a>
+			) : isPdf ? (
+				<a
+					href={doc.url!}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="bg-muted relative block aspect-[4/3] w-full overflow-hidden transition-opacity hover:opacity-80"
+				>
+					<iframe
+						src={getPdfPreviewUrl(doc.url!)}
+						title={`PDF thumbnail: ${doc.originalFilename}`}
+						className="pointer-events-none size-full border-0 bg-white"
+						aria-hidden="true"
+						tabIndex={-1}
 					/>
 				</a>
 			) : (
@@ -68,7 +84,7 @@ function DocumentCard({ doc }: { doc: KycDocument }) {
 						rel="noopener noreferrer"
 						className="mt-1 text-xs font-medium underline underline-offset-4"
 					>
-						{isImage ? 'View full size' : 'Download'}
+						{isImage || isPdf ? 'View full size' : 'Download'}
 					</a>
 				)}
 			</div>

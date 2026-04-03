@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { isImageType } from './mime';
+import { getPdfPreviewUrl, isImageType, isPdfType } from './mime';
 
 describe('isImageType', () => {
 	describe('image MIME types', () => {
@@ -19,6 +19,10 @@ describe('isImageType', () => {
 		test('returns true for image/svg+xml', () => {
 			expect(isImageType('image/svg+xml')).toBe(true);
 		});
+
+		test('returns true for image type with MIME parameters', () => {
+			expect(isImageType('image/jpeg; charset=utf-8')).toBe(true);
+		});
 	});
 
 	describe('non-image MIME types', () => {
@@ -33,5 +37,33 @@ describe('isImageType', () => {
 		test('returns false for empty string', () => {
 			expect(isImageType('')).toBe(false);
 		});
+	});
+});
+
+describe('isPdfType', () => {
+	test('returns true for application/pdf', () => {
+		expect(isPdfType('application/pdf')).toBe(true);
+	});
+
+	test('returns true for uppercase PDF MIME with parameters', () => {
+		expect(isPdfType('Application/PDF; charset=utf-8')).toBe(true);
+	});
+
+	test('returns false for non-pdf MIME types', () => {
+		expect(isPdfType('image/jpeg')).toBe(false);
+	});
+});
+
+describe('getPdfPreviewUrl', () => {
+	test('appends the preview hash parameters', () => {
+		expect(getPdfPreviewUrl('https://example.com/file.pdf')).toBe(
+			'https://example.com/file.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH',
+		);
+	});
+
+	test('replaces any existing hash to avoid conflicting viewer options', () => {
+		expect(getPdfPreviewUrl('https://example.com/file.pdf#toolbar=1')).toBe(
+			'https://example.com/file.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH',
+		);
 	});
 });

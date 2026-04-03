@@ -12,20 +12,12 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { isImageType } from '@/lib/utils/mime';
+import { getPdfPreviewUrl, isImageType, isPdfType } from '@/lib/utils/mime';
 import type { AdminKycDocument } from '@/types/admin-kyc';
 import { getDocumentPurposeLabel } from '@/types/kyc-submission';
 
 interface DocumentViewerProps {
 	documents: AdminKycDocument[];
-}
-
-/**
- * Checks whether a MIME type is a PDF.
- * Extracted for readability in conditional branches.
- */
-function isPdfType(contentType: string): boolean {
-	return contentType === 'application/pdf';
 }
 
 /**
@@ -112,7 +104,6 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 			{/* Thumbnail grid — all documents are clickable for preview */}
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{documents.map(function renderDocument(doc, index) {
-					const isImage = isImageType(doc.contentType);
 					const hasUrl = Boolean(doc.url);
 
 					return (
@@ -120,34 +111,30 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 							key={doc.id}
 							className="border-border flex flex-col overflow-hidden rounded-lg border"
 						>
-							{/* Thumbnail — clickable if URL exists */}
-							<button
-								type="button"
-								onClick={() => handleDocumentClick(index)}
-								disabled={!hasUrl}
+							{/* Thumbnail preview with a separate interaction overlay */}
+							<div
 								className={cn(
 									'bg-muted relative aspect-[4/3] w-full overflow-hidden transition-opacity',
-									hasUrl && 'cursor-pointer hover:opacity-80',
-									!hasUrl && 'cursor-not-allowed opacity-60',
+									hasUrl && 'hover:opacity-80',
+									!hasUrl && 'opacity-60',
 								)}
-								aria-label={`Preview ${getDocumentPurposeLabel(doc.purpose)}`}
 							>
-								{isImage && doc.url ? (
-									<Image
-										src={doc.url}
-										alt={doc.originalFilename}
-										fill
-										sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-										className="object-cover"
-										// Signed URLs change per request — skip optimization cache
-										unoptimized
+								<DocumentThumbnail doc={doc} />
+
+								{hasUrl ? (
+									<button
+										type="button"
+										onClick={() => handleDocumentClick(index)}
+										className="absolute inset-0 z-10 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none"
+										aria-label={`Preview ${getDocumentPurposeLabel(doc.purpose)}`}
 									/>
 								) : (
-									<div className="flex size-full items-center justify-center">
-										<FileText className="text-muted-foreground size-12" />
-									</div>
+									<div
+										className="absolute inset-0 z-10 cursor-not-allowed"
+										aria-hidden="true"
+									/>
 								)}
-							</button>
+							</div>
 
 							{/* Document info */}
 							<div className="flex flex-col gap-1 p-3">
@@ -273,6 +260,54 @@ interface DocumentPreviewProps {
 	url: string;
 	contentType: string;
 	filename: string;
+}
+
+interface DocumentThumbnailProps {
+	doc: AdminKycDocument;
+}
+
+/**
+ * Thumbnail preview renderer for document cards.
+ *
+ * - Images use Next.js Image for fast, responsive previews
+ * - PDFs use a non-interactive iframe snapshot of the first page
+ * - Unknown types fall back to a file icon
+ *
+ * @returns Visual thumbnail for the document card
+ */
+function DocumentThumbnail({ doc }: DocumentThumbnailProps) {
+	if (isImageType(doc.contentType) && doc.url) {
+		return (
+			<Image
+				src={doc.url}
+				alt={doc.originalFilename}
+				fill
+				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+				className="object-cover"
+				// Signed URLs change per request — skip optimization cache
+				unoptimized
+			/>
+		);
+	}
+
+	if (isPdfType(doc.contentType) && doc.url) {
+		return (
+			<iframe
+				src={getPdfPreviewUrl(doc.url)}
+				title={`PDF thumbnail: ${doc.originalFilename}`}
+				className="size-full border-0 bg-white"
+				// Prevent iframe from hijacking click/scroll — the button overlay owns interaction
+				aria-hidden="true"
+				tabIndex={-1}
+			/>
+		);
+	}
+
+	return (
+		<div className="flex size-full items-center justify-center">
+			<FileText className="text-muted-foreground size-12" />
+		</div>
+	);
 }
 
 /**

@@ -10,7 +10,6 @@ import { z } from 'zod';
 export const ticketVerificationSchema = z.object({
 	ticketId: z.number(),
 	ticketCode: z.string(),
-	userId: z.string(),
 	raffleId: z.string(),
 	merkleVerified: z.boolean(),
 	chunkIndex: z.number(),
@@ -27,7 +26,6 @@ export const winnerVerificationSchema = z.object({
 	actualTicketId: z.number(),
 	computedTicketId: z.number(),
 	ticketCode: z.string(),
-	userId: z.string(),
 	randomNumber: z.string(),
 	formula: z.string(),
 	merkleVerified: z.boolean(),

@@ -62,11 +62,9 @@ export const ticketCodesResponseSchema = paginationMetadataSchema.extend({
  * Represents a ticket acquisition event
  */
 export const ticketLedgerEntrySchema = z.object({
-	id: z.number(),
 	raffleId: z.string(),
 	amount: z.number(),
 	source: z.string(),
-	userId: z.string(),
 	createdAt: z.string(),
 });
 

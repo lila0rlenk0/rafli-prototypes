@@ -164,14 +164,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				) ?? null;
 		}
 
-		// Get winning ticket code from raffle.winners if user won
-		if (myWinning && raffle.winners) {
-			const myWinnerEntry = raffle.winners.find(
-				winner => winner.userId === currentUserId,
-			);
-			myWinningTicketCode = myWinnerEntry?.ticketCode ?? null;
-		}
-
 		if (meResponse.success) {
 			myUserName = meResponse.data.name;
 			myUserAvatarUrl = meResponse.data.avatarUrl;
@@ -645,7 +637,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							totalTickets={raffle.totalTicketsAtDraw}
 							manifestHash={raffle.manifestHash}
 							commitTxHash={raffle.commitTxHash}
-							currentUserId={currentUserId}
+							currentUserWinnerPosition={myWinning?.position ?? null}
 						/>
 					)}
 

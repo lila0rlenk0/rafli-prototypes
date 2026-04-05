@@ -8,7 +8,8 @@ interface WinnersListProps {
 	totalTickets?: number;
 	manifestHash?: string | null;
 	commitTxHash?: string | null;
-	currentUserId?: string | null;
+	/** Authenticated user's winner position (from /me/winnings), null if not a winner */
+	currentUserWinnerPosition?: number | null;
 }
 
 /**
@@ -22,7 +23,7 @@ export function WinnersList({
 	totalTickets,
 	manifestHash,
 	commitTxHash,
-	currentUserId,
+	currentUserWinnerPosition,
 }: WinnersListProps) {
 	if (winners.length === 0) {
 		return null;
@@ -32,13 +33,13 @@ export function WinnersList({
 		<div className="space-y-2">
 			{winners.map(winner => (
 				<WinnerCard
-					key={winner.id}
+					key={winner.position}
 					winner={winner}
 					raffleId={raffleId}
 					totalTickets={totalTickets}
 					manifestHash={manifestHash}
 					commitTxHash={commitTxHash}
-					isCurrentUser={winner.userId === currentUserId}
+					isCurrentUser={winner.position === currentUserWinnerPosition}
 				/>
 			))}
 		</div>

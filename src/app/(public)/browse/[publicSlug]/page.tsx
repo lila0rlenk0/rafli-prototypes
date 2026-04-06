@@ -32,6 +32,7 @@ import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import { getMe } from '@/services/user/get-me';
 import { getMyWinnings } from '@/services/winning/get-my-winnings';
 import type { Category } from '@/types/category';
+import { RAFFLE_ERROR_CODES } from '@/types/errors';
 import {
 	COMMENTABLE_STATUSES,
 	type CommentableStatus,
@@ -48,6 +49,7 @@ import type { Winning } from '@/types/winning';
 import { InfoIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { Suspense, type ComponentProps } from 'react';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { MobileBackButton } from './mobile-back-button';
@@ -107,6 +109,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const categories = categoriesResponse.success
 		? categoriesResponse.data.categories.filter(c => c.isActive)
 		: [];
+
+	// Backend returns core:raffle:not-found for invalid slugs — surface Next.js 404 page
+	if (!response.success && response.error === RAFFLE_ERROR_CODES.NOT_FOUND) {
+		notFound();
+	}
 
 	if (!response.success) {
 		return (

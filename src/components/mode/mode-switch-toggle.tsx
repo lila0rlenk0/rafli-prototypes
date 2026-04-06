@@ -19,6 +19,7 @@ import { USER_MODE } from '@/types/user-mode';
  */
 export function ModeSwitchToggle() {
 	const mode = useUserStore(state => state.mode);
+	const hasPermissions = useUserStore(state => state.permissions.length > 0);
 	const canSwitchMode = useUserStore(state => state.canSwitchMode);
 	const switchMode = useUserStore(state => state.switchMode);
 	const router = useRouter();
@@ -41,7 +42,12 @@ export function ModeSwitchToggle() {
 		});
 	}
 
+	// mode is null during two distinct phases:
+	// 1. Initial hydration — permissions exist but Zustand hasn't resolved mode yet → show loading skeleton
+	// 2. Sign-out reset — permissions were cleared → render nothing to avoid a flash of the disabled pill
 	if (mode === null) {
+		if (!hasPermissions) return null;
+
 		return (
 			<div
 				className="flex h-[38px] w-full items-center overflow-hidden rounded-full border border-black opacity-50"
@@ -66,9 +72,9 @@ export function ModeSwitchToggle() {
 
 	if (!canSwitchMode()) {
 		return (
-		<Link
-			href="/verification"
-			className="flex h-[38px] w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white"
+			<Link
+				href="/verification"
+				className="flex h-[38px] w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white"
 				data-testid="become-a-host-button"
 				onClick={handleBecomeHostClick}
 			>

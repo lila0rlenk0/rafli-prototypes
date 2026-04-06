@@ -20,6 +20,7 @@ import { USER_MODE } from '@/types/user-mode';
  */
 export function ModeSwitchButton() {
 	const mode = useUserStore(state => state.mode);
+	const hasPermissions = useUserStore(state => state.permissions.length > 0);
 	const canSwitchMode = useUserStore(state => state.canSwitchMode);
 	const switchMode = useUserStore(state => state.switchMode);
 	const router = useRouter();
@@ -42,7 +43,12 @@ export function ModeSwitchButton() {
 		});
 	}
 
+	// mode is null during two distinct phases:
+	// 1. Initial hydration — permissions exist but Zustand hasn't resolved mode yet → show loading skeleton
+	// 2. Sign-out reset — permissions were cleared → render nothing to avoid a flash of the disabled pill
 	if (mode === null) {
+		if (!hasPermissions) return null;
+
 		return (
 			<div
 				className="flex h-9 w-[267px] items-center overflow-hidden rounded-full border border-black/95 opacity-50"

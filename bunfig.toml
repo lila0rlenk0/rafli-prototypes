@@ -1,0 +1,5 @@
+[install]
+# 15 days in seconds — delay installing newly published versions
+# to mitigate supply chain attacks, giving time for malicious
+# packages to be detected and removed before reaching this project.
+minimumReleaseAge = 1296000

@@ -128,10 +128,8 @@ const hostSchema = z.object({
  * Represents a winner entry returned by the API
  */
 export const raffleWinnerSchema = z.object({
-	id: z.string(),
 	oddsId: z.number().optional(),
 	ticketCode: z.string().optional(),
-	userId: z.string(),
 	name: z.string().nullish(),
 	position: z.number(),
 	status: z.string(),

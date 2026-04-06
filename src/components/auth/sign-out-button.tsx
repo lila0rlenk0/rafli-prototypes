@@ -1,54 +1,63 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { signOutUser } from '@/services/auth/sign-out-user';
 import { useState } from 'react';
 
 interface SignOutButtonProps {
 	className?: string;
-	variant?: 'default' | 'outline' | 'ghost';
+	/** Visual style — defaults to the red filled button used on the profile page */
+	variant?: 'default' | 'ghost' | 'outline';
 }
 
+/** Base styles shared across all variants */
+const BASE_STYLES =
+	'inline-flex h-11 cursor-pointer items-center justify-center rounded-full px-6 py-4 text-base font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50';
+
+/** Per-variant color overrides */
+const VARIANT_STYLES: Record<
+	NonNullable<SignOutButtonProps['variant']>,
+	string
+> = {
+	default: 'bg-[#E5484D] text-white hover:bg-[#D93D42]',
+	ghost: 'bg-transparent text-black hover:bg-black/5',
+	outline: 'border border-black/20 bg-transparent text-black hover:bg-black/5',
+};
+
+/**
+ * Sign-out button with variant support for different contexts.
+ * Default red filled style for profile, ghost/outline for admin navbar.
+ *
+ * @returns Styled button that signs out and resets the user store
+ */
 export function SignOutButton({
-	className = '',
+	className,
 	variant = 'default',
 }: SignOutButtonProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const reset = useUserStore(state => state.reset);
 
-	const handleSignOut = async () => {
+	async function handleSignOut() {
 		setIsLoading(true);
 		try {
-			// Clear user store before signing out
 			reset();
 			await signOutUser();
 		} catch (error) {
-			// Error is logged in signOutUser, cookies are cleared anyway
 			console.error('Sign out failed:', error);
 		} finally {
-			// Note: We may not reach here due to redirect in signOutUser
 			setIsLoading(false);
 		}
-	};
-
-	const baseStyles =
-		'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
-
-	const variantStyles = {
-		default: 'bg-red-600 text-white hover:bg-red-700',
-		outline:
-			'border border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950',
-		ghost: 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950',
-	};
+	}
 
 	return (
 		<button
 			onClick={handleSignOut}
 			disabled={isLoading}
-			className={`${baseStyles} ${variantStyles[variant]} px-4 py-2 ${className}`}
+			className={cn(BASE_STYLES, VARIANT_STYLES[variant], className)}
 			type="button"
 		>
-			{isLoading ? 'Signing out...' : 'Sign Out'}
+			{isLoading ? 'Signing out...' : 'Sign out'}
 		</button>
 	);
 }

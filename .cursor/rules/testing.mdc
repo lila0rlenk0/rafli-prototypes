@@ -1,0 +1,58 @@
+---
+description: "Testing"
+alwaysApply: false
+globs: "'tests/**','**/*.test.{ts,tsx}'"
+---
+
+# Testing
+
+## Commands
+
+- `bun run test` — run all tests
+- `bun test src/lib/utils/` — run specific folder
+- `bun test path/to/file.test.ts` — run specific file
+- `bun run test:e2e` — Playwright E2E tests
+- `bun run test:e2e:headed` — with browser visible
+
+## File Naming
+
+Test files mirror source with `.test.ts` suffix:
+
+```
+src/lib/utils/strip-markdown.ts  ->  src/lib/utils/strip-markdown.test.ts
+```
+
+Integration tests: `tests/integration/services/{domain}/{action}.integration.test.ts`
+
+## Test Structure
+
+```typescript
+import { describe, expect, test } from 'bun:test';
+import { myFunction } from './my-function';
+
+describe('myFunction', () => {
+	describe('category of behavior', () => {
+		test('specific case description', () => {
+			expect(myFunction(input)).toBe(expected);
+		});
+	});
+});
+```
+
+## What to Test (priority order)
+
+1. Security-critical functions (validation, sanitization, auth)
+2. Pure utility functions (formatters, parsers, helpers)
+3. Business logic (calculations, transformations)
+
+## When to Add Tests
+
+- New utility function in `src/lib/utils/` — add test
+- New validator or formatter — add test
+- Bug fix — add regression test
+- New server action — add integration test
+- Never skip tests for business-critical logic (auth, payments, validation)
+
+## Integration Tests
+
+Validate full flow: HTTP call, Zod validation, error mapping, `ServiceResponse`. Mock helpers in `tests/helpers/mock-axios.ts`. See `tests/integration/services/raffle/get-raffle.integration.test.ts` for the canonical example.

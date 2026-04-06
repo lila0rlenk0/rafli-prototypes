@@ -1,13 +1,17 @@
 import { getSession } from '@/lib/auth/session';
 import { getMe } from '@/services/user/get-me';
+import { getVerificationStatus } from '@/services/kyc-submission/get-verification-status';
+import { deriveAggregateStatus } from '@/types/verification-status';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
+import { VerificationBadge } from '@/components/verification/verification-badge';
 import { ProfileSidebar } from './profile-sidebar';
 import {
 	EmailPreferencesSection,
 	PaymentHistorySection,
 	PersonalInformationSection,
 	SecuritySection,
+	VerificationSection,
 } from './sections';
 
 /**
@@ -22,8 +26,12 @@ const SIDEBAR_ITEMS = [
 		sectionId: 'personal-information',
 	},
 	{
-		label: 'Security',
+		label: 'Password',
 		sectionId: 'security',
+	},
+	{
+		label: 'Verification',
+		sectionId: 'verification',
 	},
 	{
 		label: 'Email Preferences',
@@ -43,24 +51,57 @@ const SIDEBAR_ITEMS = [
  * sections for personal info, address, payment details, login, and host info.
  */
 export default async function ProfilePage() {
-	// Parallel fetch — session and profile are independent
-	const [session, meResult] = await Promise.all([getSession(), getMe()]);
+	// Parallel fetch — session, profile, and verification status are independent
+	const [session, meResult, verificationResult] = await Promise.all([
+		getSession(),
+		getMe(),
+		getVerificationStatus(),
+	]);
 	const user = session?.user;
 	const userProfile = meResult.success ? meResult.data : null;
+	// Derive aggregate status from per-type breakdown for the profile badge.
+	// Gracefully degrade — badge simply won't render if the endpoint fails.
+	const verificationStatus = verificationResult.success
+		? deriveAggregateStatus(verificationResult.data)
+		: null;
+
+	/**
+	 * Renders the "My Profile" heading with the verification badge
+	 * (visible for approved, in_review, rejected — hidden for none/draft).
+	 */
+	function renderProfileTitle() {
+		return (
+			<div className="flex items-center gap-2.5">
+				<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
+					My Profile
+				</h1>
+				{verificationStatus && (
+					<VerificationBadge
+						status={verificationStatus.status}
+						rejectionReason={verificationStatus.rejectionReason}
+					/>
+				)}
+			</div>
+		);
+	}
 
 	return (
-		<div className="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
+		<div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
 			{/* Main Content Layout */}
-			<div className="flex w-full flex-col gap-10 md:flex-row">
-				{/* Left Sidebar */}
+			<div className="flex w-full flex-col gap-6 md:flex-row md:gap-8">
+				{/* Header — mobile only: stacked above content */}
+				<div className="flex flex-col gap-6 md:hidden">
+					{renderProfileTitle()}
+					<SignOutButton className="w-full sm:w-fit" />
+				</div>
+
+				{/* Left Sidebar — visible from tablet (md) onwards */}
 				<ProfileSidebar items={SIDEBAR_ITEMS} />
 
 				{/* Right Content Sections */}
-				<div className="flex w-full max-w-195 flex-col gap-8">
-					<div className="flex items-center justify-between">
-						<h1 className="font-clash-display text-3xl font-semibold text-black">
-							My Profile
-						</h1>
+				<div className="flex min-w-0 flex-1 flex-col gap-6">
+					<div className="hidden items-center justify-between md:flex">
+						{renderProfileTitle()}
 
 						<SignOutButton />
 					</div>
@@ -72,6 +113,9 @@ export default async function ProfilePage() {
 						avatarUrl={userProfile?.avatarUrl ?? null}
 						bio={userProfile?.bio ?? null}
 					/>
+
+					{/* Verification */}
+					<VerificationSection />
 
 					{/* Security */}
 					<SecuritySection />

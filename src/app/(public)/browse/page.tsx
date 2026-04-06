@@ -3,7 +3,10 @@ import {
 	parseRaffleSortOption,
 } from '@/app/(protected)/lib/parse-search-params';
 import { BugIcon } from '@/assets/icons/bug-icon';
-import { FilterBar } from '@/components/filters';
+import { BrowseTabs } from '@/components/browse/browse-tabs';
+import { FeaturedRaffleCard } from '@/components/browse/featured-raffle-card';
+import { HeroSection } from '@/components/browse/hero-section';
+import { FilterBar, StickyFilterSection } from '@/components/filters';
 import {
 	PublicRaffleCard,
 	type RaffleRole,
@@ -29,7 +32,7 @@ interface PageProps {
  * Browse Raffles Page
  *
  * Public-facing page displaying all available raffles with filtering and sorting.
- * Supports URL-based filtering by status, category, sort order, and pagination.
+ * Features a hero section, featured raffle cards, and a filterable grid of all raffles.
  */
 export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;
@@ -105,49 +108,66 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 
 	const { raffles } = response.data;
 
+	// Calculate total prize value for hero stats
+	const totalPrizeValue = raffles.reduce(
+		(sum, r) => sum + Number(r.declaredValueAmount),
+		0,
+	);
+
+	// Pick up to 2 featured raffles (first two from the list)
+	const featuredRaffles = raffles.slice(0, 2);
+
 	return (
-		<div className="z-10 container mx-auto px-4 py-8">
-			{/* Header Section */}
-			<div className="mb-20">
-				<h1 className="font-clash-display mb-4 text-4xl leading-8 font-semibold sm:text-5xl">
-					Pick the prize you actually want
-				</h1>
-				<p className="text-lg font-medium">
-					Get in, make a few clicks, and you&apos;re in the draw.
-				</p>
+		<div className="z-10 pt-0 pb-8 sm:py-8">
+			{/* Hero Section */}
+			<div className="mb-10 sm:mb-16">
+				<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
 			</div>
 
-			{/* Filter Bar */}
-			<div className="mb-8 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="font-clash-display text-3xl font-semibold">
-					Browse all active raffles
-				</h2>
-				<Suspense fallback={null}>
-					<FilterBar categories={categories} />
-				</Suspense>
-			</div>
-
-			{/* Grid Section */}
-			{raffles && raffles.length > 0 ? (
-				<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{raffles.map(raffle => (
-						<PublicRaffleCard
-							key={raffle.id}
-							raffle={raffle}
-							role={getRaffleRole(raffle)}
-						/>
-					))}
-				</div>
-			) : (
-				<div className="flex flex-col items-center justify-center py-20 text-center">
-					<h3 className="text-xl font-semibold text-gray-900">
-						No raffles found
-					</h3>
-					<p className="mt-2 text-gray-500">
-						Check back later for new opportunities to win!
-					</p>
-				</div>
-			)}
+			<BrowseTabs
+				featuredContent={
+					featuredRaffles.length > 0 ? (
+						<div className="mb-10 flex flex-col gap-6 sm:mb-16 lg:grid lg:grid-cols-2 lg:gap-8">
+							{featuredRaffles.map((raffle, i) => (
+								<FeaturedRaffleCard
+									key={raffle.id}
+									raffle={raffle}
+									variant={i === 0 ? 'blue' : 'green'}
+								/>
+							))}
+						</div>
+					) : null
+				}
+				filtersContent={
+					<StickyFilterSection>
+						<Suspense fallback={null}>
+							<FilterBar categories={categories} />
+						</Suspense>
+					</StickyFilterSection>
+				}
+				gridContent={
+					raffles && raffles.length > 0 ? (
+						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+							{raffles.map(raffle => (
+								<PublicRaffleCard
+									key={raffle.id}
+									raffle={raffle}
+									role={getRaffleRole(raffle)}
+								/>
+							))}
+						</div>
+					) : (
+						<div className="flex flex-col items-center justify-center py-20 text-center">
+							<h3 className="text-xl font-semibold text-gray-900">
+								No raffles found
+							</h3>
+							<p className="mt-2 text-gray-500">
+								Check back later for new opportunities to win!
+							</p>
+						</div>
+					)
+				}
+			/>
 		</div>
 	);
 }

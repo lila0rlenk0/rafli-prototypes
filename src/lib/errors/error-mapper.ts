@@ -1,10 +1,12 @@
 import { AxiosError } from 'axios';
 
 import {
+	type AdminKycErrorCode,
 	type AuthErrorCode,
 	type CommentErrorCode,
 	COMMON_ERROR_CODES,
 	type HostErrorCode,
+	type KycSubmissionErrorCode,
 	type NotificationErrorCode,
 	type OrderErrorCode,
 	type PaymentErrorCode,
@@ -665,4 +667,50 @@ export function mapPromoCodeError(error: unknown): PromoCodeErrorCode {
 
 	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
+}
+
+/**
+ * Maps KYC submission errors to KycSubmissionErrorCode
+ *
+ * Accepts `core:verification:*` and `global:*` prefixes.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns KycSubmissionErrorCode (either backend code or frontend fallback)
+ */
+export function mapKycSubmissionError(error: unknown): KycSubmissionErrorCode {
+	const extractedCode = extractErrorCode(error);
+
+	if (extractedCode) {
+		// Backend code with known prefix - use directly
+		// Examples: "core:verification:already-pending", "global:auth:unauthenticated"
+		if (
+			extractedCode.startsWith('core:') ||
+			extractedCode.startsWith('global:')
+		) {
+			return extractedCode as KycSubmissionErrorCode;
+		}
+
+		// Simple code - try to map
+		const mappedCode = mapSimpleCode(extractedCode);
+		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
+			return mappedCode as KycSubmissionErrorCode;
+		}
+	}
+
+	// No backend code - use frontend-only fallback
+	return mapCommonError(error);
+}
+
+/**
+ * Maps admin KYC review errors to AdminKycErrorCode.
+ * Delegates to mapKycSubmissionError — both share the same backend
+ * module (`core:verification:*`) so the extraction logic is identical.
+ * The cast is safe because both types include CommonErrorCode and
+ * backend `core:*` strings are trusted at runtime regardless of type.
+ *
+ * @param error - Caught error (usually AxiosError)
+ * @returns AdminKycErrorCode (either backend code or frontend fallback)
+ */
+export function mapAdminKycError(error: unknown): AdminKycErrorCode {
+	return mapKycSubmissionError(error) as AdminKycErrorCode;
 }

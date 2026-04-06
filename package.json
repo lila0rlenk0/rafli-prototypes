@@ -6,7 +6,7 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"test": "bun test",
+		"test": "bun test src/ tests/",
 		"lint": "eslint",
 		"format": "prettier --write 'src/**/*.{ts,tsx}'",
 		"format:check": "prettier --check 'src/**/*.{ts,tsx}'",

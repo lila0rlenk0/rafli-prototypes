@@ -1,39 +1,36 @@
 import { z } from 'zod';
 
-// ==========================================
-// Constants
-// ==========================================
+// ─── Constants ──────────────────────────────────────────────────────────────
 
 export const USER_MODE = {
 	PARTICIPANT: 'participant',
 	HOST: 'host',
 } as const;
 
-// ==========================================
-// Types
-// ==========================================
+// ─── Types from Constants ───────────────────────────────────────────────────
 
 /**
- * Represents the user's current mode
+ * Represents the user's current mode (participant browsing or host managing)
  */
 export type UserMode = (typeof USER_MODE)[keyof typeof USER_MODE];
 
-/**
- * Permission type matching backend schema
- */
-export type Permission =
-	| 'raffle:create'
-	| 'raffle:manage'
-	| 'raffle:participate';
+// ─── Schemas ────────────────────────────────────────────────────────────────
 
-// ==========================================
-// Schemas
-// ==========================================
-
+/** Schema for validating user mode strings */
 export const userModeSchema = z.enum([USER_MODE.PARTICIPANT, USER_MODE.HOST]);
 
+/** Schema for backend permission strings — used by parsePermissions() */
 export const permissionSchema = z.enum([
 	'raffle:create',
 	'raffle:manage',
 	'raffle:participate',
+	'admin:kyc:review',
 ]);
+
+// ─── Inferred Types ─────────────────────────────────────────────────────────
+
+/**
+ * Permission type — derived from permissionSchema to prevent drift
+ * between the Zod enum and the TypeScript type
+ */
+export type Permission = z.infer<typeof permissionSchema>;

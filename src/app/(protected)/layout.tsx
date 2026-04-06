@@ -4,23 +4,12 @@ import { AuthGuard } from '@/components/auth/auth-guard';
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { getSession } from '@/lib/auth/session';
+import { parsePermissions } from '@/lib/permissions';
 import { NotificationStoreProvider } from '@/providers/notification-store-provider';
 import { UserStoreProvider } from '@/providers/user-store-provider';
-import { permissionSchema, type Permission } from '@/types/user-mode';
 
 interface ProtectedLayoutProps {
 	children: ReactNode;
-}
-
-/**
- * Validates and filters permissions from session
- * Only includes valid Permission values, discards unknown permissions
- */
-function parsePermissions(rawPermissions: string[] | undefined): Permission[] {
-	if (!rawPermissions) return [];
-	return rawPermissions.filter(
-		(p): p is Permission => permissionSchema.safeParse(p).success,
-	);
 }
 
 /**

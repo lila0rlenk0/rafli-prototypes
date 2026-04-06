@@ -708,10 +708,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								)}
 							</RaffleExpiredGate>
 
-							<ShareOnXButton
+							{/* TODO: temporarily hidden — re-enable when share-for-free-tickets flow is ready */}
+							{/* <ShareOnXButton
 								title={raffle.title}
 								publicSlug={raffle.publicSlugOrCode}
-							/>
+							/> */}
 						</div>
 					)}
 
@@ -765,12 +766,13 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				searchParams={searchParams}
 			/>
 
-			{shouldShowActiveCard() && (
+			{/* TODO: temporarily hidden — re-enable when share-for-free-tickets flow is ready */}
+			{/* {shouldShowActiveCard() && (
 				<StickyBuyTicketsCta
 					title={raffle.title}
 					publicSlug={raffle.publicSlugOrCode}
 				/>
-			)}
+			)} */}
 		</div>
 	);
 }

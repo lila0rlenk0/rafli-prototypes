@@ -77,28 +77,27 @@ export function Navbar({ children }: NavbarProps) {
 						</Link>
 					</div>
 
-				{/* Desktop: Right side icons */}
-				<div className="hidden items-center gap-4 sm:flex">
-					<a
-						href={FEEDBACK_FORM_URL}
-						target="_blank"
-						rel="noopener noreferrer"
-						data-testid="help-us-improve-button"
-						className="flex h-[38px] items-center rounded-full border border-black px-4 text-sm font-medium text-black"
-					>
-						Help us improve
-					</a>
-					<div className="w-56">
-						<ModeSwitchToggle />
+					{/* Desktop: Right side icons */}
+					<div className="hidden items-center gap-4 sm:flex">
+						<a
+							href={FEEDBACK_FORM_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							data-testid="help-us-improve-button"
+							className="flex h-[38px] items-center rounded-full border border-black px-4 text-sm font-medium text-black"
+						>
+							Help us improve
+						</a>
+						<div className="w-56">
+							<ModeSwitchToggle />
+						</div>
+						<div className="flex items-center gap-4">
+							<NotificationBell />
+							<Link href="/profile">
+								<User className="size-5" />
+							</Link>
+						</div>
 					</div>
-					{/* 8px gap between notification and profile — tighter than the 16px outer gap */}
-				<div className="flex items-center gap-2">
-					<NotificationBell />
-					<Link href="/profile">
-						<User className="size-5" />
-					</Link>
-				</div>
-				</div>
 
 					{/* Mobile: Notification bell + Hamburger menu */}
 					<div className="flex items-center gap-2 sm:hidden">
@@ -166,15 +165,15 @@ export function Navbar({ children }: NavbarProps) {
 								Profile
 							</Link>
 
-						<a
-							href={FEEDBACK_FORM_URL}
-							target="_blank"
-							rel="noopener noreferrer"
-							onClick={closeMenu}
-							className="flex h-[38px] items-center justify-center rounded-full border border-black px-4 text-sm font-medium text-black"
-						>
-							Help us improve
-						</a>
+							<a
+								href={FEEDBACK_FORM_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+								onClick={closeMenu}
+								className="flex h-[38px] items-center justify-center rounded-full border border-black px-4 text-sm font-medium text-black"
+							>
+								Help us improve
+							</a>
 						</div>
 					</div>
 				)}

@@ -61,20 +61,20 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 
 					{/* Desktop: Right side buttons */}
 					<div className="hidden items-center gap-4 md:flex">
-					<a
-						href={FEEDBACK_FORM_URL}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="flex h-[38px] items-center rounded-full border border-black px-4 text-sm font-medium text-black"
-					>
-						Help us improve
-					</a>
-					<Button
-						asChild
-						className="h-[38px] bg-black px-6 text-sm text-white hover:bg-black/90"
-					>
-						<Link href="/sign-in">Enter the App</Link>
-					</Button>
+						<a
+							href={FEEDBACK_FORM_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex h-[38px] items-center rounded-full border border-black px-4 text-sm font-medium text-black"
+						>
+							Help us improve
+						</a>
+						<Button
+							asChild
+							className="h-[38px] bg-black px-6 text-sm text-white hover:bg-black/90"
+						>
+							<Link href="/sign-in">Enter the App</Link>
+						</Button>
 					</div>
 
 					{/* Mobile: Hamburger menu button */}
@@ -124,23 +124,23 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 						>
 							For Hosts
 						</Link>
-					<Button
-						asChild
-						className="mt-4 h-[38px] bg-black text-sm text-white hover:bg-black/90"
-					>
-						<Link href="/sign-in" onClick={closeMenu}>
-							Enter the App
-						</Link>
-					</Button>
-				<a
-					href={FEEDBACK_FORM_URL}
-					target="_blank"
-					rel="noopener noreferrer"
-					onClick={closeMenu}
-					className="flex h-[38px] items-center justify-center rounded-full border border-black px-4 text-sm font-medium text-black"
-				>
-					Help us improve
-				</a>
+						<Button
+							asChild
+							className="mt-4 h-[38px] bg-black text-sm text-white hover:bg-black/90"
+						>
+							<Link href="/sign-in" onClick={closeMenu}>
+								Enter the App
+							</Link>
+						</Button>
+						<a
+							href={FEEDBACK_FORM_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							onClick={closeMenu}
+							className="flex h-[38px] items-center justify-center rounded-full border border-black px-4 text-sm font-medium text-black"
+						>
+							Help us improve
+						</a>
 					</div>
 				</div>
 			)}

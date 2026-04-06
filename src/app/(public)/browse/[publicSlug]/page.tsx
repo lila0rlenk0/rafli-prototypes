@@ -1,6 +1,8 @@
 import { CommentSection } from '@/components/raffle/comments/comment-section';
 import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeline';
 import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
+import { MobileCountdownBanner } from '@/components/raffle/mobile-countdown-banner';
+import { RaffleUpdatesCard } from '@/components/raffle/raffle-updates-card';
 import { RaffleAutoRefresh } from '@/components/raffle/raffle-auto-refresh';
 import { RaffleCancelledCard } from '@/components/raffle/raffle-cancelled-card';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
@@ -10,8 +12,6 @@ import { PrizeBreakdownCard } from '@/components/raffle/prize-breakdown-card';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RevenueBreakdownCard } from '@/components/raffle/revenue-breakdown-card';
 import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
-import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
-import { RaffleUpdatesCard } from '@/components/raffle/raffle-updates-card';
 import { RaffleWonCard } from '@/components/raffle/raffle-won-card';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
 import { WinnersList } from '@/components/raffle/winners-list';
@@ -50,10 +50,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense, type ComponentProps } from 'react';
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { MobileBackButton } from './mobile-back-button';
 import { PaymentModalWrapper } from './payment-modal-wrapper';
 import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
 import { ReportRaffleButton } from './report-raffle-button';
+import { CopyRaffleLinkButton } from './copy-raffle-link-button';
+import { ShareOnXButton } from './share-on-x-button';
 import { StickyBuyTicketsCta } from './sticky-buy-tickets-cta';
 
 interface PageProps {
@@ -139,7 +142,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
 	let myWinning: Winning | null = null;
-	let myWinningTicketCode: string | null = null;
+	const myWinningTicketCode: string | null = null;
 	let myUserName: string | null = null;
 	let myUserAvatarUrl: string | null = null;
 
@@ -359,68 +362,140 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	);
 
 	return (
-		<div className="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
-			<BackLink fallbackHref="/browse" label="Back to Raffle Browse" />
+		<div className="container mx-auto flex max-w-6xl flex-col gap-4 px-0 lg:gap-8 lg:px-4">
+			{/* Mobile: fixed back button in nav area */}
+			<MobileBackButton />
+
+			{/* Desktop back link */}
+			<div className="hidden lg:block">
+				<BackLink fallbackHref="/browse" label="Back to Raffle Browse" />
+			</div>
+
+			{/* Mobile: fixed countdown banner — shown for active raffles */}
+			{shouldShowActiveCard() && (
+				<>
+					<MobileCountdownBanner endAt={raffle.endAt} />
+					{/* Spacer for fixed banner height on mobile */}
+					<div className="h-12 lg:hidden" />
+				</>
+			)}
 
 			<div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_24rem] lg:gap-8">
-				{/* Left column — contents on mobile for order interleaving, flex column on desktop */}
+				{/* Left column */}
 				<div className="contents lg:col-start-1 lg:flex lg:flex-col lg:gap-8">
-					{/* Title + description card — mobile order 1, desktop left column */}
-					<div className="order-1 flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
-						<div className="flex items-start justify-between gap-2">
-							<h2 className="text-3xl font-bold text-gray-900">
-								{raffle.title}
-							</h2>
-							{isAuthenticated && !isOwner && (
-								<ReportRaffleButton raffleId={raffle.id} />
-							)}
-						</div>
-
-						<Link
-							href={getHostProfileUrl()}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="group flex w-fit items-center gap-3"
-						>
-							<div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
-								{hostAvatarUrl ? (
-									<Image
-										src={hostAvatarUrl}
-										alt={getHostName()}
-										fill
-										sizes="48px"
-										className="object-cover"
-									/>
-								) : (
-									getHostInitial()
-								)}
-							</div>
-							<div className="flex min-w-0 flex-col font-medium">
-								<span className="truncate text-sm group-hover:underline">
-									by {getHostName()}
-								</span>
-								<span className="text-xs">{getHostRafflesCount()}</span>
-							</div>
-						</Link>
-
+					{/* Main card with image + title + description + purchase (mobile) */}
+					<div className="order-1 flex w-full flex-col gap-4 rounded-3xl bg-white px-4 py-6 lg:gap-5 lg:overflow-hidden lg:p-8">
+						{/* Raffle image — inside card on both mobile and desktop */}
 						<RaffleImageGallery
 							coverImage={raffle.coverMediaUrl}
 							galleryImages={raffle.galleryMediaUrls}
 							alt={raffle.title}
 						/>
 
-						<CollapsibleDescription content={raffle.description || ''} />
-
-						<div className="flex flex-wrap gap-2">
-							<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
-								<span className="text-sm capitalize">
-									{getCategoryName(categories, raffle.categoryId)}
+						{/* Title with badges */}
+						<div className="flex flex-wrap items-center gap-3">
+							<h2 className="font-clash-display text-[22px] leading-tight font-semibold tracking-tight text-[#182135] lg:text-4xl">
+								{raffle.title}
+							</h2>
+							{isAuthenticated && !isOwner && myTicketsTotal > 0 && (
+								<span className="rounded-lg bg-[#BEFFDB] px-6 py-1 text-[13px] font-semibold tracking-wide text-[#44B476]">
+									Participant
 								</span>
-							</div>
+							)}
+							<CopyRaffleLinkButton publicSlug={publicSlug} />
+							{isAuthenticated && !isOwner && (
+								<ReportRaffleButton raffleId={raffle.id} />
+							)}
 						</div>
+
+						{/* Host info */}
+						<Link
+							href={getHostProfileUrl()}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="group flex w-fit items-center gap-3"
+						>
+							<div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 font-semibold">
+								{hostAvatarUrl ? (
+									<Image
+										src={hostAvatarUrl}
+										alt={getHostName()}
+										fill
+										sizes="40px"
+										className="object-cover"
+									/>
+								) : (
+									getHostInitial()
+								)}
+							</div>
+							<div className="flex min-w-0 flex-col text-sm">
+								<span className="truncate group-hover:underline">
+									by {getHostName()}
+								</span>
+								<span className="text-[#7B7B7B]">{getHostRafflesCount()}</span>
+							</div>
+						</Link>
+
+						{/* Description — categories shown inside when expanded */}
+						<CollapsibleDescription
+							content={raffle.description || ''}
+							expandedSlot={
+								<div className="flex flex-wrap gap-4 pt-2">
+									<div className="rounded-2xl bg-[#DFFFED] px-3 py-1">
+										<span className="text-sm capitalize">
+											{getCategoryName(categories, raffle.categoryId)}
+										</span>
+									</div>
+								</div>
+							}
+						/>
+
+						{/* Mobile: inline purchase section */}
+						{shouldShowActiveCard() && (
+							<div className="lg:hidden">
+								<RaffleExpiredGate endAt={raffle.endAt}>
+									<Suspense
+										fallback={
+											<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
+										}
+									>
+										<TicketPurchaseCard
+											raffleId={raffle.id}
+											publicSlug={publicSlug}
+											endAt={raffle.endAt}
+											price={ticketPrice}
+											currency={raffle.ticketPriceCurrency}
+											availableTickets={availableTickets}
+											disabled={showEditButton || disablePurchase}
+											questionId={raffle.questionId}
+											isAuthenticated={isAuthenticated}
+											cryptoOptions={raffle.cryptoOptions}
+											myTicketsTotal={myTicketsTotal}
+											userId={currentUserId}
+										/>
+									</Suspense>
+
+									{disablePurchase && !showEditButton && (
+										<p className="mt-2 text-center text-sm text-gray-500">
+											You cannot purchase tickets for your own raffle
+										</p>
+									)}
+								</RaffleExpiredGate>
+
+								{/* KYC notice — mobile */}
+								{!isConcluded && !isCancelled && (
+									<div className="mt-4 flex items-center gap-2">
+										<InfoIcon className="size-4 shrink-0 text-[#7B7B7B]" />
+										<p className="text-sm text-[#7B7B7B]">
+											You&apos;ll only need KYC if you win
+										</p>
+									</div>
+								)}
+							</div>
+						)}
 					</div>
 
-					{/* Updates from host — mobile order 3, desktop left column */}
+					{/* Updates from host */}
 					<div className="order-3">
 						<RaffleUpdatesCard
 							raffleId={raffle.id}
@@ -435,7 +510,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						/>
 					</div>
 
-					{/* Comment section — mobile order 4, desktop left column */}
+					{/* Comment section */}
 					{isCommentable && (
 						<div className="order-4">
 							<CommentSection
@@ -447,14 +522,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</div>
 					)}
 
-					{/* FAQ — mobile order 5, desktop left column */}
-					<div className="order-5 flex w-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6">
-						<h3 className="font-clash-display text-3xl font-semibold">
+					{/* FAQ */}
+					<div className="order-5 flex w-full flex-col gap-5 rounded-3xl bg-white px-4 py-6 lg:overflow-hidden lg:p-8">
+						<h3 className="font-clash-display text-2xl font-semibold text-[#182135]">
 							Have a question?
 						</h3>
 						<Accordion type="single" collapsible className="w-full space-y-4">
 							<AccordionItem value="how-it-works" className="border-none">
-								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
+								<AccordionTrigger className="rounded-2xl bg-[#E1F8FF] px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
 									How it works?
 								</AccordionTrigger>
 								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
@@ -465,8 +540,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</AccordionItem>
 
 							<AccordionItem value="rules-eligibility" className="border-none">
-								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
-									Rules and Eligibility
+								<AccordionTrigger className="rounded-2xl bg-[#E1F8FF] px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
+									Rules and eligibility
 								</AccordionTrigger>
 								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
 									Participants must be 18 years or older to enter. You can
@@ -481,7 +556,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								value="partial-fulfillment"
 								className="border-none"
 							>
-								<AccordionTrigger className="rounded-lg bg-[#E1F8FF] px-4 py-3 font-semibold hover:no-underline">
+								<AccordionTrigger className="rounded-2xl bg-[#E1F8FF] px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
 									What if minimum participants aren&apos;t reached?
 								</AccordionTrigger>
 								<AccordionContent className="text-muted-foreground space-y-3 px-4 pt-4 text-sm">
@@ -514,7 +589,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				</div>
 				{/* End left column wrapper */}
 
-				{/* Right sidebar — mobile order 2 (after title), desktop right column */}
+				{/* Right sidebar — hidden on mobile for active raffles (purchase is inline), shown on desktop */}
 				<div className="order-2 space-y-2 lg:col-start-2">
 					{shouldShowWinnerCard() && myWinning && (
 						<>
@@ -581,18 +656,21 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						/>
 					)}
 
+					{/* Desktop: active raffle card with countdown + purchase */}
 					{shouldShowActiveCard() && (
 						<div
 							id="checkout-section"
-							className="h-fit rounded-2xl border border-black bg-white p-8"
+							className="hidden h-fit rounded-2xl border border-black bg-white/95 p-8 lg:block"
 						>
-							<RaffleFireIcon className="mx-auto size-12" />
+							<RaffleFireIcon className="mx-auto size-16" />
 
-							<h2 className="font-clash-display my-8 text-center text-xl font-semibold text-nowrap">
+							<h2 className="font-clash-display my-4 text-center text-2xl font-semibold">
 								The raffle is active!
 							</h2>
 
-							<RaffleCountdown endAt={raffle.endAt} />
+							<div className="mb-4">
+								<RaffleCountdown endAt={raffle.endAt} />
+							</div>
 
 							<RaffleExpiredGate endAt={raffle.endAt}>
 								<Suspense
@@ -623,7 +701,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								)}
 							</RaffleExpiredGate>
 
-							<RaffleShareButtons
+							<ShareOnXButton
 								title={raffle.title}
 								publicSlug={raffle.publicSlugOrCode}
 							/>
@@ -657,16 +735,17 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						isManageable={isManageable}
 					/>
 
+					{/* Desktop: KYC notice */}
 					{!isConcluded && !isCancelled && (
-						<div className="flex items-center justify-center gap-2">
+						<div className="hidden items-center justify-center gap-2 lg:flex">
 							<InfoIcon className="size-4 text-[#7B7B7B]" />
 							<p className="text-sm text-[#7B7B7B]">
-								You&apos;ll only need to provide more details if you win
+								You&apos;ll only need KYC if you win
 							</p>
 						</div>
 					)}
 
-					{/* Auto-refresh during transitional states — self-disables via internal logic */}
+					{/* Auto-refresh during transitional states */}
 					<RaffleAutoRefresh
 						status={raffle.status}
 						endAt={raffle.endAt}
@@ -679,7 +758,12 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				searchParams={searchParams}
 			/>
 
-			{shouldShowActiveCard() && <StickyBuyTicketsCta />}
+			{shouldShowActiveCard() && (
+				<StickyBuyTicketsCta
+					title={raffle.title}
+					publicSlug={raffle.publicSlugOrCode}
+				/>
+			)}
 		</div>
 	);
 }

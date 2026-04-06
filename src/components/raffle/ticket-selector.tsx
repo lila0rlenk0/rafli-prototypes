@@ -3,6 +3,11 @@
 import { Minus, Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { cn } from '@/lib/utils';
+
+const BUNDLE_SIZES_DESKTOP = [3, 6, 9];
+const BUNDLE_SIZES_MOBILE = [6, 12, 20];
+
 interface TicketSelectorProps {
 	maxTickets: number;
 	onQuantityChange: (quantity: number) => void;
@@ -83,14 +88,27 @@ export function TicketSelector({
 	}, []);
 
 	/**
-	 * Handles adding a bundle of tickets
-	 * Respects max limit and only adds what's available
-	 * @param bundleSize - Number of tickets in the bundle (3, 6, or 9)
+	 * Sets ticket quantity to the given bundle size directly (desktop)
+	 * Respects max limit and clamps to available tickets
+	 * @param bundleSize - Target ticket count (3, 6, or 9)
 	 */
-	const handleBundle = useCallback(
+	const handleBundleSet = useCallback(
 		(bundleSize: number) => {
+			const newValue = Math.min(bundleSize, effectiveMax);
+			setQuantity(newValue);
+			setInputValue(newValue.toString());
+		},
+		[effectiveMax],
+	);
+
+	/**
+	 * Adds tickets to current quantity (mobile bundles)
+	 * @param amount - Number of tickets to add
+	 */
+	const handleBundleAdd = useCallback(
+		(amount: number) => {
 			setQuantity(prev => {
-				const newValue = Math.min(prev + bundleSize, effectiveMax);
+				const newValue = Math.min(prev + amount, effectiveMax);
 				setInputValue(newValue.toString());
 				return newValue;
 			});
@@ -187,66 +205,105 @@ export function TicketSelector({
 
 	return (
 		<div className="space-y-4">
-			{/* Quantity selector */}
-			<div className="flex items-center justify-between">
-				<p className="text-sm text-[#7B7B7B]">Number of tickets</p>
-
-				<div className="flex items-center justify-center gap-2 rounded-full border border-black px-4 py-1">
+			{/* Mobile: additive bundle buttons (+6, +12, +20) */}
+			<div className="flex items-center justify-between gap-2 lg:hidden">
+				{BUNDLE_SIZES_MOBILE.map(size => (
 					<button
-						onClick={handleDecrement}
-						disabled={decrementDisabled}
-						aria-label="Decrease ticket quantity"
-						aria-disabled={decrementDisabled}
-						className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+						key={size}
+						onClick={() => handleBundleAdd(size)}
+						disabled={bundleDisabled}
+						className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-3 text-sm transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
 					>
-						<Minus className="size-4" />
+						+{size}
 					</button>
-					<input
-						type="number"
-						min={1}
-						max={isUnlimited ? undefined : maxTickets}
-						value={inputValue}
-						onChange={handleInputChange}
-						onBlur={handleInputBlur}
-						onKeyDown={handleInputKeyDown}
-						className="w-8 [appearance:textfield] border-none bg-transparent text-center outline-none focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-						aria-label="Ticket quantity"
-					/>
-					<button
-						onClick={handleIncrement}
-						disabled={incrementDisabled}
-						aria-label="Increase ticket quantity"
-						aria-disabled={incrementDisabled}
-						className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
-					>
-						<Plus className="size-4" />
-					</button>
-				</div>
+				))}
 			</div>
 
-			{/* Bundle buttons */}
-			<div className="flex items-center justify-between gap-2">
+			{/* Quantity counter — full-width on mobile, inline on desktop */}
+			<div className="flex items-center justify-center rounded-full border border-black px-4 py-2 lg:hidden">
 				<button
-					onClick={() => handleBundle(10)}
-					disabled={bundleDisabled}
-					className="disabled:hover:bg-background flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30"
+					onClick={handleDecrement}
+					disabled={decrementDisabled}
+					aria-label="Decrease ticket quantity"
+					className="cursor-pointer px-2 disabled:cursor-not-allowed disabled:opacity-30"
 				>
-					<p className="text-sm">+10 Tickets</p>
+					<Minus className="size-5" />
 				</button>
+				<input
+					type="number"
+					min={1}
+					max={isUnlimited ? undefined : maxTickets}
+					value={inputValue}
+					onChange={handleInputChange}
+					onBlur={handleInputBlur}
+					onKeyDown={handleInputKeyDown}
+					className="w-12 flex-1 [appearance:textfield] border-none bg-transparent text-center outline-none focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+					aria-label="Ticket quantity"
+				/>
 				<button
-					onClick={() => handleBundle(25)}
-					disabled={bundleDisabled}
-					className="disabled:hover:bg-background flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30"
+					onClick={handleIncrement}
+					disabled={incrementDisabled}
+					aria-label="Increase ticket quantity"
+					className="cursor-pointer px-2 disabled:cursor-not-allowed disabled:opacity-30"
 				>
-					<p className="text-sm">+25 Tickets</p>
+					<Plus className="size-5" />
 				</button>
-				<button
-					onClick={() => handleBundle(50)}
-					disabled={bundleDisabled}
-					className="disabled:hover:bg-background flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-2 transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30"
-				>
-					<p className="text-sm">+50 Tickets</p>
-				</button>
+			</div>
+
+			{/* Desktop: inline counter + set-to bundle buttons */}
+			<div className="hidden lg:block">
+				<div className="flex items-center justify-between">
+					<p className="text-sm text-[#7B7B7B]">Number of tickets</p>
+					<div className="flex items-center justify-center gap-2 rounded-full border border-black px-4 py-1">
+						<button
+							onClick={handleDecrement}
+							disabled={decrementDisabled}
+							aria-label="Decrease ticket quantity"
+							aria-disabled={decrementDisabled}
+							className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+						>
+							<Minus className="size-4" />
+						</button>
+						<input
+							type="number"
+							min={1}
+							max={isUnlimited ? undefined : maxTickets}
+							value={inputValue}
+							onChange={handleInputChange}
+							onBlur={handleInputBlur}
+							onKeyDown={handleInputKeyDown}
+							className="w-8 [appearance:textfield] border-none bg-transparent text-center outline-none focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+							aria-label="Ticket quantity"
+						/>
+						<button
+							onClick={handleIncrement}
+							disabled={incrementDisabled}
+							aria-label="Increase ticket quantity"
+							aria-disabled={incrementDisabled}
+							className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+						>
+							<Plus className="size-4" />
+						</button>
+					</div>
+				</div>
+
+				<div className="mt-4 flex items-center justify-between gap-2">
+					{BUNDLE_SIZES_DESKTOP.map(size => (
+						<button
+							key={size}
+							onClick={() => handleBundleSet(size)}
+							disabled={bundleDisabled}
+							className={cn(
+								'flex w-full cursor-pointer items-center justify-center rounded-full border py-2 text-sm transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-30',
+								quantity === size
+									? 'border-black bg-[#C4EDFF]'
+									: 'border-black hover:bg-[#C4EDFF] disabled:hover:bg-transparent',
+							)}
+						>
+							{size} tickets
+						</button>
+					))}
+				</div>
 			</div>
 		</div>
 	);

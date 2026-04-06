@@ -86,7 +86,7 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 		const base = 'rounded-2xl p-4';
 		return isClosingSoon
 			? `${base} border border-amber-200 bg-amber-50`
-			: `${base} bg-[#DFFFED]`;
+			: `${base} bg-[#F6FF8B]`;
 	}
 
 	if (!isHydrated) return null;
@@ -94,7 +94,7 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 	// Once expired, replace frozen zeros with a clear message
 	if (isExpired) {
 		return (
-			<div className="flex items-center justify-center rounded-2xl bg-[#DFFFED] p-4">
+			<div className="flex items-center justify-center rounded-2xl bg-[#F6FF8B] p-4">
 				<p className="font-clash-display text-2xl font-semibold">
 					Time&apos;s up!
 				</p>

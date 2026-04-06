@@ -7,7 +7,6 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import { Logo } from '@/assets/logo';
-import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
 import { ModeSwitchToggle } from '@/components/mode/mode-switch-toggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button } from '@/components/ui/button';
@@ -107,7 +106,9 @@ export function PublicNavbar({
 						</a>
 						{isAuthenticated ? (
 							<>
-								<ModeSwitchButton />
+								<div className="w-56">
+									<ModeSwitchToggle />
+								</div>
 								<NotificationBell />
 								<Link href="/profile">
 									<User className="size-5" />

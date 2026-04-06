@@ -75,17 +75,18 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 			className="group relative flex w-full flex-col rounded-t-2xl rounded-b-3xl border border-transparent transition-colors duration-150 sm:hover:border-black"
 		>
 			{/* Image Header */}
-			<div className="relative h-[140px] w-full overflow-hidden rounded-t-2xl bg-gray-100">
+			<div className="w-full overflow-hidden rounded-t-2xl bg-gray-100">
 				{raffle.coverMediaUrl ? (
 					<Image
 						src={raffle.coverMediaUrl}
 						alt={raffle.title}
-						fill
-						className="object-cover"
+						width={400}
+						height={300}
+						className="h-auto w-full"
 						sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
 					/>
 				) : (
-					<div className="flex size-full items-center justify-center bg-gray-200">
+					<div className="flex h-[140px] items-center justify-center bg-gray-200">
 						<span className="text-sm text-gray-400">No image</span>
 					</div>
 				)}

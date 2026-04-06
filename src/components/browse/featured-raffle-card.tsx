@@ -97,12 +97,13 @@ export function FeaturedRaffleCard({
 
 			{/* Cover image - below text on mobile, right side on desktop */}
 			{raffle.coverMediaUrl && (
-				<div className="relative h-[133px] w-full flex-shrink-0 overflow-hidden rounded-3xl sm:h-[182px] sm:w-[182px]">
+				<div className="w-full flex-shrink-0 overflow-hidden rounded-3xl sm:w-[182px]">
 					<Image
 						src={raffle.coverMediaUrl}
 						alt={raffle.title}
-						fill
-						className="object-cover"
+						width={400}
+						height={300}
+						className="h-auto w-full"
 						sizes="(max-width: 640px) 100vw, 182px"
 					/>
 				</div>

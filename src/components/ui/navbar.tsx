@@ -5,10 +5,8 @@ import Link from 'next/link';
 import { ReactNode, useEffect, useState } from 'react';
 
 import { Logo } from '@/assets/logo';
-import { ModeSwitchButton } from '@/components/mode/mode-switch-button';
 import { ModeSwitchToggle } from '@/components/mode/mode-switch-toggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
@@ -79,29 +77,28 @@ export function Navbar({ children }: NavbarProps) {
 						</Link>
 					</div>
 
-					{/* Desktop: Right side icons */}
-					<div className="hidden items-center gap-3 sm:flex sm:gap-4">
-						<Button
-							asChild
-							variant="outline"
-							size="default"
-							className="border-black text-black"
-						>
-							<a
-								href={FEEDBACK_FORM_URL}
-								target="_blank"
-								rel="noopener noreferrer"
-								data-testid="help-us-improve-button"
-							>
-								Help us improve
-							</a>
-						</Button>
-						<ModeSwitchButton />
-						<NotificationBell />
-						<Link href="/profile">
-							<User className="size-5" />
-						</Link>
+				{/* Desktop: Right side icons */}
+				<div className="hidden items-center gap-4 sm:flex">
+					<a
+						href={FEEDBACK_FORM_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						data-testid="help-us-improve-button"
+						className="flex h-[38px] items-center rounded-full border border-black px-4 text-sm font-medium text-black"
+					>
+						Help us improve
+					</a>
+					<div className="w-56">
+						<ModeSwitchToggle />
 					</div>
+					{/* 8px gap between notification and profile — tighter than the 16px outer gap */}
+				<div className="flex items-center gap-2">
+					<NotificationBell />
+					<Link href="/profile">
+						<User className="size-5" />
+					</Link>
+				</div>
+				</div>
 
 					{/* Mobile: Notification bell + Hamburger menu */}
 					<div className="flex items-center gap-2 sm:hidden">
@@ -169,15 +166,15 @@ export function Navbar({ children }: NavbarProps) {
 								Profile
 							</Link>
 
-							<a
-								href={FEEDBACK_FORM_URL}
-								target="_blank"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-								className="flex h-14 items-center justify-center rounded-full border border-black text-lg font-semibold text-black"
-							>
-								Help us improve
-							</a>
+						<a
+							href={FEEDBACK_FORM_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							onClick={closeMenu}
+							className="flex h-[38px] items-center justify-center rounded-full border border-black px-4 text-sm font-medium text-black"
+						>
+							Help us improve
+						</a>
 						</div>
 					</div>
 				)}

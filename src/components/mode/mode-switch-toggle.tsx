@@ -66,9 +66,9 @@ export function ModeSwitchToggle() {
 
 	if (!canSwitchMode()) {
 		return (
-			<Link
-				href="/verification"
-				className="flex h-12 w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white"
+		<Link
+			href="/verification"
+			className="flex h-[38px] w-full items-center justify-center rounded-full bg-black text-sm font-semibold text-white"
 				data-testid="become-a-host-button"
 				onClick={handleBecomeHostClick}
 			>

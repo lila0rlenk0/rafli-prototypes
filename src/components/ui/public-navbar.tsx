@@ -94,30 +94,33 @@ export function PublicNavbar({
 						)}
 					</div>
 
-					{/* Desktop: Right side */}
-					<div className="hidden items-center gap-3 sm:flex sm:gap-8">
-						<a
-							href={FEEDBACK_FORM_URL}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="rounded-full border border-black px-4 py-2 text-sm font-medium text-black"
-						>
-							Help us improve
-						</a>
-						{isAuthenticated ? (
-							<>
-								<div className="w-56">
-									<ModeSwitchToggle />
-								</div>
+				{/* Desktop: Right side */}
+				<div className="hidden items-center gap-4 sm:flex">
+					<a
+						href={FEEDBACK_FORM_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="flex h-[38px] items-center rounded-full border border-black px-4 text-sm font-medium text-black"
+					>
+						Help us improve
+					</a>
+					{isAuthenticated ? (
+						<>
+							<div className="w-56">
+								<ModeSwitchToggle />
+							</div>
+							{/* 8px gap between notification and profile — tighter than the 16px outer gap */}
+							<div className="flex items-center gap-2">
 								<NotificationBell />
 								<Link href="/profile">
 									<User className="size-5" />
 								</Link>
-							</>
-						) : (
-							<Button asChild className="h-9 px-4 text-sm sm:h-10 sm:px-6">
-								<Link href={getSignInHref()}>Sign In</Link>
-							</Button>
+							</div>
+						</>
+					) : (
+						<Button asChild className="h-[38px] bg-black px-4 text-sm text-white hover:bg-black/90">
+							<Link href={getSignInHref()}>Sign In</Link>
+						</Button>
 						)}
 					</div>
 
@@ -189,24 +192,24 @@ export function PublicNavbar({
 								</>
 							) : (
 								<Button
-									asChild
-									className="bg-dark hover:bg-dark/90 mt-4 h-14 text-lg"
-								>
-									<Link href={getSignInHref()} onClick={closeMenu}>
-										Sign In
-									</Link>
-								</Button>
+								asChild
+								className="mt-4 h-[38px] bg-black text-sm text-white hover:bg-black/90"
+							>
+								<Link href={getSignInHref()} onClick={closeMenu}>
+									Sign In
+								</Link>
+							</Button>
 							)}
 
-							<a
-								href={FEEDBACK_FORM_URL}
-								target="_blank"
-								rel="noopener noreferrer"
-								onClick={closeMenu}
-								className="flex h-14 items-center justify-center rounded-full border border-black text-lg font-semibold text-black"
-							>
-								Help us improve
-							</a>
+						<a
+							href={FEEDBACK_FORM_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							onClick={closeMenu}
+							className="flex h-[38px] items-center justify-center rounded-full border border-black px-4 text-sm font-medium text-black"
+						>
+							Help us improve
+						</a>
 						</div>
 					</div>
 				)}

@@ -36,7 +36,7 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 
 	return (
 		<>
-			<nav className="relative w-full border-b border-[#e6e8ec]">
+			<nav className="relative w-full border-b border-black">
 				{showDecoration && (
 					<ColoredCard className="absolute top-0 right-0 z-0 origin-top-right scale-[.55] md:scale-[.85]" />
 				)}

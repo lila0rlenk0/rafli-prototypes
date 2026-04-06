@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode, type ComponentProps } from 'react';
 
+import { MarqueeBanner } from '@/components/browse/marquee-banner';
 import { PublicNavbar } from '@/components/ui/public-navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { getSession } from '@/lib/auth/session';
@@ -43,7 +44,12 @@ async function PublicBrowseLayoutContent({
 		: [];
 
 	const content = (
-		<PublicNavbar isAuthenticated={isAuthenticated}>{children}</PublicNavbar>
+		<PublicNavbar
+			isAuthenticated={isAuthenticated}
+			topBanner={<MarqueeBanner />}
+		>
+			{children}
+		</PublicNavbar>
 	);
 
 	// Only wrap with providers for authenticated users

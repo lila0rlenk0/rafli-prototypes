@@ -124,7 +124,7 @@ export function Navbar({ children }: NavbarProps) {
 				{/* Mobile menu overlay */}
 				{isMenuOpen && (
 					<div className="fixed inset-0 z-50 bg-[#beffdb] sm:hidden">
-						<div className="flex items-center justify-between border-b border-[#e6e8ec] px-4 py-4">
+						<div className="flex items-center justify-between border-b border-black px-4 py-4">
 							<Link href="/browse" onClick={closeMenu}>
 								<Logo className="h-5 w-auto" />
 							</Link>

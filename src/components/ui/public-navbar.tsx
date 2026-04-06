@@ -17,6 +17,7 @@ const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 interface PublicNavbarProps {
 	children: ReactNode;
 	isAuthenticated: boolean;
+	topBanner?: ReactNode;
 }
 
 /**
@@ -30,7 +31,11 @@ interface PublicNavbarProps {
  * @param children - Child components to render in the content area
  * @param isAuthenticated - Whether the user is currently authenticated
  */
-export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
+export function PublicNavbar({
+	children,
+	isAuthenticated,
+	topBanner,
+}: PublicNavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -64,8 +69,8 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 			{/* Background strip — solid bg, z-10 so decorative shapes (z-[15]) show above */}
 			<div className="bg-background sticky top-0 z-10 h-14 sm:h-16" />
 
-			<nav className="bg-background sticky top-0 z-20 -mt-14 border-b border-[#e6e8ec] sm:-mt-16">
-				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between px-4 sm:h-16 sm:px-6 2xl:px-20">
+			<nav className="bg-background sticky top-0 z-20 -mt-14 border-b border-black sm:-mt-16">
+				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between px-3 sm:h-16 sm:px-8 2xl:px-[90px]">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">
 							<Logo className="h-5 w-auto sm:h-6" />
@@ -133,7 +138,7 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 				{/* Mobile menu overlay */}
 				{isMenuOpen && (
 					<div className="fixed inset-0 z-50 bg-[#beffdb] sm:hidden">
-						<div className="flex items-center justify-between border-b border-[#e6e8ec] px-4 py-4">
+						<div className="flex items-center justify-between border-b border-black px-4 py-4">
 							<Link href="/browse" onClick={closeMenu}>
 								<Logo className="h-5 w-auto" />
 							</Link>
@@ -206,7 +211,9 @@ export function PublicNavbar({ children, isAuthenticated }: PublicNavbarProps) {
 				)}
 			</nav>
 
-			<div className="relative z-[16] mx-auto mt-6 max-w-[1920px] overflow-auto px-2 pb-10 sm:mt-10 sm:px-6 2xl:px-20">
+			{topBanner}
+
+			<div className="relative z-[16] mx-auto mt-6 max-w-[1920px] overflow-auto px-3 pb-10 sm:mt-10 sm:px-8 2xl:px-[90px]">
 				{children}
 			</div>
 		</>

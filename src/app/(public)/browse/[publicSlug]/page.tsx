@@ -142,7 +142,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
 	let myWinning: Winning | null = null;
-	let myWinningTicketCode: string | null = null;
+	const myWinningTicketCode: string | null = null;
 	let myUserName: string | null = null;
 	let myUserAvatarUrl: string | null = null;
 

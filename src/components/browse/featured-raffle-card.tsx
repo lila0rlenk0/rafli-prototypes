@@ -64,7 +64,7 @@ export function FeaturedRaffleCard({
 			className={`${config.bg} flex w-full flex-col gap-6 rounded-3xl border border-transparent p-6 transition-colors sm:flex-row sm:items-start sm:justify-between sm:p-8 sm:hover:border-black`}
 		>
 			{/* Text content */}
-			<div className="flex flex-col gap-6 sm:max-w-[60%]">
+			<div className="flex flex-col gap-6 sm:w-[60%]">
 				<div className="flex flex-col gap-2">
 					<span
 						className={`${config.badgeBg} w-fit rounded-[10px] px-2 py-0.5 text-sm font-semibold text-[#121211]`}

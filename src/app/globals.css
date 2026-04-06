@@ -129,8 +129,15 @@
 		@apply border-border outline-ring/50;
 	}
 	html {
-		font-size: 14px;
+		/* 16px on mobile prevents iOS auto-zoom on input focus (triggers below 16px).
+		   Steps down to 15px on sm+ where inputs aren't the primary interaction. */
+		font-size: 16px;
 		scroll-behavior: smooth;
+	}
+	@media (min-width: 640px) {
+		html {
+			font-size: 15px;
+		}
 	}
 	body {
 		@apply bg-background text-foreground;

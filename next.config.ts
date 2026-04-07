@@ -111,6 +111,11 @@ const nextConfig: NextConfig = {
 	async redirects() {
 		return [
 			{
+				source: '/',
+				destination: '/browse',
+				permanent: false,
+			},
+			{
 				source: '/terms',
 				destination: 'https://www.earnm.com/terms',
 				permanent: false,

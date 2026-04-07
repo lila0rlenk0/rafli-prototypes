@@ -58,8 +58,6 @@ import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
 import { ReportRaffleButton } from './report-raffle-button';
 import { CopyRaffleLinkButton } from './copy-raffle-link-button';
-import { ShareOnXButton } from './share-on-x-button';
-import { StickyBuyTicketsCta } from './sticky-buy-tickets-cta';
 
 interface PageProps {
 	params: Promise<{

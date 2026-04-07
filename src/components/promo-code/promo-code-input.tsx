@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, Loader2, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +46,13 @@ export function PromoCodeInput({
 		useState<ValidatedPromoCode | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const hasAutoValidated = useRef(false);
+
+	// Ref-stabilize onValidCode so the auto-validation effect doesn't depend on
+	// the parent's inline callback reference. Without this, parent re-renders
+	// (e.g. from useRaffleSaleWindow timer) cancel the in-flight validation via
+	// the effect cleanup, but hasAutoValidated prevents a retry — validation is lost.
+	const onValidCodeRef = useRef(onValidCode);
+	onValidCodeRef.current = onValidCode;
 
 	/**
 	 * Gets user-friendly error message for validation errors
@@ -137,7 +144,9 @@ export function PromoCodeInput({
 	}
 
 	/**
-	 * Auto-validate initialCode on mount
+	 * Auto-validate initialCode on mount.
+	 * Uses onValidCodeRef (not onValidCode directly) so parent re-renders
+	 * don't trigger effect cleanup that would cancel the in-flight request.
 	 */
 	useEffect(() => {
 		const normalized = initialCode?.trim().toUpperCase() ?? '';
@@ -175,14 +184,17 @@ export function PromoCodeInput({
 			};
 
 			setValidatedPromo(promo);
-			onValidCode(promo);
+			onValidCodeRef.current(promo);
 		}
 
 		autoValidate();
 		return () => {
 			cancelled = true;
 		};
-	}, [initialCode, raffleId, onValidCode, validatedPromo]);
+		// onValidCode excluded — accessed via stable ref to prevent parent re-renders
+		// (e.g. countdown timer) from cancelling the in-flight validation request.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [initialCode, raffleId, validatedPromo]);
 
 	/**
 	 * Handles removing the validated code

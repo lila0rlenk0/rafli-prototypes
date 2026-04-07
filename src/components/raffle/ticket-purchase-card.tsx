@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
 import { CryptoBuyButton } from '@/app/(public)/browse/[publicSlug]/crypto-buy-button';
@@ -159,18 +159,20 @@ export function TicketPurchaseCard({
 	}
 
 	/**
-	 * Handles valid promo code
-	 * @param promo - The validated promo code
+	 * Handles valid promo code.
+	 * Stable reference — prevents PromoCodeInput's auto-validation effect from
+	 * being cancelled by parent re-renders (countdown timer, hydration, etc.).
 	 */
-	function handleValidPromo(promo: ValidatedPromoCode) {
+	const handleValidPromo = useCallback((promo: ValidatedPromoCode) => {
 		// Step 1: Store validated promo.
 		setAppliedPromo(promo);
 
 		// Step 2: Sync ticket quantity for free tickets.
 		if (promo.type === PROMO_CODE_TYPE.FREE_TICKETS) {
-			setTicketQuantity(getFreeTicketCount(promo));
+			const count = Math.floor(parseFloat(promo.value));
+			setTicketQuantity(count);
 		}
-	}
+	}, []);
 
 	/**
 	 * Handles promo code removal

@@ -195,20 +195,20 @@ vercel env ls production --token $VERCEL_TOKEN
 
 ## Rate limits summary
 
-| Endpoint | Limit |
-|----------|-------|
-| Deployments list | 1000/min |
-| Single deployment | 500/min |
-| Deployment events (logs) | 60/min |
-| Runtime logs | 100/min |
-| Request logs | 240/min |
-| Env var retrieval | 500/min |
-| Project domains | 500/min |
-| Domain DNS config | 500/min |
-| Edge Config reads | 500/min |
-| Checks | 500/min |
-| Log drains | 100/min |
-| Team retrieval | 600/min |
-| User retrieval | 500/min |
+| Endpoint                 | Limit    |
+| ------------------------ | -------- |
+| Deployments list         | 1000/min |
+| Single deployment        | 500/min  |
+| Deployment events (logs) | 60/min   |
+| Runtime logs             | 100/min  |
+| Request logs             | 240/min  |
+| Env var retrieval        | 500/min  |
+| Project domains          | 500/min  |
+| Domain DNS config        | 500/min  |
+| Edge Config reads        | 500/min  |
+| Checks                   | 500/min  |
+| Log drains               | 100/min  |
+| Team retrieval           | 600/min  |
+| User retrieval           | 500/min  |
 
 Exceeding any limit returns HTTP 429.

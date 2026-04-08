@@ -173,6 +173,7 @@ curl -G "https://sentry.io/api/0/organizations/$SENTRY_ORG/events/" \
 - Query params: `field` (repeatable), `query` (Sentry search syntax), `sort` (must be in field list, prefix `-` for DESC), `per_page` (max 100), `statsPeriod`, `start`/`end`, `project`, `environment`, `dataset` (errors|transactions), `cursor`
 
 Key available fields:
+
 - Event: `id`, `title`, `message`, `event.type`, `timestamp`, `level`, `platform`, `project`, `release`, `environment`
 - Transaction: `transaction`, `transaction.op`, `transaction.status`, `transaction.duration`
 - Error: `error.type`, `error.value`, `error.mechanism`, `error.handled`, `error.unhandled`
@@ -184,6 +185,7 @@ Key available fields:
 - Tags: `tag[key]` format
 
 Key available functions:
+
 - Count: `count()`, `count_unique(field)`, `count_if(col,op,val)`, `count_miserable(field,threshold)`, `count_web_vitals(vital,threshold)`
 - Aggregation: `avg(field)`, `sum(field)`, `min(field)`, `max(field)`
 - Percentiles: `p50(field)`, `p75(field)`, `p95(field)`, `p99(field)`, `p100(field)`
@@ -328,10 +330,10 @@ Configure via env vars: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SE
 
 These are measured at p75 per Google's methodology:
 
-| Metric | Good | Needs Improvement | Poor |
-|--------|------|-------------------|------|
-| LCP | < 2.5s | 2.5s - 4.0s | >= 4.0s |
-| FCP | < 1.8s | 1.8s - 3.0s | >= 3.0s |
-| CLS | < 0.1 | 0.1 - 0.25 | >= 0.25 |
-| FID | < 100ms | 100ms - 300ms | >= 300ms |
-| TTFB | < 800ms | 800ms - 1.8s | >= 1.8s |
+| Metric | Good    | Needs Improvement | Poor     |
+| ------ | ------- | ----------------- | -------- |
+| LCP    | < 2.5s  | 2.5s - 4.0s       | >= 4.0s  |
+| FCP    | < 1.8s  | 1.8s - 3.0s       | >= 3.0s  |
+| CLS    | < 0.1   | 0.1 - 0.25        | >= 0.25  |
+| FID    | < 100ms | 100ms - 300ms     | >= 300ms |
+| TTFB   | < 800ms | 800ms - 1.8s      | >= 1.8s  |

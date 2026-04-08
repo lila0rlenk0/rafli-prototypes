@@ -22,7 +22,10 @@ Both server clients from `@/lib/api/client`. Retry: only GET/HEAD on network err
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapRaffleError, success } from '@/lib/errors';
-import { captureContractDrift, captureServiceError } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import type { ServiceResponse } from '@/types/service-response';
 import { ZodError } from 'zod';
 
@@ -92,7 +95,9 @@ await trackServer(EVENT, data, { userId });
 return success(result);
 
 // good — runs after response is sent
-after(async () => { await trackServer(EVENT, data, { userId }); });
+after(async () => {
+	await trackServer(EVENT, data, { userId });
+});
 return success(result);
 ```
 

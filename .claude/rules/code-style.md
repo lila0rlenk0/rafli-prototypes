@@ -24,10 +24,14 @@ Use ternary for JSX conditionals — never `&&`. Prevents rendering `0` or `""` 
 
 ```tsx
 // bad — && can render falsy primitives
-{isLoading && <Spinner />}
+{
+	isLoading && <Spinner />;
+}
 
 // good — explicit null branch
-{isLoading ? <Spinner /> : null}
+{
+	isLoading ? <Spinner /> : null;
+}
 ```
 
 ## Early Return Pattern

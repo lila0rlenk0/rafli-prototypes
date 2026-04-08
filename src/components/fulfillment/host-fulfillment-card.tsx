@@ -8,8 +8,6 @@ interface HostFulfillmentCardProps {
 	publicSlug: string;
 	/** Number of winners to fulfill */
 	winnersCount: number;
-	/** Whether the raffle concluded with fewer participants than the minimum */
-	isPartialFulfillment: boolean;
 }
 
 /**
@@ -21,16 +19,11 @@ interface HostFulfillmentCardProps {
 export function HostFulfillmentCard({
 	publicSlug,
 	winnersCount,
-	isPartialFulfillment,
 }: HostFulfillmentCardProps) {
 	/**
 	 * Formats the winners count message
-	 * Partial fulfillment = platform-handled payouts, no host action needed
 	 */
 	function getWinnersMessage(): string {
-		if (isPartialFulfillment) {
-			return 'Payouts processed by the platform';
-		}
 		if (winnersCount === 1) {
 			return '1 winner awaiting fulfillment';
 		}
@@ -44,7 +37,7 @@ export function HostFulfillmentCard({
 			</div>
 
 			<div className="mb-4">
-				<FulfillmentBadge isPartial={isPartialFulfillment} />
+				<FulfillmentBadge />
 			</div>
 
 			<p className="mb-6 text-sm text-gray-600">{getWinnersMessage()}</p>

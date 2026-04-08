@@ -8,6 +8,8 @@ export const CANCELLATION_REASON = {
 	HOST_CANCELLED: 'host_cancelled',
 	NO_TICKETS: 'no_tickets',
 	INSUFFICIENT_PARTICIPANTS: 'insufficient_participants',
+	/** Below minParticipants but had enough for a draw — cancelled instead of partial revenue share */
+	PARTIAL_PARTICIPATION: 'partial_participation',
 } as const;
 
 export type CancellationReason =
@@ -24,6 +26,8 @@ export type CancellationReason =
  * - `no_tickets`: ended with zero tickets sold, no VRF draw attempted
  * - `insufficient_participants`: ended with some tickets but fewer unique
  *   participants than winners needed, no VRF draw attempted
+ * - `partial_participation`: enough participants for a draw but below
+ *   minParticipants — cancelled instead of partial revenue share
  * - `host_cancelled`: all other cancellations (manual action by host)
  *
  * @param raffle - The raffle to inspect
@@ -37,6 +41,7 @@ export function getCancellationReason(
 		| 'ticketsSoldCount'
 		| 'participantsCount'
 		| 'numberOfWinners'
+		| 'minParticipants'
 		| 'vrfRequestId'
 	>,
 ): CancellationReason | null {
@@ -59,6 +64,17 @@ export function getCancellationReason(
 		return CANCELLATION_REASON.INSUFFICIENT_PARTICIPANTS;
 	}
 
+	// Auto-cancel: enough participants for a draw but below minParticipants threshold.
+	// Backend now cancels instead of proceeding with partial revenue share.
+	if (
+		isPastEnd &&
+		raffle.participantsCount >= raffle.numberOfWinners &&
+		raffle.participantsCount < raffle.minParticipants &&
+		hadNoVrfDraw
+	) {
+		return CANCELLATION_REASON.PARTIAL_PARTICIPATION;
+	}
+
 	return CANCELLATION_REASON.HOST_CANCELLED;
 }
 
@@ -72,7 +88,8 @@ export function getCancellationReason(
 export function isAutoReason(reason: CancellationReason): boolean {
 	return (
 		reason === CANCELLATION_REASON.NO_TICKETS ||
-		reason === CANCELLATION_REASON.INSUFFICIENT_PARTICIPANTS
+		reason === CANCELLATION_REASON.INSUFFICIENT_PARTICIPANTS ||
+		reason === CANCELLATION_REASON.PARTIAL_PARTICIPATION
 	);
 }
 

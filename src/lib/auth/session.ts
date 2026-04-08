@@ -21,6 +21,7 @@ import 'server-only';
 
 import { AUTH_COOKIES, COOKIE_OPTIONS } from './config';
 import { decodeJwt, isJwtExpired, jwtPayloadToUser } from './jwt';
+import { clearUserModeCookie } from '@/lib/mode/cookies';
 
 /**
  * Sets authentication cookies after successful login
@@ -68,8 +69,13 @@ export async function getSession(): Promise<AuthSession | null> {
 	if (!token) return null;
 
 	try {
-		// Check if token is expired
+		// Check if token is expired — clear stale cookies to prevent repeated
+		// decode-check-redirect cycles on every navigation
 		if (isJwtExpired(token)) {
+			const cookieStore = await cookies();
+			cookieStore.delete(AUTH_COOKIES.TOKEN);
+			cookieStore.delete(AUTH_COOKIES.SESSION);
+			await clearUserModeCookie();
 			return null;
 		}
 

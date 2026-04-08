@@ -18,7 +18,10 @@ export const COOKIE_OPTIONS = {
 	httpOnly: true,
 	secure: clientEnv.NODE_ENV === 'production',
 	sameSite: 'lax' as const,
-	maxAge: 60 * 60 * 24 * 7, // 7 days
+	// Aligned with BE JWT expirationTime (30d in better-auth.config.ts:279).
+	// Previously 7d — browser deleted cookie 23 days before JWT expired,
+	// silently logging users out with no recovery path.
+	maxAge: 60 * 60 * 24 * 30, // 30 days
 	path: '/',
 } as const;
 

@@ -32,7 +32,13 @@ describe('getMyOrders', () => {
 			raffleSlug: 'test-raffle',
 		};
 		mockGet.mockResolvedValueOnce(
-			mockAxiosResponse({ total: 1, orders: [order] }),
+			mockAxiosResponse({
+				total: 1,
+				orders: [order],
+				page: 1,
+				limit: 10,
+				totalPages: 1,
+			}),
 		);
 
 		const result = await getMyOrders({ page: 1, limit: 10 });
@@ -78,7 +84,15 @@ describe('getMyOrders', () => {
 
 	test('passes excludeStale param to API', async () => {
 		mockGet.mockReset();
-		mockGet.mockResolvedValueOnce(mockAxiosResponse({ total: 0, orders: [] }));
+		mockGet.mockResolvedValueOnce(
+			mockAxiosResponse({
+				total: 0,
+				orders: [],
+				page: 1,
+				limit: 10,
+				totalPages: 0,
+			}),
+		);
 
 		await getMyOrders({ page: 1, limit: 10, excludeStale: true });
 
@@ -92,7 +106,15 @@ describe('getMyOrders', () => {
 
 	test('uses default params when called with no args', async () => {
 		mockGet.mockReset();
-		mockGet.mockResolvedValueOnce(mockAxiosResponse({ total: 0, orders: [] }));
+		mockGet.mockResolvedValueOnce(
+			mockAxiosResponse({
+				total: 0,
+				orders: [],
+				page: 1,
+				limit: 10,
+				totalPages: 0,
+			}),
+		);
 
 		await getMyOrders();
 
@@ -106,7 +128,15 @@ describe('getMyOrders', () => {
 
 	test('returns totalPages 0 for empty orders', async () => {
 		mockGet.mockReset();
-		mockGet.mockResolvedValueOnce(mockAxiosResponse({ total: 0, orders: [] }));
+		mockGet.mockResolvedValueOnce(
+			mockAxiosResponse({
+				total: 0,
+				orders: [],
+				page: 1,
+				limit: 10,
+				totalPages: 0,
+			}),
+		);
 
 		const result = await getMyOrders({ page: 1, limit: 10 });
 
@@ -134,7 +164,15 @@ describe('getMyOrders', () => {
 			raffleName: 'Test Raffle',
 			raffleSlug: 'test-raffle',
 		}));
-		mockGet.mockResolvedValueOnce(mockAxiosResponse({ total: 20, orders }));
+		mockGet.mockResolvedValueOnce(
+			mockAxiosResponse({
+				total: 20,
+				orders,
+				page: 1,
+				limit: 10,
+				totalPages: 2,
+			}),
+		);
 
 		const result = await getMyOrders({ page: 1, limit: 10 });
 

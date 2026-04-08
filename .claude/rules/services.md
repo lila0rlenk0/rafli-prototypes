@@ -81,7 +81,19 @@ export function useMyData(options?: { limit?: number; enabled?: boolean }) {
 
 ## Non-Blocking Side Effects
 
-`after()` from `next/server` for work that shouldn't block the response — analytics, audit logging, cache invalidation.
+`after()` from `next/server` for work that shouldn't block the response — analytics, audit logging, cache invalidation. Never `await trackServer(...)` on the success path — use `after(() => trackServer(...))` or `void trackServer(...)`.
+
+```tsx
+import { after } from 'next/server';
+
+// bad — blocks response for analytics
+await trackServer(EVENT, data, { userId });
+return success(result);
+
+// good — runs after response is sent
+after(async () => { await trackServer(EVENT, data, { userId }); });
+return success(result);
+```
 
 ## When to Use What
 

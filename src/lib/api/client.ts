@@ -22,13 +22,14 @@
  * @see https://developers.cloudflare.com/fundamentals/reference/http-headers/
  */
 import axios, {
-	type AxiosError,
+	AxiosError,
 	type AxiosInstance,
 	type AxiosRequestConfig,
 } from 'axios';
 import { headers } from 'next/headers';
 
 import { env } from '@/env/server';
+import { AUTH_COOKIES } from '@/lib/auth/config';
 import { getAuthToken } from '@/lib/auth/session';
 import { API_RETRY, API_TIMEOUTS } from './config';
 
@@ -172,16 +173,24 @@ authenticatedClient.interceptors.request.use(
 		const clientIp =
 			results[1].status === 'fulfilled' ? results[1].value : null;
 
-		// Validates token presence - if not present, rejects the request
+		// Validates token presence — reject with a real AxiosError so
+		// `error instanceof AxiosError` succeeds in error-mapper.ts extractErrorCode
 		if (!token) {
-			return Promise.reject({
-				response: {
-					status: 401,
-					data: { message: 'You must be signed in to perform this action' },
-				},
-				isAxiosError: true,
-				config,
-			});
+			return Promise.reject(
+				new AxiosError(
+					'You must be signed in to perform this action',
+					'ERR_UNAUTHORIZED',
+					config,
+					null,
+					{
+						status: 401,
+						data: { message: 'You must be signed in to perform this action' },
+						headers: {},
+						statusText: 'Unauthorized',
+						config,
+					} as never,
+				),
+			);
 		}
 
 		// Server-to-server authentication
@@ -203,6 +212,30 @@ authenticatedClient.interceptors.request.use(
 // Attach retry interceptors (must be after request interceptors)
 addRetryInterceptor(baseClient);
 addRetryInterceptor(authenticatedClient);
+
+/**
+ * Global 401 interceptor — clears stale auth cookies when the backend rejects a token.
+ * This prevents repeated requests with an invalid token on subsequent navigations.
+ * The actual error code mapping (→ UNAUTHORIZED) is handled by domain error mappers.
+ *
+ * Runs after retry interceptor so retried requests that still 401 are caught here.
+ */
+authenticatedClient.interceptors.response.use(
+	undefined,
+	async (error: AxiosError) => {
+		if (error.response?.status === 401) {
+			try {
+				const { cookies: getCookies } = await import('next/headers');
+				const cookieStore = await getCookies();
+				cookieStore.delete(AUTH_COOKIES.TOKEN);
+				cookieStore.delete(AUTH_COOKIES.SESSION);
+			} catch {
+				// Cookie cleanup is best-effort — may fail outside request context
+			}
+		}
+		return Promise.reject(error);
+	},
+);
 
 /**
  * Helper to create request with custom timeout

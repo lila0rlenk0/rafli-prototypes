@@ -30,8 +30,16 @@ export function CallbackHandler() {
 	const [error, setError] = useState<string | null>(null);
 	const [isProcessing, setIsProcessing] = useState(true);
 
+	// mount: exchange OAuth session cookie for JWT and redirect
 	useEffect(() => {
+		const controller = new AbortController();
+		// Prevents React 18 strict mode double-execution from firing duplicate token exchanges
+		let handled = false;
+
 		async function handleCallback() {
+			if (handled) return;
+			handled = true;
+
 			try {
 				// Step 1: Check for OAuth error in URL params
 				const oauthError = searchParams.get('error');
@@ -42,9 +50,13 @@ export function CallbackHandler() {
 				}
 
 				// Step 2: Exchange session cookie for JWT token (browserClient sends cookies).
+				// Pass abort signal so unmount cancels the in-flight request.
 				const response = await browserClient.get<{ token?: string }>(
 					'/auth/token',
+					{ signal: controller.signal },
 				);
+
+				if (controller.signal.aborted) return;
 
 				if (!response.data.token) {
 					setError('Failed to complete sign in. Please try signing in again.');
@@ -54,6 +66,8 @@ export function CallbackHandler() {
 
 				// Step 3: Set raffly auth cookies via server action
 				const cookieResult = await setAuthCookiesClient(response.data.token);
+
+				if (controller.signal.aborted) return;
 
 				if (!cookieResult.success) {
 					setError('Failed to complete sign in. Please try signing in again.');
@@ -66,6 +80,9 @@ export function CallbackHandler() {
 				router.push(returnTo);
 				router.refresh();
 			} catch (err) {
+				// Aborted requests are expected on unmount — don't log or show errors
+				if (controller.signal.aborted) return;
+
 				const errorCode = mapAuthError(err);
 				captureServiceError(err, errorCode, {
 					service: 'auth',
@@ -77,6 +94,7 @@ export function CallbackHandler() {
 		}
 
 		handleCallback();
+		return () => controller.abort();
 	}, [router, searchParams]);
 
 	if (error) {

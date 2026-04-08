@@ -58,14 +58,13 @@ export async function getMyOrders(
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const { total, orders } = result.data;
-
+		// Use BE pagination values directly to avoid divergence in totalPages calculation
 		return success({
-			items: orders,
-			total,
-			page,
-			limit,
-			totalPages: Math.ceil(total / limit),
+			items: result.data.orders,
+			total: result.data.total,
+			page: result.data.page,
+			limit: result.data.limit,
+			totalPages: result.data.totalPages,
 		});
 	} catch (error) {
 		return failure(mapOrderError(error));

@@ -1,3 +1,4 @@
+export { CreditsSection } from './credits-section';
 export { EmailPreferencesSection } from './email-preferences-section';
 export { PaymentHistorySection } from './payment-history-section';
 export { PersonalInformationSection } from './personal-information-section';

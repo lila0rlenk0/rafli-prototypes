@@ -117,6 +117,30 @@ export const PAYMENT_ERROR_CODES = {
 	/** Crypto computed amount is zero (should not happen after promo check) */
 	CRYPTO_ZERO_AMOUNT: 'payments:crypto:zero-amount',
 
+	// Credit payment errors
+	/** User's credit balance is too low to cover the order */
+	CREDITS_INSUFFICIENT_BALANCE: 'payments:credits:insufficient-balance',
+	/** Credit amount failed backend validation */
+	CREDITS_INVALID_AMOUNT: 'payments:credits:invalid-amount',
+	/** Order amount failed backend credit validation */
+	CREDITS_INVALID_ORDER_AMOUNT: 'payments:credits:invalid-order-amount',
+	/** Order not found when attempting credit spend */
+	CREDITS_ORDER_NOT_FOUND: 'payments:credits:order-not-found',
+	/** Order is no longer pending — already completed/failed */
+	CREDITS_ORDER_NOT_PENDING: 'payments:credits:order-not-pending',
+	/** Ledger entry is not a spend type — cannot reverse */
+	CREDITS_NOT_A_SPEND_ENTRY: 'payments:credits:not-a-spend-entry',
+	/** Credit entry not found */
+	CREDITS_NOT_FOUND: 'payments:credits:not-found',
+	/** Original ledger entry not found for reversal */
+	CREDITS_ORIGINAL_ENTRY_NOT_FOUND: 'payments:credits:original-entry-not-found',
+	/** Reversal entry not found */
+	CREDITS_REVERSAL_NOT_FOUND: 'payments:credits:reversal-not-found',
+	/** Spend entry not found */
+	CREDITS_SPEND_NOT_FOUND: 'payments:credits:spend-not-found',
+	/** A pending Stripe or crypto session blocks credit payment on this order */
+	CREDITS_PAYMENT_SESSION_ACTIVE: 'payments:credits:payment-session-active',
+
 	// Generic fetch failure — used when Zod parse fails on response (schema mismatch)
 	FETCH_FAILED: 'fetch_failed',
 } as const;

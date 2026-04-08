@@ -112,12 +112,15 @@ export type OrderWithRaffle = z.infer<typeof orderWithRaffleSchema>;
 // ==========================================
 
 /**
- * Schema for backend orders response
- * Backend returns { total, orders } format
+ * Schema for backend orders response — includes full pagination metadata.
+ * Using BE values directly avoids divergence in totalPages calculation.
  */
 export const ordersBackendResponseSchema = z.object({
-	total: z.number(),
+	limit: z.number(),
 	orders: z.array(orderWithRaffleSchema),
+	page: z.number(),
+	total: z.number(),
+	totalPages: z.number(),
 });
 
 /** FE-normalized wrapper over ordersBackendResponseSchema — produced in get-my-orders.ts. */

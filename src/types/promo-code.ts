@@ -258,7 +258,10 @@ export function formatUsageLimit(limit: number): string {
  * - discount_*: { valid, type, discountAmount }
  */
 export const validatePromoCodeResponseSchema = z.object({
-	valid: z.literal(true),
+	// BE always throws on invalid codes (never returns valid: false), but the
+	// interface declares `boolean`. Using z.boolean() hardens against future
+	// BE changes where valid: false is returned instead of an error.
+	valid: z.boolean(),
 	type: promoCodeTypeSchema,
 	discountAmount: z.string().optional(),
 	ticketsGranted: z.number().optional(),

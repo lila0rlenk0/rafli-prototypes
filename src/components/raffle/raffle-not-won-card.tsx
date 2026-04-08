@@ -7,20 +7,15 @@ import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
 interface RaffleNotWonCardProps {
 	/** Current raffle status */
 	status: RaffleStatus;
-	/** Whether the raffle concluded with fewer participants than the minimum */
-	isPartialFulfillment: boolean;
 }
 
 /**
  * RaffleNotWonCard Component
  *
  * Displayed to users who participated in a concluded raffle but did not win.
- * Shows different messages based on raffle status and fulfillment type.
+ * Shows different messages based on raffle status.
  */
-export function RaffleNotWonCard({
-	status,
-	isPartialFulfillment,
-}: RaffleNotWonCardProps) {
+export function RaffleNotWonCard({ status }: RaffleNotWonCardProps) {
 	/**
 	 * Returns the appropriate message based on raffle status
 	 */
@@ -56,7 +51,7 @@ export function RaffleNotWonCard({
 
 			{shouldShowFulfillmentBadge() && (
 				<div className="mt-4">
-					<FulfillmentBadge isPartial={isPartialFulfillment} />
+					<FulfillmentBadge />
 				</div>
 			)}
 

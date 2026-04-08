@@ -10,6 +10,7 @@ import { Logo } from '@/assets/logo';
 import { ModeSwitchToggle } from '@/components/mode/mode-switch-toggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button } from '@/components/ui/button';
+import { CreditBalanceBadge } from '@/components/ui/credit-balance-badge';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 
@@ -96,6 +97,8 @@ export function PublicNavbar({
 
 					{/* Desktop: Right side */}
 					<div className="hidden items-center gap-4 sm:flex">
+						{/* Badge before feedback link — mirrors navbar.tsx order */}
+						{isAuthenticated && <CreditBalanceBadge />}
 						<a
 							href={FEEDBACK_FORM_URL}
 							target="_blank"
@@ -159,6 +162,12 @@ export function PublicNavbar({
 
 						<div className="flex flex-col gap-8 px-6 pt-8">
 							{isAuthenticated && <ModeSwitchToggle />}
+							{/* Bubble click closes mobile overlay on badge tap */}
+							{isAuthenticated && (
+								<div onClick={closeMenu} role="presentation">
+									<CreditBalanceBadge />
+								</div>
+							)}
 
 							<Link
 								href="/browse"

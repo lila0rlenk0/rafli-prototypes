@@ -10,7 +10,6 @@ export const WINNING_STATUS = {
 	SENT: 'sent',
 	DELIVERED: 'delivered',
 	RECEIVED: 'received',
-	PENDING_PARTIAL_FULFILLMENT: 'pending_partial_fulfillment',
 	DISPUTED: 'disputed',
 	RESOLVED: 'resolved',
 } as const;
@@ -42,7 +41,6 @@ export const winningStatusSchema = z.enum([
 	WINNING_STATUS.SENT,
 	WINNING_STATUS.DELIVERED,
 	WINNING_STATUS.RECEIVED,
-	WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT,
 	WINNING_STATUS.DISPUTED,
 	WINNING_STATUS.RESOLVED,
 ]);
@@ -85,7 +83,6 @@ export const winningSchema = z.object({
 	shippingInfo: shippingInfoSchema.nullable(),
 	proofUrl: z.string().nullable(),
 	hostNotes: z.string().nullable(),
-	distributionAmount: z.string().nullable(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });

@@ -166,6 +166,19 @@ export function getPaymentErrorMessage(errorCode: PaymentErrorCode): string {
 		case 'unauthorized':
 			return 'Please sign in to continue';
 
+		// Credit payment errors
+		case 'payments:credits:insufficient-balance':
+			return "You don't have enough credits for this purchase";
+		case 'payments:credits:order-not-found':
+			return 'Order not found';
+		case 'payments:credits:order-not-pending':
+			return 'This order is no longer available for payment';
+		case 'payments:credits:invalid-amount':
+		case 'payments:credits:invalid-order-amount':
+			return 'Invalid order amount for credit payment';
+		case 'payments:credits:payment-session-active':
+			return 'A pending payment session exists. Please wait for it to expire or try again';
+
 		// Common errors
 		case 'network_error':
 			return 'Network error. Please check your connection';

@@ -55,6 +55,41 @@ describe('getPaymentErrorMessage', () => {
 		);
 	});
 
+	test('maps credits insufficient-balance', () => {
+		expect(
+			getPaymentErrorMessage('payments:credits:insufficient-balance'),
+		).toBe("You don't have enough credits for this purchase");
+	});
+
+	test('maps credits order-not-found', () => {
+		expect(getPaymentErrorMessage('payments:credits:order-not-found')).toBe(
+			'Order not found',
+		);
+	});
+
+	test('maps credits order-not-pending', () => {
+		expect(getPaymentErrorMessage('payments:credits:order-not-pending')).toBe(
+			'This order is no longer available for payment',
+		);
+	});
+
+	test('maps credits invalid-amount and invalid-order-amount', () => {
+		expect(getPaymentErrorMessage('payments:credits:invalid-amount')).toBe(
+			'Invalid order amount for credit payment',
+		);
+		expect(
+			getPaymentErrorMessage('payments:credits:invalid-order-amount'),
+		).toBe('Invalid order amount for credit payment');
+	});
+
+	test('maps credits payment-session-active', () => {
+		expect(
+			getPaymentErrorMessage('payments:credits:payment-session-active'),
+		).toBe(
+			'A pending payment session exists. Please wait for it to expire or try again',
+		);
+	});
+
 	test('falls back to generic message for unknown codes', () => {
 		expect(
 			getPaymentErrorMessage(

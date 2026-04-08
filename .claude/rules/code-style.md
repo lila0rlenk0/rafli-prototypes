@@ -18,6 +18,18 @@ function getHeaderText(): string {
 <h2>{getHeaderText()}</h2>;
 ```
 
+## Conditional Rendering
+
+Use ternary for JSX conditionals — never `&&`. Prevents rendering `0` or `""` and makes the null branch explicit.
+
+```tsx
+// bad — && can render falsy primitives
+{isLoading && <Spinner />}
+
+// good — explicit null branch
+{isLoading ? <Spinner /> : null}
+```
+
 ## Early Return Pattern
 
 Always negate the condition and return early.
@@ -75,11 +87,14 @@ const setSafeTimeout = useTimeout();
 
 ## Immutable Array Operations
 
-Use `.toSorted()` / `.toReversed()` instead of `.sort()` / `.reverse()` — mutating arrays breaks React's immutability model and causes stale closure bugs.
+Use `.toSorted()` / `.toReversed()` instead of `.sort()` / `.reverse()` — mutating arrays breaks React's immutability model and causes stale closure bugs. Also applies to the `[...arr].sort()` spread-copy pattern.
 
 ```tsx
 // bad — mutates original array
 const sorted = users.sort((a, b) => a.name.localeCompare(b.name));
+
+// bad — unnecessary spread, toSorted exists
+const sorted = [...users].sort((a, b) => a.name.localeCompare(b.name));
 
 // good — returns new array
 const sorted = users.toSorted((a, b) => a.name.localeCompare(b.name));

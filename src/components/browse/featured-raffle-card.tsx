@@ -57,6 +57,8 @@ export function FeaturedRaffleCard({
 	}
 
 	const hostName = raffle.host?.name || raffle.host?.username || 'Unknown';
+	/** Hero image optimized for featured placement — falls back to standard cover */
+	const heroImage = raffle.featuredCoverUrl ?? raffle.coverMediaUrl;
 
 	return (
 		<Link
@@ -96,10 +98,10 @@ export function FeaturedRaffleCard({
 			</div>
 
 			{/* Cover image - below text on mobile, right side on desktop */}
-			{raffle.coverMediaUrl && (
+			{heroImage && (
 				<div className="relative aspect-square w-full flex-shrink-0 overflow-hidden rounded-3xl sm:w-[182px]">
 					<Image
-						src={raffle.coverMediaUrl}
+						src={heroImage}
 						alt={raffle.title}
 						fill
 						className="object-cover"

@@ -17,7 +17,6 @@ interface WinningStatusBadgeProps {
  * - sent → blue
  * - delivered → purple
  * - received → green
- * - pending_partial_fulfillment → yellow (admin processes payout)
  * - disputed → red
  * - resolved → green
  */
@@ -33,7 +32,6 @@ export function WinningStatusBadge({
 			case WINNING_STATUS.PENDING:
 				return 'bg-gray-100 text-gray-700';
 			case WINNING_STATUS.AWAITING_HOST:
-			case WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT:
 				return 'bg-yellow-100 text-yellow-700';
 			case WINNING_STATUS.SENT:
 				return 'bg-blue-100 text-blue-700';
@@ -58,8 +56,6 @@ export function WinningStatusBadge({
 				return 'Pending';
 			case WINNING_STATUS.AWAITING_HOST:
 				return 'Awaiting';
-			case WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT:
-				return 'Payout Pending';
 			case WINNING_STATUS.SENT:
 				return 'Sent';
 			case WINNING_STATUS.DELIVERED:

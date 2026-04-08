@@ -14,6 +14,7 @@ import {
 import { getSession } from '@/lib/auth/session';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getEnrolledRaffles } from '@/services/raffle/get-enrolled-raffles';
+import { getFeaturedRaffles } from '@/services/raffle/get-featured-raffles';
 import { getRaffles } from '@/services/raffle/get-raffles';
 import type { Raffle } from '@/types/raffle';
 import Link from 'next/link';
@@ -40,18 +41,20 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const page = parsePage(params.page);
 	const category = params.category;
 
-	// Fetch raffles, categories, and session in parallel
-	const [response, categoriesResponse, session] = await Promise.all([
-		getRaffles({
-			status: 'live',
-			page,
-			category,
-			sort,
-			limit: 12,
-		}),
-		getCategories(),
-		getSession(),
-	]);
+	// Fetch raffles, featured, categories, and session in parallel
+	const [response, featuredResponse, categoriesResponse, session] =
+		await Promise.all([
+			getRaffles({
+				status: 'live',
+				page,
+				category,
+				sort,
+				limit: 12,
+			}),
+			getFeaturedRaffles(),
+			getCategories(),
+			getSession(),
+		]);
 
 	// Fetch enrolled raffles for authenticated users
 	const enrolledIds = new Set<string>();
@@ -108,14 +111,17 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 
 	const { raffles } = response.data;
 
+	// Admin-curated featured raffles from dedicated endpoint (0-2 items).
+	// Grid uses the full /raffles response — featured cards are separate.
+	const featuredRaffles = featuredResponse.success
+		? featuredResponse.data.raffles
+		: [];
+
 	// Calculate total prize value for hero stats
 	const totalPrizeValue = raffles.reduce(
 		(sum, r) => sum + Number(r.declaredValueAmount),
 		0,
 	);
-
-	// Pick up to 2 featured raffles (first two from the list)
-	const featuredRaffles = raffles.slice(0, 2);
 
 	return (
 		<div className="z-10 pt-0 pb-8 sm:py-8">
@@ -146,7 +152,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 					</StickyFilterSection>
 				}
 				gridContent={
-					raffles && raffles.length > 0 ? (
+					raffles.length > 0 ? (
 						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 							{raffles.map(raffle => (
 								<PublicRaffleCard

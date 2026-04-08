@@ -92,6 +92,13 @@ export function decodeJwt(token: string): JwtPayload {
 }
 
 /**
+ * Clock-skew tolerance in seconds.
+ * Prevents premature expiry when device clock is slightly ahead of server.
+ * 60s is negligible for a 30-day token but covers typical NTP drift.
+ */
+const CLOCK_SKEW_TOLERANCE_SECONDS = 60;
+
+/**
  * Check if JWT token is expired
  *
  * @param token - JWT token string
@@ -101,7 +108,8 @@ export function isJwtExpired(token: string): boolean {
 	try {
 		const payload = decodeJwt(token);
 		const nowInSeconds = Math.floor(Date.now() / 1000);
-		return payload.exp < nowInSeconds;
+		// Subtract tolerance so tokens are considered valid for 60s past server-side exp
+		return payload.exp < nowInSeconds - CLOCK_SKEW_TOLERANCE_SECONDS;
 	} catch {
 		return true;
 	}

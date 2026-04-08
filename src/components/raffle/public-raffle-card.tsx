@@ -2,6 +2,7 @@ import { CheckCircle, Clock } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { Button } from '@/components/ui/button';
 import type { Raffle } from '@/types/raffle';
 
 /** User's relationship to a raffle */
@@ -74,19 +75,20 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 			data-testid="raffle-card"
 			className="group relative flex w-full flex-col rounded-t-2xl rounded-b-3xl border border-transparent transition-colors duration-150 sm:hover:border-black"
 		>
-			{/* Image Header */}
-			<div className="w-full overflow-hidden rounded-t-2xl bg-gray-100">
+			{/* Image Header — fixed 16:9 container so every card has identical image height.
+			     A true 16:9 source fills the box without any cropping; other ratios are
+			     cropped symmetrically to maintain grid uniformity. */}
+			<div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-gray-100">
 				{raffle.coverMediaUrl ? (
 					<Image
 						src={raffle.coverMediaUrl}
 						alt={raffle.title}
-						width={400}
-						height={300}
-						className="h-auto w-full"
+						fill
+						className="object-cover"
 						sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
 					/>
 				) : (
-					<div className="flex h-[140px] items-center justify-center bg-gray-200">
+					<div className="flex h-full items-center justify-center bg-gray-200">
 						<span className="text-sm text-gray-400">No image</span>
 					</div>
 				)}
@@ -150,17 +152,13 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 				</div>
 
 				{/* Details Button */}
-				<Link
-					href={`/browse/${raffle.publicSlugOrCode}`}
-					className="relative z-10 block"
+				<Button
+					asChild
+					variant="outline"
+					className="relative z-10 h-12 w-full border-2 border-black text-sm font-semibold text-[#121211] hover:bg-black hover:text-white"
 				>
-					<button
-						type="button"
-						className="flex h-11 w-full cursor-pointer items-center justify-center rounded-full border border-[#121211] text-sm font-semibold text-[#121211] transition-colors hover:bg-black hover:text-white"
-					>
-						Details
-					</button>
-				</Link>
+					<Link href={`/browse/${raffle.publicSlugOrCode}`}>Details</Link>
+				</Button>
 			</div>
 		</div>
 	);

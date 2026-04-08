@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
 import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
+import { CreditsBuyButton } from '@/app/(public)/browse/[publicSlug]/credits-buy-button';
 import { CryptoBuyButton } from '@/app/(public)/browse/[publicSlug]/crypto-buy-button';
 import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
@@ -34,6 +35,8 @@ interface TicketPurchaseCardProps {
 	/** Current user ticket total for this raffle — baseline for crypto post-success sync */
 	myTicketsTotal?: number;
 	userId?: string | null;
+	/** User's available credit balance as decimal string — null when unauthenticated or fetch failed */
+	availableCredits?: string | null;
 }
 
 /**
@@ -62,6 +65,7 @@ export function TicketPurchaseCard({
 	cryptoOptions,
 	myTicketsTotal = 0,
 	userId,
+	availableCredits,
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
 	const pathname = usePathname();
@@ -240,6 +244,11 @@ export function TicketPurchaseCard({
 		isWeb3Enabled &&
 		!isFree;
 
+	// Credits button shown when user has any credits, order costs money, and not a free-tickets promo.
+	// The button itself handles insufficient-balance state (disabled + tooltip).
+	const creditBalance = availableCredits ? parseFloat(availableCredits) : 0;
+	const showCreditsOption = creditBalance > 0 && !isFree && total > 0;
+
 	/**
 	 * Final-10-minute warning copy.
 	 * We keep it next to the CTAs so the user sees the risk at decision time,
@@ -350,6 +359,21 @@ export function TicketPurchaseCard({
 						onPromoInvalid={handlePromoInvalid}
 						onPromoRedeemed={handlePromoRedeemed}
 					/>
+
+					{/* Credits buy button — shown when user has credits and order costs money */}
+					{showCreditsOption && availableCredits && (
+						<CreditsBuyButton
+							raffleId={raffleId}
+							ticketQuantity={ticketQuantity}
+							disabled={disabled}
+							questionId={questionId}
+							promoCode={appliedPromo?.code}
+							onPromoInvalid={handlePromoInvalid}
+							availableCredits={availableCredits}
+							orderTotal={total}
+							currency={currency}
+						/>
+					)}
 
 					{/* Crypto buy button — only when raffle has crypto options AND Web3 is configured */}
 					{cryptoOptions && hasSelectableCryptoPaymentOption && (

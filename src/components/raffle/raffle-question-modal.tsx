@@ -213,7 +213,7 @@ export function RaffleQuestionModal({
 							<Button
 								onClick={handleSubmit}
 								disabled={isLoading || !selectedOptionId}
-								className="hover:bg-background h-12 w-full cursor-pointer border-2 border-black bg-black hover:text-black"
+								className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
 							>
 								{isLoading && (
 									<Loader2Icon className="mr-2 size-4 animate-spin" />

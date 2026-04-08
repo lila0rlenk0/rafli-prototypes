@@ -22,6 +22,12 @@ const authRoutes = [
  * Proxy function for route protection and authentication flows
  * Implements JWT-based authentication and route protection for Next.js 16
  *
+ * SECURITY NOTE: `isJwtExpired()` decodes the JWT payload without signature verification.
+ * This is intentional — the proxy is a UX-only guard (redirect unauthenticated users to
+ * sign-in, redirect authenticated users away from auth pages). The backend enforces real
+ * auth on every API call. A crafted JWT with a future `exp` can access protected route HTML,
+ * but no data is leaked because API calls still fail without a valid signature.
+ *
  * @param request - NextRequest object from Next.js
  * @returns NextResponse with appropriate redirect or continuation
  */

@@ -121,6 +121,19 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'payments:abandon:crypto-active',
 	'payments:raffle:user-ticket-limit-exceeded',
 
+	// Credits — expected business errors
+	'payments:credits:insufficient-balance',
+	'payments:credits:invalid-amount',
+	'payments:credits:invalid-order-amount',
+	'payments:credits:order-not-found',
+	'payments:credits:order-not-pending',
+	'payments:credits:not-a-spend-entry',
+	'payments:credits:not-found',
+	'payments:credits:original-entry-not-found',
+	'payments:credits:reversal-not-found',
+	'payments:credits:spend-not-found',
+	'payments:credits:payment-session-active',
+
 	// Promo — validation/business rules
 	'core:promo:not-found',
 	'core:promo:not-host',
@@ -143,7 +156,6 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'core:winning:not-owner',
 	'core:winning:not-claimed',
 	'core:winning:permission-denied',
-	'core:winning:partial-participation-no-fulfillment',
 	'core:winning:invalid-state-shape',
 
 	// Comment — expected states

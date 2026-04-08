@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, Loader2, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,7 +52,9 @@ export function PromoCodeInput({
 	// (e.g. from useRaffleSaleWindow timer) cancel the in-flight validation via
 	// the effect cleanup, but hasAutoValidated prevents a retry — validation is lost.
 	const onValidCodeRef = useRef(onValidCode);
-	onValidCodeRef.current = onValidCode;
+	useEffect(() => {
+		onValidCodeRef.current = onValidCode;
+	}, [onValidCode]);
 
 	/**
 	 * Gets user-friendly error message for validation errors
@@ -193,7 +195,6 @@ export function PromoCodeInput({
 		};
 		// onValidCode excluded — accessed via stable ref to prevent parent re-renders
 		// (e.g. countdown timer) from cancelling the in-flight validation request.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [initialCode, raffleId, validatedPromo]);
 
 	/**

@@ -145,6 +145,10 @@ export const raffleSchema = z.object({
 	description: z.string(),
 	categoryId: z.string(),
 	coverMediaUrl: z.string().nullable(),
+	/** Separate hero image optimized for featured card placement — falls back to coverMediaUrl when null */
+	featuredCoverUrl: z.string().nullable().optional().catch(null),
+	/** Admin-curated featured status — derived from featuredAt on the backend */
+	isFeatured: z.boolean().optional().catch(false),
 	galleryMediaUrls: z.array(z.string()),
 	declaredValueAmount: z.string(),
 	declaredValueCurrency: z.string(),
@@ -177,12 +181,27 @@ export const raffleSchema = z.object({
 	vrfFulfillTxHash: z.string().nullable().optional(),
 	/** Backend flag — true while draw process is running. Blocks cancellation even when status is still `live`. */
 	isProcessingCompletion: z.boolean().optional(),
-	isPartialParticipation: z.boolean().optional(),
-	platformFeePercent: z.string().optional(),
-	platformFeeAmount: z.string().nullable().optional(),
-	netRevenueAmount: z.string().nullable().optional(),
-	perWinnerAmount: z.string().nullable().optional(),
 	disputeWindowEndsAt: z.string().nullable().optional(),
+	/** Whether X/Twitter share free tickets are enabled for this raffle */
+	xShareTicketsEnabled: z.boolean().optional(),
+	/**
+	 * User's X share claim state — only present when authenticated and xShareTicketsEnabled is true.
+	 * `.catch(null)` degrades gracefully if backend shape changes.
+	 */
+	xShareClaim: z
+		.object({
+			claimId: z.string(),
+			status: z.enum(['pending', 'verified', 'revoked', 'expired']),
+			token: z.string().nullable(),
+			expiresAt: z.string().nullable(),
+		})
+		.nullable()
+		.optional()
+		.catch(null),
+	/** Whether user has hit the daily X share limit (one free ticket per UTC day) */
+	xShareDailyLimitReached: z.boolean().optional(),
+	/** ISO datetime when user can next claim an X share ticket — null if not rate-limited */
+	xShareNextAvailableAt: z.string().nullable().optional(),
 	/**
 	 * Structured crypto payment options — null when raffle doesn't accept crypto.
 	 * Backend computes per-chain selectable tokens with pricing, eliminating
@@ -296,6 +315,8 @@ export const createRafflePayloadSchema = z.object({
 	categoryId: z.uuid(),
 	questionId: z.uuid(),
 	coverMediaUrl: z.string().max(500),
+	/** Optional hero image for featured card placement — omit to default to null */
+	featuredCoverUrl: z.string().max(500).optional(),
 	declaredValueAmount: z.string().regex(/^\d+(\.\d{1,4})?$/),
 	declaredValueCurrency: z.string().length(3),
 	deliveryIncluded: z.boolean(),
@@ -311,6 +332,8 @@ export const createRafflePayloadSchema = z.object({
 	ticketPriceCurrency: z.string().length(3),
 	timezone: z.string().min(1).max(50).optional(),
 	title: z.string().min(3).max(200),
+	/** Whether X/Twitter share free tickets are enabled (defaults false on backend) */
+	xShareTicketsEnabled: z.boolean().optional(),
 	...cryptoPayloadFields,
 });
 
@@ -344,6 +367,10 @@ export const updateRafflePayloadSchema = z.object({
 	numberOfWinners: z.number().int().min(1).max(100).optional(),
 	minParticipants: z.number().int().min(0).optional(),
 	maxParticipants: z.number().int().min(0).max(1_000_000).optional(),
+	/** Optional hero image for featured card placement — send empty string to clear */
+	featuredCoverUrl: z.string().max(500).optional(),
+	/** Whether X/Twitter share free tickets are enabled */
+	xShareTicketsEnabled: z.boolean().optional(),
 	...cryptoPayloadFields,
 });
 
@@ -422,6 +449,14 @@ export const enrolledRafflesQuerySchema = paginationQuerySchema.extend({
 
 export type MyRafflesQuery = z.infer<typeof myRafflesQuerySchema>;
 export type ListRafflesResponse = z.infer<typeof listRafflesResponseSchema>;
+
+/** Response for GET /api/v1/raffles/featured — always 0-2 items, no pagination */
+export const featuredRafflesResponseSchema = z.object({
+	raffles: z.array(raffleSchema),
+});
+export type FeaturedRafflesResponse = z.infer<
+	typeof featuredRafflesResponseSchema
+>;
 export type EnrolledRaffle = z.infer<typeof enrolledRaffleSchema>;
 export type ListEnrolledRafflesResponse = z.infer<
 	typeof listEnrolledRafflesResponseSchema

@@ -99,9 +99,21 @@ export function NotificationStoreProvider({
 		// Initial unread count fetch
 		fetchUnreadCount();
 
+		/**
+		 * Handles WS recovery from poll fallback — catches up on any notifications
+		 * missed during the disconnect gap by invalidating the query cache.
+		 */
+		function handleReconnected() {
+			fetchUnreadCount();
+			queryClient.invalidateQueries({
+				queryKey: ['notification'],
+			});
+		}
+
 		// Create stream with stable callbacks — only one stream per mount
 		streamRef.current = new NotificationStream({
 			onNewNotification: handleNewNotification,
+			onReconnected: handleReconnected,
 			getToken,
 		});
 

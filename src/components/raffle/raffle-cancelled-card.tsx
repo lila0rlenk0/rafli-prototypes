@@ -73,6 +73,11 @@ export function RaffleCancelledCard({
 					? `This raffle needed at least ${formatParticipantCount(numberOfWinners)} but only had ${participantsCount}. It was automatically cancelled.`
 					: `This raffle needed at least ${formatParticipantCount(numberOfWinners)} to draw winners but didn't reach the minimum.`;
 
+			case CANCELLATION_REASON.PARTIAL_PARTICIPATION:
+				return isOwner
+					? `This raffle didn't reach the minimum participant threshold and was automatically cancelled.`
+					: `This raffle was cancelled because it didn't reach the minimum number of participants.`;
+
 			case CANCELLATION_REASON.HOST_CANCELLED:
 				return isOwner
 					? 'You cancelled this raffle.'

@@ -26,6 +26,7 @@ import { CollapsibleDescription } from '@/components/raffle/collapsible-descript
 import { RaffleImageGallery } from '@/components/raffle/raffle-image-gallery';
 import { getSession } from '@/lib/auth/session';
 import { getCancellationReason } from '@/lib/utils/cancellation-reason';
+import { getCreditBalance } from '@/services/payment/get-credit-balance';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
@@ -58,6 +59,8 @@ import { PostUpdateButton } from './post-update-button';
 import { PromoCodesCard } from './promo-codes-card';
 import { ReportRaffleButton } from './report-raffle-button';
 import { CopyRaffleLinkButton } from './copy-raffle-link-button';
+import { ShareOnXButton } from './share-on-x-button';
+import { StickyBuyTicketsCta } from './sticky-buy-tickets-cta';
 
 interface PageProps {
 	params: Promise<{
@@ -150,15 +153,21 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const myWinningTicketCode: string | null = null;
 	let myUserName: string | null = null;
 	let myUserAvatarUrl: string | null = null;
+	let availableCredits: string | null = null;
 
 	if (isAuthenticated) {
 		// Fetch user data in parallel to avoid waterfall
-		const [ticketCodesResponse, winningsResponse, meResponse] =
-			await Promise.all([
-				getMyTicketCodes({ raffleId: raffle.id }),
-				getMyWinnings(),
-				getMe(),
-			]);
+		const [
+			ticketCodesResponse,
+			winningsResponse,
+			meResponse,
+			creditBalanceResponse,
+		] = await Promise.all([
+			getMyTicketCodes({ raffleId: raffle.id }),
+			getMyWinnings(),
+			getMe(),
+			getCreditBalance(),
+		]);
 
 		if (ticketCodesResponse.success) {
 			myTicketCodes = ticketCodesResponse.data.tickets;
@@ -175,6 +184,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		if (meResponse.success) {
 			myUserName = meResponse.data.name;
 			myUserAvatarUrl = meResponse.data.avatarUrl;
+		}
+
+		if (creditBalanceResponse.success) {
+			availableCredits = creditBalanceResponse.data.availableAmount;
 		}
 	}
 
@@ -240,14 +253,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const isManageable = isManageableStatus();
 	const isCancelled = raffle.status === RAFFLE_STATUS.CANCELLED;
 	const cancellationReason = getCancellationReason(raffle);
-
-	/**
-	 * Whether the raffle concluded with partial participation (revenue share)
-	 * Uses backend field when available, falls back to ticket count comparison
-	 */
-	const isPartialFulfillment =
-		raffle.isPartialParticipation ??
-		raffle.ticketsSoldCount < raffle.minParticipants;
 
 	/**
 	 * Checks if winner card should be shown (user won)
@@ -477,6 +482,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 											cryptoOptions={raffle.cryptoOptions}
 											myTicketsTotal={myTicketsTotal}
 											userId={currentUserId}
+											availableCredits={availableCredits}
 										/>
 									</Suspense>
 
@@ -602,20 +608,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								userName={myUserName ?? 'Winner'}
 								userAvatar={myUserAvatarUrl}
 								ticketCode={myWinningTicketCode}
-								isPartialFulfillment={isPartialFulfillment}
 							/>
-							<PrizeBreakdownCard
-								raffle={raffle}
-								isPartialParticipation={isPartialFulfillment}
-								distributionAmount={myWinning?.distributionAmount}
-							/>
+							<PrizeBreakdownCard raffle={raffle} />
 							<FulfillmentTimeline
 								winning={myWinning}
 								isHost={isOwner}
 								raffleId={raffle.id}
 								hostId={raffle.hostId}
 								publicSlug={publicSlug}
-								isPartialFulfillment={isPartialFulfillment}
 							/>
 						</>
 					)}
@@ -625,12 +625,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							<HostFulfillmentCard
 								publicSlug={publicSlug}
 								winnersCount={raffle.winners?.length ?? 0}
-								isPartialFulfillment={isPartialFulfillment}
 							/>
-							<RevenueBreakdownCard
-								raffle={raffle}
-								isPartialParticipation={isPartialFulfillment}
-							/>
+							<RevenueBreakdownCard raffle={raffle} />
 							<RaffleInfoCard
 								raffle={raffle}
 								myTicketCodes={myTicketCodes}
@@ -655,10 +651,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					)}
 
 					{shouldShowNotWonCard() && (
-						<RaffleNotWonCard
-							status={raffle.status}
-							isPartialFulfillment={isPartialFulfillment}
-						/>
+						<RaffleNotWonCard status={raffle.status} />
 					)}
 
 					{/* Desktop: active raffle card with countdown + purchase */}
@@ -696,6 +689,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										cryptoOptions={raffle.cryptoOptions}
 										myTicketsTotal={myTicketsTotal}
 										userId={currentUserId}
+										availableCredits={availableCredits}
 									/>
 								</Suspense>
 
@@ -706,11 +700,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								)}
 							</RaffleExpiredGate>
 
-							{/* TODO: temporarily hidden — re-enable when share-for-free-tickets flow is ready */}
-							{/* <ShareOnXButton
-								title={raffle.title}
-								publicSlug={raffle.publicSlugOrCode}
-							/> */}
+							{/* Only authenticated users can earn free tickets — sharing without an account
+							    can't be attributed to anyone, so the button is meaningless for guests. */}
+							{isAuthenticated ? (
+								<ShareOnXButton
+									title={raffle.title}
+									publicSlug={raffle.publicSlugOrCode}
+								/>
+							) : null}
 						</div>
 					)}
 
@@ -764,13 +761,12 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				searchParams={searchParams}
 			/>
 
-			{/* TODO: temporarily hidden — re-enable when share-for-free-tickets flow is ready */}
-			{/* {shouldShowActiveCard() && (
+			{shouldShowActiveCard() && (
 				<StickyBuyTicketsCta
 					title={raffle.title}
 					publicSlug={raffle.publicSlugOrCode}
 				/>
-			)} */}
+			)}
 		</div>
 	);
 }

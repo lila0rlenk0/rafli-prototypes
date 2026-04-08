@@ -17,12 +17,16 @@ export interface NotificationStreamConfig {
 	onNewNotification: () => void;
 	/** Called to fetch fresh WS token (on connect and reconnect) */
 	getToken: () => Promise<{ token: string; expiresIn: number } | null>;
+	/** Called when stream recovers from poll fallback back to WebSocket */
+	onReconnected?: () => void;
 }
 
 const BASE_RECONNECT_DELAY_MS = 1_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
-/** Stop retrying after this many consecutive failures to avoid console spam */
+/** Stop retrying after this many consecutive failures — falls back to slow polling */
 const MAX_RECONNECT_ATTEMPTS = 5;
+/** Polling interval when WS is dead — checks for new notifications and probes WS recovery */
+const POLL_FALLBACK_INTERVAL_MS = 60_000;
 const WS_CLOSE_NORMAL = 1_000;
 /** Refresh token at 80% of expiry to avoid edge cases */
 const TOKEN_REFRESH_RATIO = 0.8;
@@ -55,6 +59,7 @@ export class NotificationStream {
 	private reconnectAttempts = 0;
 	private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 	private tokenRefreshTimeoutId: ReturnType<typeof setTimeout> | null = null;
+	private pollIntervalId: ReturnType<typeof setInterval> | null = null;
 	private currentToken: string | null = null;
 	private intentionalClose = false;
 	private config: NotificationStreamConfig;
@@ -83,6 +88,7 @@ export class NotificationStream {
 		this.intentionalClose = true;
 		this.clearReconnectTimeout();
 		this.clearTokenRefreshTimeout();
+		this.clearPollFallback();
 
 		if (this.ws) {
 			this.ws.close(WS_CLOSE_NORMAL, 'Client disconnect');
@@ -114,10 +120,19 @@ export class NotificationStream {
 	}
 
 	/**
-	 * Handles successful connection
+	 * Handles successful connection.
+	 * If recovering from poll fallback, clears the interval and notifies
+	 * so the provider can catch up on missed notifications.
 	 */
 	private handleOpen(): void {
+		const wasPolling = this.pollIntervalId !== null;
 		this.reconnectAttempts = 0;
+		this.clearPollFallback();
+
+		if (wasPolling) {
+			this.config.onReconnected?.();
+		}
+
 		if (isDev) {
 			console.log('[NotificationStream] Connected');
 		}
@@ -191,9 +206,10 @@ export class NotificationStream {
 		if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
 			if (isDev) {
 				console.warn(
-					`[NotificationStream] Giving up after ${MAX_RECONNECT_ATTEMPTS} attempts. Real-time notifications unavailable.`,
+					`[NotificationStream] WS failed ${MAX_RECONNECT_ATTEMPTS} times — falling back to ${POLL_FALLBACK_INTERVAL_MS / 1_000}s polling`,
 				);
 			}
+			this.startPollFallback();
 			return;
 		}
 
@@ -254,6 +270,36 @@ export class NotificationStream {
 		// Reset attempts since this is proactive refresh, not error recovery
 		this.reconnectAttempts = 0;
 		await this.fetchTokenAndConnect();
+	}
+
+	/**
+	 * Starts slow-poll fallback after WS reconnect attempts are exhausted.
+	 * Each tick: fires onNewNotification (so the provider refetches the list),
+	 * then probes WS recovery by attempting a fresh connection.
+	 */
+	private startPollFallback(): void {
+		if (this.pollIntervalId) return;
+
+		this.pollIntervalId = setInterval(() => {
+			// Trigger a data refresh even without WS
+			this.config.onNewNotification();
+
+			// Cancel any pending reconnect from a previous failed probe before starting a new one
+			this.clearReconnectTimeout();
+			// Probe WS recovery — reset attempts and try once
+			this.reconnectAttempts = 0;
+			this.fetchTokenAndConnect();
+		}, POLL_FALLBACK_INTERVAL_MS);
+	}
+
+	/**
+	 * Clears poll fallback interval
+	 */
+	private clearPollFallback(): void {
+		if (this.pollIntervalId) {
+			clearInterval(this.pollIntervalId);
+			this.pollIntervalId = null;
+		}
 	}
 
 	/**

@@ -39,7 +39,7 @@ export function SignInToBuyButton() {
 		<Button
 			id="checkout-action"
 			asChild
-			className="hover:bg-background w-full cursor-pointer border-2 border-black bg-black hover:text-black"
+			className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
 		>
 			<Link href={getSignInUrl()}>
 				<p className="font-semibold">Sign in to buy tickets</p>

@@ -27,8 +27,6 @@ interface FulfillmentTimelineProps {
 	hostId: string;
 	/** Public slug for sharing */
 	publicSlug: string;
-	/** Whether this raffle concluded with partial participation (revenue share) */
-	isPartialFulfillment?: boolean;
 }
 
 type StepStatus = 'completed' | 'active' | 'pending';
@@ -45,7 +43,6 @@ export function FulfillmentTimeline({
 	raffleId,
 	hostId,
 	publicSlug,
-	isPartialFulfillment = false,
 }: FulfillmentTimelineProps) {
 	const router = useRouter();
 	const [currentStatus, setCurrentStatus] = useState<WinningStatus>(
@@ -76,12 +73,6 @@ export function FulfillmentTimeline({
 	 * Determines step status based on current winning status
 	 */
 	function getStepStatus(step: number): StepStatus {
-		// pending_partial_fulfillment: platform handles payout, no shipping timeline
-		// All steps shown as completed since no host/winner action is needed
-		if (currentStatus === 'pending_partial_fulfillment') {
-			return 'completed';
-		}
-
 		// pending: winner hasn't claimed yet
 		if (currentStatus === 'pending') {
 			if (step === 1) return 'active';
@@ -408,72 +399,6 @@ export function FulfillmentTimeline({
 		setCurrentStatus('sent');
 		router.refresh();
 	}
-
-	// ==========================================
-	// Partial Fulfillment (Payout) Timeline
-	// ==========================================
-	// Platform handles payouts automatically — no host/winner actions needed.
-	// 4 steps: Winner Selected → Prize Calculated → Processing Payout → Payout Complete
-
-	/**
-	 * Determines payout step status for partial fulfillment
-	 * pending_partial_fulfillment → steps 1-2 done, step 3 active, step 4 pending
-	 * received → all 4 completed
-	 */
-	function getPayoutStepStatus(step: number): StepStatus {
-		if (currentStatus === 'received') return 'completed';
-
-		// pending_partial_fulfillment (or any other status): processing payout
-		if (step <= 2) return 'completed';
-		if (step === 3) return 'active';
-		return 'pending';
-	}
-
-	/**
-	 * Formats the distribution amount for display
-	 * @returns Formatted dollar string or fallback
-	 */
-	function formatDistribution(): string {
-		if (!winning.distributionAmount) return 'Calculating your share...';
-		const amount = parseFloat(winning.distributionAmount);
-		return `Your share: $${amount.toFixed(2)}`;
-	}
-
-	if (isPartialFulfillment) {
-		return (
-			<div className="rounded-2xl border border-black bg-white p-6">
-				<h3 className="mb-6 text-lg font-semibold">Payout status</h3>
-
-				<div className="space-y-0">
-					<TimelineStep
-						title="Winner Selected"
-						description="You've been selected as a winner"
-						status={getPayoutStepStatus(1)}
-					/>
-					<TimelineStep
-						title="Prize Calculated"
-						description={formatDistribution()}
-						status={getPayoutStepStatus(2)}
-					/>
-					<TimelineStep
-						title="Processing Payout"
-						description="Platform is processing your payout"
-						status={getPayoutStepStatus(3)}
-					/>
-					<TimelineStep
-						title="Payout Complete"
-						description="Funds have been distributed"
-						status={getPayoutStepStatus(4)}
-						isLast
-					/>
-				</div>
-			</div>
-		);
-	}
-
-	// ==========================================
-	// Standard Shipping Timeline
-	// ==========================================
 
 	const claimStep = getClaimStep();
 	const preparingStep = getPreparingStep();

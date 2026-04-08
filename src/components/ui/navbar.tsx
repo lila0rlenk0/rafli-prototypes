@@ -7,6 +7,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Logo } from '@/assets/logo';
 import { ModeSwitchToggle } from '@/components/mode/mode-switch-toggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { CreditBalanceBadge } from '@/components/ui/credit-balance-badge';
 import { cn } from '@/lib/utils';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
@@ -79,6 +80,7 @@ export function Navbar({ children }: NavbarProps) {
 
 					{/* Desktop: Right side icons */}
 					<div className="hidden items-center gap-4 sm:flex">
+						<CreditBalanceBadge />
 						<a
 							href={FEEDBACK_FORM_URL}
 							target="_blank"
@@ -135,6 +137,10 @@ export function Navbar({ children }: NavbarProps) {
 
 						<div className="flex flex-col gap-8 px-6 pt-8">
 							<ModeSwitchToggle />
+							{/* Bubble click closes mobile overlay on badge tap */}
+							<div onClick={closeMenu} role="presentation">
+								<CreditBalanceBadge />
+							</div>
 
 							<Link
 								href="/browse"

@@ -32,8 +32,6 @@ export const WINNING_ERROR_CODES = {
 	NOT_CLAIMED: 'core:winning:not-claimed',
 	/** Permission denied (not raffle host) */
 	PERMISSION_DENIED: 'core:winning:permission-denied',
-	/** Partial participation — no fulfillment needed (cash distribution) */
-	PARTIAL_NO_FULFILLMENT: 'core:winning:partial-participation-no-fulfillment',
 	/** Invalid state shape for status transition */
 	INVALID_STATE_SHAPE: 'core:winning:invalid-state-shape',
 	/** Raffle not found */

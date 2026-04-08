@@ -7,6 +7,7 @@ import { SignOutButton } from '@/components/auth/sign-out-button';
 import { VerificationBadge } from '@/components/verification/verification-badge';
 import { ProfileSidebar } from './profile-sidebar';
 import {
+	CreditsSection,
 	EmailPreferencesSection,
 	PaymentHistorySection,
 	PersonalInformationSection,
@@ -36,6 +37,10 @@ const SIDEBAR_ITEMS = [
 	{
 		label: 'Email Preferences',
 		sectionId: 'email-preferences',
+	},
+	{
+		label: 'Credits',
+		sectionId: 'credits',
 	},
 	{
 		label: 'Payment History',
@@ -122,6 +127,9 @@ export default async function ProfilePage() {
 
 					{/* Email Preferences */}
 					<EmailPreferencesSection />
+
+					{/* Credits */}
+					<CreditsSection />
 
 					{/* Payment History */}
 					<PaymentHistorySection />

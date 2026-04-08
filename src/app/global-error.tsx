@@ -1,7 +1,8 @@
 'use client';
 
-import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
+
+import { captureErrorBoundary } from '@/lib/sentry/capture';
 
 /**
  * Root-level error boundary.
@@ -15,7 +16,7 @@ export default function GlobalError({
 	reset: () => void;
 }) {
 	useEffect(() => {
-		Sentry.captureException(error);
+		captureErrorBoundary(error);
 	}, [error]);
 
 	return (

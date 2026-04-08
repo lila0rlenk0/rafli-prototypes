@@ -2,6 +2,19 @@ import * as Sentry from '@sentry/nextjs';
 import type { ZodError } from 'zod';
 
 /**
+ * Captures client-originated errors from React error boundaries.
+ * Server errors carry a `digest` and are already captured by `onRequestError`
+ * in `instrumentation.ts` — capturing them again would create duplicates.
+ *
+ * @param error - Error from the error boundary props
+ */
+export function captureErrorBoundary(error: Error & { digest?: string }): void {
+	if (!error.digest) {
+		Sentry.captureException(error);
+	}
+}
+
+/**
  * Captures a service error in Sentry with the error code tag.
  * The `beforeSend` filter in `filter.ts` uses the tag to drop expected errors.
  *

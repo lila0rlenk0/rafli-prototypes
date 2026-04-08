@@ -162,6 +162,12 @@ export default withSentryConfig(nextConfig, {
 	// Disable Sentry SDK telemetry
 	telemetry: false,
 
+	// Remove source maps from the production bundle after uploading to Sentry.
+	// Prevents exposing original source code via browser devtools.
+	sourcemaps: {
+		deleteSourcemapsAfterUpload: true,
+	},
+
 	// Silence source map upload warnings when auth token is not set (local dev)
 	silent: !process.env.SENTRY_AUTH_TOKEN,
 });

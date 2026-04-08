@@ -15,8 +15,8 @@ mock.module('@/lib/api/client', () => ({
 		patch: mock(),
 	},
 }));
-
 mock.module('@/lib/sentry/capture', () => ({
+	captureContractDrift: mock(),
 	captureServiceError: mock(),
 }));
 

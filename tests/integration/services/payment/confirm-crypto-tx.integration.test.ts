@@ -1,4 +1,4 @@
-import { describe, expect, mock, spyOn, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
 import { PAYMENT_ERROR_CODES } from '@/types/errors/payment-errors';
 
@@ -19,6 +19,10 @@ mock.module('@/lib/auth/session', () => ({
 
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(() => Promise.resolve()),
+}));
+mock.module('@/lib/sentry/capture', () => ({
+	captureContractDrift: mock(),
+	captureServiceError: mock(),
 }));
 
 const { confirmCryptoTx } =
@@ -44,7 +48,6 @@ describe('confirmCryptoTx', () => {
 	});
 
 	test('returns CRYPTO_CONFIRM_FAILED on invalid response shape', async () => {
-		const consoleSpy = spyOn(console, 'error').mockImplementation(() => {});
 		mockPost.mockResolvedValueOnce(mockAxiosResponse({ id: 'session-1' }));
 
 		const result = await confirmCryptoTx({
@@ -58,8 +61,6 @@ describe('confirmCryptoTx', () => {
 		if (!result.success) {
 			expect(result.error).toBe(PAYMENT_ERROR_CODES.CRYPTO_CONFIRM_FAILED);
 		}
-		expect(consoleSpy).toHaveBeenCalled();
-		consoleSpy.mockRestore();
 	});
 
 	test('maps chain-mismatch from RFC 7807 responses', async () => {

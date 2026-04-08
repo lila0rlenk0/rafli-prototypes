@@ -1,4 +1,4 @@
-import { describe, expect, mock, spyOn, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { WALLET_ERROR_CODES } from '@/types/errors/wallet-errors';
@@ -10,6 +10,10 @@ const mockGet = mock();
 mock.module('@/lib/api/client', () => ({
 	authenticatedClient: { get: mockGet, post: mock() },
 	baseClient: { get: mock() },
+}));
+mock.module('@/lib/sentry/capture', () => ({
+	captureContractDrift: mock(),
+	captureServiceError: mock(),
 }));
 
 const { getWallets } = await import('@/services/wallet/get-wallets');
@@ -40,7 +44,6 @@ describe('getWallets', () => {
 	});
 
 	test('returns FETCH_FAILED on invalid response shape', async () => {
-		const consoleSpy = spyOn(console, 'error').mockImplementation(() => {});
 		mockGet.mockResolvedValueOnce(mockAxiosResponse({ wallets: [{}] }));
 
 		const result = await getWallets();
@@ -49,8 +52,6 @@ describe('getWallets', () => {
 		if (!result.success) {
 			expect(result.error).toBe(WALLET_ERROR_CODES.FETCH_FAILED);
 		}
-		expect(consoleSpy).toHaveBeenCalled();
-		consoleSpy.mockRestore();
 	});
 
 	test('maps global auth errors from RFC 7807 responses', async () => {

@@ -25,8 +25,8 @@ mock.module('@/lib/api/client', () => ({
 mock.module('next/cache', () => ({
 	revalidatePath: mock(),
 }));
-
 mock.module('@/lib/sentry/capture', () => ({
+	captureContractDrift: mock(),
 	captureServiceError: mock(),
 }));
 

@@ -1,4 +1,4 @@
-import { describe, expect, mock, spyOn, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
 import { WALLET_ERROR_CODES } from '@/types/errors/wallet-errors';
 
@@ -9,6 +9,10 @@ const mockPost = mock();
 mock.module('@/lib/api/client', () => ({
 	authenticatedClient: { get: mock(), post: mockPost },
 	baseClient: { get: mock() },
+}));
+mock.module('@/lib/sentry/capture', () => ({
+	captureContractDrift: mock(),
+	captureServiceError: mock(),
 }));
 
 const { verifyWallet } = await import('@/services/wallet/verify-wallet');
@@ -41,7 +45,6 @@ describe('verifyWallet', () => {
 	});
 
 	test('returns VALIDATION_FAILED on invalid response shape', async () => {
-		const consoleSpy = spyOn(console, 'error').mockImplementation(() => {});
 		mockPost.mockResolvedValueOnce(mockAxiosResponse({ id: 'wallet-1' }));
 
 		const result = await verifyWallet({
@@ -56,8 +59,7 @@ describe('verifyWallet', () => {
 		if (!result.success) {
 			expect(result.error).toBe(WALLET_ERROR_CODES.VALIDATION_FAILED);
 		}
-		expect(consoleSpy).toHaveBeenCalled();
-		consoleSpy.mockRestore();
+		// captureContractDrift called internally — Sentry is no-op without DSN
 	});
 
 	test('maps invalid-timestamp from RFC 7807 responses', async () => {

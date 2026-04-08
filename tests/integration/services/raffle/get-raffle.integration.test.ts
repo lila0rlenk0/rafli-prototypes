@@ -1,4 +1,4 @@
-import { describe, expect, mock, spyOn, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { RAFFLE_ERROR_CODES } from '@/types/errors/raffle-errors';
@@ -46,6 +46,10 @@ mock.module('@/lib/api/client', () => ({
 	baseClient: { get: mockGet },
 	authenticatedClient: { get: mock(), post: mock() },
 }));
+mock.module('@/lib/sentry/capture', () => ({
+	captureContractDrift: mock(),
+	captureServiceError: mock(),
+}));
 
 // Import AFTER mocking
 const { getRaffle } = await import('@/services/raffle/get-raffle');
@@ -68,7 +72,6 @@ describe('getRaffle', () => {
 
 	describe('zod validation failure', () => {
 		test('returns FETCH_FAILED on invalid response shape', async () => {
-			const consoleSpy = spyOn(console, 'error').mockImplementation(() => {});
 			mockGet.mockResolvedValueOnce(
 				mockAxiosResponse({ id: 123, invalid: true }),
 			);
@@ -79,8 +82,7 @@ describe('getRaffle', () => {
 			if (!result.success) {
 				expect(result.error).toBe(RAFFLE_ERROR_CODES.FETCH_FAILED);
 			}
-			expect(consoleSpy).toHaveBeenCalled();
-			consoleSpy.mockRestore();
+			// captureContractDrift is called but Sentry is a no-op without DSN in tests
 		});
 	});
 

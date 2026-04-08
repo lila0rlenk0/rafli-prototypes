@@ -30,8 +30,8 @@ const mockRevalidatePath = mock();
 mock.module('next/cache', () => ({
 	revalidatePath: mockRevalidatePath,
 }));
-
 mock.module('@/lib/sentry/capture', () => ({
+	captureContractDrift: mock(),
 	captureServiceError: mock(),
 }));
 

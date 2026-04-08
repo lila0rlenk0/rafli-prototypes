@@ -2,6 +2,8 @@
 
 import { cookies } from 'next/headers';
 
+import { setSentryUser } from '@/lib/sentry/user';
+
 import { AUTH_COOKIES, COOKIE_OPTIONS } from './config';
 import { decodeJwt, jwtPayloadToUser } from './jwt';
 
@@ -30,6 +32,9 @@ export async function setAuthCookiesClient(
 			...COOKIE_OPTIONS,
 			httpOnly: false,
 		});
+
+		// Tag all subsequent Sentry errors with this user ID
+		setSentryUser(user.id);
 
 		return { success: true };
 	} catch (error) {

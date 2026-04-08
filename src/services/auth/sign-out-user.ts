@@ -6,6 +6,7 @@ import { AUTH_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
+import { clearSentryUser } from '@/lib/sentry/user';
 
 import { clearAuthCookies } from './clear-auth';
 
@@ -31,6 +32,8 @@ export async function signOutUser(): Promise<never> {
 		console.error('Sign out error:', error);
 	} finally {
 		await clearAuthCookies();
+		// Detach user from Sentry scope so post-logout errors aren't misattributed
+		clearSentryUser();
 	}
 
 	redirect('/sign-in');

@@ -6,6 +6,7 @@ import { baseClient } from '@/lib/api/client';
 import { setAuthCookies } from '@/lib/auth/session';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
+import { setSentryUser } from '@/lib/sentry/user';
 import { signInInputSchema, type SignInInput } from '@/types/auth';
 import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -45,6 +46,9 @@ export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 
 		// Set authentication cookies
 		await setAuthCookies(token, user);
+
+		// Tag all subsequent Sentry errors with this user ID
+		setSentryUser(user.id);
 
 		// Track successful sign-in (awaited to ensure completion in serverless)
 		await trackServer(

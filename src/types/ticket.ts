@@ -32,12 +32,17 @@ export const ticketSourceSchema = z.enum([
 ]);
 
 /**
- * Schema for a single ticket code item
- * Represents a human-friendly ticket code
+ * Schema for a single ticket code item.
+ * Represents a human-friendly ticket code with issuance source and optional receipt link.
+ *
+ * source: issuance origin — 'purchase', 'promo', 'x_share', 'wallet', 'partner:{id}'
+ * receiptUrl: Stripe receipt or block explorer link — null for non-payment sources
  */
 export const ticketCodeSchema = z.object({
 	ticketCode: z.string(),
 	raffleId: z.string(),
+	source: z.string(),
+	receiptUrl: z.string().nullable(),
 	createdAt: z.string(),
 });
 

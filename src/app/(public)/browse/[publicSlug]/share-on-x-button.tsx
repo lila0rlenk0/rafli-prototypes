@@ -12,18 +12,29 @@ import { type XShareConfig, useXShare } from './use-x-share';
  * 2. Open X intent with that URL
  * 3. Show "I shared it" button → POST /verify-x-share → grant ticket
  *
- * Falls back to plain share (no ticket) when xShare is disabled or claim already verified.
+ * Falls back to plain share (no ticket) when xShare is disabled or claim is terminal.
  */
 export function ShareOnXButton(props: XShareConfig) {
-	const { state, alreadyVerified, retryCountdown, handleShare, handleVerify } =
-		useXShare(props);
+	const {
+		state,
+		alreadyVerified,
+		claimUsed,
+		xShareClaimStatus,
+		retryCountdown,
+		handleShare,
+		handleVerify,
+	} = useXShare(props);
 
-	// Already earned — quiet confirmation, no further action needed
-	if (alreadyVerified) {
+	// Terminal claim — show status-specific message, no re-share allowed
+	if (claimUsed) {
+		const message = alreadyVerified
+			? 'Free ticket earned from sharing on X'
+			: xShareClaimStatus === 'expired'
+				? 'Your free ticket share link has expired'
+				: 'Your free ticket share was revoked';
+
 		return (
-			<p className="mt-2 text-center text-sm text-gray-500">
-				Free ticket earned from sharing on X
-			</p>
+			<p className="mt-2 text-center text-sm text-gray-500">{message}</p>
 		);
 	}
 

@@ -24,6 +24,10 @@ interface UseXShareResult {
 	state: XShareState;
 	/** True when the user already earned their ticket for this raffle */
 	alreadyVerified: boolean;
+	/** True when the claim is in any terminal state (verified/expired/revoked) — no re-share allowed */
+	claimUsed: boolean;
+	/** Raw claim status for per-status UI messaging */
+	xShareClaimStatus?: 'expired' | 'pending' | 'revoked' | 'verified' | null;
 	/** Seconds until auto-retry fires (0 = no countdown active) */
 	retryCountdown: number;
 	handleShare: () => void | Promise<void>;
@@ -41,7 +45,8 @@ interface UseXShareResult {
 function getIntentErrorMessage(errorCode: string): string {
 	switch (errorCode) {
 		case 'core:xshare:already-claimed':
-			return 'You already earned a free ticket for this raffle.';
+			// Covers verified (earned), expired (missed window), and revoked claims
+			return 'Your free ticket opportunity for this raffle has already been used.';
 		case 'core:xshare:question-required':
 			return 'Answer the raffle question first to unlock sharing.';
 		case 'core:xshare:disabled':
@@ -70,7 +75,7 @@ function getIntentErrorMessage(errorCode: string): string {
 function getVerifyErrorMessage(errorCode: string): string {
 	switch (errorCode) {
 		case 'core:xshare:expired':
-			return 'Your share link expired. Tap "Share on X" to get a new one.';
+			return 'Your share link has expired. Each raffle allows one free ticket share attempt.';
 		case 'core:xshare:rate-limited':
 			return 'Too many attempts — please wait 30 seconds before trying again.';
 		case 'core:xshare:not-found':
@@ -147,7 +152,7 @@ function handleNotFoundReason(
  * Handles three scenarios:
  * 1. Tokenized flow: create intent → open X with tokenized URL → verify
  * 2. Resume pending: user had a pending claim from a prior session → show verify directly
- * 3. Plain share: xShare disabled or already verified → just open X intent
+ * 3. Plain share: xShare disabled or claim terminal (verified/expired/revoked) → just open X intent
  *
  * Auto-retry: when X API hasn't indexed the tweet yet, starts a countdown
  * and automatically re-verifies after AUTO_RETRY_DELAY_S seconds.
@@ -160,7 +165,13 @@ export function useXShare({
 	xShareClaimStatus,
 }: XShareConfig): UseXShareResult {
 	const router = useRouter();
+	// Any terminal status means the user's one chance is consumed — no resets.
+	// verified = ticket earned, expired/revoked = opportunity used without earning.
 	const alreadyVerified = xShareClaimStatus === 'verified';
+	const claimUsed =
+		alreadyVerified ||
+		xShareClaimStatus === 'expired' ||
+		xShareClaimStatus === 'revoked';
 
 	// Resume verify state if the user has a pending claim from a prior session
 	// (they shared but navigated away before verifying)
@@ -172,7 +183,9 @@ export function useXShare({
 	const [retryCountdown, setRetryCountdown] = useState(0);
 	const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-	const useTokenizedFlow = xShareEnabled && !alreadyVerified;
+	// Disable tokenized flow when the claim is in any terminal state — backend
+	// will reject with already-claimed anyway, but skip the round-trip entirely.
+	const useTokenizedFlow = xShareEnabled && !claimUsed;
 
 	// Ref holds the latest handleVerify so startAutoRetry's stable useCallback
 	// never calls a stale closure — handleVerify closes over raffleId from props
@@ -287,11 +300,8 @@ export function useXShare({
 			// narrow union (e.g. core:xshare:expired, core:xshare:rate-limited).
 			const errorCode = result.error as string;
 
-			// Expired or not-found claims restart from scratch — user must
-			// re-share to get a fresh token
-			const needsRestart =
-				errorCode === 'core:xshare:expired' ||
-				errorCode === 'core:xshare:not-found';
+			// not-found restarts from scratch — expired is now terminal (no re-share)
+			const needsRestart = errorCode === 'core:xshare:not-found';
 			setState(needsRestart ? 'idle' : 'shared');
 
 			toast.error(getVerifyErrorMessage(errorCode));
@@ -333,6 +343,8 @@ export function useXShare({
 	return {
 		state,
 		alreadyVerified,
+		claimUsed,
+		xShareClaimStatus,
 		retryCountdown,
 		handleShare: useTokenizedFlow ? handleTokenizedShare : handlePlainShare,
 		handleVerify,

@@ -38,7 +38,7 @@ export function StickyBuyTicketsCta({
 }: StickyBuyTicketsCtaProps) {
 	const [isCheckoutVisible, setIsCheckoutVisible] = useState(false);
 
-	const { state, alreadyVerified, retryCountdown, handleShare, handleVerify } =
+	const { state, claimUsed, retryCountdown, handleShare, handleVerify } =
 		useXShare({
 			raffleId,
 			title,
@@ -82,8 +82,8 @@ export function StickyBuyTicketsCta({
 	}
 
 	function renderShareButton() {
-		// Already earned — no button in the sticky bar, keep it clean
-		if (alreadyVerified) return null;
+		// Terminal claim (verified/expired/revoked) — no button in the sticky bar
+		if (claimUsed) return null;
 
 		if (state === 'shared' || state === 'verifying') {
 			const isCountingDown = retryCountdown > 0 && state === 'shared';

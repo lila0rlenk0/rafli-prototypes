@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapCommentError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import type { CommentSort } from '@/types/comment';
 import {
 	listCommentsResponseSchema,
@@ -41,7 +42,7 @@ export async function getMyComments(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('My comments response validation failed:', error);
+			captureContractDrift(error, 'comment', 'get-my-comments');
 			return failure(COMMENT_ERROR_CODES.FETCH_FAILED);
 		}
 		return failure(mapCommentError(error));

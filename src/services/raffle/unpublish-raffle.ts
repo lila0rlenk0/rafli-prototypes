@@ -8,6 +8,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { revalidateMyRaffles } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
@@ -47,7 +48,7 @@ export async function unpublishRaffle(
 		return success(validatedData);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Unpublish raffle response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'unpublish-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

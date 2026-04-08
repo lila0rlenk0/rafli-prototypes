@@ -6,6 +6,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import { cryptoPaymentStatusSchema } from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
@@ -71,7 +72,7 @@ export async function getCryptoSession(
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Crypto session response validation failed:', error);
+			captureContractDrift(error, 'payment', 'get-crypto-session');
 			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
 		}
 

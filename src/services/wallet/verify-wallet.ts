@@ -9,6 +9,7 @@ import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapWalletError } from '@/lib/errors/error-mapper';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { WALLET_ERROR_CODES, type WalletErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import type { VerifyWalletPayload, WalletResponse } from '@/types/wallet';
@@ -45,7 +46,7 @@ export async function verifyWallet(
 		return success(wallet);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Wallet verify response validation failed:', error);
+			captureContractDrift(error, 'wallet', 'verify-wallet');
 			return failure(WALLET_ERROR_CODES.VALIDATION_FAILED);
 		}
 

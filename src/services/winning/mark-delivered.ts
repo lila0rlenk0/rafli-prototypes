@@ -8,6 +8,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { revalidateWinningPaths } from '@/lib/cache/revalidation';
 import { failure, mapWinningError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import { type Winning, winningSchema } from '@/types/winning';
@@ -55,7 +56,7 @@ export async function markDelivered(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Mark delivered response validation failed:', error);
+			captureContractDrift(error, 'winning', 'mark-delivered');
 			return failure(WINNING_ERROR_CODES.MARK_DELIVERED_FAILED);
 		}
 

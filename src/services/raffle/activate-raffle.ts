@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import { authenticatedClient } from '@/lib/api/client';
 import { revalidateMyRaffles } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
@@ -37,7 +38,7 @@ export async function activateRaffle(
 		return success(validatedData);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Activate raffle response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'activate-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

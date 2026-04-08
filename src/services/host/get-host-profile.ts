@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
 import { failure, mapHostError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { HOST_ERROR_CODES, type HostErrorCode } from '@/types/errors';
 import { type HostProfile, hostProfileSchema } from '@/types/host';
 import type { ServiceResponse } from '@/types/service-response';
@@ -34,7 +35,7 @@ export async function getHostProfile(
 	} catch (error) {
 		// Handle validation errors separately
 		if (error instanceof ZodError) {
-			console.error('Host profile response validation failed:', error);
+			captureContractDrift(error, 'host', 'get-host-profile');
 			return failure(HOST_ERROR_CODES.FETCH_FAILED);
 		}
 

@@ -9,6 +9,7 @@ import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapOrderError } from '@/lib/errors/error-mapper';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import {
 	orderSchema,
@@ -92,7 +93,7 @@ export async function checkoutOrder(
 		});
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Checkout order response validation failed:', error);
+			captureContractDrift(error, 'order', 'checkout-order');
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 

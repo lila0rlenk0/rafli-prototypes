@@ -8,7 +8,10 @@ import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapAdminKycError, success } from '@/lib/errors';
 import { parsePermissions, PERMISSIONS } from '@/lib/permissions';
-import { captureServiceError } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import type { AdminKycReviewResponse } from '@/types/admin-kyc';
 import {
 	adminKycReviewInputSchema,
@@ -67,7 +70,7 @@ export async function reviewSubmission(
 		return success(result);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Review submission response validation failed:', error);
+			captureContractDrift(error, 'admin-kyc', 'review-submission');
 			return failure(ADMIN_KYC_ERROR_CODES.FETCH_FAILED);
 		}
 

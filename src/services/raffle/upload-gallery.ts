@@ -3,6 +3,7 @@
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	CLIENT_ERROR_CODES,
 	RAFFLE_ERROR_CODES,
@@ -84,7 +85,7 @@ export async function uploadGalleryImages(
 	} catch (error) {
 		// Handle validation errors
 		if (error instanceof ZodError) {
-			console.error('Gallery upload response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'upload-gallery');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

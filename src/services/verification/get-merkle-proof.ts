@@ -3,6 +3,7 @@
 import { baseClient } from '@/lib/api/client';
 import { failure, success } from '@/lib/errors';
 import { mapVerificationError } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import type { VerificationErrorCode } from '@/types/errors/verification-errors';
 import type { ServiceResponse } from '@/types/service-response';
 import { type MerkleProof, merkleProofSchema } from '@/types/verification';
@@ -27,7 +28,7 @@ export async function getMerkleProof(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Merkle proof validation failed:', error);
+			captureContractDrift(error, 'verification', 'get-merkle-proof');
 			return failure('validation_error');
 		}
 		return failure(mapVerificationError(error));

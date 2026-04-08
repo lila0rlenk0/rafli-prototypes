@@ -8,6 +8,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapRaffleError } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
 	answerResponseSchema,
@@ -59,7 +60,7 @@ export async function submitRaffleAnswer(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Answer response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'submit-raffle-answer');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

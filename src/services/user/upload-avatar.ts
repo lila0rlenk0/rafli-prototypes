@@ -3,6 +3,7 @@
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	CLIENT_ERROR_CODES,
 	RAFFLE_ERROR_CODES,
@@ -59,7 +60,7 @@ export async function uploadAvatar(
 	} catch (error) {
 		// Handle validation errors
 		if (error instanceof ZodError) {
-			console.error('Avatar upload response validation failed:', error);
+			captureContractDrift(error, 'user', 'upload-avatar');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

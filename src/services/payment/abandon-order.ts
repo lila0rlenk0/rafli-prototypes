@@ -9,6 +9,7 @@ import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -66,7 +67,7 @@ export async function abandonOrder(
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Abandon order response validation failed:', error);
+			captureContractDrift(error, 'payment', 'abandon-order');
 			// FETCH_FAILED is the closest generic code — abandon is best-effort so callers
 			// treat all failures the same (fire-and-forget), making a dedicated code unnecessary.
 			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);

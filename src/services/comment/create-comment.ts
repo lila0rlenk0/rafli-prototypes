@@ -7,6 +7,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapCommentError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	commentSchema,
 	type Comment,
@@ -46,7 +47,7 @@ export async function createComment(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Create comment response validation failed:', error);
+			captureContractDrift(error, 'comment', 'create-comment');
 			return failure(COMMENT_ERROR_CODES.FETCH_FAILED);
 		}
 		return failure(mapCommentError(error));

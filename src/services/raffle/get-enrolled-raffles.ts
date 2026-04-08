@@ -3,6 +3,7 @@
 import { authenticatedClient } from '@/lib/api/client';
 import { buildQueryParamsWithStatus } from '@/lib/api/utils';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
 	type EnrolledRafflesQuery,
@@ -45,7 +46,7 @@ export async function getEnrolledRaffles(
 	} catch (error) {
 		// Handle validation errors separately
 		if (error instanceof ZodError) {
-			console.error('Enrolled raffles response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'get-enrolled-raffles');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

@@ -3,6 +3,7 @@
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapUpdateError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	CLIENT_ERROR_CODES,
 	UPDATE_ERROR_CODES,
@@ -84,7 +85,7 @@ export async function uploadUpdateImages(
 	} catch (error) {
 		// Handle validation errors
 		if (error instanceof ZodError) {
-			console.error('Update images upload response validation failed:', error);
+			captureContractDrift(error, 'update', 'upload-update-images');
 			return failure(UPDATE_ERROR_CODES.FETCH_FAILED);
 		}
 

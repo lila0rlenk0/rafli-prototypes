@@ -2,6 +2,7 @@
 
 import { baseClient } from '@/lib/api/client';
 import { failure, mapUpdateError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { UPDATE_ERROR_CODES, type UpdateErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -49,7 +50,7 @@ export async function getUpdates(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Updates response validation failed:', error);
+			captureContractDrift(error, 'update', 'get-updates');
 			return failure(UPDATE_ERROR_CODES.FETCH_FAILED);
 		}
 		return failure(mapUpdateError(error));

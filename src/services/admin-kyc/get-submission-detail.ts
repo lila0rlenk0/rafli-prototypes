@@ -7,7 +7,10 @@ import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapAdminKycError, success } from '@/lib/errors';
 import { parsePermissions, PERMISSIONS } from '@/lib/permissions';
-import { captureServiceError } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import type { AdminKycDetail } from '@/types/admin-kyc';
 import { adminKycDetailSchema } from '@/types/admin-kyc';
 import {
@@ -47,7 +50,7 @@ export async function getSubmissionDetail(
 		return success(parsed);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Admin submission detail validation failed:', error);
+			captureContractDrift(error, 'admin-kyc', 'get-submission-detail');
 			return failure(ADMIN_KYC_ERROR_CODES.FETCH_FAILED);
 		}
 

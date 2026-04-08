@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
 	type RaffleGalleryResponse,
@@ -60,7 +61,7 @@ export async function getRaffleGallery(
 	} catch (error) {
 		// Handle validation errors
 		if (error instanceof ZodError) {
-			console.error('Gallery response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'get-raffle-gallery');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

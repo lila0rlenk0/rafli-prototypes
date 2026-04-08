@@ -7,6 +7,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
@@ -56,7 +57,7 @@ export async function publishRaffle(
 	} catch (error) {
 		// Handle validation errors separately
 		if (error instanceof ZodError) {
-			console.error('Publish raffle response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'publish-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

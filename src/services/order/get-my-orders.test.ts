@@ -5,10 +5,16 @@ import { ORDER_ERROR_CODES } from '@/types/errors';
 import { mockAxiosResponse } from '../../../tests/helpers/mock-axios';
 
 const mockGet = mock();
+const mockCaptureContractDrift = mock();
 
 mock.module('@/lib/api/client', () => ({
 	authenticatedClient: { get: mockGet },
 	baseClient: { get: mock() },
+}));
+
+mock.module('@/lib/sentry/capture', () => ({
+	captureContractDrift: mockCaptureContractDrift,
+	captureServiceError: mock(),
 }));
 
 const { getMyOrders } = await import('./get-my-orders');
@@ -63,13 +69,14 @@ describe('getMyOrders', () => {
 			success: false,
 			error: ORDER_ERROR_CODES.FETCH_FAILED,
 		});
+		// Asserts the null-data guard path (line 48 of get-my-orders.ts) fires
 		expect(consoleSpy).toHaveBeenCalledTimes(1);
 		consoleSpy.mockRestore();
 	});
 
 	test('returns FETCH_FAILED when backend response shape is invalid', async () => {
 		mockGet.mockReset();
-		const consoleSpy = spyOn(console, 'error').mockImplementation(() => {});
+		mockCaptureContractDrift.mockReset();
 		mockGet.mockResolvedValueOnce(mockAxiosResponse({ invalid: true }));
 
 		const result = await getMyOrders({ page: 1, limit: 10 });
@@ -78,8 +85,7 @@ describe('getMyOrders', () => {
 			success: false,
 			error: ORDER_ERROR_CODES.FETCH_FAILED,
 		});
-		expect(consoleSpy).toHaveBeenCalledTimes(1);
-		consoleSpy.mockRestore();
+		expect(mockCaptureContractDrift).toHaveBeenCalled();
 	});
 
 	test('passes excludeStale param to API', async () => {

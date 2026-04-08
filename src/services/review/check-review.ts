@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapReviewError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { REVIEW_ERROR_CODES, type ReviewErrorCode } from '@/types/errors';
 import {
 	type CheckReviewResponse,
@@ -38,7 +39,7 @@ export async function checkReview(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Check review response validation failed:', error);
+			captureContractDrift(error, 'review', 'check-review');
 			return failure(REVIEW_ERROR_CODES.FETCH_FAILED);
 		}
 

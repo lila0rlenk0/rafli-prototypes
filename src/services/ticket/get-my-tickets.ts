@@ -3,6 +3,7 @@
 import { authenticatedClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
 import { failure, mapTicketError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { TICKET_ERROR_CODES, type TicketErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -38,7 +39,7 @@ export async function getMyTickets(
 		return success(validatedData);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('My tickets response validation failed:', error);
+			captureContractDrift(error, 'ticket', 'get-my-tickets');
 			return failure(TICKET_ERROR_CODES.FETCH_FAILED);
 		}
 

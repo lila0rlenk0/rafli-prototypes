@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -64,7 +65,7 @@ export async function updateMe(
 	} catch (error) {
 		// Handle validation errors
 		if (error instanceof ZodError) {
-			console.error('Update me response validation failed:', error);
+			captureContractDrift(error, 'user', 'update-me');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

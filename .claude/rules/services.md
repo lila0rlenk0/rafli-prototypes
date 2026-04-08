@@ -22,6 +22,7 @@ Both server clients from `@/lib/api/client`. Retry: only GET/HEAD on network err
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift, captureServiceError } from '@/lib/sentry/capture';
 import type { ServiceResponse } from '@/types/service-response';
 import { ZodError } from 'zod';
 
@@ -32,7 +33,7 @@ export async function getData(): Promise<ServiceResponse<MyType, MyErrorCode>> {
 		return success(mySchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Validation failed:', error);
+			captureContractDrift(error, 'domain', 'getData');
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 		const errorCode = mapRaffleError(error);

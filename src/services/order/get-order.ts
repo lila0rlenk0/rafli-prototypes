@@ -4,6 +4,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapOrderError } from '@/lib/errors/error-mapper';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import type { Order } from '@/types/order';
 import { orderSchema } from '@/types/order';
@@ -36,7 +37,7 @@ export async function getOrder(orderId: string): Promise<GetOrderResponse> {
 	} catch (error) {
 		// Handle validation errors
 		if (error instanceof ZodError) {
-			console.error('Order response validation failed:', error);
+			captureContractDrift(error, 'order', 'get-order');
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 

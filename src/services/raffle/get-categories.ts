@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	type CategoriesResponse,
 	categoriesResponseSchema,
@@ -35,7 +36,7 @@ export async function getCategories(): Promise<GetCategoriesResponse> {
 	} catch (error) {
 		// Handle validation errors separately
 		if (error instanceof ZodError) {
-			console.error('Categories response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'get-categories');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

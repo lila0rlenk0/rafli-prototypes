@@ -7,6 +7,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	PROMO_CODE_ERROR_CODES,
 	type PromoCodeErrorCode,
@@ -68,10 +69,7 @@ export async function bulkCreatePromoCodes(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error(
-				'Bulk create promo codes response validation failed:',
-				error,
-			);
+			captureContractDrift(error, 'promo-code', 'bulk-create-promo-codes');
 			return failure(PROMO_CODE_ERROR_CODES.FETCH_FAILED);
 		}
 		return failure(mapPromoCodeError(error));

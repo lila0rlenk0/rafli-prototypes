@@ -7,6 +7,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapUpdateError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { UPDATE_ERROR_CODES, type UpdateErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -51,7 +52,7 @@ export async function createUpdate(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Create update response validation failed:', error);
+			captureContractDrift(error, 'update', 'create-update');
 			return failure(UPDATE_ERROR_CODES.FETCH_FAILED);
 		}
 		return failure(mapUpdateError(error));

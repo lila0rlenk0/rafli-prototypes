@@ -3,6 +3,7 @@
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, success } from '@/lib/errors';
 import { mapNotificationError } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	NOTIFICATION_ERROR_CODES,
 	type NotificationErrorCode,
@@ -40,7 +41,7 @@ export async function markNotificationRead(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Mark read response validation failed:', error);
+			captureContractDrift(error, 'notification', 'mark-notification-read');
 			return failure(NOTIFICATION_ERROR_CODES.VALIDATION_FAILED);
 		}
 		return failure(mapNotificationError(error));

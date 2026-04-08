@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	PROMO_CODE_ERROR_CODES,
 	type PromoCodeErrorCode,
@@ -59,7 +60,7 @@ export async function getPromoCodes(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Promo codes response validation failed:', error);
+			captureContractDrift(error, 'promo-code', 'get-promo-codes');
 			return failure(PROMO_CODE_ERROR_CODES.FETCH_FAILED);
 		}
 		return failure(mapPromoCodeError(error));

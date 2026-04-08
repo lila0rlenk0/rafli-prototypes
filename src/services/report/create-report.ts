@@ -7,6 +7,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapReportError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { REPORT_ERROR_CODES, type ReportErrorCode } from '@/types/errors';
 import {
 	createReportSchema,
@@ -57,7 +58,7 @@ export async function createReport(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Create report response validation failed:', error);
+			captureContractDrift(error, 'report', 'create-report');
 			return failure(REPORT_ERROR_CODES.VALIDATION_FAILED);
 		}
 		return failure(mapReportError(error));

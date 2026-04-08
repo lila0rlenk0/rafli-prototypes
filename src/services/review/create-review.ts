@@ -7,6 +7,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapReviewError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { REVIEW_ERROR_CODES, type ReviewErrorCode } from '@/types/errors';
 import {
 	type CreateReviewPayload,
@@ -51,7 +52,7 @@ export async function createReview(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Create review response validation failed:', error);
+			captureContractDrift(error, 'review', 'create-review');
 			return failure(REVIEW_ERROR_CODES.CREATE_FAILED);
 		}
 

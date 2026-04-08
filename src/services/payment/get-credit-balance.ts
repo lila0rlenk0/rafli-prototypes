@@ -6,6 +6,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { COMMON_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -34,7 +35,7 @@ export async function getCreditBalance(): Promise<
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Credit balance response validation failed:', error);
+			captureContractDrift(error, 'payment', 'get-credit-balance');
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 

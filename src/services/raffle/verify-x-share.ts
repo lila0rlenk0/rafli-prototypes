@@ -5,7 +5,10 @@ import { ZodError, z } from 'zod';
 import { authenticatedClient } from '@/lib/api/client';
 import { revalidateRaffleDetail } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
-import { captureServiceError } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -60,7 +63,7 @@ export async function verifyXShare(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('X share verify response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'verify-x-share');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

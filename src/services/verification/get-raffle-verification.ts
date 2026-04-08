@@ -3,6 +3,7 @@
 import { baseClient } from '@/lib/api/client';
 import { failure, success } from '@/lib/errors';
 import { mapVerificationError } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import type { VerificationErrorCode } from '@/types/errors/verification-errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -26,7 +27,7 @@ export async function getRaffleVerification(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Raffle verification validation failed:', error);
+			captureContractDrift(error, 'verification', 'get-raffle-verification');
 			return failure('validation_error');
 		}
 		return failure(mapVerificationError(error));

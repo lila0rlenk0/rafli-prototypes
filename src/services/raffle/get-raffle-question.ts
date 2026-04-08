@@ -3,6 +3,7 @@
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, success } from '@/lib/errors';
 import { mapRaffleError } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
 	raffleQuestionSchema,
@@ -39,7 +40,7 @@ export async function getRaffleQuestion(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Raffle question response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'get-raffle-question');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

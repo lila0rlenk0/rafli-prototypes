@@ -8,6 +8,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { revalidateWinningPaths } from '@/lib/cache/revalidation';
 import { failure, mapWinningError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -62,7 +63,7 @@ export async function markSent(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Mark sent response validation failed:', error);
+			captureContractDrift(error, 'winning', 'mark-sent');
 			return failure(WINNING_ERROR_CODES.MARK_SENT_FAILED);
 		}
 

@@ -2,6 +2,7 @@
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import { meResponseSchema, type MeResponse } from '@/types/user';
@@ -36,7 +37,7 @@ export async function getMe(): Promise<GetMeResponse> {
 		});
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Get me response validation failed:', error);
+			captureContractDrift(error, 'user', 'get-me');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

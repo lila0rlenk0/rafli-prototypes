@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import { baseClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
 	type ListRafflesResponse,
@@ -41,7 +42,7 @@ export async function getRaffles(
 	} catch (error) {
 		// Handle validation errors separately
 		if (error instanceof ZodError) {
-			console.error('Raffle response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'get-raffles');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

@@ -3,6 +3,7 @@
 import { authenticatedClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
 import { failure, mapNotificationError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	NOTIFICATION_ERROR_CODES,
 	type NotificationErrorCode,
@@ -42,7 +43,7 @@ export async function getNotifications(
 		return success(validated);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Notification response validation failed:', error);
+			captureContractDrift(error, 'notification', 'get-notifications');
 			return failure(NOTIFICATION_ERROR_CODES.VALIDATION_FAILED);
 		}
 		return failure(mapNotificationError(error));

@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapCommentError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { deleteCommentResponseSchema } from '@/types/comment';
 import { COMMENT_ERROR_CODES, type CommentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -26,7 +27,7 @@ export async function deleteComment(
 		return success(undefined);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Delete comment response validation failed:', error);
+			captureContractDrift(error, 'comment', 'delete-comment');
 			return failure(COMMENT_ERROR_CODES.FETCH_FAILED);
 		}
 		return failure(mapCommentError(error));

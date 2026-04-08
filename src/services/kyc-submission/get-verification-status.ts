@@ -3,7 +3,10 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { captureServiceError } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapKycSubmissionError, success } from '@/lib/errors';
 import {
@@ -34,7 +37,7 @@ export async function getVerificationStatus(): Promise<
 		return success(parsed);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Verification status response validation failed:', error);
+			captureContractDrift(error, 'kyc-submission', 'get-verification-status');
 			return failure(KYC_SUBMISSION_ERROR_CODES.FETCH_FAILED);
 		}
 

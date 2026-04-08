@@ -6,6 +6,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, success } from '@/lib/errors';
 import { mapWalletError } from '@/lib/errors/error-mapper';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { WALLET_ERROR_CODES, type WalletErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import type { WalletsListResponse } from '@/types/wallet';
@@ -28,7 +29,7 @@ export async function getWallets(): Promise<
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Wallets response validation failed:', error);
+			captureContractDrift(error, 'wallet', 'get-wallets');
 			return failure(WALLET_ERROR_CODES.FETCH_FAILED);
 		}
 

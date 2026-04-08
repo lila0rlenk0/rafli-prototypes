@@ -8,6 +8,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { Raffle, UpdateRafflePayload } from '@/types/raffle';
 import { raffleSchema, updateRafflePayloadSchema } from '@/types/raffle';
@@ -74,7 +75,7 @@ export async function updateRaffle(
 	} catch (error) {
 		// Handle validation errors
 		if (error instanceof ZodError) {
-			console.error('Raffle update response validation failed:', error);
+			captureContractDrift(error, 'raffle', 'update-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 

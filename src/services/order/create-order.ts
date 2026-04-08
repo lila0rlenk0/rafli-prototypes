@@ -9,6 +9,7 @@ import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapOrderError } from '@/lib/errors/error-mapper';
+import { captureContractDrift } from '@/lib/sentry/capture';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import type { CreateOrderPayload, Order } from '@/types/order';
 import { createOrderPayloadSchema, orderSchema } from '@/types/order';
@@ -63,7 +64,7 @@ export async function createOrder(
 	} catch (error) {
 		// Handle validation errors
 		if (error instanceof ZodError) {
-			console.error('Order response validation failed:', error);
+			captureContractDrift(error, 'order', 'create-order');
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 

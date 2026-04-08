@@ -9,7 +9,10 @@ import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { mapPaymentError } from '@/lib/errors/error-mapper';
-import { captureServiceError } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import {
 	cryptoTxMutationResponseSchema,
@@ -55,7 +58,7 @@ export async function submitCryptoTx(
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Crypto tx submit response validation failed:', error);
+			captureContractDrift(error, 'payment', 'submit-crypto-tx');
 			return failure(PAYMENT_ERROR_CODES.CRYPTO_SUBMIT_FAILED);
 		}
 

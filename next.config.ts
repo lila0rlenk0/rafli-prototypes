@@ -143,16 +143,25 @@ const nextConfig: NextConfig = {
 	},
 };
 
-// TODO: Configure SENTRY_ORG, SENTRY_PROJECT, and SENTRY_AUTH_TOKEN env vars
-// before merging. Source map uploads won't work until these are set.
 export default withSentryConfig(nextConfig, {
-	org: process.env.SENTRY_ORG,
-	project: process.env.SENTRY_PROJECT,
+	org: 'mode-mobile-t5',
+	project: 'rafli',
+
+	// CI/CD provides this via SENTRY_AUTH_TOKEN env var (org token with org:ci scope).
+	// Locally this is unset — `silent` below suppresses the resulting warnings.
 	authToken: process.env.SENTRY_AUTH_TOKEN,
+
+	// Upload a wider set of client source maps — improves stack trace readability
+	// for chunks that Next.js normally excludes from the default upload set.
+	widenClientFileUpload: true,
+
+	// Route client-side Sentry events through the Next.js server.
+	// Bypasses ad-blockers that block requests to ingest.sentry.io.
+	tunnelRoute: '/monitoring',
 
 	// Disable Sentry SDK telemetry
 	telemetry: false,
 
-	// Silence source map upload warnings when env vars are not set (local dev)
+	// Silence source map upload warnings when auth token is not set (local dev)
 	silent: !process.env.SENTRY_AUTH_TOKEN,
 });

@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { RAFFLE_EVENTS } from '@/lib/analytics/events';
-import { track } from '@/lib/analytics/mixpanel-client';
 
-interface StickyBuyTicketsCtaProps {
-	title: string;
-	publicSlug: string;
+import { type XShareConfig, useXShare } from './use-x-share';
+
+interface StickyBuyTicketsCtaProps extends XShareConfig {
+	/** Unauthenticated users get plain share — can't attribute tickets without an account */
+	isAuthenticated: boolean;
 }
 
 /**
@@ -27,15 +27,29 @@ const VISIBILITY_THRESHOLD = 0.6;
  *   real buy button (#checkout-action) so the purchase flow starts
  *
  * Hidden on desktop (lg:) where the sidebar checkout is always alongside content.
- *
- * @returns Fixed-position bar with Enter Now + Share on X (mobile only)
  */
 export function StickyBuyTicketsCta({
+	raffleId,
 	title,
 	publicSlug,
+	xShareEnabled,
+	xShareClaimStatus,
+	xShareDailyLimitReached,
+	isAuthenticated,
 }: StickyBuyTicketsCtaProps) {
 	const [isCheckoutVisible, setIsCheckoutVisible] = useState(false);
 
+	const { state, alreadyVerified, handleShare, handleVerify } = useXShare({
+		raffleId,
+		title,
+		publicSlug,
+		// Unauthenticated users always get plain share — tokenized flow requires auth
+		xShareEnabled: isAuthenticated && xShareEnabled,
+		xShareClaimStatus,
+		xShareDailyLimitReached,
+	});
+
+	// mount: observe checkout section visibility for scroll-to / click-through CTA
 	useEffect(() => {
 		const target = document.getElementById('checkout-section');
 		if (!target) return;
@@ -68,15 +82,41 @@ export function StickyBuyTicketsCta({
 			?.scrollIntoView({ behavior: 'smooth' });
 	}
 
-	/**
-	 * Opens Twitter/X share intent
-	 */
-	function handleShareOnX() {
-		const text = `Check out this raffle: ${title}`;
-		const link = `${window.location.origin}/browse/${publicSlug}`;
-		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
-		track(RAFFLE_EVENTS.SHARED, { raffle_slug: publicSlug, method: 'twitter' });
-		window.open(url, '_blank');
+	function renderShareButton() {
+		// Already earned — no button in the sticky bar, keep it clean
+		if (alreadyVerified) return null;
+
+		if (state === 'shared' || state === 'verifying') {
+			return (
+				<Button
+					variant="outline"
+					onClick={handleVerify}
+					disabled={state === 'verifying'}
+					className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
+				>
+					<p className="font-semibold">
+						{state === 'verifying'
+							? 'Verifying...'
+							: 'I shared it — Claim my free ticket!'}
+					</p>
+				</Button>
+			);
+		}
+
+		return (
+			<Button
+				variant="outline"
+				onClick={handleShare}
+				disabled={state === 'loading'}
+				className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
+			>
+				<p className="font-semibold">
+					{state === 'loading'
+						? 'Preparing...'
+						: 'Get Free Tickets! Share on X'}
+				</p>
+			</Button>
+		);
 	}
 
 	return (
@@ -87,13 +127,7 @@ export function StickyBuyTicketsCta({
 			>
 				<p className="font-semibold">Enter Now!</p>
 			</Button>
-			<Button
-				variant="outline"
-				onClick={handleShareOnX}
-				className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
-			>
-				<p className="font-semibold">Get Free Tickets! Share on X</p>
-			</Button>
+			{renderShareButton()}
 		</div>
 	);
 }

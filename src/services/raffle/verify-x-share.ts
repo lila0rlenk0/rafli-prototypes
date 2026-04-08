@@ -1,0 +1,74 @@
+'use server';
+
+import { ZodError, z } from 'zod';
+
+import { authenticatedClient } from '@/lib/api/client';
+import { revalidateRaffleDetail } from '@/lib/cache/revalidation';
+import { failure, mapRaffleError, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
+import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
+import type { ServiceResponse } from '@/types/service-response';
+
+// =============================================================================
+// RESPONSE SCHEMA
+// =============================================================================
+
+const verifyXShareResponseSchema = z.object({
+	claimId: z.string(),
+	reason: z
+		.enum(['not_found', 'not_found_or_private', 'x_api_unavailable'])
+		.nullable(),
+	status: z.enum(['not_found', 'verified']),
+	ticketsGranted: z.number(),
+});
+
+type VerifyXShareResponse = z.infer<typeof verifyXShareResponseSchema>;
+
+type VerifyXShareServiceResponse = ServiceResponse<
+	VerifyXShareResponse,
+	RaffleErrorCode
+>;
+
+// =============================================================================
+// SERVER ACTION
+// =============================================================================
+
+/**
+ * Verifies that the user posted the tokenized share URL on X.
+ * Backend searches X API v2 for a tweet containing the token, then
+ * atomically grants one free ticket if found.
+ *
+ * @param raffleId - The UUID of the raffle being verified
+ * @returns Verification result with ticket count, or error code
+ */
+export async function verifyXShare(
+	raffleId: string,
+): Promise<VerifyXShareServiceResponse> {
+	try {
+		const response = await authenticatedClient.post(
+			`/raffles/${raffleId}/verify-x-share`,
+		);
+
+		const validated = verifyXShareResponseSchema.parse(response.data);
+
+		// Revalidate raffle cache so server components reflect updated ticket count
+		// and claim status without a full page reload
+		if (validated.status === 'verified') {
+			revalidateRaffleDetail(raffleId);
+		}
+
+		return success(validated);
+	} catch (error) {
+		if (error instanceof ZodError) {
+			console.error('X share verify response validation failed:', error);
+			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
+		}
+
+		const errorCode = mapRaffleError(error);
+		captureServiceError(error, errorCode, {
+			service: 'raffle',
+			action: 'verifyXShare',
+		});
+		return failure(errorCode);
+	}
+}

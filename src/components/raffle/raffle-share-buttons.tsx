@@ -16,8 +16,7 @@ interface RaffleShareButtonsProps {
  * RaffleShareButtons Component
  *
  * Provides social sharing and link copying functionality for raffles.
- * Includes buttons for sharing on X (Twitter) and copying the raffle link
- * to clipboard.
+ * Includes buttons for sharing on X and copying the raffle link to clipboard.
  */
 export function RaffleShareButtons({
 	title,
@@ -38,13 +37,13 @@ export function RaffleShareButtons({
 	}
 
 	/**
-	 * Opens a Twitter/X share intent in a new tab
-	 * Includes the raffle title and link in the tweet
+	 * Opens an X share intent in a new tab
+	 * Includes the raffle title and link in the post
 	 */
 	function handleShareOnX() {
 		const text = `Check out this raffle: ${title}`;
 		const link = `${window.location.origin}/browse/${publicSlug}`;
-		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+		const url = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
 		track(RAFFLE_EVENTS.SHARED, { raffle_slug: publicSlug, method: 'twitter' });
 		window.open(url, '_blank');
 	}

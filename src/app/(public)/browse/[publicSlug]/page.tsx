@@ -61,6 +61,7 @@ import { ReportRaffleButton } from './report-raffle-button';
 import { CopyRaffleLinkButton } from './copy-raffle-link-button';
 import { ShareOnXButton } from './share-on-x-button';
 import { StickyBuyTicketsCta } from './sticky-buy-tickets-cta';
+import type { XShareConfig } from './use-x-share';
 
 interface PageProps {
 	params: Promise<{
@@ -370,6 +371,17 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		raffle.maxParticipants,
 		raffle.participantsCount,
 	);
+
+	// Shared config for X share components — built once, passed to both
+	// desktop (ShareOnXButton) and mobile (StickyBuyTicketsCta) buttons
+	const xShareConfig: XShareConfig = {
+		raffleId: raffle.id,
+		title: raffle.title,
+		publicSlug: raffle.publicSlugOrCode,
+		xShareEnabled: raffle.xShareTicketsEnabled ?? false,
+		xShareClaimStatus: raffle.xShareClaim?.status ?? null,
+		xShareDailyLimitReached: raffle.xShareDailyLimitReached ?? false,
+	};
 
 	return (
 		<div className="container mx-auto flex max-w-6xl flex-col gap-4 px-0 lg:gap-8 lg:px-4">
@@ -702,12 +714,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 							{/* Only authenticated users can earn free tickets — sharing without an account
 							    can't be attributed to anyone, so the button is meaningless for guests. */}
-							{isAuthenticated ? (
-								<ShareOnXButton
-									title={raffle.title}
-									publicSlug={raffle.publicSlugOrCode}
-								/>
-							) : null}
+							{isAuthenticated ? <ShareOnXButton {...xShareConfig} /> : null}
 						</div>
 					)}
 
@@ -763,8 +770,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 			{shouldShowActiveCard() && (
 				<StickyBuyTicketsCta
-					title={raffle.title}
-					publicSlug={raffle.publicSlugOrCode}
+					{...xShareConfig}
+					isAuthenticated={isAuthenticated}
 				/>
 			)}
 		</div>

@@ -18,7 +18,6 @@ export interface XShareConfig {
 	publicSlug: string;
 	xShareEnabled: boolean;
 	xShareClaimStatus?: 'expired' | 'pending' | 'revoked' | 'verified' | null;
-	xShareDailyLimitReached?: boolean;
 }
 
 interface UseXShareResult {
@@ -27,6 +26,48 @@ interface UseXShareResult {
 	alreadyVerified: boolean;
 	handleShare: () => void | Promise<void>;
 	handleVerify: () => Promise<void>;
+}
+
+/**
+ * Maps backend error codes from createXShareIntent to user-friendly toast messages.
+ * Keeps error presentation co-located with the hook that consumes it.
+ */
+function getIntentErrorMessage(errorCode: string): string {
+	switch (errorCode) {
+		case 'core:xshare:already-claimed':
+			return 'You already earned a free ticket for this raffle.';
+		case 'core:xshare:question-required':
+			return 'Answer the raffle question first to unlock sharing.';
+		case 'core:xshare:disabled':
+			return 'Free ticket sharing is not available for this raffle.';
+		case 'core:raffle:not-live':
+			return 'This raffle is no longer active.';
+		default:
+			return 'Could not prepare share link. Please try again.';
+	}
+}
+
+/**
+ * Maps backend error codes from verifyXShare to user-friendly toast messages.
+ * Covers all APIError codes thrown by VerifyXShareCommand.
+ */
+function getVerifyErrorMessage(errorCode: string): string {
+	switch (errorCode) {
+		case 'core:xshare:expired':
+			return 'Your share link expired. Tap "Share on X" to get a new one.';
+		case 'core:xshare:rate-limited':
+			return 'Too many attempts — please wait a moment before trying again.';
+		case 'core:xshare:not-found':
+			return 'No share claim found. Tap "Share on X" to start.';
+		case 'core:xshare:disabled':
+			return 'Free ticket sharing was turned off for this raffle.';
+		case 'core:raffle:not-live':
+			return 'This raffle is no longer active.';
+		case 'core:raffle:sold-out':
+			return 'This raffle is sold out — no more tickets available.';
+		default:
+			return 'Verification failed. Please try again.';
+	}
 }
 
 /**
@@ -43,7 +84,6 @@ export function useXShare({
 	publicSlug,
 	xShareEnabled,
 	xShareClaimStatus,
-	xShareDailyLimitReached,
 }: XShareConfig): UseXShareResult {
 	const router = useRouter();
 	const alreadyVerified = xShareClaimStatus === 'verified';
@@ -54,8 +94,7 @@ export function useXShare({
 		xShareClaimStatus === 'pending' ? 'shared' : 'idle';
 	const [state, setState] = useState<XShareState>(initialState);
 
-	const useTokenizedFlow =
-		xShareEnabled && !alreadyVerified && !xShareDailyLimitReached;
+	const useTokenizedFlow = xShareEnabled && !alreadyVerified;
 
 	// mount: strip xref token from URL — only meaningful to backend, noisy in address
 	// bar, and could leak the claim token if the user copies the URL.
@@ -83,7 +122,7 @@ export function useXShare({
 
 	/**
 	 * Plain share — no backend, just opens X intent with the public raffle URL.
-	 * Used when xShare is disabled, user already claimed, or daily limit reached.
+	 * Used when xShare is disabled or user already claimed their ticket.
 	 */
 	function handlePlainShare() {
 		const link = `${window.location.origin}/browse/${publicSlug}`;
@@ -95,19 +134,14 @@ export function useXShare({
 	 * then transitions to verify state so the user can claim their ticket.
 	 */
 	async function handleTokenizedShare() {
-		// Guard: daily limit already reached — toast instead of wasting an API call
-		if (xShareDailyLimitReached) {
-			toast.info('You already earned a free ticket today. Come back tomorrow!');
-			return;
-		}
-
 		setState('loading');
 
 		const result = await createXShareIntent(raffleId);
 
 		if (!result.success) {
 			setState('idle');
-			toast.error('Could not prepare share link. Please try again.');
+			const message = getIntentErrorMessage(result.error);
+			toast.error(message);
 			return;
 		}
 
@@ -125,14 +159,19 @@ export function useXShare({
 		const result = await verifyXShare(raffleId);
 
 		if (!result.success) {
-			setState('shared');
-			toast.error('Verification failed. Please try again.');
+			// Expired claims need to restart the flow from scratch — user must
+			// re-share to get a fresh token. Cast to string for backend codes
+			// not enumerated in RaffleErrorCode's narrow union.
+			const errorCode = result.error as string;
+			const isExpired = errorCode === 'core:xshare:expired';
+			setState(isExpired ? 'idle' : 'shared');
+			toast.error(getVerifyErrorMessage(errorCode));
 			return;
 		}
 
 		if (result.data.status === 'verified') {
 			setState('idle');
-			toast.success('Free ticket granted!');
+			toast.success('Free ticket granted! 🎉');
 			// Server action already revalidated the raffle cache tag — refresh
 			// re-renders server components with fresh data (ticket count, claim status)
 			router.refresh();
@@ -148,7 +187,7 @@ export function useXShare({
 			);
 		} else if (result.data.reason === 'not_found_or_private') {
 			toast.error(
-				'Post not found. Make sure your account is public and the post exists.',
+				"Post not found. Make sure your X account is public and the post wasn't deleted.",
 			);
 		} else if (result.data.reason === 'x_api_unavailable') {
 			toast.error('X is temporarily unavailable. Please try again later.');

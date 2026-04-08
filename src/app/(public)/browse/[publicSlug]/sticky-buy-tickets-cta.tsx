@@ -34,7 +34,6 @@ export function StickyBuyTicketsCta({
 	publicSlug,
 	xShareEnabled,
 	xShareClaimStatus,
-	xShareDailyLimitReached,
 	isAuthenticated,
 }: StickyBuyTicketsCtaProps) {
 	const [isCheckoutVisible, setIsCheckoutVisible] = useState(false);
@@ -46,7 +45,6 @@ export function StickyBuyTicketsCta({
 		// Unauthenticated users always get plain share — tokenized flow requires auth
 		xShareEnabled: isAuthenticated && xShareEnabled,
 		xShareClaimStatus,
-		xShareDailyLimitReached,
 	});
 
 	// mount: observe checkout section visibility for scroll-to / click-through CTA

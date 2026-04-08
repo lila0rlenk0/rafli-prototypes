@@ -198,10 +198,6 @@ export const raffleSchema = z.object({
 		.nullable()
 		.optional()
 		.catch(null),
-	/** Whether user has hit the daily X share limit (one free ticket per UTC day) */
-	xShareDailyLimitReached: z.boolean().optional(),
-	/** ISO datetime when user can next claim an X share ticket — null if not rate-limited */
-	xShareNextAvailableAt: z.string().nullable().optional(),
 	/**
 	 * Structured crypto payment options — null when raffle doesn't accept crypto.
 	 * Backend computes per-chain selectable tokens with pricing, eliminating

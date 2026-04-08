@@ -18,6 +18,8 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'auth:user:already-host',
 	'auth:email:invalid',
 	'auth:token:expired',
+	'auth:token:invalid',
+	'auth:signup:failed',
 	'auth:password:compromised',
 	'auth:password:not-set',
 	'auth:password:invalid',
@@ -52,17 +54,23 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'auth:wallet:not-found',
 	'auth:wallet:validation-failed',
 
-	// Common — user/client errors
+	// Common — user/client errors and auth guards
 	'validation_error',
 	'unauthorized',
 	'forbidden',
 	'session_expired',
 	'invalid_request',
+	'global:auth:unauthenticated',
 
 	// Global — rate limiting, upload validation
 	'global:ratelimit:exceeded',
 	'global:upload:file-too-large',
 	'global:upload:invalid-image',
+	'global:upload:invalid-file-type',
+	'global:upload:invalid-content-type',
+	'global:upload:missing-boundary',
+	'global:upload:no-file',
+	'global:validation:invalid-argument',
 
 	// Raffle — business rules
 	'core:raffle:not-found',
@@ -79,6 +87,11 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'core:raffle:not-live',
 	'core:raffle:not-fulfilling',
 	'core:raffle:not-commentable',
+	'core:raffle:question-not-found',
+	'core:raffle:invalid-crypto-config',
+	'core:gallery:limit-exceeded',
+	'core:option:not-found',
+	'core:option:invalid',
 
 	// Order — expected states
 	'core:order:not-found',
@@ -86,6 +99,7 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'core:order:invalid-quantity',
 	'core:order:already-completed',
 	'core:order:question-not-answered',
+	'core:order:not-pending',
 
 	// Payment — expected user/business errors
 	'payments:order:permission-denied',
@@ -93,6 +107,7 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'payments:order:already-paid',
 	'payments:stripe:crypto-session-active',
 	'payments:stripe:permission-denied',
+	'payments:stripe:session-not-found',
 	'payments:crypto:stripe-session-active',
 	'payments:crypto:wallet-not-verified',
 	'payments:crypto:raffle-not-accepting',
@@ -116,10 +131,17 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'payments:crypto:invalid-price-format',
 	'payments:crypto:invalid-ticket-quantity',
 	'payments:crypto:zero-amount',
+	'payments:crypto:session-not-found',
 	'payments:amount:invalid-format',
 	'payments:amount:too-large',
 	'payments:abandon:crypto-active',
 	'payments:raffle:user-ticket-limit-exceeded',
+
+	// Payment — race conditions (expected under concurrent load)
+	'payments:checkout:not-found',
+	'payments:checkout:concurrent-completion',
+	'payments:crypto:concurrent-update',
+	'payments:crypto:concurrent-completion',
 
 	// Credits — expected business errors
 	'payments:credits:insufficient-balance',
@@ -146,7 +168,6 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'core:promo:question-required',
 	'core:promo:raffle-mismatch',
 	'core:promo:order-already-discounted',
-	'global:validation:invalid-argument',
 
 	// Winning — expected states
 	'core:winning:no-winnings',
@@ -157,6 +178,16 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'core:winning:not-claimed',
 	'core:winning:permission-denied',
 	'core:winning:invalid-state-shape',
+	'core:winning:raffle-not-found',
+
+	// Update — expected states
+	'core:update:not-found',
+	'core:update:permission-denied',
+	'core:update:image-limit-exceeded',
+	'core:update:image-not-found',
+
+	// Host — expected lookup failures
+	'core:user:not-found',
 
 	// Comment — expected states
 	'core:comment:not-found',
@@ -168,11 +199,28 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 	'core:comment:self-vote',
 	'core:comment:invalid-body',
 
-	// Verification — expected lookup failures
+	// Verification — expected lookup/state failures
 	'core:verification:ticket-not-found',
 	'core:verification:winner-not-found',
 	'core:verification:proof-not-found',
 	'core:verification:raffle-not-completed',
+	'core:verification:not-found',
+
+	// KYC submission — expected validation/state errors
+	'core:verification:already-pending',
+	'core:verification:invalid-purpose',
+	'core:verification:document-exists',
+	'core:verification:already-finalized',
+	'core:verification:not-pending',
+	'core:verification:incomplete-documents',
+	'core:verification:email-mismatch',
+	'core:verification:permission-denied',
+	'core:verification:invalid-type',
+
+	// Admin KYC — expected review states
+	'core:verification:not-finalized',
+	'core:verification:already-reviewed',
+	'core:verification:self-review',
 
 	// Report — expected validation
 	'moderation:report:raffle-id-required',

@@ -22,24 +22,72 @@ function createHint(originalException?: unknown): EventHint {
 describe('filterEvent', () => {
 	describe('expected business error codes are dropped', () => {
 		const expectedCodes = [
+			// Auth
 			'auth:user:invalid-credentials',
+			'auth:token:invalid',
+			'auth:signup:failed',
+
+			// Raffle + gallery + options
 			'core:raffle:not-draft',
 			'core:raffle:not-queued',
 			'core:raffle:not-cancellable',
 			'core:raffle:sold-out',
+			'core:raffle:question-not-found',
+			'core:raffle:invalid-crypto-config',
+			'core:gallery:limit-exceeded',
+			'core:option:not-found',
+			'core:option:invalid',
+
+			// Order
 			'core:order:already-completed',
+			'core:order:not-pending',
+
+			// Payment + race conditions
 			'payments:crypto:already-paid',
+			'payments:checkout:not-found',
+			'payments:checkout:concurrent-completion',
+			'payments:crypto:session-not-found',
+			'payments:crypto:concurrent-update',
+			'payments:crypto:concurrent-completion',
+			'payments:stripe:session-not-found',
+
+			// Credits
+			'payments:credits:insufficient-balance',
+			'payments:credits:order-not-pending',
+			'payments:credits:payment-session-active',
+
+			// Promo
 			'core:promo:already-redeemed',
+
+			// Winning + update + host
 			'core:winning:not-found',
+			'core:winning:raffle-not-found',
+			'core:update:not-found',
+			'core:update:permission-denied',
+			'core:update:image-limit-exceeded',
+			'core:update:image-not-found',
+			'core:user:not-found',
+
+			// Comment + review + notification + ticket
 			'core:comment:self-vote',
 			'core:review:not-eligible',
 			'core:notification:not-found',
 			'core:ticket:no-tickets',
+
+			// KYC submission + admin KYC
+			'core:verification:already-pending',
+			'core:verification:not-pending',
+			'core:verification:not-finalized',
+			'core:verification:already-reviewed',
+			'core:verification:self-review',
+			'core:verification:permission-denied',
+
+			// Report + client + global
 			'moderation:report:duplicate',
 			'client:upload:too-large',
-			'payments:credits:insufficient-balance',
-			'payments:credits:order-not-pending',
-			'payments:credits:payment-session-active',
+			'global:auth:unauthenticated',
+			'global:upload:invalid-file-type',
+			'global:upload:no-file',
 			'validation_error',
 			'unauthorized',
 			'forbidden',
@@ -72,6 +120,28 @@ describe('filterEvent', () => {
 			const result = filterEvent(event, createHint());
 			expect(result).toBe(event);
 		});
+	});
+
+	describe('infrastructure errors (5XX) always reach Sentry', () => {
+		const infraCodes = [
+			'internal_server_error',
+			'service_unavailable',
+			'unknown_error',
+			'payments:checkout:failed',
+			'payments:crypto:submit-failed',
+			'payments:crypto:confirm-failed',
+			'payments:crypto:order-not-recoverable',
+			'payments:crypto:treasury-not-configured',
+			'contract_drift',
+		];
+
+		for (const code of infraCodes) {
+			test(`passes ${code}`, () => {
+				const event = createEvent({ errorCode: code });
+				const result = filterEvent(event, createHint());
+				expect(result).toBe(event);
+			});
+		}
 	});
 
 	describe('network/timeout errors are sampled', () => {

@@ -2,6 +2,7 @@
 
 import { baseClient } from '@/lib/api/client';
 import { failure, mapAuthError, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
 import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -28,6 +29,13 @@ export async function resendVerificationEmail(
 		return success(undefined);
 	} catch (error) {
 		const errorCode = mapAuthError(error);
+
+		// Capture all errors — the Sentry filter drops expected business codes.
+		// Infrastructure errors (5XX, network) pass through for alerting.
+		captureServiceError(error, errorCode, {
+			service: 'auth',
+			action: 'resend-verification-email',
+		});
 
 		// Infrastructure errors — user should know to retry
 		if (

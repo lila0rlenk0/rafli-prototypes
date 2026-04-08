@@ -1,8 +1,8 @@
 'use server';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { failure, success } from '@/lib/errors';
-import { mapAuthError } from '@/lib/errors';
+import { failure, mapAuthError, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
 import type { ChangePasswordInput } from '@/types/auth';
 import type { AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -28,6 +28,10 @@ export async function changePassword(
 		return success(undefined);
 	} catch (error) {
 		const errorCode = mapAuthError(error);
+		captureServiceError(error, errorCode, {
+			service: 'auth',
+			action: 'change-password',
+		});
 		return failure(errorCode);
 	}
 }

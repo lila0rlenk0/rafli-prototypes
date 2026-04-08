@@ -3,6 +3,7 @@
 import { decodeJwt, jwtPayloadToUser } from '@/lib/auth/jwt';
 import { setAuthCookies } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
 import { AUTH_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -35,7 +36,11 @@ export async function saveAuthToken(
 
 		return success(undefined);
 	} catch (error) {
-		console.error('Failed to save auth token:', error);
+		// JWT decode or cookie-setting failure — critical auth path
+		captureServiceError(error, AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED, {
+			service: 'auth',
+			action: 'save-auth-token',
+		});
 		return failure(AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED);
 	}
 }

@@ -3,8 +3,8 @@
 import { ACCOUNT_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
-import { failure, success } from '@/lib/errors';
-import { mapAuthError } from '@/lib/errors';
+import { failure, mapAuthError, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
 import type { ResetPasswordInput } from '@/types/auth';
 import type { AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -33,6 +33,10 @@ export async function resetPassword(
 		return success(undefined);
 	} catch (error) {
 		const errorCode = mapAuthError(error);
+		captureServiceError(error, errorCode, {
+			service: 'auth',
+			action: 'reset-password',
+		});
 		return failure(errorCode);
 	}
 }

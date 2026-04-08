@@ -3,8 +3,8 @@
 import { ACCOUNT_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
-import { failure, success } from '@/lib/errors';
-import { mapAuthError } from '@/lib/errors';
+import { failure, mapAuthError, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
 import type { RequestPasswordResetInput } from '@/types/auth';
 import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -34,6 +34,13 @@ export async function requestPasswordReset(
 		return success(undefined);
 	} catch (error) {
 		const errorCode = mapAuthError(error);
+
+		// Capture all errors — the Sentry filter drops expected business codes.
+		// Infrastructure errors (5XX, network) pass through for alerting.
+		captureServiceError(error, errorCode, {
+			service: 'auth',
+			action: 'request-password-reset',
+		});
 
 		// For infrastructure errors, return failure (user should know)
 		// For user-related errors (not found), return success to prevent enumeration

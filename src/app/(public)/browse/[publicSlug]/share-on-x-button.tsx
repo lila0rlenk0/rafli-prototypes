@@ -25,16 +25,22 @@ export function ShareOnXButton(props: XShareConfig) {
 		handleVerify,
 	} = useXShare(props);
 
-	// Terminal claim — show status-specific message, no re-share allowed
+	// Terminal claim — show disabled button so user knows the feature exists but is consumed
 	if (claimUsed) {
-		const message = alreadyVerified
-			? 'Free ticket earned from sharing on X'
+		const label = alreadyVerified
+			? 'Free ticket already redeemed'
 			: xShareClaimStatus === 'expired'
-				? 'Your free ticket share link has expired'
-				: 'Your free ticket share was revoked';
+				? 'Free ticket share expired'
+				: 'Free ticket share revoked';
 
 		return (
-			<p className="mt-2 text-center text-sm text-gray-500">{message}</p>
+			<Button
+				variant="outline"
+				disabled
+				className="mt-2 h-12 w-full rounded-full border-2 border-gray-300 bg-gray-50 text-gray-400"
+			>
+				<p className="font-semibold">{label}</p>
+			</Button>
 		);
 	}
 

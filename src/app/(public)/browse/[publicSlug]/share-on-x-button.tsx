@@ -15,7 +15,7 @@ import { type XShareConfig, useXShare } from './use-x-share';
  * Falls back to plain share (no ticket) when xShare is disabled or claim already verified.
  */
 export function ShareOnXButton(props: XShareConfig) {
-	const { state, alreadyVerified, handleShare, handleVerify } =
+	const { state, alreadyVerified, retryCountdown, handleShare, handleVerify } =
 		useXShare(props);
 
 	// Already earned — quiet confirmation, no further action needed
@@ -29,19 +29,29 @@ export function ShareOnXButton(props: XShareConfig) {
 
 	// Verification button — shown after sharing or when resuming a pending claim
 	if (state === 'shared' || state === 'verifying') {
+		// Auto-retry countdown active — show seconds remaining
+		const isCountingDown = retryCountdown > 0 && state === 'shared';
+
 		return (
-			<Button
-				variant="outline"
-				onClick={handleVerify}
-				disabled={state === 'verifying'}
-				className="mt-2 h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
-			>
-				<p className="font-semibold">
-					{state === 'verifying'
-						? 'Verifying...'
-						: 'I shared it — Claim my free ticket!'}
-				</p>
-			</Button>
+			<div className="mt-2 flex flex-col gap-1">
+				<Button
+					variant="outline"
+					onClick={handleVerify}
+					disabled={state === 'verifying'}
+					className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
+				>
+					<p className="font-semibold">
+						{state === 'verifying'
+							? 'Verifying...'
+							: 'I shared it — Claim my free ticket!'}
+					</p>
+				</Button>
+				{isCountingDown ? (
+					<p className="text-center text-xs text-gray-400">
+						Auto-checking in {retryCountdown}s...
+					</p>
+				) : null}
+			</div>
 		);
 	}
 

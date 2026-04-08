@@ -38,14 +38,15 @@ export function StickyBuyTicketsCta({
 }: StickyBuyTicketsCtaProps) {
 	const [isCheckoutVisible, setIsCheckoutVisible] = useState(false);
 
-	const { state, alreadyVerified, handleShare, handleVerify } = useXShare({
-		raffleId,
-		title,
-		publicSlug,
-		// Unauthenticated users always get plain share — tokenized flow requires auth
-		xShareEnabled: isAuthenticated && xShareEnabled,
-		xShareClaimStatus,
-	});
+	const { state, alreadyVerified, retryCountdown, handleShare, handleVerify } =
+		useXShare({
+			raffleId,
+			title,
+			publicSlug,
+			// Unauthenticated users always get plain share — tokenized flow requires auth
+			xShareEnabled: isAuthenticated && xShareEnabled,
+			xShareClaimStatus,
+		});
 
 	// mount: observe checkout section visibility for scroll-to / click-through CTA
 	useEffect(() => {
@@ -85,19 +86,28 @@ export function StickyBuyTicketsCta({
 		if (alreadyVerified) return null;
 
 		if (state === 'shared' || state === 'verifying') {
+			const isCountingDown = retryCountdown > 0 && state === 'shared';
+
 			return (
-				<Button
-					variant="outline"
-					onClick={handleVerify}
-					disabled={state === 'verifying'}
-					className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
-				>
-					<p className="font-semibold">
-						{state === 'verifying'
-							? 'Verifying...'
-							: 'I shared it — Claim my free ticket!'}
-					</p>
-				</Button>
+				<div className="flex w-full flex-col gap-1">
+					<Button
+						variant="outline"
+						onClick={handleVerify}
+						disabled={state === 'verifying'}
+						className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
+					>
+						<p className="font-semibold">
+							{state === 'verifying'
+								? 'Verifying...'
+								: 'I shared it — Claim my free ticket!'}
+						</p>
+					</Button>
+					{isCountingDown ? (
+						<p className="text-center text-xs text-gray-400">
+							Auto-checking in {retryCountdown}s...
+						</p>
+					) : null}
+				</div>
 			);
 		}
 

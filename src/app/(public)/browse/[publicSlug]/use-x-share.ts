@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -24,13 +24,19 @@ interface UseXShareResult {
 	state: XShareState;
 	/** True when the user already earned their ticket for this raffle */
 	alreadyVerified: boolean;
+	/** Seconds until auto-retry fires (0 = no countdown active) */
+	retryCountdown: number;
 	handleShare: () => void | Promise<void>;
 	handleVerify: () => Promise<void>;
 }
 
+// =============================================================================
+// ERROR MESSAGE MAPPERS
+// =============================================================================
+
 /**
  * Maps backend error codes from createXShareIntent to user-friendly toast messages.
- * Keeps error presentation co-located with the hook that consumes it.
+ * Every APIError code from CreateXShareIntentCommand is covered — no silent fallbacks.
  */
 function getIntentErrorMessage(errorCode: string): string {
 	switch (errorCode) {
@@ -42,33 +48,98 @@ function getIntentErrorMessage(errorCode: string): string {
 			return 'Free ticket sharing is not available for this raffle.';
 		case 'core:raffle:not-live':
 			return 'This raffle is no longer active.';
+		case 'core:raffle:not-found':
+			return 'This raffle no longer exists.';
+		// Endpoint-level rate limit (30/min on write tier)
+		case 'global:ratelimit:exceeded':
+			return 'Too many requests — please wait a moment and try again.';
+		// Network / timeout / unknown — actionable fallback
+		case 'network_error':
+			return 'Network issue — check your connection and try again.';
+		case 'timeout_error':
+			return 'Request timed out — please try again.';
 		default:
-			return 'Could not prepare share link. Please try again.';
+			return 'Something went wrong. Please try again.';
 	}
 }
 
 /**
  * Maps backend error codes from verifyXShare to user-friendly toast messages.
- * Covers all APIError codes thrown by VerifyXShareCommand.
+ * Every APIError code from VerifyXShareCommand is covered.
  */
 function getVerifyErrorMessage(errorCode: string): string {
 	switch (errorCode) {
 		case 'core:xshare:expired':
 			return 'Your share link expired. Tap "Share on X" to get a new one.';
 		case 'core:xshare:rate-limited':
-			return 'Too many attempts — please wait a moment before trying again.';
+			return 'Too many attempts — please wait 30 seconds before trying again.';
 		case 'core:xshare:not-found':
 			return 'No share claim found. Tap "Share on X" to start.';
 		case 'core:xshare:disabled':
 			return 'Free ticket sharing was turned off for this raffle.';
 		case 'core:raffle:not-live':
 			return 'This raffle is no longer active.';
+		case 'core:raffle:not-found':
+			return 'This raffle no longer exists.';
 		case 'core:raffle:sold-out':
 			return 'This raffle is sold out — no more tickets available.';
+		// Endpoint-level rate limit (5/min on strict tier)
+		case 'global:ratelimit:exceeded':
+			return 'Too many requests — please wait a moment and try again.';
+		case 'network_error':
+			return 'Network issue — check your connection and try again.';
+		case 'timeout_error':
+			return 'Request timed out — please try again.';
 		default:
 			return 'Verification failed. Please try again.';
 	}
 }
+
+// =============================================================================
+// AUTO-RETRY
+// =============================================================================
+
+/** Seconds to wait before auto-retrying when tweet is not yet indexed */
+const AUTO_RETRY_DELAY_S = 15;
+
+/**
+ * Maps the not-found reason to a toast that explains what's happening
+ * and whether an auto-retry is coming. Returns true if auto-retry should fire.
+ */
+function handleNotFoundReason(
+	reason: 'not_found' | 'not_found_or_private' | 'x_api_unavailable' | null,
+): boolean {
+	switch (reason) {
+		case 'not_found':
+			// Transient — X API indexing takes ~15-60s. Auto-retry helps here.
+			toast.info(
+				"Your post hasn't been indexed by X yet — we'll automatically check again in a few seconds.",
+			);
+			return true;
+
+		case 'not_found_or_private':
+			// Likely permanent — account is private or tweet was deleted
+			toast.error(
+				"We couldn't find your post. Make sure your X account is set to public and the post wasn't deleted, then try again.",
+			);
+			return false;
+
+		case 'x_api_unavailable':
+			// X API outage — auto-retry makes sense
+			toast.error(
+				"X is temporarily unavailable. We'll retry automatically in a few seconds.",
+			);
+			return true;
+
+		default:
+			toast.error('Verification failed. Please try again.');
+			return false;
+	}
+}
+
+// =============================================================================
+// HOOK
+// =============================================================================
 
 /**
  * Shared hook for X share → verify → free ticket flow.
@@ -77,6 +148,9 @@ function getVerifyErrorMessage(errorCode: string): string {
  * 1. Tokenized flow: create intent → open X with tokenized URL → verify
  * 2. Resume pending: user had a pending claim from a prior session → show verify directly
  * 3. Plain share: xShare disabled or already verified → just open X intent
+ *
+ * Auto-retry: when X API hasn't indexed the tweet yet, starts a countdown
+ * and automatically re-verifies after AUTO_RETRY_DELAY_S seconds.
  */
 export function useXShare({
 	raffleId,
@@ -94,7 +168,23 @@ export function useXShare({
 		xShareClaimStatus === 'pending' ? 'shared' : 'idle';
 	const [state, setState] = useState<XShareState>(initialState);
 
+	// Countdown for auto-retry — ticks every second, fires verify at 0
+	const [retryCountdown, setRetryCountdown] = useState(0);
+	const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
 	const useTokenizedFlow = xShareEnabled && !alreadyVerified;
+
+	// Ref holds the latest handleVerify so startAutoRetry's stable useCallback
+	// never calls a stale closure — handleVerify closes over raffleId from props
+	// and router from useRouter(), both of which could change across renders.
+	const handleVerifyRef = useRef<() => Promise<void>>(() => Promise.resolve());
+
+	// Cleanup auto-retry timer on unmount
+	useEffect(() => {
+		return () => {
+			if (retryTimerRef.current) clearInterval(retryTimerRef.current);
+		};
+	}, []);
 
 	// mount: strip xref token from URL — only meaningful to backend, noisy in address
 	// bar, and could leak the claim token if the user copies the URL.
@@ -104,6 +194,30 @@ export function useXShare({
 
 		url.searchParams.delete('xref');
 		window.history.replaceState(null, '', url.pathname + (url.search || ''));
+	}, []);
+
+	/** Starts a visible countdown that auto-fires handleVerify at zero */
+	const startAutoRetry = useCallback(() => {
+		// Clear any existing timer
+		if (retryTimerRef.current) clearInterval(retryTimerRef.current);
+
+		setRetryCountdown(AUTO_RETRY_DELAY_S);
+
+		retryTimerRef.current = setInterval(() => {
+			setRetryCountdown(prev => {
+				if (prev <= 1) {
+					// Timer expired — clear interval, fire verify
+					if (retryTimerRef.current) clearInterval(retryTimerRef.current);
+					retryTimerRef.current = null;
+					// Trigger verify on next tick to avoid setState-during-render.
+					// Uses ref to always call the latest handleVerify — avoids
+					// stale closure since this useCallback has [] deps.
+					setTimeout(() => handleVerifyRef.current(), 0);
+					return 0;
+				}
+				return prev - 1;
+			});
+		}, 1_000);
 	}, []);
 
 	/**
@@ -140,8 +254,8 @@ export function useXShare({
 
 		if (!result.success) {
 			setState('idle');
-			const message = getIntentErrorMessage(result.error);
-			toast.error(message);
+			const errorCode = result.error as string;
+			toast.error(getIntentErrorMessage(errorCode));
 			return;
 		}
 
@@ -152,26 +266,46 @@ export function useXShare({
 	/**
 	 * Verify the share — backend searches X API for the tweet containing
 	 * the tokenized URL and grants one free ticket if found.
+	 *
+	 * When tweet is not yet indexed, starts an auto-retry countdown so the
+	 * user doesn't have to manually tap verify repeatedly.
 	 */
 	async function handleVerify() {
+		// Cancel any running auto-retry — user tapped manually or auto-retry fired
+		if (retryTimerRef.current) {
+			clearInterval(retryTimerRef.current);
+			retryTimerRef.current = null;
+			setRetryCountdown(0);
+		}
+
 		setState('verifying');
 
 		const result = await verifyXShare(raffleId);
 
 		if (!result.success) {
-			// Expired claims need to restart the flow from scratch — user must
-			// re-share to get a fresh token. Cast to string for backend codes
-			// not enumerated in RaffleErrorCode's narrow union.
+			// Cast to string for backend codes not enumerated in RaffleErrorCode's
+			// narrow union (e.g. core:xshare:expired, core:xshare:rate-limited).
 			const errorCode = result.error as string;
-			const isExpired = errorCode === 'core:xshare:expired';
-			setState(isExpired ? 'idle' : 'shared');
+
+			// Expired or not-found claims restart from scratch — user must
+			// re-share to get a fresh token
+			const needsRestart =
+				errorCode === 'core:xshare:expired' ||
+				errorCode === 'core:xshare:not-found';
+			setState(needsRestart ? 'idle' : 'shared');
+
 			toast.error(getVerifyErrorMessage(errorCode));
 			return;
 		}
 
 		if (result.data.status === 'verified') {
 			setState('idle');
-			toast.success('Free ticket granted! 🎉');
+
+			// Show ticket count when available — usually 1, but could be more
+			const ticketWord =
+				result.data.ticketsGranted === 1 ? 'ticket' : 'tickets';
+			toast.success(`Free ${ticketWord} granted! You're in the raffle now.`);
+
 			// Server action already revalidated the raffle cache tag — refresh
 			// re-renders server components with fresh data (ticket count, claim status)
 			router.refresh();
@@ -181,22 +315,25 @@ export function useXShare({
 		// Tweet not found — provide actionable feedback based on reason
 		setState('shared');
 
-		if (result.data.reason === 'not_found') {
-			toast.info(
-				'Post not indexed yet — X can take a minute. Try again shortly.',
-			);
-		} else if (result.data.reason === 'not_found_or_private') {
-			toast.error(
-				"Post not found. Make sure your X account is public and the post wasn't deleted.",
-			);
-		} else if (result.data.reason === 'x_api_unavailable') {
-			toast.error('X is temporarily unavailable. Please try again later.');
+		const shouldAutoRetry = handleNotFoundReason(result.data.reason);
+		if (shouldAutoRetry) {
+			startAutoRetry();
 		}
 	}
+
+	// Keep ref in sync after every render so startAutoRetry's stable useCallback
+	// always calls the latest handleVerify (avoids stale closure over raffleId/router).
+	// Uses useEffect instead of render-time assignment because react-hooks/refs
+	// forbids writing .current during render. The setTimeout inside setInterval
+	// defers to the next tick, so the effect will have run before it fires.
+	useEffect(() => {
+		handleVerifyRef.current = handleVerify;
+	});
 
 	return {
 		state,
 		alreadyVerified,
+		retryCountdown,
 		handleShare: useTokenizedFlow ? handleTokenizedShare : handlePlainShare,
 		handleVerify,
 	};

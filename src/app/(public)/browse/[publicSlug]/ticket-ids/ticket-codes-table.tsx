@@ -10,6 +10,11 @@ interface TicketCodesTableProps {
 	ticketCodes: TicketCode[];
 }
 
+interface SourceCellProps {
+	source: string;
+	receiptUrl: null | string;
+}
+
 // =============================================================================
 // SOURCE LABELS
 // =============================================================================
@@ -98,13 +103,7 @@ export function TicketCodesTable({ ticketCodes }: TicketCodesTableProps) {
  * Renders the source label with an optional external receipt link.
  * Links open in a new tab — Stripe receipt pages and block explorer tx pages.
  */
-function SourceCell({
-	source,
-	receiptUrl,
-}: {
-	source: string;
-	receiptUrl: null | string;
-}) {
+function SourceCell({ source, receiptUrl }: SourceCellProps) {
 	const label = getSourceLabel(source);
 
 	if (!receiptUrl) {

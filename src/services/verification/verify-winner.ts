@@ -27,8 +27,7 @@ export async function verifyWinner(
 		const response = await baseClient.get(
 			`/raffles/${raffleId}/verify-winner/${position}`,
 		);
-		const validated = winnerVerificationSchema.parse(response.data);
-		return success(validated);
+		return success(winnerVerificationSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'verification', 'verify-winner');

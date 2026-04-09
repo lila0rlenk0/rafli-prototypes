@@ -2,7 +2,11 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 /**
- * Call-to-action section with daily raffles message
+ * Call-to-action section with daily raffles message.
+ *
+ * Server Component — purely static content, no data fetching or interactivity.
+ *
+ * @returns CTA section with gift icon, headline, description, and explore button
  */
 export function CTASection() {
 	return (

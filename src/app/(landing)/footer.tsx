@@ -1,8 +1,13 @@
 import Link from 'next/link';
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
 /**
- * Footer component with links and copyright
+ * Footer component with links and copyright.
+ *
+ * Server Component — purely static content, no data fetching or interactivity.
+ * Reused by both the landing page and press-release page.
+ *
+ * @returns Footer with support/terms links, copyright, and decorative background shapes
  */
 export function Footer() {
 	return (
@@ -36,6 +41,7 @@ export function Footer() {
 	);
 }
 
+/** Decorative shapes in the bottom-left corner of the footer */
 function LeftColoredCards(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -62,6 +68,7 @@ function LeftColoredCards(props: ComponentProps<'svg'>) {
 	);
 }
 
+/** Decorative shapes in the bottom-right corner of the footer */
 function RightColoredCards(props: ComponentProps<'svg'>) {
 	return (
 		<svg

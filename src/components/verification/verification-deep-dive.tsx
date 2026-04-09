@@ -37,16 +37,15 @@ import type {
 	WinnerVerification,
 } from '@/types/verification';
 
+function truncateHex(str: string, leading = 10, trailing = 8): string {
+	if (str.length <= leading + trailing + 3) return str;
+	return `${str.slice(0, leading)}...${str.slice(-trailing)}`;
+}
+
 interface VerificationDeepDiveProps {
 	raffleId: string;
 }
 
-/**
- * VerificationDeepDive Component
- *
- * Full technical verification display for a raffle.
- * Shows manifest, blockchain proofs, winners, and formulas.
- */
 export function VerificationDeepDive({ raffleId }: VerificationDeepDiveProps) {
 	const { data, isLoading, isError } = useRaffleVerification(raffleId);
 
@@ -87,26 +86,17 @@ interface RaffleHeaderProps {
 	data: RaffleVerificationData;
 }
 
-/**
- * Header with raffle title and summary
- */
 function RaffleHeader({ data }: RaffleHeaderProps) {
 	const allVerified = data.winners.every(w => w.merkleVerified);
-
-	/** Formats raffle summary line (tickets + winners count) */
-	function getSummaryText(): string {
-		const tickets = `${data.totalTickets.toLocaleString()} tickets`;
-		const count = data.winners.length;
-		const winners = `${count} ${count !== 1 ? 'winners' : 'winner'}`;
-		return `${tickets} · ${winners}`;
-	}
+	const count = data.winners.length;
+	const summaryText = `${data.totalTickets.toLocaleString()} tickets · ${count} ${count !== 1 ? 'winners' : 'winner'}`;
 
 	return (
 		<div className="rounded-2xl border border-black bg-white p-6">
 			<div className="flex items-start justify-between gap-4">
 				<div>
 					<h2 className="text-xl font-semibold">{data.title}</h2>
-					<p className="mt-1 text-sm text-neutral-500">{getSummaryText()}</p>
+					<p className="mt-1 text-sm text-neutral-500">{summaryText}</p>
 				</div>
 				<div
 					className={cn(
@@ -137,18 +127,7 @@ interface BlockchainProofsProps {
 	data: RaffleVerificationData;
 }
 
-/**
- * Blockchain proof links and hashes
- */
 function BlockchainProofs({ data }: BlockchainProofsProps) {
-	/**
-	 * Truncates a hex string for display
-	 */
-	function truncateHex(str: string): string {
-		if (str.length <= 20) return str;
-		return `${str.slice(0, 12)}...${str.slice(-8)}`;
-	}
-
 	return (
 		<div className="rounded-2xl border border-black bg-white p-6">
 			<h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
@@ -228,9 +207,6 @@ interface ProofLinkProps {
 	truncateHex: (str: string) => string;
 }
 
-/**
- * Single proof link row
- */
 function ProofLink({
 	icon,
 	label,
@@ -291,9 +267,6 @@ interface WinnersListProps {
 	totalTickets: number;
 }
 
-/**
- * List of all winners with verification details
- */
 function WinnersList({ winners, totalTickets }: WinnersListProps) {
 	const [expandedWinner, setExpandedWinner] = useState<number | null>(null);
 
@@ -335,28 +308,12 @@ interface WinnerCardProps {
 	onToggle: () => void;
 }
 
-/**
- * Individual winner verification card
- */
 function WinnerCard({
 	winner,
 	totalTickets,
 	isExpanded,
 	onToggle,
 }: WinnerCardProps) {
-	/** Converts 0-based position to 1-based for display */
-	function getDisplayPosition(position: number): number {
-		return position + 1;
-	}
-
-	/**
-	 * Truncates a hex string for display
-	 */
-	function truncateHex(str: string): string {
-		if (str.length <= 16) return str;
-		return `${str.slice(0, 10)}...${str.slice(-8)}`;
-	}
-
 	const isMatch = winner.computedTicketId === winner.actualTicketId;
 
 	return (
@@ -368,7 +325,7 @@ function WinnerCard({
 			>
 				<div className="flex items-center gap-3">
 					<div className="flex size-8 items-center justify-center rounded-full bg-amber-100 text-sm font-semibold text-amber-700">
-						{getDisplayPosition(winner.position)}
+						{winner.position + 1}
 					</div>
 					<div className="text-left">
 						<div className="text-sm font-medium">
@@ -479,9 +436,6 @@ function WinnerCard({
 	);
 }
 
-/**
- * Technical notes and formula explanation
- */
 function TechnicalNotes() {
 	const FORMULA_CODE = `// Winner Selection Formula
 const randomNumber = BigInt(randomHex);

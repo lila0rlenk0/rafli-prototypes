@@ -17,27 +17,24 @@ import {
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for creating a review
- */
-type CreateReviewServiceResponse = ServiceResponse<Review, ReviewErrorCode>;
-
-/**
- * Creates a review for a raffle host
+ * Creates a review for a raffle host.
  *
  * @param payload - The review data including raffleId, hostId, rating, and optional comment
  * @returns ServiceResponse with created review on success, ReviewErrorCode on failure
  */
 export async function createReview(
 	payload: CreateReviewPayload,
-): Promise<CreateReviewServiceResponse> {
+): Promise<ServiceResponse<Review, ReviewErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Submit review to backend
 		const response = await authenticatedClient.post('/reviews', payload);
 
+		// Step 2: Validate response shape
 		const validated = reviewSchema.parse(response.data);
 
-		// Fire-and-forget — don't block review submission
+		// Step 3: Fire-and-forget analytics — don't block review submission
 		void sessionPromise.then(session =>
 			trackServer(
 				REVIEW_EVENTS.CREATED,

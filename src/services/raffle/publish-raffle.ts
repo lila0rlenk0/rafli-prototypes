@@ -14,58 +14,53 @@ import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for publishing a raffle
- */
-type PublishRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
-
-/**
- * Publishes a draft raffle, transitioning it to queued or live status
+ * Publishes a draft raffle, transitioning it to queued or live status.
  *
  * Status is determined by the raffle's startAt date:
- * - If startAt <= now: status becomes 'live'
- * - If startAt > now: status becomes 'queued' (cron will activate it later)
+ * - startAt <= now → 'live'
+ * - startAt > now → 'queued' (cron activates it later)
  *
  * @param raffleId - The ID of the raffle to publish
  * @returns ServiceResponse with updated raffle on success, RaffleErrorCode on failure
  */
 export async function publishRaffle(
 	raffleId: string,
-): Promise<PublishRaffleResponse> {
+): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Publish draft — backend transitions to queued or live based on startAt
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/publish`,
 		);
 
-		// Validate response data structure
-		const validatedData = raffleSchema.parse(response.data);
+		// Step 2: Validate response shape
+		const raffle = raffleSchema.parse(response.data);
 
+		// Step 3: Non-blocking publish analytics
 		runAfter(async () => {
 			const userId = (await sessionPromise)?.user?.id;
 
 			await trackServer(
 				RAFFLE_EVENTS.PUBLISHED,
 				{
-					raffle_id: validatedData.id,
-					category_id: validatedData.categoryId,
-					ticket_price: validatedData.ticketPriceAmount,
-					max_participants: validatedData.maxParticipants,
-					number_of_winners: validatedData.numberOfWinners,
+					raffle_id: raffle.id,
+					category_id: raffle.categoryId,
+					ticket_price: raffle.ticketPriceAmount,
+					max_participants: raffle.maxParticipants,
+					number_of_winners: raffle.numberOfWinners,
 				},
 				{ userId },
 			);
 		});
 
-		return success(validatedData);
+		return success(raffle);
 	} catch (error) {
-		// Handle validation errors separately
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'publish-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

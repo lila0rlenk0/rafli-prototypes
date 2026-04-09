@@ -37,6 +37,7 @@ export async function payWithCredits(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Non-blocking checkout-started analytics
 		runAfter(async () => {
 			const userId = (await sessionPromise)?.user?.id;
 
@@ -50,12 +51,14 @@ export async function payWithCredits(
 			);
 		});
 
+		// Step 2: Atomically debit credits and complete order — instant settlement
 		const response = await authenticatedClient.post(
 			'/payments/credits/pay',
 			{ orderId },
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
+		// Step 3: Validate response — contains balance after payment
 		const data = spendCreditsResponseSchema.parse(response.data);
 
 		runAfter(async () => {

@@ -38,10 +38,10 @@ export async function setAuthCookies(
 ): Promise<void> {
 	const cookieStore = await cookies();
 
-	// Store token in httpOnly cookie
+	// Token cookie: httpOnly (default from COOKIE_OPTIONS) — never readable by JS
 	cookieStore.set(AUTH_COOKIES.TOKEN, token, COOKIE_OPTIONS);
-
-	// Store user data in separate cookie (can be read client-side if needed)
+	// Session cookie: httpOnly: false so client can hydrate user state (name, avatar)
+	// without a server round-trip. Contains no secrets — only display-safe user fields.
 	cookieStore.set(AUTH_COOKIES.SESSION, JSON.stringify(user), {
 		...COOKIE_OPTIONS,
 		httpOnly: false,
@@ -65,12 +65,13 @@ export async function getAuthToken(): Promise<string | null> {
  * @returns AuthSession with user data and token, or null if invalid/expired
  */
 export async function getSession(): Promise<AuthSession | null> {
+	// Step 1: Retrieve JWT from httpOnly cookie.
 	const token = await getAuthToken();
 	if (!token) return null;
 
 	try {
-		// Check if token is expired — clear stale cookies to prevent repeated
-		// decode-check-redirect cycles on every navigation
+		// Step 2: Check expiration — clear stale cookies to prevent repeated
+		// decode-check-redirect cycles on every navigation.
 		if (isJwtExpired(token)) {
 			const cookieStore = await cookies();
 			cookieStore.delete(AUTH_COOKIES.TOKEN);
@@ -79,7 +80,7 @@ export async function getSession(): Promise<AuthSession | null> {
 			return null;
 		}
 
-		// Decode JWT to extract user data
+		// Step 3: Decode JWT payload and build session object.
 		const payload = decodeJwt(token);
 
 		const session = {
@@ -88,22 +89,29 @@ export async function getSession(): Promise<AuthSession | null> {
 			expiresAt: new Date(payload.exp * 1000).toISOString(),
 		};
 
-		// Validate session structure
+		// Step 4: Validate session shape with Zod to catch contract drift.
 		return authSessionSchema.parse(session);
 	} catch {
+		// Malformed JWT or Zod validation failure — treat as unauthenticated
+		// rather than crashing the page. User will be redirected to sign-in.
 		return null;
 	}
 }
 
 /**
- * Gets current authenticated user (cached per-request)
+ * Gets current authenticated user (cached per-request via React.cache).
+ *
+ * Prefer this over raw `getSession()` in server components — React.cache
+ * deduplicates the cookie read + JWT decode across the same request.
  *
  * @returns AuthUser object or null if not authenticated
  */
-export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
-	const session = await getSession();
-	return session?.user ?? null;
-});
+export const getCurrentUser = cache(
+	async function getCurrentUserImpl(): Promise<AuthUser | null> {
+		const session = await getSession();
+		return session?.user ?? null;
+	},
+);
 
 /**
  * Requires authentication or throws error

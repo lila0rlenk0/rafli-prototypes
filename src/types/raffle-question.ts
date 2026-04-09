@@ -2,13 +2,10 @@ import { z } from 'zod';
 
 import { questionOptionSchema } from './question';
 
-// ==========================================
-// Schemas
-// ==========================================
-
 /**
- * Schema for raffle question response
- * Represents the question that participants must answer before joining a raffle
+ * Question that participants must answer before joining a raffle.
+ *
+ * Validation boundary: server-side — parsed from GET /raffles/:id/question response.
  */
 export const raffleQuestionSchema = z.object({
 	questionId: z.string(),
@@ -16,17 +13,12 @@ export const raffleQuestionSchema = z.object({
 	options: z.array(questionOptionSchema),
 });
 
-/**
- * Schema for answer response from the backend
- * Indicates whether the submitted answer was correct
- */
+/** Response from POST /raffles/:id/answer — backend evaluates correctness. */
 export const answerResponseSchema = z.object({
 	correct: z.boolean(),
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
+/** Check-in question attached to a specific raffle. */
 export type RaffleQuestion = z.infer<typeof raffleQuestionSchema>;
+/** Result of answering a raffle's check-in question. */
 export type AnswerResponse = z.infer<typeof answerResponseSchema>;

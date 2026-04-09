@@ -14,9 +14,6 @@ import {
 	type VerificationStatus,
 } from '@/types/verification-status';
 
-/**
- * Props for VerificationBadge
- */
 interface VerificationBadgeProps {
 	status: VerificationStatus;
 	/** Shown in tooltip when rejected — explains why verification was declined */
@@ -25,15 +22,11 @@ interface VerificationBadgeProps {
 }
 
 /**
- * Displays the user's verification status as a colored pill badge.
- * Follows the project's status badge pattern (OrderStatusBadge, WinningStatusBadge).
- *
- * - none/draft → hidden (returns null)
- * - in_review → blue "Under Review" with tooltip + link to /verification
- * - approved → green "Verified" with checkmark icon
- * - rejected → red "Action Required" with tooltip + link to /verification
- *
- * @returns Status badge span, or null if status is 'none' or 'draft'
+ * Colored pill badge for verification status.
+ * - none/draft → null
+ * - in_review → blue "Under Review" + tooltip + link to /verification
+ * - approved → green "Verified" + checkmark
+ * - rejected → red "Action Required" + tooltip + link to /verification
  */
 export function VerificationBadge({
 	status,
@@ -49,11 +42,7 @@ export function VerificationBadge({
 		return null;
 	}
 
-	/**
-	 * Maps verification status to Tailwind color classes.
-	 * Color scheme matches existing badge conventions:
-	 * blue=in-progress, green=success, red=action-needed
-	 */
+	// blue=in-progress, green=success, red=action-needed — matches existing badge conventions
 	function getStatusClasses(): string {
 		switch (status) {
 			case VERIFICATION_STATUS.IN_REVIEW:
@@ -67,9 +56,6 @@ export function VerificationBadge({
 		}
 	}
 
-	/**
-	 * Maps verification status to user-facing label
-	 */
 	function getStatusLabel(): string {
 		switch (status) {
 			case VERIFICATION_STATUS.IN_REVIEW:
@@ -83,10 +69,7 @@ export function VerificationBadge({
 		}
 	}
 
-	/**
-	 * Returns tooltip text for statuses that need it.
-	 * Null means no tooltip wrapper needed (approved shows a plain badge).
-	 */
+	// null → no tooltip needed (approved is self-explanatory)
 	function getTooltipText(): string | null {
 		switch (status) {
 			case VERIFICATION_STATUS.IN_REVIEW:

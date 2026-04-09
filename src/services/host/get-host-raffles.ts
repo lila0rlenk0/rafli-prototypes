@@ -15,15 +15,7 @@ import {
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for fetching host raffles
- */
-type GetHostRafflesResponse = ServiceResponse<
-	ListRafflesResponse,
-	RaffleErrorCode
->;
-
-/**
- * Fetches raffles for a specific host
+ * Fetches raffles for a specific host.
  *
  * Either hostId or username must be provided.
  * Status can be comma-separated for multiple statuses (e.g., "ended,fulfilling,completed,cancelled").
@@ -33,26 +25,18 @@ type GetHostRafflesResponse = ServiceResponse<
  */
 export async function getHostRaffles(
 	query: HostRafflesQuery,
-): Promise<GetHostRafflesResponse> {
+): Promise<ServiceResponse<ListRafflesResponse, RaffleErrorCode>> {
 	try {
-		const params = buildQueryParamsWithStatus(query);
-
 		const response = await baseClient.get('/raffles', {
-			params,
+			params: buildQueryParamsWithStatus(query),
 		});
-
-		// Validate response data structure
-		const validatedData = listRafflesResponseSchema.parse(response.data);
-
-		return success(validatedData);
+		return success(listRafflesResponseSchema.parse(response.data));
 	} catch (error) {
-		// Handle validation errors separately
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'host', 'get-host-raffles');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

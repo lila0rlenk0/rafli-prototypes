@@ -18,6 +18,12 @@ import { DescriptionEditor } from '../description-editor';
 import { useMultiStepForm } from '../multi-step-form-provider';
 import { MAX_FILE_SIZE } from '../schema';
 
+/**
+ * Step 1 of the raffle creation wizard — collects title, description,
+ * declared value, category, and cover/gallery images.
+ *
+ * @returns Form fields for the basic info step with continue/clear actions
+ */
 export function BasicInfoStep() {
 	const {
 		form,
@@ -43,13 +49,15 @@ export function BasicInfoStep() {
 	const category = watch('category');
 	const coverImage = watch('coverImage');
 
-	// State for lightbox preview
+	// Lightbox preview state — null when closed, index when viewing an image
 	const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
-	// Ref to Dropzone wrapper for triggering file picker from empty slots
+	// Ref instead of state — direct DOM access to the Dropzone hidden input.
+	// Triggering the file picker is imperative, not declarative.
 	const dropzoneRef = useRef<HTMLDivElement>(null);
 
-	// Generate slug preview
+	// useMemo: generate slug preview from title — avoids slugify computation on every keystroke
+	// when other fields change. Only recomputes when title changes.
 	const previewSlugPath = useMemo(() => {
 		if (!title || title.trim().length === 0) {
 			return null;
@@ -60,10 +68,9 @@ export function BasicInfoStep() {
 		return `/browse/${slugPreview}`;
 	}, [title]);
 
-	/**
-	 * Transforms categories into combobox options format
-	 * Uses category id as value (backend UUID)
-	 */
+	// useMemo: transform categories into combobox options format.
+	// Categories come from server props and don't change — memoize to avoid
+	// creating new arrays on every render (Combobox would re-filter needlessly).
 	const categoryOptions = useMemo(
 		() =>
 			categories.map(cat => ({
@@ -208,8 +215,9 @@ export function BasicInfoStep() {
 					<span className="text-sm text-red-500">{errors.title.message}</span>
 				) : null}
 				<p className="text-muted-foreground min-h-[20px] text-sm">
-					{previewSlugPath &&
-						`Slug preview: ${previewSlugPath} (final URL may differ)`}
+					{previewSlugPath
+						? `Slug preview: ${previewSlugPath} (final URL may differ)`
+						: null}
 				</p>
 			</div>
 

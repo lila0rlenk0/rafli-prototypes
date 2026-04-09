@@ -28,7 +28,7 @@ export interface RejectedSubmissionNoticeData {
 function getCurrentRejectedStatus(
 	statusData: VerificationStatusResponse,
 ): RejectedEntryCandidate | null {
-	const entries: RejectedEntryCandidate[] = [
+	const candidates: RejectedEntryCandidate[] = [
 		{
 			type: 'kyb_individual',
 			status: statusData.kybIndividual,
@@ -47,8 +47,8 @@ function getCurrentRejectedStatus(
 	];
 
 	return (
-		entries.find(
-			entry => entry.status.status === VERIFICATION_STATUS.REJECTED,
+		candidates.find(
+			candidate => candidate.status.status === VERIFICATION_STATUS.REJECTED,
 		) ?? null
 	);
 }
@@ -68,26 +68,20 @@ export function getCurrentRejectedSubmissionNotice(
 	const rejected = getCurrentRejectedStatus(statusData);
 	if (!rejected) return null;
 
-	const bySubmissionId = rejected.status.submissionId
-		? submissions.find(
-				submission => submission.id === rejected.status.submissionId,
-			)
+	// Prefer lookup by ID — status endpoint returns the active submission ID.
+	// Fall back to type+status match for submissions that predate the submissionId field.
+	const matchById = rejected.status.submissionId
+		? submissions.find(s => s.id === rejected.status.submissionId)
 		: null;
-	if (bySubmissionId) {
-		return {
-			submission: bySubmissionId,
-			rejectionReason: rejected.rejectionReason,
-		};
+
+	if (matchById) {
+		return { submission: matchById, rejectionReason: rejected.rejectionReason };
 	}
 
-	const byType = submissions.find(
-		submission =>
-			submission.type === rejected.type && submission.status === 'rejected',
+	const matchByType = submissions.find(
+		s => s.type === rejected.type && s.status === 'rejected',
 	);
-	if (!byType) return null;
+	if (!matchByType) return null;
 
-	return {
-		submission: byType,
-		rejectionReason: rejected.rejectionReason,
-	};
+	return { submission: matchByType, rejectionReason: rejected.rejectionReason };
 }

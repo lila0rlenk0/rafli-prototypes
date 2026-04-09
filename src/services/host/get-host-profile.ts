@@ -10,12 +10,7 @@ import { type HostProfile, hostProfileSchema } from '@/types/host';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for fetching host profile
- */
-type GetHostProfileResponse = ServiceResponse<HostProfile, HostErrorCode>;
-
-/**
- * Fetches a host's public profile by username or user ID
+ * Fetches a host's public profile by username or user ID.
  *
  * The backend resolves both username and UUID internally.
  *
@@ -24,22 +19,16 @@ type GetHostProfileResponse = ServiceResponse<HostProfile, HostErrorCode>;
  */
 export async function getHostProfile(
 	usernameOrId: string,
-): Promise<GetHostProfileResponse> {
+): Promise<ServiceResponse<HostProfile, HostErrorCode>> {
 	try {
 		const response = await baseClient.get(`/users/${usernameOrId}`);
-
-		// Validate response data structure
-		const validatedData = hostProfileSchema.parse(response.data);
-
-		return success(validatedData);
+		return success(hostProfileSchema.parse(response.data));
 	} catch (error) {
-		// Handle validation errors separately
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'host', 'get-host-profile');
 			return failure(HOST_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapHostError(error);
-		return failure(errorCode);
+		return failure(mapHostError(error));
 	}
 }

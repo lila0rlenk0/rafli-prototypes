@@ -1,12 +1,7 @@
 import type { ClientErrorCode } from './client-errors';
 import type { CommonErrorCode } from './common-errors';
 
-/**
- * Comment error codes — maps to backend "core:comment:*" error codes
- * for create, vote, delete, and fetch operations.
- */
 export const COMMENT_ERROR_CODES = {
-	// Core comment errors
 	/** Comment not found */
 	NOT_FOUND: 'core:comment:not-found',
 	/** Parent comment not found (for replies) */
@@ -28,10 +23,6 @@ export const COMMENT_ERROR_CODES = {
 	FETCH_FAILED: 'fetch_failed',
 } as const;
 
-/**
- * Comment error code type
- * Represents all possible comment-specific, client-side, and common error codes
- */
 export type CommentErrorCode =
 	| (typeof COMMENT_ERROR_CODES)[keyof typeof COMMENT_ERROR_CODES]
 	| ClientErrorCode

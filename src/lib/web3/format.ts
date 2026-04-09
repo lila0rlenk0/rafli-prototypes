@@ -24,23 +24,35 @@ interface BalanceData {
  * @param value - Backend decimal string (e.g. "10.50000", "0.1234567")
  * @returns Formatted string with 2-4 meaningful fraction digits
  */
+/** Maximum fraction digits shown — avoids distracting precision on non-stablecoins */
+const MAX_DISPLAY_FRACTION_DIGITS = 4;
+/** Minimum fraction digits — USD convention for currency display */
+const MIN_DISPLAY_FRACTION_DIGITS = 2;
+
+// Hoisted RegExp — avoid re-creation on every call
+const RE_TRAILING_ZEROS = /0+$/;
+
 function formatDisplayDecimal(value: string): string {
+	// Step 1: Split into integer and fraction parts.
 	const [integerPart, rawFraction = ''] = value.split('.');
 
+	// Step 2: No fraction at all — show .00 (USD convention).
 	if (rawFraction.length === 0) {
 		return `${integerPart}.00`;
 	}
 
-	const trimmedFraction = rawFraction.replace(/0+$/, '');
+	// Step 3: Trim trailing zeros to find meaningful digits.
+	const trimmedFraction = rawFraction.replace(RE_TRAILING_ZEROS, '');
 	if (trimmedFraction.length === 0) {
 		return `${integerPart}.00`;
 	}
 
-	if (trimmedFraction.length <= 2) {
-		return `${integerPart}.${trimmedFraction.padEnd(2, '0')}`;
+	// Step 4: Pad short fractions to minimum 2 digits, cap long ones at 4.
+	if (trimmedFraction.length <= MIN_DISPLAY_FRACTION_DIGITS) {
+		return `${integerPart}.${trimmedFraction.padEnd(MIN_DISPLAY_FRACTION_DIGITS, '0')}`;
 	}
 
-	return `${integerPart}.${trimmedFraction.slice(0, 4)}`;
+	return `${integerPart}.${trimmedFraction.slice(0, MAX_DISPLAY_FRACTION_DIGITS)}`;
 }
 
 // ==========================================
@@ -69,9 +81,14 @@ export function formatPaymentAmount(
  * @param balance - Native balance from useBalance hook
  * @returns Formatted balance string with 4 decimal places
  */
+/** Native token (ETH/MATIC) display precision — 4dp for gas indicator visibility */
+const NATIVE_DISPLAY_DECIMALS = 4;
+
 export function formatNativeBalance(balance: BalanceData | undefined): string {
 	if (!balance) return '\u2014';
-	return parseFloat(formatUnits(balance.value, balance.decimals)).toFixed(4);
+	return parseFloat(formatUnits(balance.value, balance.decimals)).toFixed(
+		NATIVE_DISPLAY_DECIMALS,
+	);
 }
 
 /**
@@ -83,10 +100,20 @@ export function formatNativeBalance(balance: BalanceData | undefined): string {
  * @param balance - Token balance from useBalance hook
  * @returns Formatted balance string
  */
+/** Tokens with ≤ this many decimals are treated as stablecoin-like (2dp display) */
+const STABLECOIN_DECIMAL_THRESHOLD = 8;
+/** Display precision for stablecoin-like tokens (USD convention) */
+const STABLECOIN_DISPLAY_DECIMALS = 2;
+/** Display precision for high-decimal tokens (e.g. EARNM at 18 decimals) */
+const HIGH_DECIMAL_DISPLAY_DECIMALS = 4;
+
 export function formatTokenBalance(balance: BalanceData | undefined): string {
 	if (!balance) return '\u2014';
 	// 6-decimal tokens (USDC, USDT) → 2dp; 18-decimal tokens (EARNM) → 4dp
-	const displayDecimals = balance.decimals <= 8 ? 2 : 4;
+	const displayDecimals =
+		balance.decimals <= STABLECOIN_DECIMAL_THRESHOLD
+			? STABLECOIN_DISPLAY_DECIMALS
+			: HIGH_DECIMAL_DISPLAY_DECIMALS;
 	return parseFloat(formatUnits(balance.value, balance.decimals)).toFixed(
 		displayDecimals,
 	);

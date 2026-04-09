@@ -22,6 +22,8 @@ export function useBlobUrl(file: File | null | undefined): string | null {
 		url: null,
 	});
 
+	// Sync target: File object → browser blob URL. Deps: [file] — new File means
+	// new blob URL needed. Cleanup: revokes the previous blob URL to free memory.
 	// Blob URLs are browser-managed resources, so the effect owns allocation +
 	// revocation. The state keeps the source File alongside the URL so render can
 	// ignore stale URLs while a replacement is still being created.

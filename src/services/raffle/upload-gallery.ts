@@ -24,14 +24,6 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES = 10;
 
 /**
- * Response type for gallery upload
- */
-type UploadGalleryServiceResponse = ServiceResponse<
-	UploadGalleryResponse,
-	RaffleErrorCode
->;
-
-/**
  * Uploads gallery images for a raffle
  *
  * @param raffleId - The ID of the raffle
@@ -41,11 +33,10 @@ type UploadGalleryServiceResponse = ServiceResponse<
 export async function uploadGalleryImages(
 	raffleId: string,
 	files: File[],
-): Promise<UploadGalleryServiceResponse> {
+): Promise<ServiceResponse<UploadGalleryResponse, RaffleErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Client-side validation
 		if (files.length === 0) {
 			return failure(CLIENT_ERROR_CODES.UPLOAD_INVALID_TYPE);
 		}
@@ -54,7 +45,6 @@ export async function uploadGalleryImages(
 			return failure(CLIENT_ERROR_CODES.UPLOAD_TOO_MANY_FILES);
 		}
 
-		// Validate each file
 		for (const file of files) {
 			if (!ACCEPTED_TYPES.includes(file.type)) {
 				return failure(CLIENT_ERROR_CODES.UPLOAD_INVALID_TYPE);
@@ -83,7 +73,6 @@ export async function uploadGalleryImages(
 			},
 		);
 
-		// Validate response structure
 		const parsed = uploadGalleryResponseSchema.parse(response.data);
 
 		// Fire-and-forget — upload tracking must not block
@@ -101,13 +90,11 @@ export async function uploadGalleryImages(
 
 		return success(parsed);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'upload-gallery');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

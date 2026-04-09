@@ -41,7 +41,9 @@ interface EmailPreferencesFormProps {
 export function EmailPreferencesForm({
 	preferences,
 }: EmailPreferencesFormProps) {
+	// Local state mirrors server preferences — enables optimistic updates with rollback
 	const [state, setState] = useState<EmailPreferences | null>(preferences);
+	// useTransition: keeps the toggle interactive during server action calls
 	const [isPending, startTransition] = useTransition();
 
 	if (!state) {

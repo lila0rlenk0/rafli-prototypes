@@ -22,7 +22,10 @@ export async function deleteComment(
 	commentId: string,
 ): Promise<ServiceResponse<void, CommentErrorCode>> {
 	try {
+		// Step 1: Soft-delete comment — body becomes "[Deleted]", replies preserved
 		const response = await authenticatedClient.delete(`/comments/${commentId}`);
+
+		// Step 2: Validate response to detect contract drift
 		deleteCommentResponseSchema.parse(response.data);
 		return success(undefined);
 	} catch (error) {

@@ -1,119 +1,59 @@
 # Code Style
 
-Non-linter conventions. Formatting (tabs, quotes, parens) is enforced by Prettier — not repeated here.
+Formatting (tabs, quotes, parens) enforced by Prettier.
 
-## JSX Logic Extraction
+## Scan Exclusions
 
-Never inline logic in JSX. Extract to named functions inside component scope.
+`src/components/ui/` — shadcn stock, skip for eslint/TS audits and complexity scans
 
-```tsx
-// bad — logic buried in JSX
-<h2>{total > 0 ? `${total} Code${total !== 1 ? 's' : ''}` : 'Codes'}</h2>;
+## JSX
 
-// good — named function
-function getHeaderText(): string {
-	if (total === 0) return 'Codes';
-	return `${total} Code${total !== 1 ? 's' : ''}`;
-}
-<h2>{getHeaderText()}</h2>;
-```
+- extract logic to named functions inside component scope, never inline in JSX
+- ternary for conditionals, never `&&` — prevents rendering `0`/`""`, explicit null branch
+- extract static JSX and RegExp to module scope — avoids re-creation per render
 
-## Conditional Rendering
+## Functions
 
-Use ternary for JSX conditionals — never `&&`. Prevents rendering `0` or `""` and makes the null branch explicit.
+- helpers inside component scope; exceptions: pure utilities in `@/lib/utils`, constants, shared helpers in same file
+- decompose complex conditions into named helper functions
+- extract inline callback/object types to named interfaces
+- max ~50 SLOC per function, max 4 nesting levels
+- one responsibility per function — if you need "and" to describe it, split
+- `switch` exhaustiveness (`default: never`) over `if/else if` for unions
+- replace boolean params with named options objects or separate functions
 
-```tsx
-// bad — && can render falsy primitives
-{
-	isLoading && <Spinner />;
-}
+## Control Flow
 
-// good — explicit null branch
-{
-	isLoading ? <Spinner /> : null;
-}
-```
+- negate condition and return early, no deep `if/else` pyramids
+- guard clauses at function top: validate, return/throw, then happy path
+- no `else` after `return`/`throw`
+- no nested ternaries — use `if/else` or named variable
 
-## Early Return Pattern
+## Naming
 
-Always negate the condition and return early.
+- descriptive hook return values, never shadow built-in globals
+- delete unused imports, variables, functions, types — never comment out
 
-```tsx
-// bad
-if (result.success) {
-	/* happy path */
-} else {
-	toast.error('...');
-}
+## Type Safety
 
-// good
-if (!result.success) {
-	toast.error('...');
-	return;
-}
-// happy path continues
-```
+- no `any`, `unknown`, `as unknown as T`, `as never`, unsafe `as Type` casts
+- no `@ts-ignore`, `@ts-expect-error`, `eslint-disable` — fix root cause
+- prefer type guards (`is`, `in`, discriminated unions) over assertions
+- narrow with control flow: `if (!x) throw` or `if ('kind' in x)`
+- let TS infer return types internally; annotate public API boundaries
 
-## Function Placement
+## Data
 
-Prefer helpers inside component scope. Exceptions: pure utilities in `@/lib/utils`, constants, helpers shared by multiple components in the same file, hoisted static JSX and RegExp.
+- `readonly` arrays/properties for immutable data
+- destructure at call site, not deep inside function body
+- no magic numbers/strings — named `const` with comment
+- `Map`/`Set` for dynamic keys — O(1) lookups
+- `.toSorted()`/`.toReversed()` not `.sort()`/`.reverse()` — immutability
 
-## Complex Logic Decomposition
+## Async
 
-Break complex conditions into named helper functions.
-
-```tsx
-// bad — dense predicate inline
-const order = orders.find(o => o.status === STATUS.PENDING && o.raffleId === raffleId && ...);
-
-// good — decomposed
-function isReusable(order: Order, code?: string): boolean {
-  return order.status === STATUS.PENDING && matchesRaffle(order) && hasCompatiblePromo(order, code);
-}
-const order = orders.find(o => isReusable(o, promoCode));
-```
-
-## Interface Extraction
-
-Extract inline callback/object types to named interfaces.
-
-## Hook Naming
-
-Name hook return values descriptively. Never shadow built-in globals.
-
-```tsx
-// bad — shadows global setTimeout
-const setTimeout = useTimeout();
-
-// good — conveys added value
-const setSafeTimeout = useTimeout();
-```
-
-## Immutable Array Operations
-
-Use `.toSorted()` / `.toReversed()` instead of `.sort()` / `.reverse()` — mutating arrays breaks React's immutability model and causes stale closure bugs. Also applies to the `[...arr].sort()` spread-copy pattern.
-
-```tsx
-// bad — mutates original array
-const sorted = users.sort((a, b) => a.name.localeCompare(b.name));
-
-// bad — unnecessary spread, toSorted exists
-const sorted = [...users].sort((a, b) => a.name.localeCompare(b.name));
-
-// good — returns new array
-const sorted = users.toSorted((a, b) => a.name.localeCompare(b.name));
-```
-
-## Hoist Static JSX and RegExp
-
-Extract static JSX elements and RegExp literals to module scope — avoids re-creation on every render.
-
-```tsx
-// bad — recreates regex every render
-function Validator() {
-	const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-}
-
-// good — hoisted to module scope
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-```
+- every `async` must `await` something — remove `async` if synchronous
+- no floating promises — `await` or `void`
+- no `Promise` constructor wrapping already-async operations
+- `Promise.all()` for independent concurrent work
+- no empty catch blocks — log or re-throw

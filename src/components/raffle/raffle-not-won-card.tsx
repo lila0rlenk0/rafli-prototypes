@@ -16,9 +16,6 @@ interface RaffleNotWonCardProps {
  * Shows different messages based on raffle status.
  */
 export function RaffleNotWonCard({ status }: RaffleNotWonCardProps) {
-	/**
-	 * Returns the appropriate message based on raffle status
-	 */
 	function getMessage(): string {
 		switch (status) {
 			case RAFFLE_STATUS.FULFILLING:
@@ -28,14 +25,6 @@ export function RaffleNotWonCard({ status }: RaffleNotWonCardProps) {
 			default:
 				return 'The raffle has ended!';
 		}
-	}
-
-	/**
-	 * Whether to show the fulfillment badge
-	 * Only shown when raffle is concluded (not during fulfilling)
-	 */
-	function shouldShowFulfillmentBadge(): boolean {
-		return status !== RAFFLE_STATUS.FULFILLING;
 	}
 
 	const isFulfilling = status === RAFFLE_STATUS.FULFILLING;
@@ -49,7 +38,7 @@ export function RaffleNotWonCard({ status }: RaffleNotWonCardProps) {
 				{getMessage()}
 			</h2>
 
-			{shouldShowFulfillmentBadge() ? (
+			{!isFulfilling ? (
 				<div className="mt-4">
 					<FulfillmentBadge />
 				</div>

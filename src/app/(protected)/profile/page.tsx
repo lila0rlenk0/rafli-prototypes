@@ -51,11 +51,14 @@ const SIDEBAR_ITEMS = [
 ];
 
 /**
- * ProfilePage Component
+ * ProfilePage (Server Component)
+ *
+ * Data-fetching strategy: parallel-fetches session, /me profile, and verification
+ * status — three independent endpoints. Each section below is either a server
+ * component with its own fetch (VerificationSection, CreditsSection, etc.) or
+ * receives data as props from this parent fetch.
  *
  * Displays the user's complete profile information organized in sections.
- * Includes a sidebar showing completion progress and multiple content
- * sections for personal info, address, payment details, login, and host info.
  */
 export default async function ProfilePage() {
 	// Parallel fetch — session, profile, and verification status are independent

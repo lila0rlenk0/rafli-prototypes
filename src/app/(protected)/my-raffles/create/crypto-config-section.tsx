@@ -69,7 +69,8 @@ export function CryptoConfigSection({
 	// Fetch global config (cached 10min by useCryptoConfig)
 	const { data: cryptoConfig, isLoading } = useCryptoConfig();
 
-	// Filter backend chains to only those supported in this environment
+	// useMemo: filter backend chains to only those supported in this environment.
+	// Avoids re-filtering on every render — cryptoConfig changes only on initial fetch.
 	const supportedChains = useMemo(
 		function filterSupportedChains() {
 			if (!cryptoConfig) return [];
@@ -83,7 +84,8 @@ export function CryptoConfigSection({
 	/** Whether all supported chains are selected */
 	const allChainsSelected = selectedChainIds.length >= supportedChains.length;
 
-	// Compute available tokens based on selected chains.
+	// useMemo: compute available tokens based on selected chains.
+	// Re-computes when chain selection changes — deduplicates cross-chain tokens.
 	const availableTokens = useMemo(
 		function computeAvailableTokens() {
 			const chains = allChainsSelected
@@ -106,7 +108,8 @@ export function CryptoConfigSection({
 		[supportedChains, selectedChainIds, allChainsSelected],
 	);
 
-	// Identify non-stablecoin tokens that need pricing
+	// useMemo: identify non-stablecoin tokens that need manual pricing.
+	// Stablecoins use 1:1 USD pricing — only non-stables need a price input.
 	const nonStablecoinTokens = useMemo(
 		function filterNonStablecoins() {
 			return availableTokens.filter(

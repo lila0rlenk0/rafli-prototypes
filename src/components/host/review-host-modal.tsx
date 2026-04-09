@@ -6,6 +6,7 @@ import { FaXTwitter } from 'react-icons/fa6';
 import { toast } from 'sonner';
 
 import { useTimeout } from '@/lib/hooks/use-timeout';
+import { DIALOG_EXIT_ANIMATION_MS } from '@/lib/ui-constants';
 
 import {
 	Dialog,
@@ -31,12 +32,7 @@ interface ReviewHostModalProps {
 	publicSlug: string;
 }
 
-/**
- * ReviewHostModal Component
- *
- * Modal for raffle winners to review hosts.
- * Shows form state initially, then success state after submission.
- */
+/** Modal for raffle winners to review hosts — form state initially, success state after submit. */
 export function ReviewHostModal({
 	open,
 	onOpenChange,
@@ -49,9 +45,6 @@ export function ReviewHostModal({
 	const reviewMutation = useCreateReview();
 	const setCloseTimeout = useTimeout();
 
-	/**
-	 * Handles review form submission
-	 */
 	function handleSubmit() {
 		if (rating === 0) {
 			toast.error('Please select a rating');
@@ -71,18 +64,12 @@ export function ReviewHostModal({
 		);
 	}
 
-	/**
-	 * Copies the raffle link to clipboard
-	 */
 	function handleCopyLink() {
 		const link = `${window.location.origin}/browse/${publicSlug}`;
 		navigator.clipboard.writeText(link);
 		toast.success('Raffle link copied to clipboard!');
 	}
 
-	/**
-	 * Opens Twitter/X share intent
-	 */
 	function handleShare() {
 		const text = 'I just won a raffle! Check it out';
 		const link = `${window.location.origin}/browse/${publicSlug}`;
@@ -90,16 +77,13 @@ export function ReviewHostModal({
 		window.open(url, '_blank');
 	}
 
-	/**
-	 * Resets modal state when closed
-	 */
 	function handleOpenChange(newOpen: boolean) {
 		if (!newOpen) {
-			// Reset state after Dialog close animation completes
+			// Reset after Dialog close animation completes
 			setCloseTimeout(() => {
 				setRating(0);
 				setIsSuccess(false);
-			}, 200);
+			}, DIALOG_EXIT_ANIMATION_MS);
 		}
 		onOpenChange(newOpen);
 	}
@@ -165,14 +149,14 @@ export function ReviewHostModal({
 							onClick={handleShare}
 							className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
 						>
-							<FaXTwitter className="h-4 w-4" />
+							<FaXTwitter className="size-4" />
 							Share on X
 						</button>
 						<button
 							onClick={handleCopyLink}
 							className="flex items-center justify-center gap-2 text-sm font-medium"
 						>
-							<Copy className="h-4 w-4" />
+							<Copy className="size-4" />
 							Copy Raffle link
 						</button>
 					</div>
@@ -182,9 +166,6 @@ export function ReviewHostModal({
 	);
 }
 
-/**
- * Party Popper Icon
- */
 function PartyPopperIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -203,9 +184,6 @@ function PartyPopperIcon(props: ComponentProps<'svg'>) {
 	);
 }
 
-/**
- * Left decorative colored card SVG
- */
 function LeftColoredCard(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -232,9 +210,6 @@ function LeftColoredCard(props: ComponentProps<'svg'>) {
 	);
 }
 
-/**
- * Right decorative colored card SVG
- */
 function RightColoredCard(props: ComponentProps<'svg'>) {
 	return (
 		<svg

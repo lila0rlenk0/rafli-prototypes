@@ -10,9 +10,15 @@ const SplitText = dynamic(
 );
 
 /**
- * Hero section with main headline and call-to-action buttons
+ * Hero section with main headline and call-to-action buttons.
+ *
+ * 'use client' required: SplitText (GSAP animation) uses IntersectionObserver
+ * and DOM manipulation which require a browser environment.
+ *
+ * @returns Hero section with animated headline and two CTA buttons
  */
 export function HeroSection() {
+	/** Shared animation config for SplitText headline — chars animate in sequence */
 	const splitTextProps = {
 		delay: 50,
 		duration: 1.25,

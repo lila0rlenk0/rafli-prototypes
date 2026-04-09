@@ -32,7 +32,11 @@ export function CallbackHandler() {
 	const [error, setError] = useState<string | null>(null);
 	const [isProcessing, setIsProcessing] = useState(true);
 
-	// mount: exchange OAuth session cookie for JWT and redirect
+	// mount: exchange the OAuth session cookie (set on backend domain) for a JWT,
+	// then set raffly auth cookies and redirect. Must run client-side because
+	// only the browser can send the cross-origin better-auth.session_token cookie.
+	// Deps: [router, searchParams] — both are stable references from Next.js hooks.
+	// Cleanup: AbortController cancels in-flight fetch on unmount.
 	useEffect(() => {
 		const controller = new AbortController();
 		// Prevents React 18 strict mode double-execution from firing duplicate token exchanges

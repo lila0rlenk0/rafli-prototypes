@@ -45,12 +45,16 @@ export function PromoCodeInput({
 	const [validatedPromo, setValidatedPromo] =
 		useState<ValidatedPromoCode | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	// Ref instead of direct dep — avoids re-running the auto-validation effect when
+	// the parent re-renders with a new callback identity (e.g. countdown timer ticks).
 	const onValidCodeRef = useRef(onValidCode);
+	// Tracks which code was already auto-validated to prevent duplicate API calls
+	// when React Strict Mode double-fires the effect or initialCode prop identity changes.
 	const autoValidatedCodeRef = useRef<string | null>(null);
 
-	// Parent callbacks can be recreated by unrelated rerenders.
-	// Sync the ref in an effect so the auto-validation flow always calls
-	// the latest handler without treating callback identity as effect input.
+	// Ref sync effect — keeps onValidCodeRef current without adding callback identity
+	// to the auto-validation effect's deps, which would re-trigger validation on unrelated rerenders.
+	// Deps: onValidCode (syncs on every new callback reference).
 	useEffect(() => {
 		onValidCodeRef.current = onValidCode;
 	}, [onValidCode]);

@@ -1,9 +1,6 @@
 import type { CommonErrorCode } from './common-errors';
 
 /**
- * Admin KYC Error Codes
- *
- * Backend errors for admin verification review endpoints.
  * Uses the same `core:verification:*` prefix as user-facing KYC errors
  * since they share the same backend module.
  */
@@ -22,9 +19,6 @@ export const ADMIN_KYC_ERROR_CODES = {
 	SELF_REVIEW: 'core:verification:self-review',
 } as const;
 
-/**
- * Type representing all possible admin KYC error codes
- */
 export type AdminKycErrorCode =
 	| (typeof ADMIN_KYC_ERROR_CODES)[keyof typeof ADMIN_KYC_ERROR_CODES]
 	| CommonErrorCode;

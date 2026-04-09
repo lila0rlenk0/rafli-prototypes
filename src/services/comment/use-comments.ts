@@ -34,11 +34,9 @@ export function useComments(options: {
 	return useInfiniteQuery({
 		queryKey: commentsKey(options.raffleId, options.sort),
 		queryFn: async function fetchComments({ pageParam }) {
-			// Step 1: Choose endpoint based on auth state
-			//         Authenticated users get userVote on each comment
+			// Authenticated users get userVote enrichment via the /me/ endpoint
 			const fetcher = options.isAuthenticated ? getMyComments : getComments;
 
-			// Step 2: Fetch page
 			const result = await fetcher(options.raffleId, {
 				page: pageParam,
 				limit: COMMENTS_PAGE_SIZE,

@@ -8,13 +8,12 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapPaymentError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
-
-// ==========================================
-// Schema
-// ==========================================
 
 /** Backend returns whether the order was actually abandoned */
 const abandonOrderResponseSchema = z.object({
@@ -22,10 +21,6 @@ const abandonOrderResponseSchema = z.object({
 });
 
 type AbandonOrderResponse = z.infer<typeof abandonOrderResponseSchema>;
-
-// ==========================================
-// Server Action
-// ==========================================
 
 /**
  * Abandons a pending order that the user decided not to pay.
@@ -44,15 +39,17 @@ export async function abandonOrder(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Request order abandonment — best-effort, reclaims backend order slot
 		const response = await authenticatedClient.post(
 			`/payments/orders/${encodeURIComponent(orderId)}/abandon`,
 			{},
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
+		// Step 2: Validate response shape
 		const data = abandonOrderResponseSchema.parse(response.data);
 
-		// Fire-and-forget — abandon is best-effort, analytics must not block
+		// Step 3: Fire-and-forget analytics — abandon is best-effort, must not block
 		void sessionPromise.then(session =>
 			trackServer(
 				PURCHASE_EVENTS.ORDER_ABANDONED,
@@ -73,6 +70,12 @@ export async function abandonOrder(
 			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
 		}
 
-		return failure(mapPaymentError(error));
+		// Payment is a critical service — capture even best-effort failures for alerting
+		const errorCode = mapPaymentError(error);
+		captureServiceError(error, errorCode, {
+			service: 'payment',
+			action: 'abandon-order',
+		});
+		return failure(errorCode);
 	}
 }

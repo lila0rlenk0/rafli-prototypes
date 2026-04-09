@@ -22,7 +22,10 @@ interface TicketIdsPageProps {
 
 /**
  * Dedicated page for viewing all ticket codes for a raffle.
- * Displays a paginated table of ticket codes with dates.
+ *
+ * Server Component — requires authentication (404 for guests).
+ * Data-fetching: sequential waterfall (session → raffle → ticket codes) because
+ * each step depends on the previous result. No parallelization possible.
  *
  * @returns Paginated ticket codes table or not found page
  */
@@ -30,17 +33,21 @@ export default async function TicketIdsPage({
 	params,
 	searchParams,
 }: TicketIdsPageProps) {
+	// Step 1: Parse route and query params.
 	const { publicSlug } = await params;
 	const queryParams = await searchParams;
 	const page = queryParams.page ? parseInt(queryParams.page, 10) : 1;
+	// 20 rows per page — fits typical viewport without excessive scrolling
 	const limit = 20;
 
+	// Step 2: Require authentication — guests get 404.
 	const session = await getSession();
 
 	if (!session) {
 		notFound();
 	}
 
+	// Step 3: Fetch raffle — need raffle.id for ticket codes query.
 	const response = await getRaffle(publicSlug);
 
 	if (!response.success) {
@@ -49,12 +56,14 @@ export default async function TicketIdsPage({
 
 	const raffle = response.data;
 
+	// Step 4: Fetch user's ticket codes for this raffle.
 	const ticketCodesResponse = await getMyTicketCodes({
 		raffleId: raffle.id,
 		page,
 		limit,
 	});
 
+	// Step 5: Derive pagination data — defaults for failed responses.
 	const ticketCodes = ticketCodesResponse.success
 		? ticketCodesResponse.data.tickets
 		: [];

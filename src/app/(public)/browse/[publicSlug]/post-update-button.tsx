@@ -64,20 +64,18 @@ function PostUpdateButtonContent({
 }: PostUpdateButtonProps) {
 	const mode = useUserStore(state => state.mode);
 
-	/**
-	 * Determines if the button should be shown
-	 * Requires owner + live raffle + host mode
-	 */
-	function shouldShow(): boolean {
-		if (mode === null) {
-			return false;
-		}
-
-		const isHostMode = mode === USER_MODE.HOST;
-		return isOwner && canManageUpdates && isHostMode;
+	/** Prevent click from bubbling to parent accordion/card */
+	function handleClick(e: React.MouseEvent) {
+		e.stopPropagation();
 	}
 
-	if (!shouldShow()) {
+	// Requires owner + manageable raffle status + host mode
+	if (
+		mode === null ||
+		!isOwner ||
+		!canManageUpdates ||
+		mode !== USER_MODE.HOST
+	) {
 		return null;
 	}
 
@@ -85,7 +83,7 @@ function PostUpdateButtonContent({
 		<Button
 			asChild
 			className="cursor-pointer rounded-full border-2 border-black bg-white px-6 text-black hover:bg-black hover:text-white"
-			onClick={e => e.stopPropagation()}
+			onClick={handleClick}
 		>
 			<Link href={`/my-raffles/${publicSlug}/update`} className="font-semibold">
 				Add update

@@ -1,13 +1,6 @@
 import type { ServiceFailure, ServiceSuccess } from '@/types/service-response';
 
 /**
- * Error Handler Utilities
- *
- * Helper functions for creating success and failure responses
- * in server actions.
- */
-
-/**
  * Creates a success response
  *
  * @param data - The data to return on success

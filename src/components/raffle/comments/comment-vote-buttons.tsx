@@ -13,19 +13,6 @@ interface CommentVoteButtonsProps {
 	raffleId: string;
 }
 
-/**
- * Upvote/downvote buttons for a comment
- *
- * Displays arrows with score between them. Active vote is highlighted.
- * Disabled (visually present but non-interactive) for unauthenticated users.
- * Uses optimistic mutation for instant feedback.
- *
- * @param commentId - The comment to vote on
- * @param voteScore - Current net score
- * @param userVote - Current user's vote direction (null if none)
- * @param isAuthenticated - Whether the user is logged in
- * @param raffleId - The raffle ID (needed for cache invalidation)
- */
 export function CommentVoteButtons({
 	commentId,
 	voteScore,
@@ -35,21 +22,13 @@ export function CommentVoteButtons({
 }: CommentVoteButtonsProps) {
 	const voteMutation = useVoteComment();
 
-	/** Handles vote click — toggles vote on/off */
 	function handleVote(type: VoteType) {
 		if (!isAuthenticated) return;
 		voteMutation.mutate({ commentId, type, raffleId });
 	}
 
-	/** Whether upvote arrow should be highlighted */
-	function isUpvoteActive(): boolean {
-		return userVote === VOTE_TYPE.UPVOTE;
-	}
-
-	/** Whether downvote arrow should be highlighted */
-	function isDownvoteActive(): boolean {
-		return userVote === VOTE_TYPE.DOWNVOTE;
-	}
+	const isUpvoteActive = userVote === VOTE_TYPE.UPVOTE;
+	const isDownvoteActive = userVote === VOTE_TYPE.DOWNVOTE;
 
 	return (
 		<div className="flex items-center gap-1">
@@ -61,7 +40,7 @@ export function CommentVoteButtons({
 				disabled={!isAuthenticated}
 				className={cn(
 					'rounded p-0.5 text-sm transition-colors',
-					isUpvoteActive()
+					isUpvoteActive
 						? 'text-green-600'
 						: 'text-gray-400 hover:text-gray-600',
 					!isAuthenticated && 'cursor-default opacity-50',
@@ -83,7 +62,7 @@ export function CommentVoteButtons({
 				disabled={!isAuthenticated}
 				className={cn(
 					'rounded p-0.5 text-sm transition-colors',
-					isDownvoteActive()
+					isDownvoteActive
 						? 'text-red-500'
 						: 'text-gray-400 hover:text-gray-600',
 					!isAuthenticated && 'cursor-default opacity-50',

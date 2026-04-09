@@ -133,24 +133,25 @@ const wallets: WalletList = [
 let _wagmiConfig: ReturnType<typeof getDefaultConfig> | null | undefined;
 
 export function getWagmiConfig(): ReturnType<typeof getDefaultConfig> | null {
-	// Return cached instance after first initialization
+	// Step 1: Return cached instance after first initialization.
 	if (typeof _wagmiConfig !== 'undefined') return _wagmiConfig;
 
-	// Server-side — return null so the provider falls through to a children passthrough.
-	// Context providers (WagmiProvider, RainbowKitProvider) produce no DOM nodes,
-	// so the server/client HTML is identical regardless of this guard.
+	// Step 2: Guard — server-side returns null so the provider falls through
+	// to a children passthrough. WagmiProvider/RainbowKitProvider produce no
+	// DOM nodes, so server/client HTML is identical regardless.
 	if (typeof window === 'undefined') return null;
 
-	// Web3 disabled — no WalletConnect project ID configured
+	// Step 3: Guard — Web3 disabled when no WalletConnect project ID is configured.
 	if (!isWeb3Enabled) {
 		_wagmiConfig = null;
 		return null;
 	}
 
-	// Client-side first call — initialize once and cache
+	// Step 4: Client-side first call — initialize once and cache.
 	_wagmiConfig = getDefaultConfig({
 		appName: 'Rafli',
-		projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
+		// isWeb3Enabled guard above guarantees this value is non-empty
+		projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? '',
 		chains: configuredChains,
 		storage: wagmiStorage,
 		wallets,

@@ -21,10 +21,6 @@ import {
 	type AtomicCryptoCheckoutResponse,
 } from '@/types/wallet';
 
-// ==========================================
-// Server Action
-// ==========================================
-
 /**
  * Creates order + crypto session atomically in a single backend call.
  *
@@ -44,12 +40,14 @@ export async function createAtomicCryptoCheckout(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Create order + crypto session atomically — backend handles reuse & promo
 		const response = await authenticatedClient.post(
 			'/payments/crypto/atomic-checkout',
 			payload,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
+		// Step 2: Validate response — `session` is null when order is $0 (fully discounted)
 		const data = atomicCryptoCheckoutResponseSchema.parse(response.data);
 
 		runAfter(async () => {

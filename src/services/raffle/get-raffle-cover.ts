@@ -14,45 +14,37 @@ import {
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for fetching raffle cover image
- */
-type GetRaffleCoverResponse = ServiceResponse<
-	RaffleCoverResponse,
-	RaffleErrorCode
->;
-
-/**
- * Fetches raffle cover image with expiration-aware caching
+ * Fetches raffle cover image with expiration-aware caching.
  *
- * Uses Next.js 16 'use cache' directive with dynamic cache duration
- * based on the pre-signed URL expiration time.
+ * Uses Next.js 'use cache' directive with a fixed 5-minute cache since
+ * cover URLs are now plain strings rather than pre-signed URLs.
  *
  * @param raffleId - UUID of the raffle
  * @returns ServiceResponse with cover URL and expiration on success, RaffleErrorCode on failure
  */
 export async function getRaffleCover(
 	raffleId: string,
-): Promise<GetRaffleCoverResponse> {
+): Promise<ServiceResponse<RaffleCoverResponse, RaffleErrorCode>> {
 	'use cache';
 
 	try {
+		// Step 1: Fetch cover image URL from backend
 		const response = await baseClient.get(`/raffles/${raffleId}/cover`);
 
-		// Validate response structure
+		// Step 2: Validate response shape
 		const validatedData = raffleCoverResponseSchema.parse(response.data);
 
-		// URLs are now plain strings — use fixed 5-minute cache
+		// Step 3: Cache for 5 minutes — URLs are plain strings, not pre-signed
+		// revalidate: 300s (5min), expire: 360s (6min)
 		cacheLife({ stale: 0, revalidate: 300, expire: 360 });
 
 		return success(validatedData);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'get-raffle-cover');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

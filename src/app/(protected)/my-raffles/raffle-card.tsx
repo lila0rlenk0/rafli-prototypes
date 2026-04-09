@@ -263,9 +263,12 @@ function DraftRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
  */
 function QueuedRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 	const router = useRouter();
+	// Tracks in-flight "Go Live Now" request to disable both buttons
 	const [isActivating, setIsActivating] = useState(false);
+	// Tracks in-flight "Edit" (unpublish then navigate) request
 	const [isUnpublishing, setIsUnpublishing] = useState(false);
 
+	// useCallback: stable reference passed as onClick — avoids re-render of Button children
 	const handleActivate = useCallback(async () => {
 		setIsActivating(true);
 		try {

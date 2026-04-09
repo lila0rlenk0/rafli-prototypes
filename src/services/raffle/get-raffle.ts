@@ -10,11 +10,6 @@ import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for fetching a single raffle
- */
-type GetRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
-
-/**
  * Fetches a single raffle by public slug
  *
  * @param publicSlug - The public slug of the raffle to fetch
@@ -22,20 +17,16 @@ type GetRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
  */
 export async function getRaffle(
 	publicSlug: string,
-): Promise<GetRaffleResponse> {
+): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
 	try {
 		const response = await baseClient.get(`/raffles/${publicSlug}`);
-
-		const validatedData = raffleSchema.parse(response.data);
-
-		return success(validatedData);
+		return success(raffleSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'get-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

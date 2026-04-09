@@ -1,9 +1,6 @@
 import { cn } from '@/lib/utils';
 import { WINNING_STATUS, type WinningStatus } from '@/types/winning';
 
-/**
- * Props for WinningStatusBadge
- */
 interface WinningStatusBadgeProps {
 	status: WinningStatus;
 	className?: string;
@@ -24,9 +21,6 @@ export function WinningStatusBadge({
 	status,
 	className,
 }: WinningStatusBadgeProps) {
-	/**
-	 * Returns Tailwind classes for status color
-	 */
 	function getStatusClasses(): string {
 		switch (status) {
 			case WINNING_STATUS.PENDING:
@@ -47,9 +41,6 @@ export function WinningStatusBadge({
 		}
 	}
 
-	/**
-	 * Returns display label for status
-	 */
 	function getStatusLabel(): string {
 		switch (status) {
 			case WINNING_STATUS.PENDING:

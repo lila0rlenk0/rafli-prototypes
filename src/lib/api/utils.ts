@@ -24,12 +24,7 @@ export function buildQueryParams(query?: object): Record<string, string> {
 	const params: Record<string, string> = {};
 
 	for (const [key, value] of Object.entries(query)) {
-		// Skip undefined and null values
-		if (value === undefined || value === null) {
-			continue;
-		}
-
-		// Convert value to string
+		if (value === undefined || value === null) continue;
 		params[key] = String(value);
 	}
 
@@ -63,9 +58,8 @@ export function buildQueryParamsWithStatus<T extends { status?: string }>(
 
 	// Handle status: split comma-separated values into repeated params
 	if (status) {
-		const statuses = status.split(',');
-		for (const s of statuses) {
-			searchParams.append('status', s.trim());
+		for (const statusValue of status.split(',')) {
+			searchParams.append('status', statusValue.trim());
 		}
 	}
 

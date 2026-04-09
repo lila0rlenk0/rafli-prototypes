@@ -1,33 +1,31 @@
 import { z } from 'zod';
 
-// ─── Constants ──────────────────────────────────────────────────────────────
-
 export const USER_MODE = {
 	PARTICIPANT: 'participant',
 	HOST: 'host',
 } as const;
 
-// ─── Types from Constants ───────────────────────────────────────────────────
-
-/**
- * Represents the user's current mode (participant browsing or host managing)
- */
+/** User's current mode — participant browsing or host managing */
 export type UserMode = (typeof USER_MODE)[keyof typeof USER_MODE];
 
-// ─── Schemas ────────────────────────────────────────────────────────────────
-
-/** Schema for validating user mode strings */
+/**
+ * Validation boundary: client-side — validated when reading/writing
+ * the `raffly-user-mode` cookie. Also used for route guard checks.
+ */
 export const userModeSchema = z.enum([USER_MODE.PARTICIPANT, USER_MODE.HOST]);
 
-/** Schema for backend permission strings — used by parsePermissions() */
+/**
+ * Backend permission strings — used by parsePermissions().
+ *
+ * Validation boundary: server-side — validated when parsing the
+ * permissions array from the session cookie.
+ */
 export const permissionSchema = z.enum([
 	'raffle:create',
 	'raffle:manage',
 	'raffle:participate',
 	'admin:kyc:review',
 ]);
-
-// ─── Inferred Types ─────────────────────────────────────────────────────────
 
 /**
  * Permission type — derived from permissionSchema to prevent drift

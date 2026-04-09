@@ -12,31 +12,20 @@ import type { ServiceResponse } from '@/types/service-response';
 import { ZodError } from 'zod';
 
 /**
- * Response type for fetching a raffle question
- */
-type GetRaffleQuestionResponse = ServiceResponse<
-	RaffleQuestion,
-	RaffleErrorCode
->;
-
-/**
- * Fetches the question for a raffle
- * Users must answer this question correctly before purchasing tickets
+ * Fetches the question for a raffle.
+ * Users must answer this question correctly before purchasing tickets.
  *
  * @param raffleId - The UUID of the raffle
  * @returns ServiceResponse with question data or error code
  */
 export async function getRaffleQuestion(
 	raffleId: string,
-): Promise<GetRaffleQuestionResponse> {
+): Promise<ServiceResponse<RaffleQuestion, RaffleErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
 			`/raffles/${raffleId}/question`,
 		);
-
-		const validated = raffleQuestionSchema.parse(response.data);
-
-		return success(validated);
+		return success(raffleQuestionSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'get-raffle-question');

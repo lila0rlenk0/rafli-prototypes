@@ -34,13 +34,16 @@ export async function createReply(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Submit reply to backend (single nesting level enforced by backend)
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/comments/${commentId}/replies`,
 			payload,
 		);
+
+		// Step 2: Validate response shape against schema
 		const validated = commentSchema.parse(response.data);
 
-		// Fire-and-forget — don't block reply UX
+		// Step 3: Fire-and-forget analytics — don't block reply UX
 		void sessionPromise.then(session =>
 			trackServer(
 				COMMENT_EVENTS.CREATED,

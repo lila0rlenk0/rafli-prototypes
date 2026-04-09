@@ -8,12 +8,6 @@ interface NotificationListProps {
 	onClose: () => void;
 }
 
-/**
- * Renders list of notifications or empty state
- *
- * @param notifications - Array of notifications to display
- * @param onClose - Callback to close the popover
- */
 export function NotificationList({
 	notifications,
 	onClose,

@@ -16,13 +16,9 @@ import {
 import { promoCodeStringSchema, promoCodeTypeSchema } from '@/types/promo-code';
 import type { ServiceResponse } from '@/types/service-response';
 
-// ==========================================
-// Schemas
-// ==========================================
-
 /**
- * Schema for redeem request payload
- * Uses centralized promoCodeStringSchema for format validation
+ * Schema for redeem request payload.
+ * Uses centralized promoCodeStringSchema for format validation (uppercases + trims).
  */
 const redeemPromoCodePayloadSchema = z.object({
 	code: promoCodeStringSchema,
@@ -30,19 +26,13 @@ const redeemPromoCodePayloadSchema = z.object({
 	orderId: z.string().uuid().optional(),
 });
 
-/**
- * Schema for redeem response from backend
- */
+/** Schema for redeem response from backend */
 const redeemPromoCodeResponseSchema = z.object({
 	redemptionId: z.string(),
 	type: promoCodeTypeSchema,
 	ticketsGranted: z.number().optional(),
 	discountAmount: z.string().optional(),
 });
-
-// ==========================================
-// Types
-// ==========================================
 
 export type RedeemPromoCodePayload = z.infer<
 	typeof redeemPromoCodePayloadSchema
@@ -51,15 +41,11 @@ export type RedeemPromoCodeResponse = z.infer<
 	typeof redeemPromoCodeResponseSchema
 >;
 
-// ==========================================
-// Service
-// ==========================================
-
 /**
- * Redeems a promo code for a specific raffle
+ * Redeems a promo code for a specific raffle.
  *
- * For free_tickets type: Issues tickets directly, no orderId needed
- * For discount types: Requires orderId to apply discount
+ * For free_tickets type: Issues tickets directly, no orderId needed.
+ * For discount types: Requires orderId to apply discount.
  *
  * @param payload - Redeem request data (code, raffleId, optional orderId)
  * @returns ServiceResponse with redemption result or error code
@@ -70,13 +56,12 @@ export async function redeemPromoCode(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Step 1: Validate payload.
 		const validationResult = redeemPromoCodePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
 			return failure(PROMO_CODE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		// Step 2: Send redeem request (schema uppercases code).
+		// promoCodeStringSchema uppercases the code before sending
 		const response = await authenticatedClient.post('/promo-codes/redeem', {
 			code: validationResult.data.code,
 			raffleId: validationResult.data.raffleId,
@@ -85,8 +70,7 @@ export async function redeemPromoCode(
 			}),
 		});
 
-		// Step 3: Validate response and return success.
-		const validated = redeemPromoCodeResponseSchema.parse(response.data);
+		const data = redeemPromoCodeResponseSchema.parse(response.data);
 
 		runAfter(async () => {
 			const userId = (await sessionPromise)?.user?.id;
@@ -96,15 +80,15 @@ export async function redeemPromoCode(
 				{
 					code: validationResult.data.code,
 					raffle_id: validationResult.data.raffleId,
-					type: validated.type,
-					tickets_granted: validated.ticketsGranted,
-					discount_amount: validated.discountAmount,
+					type: data.type,
+					tickets_granted: data.ticketsGranted,
+					discount_amount: data.discountAmount,
 				},
 				{ userId },
 			);
 		});
 
-		return success(validated);
+		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'promo-code', 'redeem-promo-code');

@@ -17,14 +17,8 @@ export function CreateRaffleButton() {
 	const mode = useUserStore(state => state.mode);
 	const canSwitchMode = useUserStore(state => state.canSwitchMode);
 
-	// Don't render while mode is initializing
-	if (mode === null) {
-		return null;
-	}
-
-	const shouldShowButton = canSwitchMode() && mode === USER_MODE.HOST;
-
-	if (!shouldShowButton) {
+	// Null while mode is hydrating from cookie
+	if (mode === null || !canSwitchMode() || mode !== USER_MODE.HOST) {
 		return null;
 	}
 

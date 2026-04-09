@@ -36,7 +36,7 @@ export function useCreateComment() {
 		CreateCommentVariables
 	>({
 		mutationFn: async function create(variables: CreateCommentVariables) {
-			// Step 1: Route to correct endpoint based on parentId
+			// parentId present → reply, absent → top-level comment
 			const result = variables.parentId
 				? await createReply(
 						variables.raffleId,
@@ -49,13 +49,12 @@ export function useCreateComment() {
 			return result.data;
 		},
 		onSuccess(_data, variables) {
-			// Step 2: Invalidate relevant caches
-			//         Always invalidate top-level list (total count may change)
+			// Always invalidate top-level list — total count may change even for replies
 			queryClient.invalidateQueries({
 				queryKey: ['comment', 'list', variables.raffleId],
 			});
 
-			// Step 3: If reply, also invalidate parent's replies
+			// Also invalidate parent's replies cache when creating a reply
 			if (variables.parentId) {
 				queryClient.invalidateQueries({
 					queryKey: ['comment', 'replies', variables.parentId],

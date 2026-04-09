@@ -1,68 +1,69 @@
 # Rafli
 
-Next.js raffle platform. Clean Architecture with Zod-first types.
+Next.js raffle platform. Clean Architecture, Zod-first types.
 
 ## Stack
 
-- Next.js App Router, React, TypeScript
-- Tailwind CSS v4 (CSS-first config in `globals.css`, no `tailwind.config`)
-- Bun runtime and package manager — never npm/yarn/pnpm
-- `@tanstack/react-query` v5, Zustand, Zod
-- Custom JWT auth (no NextAuth, no middleware)
+Next.js App Router, React, TypeScript, Tailwind CSS v4 (CSS-first in `globals.css`), Bun (never npm/yarn/pnpm), `@tanstack/react-query` v5, Zustand, Zod, custom JWT auth (no NextAuth)
 
 ## Commands
 
-- `bun run dev` — development server
+- `bun run dev` — dev server
 - `bun run format && bun run lint && bun run test` — required after every change
-- `bun run format:check` — CI check (no writes)
-- `bun run test:e2e` — Playwright E2E tests
 - `bun run build` — production build
+- `bun run test:e2e` — Playwright E2E
 
 ## Architecture
 
 ```
 src/
-  app/           — Next.js App Router (pages, layouts, routes)
-  components/    — UI (Server + Client components)
-  services/      — Server actions wrapping API calls
+  app/           — App Router pages, layouts, routes
+  assets/        — SVG components (logo, icons, backgrounds)
+  components/    — Server + Client components (ui/ is shadcn stock)
+  services/      — server actions wrapping API calls
   types/         — Zod schemas, inferred types, error codes
-  lib/           — Utilities, API clients, errors, auth, cache, hooks
+  lib/           — utilities, API clients, errors, auth, cache, hooks
   providers/     — React context providers
-  store/         — Zustand client state (vanilla createStore + provider)
-  env/           — @t3-oss/env-nextjs parsed environment variables
+  store/         — Zustand (vanilla createStore + provider)
+  env/           — @t3-oss/env-nextjs environment variables
+  proxy.ts       — lightweight middleware (auth redirects only)
+tests/
+  integration/   — server action integration tests (mock.module)
+  helpers/       — shared mock utilities
+e2e/             — Playwright E2E tests
 ```
 
-## Golden Rules
+## Rules
 
 - Server Components by default
-- All API calls via server actions (`'use server'`)
-- Zod schema-first — define schema, infer type with `z.infer<>`
-- `ServiceResponse<T, E>` for all service returns — `success(data)` / `failure(errorCode)`
-- Use `function` declarations, not arrow functions (arrows OK in hook callbacks and shadcn/ui primitives)
-- Use `@/env/server` or `@/env/client` for environment variables — never `process.env` directly
-- Use underscores in large numbers (`1_000_000`)
-- Write code and comments in English
-- JSDoc with `@returns` on all exports
-- No `any` without justification
+- all API calls via server actions (`'use server'`)
+- Zod schema-first — define schema, infer with `z.infer<>`
+- `ServiceResponse<T, E>` — `success(data)` / `failure(errorCode)`
+- `function` declarations, not arrows (arrows OK in hook callbacks and shadcn primitives)
+- `@/env/server` or `@/env/client` — never `process.env`
+- underscores in large numbers (`1_000_000`)
+- English code and comments, JSDoc with `@returns` on all exports
+- no `any` without justification
+- detailed rules in `.claude/rules/` — scoped by file path
 
-## Auth Model
+## Auth
 
-Cookie-based custom JWT. Three cookies: `raffly-token` (httpOnly JWT), `raffly-session` (client-readable user JSON), `raffly-user-mode` (participant/host). Session helpers in `@/lib/auth/session`: `getSession()`, `getCurrentUser` (cache-wrapped), `requireAuth()`, `requireEmailVerification()`.
+Cookie-based JWT. Cookies: `raffly-token` (httpOnly), `raffly-session` (client-readable user JSON), `raffly-user-mode` (participant/host). Helpers in `@/lib/auth/session`: `getSession()`, `getCurrentUser` (cache-wrapped), `requireAuth()`, `requireEmailVerification()`. Route guard in `src/proxy.ts` — redirects unauthenticated users, never handles auth logic.
 
 ## Caching
 
-- Revalidation TTLs in `@/lib/api/config` — `MY_RAFFLES: 60s`, `RAFFLE_DETAIL: 300s`, `CATEGORIES: 3_600s`. Cache tags exist for `MY_RAFFLES` and `RAFFLE_DETAIL` only
-- Revalidation helpers in `@/lib/cache/revalidation`
-- React Query — `staleTime: Infinity`, all auto-refetch disabled, manual invalidation on mutation
+TTLs in `@/lib/api/config`: `MY_RAFFLES: 60s`, `RAFFLE_DETAIL: 300s`, `CATEGORIES: 3_600s`. Tags for `MY_RAFFLES` and `RAFFLE_DETAIL` only. Revalidation in `@/lib/cache/revalidation`. React Query: `staleTime: Infinity`, auto-refetch disabled, manual invalidation.
 
 ## Imports
 
-- Direct paths preferred (`@/components/ui/button`)
-- Barrel re-exports (`index.ts`) only for cohesive modules (`@/lib/errors`, `@/types/errors`)
-- `lucide-react` uses barrel imports — relies on `optimizePackageImports` in `next.config.ts` for tree-shaking
+Direct paths (`@/components/ui/button`). Barrels only for cohesive modules (`@/lib/errors`, `@/types/errors`). `lucide-react` barrels tree-shaken via `optimizePackageImports`.
+
+## Testing
+
+Three tiers: unit (co-located `*.test.ts` in `src/`), integration (`tests/integration/`, uses `mock.module()`), E2E (`e2e/*.spec.ts`, Playwright). See `.claude/rules/testing.md` for full conventions.
 
 ## Next.js
 
-Before any Next.js work, find and read the relevant doc in `node_modules/next/dist/docs/`. Training data is outdated — the docs are the source of truth.
+Read relevant doc in `node_modules/next/dist/docs/` before any Next.js work.
 
 @AGENTS.md

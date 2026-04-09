@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { useTimeout } from '@/lib/hooks/use-timeout';
+import { DIALOG_EXIT_ANIMATION_MS } from '@/lib/ui-constants';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -50,11 +51,6 @@ interface ShippingFormModalProps {
 	onSuccess: (winning: Winning) => void;
 }
 
-/**
- * ShippingFormModal Component
- *
- * Modal for winner to submit their shipping address to claim the prize.
- */
 export function ShippingFormModal({
 	open,
 	onOpenChange,
@@ -73,9 +69,6 @@ export function ShippingFormModal({
 	const [isPending, startTransition] = useTransition();
 	const setCloseTimeout = useTimeout();
 
-	/**
-	 * Handles form submission
-	 */
 	function handleClaim(data: FormType) {
 		startTransition(async () => {
 			const result = await claimWinning(
@@ -105,15 +98,12 @@ export function ShippingFormModal({
 		});
 	}
 
-	/**
-	 * Resets form state when modal closes
-	 */
 	function handleOpenChange(newOpen: boolean) {
 		if (!newOpen) {
 			// Reset form after Dialog close animation completes
 			setCloseTimeout(() => {
 				reset();
-			}, 200);
+			}, DIALOG_EXIT_ANIMATION_MS);
 		}
 		onOpenChange(newOpen);
 	}
@@ -218,9 +208,6 @@ export function ShippingFormModal({
 	);
 }
 
-/**
- * Trophy icon for prize claim modal
- */
 function TrophyIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -239,9 +226,6 @@ function TrophyIcon(props: ComponentProps<'svg'>) {
 	);
 }
 
-/**
- * Left decorative colored cards SVG
- */
 function LeftColoredCard(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -268,9 +252,6 @@ function LeftColoredCard(props: ComponentProps<'svg'>) {
 	);
 }
 
-/**
- * Right decorative colored cards SVG
- */
 function RightColoredCard(props: ComponentProps<'svg'>) {
 	return (
 		<svg

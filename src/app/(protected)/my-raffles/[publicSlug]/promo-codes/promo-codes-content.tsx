@@ -178,6 +178,34 @@ export function PromoCodesContent({
 		return isRefreshing ? `${base} animate-spin` : base;
 	}
 
+	function handleRefresh() {
+		refetch();
+	}
+
+	function handleOpenExportModal() {
+		setIsExportModalOpen(true);
+	}
+
+	function handleCloseExportModal() {
+		setIsExportModalOpen(false);
+	}
+
+	function handleOpenCreateModal() {
+		setIsCreateModalOpen(true);
+	}
+
+	function handleCloseCreateModal() {
+		setIsCreateModalOpen(false);
+	}
+
+	function handlePreviousPage() {
+		goToPage(currentPage - 1);
+	}
+
+	function handleNextPage() {
+		goToPage(currentPage + 1);
+	}
+
 	return (
 		<div className="rounded-2xl bg-white p-6">
 			{/* Actions Header */}
@@ -188,7 +216,7 @@ export function PromoCodesContent({
 						<Button
 							variant="ghost"
 							size="icon-sm"
-							onClick={() => refetch()}
+							onClick={handleRefresh}
 							disabled={isRefreshing}
 							className="text-gray-500"
 						>
@@ -200,7 +228,7 @@ export function PromoCodesContent({
 				<div className="flex items-center gap-2">
 					{total > 0 ? (
 						<Button
-							onClick={() => setIsExportModalOpen(true)}
+							onClick={handleOpenExportModal}
 							className="cursor-pointer gap-1.5 rounded-full border-2 border-black bg-white px-6 font-semibold text-black hover:bg-black hover:text-white"
 						>
 							<Download className="size-4" />
@@ -210,7 +238,7 @@ export function PromoCodesContent({
 
 					{!isReadOnly ? (
 						<Button
-							onClick={() => setIsCreateModalOpen(true)}
+							onClick={handleOpenCreateModal}
 							className="font-clash-display hover:bg-background cursor-pointer border-2 border-black bg-black px-8 font-semibold hover:text-black"
 						>
 							<Plus className="size-4" />
@@ -240,7 +268,7 @@ export function PromoCodesContent({
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() => goToPage(currentPage - 1)}
+						onClick={handlePreviousPage}
 						disabled={currentPage === 1}
 					>
 						Previous
@@ -253,7 +281,7 @@ export function PromoCodesContent({
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={() => goToPage(currentPage + 1)}
+						onClick={handleNextPage}
 						disabled={currentPage === totalPages}
 					>
 						Next
@@ -264,7 +292,7 @@ export function PromoCodesContent({
 			{/* Modals */}
 			<CreatePromoCodeModal
 				isOpen={isCreateModalOpen}
-				onClose={() => setIsCreateModalOpen(false)}
+				onClose={handleCloseCreateModal}
 				onCreate={handleCreate}
 				onExportBatch={handleExportBatch}
 				allowFreeTickets={allowFreeTickets}
@@ -272,7 +300,7 @@ export function PromoCodesContent({
 
 			<ExportPromoCodesModal
 				isOpen={isExportModalOpen}
-				onClose={() => setIsExportModalOpen(false)}
+				onClose={handleCloseExportModal}
 				onExport={handleExport}
 			/>
 		</div>

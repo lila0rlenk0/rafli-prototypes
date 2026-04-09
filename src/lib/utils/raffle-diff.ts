@@ -4,7 +4,7 @@ import type {
 	UpdateRafflePayload,
 } from '@/types/raffle';
 
-import { extractCryptoFormFields } from './crypto-form';
+import { extractCryptoFormFields, type CryptoFormFields } from './crypto-form';
 
 /**
  * Form data structure for edit form
@@ -31,8 +31,99 @@ interface EditFormData {
 }
 
 /**
- * Computes the diff between original raffle data and current form data
- * Returns only the fields that have changed for partial update
+ * Diffs scalar raffle fields (title, description, price, category, dates, limits, question).
+ * Extracted from computeRaffleDiff to stay under the 30-SLOC function limit.
+ */
+function diffScalarFields(
+	original: Raffle,
+	current: EditFormData,
+	categoryId: string,
+	checkInQuestionId: string,
+): UpdateRafflePayload {
+	const diff: UpdateRafflePayload = {};
+
+	// Text fields
+	if (current.title !== original.title) diff.title = current.title;
+	if (current.description !== original.description)
+		diff.description = current.description;
+
+	// Numeric fields stored as strings — coerce form number to string for comparison
+	const currentDeclaredValue = current.price.toString();
+	if (currentDeclaredValue !== original.declaredValueAmount)
+		diff.declaredValueAmount = currentDeclaredValue;
+
+	if (categoryId !== original.categoryId) diff.categoryId = categoryId;
+
+	// Date/time — form stores separately, combine into ISO for comparison
+	const currentStartISO = new Date(
+		`${current.startDate}T${current.startTime || '00:00'}`,
+	).toISOString();
+	if (currentStartISO !== original.startAt) diff.startAt = currentStartISO;
+
+	const currentEndISO = new Date(
+		`${current.endDate}T${current.endTime || '00:00'}`,
+	).toISOString();
+	if (currentEndISO !== original.endAt) diff.endAt = currentEndISO;
+
+	const currentTicketPrice = current.pricePerTicket.toString();
+	if (currentTicketPrice !== original.ticketPriceAmount)
+		diff.ticketPriceAmount = currentTicketPrice;
+
+	// Participation limits
+	if (current.numberOfWinners !== original.numberOfWinners)
+		diff.numberOfWinners = current.numberOfWinners;
+	if (current.minParticipants !== original.minParticipants)
+		diff.minParticipants = current.minParticipants;
+	if (current.maxParticipants !== original.maxParticipants)
+		diff.maxParticipants = current.maxParticipants;
+
+	// Check-in question — empty string normalized for missing original
+	const originalQuestionId = original.questionId || '';
+	if (checkInQuestionId !== originalQuestionId)
+		diff.questionId = checkInQuestionId;
+
+	return diff;
+}
+
+/**
+ * Diffs crypto payment configuration between saved raffle and current form state.
+ * Uses JSON.stringify on sorted arrays — order is irrelevant for equality.
+ */
+function diffCryptoFields(
+	current: EditFormData,
+	originalCrypto: CryptoFormFields,
+): UpdateRafflePayload {
+	const diff: UpdateRafflePayload = {};
+
+	if (current.acceptsCrypto !== originalCrypto.acceptsCrypto)
+		diff.acceptsCrypto = current.acceptsCrypto;
+
+	// Sort both sides before JSON-stringifying — array order is irrelevant for equality
+	const currentChainIds = current.cryptoChainIds.toSorted();
+	const originalChainIds = originalCrypto.cryptoChainIds.toSorted();
+	if (JSON.stringify(currentChainIds) !== JSON.stringify(originalChainIds))
+		diff.cryptoChainIds = current.cryptoChainIds;
+
+	const currentTokenIds = current.cryptoTokens.toSorted();
+	const originalTokenIds = originalCrypto.cryptoTokens.toSorted();
+	if (JSON.stringify(currentTokenIds) !== JSON.stringify(originalTokenIds))
+		diff.cryptoTokens = current.cryptoTokens;
+
+	const currentPricing = current.cryptoTokenPricing.toSorted((a, b) =>
+		a.tokenId.localeCompare(b.tokenId),
+	);
+	const originalPricing = originalCrypto.cryptoTokenPricing.toSorted((a, b) =>
+		a.tokenId.localeCompare(b.tokenId),
+	);
+	if (JSON.stringify(currentPricing) !== JSON.stringify(originalPricing))
+		diff.cryptoTokenPricing = current.cryptoTokenPricing;
+
+	return diff;
+}
+
+/**
+ * Computes the diff between original raffle data and current form data.
+ * Returns only the fields that have changed for partial update.
  *
  * @param original - The original raffle from the API
  * @param current - The current form data
@@ -46,106 +137,19 @@ export function computeRaffleDiff(
 	categoryId: string,
 	checkInQuestionId: string,
 ): UpdateRafflePayload {
-	const diff: UpdateRafflePayload = {};
+	// Step 1: Diff scalar fields (text, numbers, dates, limits).
+	const scalarDiff = diffScalarFields(
+		original,
+		current,
+		categoryId,
+		checkInQuestionId,
+	);
 
-	// Compare title
-	if (current.title !== original.title) {
-		diff.title = current.title;
-	}
-
-	// Compare description
-	if (current.description !== original.description) {
-		diff.description = current.description;
-	}
-
-	// Compare declared value (convert form number to string for comparison)
-	const currentDeclaredValue = current.price.toString();
-	if (currentDeclaredValue !== original.declaredValueAmount) {
-		diff.declaredValueAmount = currentDeclaredValue;
-	}
-
-	// Compare category
-	if (categoryId !== original.categoryId) {
-		diff.categoryId = categoryId;
-	}
-
-	// Compare start datetime — form stores date (YYYY-MM-DD) + time (HH:mm) separately.
-	// Combine into a local datetime string and compare against the original ISO.
-	const currentStartISO = new Date(
-		`${current.startDate}T${current.startTime || '00:00'}`,
-	).toISOString();
-	if (currentStartISO !== original.startAt) {
-		diff.startAt = currentStartISO;
-	}
-
-	// Compare end datetime — same strategy as start
-	const currentEndISO = new Date(
-		`${current.endDate}T${current.endTime || '00:00'}`,
-	).toISOString();
-	if (currentEndISO !== original.endAt) {
-		diff.endAt = currentEndISO;
-	}
-
-	// Compare ticket price
-	const currentTicketPrice = current.pricePerTicket.toString();
-	if (currentTicketPrice !== original.ticketPriceAmount) {
-		diff.ticketPriceAmount = currentTicketPrice;
-	}
-
-	// Compare number of winners
-	if (current.numberOfWinners !== original.numberOfWinners) {
-		diff.numberOfWinners = current.numberOfWinners;
-	}
-
-	// Compare min participants
-	if (current.minParticipants !== original.minParticipants) {
-		diff.minParticipants = current.minParticipants;
-	}
-
-	// Compare max participants
-	if (current.maxParticipants !== original.maxParticipants) {
-		diff.maxParticipants = current.maxParticipants;
-	}
-
-	// Compare check-in question
-	const originalQuestionId = original.questionId || '';
-	if (checkInQuestionId !== originalQuestionId) {
-		diff.questionId = checkInQuestionId;
-	}
-
-	// Compare crypto config — extract original values from cryptoOptions
+	// Step 2: Diff crypto configuration (chains, tokens, pricing).
 	const originalCrypto = extractCryptoFormFields(original.cryptoOptions);
+	const cryptoDiff = diffCryptoFields(current, originalCrypto);
 
-	if (current.acceptsCrypto !== originalCrypto.acceptsCrypto) {
-		diff.acceptsCrypto = current.acceptsCrypto;
-	}
-
-	// Compare chain IDs (sorted for stable comparison)
-	const currentChainIds = current.cryptoChainIds.toSorted();
-	const originalChainIds = originalCrypto.cryptoChainIds.toSorted();
-	if (JSON.stringify(currentChainIds) !== JSON.stringify(originalChainIds)) {
-		diff.cryptoChainIds = current.cryptoChainIds;
-	}
-
-	// Compare token IDs (sorted for stable comparison)
-	const currentTokenIds = current.cryptoTokens.toSorted();
-	const originalTokenIds = originalCrypto.cryptoTokens.toSorted();
-	if (JSON.stringify(currentTokenIds) !== JSON.stringify(originalTokenIds)) {
-		diff.cryptoTokens = current.cryptoTokens;
-	}
-
-	// Compare token pricing (sorted by tokenId for stable comparison)
-	const currentPricing = current.cryptoTokenPricing.toSorted((a, b) =>
-		a.tokenId.localeCompare(b.tokenId),
-	);
-	const originalPricing = originalCrypto.cryptoTokenPricing.toSorted((a, b) =>
-		a.tokenId.localeCompare(b.tokenId),
-	);
-	if (JSON.stringify(currentPricing) !== JSON.stringify(originalPricing)) {
-		diff.cryptoTokenPricing = current.cryptoTokenPricing;
-	}
-
-	return diff;
+	return { ...scalarDiff, ...cryptoDiff };
 }
 
 /**

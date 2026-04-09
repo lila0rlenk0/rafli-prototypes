@@ -8,13 +8,12 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapPaymentError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
-
-// ==========================================
-// Schema
-// ==========================================
 
 /**
  * Stripe session status — backend-verified, not blindly trusting the redirect.
@@ -26,10 +25,6 @@ const stripeSessionStatusSchema = z.object({
 });
 
 export type StripeSessionStatus = z.infer<typeof stripeSessionStatusSchema>;
-
-// ==========================================
-// Server Action
-// ==========================================
 
 /**
  * Verifies a Stripe checkout session's actual payment status.
@@ -47,14 +42,16 @@ export async function getStripeSessionStatus(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Verify session status against Stripe API (backend-verified, not from redirect URL)
 		const response = await authenticatedClient.get(
 			`/payments/stripe/sessions/${encodeURIComponent(sessionId)}/status`,
 			{ timeout: API_TIMEOUTS.QUERY },
 		);
 
+		// Step 2: Validate response shape
 		const data = stripeSessionStatusSchema.parse(response.data);
 
-		// Track purchase completed when Stripe confirms payment
+		// Step 3: Track purchase completed when Stripe confirms payment
 		if (data.status === 'paid') {
 			void sessionPromise.then(session =>
 				trackServer(
@@ -69,7 +66,7 @@ export async function getStripeSessionStatus(
 			);
 		}
 
-		// Track Stripe failures — expired sessions or unpaid terminal states
+		// Step 4: Track Stripe failures — expired sessions or unpaid terminal states
 		if (data.status === 'expired') {
 			void sessionPromise.then(session =>
 				trackServer(
@@ -92,6 +89,12 @@ export async function getStripeSessionStatus(
 			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
 		}
 
-		return failure(mapPaymentError(error));
+		// Payment is a critical service — capture for Sentry alerting
+		const errorCode = mapPaymentError(error);
+		captureServiceError(error, errorCode, {
+			service: 'payment',
+			action: 'get-stripe-session-status',
+		});
+		return failure(errorCode);
 	}
 }

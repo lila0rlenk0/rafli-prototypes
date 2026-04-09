@@ -49,25 +49,29 @@ function slugifyTitle(title: string): string {
  * Uses a simple hash of the title to create a consistent suffix for preview.
  *
  * The actual backend uses randomBytes, but for preview we want consistency.
+ *
+ * @param title - The title to hash
+ * @returns 5-char alphanumeric suffix string
  */
 function generateDeterministicSuffix(title: string): string {
 	const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
-	// Simple hash function for deterministic suffix
+	// DJB2 variant — (hash << 5) - hash is equivalent to hash * 31.
+	// 31 is a Mersenne prime producing good distribution for short strings.
 	let hash = 0;
 	for (let i = 0; i < title.length; i++) {
-		const char = title.charCodeAt(i);
-		hash = (hash << 5) - hash + char;
-		hash = hash & hash; // Convert to 32-bit integer
+		const charCode = title.charCodeAt(i);
+		hash = (hash << 5) - hash + charCode;
+		hash = hash & hash; // Clamp to 32-bit integer
 	}
 
-	// Generate 5 characters from hash
-	let result = '';
+	// Spread hash across SLUG_SUFFIX_LENGTH positions using prime stride (31)
+	// to avoid clustering when hash values are close.
+	let suffix = '';
 	for (let i = 0; i < SLUG_SUFFIX_LENGTH; i++) {
-		// Use absolute value and modulo to get index
 		const index = Math.abs(hash + i * 31) % chars.length;
-		result += chars[index];
+		suffix += chars[index];
 	}
 
-	return result;
+	return suffix;
 }

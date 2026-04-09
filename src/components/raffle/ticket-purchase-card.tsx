@@ -17,9 +17,6 @@ import type { RaffleCryptoOptions } from '@/types/raffle';
 import { SignInToBuyButton } from './sign-in-button';
 import { TicketSelector } from './ticket-selector';
 
-/**
- * Props for TicketPurchaseCard
- */
 interface TicketPurchaseCardProps {
 	raffleId: string;
 	publicSlug: string;
@@ -40,17 +37,7 @@ interface TicketPurchaseCardProps {
 }
 
 /**
- * TicketPurchaseCard Component
- *
- * Orchestrates the ticket purchase flow by managing the ticket quantity state
- * and coordinating between the TicketSelector, PromoCodeInput, and BuyButton.
- *
- * Displays:
- * - Price per ticket
- * - Ticket quantity selector with +/- and bundle buttons
- * - Promo code input with validation
- * - Total price calculation with discount breakdown
- * - Purchase button with selected quantity
+ * Orchestrates the ticket purchase flow: quantity selection, promo codes, and buy CTAs.
  */
 export function TicketPurchaseCard({
 	raffleId,
@@ -81,12 +68,6 @@ export function TicketPurchaseCard({
 	);
 	const [promoResetSignal, setPromoResetSignal] = useState(0);
 
-	/**
-	 * Formats a price value with currency symbol
-	 * @param amount - The price amount
-	 * @param currencyCode - Currency code (e.g., "USD")
-	 * @returns Formatted price string
-	 */
 	function formatPrice(amount: number, currencyCode: string): string {
 		return new Intl.NumberFormat('en-US', {
 			style: 'currency',
@@ -96,23 +77,17 @@ export function TicketPurchaseCard({
 		}).format(amount);
 	}
 
-	/**
-	 * Calculates the subtotal (before discount)
-	 * @returns Subtotal price
-	 */
 	function calculateSubtotal(): number {
 		return ticketQuantity * price;
 	}
 
 	/**
-	 * Calculates discount amount based on promo type
+	 * Calculates discount amount based on promo type.
 	 *
 	 * Backend returns:
 	 * - discount_percent: per-ticket discount amount (NOT the percentage)
-	 * - discount_fixed: total fixed discount amount
-	 * - free_tickets: number of tickets
-	 *
-	 * @returns Discount amount in currency units
+	 * - discount_fixed: total fixed discount
+	 * - free_tickets: number of tickets (full price discount)
 	 */
 	function calculateDiscount(): number {
 		if (!appliedPromo) return 0;
@@ -134,27 +109,16 @@ export function TicketPurchaseCard({
 		}
 	}
 
-	/**
-	 * Calculates final total after discount
-	 * @returns Final total price
-	 */
 	function calculateTotal(): number {
 		return Math.max(0, calculateSubtotal() - calculateDiscount());
 	}
 
-	/**
-	 * Checks if current promo is free tickets type
-	 * @returns True if promo grants free tickets
-	 */
 	function isFreeTicketsPromo(): boolean {
 		return appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
 	}
 
 	/**
-	 * Gets the ticket quantity for free tickets promo.
 	 * Accepts optional promo override for pre-setState contexts where appliedPromo hasn't settled.
-	 * @param promo - Optional promo to use instead of current appliedPromo state
-	 * @returns Number of free tickets from promo
 	 */
 	function getFreeTicketCount(promo?: ValidatedPromoCode): number {
 		const source = promo ?? appliedPromo;
@@ -162,50 +126,35 @@ export function TicketPurchaseCard({
 		return Math.floor(parseFloat(source.value));
 	}
 
-	/**
-	 * Handles valid promo code.
-	 * Stable reference — prevents PromoCodeInput's auto-validation effect from
-	 * being cancelled by parent re-renders (countdown timer, hydration, etc.).
-	 */
+	// useCallback: stable identity prevents PromoCodeInput's auto-validation effect from
+	// being cancelled by parent re-renders (countdown timer, hydration, etc.).
+	// No deps — setAppliedPromo and setTicketQuantity are stable dispatch functions.
 	const handleValidPromo = useCallback((promo: ValidatedPromoCode) => {
-		// Step 1: Store validated promo.
 		setAppliedPromo(promo);
 
-		// Step 2: Sync ticket quantity for free tickets.
+		// Sync quantity when promo grants free tickets (quantity is locked to the promo value)
 		if (promo.type === PROMO_CODE_TYPE.FREE_TICKETS) {
 			const count = Math.floor(parseFloat(promo.value));
 			setTicketQuantity(count);
 		}
 	}, []);
 
-	/**
-	 * Handles promo code removal
-	 */
 	function handleClearPromo() {
-		// Step 1: Clear promo and reset quantity.
 		setAppliedPromo(null);
 		setTicketQuantity(1);
 	}
 
-	/**
-	 * Handles promo invalidation from checkout flow.
-	 * Keeps quantity for discount promos; resets for free-ticket promos.
-	 */
+	// Keeps quantity for discount promos; resets for free-ticket promos.
 	function handlePromoInvalid() {
-		// Step 1: Clear promo and notify input to reset.
 		const wasFreeTickets = appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
 		setAppliedPromo(null);
 		setPromoResetSignal(prev => prev + 1);
 
 		if (wasFreeTickets) {
-			// Step 2: Reset quantity for free-ticket promos.
 			setTicketQuantity(1);
 		}
 	}
 
-	/**
-	 * Removes promo code from URL after redemption
-	 */
 	function clearPromoCodeFromUrl() {
 		const params = new URLSearchParams(searchParams.toString());
 		params.delete('code');
@@ -217,12 +166,7 @@ export function TicketPurchaseCard({
 		window.history.replaceState(null, '', nextUrl);
 	}
 
-	/**
-	 * Handles successful promo redemption (free tickets).
-	 * Reuses handlePromoInvalid because post-redemption cleanup
-	 * (clear promo, bump reset signal, reset quantity) is identical
-	 * to invalidation cleanup.
-	 */
+	// Reuses handlePromoInvalid — post-redemption cleanup is identical to invalidation cleanup.
 	function handlePromoRedeemed() {
 		clearPromoCodeFromUrl();
 		handlePromoInvalid();
@@ -249,11 +193,7 @@ export function TicketPurchaseCard({
 	const creditBalance = availableCredits ? parseFloat(availableCredits) : 0;
 	const showCreditsOption = creditBalance > 0 && !isFree && total > 0;
 
-	/**
-	 * Final-10-minute warning copy.
-	 * We keep it next to the CTAs so the user sees the risk at decision time,
-	 * not only in the countdown at the top of the card.
-	 */
+	// Near-CTA placement so user sees the risk at decision time, not only in the countdown.
 	function getClosingSoonWarning(): string {
 		const baseMessage =
 			'Raffle closes soon. Purchases stay open until the countdown ends. Start checkout now to avoid missing the cutoff.';
@@ -309,7 +249,7 @@ export function TicketPurchaseCard({
 
 			<Separator className="my-4 bg-[#B4B4B4]" />
 
-			{/* Price breakdown */}
+			{/* Price breakdown — only show subtotal/discount when there's a non-free discount */}
 			{hasDiscount && !isFree ? (
 				<>
 					<div className="flex items-center justify-between text-sm">
@@ -361,34 +301,38 @@ export function TicketPurchaseCard({
 					/>
 
 					{/* Credits buy button — shown when user has credits and order costs money */}
-					{showCreditsOption && availableCredits ? (
-						<CreditsBuyButton
-							raffleId={raffleId}
-							ticketQuantity={ticketQuantity}
-							disabled={disabled}
-							questionId={questionId}
-							promoCode={appliedPromo?.code}
-							onPromoInvalid={handlePromoInvalid}
-							availableCredits={availableCredits}
-							orderTotal={total}
-							currency={currency}
-						/>
+					{showCreditsOption ? (
+						availableCredits ? (
+							<CreditsBuyButton
+								raffleId={raffleId}
+								ticketQuantity={ticketQuantity}
+								disabled={disabled}
+								questionId={questionId}
+								promoCode={appliedPromo?.code}
+								onPromoInvalid={handlePromoInvalid}
+								availableCredits={availableCredits}
+								orderTotal={total}
+								currency={currency}
+							/>
+						) : null
 					) : null}
 
 					{/* Crypto buy button — only when raffle has crypto options AND Web3 is configured */}
-					{cryptoOptions && hasSelectableCryptoPaymentOption ? (
-						<CryptoBuyButton
-							raffleId={raffleId}
-							endAt={endAt}
-							ticketQuantity={ticketQuantity}
-							disabled={disabled}
-							questionId={questionId}
-							promoCode={appliedPromo?.code}
-							onPromoInvalid={handlePromoInvalid}
-							cryptoOptions={cryptoOptions}
-							myTicketsTotal={myTicketsTotal}
-							userId={userId}
-						/>
+					{cryptoOptions ? (
+						hasSelectableCryptoPaymentOption ? (
+							<CryptoBuyButton
+								raffleId={raffleId}
+								endAt={endAt}
+								ticketQuantity={ticketQuantity}
+								disabled={disabled}
+								questionId={questionId}
+								promoCode={appliedPromo?.code}
+								onPromoInvalid={handlePromoInvalid}
+								cryptoOptions={cryptoOptions}
+								myTicketsTotal={myTicketsTotal}
+								userId={userId}
+							/>
+						) : null
 					) : null}
 				</>
 			) : (

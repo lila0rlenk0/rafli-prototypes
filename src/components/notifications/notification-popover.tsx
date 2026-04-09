@@ -16,25 +16,19 @@ import { useNotificationStore } from '@/providers/notification-store-provider';
 import { useMarkAllNotificationsRead } from '@/services/notification/use-mark-all-read';
 import { useNotifications } from '@/services/notification/use-notifications';
 
-/**
- * Notification popover with bell trigger and notifications list
- * Fetches notifications on-demand when opened
- */
 export function NotificationPopover() {
 	const [open, setOpen] = useState(false);
 
 	const unreadCount = useNotificationStore(s => s.unreadCount);
 	const clearUnreadCount = useNotificationStore(s => s.clearUnreadCount);
 
+	// Fetch notifications only when popover is open — avoids unnecessary API calls on every page load
 	const { data, isLoading } = useNotifications({
 		limit: 20,
 		enabled: open,
 	});
 	const markAllRead = useMarkAllNotificationsRead();
 
-	/**
-	 * Marks all notifications as read
-	 */
 	function handleMarkAllRead() {
 		markAllRead.mutate(undefined, {
 			onSuccess() {
@@ -43,9 +37,6 @@ export function NotificationPopover() {
 		});
 	}
 
-	/**
-	 * Closes the popover
-	 */
 	function handleClose() {
 		setOpen(false);
 	}

@@ -23,20 +23,22 @@ export async function saveAuthToken(
 	token: string,
 ): Promise<SaveAuthTokenResponse> {
 	try {
+		// Step 1: Guard — empty token means OAuth callback failed upstream
 		if (!token) {
 			return failure(AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED);
 		}
 
-		// Decode JWT and extract user data
+		// Step 2: Decode JWT payload to extract user data (throws on malformed tokens)
 		const payload = decodeJwt(token);
 		const user = jwtPayloadToUser(payload);
 
-		// Set raffly auth cookies on frontend domain
+		// Step 3: Persist token + user into httpOnly/client-readable cookies
+		// Side-effects: sets raffly-token (httpOnly) and raffly-session cookies
 		await setAuthCookies(token, user);
 
 		return success(undefined);
 	} catch (error) {
-		// JWT decode or cookie-setting failure — critical auth path
+		// Step 4: JWT decode or cookie-setting failure — critical auth path
 		captureServiceError(error, AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED, {
 			service: 'auth',
 			action: 'save-auth-token',

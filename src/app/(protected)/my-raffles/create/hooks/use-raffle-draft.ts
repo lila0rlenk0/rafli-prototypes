@@ -16,23 +16,15 @@ export function useRaffleDraft() {
 	const [draft, setDraft] = useState<RaffleDraftData | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
-	/**
-	 * Checks if a draft has expired based on savedAt timestamp
-	 * @param savedAt - ISO date string when draft was saved
-	 * @returns true if draft is older than 7 days
-	 */
 	function isDraftExpired(savedAt: string): boolean {
 		const savedDate = new Date(savedAt);
 		const now = new Date();
 		const diffTime = now.getTime() - savedDate.getTime();
-		const diffDays = diffTime / (1_000 * 60 * 60 * 24); // 7 days
+		const diffDays = diffTime / (1_000 * 60 * 60 * 24);
 		return diffDays >= DRAFT_EXPIRATION_DAYS;
 	}
 
-	/**
-	 * Loads draft from localStorage on mount
-	 * Validates with Zod schema and checks expiration
-	 */
+	// mount: load and validate draft from localStorage
 	useEffect(() => {
 		if (typeof window === 'undefined') {
 			setIsLoading(false);
@@ -73,10 +65,7 @@ export function useRaffleDraft() {
 	}, []);
 
 	/**
-	 * Saves draft data to localStorage
-	 * Does not update state to avoid triggering the load effect
-	 * @param data - Partial raffle form data to save
-	 * @param currentStep - Current step index to restore position
+	 * Persists draft to localStorage without updating state (avoids re-triggering the load effect).
 	 */
 	const saveDraft = useCallback(
 		(data: Omit<RaffleDraftData, 'savedAt'>, currentStep: number) => {
@@ -97,9 +86,6 @@ export function useRaffleDraft() {
 		[],
 	);
 
-	/**
-	 * Clears draft from localStorage
-	 */
 	const clearDraft = useCallback(() => {
 		if (typeof window === 'undefined') return;
 

@@ -2,44 +2,24 @@ import Link from 'next/link';
 
 import { OrderStatusBadge } from '@/components/order/status-badge';
 import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/utils/date-format';
 import type { OrderWithRaffle } from '@/types/order';
 
-/**
- * Props for OrdersTable
- */
 interface OrdersTableProps {
 	orders: OrderWithRaffle[];
 }
 
+function formatAmount(amount: string, currency: string): string {
+	return new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency,
+	}).format(parseFloat(amount));
+}
+
 /**
- * OrdersTable Component
- *
- * Renders orders in a table format with links to details.
- * Responsive: stacks on mobile, table on desktop.
+ * Orders in a responsive table with links to detail pages.
  */
 export function OrdersTable({ orders }: OrdersTableProps) {
-	/**
-	 * Formats decimal string to currency display
-	 */
-	function formatAmount(amount: string, currency: string): string {
-		const value = parseFloat(amount);
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency,
-		}).format(value);
-	}
-
-	/**
-	 * Formats ISO date to readable format
-	 */
-	function formatDate(date: string): string {
-		return new Date(date).toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
-		});
-	}
-
 	if (orders.length === 0) {
 		return (
 			<p className="text-muted-foreground py-8 text-center text-sm">

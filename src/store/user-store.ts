@@ -5,32 +5,41 @@ import { setUserModeCookie } from '@/lib/mode/cookies';
 import { PERMISSIONS } from '@/lib/permissions';
 import { USER_MODE, type Permission, type UserMode } from '@/types/user-mode';
 
+// --- State & Action interfaces ---
+// Separated so the provider can type the initial state without actions.
+
 export interface UserStoreState {
-	mode: UserMode | null; // null = not yet initialized
-	permissions: Permission[];
+	readonly mode: UserMode | null; // null = not yet initialized from localStorage
+	readonly permissions: readonly Permission[];
 }
 
 export interface UserStoreActions {
-	switchMode: () => Promise<void>;
-	hasPermission: (permission: Permission) => boolean;
-	canSwitchMode: () => boolean;
-	setPermissions: (permissions: Permission[]) => void;
-	initializeMode: () => void;
-	reset: () => void;
+	readonly switchMode: () => Promise<void>;
+	readonly hasPermission: (permission: Permission) => boolean;
+	readonly canSwitchMode: () => boolean;
+	readonly setPermissions: (permissions: readonly Permission[]) => void;
+	readonly initializeMode: () => void;
+	readonly reset: () => void;
 }
 
 export type UserStore = UserStoreState & UserStoreActions;
 
-export const defaultInitState: UserStoreState = {
-	mode: null, // null means not yet initialized
+/** localStorage key used by zustand persist — must be stable across deploys */
+const PERSIST_STORAGE_KEY = 'raffly-user-store';
+
+/** Default state — null mode until hydrated from localStorage */
+export const defaultInitState: Readonly<UserStoreState> = {
+	mode: null,
 	permissions: [],
 };
 
 /**
- * Creates a new user store instance
+ * Creates a vanilla Zustand store for user mode and permission state.
+ * Persisted to localStorage via zustand/middleware so the host/participant
+ * preference survives page reloads. Cookie is kept in sync for SSR.
  *
  * @param initState - Initial state for the store
- * @returns Zustand store instance
+ * @returns Zustand vanilla store instance with persistence middleware
  */
 export function createUserStore(initState: UserStoreState = defaultInitState) {
 	return createStore<UserStore>()(
@@ -64,33 +73,17 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 					await setUserModeCookie(newMode);
 				},
 
-				/**
-				 * Check if user has a specific permission
-				 *
-				 * @param permission - Permission to check
-				 * @returns true if user has the permission
-				 */
 				hasPermission: permission => {
 					const { permissions } = get();
 					return permissions.includes(permission);
 				},
 
-				/**
-				 * Check if user can switch between modes
-				 * Requires raffle:create permission
-				 *
-				 * @returns true if user can switch modes
-				 */
+				// raffle:create is the gate for hosting — no other permission grants mode switch
 				canSwitchMode: () => {
 					const { hasPermission } = get();
 					return hasPermission(PERMISSIONS.RAFFLE_CREATE);
 				},
 
-				/**
-				 * Update user permissions from server
-				 *
-				 * @param permissions - New permissions array
-				 */
 				setPermissions: permissions => {
 					set({ permissions });
 				},
@@ -124,16 +117,13 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 					setUserModeCookie(effectiveMode).catch(console.error);
 				},
 
-				/**
-				 * Reset store to default state
-				 * Should be called on sign out to clear persisted data
-				 */
+				// Called on sign-out — clears persisted mode so next user starts fresh
 				reset: () => {
 					set({ mode: null, permissions: [] });
 				},
 			}),
 			{
-				name: 'raffly-user-store',
+				name: PERSIST_STORAGE_KEY,
 				storage: createJSONStorage(() => {
 					// Return a no-op storage during SSR
 					if (typeof window === 'undefined') {

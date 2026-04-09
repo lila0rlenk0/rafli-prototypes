@@ -62,21 +62,20 @@ export function UpdateFormProvider({
 	});
 
 	/**
-	 * Handles form submission using two-phase flow:
-	 * 1. Creates update with text only
-	 * 2. Uploads images to the created update (if any)
+	 * Two-phase submit pipeline:
+	 * Step 1: Create the update record (text only) via server action.
+	 * Step 2: Upload images to the created update (if any provided).
+	 * Redirects even if image upload fails — update record already exists.
 	 *
-	 * @param data - Validated form data
+	 * Side-effects: revalidates raffle detail cache. Redirects to raffle browse page.
 	 */
 	const handleSubmit = useCallback(
 		async (data: UpdateFormData) => {
 			setIsSubmitting(true);
 
 			try {
-				// Phase 1: Create the update with text only
-				const createResult = await createUpdate(raffleId, {
-					text: data.text,
-				});
+				// Step 1: Create the update record with text only
+				const createResult = await createUpdate(raffleId, { text: data.text });
 
 				if (!createResult.success) {
 					toast.error('Failed to create update. Please try again.');
@@ -86,13 +85,12 @@ export function UpdateFormProvider({
 
 				const updateId = createResult.data.id;
 
-				// Phase 2: Upload images if any
+				// Step 2: Upload images if provided
 				if (data.images && data.images.length > 0) {
 					const uploadResult = await uploadUpdateImages(updateId, data.images);
 
 					if (!uploadResult.success) {
-						// Update was created but images failed
-						// Show warning but still redirect since update exists
+						// Update exists — redirect with warning so host can retry images later
 						toast.warning(
 							'Update posted, but some images failed to upload. You can try adding them later.',
 						);
@@ -103,11 +101,7 @@ export function UpdateFormProvider({
 				}
 
 				toast.success('Update posted successfully!');
-
-				// Reset form
 				form.reset();
-
-				// Redirect to raffle page
 				router.push(`/browse/${publicSlug}`);
 			} catch (error) {
 				console.error('Create update error:', error);

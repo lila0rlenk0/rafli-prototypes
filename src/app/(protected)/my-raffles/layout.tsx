@@ -1,5 +1,13 @@
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
+/**
+ * My Raffles Layout
+ *
+ * Wraps my-raffles pages with decorative background shapes
+ * positioned at the bottom-left and bottom-right of the viewport.
+ *
+ * @returns Children with fixed colored shapes behind content
+ */
 export default function MyRafflesLayout({
 	children,
 }: {

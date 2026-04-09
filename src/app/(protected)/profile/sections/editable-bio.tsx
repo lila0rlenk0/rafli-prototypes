@@ -8,59 +8,35 @@ import { Check, Pencil, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-/**
- * Props for the EditableBio component
- */
 interface EditableBioProps {
-	/**
-	 * The current bio text
-	 */
 	bio?: string | null;
 }
 
-/**
- * Maximum character limit for bio
- */
+/** Backend constraint — sanitizeText + max 500 chars */
 const BIO_MAX_LENGTH = 500;
 
 /**
- * EditableBio Component
- *
- * Displays a user bio with inline editing capability.
- * Shows a placeholder text when no bio is available.
- * On click of pencil icon, switches to edit mode with a textarea.
- *
- * @param bio - Optional current bio text
+ * Inline-editable bio field. Shows textarea on pencil click; reverts on cancel.
  */
 export function EditableBio({ bio }: EditableBioProps) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [bioValue, setBioValue] = useState(bio ?? '');
 	const [isUpdating, setIsUpdating] = useState(false);
 
-	/**
-	 * Handles entering edit mode
-	 */
 	function handleEditClick() {
 		setBioValue(bio ?? '');
 		setIsEditing(true);
 	}
 
-	/**
-	 * Handles cancelling edit mode
-	 */
 	function handleCancelClick() {
 		if (isUpdating) return;
 		setIsEditing(false);
 		setBioValue(bio ?? '');
 	}
 
-	/**
-	 * Handles saving the bio
-	 */
 	async function handleSaveClick() {
 		if (isUpdating) return;
 
-		// Validate length
 		if (bioValue.length > BIO_MAX_LENGTH) {
 			toast.error(`Bio must be ${BIO_MAX_LENGTH} characters or less`);
 			return;
@@ -77,10 +53,7 @@ export function EditableBio({ bio }: EditableBioProps) {
 			}
 
 			toast.success('Bio updated successfully!');
-
-			// Revalidate profile cache
 			await revalidateProfile();
-
 			setIsEditing(false);
 		} catch (error) {
 			console.error('Unexpected error during bio update:', error);
@@ -90,9 +63,6 @@ export function EditableBio({ bio }: EditableBioProps) {
 		}
 	}
 
-	/**
-	 * Handles textarea value change
-	 */
 	function handleBioChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
 		setBioValue(event.target.value);
 	}

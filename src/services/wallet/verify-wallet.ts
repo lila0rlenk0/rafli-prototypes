@@ -9,7 +9,10 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapWalletError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { WALLET_ERROR_CODES, type WalletErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import type { VerifyWalletPayload, WalletResponse } from '@/types/wallet';
@@ -27,14 +30,17 @@ export async function verifyWallet(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Submit EIP-191 signed payload for backend verification
 		const response = await authenticatedClient.post(
 			'/me/wallets/verify',
 			payload,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
+		// Step 2: Validate response shape
 		const wallet = walletResponseSchema.parse(response.data);
 
+		// Step 3: Non-blocking analytics — wallet verification success
 		runAfter(async () => {
 			const userId = (await sessionPromise)?.user?.id;
 
@@ -53,6 +59,12 @@ export async function verifyWallet(
 		}
 
 		const errorCode = mapWalletError(error);
+
+		// Wallet is a critical service — capture for Sentry alerting
+		captureServiceError(error, errorCode, {
+			service: 'wallet',
+			action: 'verify-wallet',
+		});
 
 		// Track wallet verification failure — measures Web3 onboarding friction
 		runAfter(async () => {

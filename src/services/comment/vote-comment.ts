@@ -33,13 +33,16 @@ export async function voteComment(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Submit vote — backend toggles: same direction twice removes the vote
 		const response = await authenticatedClient.post(
 			`/comments/${commentId}/vote`,
 			{ voteType: type },
 		);
+
+		// Step 2: Validate response shape
 		const validated = voteResponseSchema.parse(response.data);
 
-		// Fire-and-forget — don't block vote UX
+		// Step 3: Fire-and-forget analytics — don't block vote UX
 		void sessionPromise.then(session =>
 			trackServer(
 				COMMENT_EVENTS.VOTED,

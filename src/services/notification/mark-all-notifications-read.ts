@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapNotificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -12,29 +14,20 @@ import {
 	markReadResponseSchema,
 } from '@/types/notification';
 import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
 
 /**
- * Response type for marking all notifications as read
- */
-type MarkAllNotificationsReadResponse = ServiceResponse<
-	MarkReadResponse,
-	NotificationErrorCode
->;
-
-/**
- * Marks all notifications as read for the current user
+ * Marks all notifications as read for the current user.
  *
  * @returns ServiceResponse with success status
  */
-export async function markAllNotificationsRead(): Promise<MarkAllNotificationsReadResponse> {
+export async function markAllNotificationsRead(): Promise<
+	ServiceResponse<MarkReadResponse, NotificationErrorCode>
+> {
 	try {
 		const response = await authenticatedClient.post(
 			'/me/notifications/read-all',
 		);
-
-		const validated = markReadResponseSchema.parse(response.data);
-		return success(validated);
+		return success(markReadResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(

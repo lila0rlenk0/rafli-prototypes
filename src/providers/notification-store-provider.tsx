@@ -13,23 +13,28 @@ import {
 	type NotificationStore,
 } from '@/store/notification-store';
 
+/**
+ * Broad query key prefix — invalidates all notification queries (list, count, etc.)
+ * Matches the first segment of keys produced by `notificationsKey()` in use-notifications.
+ */
+const NOTIFICATION_QUERY_PREFIX = 'notification' as const;
+
 export type NotificationStoreApi = ReturnType<typeof createNotificationStore>;
 
+// Context lives at the authenticated layout level — only mounted when the
+// user is signed in, so unauthenticated pages never pay for the WebSocket.
 export const NotificationStoreContext = createContext<
 	NotificationStoreApi | undefined
 >(undefined);
 
 export interface NotificationStoreProviderProps {
-	children: ReactNode;
+	readonly children: ReactNode;
 }
 
 /**
- * NotificationStoreProvider Component
- *
- * Provides the Zustand notification store to all child components via Context.
- * Uses WebSocket for real-time updates.
- * The effect owns the stream for the mount lifecycle, so local callbacks are
- * enough and no extra refs are needed.
+ * Provides notification store and owns the WebSocket stream lifecycle.
+ * Scope: wraps the authenticated layout — children include the header
+ * badge and notification drawer, both of which consume the store.
  *
  * @param children - Child components
  * @returns Provider wrapping children with notification store context
@@ -37,12 +42,17 @@ export interface NotificationStoreProviderProps {
 export function NotificationStoreProvider({
 	children,
 }: NotificationStoreProviderProps) {
+	// useState initializer — store is created once per provider mount
 	const [store] = useState(() => createNotificationStore());
 	const queryClient = useQueryClient();
 
+	// mount: fetch initial unread count + establish WebSocket stream.
+	// Deps are stable references (store instance and queryClient singleton)
+	// so this only runs on mount/unmount.
 	useEffect(() => {
 		let isMounted = true;
 
+		// Step 1: Fetch initial unread count from the server
 		async function fetchUnreadCount() {
 			const result = await getUnreadCount();
 			if (result.success && isMounted) {
@@ -50,13 +60,17 @@ export function NotificationStoreProvider({
 			}
 		}
 
-		function handleNewNotification() {
+		// Step 2: Shared handler for WebSocket events — both new-notification
+		// and reconnect need a fresh count + React Query cache bust so the
+		// notification list re-fetches.
+		function handleNotificationEvent() {
 			void fetchUnreadCount();
 			void queryClient.invalidateQueries({
-				queryKey: ['notification'],
+				queryKey: [NOTIFICATION_QUERY_PREFIX],
 			});
 		}
 
+		// Step 3: Acquire a short-lived WS token via server action
 		async function getToken() {
 			const result = await getWsToken();
 
@@ -73,23 +87,18 @@ export function NotificationStoreProvider({
 			return result.data;
 		}
 
+		// Step 4: Kick off initial fetch and open the stream
 		void fetchUnreadCount();
 
-		function handleReconnected() {
-			void fetchUnreadCount();
-			void queryClient.invalidateQueries({
-				queryKey: ['notification'],
-			});
-		}
-
 		const stream = new NotificationStream({
-			onNewNotification: handleNewNotification,
-			onReconnected: handleReconnected,
+			onNewNotification: handleNotificationEvent,
+			onReconnected: handleNotificationEvent,
 			getToken,
 		});
 
 		void stream.connect();
 
+		// Cleanup: disconnect WebSocket on unmount (sign-out / layout change)
 		return () => {
 			isMounted = false;
 			stream.disconnect();
@@ -104,7 +113,7 @@ export function NotificationStoreProvider({
 }
 
 /**
- * Hook to access the notification store
+ * Typed selector hook for the notification store.
  *
  * @param selector - Selector function to extract data from store
  * @returns Selected data from store
@@ -113,13 +122,13 @@ export function NotificationStoreProvider({
 export function useNotificationStore<T>(
 	selector: (store: NotificationStore) => T,
 ): T {
-	const notificationStoreContext = use(NotificationStoreContext);
+	const ctx = use(NotificationStoreContext);
 
-	if (!notificationStoreContext) {
+	if (!ctx) {
 		throw new Error(
 			`useNotificationStore must be used within NotificationStoreProvider`,
 		);
 	}
 
-	return useStore(notificationStoreContext, selector);
+	return useStore(ctx, selector);
 }

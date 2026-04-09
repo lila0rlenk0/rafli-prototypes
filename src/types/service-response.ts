@@ -1,13 +1,10 @@
 /**
- * Service Response Types
+ * Generic service response type for all server actions.
+ * Discriminated union — narrow via `result.success` before accessing `result.data`.
  *
- * Generic type definitions for all server action responses.
- * Uses discriminated union pattern for type-safe error handling.
- */
-
-/**
- * Generic service response type for all server actions
- * Uses discriminated union pattern for type-safe error handling
+ * All server actions return this shape. Components check `result.success` to
+ * narrow into the data or error branch. Helper constructors `success()` and
+ * `failure()` live in `@/lib/errors/error-handler` to avoid circular deps.
  *
  * @template TData - The type of successful response data
  * @template TErrorCode - Union type of possible error codes (defaults to string)
@@ -22,24 +19,14 @@ export type ServiceResponse<TData, TErrorCode extends string = string> =
 	| ServiceSuccess<TData>
 	| ServiceFailure<TErrorCode>;
 
-/**
- * Success response shape
- * Contains the data returned by the service action
- *
- * @template TData - The type of the data payload
- */
+/** Success branch of ServiceResponse — `data` is available after narrowing on `success: true`. */
 export type ServiceSuccess<TData> = {
-	success: true;
-	data: TData;
+	readonly success: true;
+	readonly data: TData;
 };
 
-/**
- * Failure response shape with typed error code
- * Contains an error code that can be used to display appropriate messages
- *
- * @template TErrorCode - Union type of possible error codes
- */
+/** Failure branch of ServiceResponse — `error` is a typed error code after narrowing on `success: false`. */
 export type ServiceFailure<TErrorCode extends string> = {
-	success: false;
-	error: TErrorCode;
+	readonly success: false;
+	readonly error: TErrorCode;
 };

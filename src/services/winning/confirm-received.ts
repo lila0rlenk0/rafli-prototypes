@@ -15,15 +15,7 @@ import type { ServiceResponse } from '@/types/service-response';
 import { type Winning, winningSchema } from '@/types/winning';
 
 /**
- * Response type for confirming prize received
- */
-type ConfirmReceivedServiceResponse = ServiceResponse<
-	Winning,
-	WinningErrorCode
->;
-
-/**
- * Confirms that the winner has received the prize
+ * Confirms that the winner has received the prize.
  *
  * Can be called when winning status is 'sent' or 'delivered'.
  * Transitions status to 'received' and enables reviews.
@@ -34,16 +26,21 @@ type ConfirmReceivedServiceResponse = ServiceResponse<
 export async function confirmReceived(
 	winningId: string,
 	publicSlug?: string,
-): Promise<ConfirmReceivedServiceResponse> {
+): Promise<ServiceResponse<Winning, WinningErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Confirm receipt — transitions sent/delivered → received, enables reviews
 		const response = await authenticatedClient.post(
 			`/winnings/${winningId}/confirm-received`,
 		);
 
+		// Step 2: Validate response shape
 		const validated = winningSchema.parse(response.data);
+
+		// Step 3: Non-blocking cache revalidation + analytics
 		runAfter(async () => {
+			// Revalidation target: winning detail and list pages
 			revalidateWinningPaths(publicSlug);
 
 			const userId = (await sessionPromise)?.user?.id;

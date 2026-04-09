@@ -11,36 +11,27 @@ import type { ServiceResponse } from '@/types/service-response';
 import { ZodError } from 'zod';
 
 /**
- * Response type for fetching a single order
- */
-type GetOrderResponse = ServiceResponse<Order, OrderErrorCode>;
-
-/**
- * Fetches a single order by ID
- * Used for polling order status after payment
+ * Fetches a single order by ID.
+ * Used for polling order status after payment.
  *
  * @param orderId - The UUID of the order to fetch
  * @returns ServiceResponse with order data on success, OrderErrorCode on failure
  */
-export async function getOrder(orderId: string): Promise<GetOrderResponse> {
+export async function getOrder(
+	orderId: string,
+): Promise<ServiceResponse<Order, OrderErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
 			`/orders/${encodeURIComponent(orderId)}`,
 			{ timeout: API_TIMEOUTS.QUERY },
 		);
-
-		// Validate response structure
-		const order = orderSchema.parse(response.data);
-
-		return success(order);
+		return success(orderSchema.parse(response.data));
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'order', 'get-order');
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapOrderError(error);
-		return failure(errorCode);
+		return failure(mapOrderError(error));
 	}
 }

@@ -7,7 +7,7 @@ import { hasHostPermission } from '@/lib/permissions';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { getQuestions } from '@/services/raffle/get-questions';
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 import { FormHeader } from './form-header';
 import { FormStepComponent } from './form-step-component';
 import { MultiStepFormProvider } from './multi-step-form-provider';
@@ -36,26 +36,25 @@ const LEFT_PANEL_LINKS = [
 ];
 
 /**
- * Raffles Create Page
+ * Raffles Create Page (Server Component)
  *
- * Multi-step form for creating a new raffle.
- * Server-side protected - only accessible with raffle:create permission.
+ * Data-fetching strategy: reads session for permission check, then parallel-fetches
+ * raffles count, questions, and categories — all independent. Categories/questions
+ * use CATEGORIES cache (3600s TTL). Raffle count uses MY_RAFFLES cache (60s TTL).
+ *
+ * Server-side protected — only accessible with raffle:create permission.
  * Redirects to /my-raffles if user doesn't have permission.
  */
 export default async function RafflesCreatePage() {
-	// Server-side permission check
 	const session = await getSession();
 	const permissions = session?.user?.permissions || [];
 
-	// Redirect if user doesn't have raffle:create permission
 	if (!hasHostPermission(permissions)) {
 		redirect('/my-raffles');
 	}
 
-	// Get user information
 	const userName = session?.user?.name || 'Raffle Host';
 
-	// Get total raffles count, questions, and categories in parallel
 	const [rafflesResponse, questionsResponse, categoriesResponse] =
 		await Promise.all([getMyRaffles(), getQuestions(), getCategories()]);
 
@@ -63,12 +62,10 @@ export default async function RafflesCreatePage() {
 		? rafflesResponse.data.total || 0
 		: 0;
 
-	// Filter active questions only
 	const questions = questionsResponse.success
 		? questionsResponse.data.questions.filter(q => q.isActive)
 		: [];
 
-	// Filter active categories only
 	const categories = categoriesResponse.success
 		? categoriesResponse.data.categories.filter(c => c.isActive)
 		: [];
@@ -82,14 +79,14 @@ export default async function RafflesCreatePage() {
 					How to build the best Raffle?
 				</span>
 
-				{LEFT_PANEL_LINKS.map(item => (
+				{LEFT_PANEL_LINKS.map(link => (
 					<Link
-						key={item.href}
-						href={item.href}
+						key={link.href}
+						href={link.href}
 						className="flex w-fit items-center gap-4"
 					>
 						<Copy className="size-4" />
-						<span className="text-[#6E6E6E]">{item.label}</span>
+						<span className="text-[#6E6E6E]">{link.label}</span>
 					</Link>
 				))}
 			</div>

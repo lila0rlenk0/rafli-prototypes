@@ -5,105 +5,51 @@ paths:
 
 # Services
 
-Server actions for all external API communication. One action per file, kebab-case naming.
+Server actions for all API communication. One action per file, kebab-case.
 
 ## API Clients
 
-- `baseClient` — server-only, public endpoints, S2S secret, no auth token
-- `authenticatedClient` — server-only, protected endpoints, S2S secret + Bearer JWT
-- `browserClient` — browser-only, OAuth flows, `withCredentials: true`, no S2S. File: `@/lib/api/client-browser`
+- `baseClient` — server-only, public, S2S secret, no auth
+- `authenticatedClient` — server-only, protected, S2S + Bearer JWT
+- `browserClient` — browser-only, OAuth flows, `withCredentials: true`
 
-Both server clients from `@/lib/api/client`. Retry: only GET/HEAD on network errors, max 1 retry. Mutations never retried. `createRequest()` for custom timeout.
+Server clients from `@/lib/api/client`. Retry: GET/HEAD only on network errors, max 1. Mutations never retried. `createRequest()` for custom timeout.
 
 ## Server Action Pattern
 
-```tsx
+```ts
 'use server';
-
-import { authenticatedClient } from '@/lib/api/client';
-import { failure, mapRaffleError, success } from '@/lib/errors';
-import {
-	captureContractDrift,
-	captureServiceError,
-} from '@/lib/sentry/capture';
-import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
-
-/** @returns ServiceResponse with data or error code */
 export async function getData(): Promise<ServiceResponse<MyType, MyErrorCode>> {
-	try {
-		const response = await authenticatedClient.get('/endpoint');
-		return success(mySchema.parse(response.data));
-	} catch (error) {
-		if (error instanceof ZodError) {
-			captureContractDrift(error, 'domain', 'getData');
-			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
-		}
-		const errorCode = mapRaffleError(error);
-		captureServiceError(error, errorCode, {
-			service: 'domain',
-			action: 'getData',
-		});
-		return failure(errorCode);
-	}
+  try {
+    const response = await authenticatedClient.get('/endpoint');
+    return success(mySchema.parse(response.data));
+  } catch (error) {
+    if (error instanceof ZodError) {
+      captureContractDrift(error, 'domain', 'getData');
+      return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
+    }
+    const errorCode = mapDomainError(error);
+    captureServiceError(error, errorCode, { service: 'domain', action: 'getData' });
+    return failure(errorCode);
+  }
 }
 ```
 
 ## Validation
 
-- `safeParse` for input validation (early return on failure)
-- `.parse()` for response validation (throws into catch block)
-
-## File Upload
-
-Validate type/size before sending. Use `FormData`. Pass `'Content-Type': 'multipart/form-data'`.
+- `safeParse` for input (early return on failure), `.parse()` for responses (throws into catch)
 
 ## React Query Hooks
 
-Hooks live alongside server actions. File: `use-<action>.ts`. Mark `'use client'`.
-
-- Query keys: `[domain, scope, ...params]`
-- Mutations invalidate using domain prefix `['domain']`
-- `serviceError()` from `@/lib/query/errors` bridges ServiceResponse errors to React Query
-- `placeholderData: keepPreviousData` for paginated queries
-
-```tsx
-'use client';
-
-export function useMyData(options?: { limit?: number; enabled?: boolean }) {
-	return useQuery<MyResponse, ServiceError<MyErrorCode>>({
-		queryKey: ['my-domain', 'list', { limit: options?.limit }],
-		queryFn: async function fetchMyData() {
-			const result = await getMyData({ limit: options?.limit });
-			if (!result.success) throw serviceError(result.error);
-			return result.data;
-		},
-		enabled: options?.enabled ?? true,
-	});
-}
-```
+Alongside actions. File: `use-<action>.ts`, marked `'use client'`. Keys: `[domain, scope, ...params]`. Mutations invalidate with domain prefix. `serviceError()` bridges ServiceResponse to React Query. `placeholderData: keepPreviousData` for pagination.
 
 ## Non-Blocking Side Effects
 
-`after()` from `next/server` for work that shouldn't block the response — analytics, audit logging, cache invalidation. Never `await trackServer(...)` on the success path — use `after(() => trackServer(...))` or `void trackServer(...)`.
-
-```tsx
-import { after } from 'next/server';
-
-// bad — blocks response for analytics
-await trackServer(EVENT, data, { userId });
-return success(result);
-
-// good — runs after response is sent
-after(async () => {
-	await trackServer(EVENT, data, { userId });
-});
-return success(result);
-```
+`after()` from `next/server` for analytics, audit logging, cache invalidation. Never `await` analytics on success path — use `after(() => ...)` or `void`.
 
 ## When to Use What
 
-- React Query query hook — client component needs cached data, pagination, on-demand fetching
-- React Query mutation hook — client component needs loading/error states + cache invalidation
-- Direct server action + `useTransition` — form submissions, one-off actions
-- Direct server action in server component — SSR data fetching
+- query hook — client needs cached data, pagination, on-demand fetch
+- mutation hook — loading/error states + cache invalidation
+- direct action + `useTransition` — form submissions, one-off actions
+- direct action in server component — SSR data fetching

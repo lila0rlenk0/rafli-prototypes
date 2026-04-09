@@ -12,11 +12,6 @@ interface WinnersListProps {
 	currentUserWinnerPosition?: number | null;
 }
 
-/**
- * WinnersList Component
- *
- * Displays a list of winner cards for a concluded raffle.
- */
 export function WinnersList({
 	winners,
 	raffleId,

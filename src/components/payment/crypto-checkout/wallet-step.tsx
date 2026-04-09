@@ -6,10 +6,6 @@ import { Loader2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatNativeBalance, truncateAddress } from '@/lib/web3/format';
 
-// ==========================================
-// Types
-// ==========================================
-
 interface WalletStepProps {
 	address: string | undefined;
 	isWalletVerified: boolean;
@@ -20,10 +16,6 @@ interface WalletStepProps {
 		| undefined;
 	onWalletReady: () => void;
 }
-
-// ==========================================
-// Component
-// ==========================================
 
 /**
  * Wallet connect + verify step for crypto checkout.
@@ -36,8 +28,6 @@ interface WalletStepProps {
  * - openConnectModal: () => void — opens the wallet selection modal
  * - account: { address, displayName, displayBalance, ... } | undefined
  * - chain: { id, name, unsupported, ... } | undefined
- *
- * @returns wallet connection step UI
  */
 export function WalletStep({
 	address,
@@ -46,25 +36,12 @@ export function WalletStep({
 	nativeBalance,
 	onWalletReady,
 }: WalletStepProps) {
-	/**
-	 * @returns status label text based on wallet verification state
-	 */
-	function getStatusText(): string {
-		return isWalletVerified
-			? 'Wallet connected and verified'
-			: 'Connect your wallet and verify ownership';
-	}
+	const statusText = isWalletVerified
+		? 'Wallet connected and verified'
+		: 'Connect your wallet and verify ownership';
+	const buttonText = isWalletVerified ? 'Continue' : 'Verify Wallet';
 
-	/**
-	 * @returns "Continue" if already verified, else "Verify Wallet"
-	 */
-	function getButtonText(): string {
-		return isWalletVerified ? 'Continue' : 'Verify Wallet';
-	}
-
-	/**
-	 * @returns green checkmark badge if verified, amber text if not
-	 */
+	// green checkmark if verified, amber nudge if not
 	function renderVerificationBadge(): React.ReactNode {
 		if (isWalletVerified) {
 			return (
@@ -79,7 +56,7 @@ export function WalletStep({
 
 	return (
 		<div className="flex flex-col items-center gap-5">
-			<p className="text-center text-sm text-[#7B7B7B]">{getStatusText()}</p>
+			<p className="text-center text-sm text-[#7B7B7B]">{statusText}</p>
 
 			{/* Custom connect button — styled to match app.
 			    RainbowKit docs: check mounted + authenticationStatus for readiness,
@@ -164,7 +141,7 @@ export function WalletStep({
 					{isProcessing ? (
 						<Loader2 className="mr-2 size-4 animate-spin" />
 					) : null}
-					{getButtonText()}
+					{buttonText}
 				</Button>
 			) : null}
 		</div>

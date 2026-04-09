@@ -44,18 +44,12 @@ export function PublishSplitButton({
 	className,
 }: PublishSplitButtonProps) {
 	const [selected, setSelected] = useState<PublishMode>('now');
-
-	function getSelectedLabel(): string {
-		return OPTIONS.find(o => o.mode === selected)?.label ?? 'Go Live Now';
-	}
+	const selectedLabel =
+		OPTIONS.find(o => o.mode === selected)?.label ?? 'Go Live Now';
 
 	function handleMainClick() {
 		if (isPublishing) return;
 		onPublish(selected);
-	}
-
-	function handleOptionSelect(mode: PublishMode) {
-		setSelected(mode);
 	}
 
 	return (
@@ -67,7 +61,7 @@ export function PublishSplitButton({
 				className="flex flex-1 items-center justify-center gap-2 rounded-l-full border-2 border-r-0 border-black bg-black px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:pointer-events-none disabled:opacity-50"
 			>
 				{isPublishing ? <Loader2Icon className="size-4 animate-spin" /> : null}
-				{getSelectedLabel()}
+				{selectedLabel}
 			</button>
 
 			<DropdownMenu>
@@ -87,7 +81,7 @@ export function PublishSplitButton({
 					{OPTIONS.map(option => (
 						<DropdownMenuItem
 							key={option.mode}
-							onSelect={() => handleOptionSelect(option.mode)}
+							onSelect={() => setSelected(option.mode)}
 						>
 							{option.label}
 						</DropdownMenuItem>

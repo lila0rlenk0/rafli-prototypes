@@ -7,7 +7,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
 interface SaveDraftModalProps {
 	open: boolean;
@@ -30,28 +30,16 @@ export function SaveDraftModal({
 	onSaveDraft,
 	onLeaveWithoutSaving,
 }: SaveDraftModalProps) {
-	/**
-	 * Handles the Stay button click
-	 * Closes modal and continues editing
-	 */
 	function handleStay() {
 		onStay();
 		onOpenChange(false);
 	}
 
-	/**
-	 * Handles the Save Draft button click
-	 * Saves draft to localStorage and navigates away
-	 */
 	function handleSaveDraft() {
 		onSaveDraft();
 		onOpenChange(false);
 	}
 
-	/**
-	 * Handles the Leave Without Saving button click
-	 * Navigates away without saving draft
-	 */
 	function handleLeaveWithoutSaving() {
 		onLeaveWithoutSaving();
 		onOpenChange(false);

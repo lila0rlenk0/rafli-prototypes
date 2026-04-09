@@ -18,11 +18,8 @@ interface ReportMenuItemProps {
 }
 
 /**
- * Dropdown menu item that opens the report content modal
- *
- * Designed for use inside DropdownMenuContent alongside other
- * actions like delete. Renders the modal inline — portal-based
- * via Radix Dialog so it escapes overflow clipping.
+ * Dropdown menu item that opens the report modal.
+ * Modal rendered inline — Radix Dialog portals past overflow clipping.
  */
 export function ReportMenuItem({
 	contentType,
@@ -31,7 +28,7 @@ export function ReportMenuItem({
 }: ReportMenuItemProps) {
 	const [open, setOpen] = useState(false);
 
-	/** Opens the report modal — onSelect prevents dropdown from closing */
+	// onSelect preventDefault keeps dropdown open while modal mounts
 	function handleSelect(e: Event) {
 		e.preventDefault();
 		setOpen(true);

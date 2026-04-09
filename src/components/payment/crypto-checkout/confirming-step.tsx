@@ -9,10 +9,6 @@ import {
 import { TxLink } from '@/components/payment/crypto-checkout/terminal-steps';
 import type { CryptoChainConfig } from '@/types/crypto-config';
 
-// ==========================================
-// Types
-// ==========================================
-
 interface ConfirmingStepProps {
 	txHash: string | undefined;
 	/** Parent guarantees non-null — only renders when chain is selected */
@@ -27,24 +23,11 @@ interface ConfirmingStepProps {
 	chains: CryptoChainConfig[];
 }
 
-// ==========================================
-// Component
-// ==========================================
-
 /**
- * Confirming step — vertical step tracker inspired by Safe's transaction flow.
- *
- * Four sequential phases connected by vertical lines:
- * 1. Confirm in wallet — active while MetaMask/wallet is prompting, done once tx broadcast
- * 2. Block confirmations — shows live X/Y count, active until target reached
- * 3. Verifying payment — backend validates the tx against checkout session
- * 4. Completing order — backend finalizes order (transitions to success step)
- *
- * Only one phase is active at a time — prevents the "two spinners" issue
- * when the wallet popup coexists with the modal.
- *
- * Each phase shows: dot (done=black, active=pulsing, pending=gray) + label + optional detail.
- * Connecting lines between dots fill black as phases complete.
+ * Confirming step — vertical 4-phase tracker (confirm wallet → confirmations → verify → complete).
+ * Only one phase active at a time to prevent two-spinner overlap with the wallet popup.
+ * Dots: done=solid black, active=pulsing, pending=gray outline.
+ * Connecting lines fill black as phases complete.
  */
 export function ConfirmingStep({
 	txHash,
@@ -54,17 +37,7 @@ export function ConfirmingStep({
 	finalizationRequested,
 	chains,
 }: ConfirmingStepProps) {
-	// ==========================================
-	// Phase Definitions
-	// ==========================================
-
-	/**
-	 * Ordered list of phases rendered in the vertical tracker.
-	 *
-	 * The state machine lives in a pure helper so we can test the sequencing rules:
-	 * only one phase active, no receipt-driven overlap, and a real boundary between
-	 * "verifying payment" and "completing order".
-	 */
+	// State machine lives in a pure helper for testability — enforces one-active-at-a-time rule
 	const phases = buildConfirmingPhases({
 		txHash,
 		confirmations,
@@ -72,16 +45,7 @@ export function ConfirmingStep({
 		finalizationRequested,
 	});
 
-	// ==========================================
-	// Render Helpers
-	// ==========================================
-
-	/**
-	 * Renders the status dot for a phase.
-	 * - done: solid black dot with white checkmark
-	 * - active: pulsing black dot (animated ring)
-	 * - pending: gray outline dot
-	 */
+	// done=solid black, active=pulsing ring, pending=gray outline
 	function renderDot(status: PhaseStatus): React.ReactNode {
 		switch (status) {
 			case 'done':
@@ -106,10 +70,6 @@ export function ConfirmingStep({
 		}
 	}
 
-	/**
-	 * Returns text styling for a phase label.
-	 * Pending phases are dimmed; active/done phases are bold black.
-	 */
 	function getPhaseTextClass(status: PhaseStatus): string {
 		const base = 'text-sm';
 		return status === 'pending'
@@ -117,10 +77,6 @@ export function ConfirmingStep({
 			: `${base} font-medium text-black`;
 	}
 
-	/**
-	 * Renders the connecting line between two phase dots.
-	 * Filled (black) when the next phase is done or active; gray when pending.
-	 */
 	function renderLine(nextStatus: PhaseStatus): React.ReactNode {
 		const isFilled = nextStatus !== 'pending';
 		return (
@@ -133,10 +89,6 @@ export function ConfirmingStep({
 			/>
 		);
 	}
-
-	// ==========================================
-	// Render
-	// ==========================================
 
 	return (
 		<div className="flex flex-col gap-4 py-4">
@@ -162,7 +114,7 @@ export function ConfirmingStep({
 						</div>
 
 						{/* Connecting line between phases (not after last) */}
-						{i < phases.length - 1 && renderLine(phases[i + 1]!.status)}
+						{i < phases.length - 1 ? renderLine(phases[i + 1]!.status) : null}
 					</div>
 				))}
 			</div>

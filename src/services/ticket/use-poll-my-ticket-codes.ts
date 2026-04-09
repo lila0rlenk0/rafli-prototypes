@@ -9,10 +9,6 @@ import type { TicketCodesResponse } from '@/types/ticket';
 
 import { getMyTicketCodes } from './get-my-ticket-codes';
 
-// ==========================================
-// Constants
-// ==========================================
-
 /**
  * Ticket issuance happens asynchronously after order completion.
  * Poll every 10s so the UI catches up without turning one purchase into a burst
@@ -27,10 +23,6 @@ const POLL_INTERVAL_MS = 10_000;
  */
 const MAX_POLL_DURATION_MS = 60 * 1_000;
 
-// ==========================================
-// Query Key
-// ==========================================
-
 /** Query key for post-payment ticket sync polling */
 export function pollMyTicketCodesKey(
 	raffleId: string | null,
@@ -38,10 +30,6 @@ export function pollMyTicketCodesKey(
 ) {
 	return ['ticket-codes', 'poll', raffleId, targetTotal] as const;
 }
-
-// ==========================================
-// Hook
-// ==========================================
 
 /**
  * Poll the authenticated user's ticket codes for a raffle until the expected

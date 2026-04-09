@@ -6,10 +6,6 @@ import { Button } from '@/components/ui/button';
 import { getTxExplorerUrl } from '@/lib/web3/block-explorers';
 import type { CryptoChainConfig } from '@/types/crypto-config';
 
-// ==========================================
-// Shared: TxLink
-// ==========================================
-
 interface TxLinkProps {
 	txHash: string | undefined;
 	selectedChainId: number | undefined;
@@ -17,10 +13,7 @@ interface TxLinkProps {
 	chains: CryptoChainConfig[];
 }
 
-/**
- * Block explorer link for the submitted transaction hash.
- * Reused across confirming, success, and failure steps.
- */
+/** Block explorer link for the submitted tx hash — reused across confirming, success, and failure. */
 export function TxLink({ txHash, selectedChainId, chains }: TxLinkProps) {
 	const url = getTxExplorerUrl(txHash, selectedChainId, chains);
 	if (!txHash || !url) return null;
@@ -38,10 +31,6 @@ export function TxLink({ txHash, selectedChainId, chains }: TxLinkProps) {
 	);
 }
 
-// ==========================================
-// SuccessStep
-// ==========================================
-
 interface SuccessStepProps {
 	txHash: string | undefined;
 	selectedChainId: number;
@@ -50,9 +39,6 @@ interface SuccessStepProps {
 	onClose: () => void;
 }
 
-/**
- * Terminal success step — payment confirmed on-chain and verified by backend.
- */
 export function SuccessStep({
 	txHash,
 	selectedChainId,
@@ -87,10 +73,6 @@ export function SuccessStep({
 	);
 }
 
-// ==========================================
-// FailureStep
-// ==========================================
-
 interface FailureStepProps {
 	txHash: string | undefined;
 	/** May be undefined if failure occurs before chain selection (e.g. expired session on reopen) */
@@ -111,9 +93,7 @@ interface FailureStepProps {
 
 /**
  * Terminal failure step — payment failed or verification timed out.
- * Offers retry via onReset and close via onClose.
- * "Try Again" is hidden when fundsAtRisk is true (reorg with ambiguous balance)
- * — retrying could cause a duplicate payment.
+ * "Try Again" hidden when `fundsAtRisk` (reorg + ambiguous balance) — retrying could double-pay.
  */
 export function FailureStep({
 	txHash,

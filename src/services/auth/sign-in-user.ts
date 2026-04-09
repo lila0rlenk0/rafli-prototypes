@@ -14,30 +14,27 @@ import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for sign-in operation
- * Returns void on success (session is set in cookies)
- */
-type SignInResponse = ServiceResponse<void, AuthErrorCode>;
-
-/**
- * Authenticates a user with email and password
- * Sets authentication cookies on successful sign-in
+ * Authenticates a user with email and password.
+ * Sets authentication cookies on successful sign-in.
  *
  * @param input - User credentials (email and password)
- * @returns ServiceResponse with void data on success, AuthErrorCode on failure
+ * @returns ServiceResponse with void on success, AuthErrorCode on failure
  */
-export async function signInUser(input: SignInInput): Promise<SignInResponse> {
+export async function signInUser(
+	input: SignInInput,
+): Promise<ServiceResponse<void, AuthErrorCode>> {
 	try {
-		// Validate input payload
+		// Step 1: Validate input — reject malformed credentials before network call
 		const validationResult = signInInputSchema.safeParse(input);
 		if (!validationResult.success) {
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
-		// Fire-and-forget: track intent before API call — captures drop-off between
+		// Step 2: Fire-and-forget intent tracking — captures drop-off between
 		// form submit and completion. Not awaited so it doesn't block the response.
 		void trackServer(AUTH_EVENTS.SIGN_IN_STARTED, { method: 'email' });
 
+		// Step 3: Authenticate against backend (public endpoint)
 		const response = await baseClient.post(
 			'/auth/sign-in/email',
 			validationResult.data,
@@ -45,17 +42,19 @@ export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 
 		const { token, user } = response.data;
 
-		// Validate server response structure
+		// Step 4: Guard — backend must return both token and user on success
 		if (!token || !user) {
 			return failure(COMMON_ERROR_CODES.UNKNOWN_ERROR);
 		}
 
-		// Set authentication cookies
+		// Step 5: Persist auth state into cookies
+		// Side-effects: sets raffly-token (httpOnly) and raffly-session cookies
 		await setAuthCookies(token, user);
 
-		// Tag all subsequent Sentry errors with this user ID
+		// Step 6: Tag Sentry scope so subsequent errors are attributed to this user
 		setSentryUser(user.id);
 
+		// Step 7: Non-blocking success analytics
 		runAfter(async () => {
 			await trackServer(
 				AUTH_EVENTS.SIGN_IN_COMPLETED,
@@ -66,12 +65,14 @@ export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 
 		return success(undefined);
 	} catch (error) {
+		// Step 8: Map and capture — auth is a critical service
 		const errorCode = mapAuthError(error);
 		captureServiceError(error, errorCode, {
 			service: 'auth',
 			action: 'sign-in-user',
 		});
 
+		// Non-blocking failure analytics
 		runAfter(async () => {
 			await trackServer(AUTH_EVENTS.SIGN_IN_FAILED, {
 				method: 'email',

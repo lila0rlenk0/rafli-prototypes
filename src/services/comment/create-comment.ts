@@ -30,13 +30,16 @@ export async function createComment(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Submit comment to backend
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/comments`,
 			payload,
 		);
+
+		// Step 2: Validate response shape against schema
 		const validated = commentSchema.parse(response.data);
 
-		// Fire-and-forget — don't block comment UX
+		// Step 3: Fire-and-forget analytics — don't block comment UX
 		void sessionPromise.then(session =>
 			trackServer(
 				COMMENT_EVENTS.CREATED,

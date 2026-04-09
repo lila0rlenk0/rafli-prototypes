@@ -23,34 +23,21 @@ interface PublicRaffleCardProps {
  */
 export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	const isUnlimited = raffle.maxParticipants === 0;
+	const progress = isUnlimited
+		? 0
+		: Math.min((raffle.participantsCount / raffle.maxParticipants) * 100, 100);
+	const hostName = raffle.host?.name ?? raffle.host?.username ?? 'Unknown';
 
 	function getRoleTag(): { label: string; className: string } | null {
 		if (!role) return null;
 		if (role === 'host') {
-			return {
-				label: 'Host',
-				className: 'bg-[#FAFFC4] text-[#998B53]',
-			};
+			return { label: 'Host', className: 'bg-[#FAFFC4] text-[#998B53]' };
 		}
-		return {
-			label: 'Participant',
-			className: 'bg-[#BEFFDB] text-[#44B476]',
-		};
+		return { label: 'Participant', className: 'bg-[#BEFFDB] text-[#44B476]' };
 	}
-
-	function calculateProgress(current: number, max: number): number {
-		if (max === 0) return 0;
-		return Math.min((current / max) * 100, 100);
-	}
-
-	const progress = calculateProgress(
-		raffle.participantsCount,
-		raffle.maxParticipants,
-	);
 
 	function getTicketPrice(): string {
-		const value = Number(raffle.ticketPriceAmount);
-		return value.toLocaleString('en-US', {
+		return Number(raffle.ticketPriceAmount).toLocaleString('en-US', {
 			minimumFractionDigits: 0,
 			maximumFractionDigits: 2,
 		});
@@ -68,7 +55,6 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	}
 
 	const roleTag = getRoleTag();
-	const hostName = raffle.host?.name || raffle.host?.username || 'Unknown';
 
 	return (
 		<div

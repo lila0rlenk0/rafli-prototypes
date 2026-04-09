@@ -36,12 +36,14 @@ export async function submitCryptoTx(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Submit tx hash to backend for verification against session parameters
 		const response = await authenticatedClient.post(
 			'/payments/crypto/submit',
 			payload,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
+		// Step 2: Validate response shape
 		const data = cryptoTxMutationResponseSchema.parse(response.data);
 
 		runAfter(async () => {

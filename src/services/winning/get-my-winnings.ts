@@ -13,25 +13,16 @@ import {
 } from '@/types/winning';
 
 /**
- * Response type for fetching user's winnings
- */
-type GetMyWinningsResponse = ServiceResponse<
-	ListWinningsResponse,
-	WinningErrorCode
->;
-
-/**
- * Fetches the current user's winnings
+ * Fetches the current user's winnings.
  *
  * @returns ServiceResponse with paginated winnings on success, WinningErrorCode on failure
  */
-export async function getMyWinnings(): Promise<GetMyWinningsResponse> {
+export async function getMyWinnings(): Promise<
+	ServiceResponse<ListWinningsResponse, WinningErrorCode>
+> {
 	try {
 		const response = await authenticatedClient.get('/me/winnings');
-
-		const validatedData = listWinningsResponseSchema.parse(response.data);
-
-		return success(validatedData);
+		return success(listWinningsResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'winning', 'get-my-winnings');

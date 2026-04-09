@@ -10,25 +10,14 @@ interface HostFulfillmentCardProps {
 	winnersCount: number;
 }
 
-/**
- * HostFulfillmentCard Component
- *
- * Displays delivery status card for hosts on concluded raffles.
- * Provides link to manage all winners fulfillment.
- */
 export function HostFulfillmentCard({
 	publicSlug,
 	winnersCount,
 }: HostFulfillmentCardProps) {
-	/**
-	 * Formats the winners count message
-	 */
-	function getWinnersMessage(): string {
-		if (winnersCount === 1) {
-			return '1 winner awaiting fulfillment';
-		}
-		return `${winnersCount} winners awaiting fulfillment`;
-	}
+	const winnersMessage =
+		winnersCount === 1
+			? '1 winner awaiting fulfillment'
+			: `${winnersCount} winners awaiting fulfillment`;
 
 	return (
 		<div className="min-w-sm rounded-2xl border border-black bg-white p-6">
@@ -40,7 +29,7 @@ export function HostFulfillmentCard({
 				<FulfillmentBadge />
 			</div>
 
-			<p className="mb-6 text-sm text-gray-600">{getWinnersMessage()}</p>
+			<p className="mb-6 text-sm text-gray-600">{winnersMessage}</p>
 
 			<Link
 				href={`/browse/${publicSlug}/fulfillment`}

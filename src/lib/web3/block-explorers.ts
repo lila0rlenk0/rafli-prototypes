@@ -39,7 +39,7 @@ export function getTxExplorerUrl(
 	if (!txHash || !chainId) return null;
 	// Defense-in-depth: reject malformed hashes before URL interpolation
 	if (!isValidTxHash(txHash)) return null;
-	const chain = chains.find(c => c.chainId === chainId);
+	const chain = chains.find(chainConfig => chainConfig.chainId === chainId);
 	if (!chain?.explorerTxUrl) return null;
 	// Backend now ships explorerTxUrl as the tx route prefix (`.../tx`) instead of
 	// a slash-terminated template. Normalize both `.../tx` and `.../tx/` so FE
@@ -59,5 +59,8 @@ export function getChainName(
 	chainId: number,
 	chains: CryptoChainConfig[],
 ): string {
-	return chains.find(c => c.chainId === chainId)?.name ?? `Chain ${chainId}`;
+	return (
+		chains.find(chainConfig => chainConfig.chainId === chainId)?.name ??
+		`Chain ${chainId}`
+	);
 }

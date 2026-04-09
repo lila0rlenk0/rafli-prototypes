@@ -9,9 +9,13 @@ import { Footer } from './footer';
 /**
  * Landing page for Rafli - the raffle platform
  *
- * Showcases the platform's features, benefits for participants and hosts,
- * and provides call-to-action buttons to enter the app.
- * Server Component — all interactivity is handled by child client components.
+ * Server Component — no data fetching, purely compositional.
+ * All interactivity (GSAP animations, mobile menu) is handled by child Client Components.
+ *
+ * Section order: Navbar > Hero > Trust > Participant > Host > CTA > Footer.
+ * Each section is a co-located sibling file in (landing)/ for colocation.
+ *
+ * @returns Full landing page with all sections composed in order
  */
 export default function LandingPage() {
 	return (

@@ -9,12 +9,6 @@ interface EditRaffleButtonProps {
 	publicSlug: string;
 }
 
-/**
- * EditRaffleButton Component
- *
- * Displays an "Edit Raffle" button for draft/queued raffles.
- * Links to the edit page for the raffle.
- */
 export function EditRaffleButton({ publicSlug }: EditRaffleButtonProps) {
 	return (
 		<Link href={`/my-raffles/${publicSlug}/edit`}>

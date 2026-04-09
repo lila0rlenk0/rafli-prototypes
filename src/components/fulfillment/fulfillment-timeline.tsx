@@ -31,12 +31,6 @@ interface FulfillmentTimelineProps {
 
 type StepStatus = 'completed' | 'active' | 'pending';
 
-/**
- * FulfillmentTimeline Component
- *
- * Displays delivery status as a 4-step timeline.
- * Shows different actions for host vs winner based on current status.
- */
 export function FulfillmentTimeline({
 	winning,
 	isHost,
@@ -59,19 +53,13 @@ export function FulfillmentTimeline({
 	const [markSentModalOpen, setMarkSentModalOpen] = useState(false);
 	const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
-	/** Button text for mark delivered action */
-	function getMarkDeliveredText(): string {
-		return isMarkingDelivered ? 'Marking...' : 'Mark as Delivered';
-	}
+	const markDeliveredText = isMarkingDelivered
+		? 'Marking...'
+		: 'Mark as Delivered';
+	const confirmButtonText = isConfirming
+		? 'Confirming...'
+		: 'I received the prize';
 
-	/** Button text for confirm receipt action */
-	function getConfirmButtonText(): string {
-		return isConfirming ? 'Confirming...' : 'I received the prize';
-	}
-
-	/**
-	 * Determines step status based on current winning status
-	 */
 	function getStepStatus(step: number): StepStatus {
 		// pending: winner hasn't claimed yet
 		if (currentStatus === 'pending') {
@@ -123,9 +111,6 @@ export function FulfillmentTimeline({
 		return 'pending';
 	}
 
-	/**
-	 * Gets step 1 (Claim) content based on role and status
-	 */
 	function getClaimStep() {
 		const status = getStepStatus(1);
 		const hasClaimed = currentStatus !== 'pending';
@@ -157,9 +142,6 @@ export function FulfillmentTimeline({
 		};
 	}
 
-	/**
-	 * Gets step 2 (Preparing) content based on role
-	 */
 	function getPreparingStep() {
 		const status = getStepStatus(2);
 
@@ -189,9 +171,6 @@ export function FulfillmentTimeline({
 		};
 	}
 
-	/**
-	 * Gets step 3 (Shipped) content based on role
-	 */
 	function getShippedStep() {
 		const status = getStepStatus(3);
 
@@ -206,7 +185,7 @@ export function FulfillmentTimeline({
 							disabled={isMarkingDelivered}
 							className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
 						>
-							{getMarkDeliveredText()}
+							{markDeliveredText}
 						</button>
 					) : null,
 			};
@@ -222,10 +201,7 @@ export function FulfillmentTimeline({
 		};
 	}
 
-	/**
-	 * Gets step 4 content when status is 'disputed'
-	 * No action buttons — dispute is handled externally
-	 */
+	// No action buttons for disputed — handled externally
 	function getDisputedStep() {
 		return {
 			title: 'Dispute in Progress',
@@ -236,10 +212,7 @@ export function FulfillmentTimeline({
 		};
 	}
 
-	/**
-	 * Gets step 4 content when status is 'resolved'
-	 * Admin resolved a dispute — informational only, no actions
-	 */
+	// Admin resolved — informational only, no actions
 	function getResolvedStep() {
 		return {
 			title: 'Dispute Resolved',
@@ -250,10 +223,7 @@ export function FulfillmentTimeline({
 		};
 	}
 
-	/**
-	 * Computes auto-confirm deadline text for delivered status
-	 * Backend auto-confirms receipt 48h after deliveredAt
-	 */
+	// Backend auto-confirms receipt 48h after deliveredAt
 	function getAutoConfirmText(): string | null {
 		if (!winning.deliveredAt) return null;
 
@@ -270,20 +240,12 @@ export function FulfillmentTimeline({
 		return `Auto-confirms in ${hoursLeft}h if not confirmed`;
 	}
 
-	/**
-	 * Gets step 4 (Delivered / Confirm Receipt) content based on role and status.
-	 * Winner can confirm from both 'sent' and 'delivered' statuses.
-	 */
+	// Winner can confirm from both 'sent' and 'delivered' statuses.
 	function getDeliveredStep() {
 		const status = getStepStatus(4);
 		const isReceived = currentStatus === 'received';
 
-		/**
-		 * Contextual title for step 4:
-		 * - received → "Completed"
-		 * - sent (winner view) → "Confirm Receipt" (skipping host's delivered step)
-		 * - delivered / other → "Delivered"
-		 */
+		// sent (winner view) → skip host's delivered step and go straight to confirm
 		function getStep4Title(): string {
 			if (isReceived) return 'Completed';
 			if (currentStatus === 'sent') return 'Confirm Receipt';
@@ -300,7 +262,6 @@ export function FulfillmentTimeline({
 			};
 		}
 
-		/** Show auto-confirm countdown for delivered status (winner only) */
 		const autoConfirm =
 			currentStatus === 'delivered' ? getAutoConfirmText() : null;
 		const deliveredDescription = autoConfirm
@@ -319,7 +280,7 @@ export function FulfillmentTimeline({
 						disabled={isConfirming}
 						className="cursor-pointer rounded-full border-2 border-black bg-black px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
 					>
-						{getConfirmButtonText()}
+						{confirmButtonText}
 					</button>
 				) : isReceived ? (
 					<button
@@ -332,9 +293,6 @@ export function FulfillmentTimeline({
 		};
 	}
 
-	/**
-	 * Handles confirm received action (winner)
-	 */
 	async function handleConfirmReceived() {
 		setIsConfirming(true);
 
@@ -362,9 +320,6 @@ export function FulfillmentTimeline({
 		}
 	}
 
-	/**
-	 * Handles mark delivered action (host)
-	 */
 	async function handleMarkDelivered() {
 		setIsMarkingDelivered(true);
 
@@ -382,19 +337,12 @@ export function FulfillmentTimeline({
 		router.refresh();
 	}
 
-	/**
-	 * Handles successful shipping form submission
-	 * Uses real winning data from backend instead of dummy placeholder
-	 */
 	function handleShippingSuccess(updatedWinning: Winning) {
 		setShippingInfo(updatedWinning.shippingInfo ?? null);
 		setCurrentStatus('awaiting_host');
 		router.refresh();
 	}
 
-	/**
-	 * Handles successful mark sent
-	 */
 	function handleMarkSentSuccess() {
 		setCurrentStatus('sent');
 		router.refresh();

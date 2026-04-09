@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { ORDER_ERROR_CODES } from '@/types/errors';
 
-import { mockAxiosResponse } from '../../../tests/helpers/mock-axios';
+import { mockAxiosResponse } from '../../../helpers/mock-axios';
 
 const mockGet = mock();
 const mockCaptureContractDrift = mock();
@@ -17,7 +17,7 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureServiceError: mock(),
 }));
 
-const { getMyOrders } = await import('./get-my-orders');
+const { getMyOrders } = await import('@/services/order/get-my-orders');
 
 describe('getMyOrders', () => {
 	test('returns paginated orders on valid backend response', async () => {

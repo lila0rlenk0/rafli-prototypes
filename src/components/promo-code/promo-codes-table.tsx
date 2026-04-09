@@ -112,44 +112,31 @@ export function PromoCodesTable({
 	 * Copies share link with promo code to clipboard
 	 */
 	async function handleCopyShareLink(code: string) {
-		const origin = typeof window !== 'undefined' ? window.location.origin : '';
-		const shareUrl = `${origin}/browse/${publicSlug}?code=${code}`;
+		const shareUrl = `${window.location.origin}/browse/${publicSlug}?code=${code}`;
 		try {
-			// Step 1: Copy share URL.
 			await navigator.clipboard.writeText(shareUrl);
-			// Step 2: Notify success.
 			toast.success('Share link copied');
 		} catch {
 			toast.error('Failed to copy link');
 		}
 	}
 
-	/**
-	 * Copies batch ID to clipboard
-	 */
 	async function handleCopyBatchId(bulkId: string) {
 		try {
-			// Step 1: Copy batch ID.
 			await navigator.clipboard.writeText(bulkId);
-			// Step 2: Notify success.
 			toast.success('Batch ID copied');
 		} catch {
 			toast.error('Failed to copy batch ID');
 		}
 	}
 
-	/**
-	 * Handles deactivate action
-	 */
 	async function handleDeactivate() {
 		if (!deactivatingCode || !onDeactivate) return;
 
-		// Step 1: Call deactivate handler.
 		setIsDeactivating(true);
 		try {
 			await onDeactivate(deactivatingCode.id);
 		} finally {
-			// Step 2: Reset modal state.
 			setIsDeactivating(false);
 			setDeactivatingCode(null);
 		}
@@ -339,9 +326,9 @@ export function PromoCodesTable({
 						<div className="mt-2 text-xs text-gray-500">
 							{formatPromoCodeUsage(code)} used • Per user:{' '}
 							{formatUsageLimit(code.maxRedemptionsPerUser)}
-							{code.expiresAt &&
-								` • Expires ${formatExpiration(code.expiresAt)}`}
-							{!code.expiresAt && ' • Never expires'}
+							{code.expiresAt
+								? ` • Expires ${formatExpiration(code.expiresAt)}`
+								: ' • Never expires'}
 						</div>
 					</div>
 				))}

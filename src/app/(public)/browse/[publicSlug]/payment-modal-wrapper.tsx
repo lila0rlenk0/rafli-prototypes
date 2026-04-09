@@ -33,7 +33,10 @@ export function PaymentModalWrapper({
 	searchParams,
 }: PaymentModalWrapperProps) {
 	const router = useRouter();
+	// React `use()` unwraps the Next.js 15 Promise-based searchParams.
+	// Integrates with the parent Suspense boundary instead of resolving inside useEffect.
 	const params = use(searchParams);
+	// Initialize modal open state from URL — true when Stripe redirects back with session_id
 	const [isModalOpen, setIsModalOpen] = useState(!!params.session_id);
 
 	/**

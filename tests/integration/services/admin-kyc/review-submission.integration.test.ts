@@ -9,8 +9,14 @@ import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
 // Mock session — controls whether the caller has admin permissions
 const mockGetSession = mock();
 
+// All session exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
 mock.module('@/lib/auth/session', () => ({
 	getSession: mockGetSession,
+	setAuthCookies: mock(),
+	getAuthToken: mock(),
+	getCurrentUser: mock(),
+	requireAuth: mock(),
+	requireEmailVerification: mock(),
 }));
 
 // Mock API client
@@ -27,8 +33,14 @@ mock.module('@/lib/api/client', () => ({
 // Mock revalidatePath — server action calls this on success
 const mockRevalidatePath = mock();
 
+// All next/cache exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
 mock.module('next/cache', () => ({
+	cacheLife: mock(),
+	cacheTag: mock(),
+	unstable_cacheLife: mock(),
+	unstable_cacheTag: mock(),
 	revalidatePath: mockRevalidatePath,
+	revalidateTag: mock(),
 }));
 mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),

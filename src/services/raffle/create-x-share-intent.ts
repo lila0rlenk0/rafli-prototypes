@@ -11,10 +11,6 @@ import {
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
-// =============================================================================
-// RESPONSE SCHEMA
-// =============================================================================
-
 const xShareIntentResponseSchema = z.object({
 	claimId: z.string(),
 	expiresAt: z.string(),
@@ -23,15 +19,6 @@ const xShareIntentResponseSchema = z.object({
 });
 
 type XShareIntentResponse = z.infer<typeof xShareIntentResponseSchema>;
-
-type CreateXShareIntentResponse = ServiceResponse<
-	XShareIntentResponse,
-	RaffleErrorCode
->;
-
-// =============================================================================
-// SERVER ACTION
-// =============================================================================
 
 /**
  * Creates an X share intent for the given raffle.
@@ -43,14 +30,13 @@ type CreateXShareIntentResponse = ServiceResponse<
  */
 export async function createXShareIntent(
 	raffleId: string,
-): Promise<CreateXShareIntentResponse> {
+): Promise<ServiceResponse<XShareIntentResponse, RaffleErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/x-share-intent`,
 		);
 
-		const validated = xShareIntentResponseSchema.parse(response.data);
-		return success(validated);
+		return success(xShareIntentResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'create-x-share-intent');
@@ -60,7 +46,7 @@ export async function createXShareIntent(
 		const errorCode = mapRaffleError(error);
 		captureServiceError(error, errorCode, {
 			service: 'raffle',
-			action: 'createXShareIntent',
+			action: 'create-x-share-intent',
 		});
 		return failure(errorCode);
 	}

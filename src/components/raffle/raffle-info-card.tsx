@@ -6,8 +6,12 @@ import type { Raffle } from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
 import { CheckCircle2Icon, InfoIcon } from 'lucide-react';
 import Link from 'next/link';
-import { Separator } from '../ui/separator';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Separator } from '@/components/ui/separator';
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const MAX_VISIBLE_TICKETS = 5;
 
@@ -39,80 +43,19 @@ export function RaffleInfoCard({
 	publicSlug,
 }: RaffleInfoCardProps) {
 	const isUnlimited = raffle.maxParticipants === 0;
-
-	/**
-	 * Gets the fill status text for the raffle
-	 * @returns "Unlimited" for unlimited raffles, otherwise percentage string
-	 */
-	function getFillStatus(): string {
-		if (isUnlimited) return 'Unlimited';
-		return (
-			(
-				(raffle.participantsCount / raffle.maxParticipants) *
-				100
-			).toLocaleString('en-US', {
-				minimumFractionDigits: 0,
-				maximumFractionDigits: 2,
-			}) + '% filled'
-		);
-	}
-
-	/**
-	 * Gets the participants count display text
-	 * @returns Only current count for unlimited, otherwise "current/max Participants"
-	 */
-	function getParticipantsDisplay(): string {
-		if (isUnlimited) {
-			return `${raffle.participantsCount.toLocaleString()} Participants`;
-		}
-		return `${raffle.participantsCount.toLocaleString()}/${raffle.maxParticipants.toLocaleString()} Participants`;
-	}
-
-	/**
-	 * Gets the progress bar width as a percentage string
-	 * @returns Percentage string for width style
-	 */
-	function getProgressBarWidth(): string {
-		if (isUnlimited) return '0%';
-		const percentage =
-			(raffle.participantsCount / raffle.maxParticipants) * 100;
-		return `${percentage}%`;
-	}
-
-	/**
-	 * Gets the formatted active period string
-	 * @returns Period string (e.g., "Jan 16, 2026 - Feb 16, 2026")
-	 */
-	function getActivePeriod(): string {
-		return `${formatDate(raffle.startAt)} - ${formatDate(raffle.endAt)}`;
-	}
-
-	/**
-	 * Gets total tickets sold from raffle data
-	 * @returns Formatted ticket count string
-	 */
-	function getTotalTickets(): string {
-		return raffle.ticketsSoldCount.toLocaleString('en-US');
-	}
-
-	/**
-	 * Gets formatted total ticket count for user
-	 * @returns Formatted count string
-	 */
-	function getMyTotalTickets(): string {
-		return myTicketsTotal.toLocaleString('en-US');
-	}
-
-	/**
-	 * Checks if current ticket sales are below minimum participants
-	 * @returns true if below minimum
-	 */
-	function isBelowMinParticipants(): boolean {
-		return (
-			raffle.minParticipants > 0 &&
-			raffle.ticketsSoldCount < raffle.minParticipants
-		);
-	}
+	const fillPercent = isUnlimited
+		? 0
+		: (raffle.participantsCount / raffle.maxParticipants) * 100;
+	const fillStatus = isUnlimited
+		? 'Unlimited'
+		: `${fillPercent.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}% filled`;
+	const participantsDisplay = isUnlimited
+		? `${raffle.participantsCount.toLocaleString()} Participants`
+		: `${raffle.participantsCount.toLocaleString()}/${raffle.maxParticipants.toLocaleString()} Participants`;
+	const activePeriod = `${formatDate(raffle.startAt)} - ${formatDate(raffle.endAt)}`;
+	const isBelowMinParticipants =
+		raffle.minParticipants > 0 &&
+		raffle.ticketsSoldCount < raffle.minParticipants;
 
 	return (
 		<div className="mt-4 rounded-3xl border border-black bg-white px-4 py-6 lg:mt-8 lg:rounded-2xl lg:p-8">
@@ -126,16 +69,14 @@ export function RaffleInfoCard({
 				<div className="space-y-3">
 					<div className="space-y-2">
 						<div className="flex items-center justify-between text-sm">
-							<span className="text-[#7B7B7B]">{getParticipantsDisplay()}</span>
-							<span className="font-medium text-[#7B7B7B]">
-								{getFillStatus()}
-							</span>
+							<span className="text-[#7B7B7B]">{participantsDisplay}</span>
+							<span className="font-medium text-[#7B7B7B]">{fillStatus}</span>
 						</div>
 
 						<div className="h-[11px] w-full overflow-hidden rounded-full bg-gray-100">
 							<div
 								className="bg-primary h-full transition-all duration-300 ease-out"
-								style={{ width: getProgressBarWidth() }}
+								style={{ width: `${fillPercent}%` }}
 							/>
 						</div>
 					</div>
@@ -146,7 +87,9 @@ export function RaffleInfoCard({
 							<h3 className="text-sm font-medium text-[#7B7B7B]">
 								Total tickets
 							</h3>
-							<p className="text-sm font-medium">{getTotalTickets()}</p>
+							<p className="text-sm font-medium">
+								{raffle.ticketsSoldCount.toLocaleString('en-US')}
+							</p>
 						</div>
 
 						{/* Active Period Section */}
@@ -154,7 +97,7 @@ export function RaffleInfoCard({
 							<h3 className="text-sm font-medium text-[#7B7B7B]">
 								Active Period
 							</h3>
-							<p className="text-sm font-medium">{getActivePeriod()}</p>
+							<p className="text-sm font-medium">{activePeriod}</p>
 						</div>
 					</div>
 				</div>
@@ -178,7 +121,7 @@ export function RaffleInfoCard({
 					<div className="flex items-center justify-between">
 						<h3 className="flex items-center gap-1 text-sm font-medium text-[#7B7B7B]">
 							Min. Participants
-							{isBelowMinParticipants() ? (
+							{isBelowMinParticipants ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<InfoIcon className="size-3.5 cursor-help text-[#7B7B7B]" />
@@ -214,7 +157,7 @@ export function RaffleInfoCard({
 									My Tickets
 								</h3>
 								<div className="flex items-center gap-2">
-									<p>{getMyTotalTickets()}</p>
+									<p>{myTicketsTotal.toLocaleString('en-US')}</p>
 									{myTicketsTotal > 0 ? (
 										<Tooltip>
 											<TooltipTrigger asChild>

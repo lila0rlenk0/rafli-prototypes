@@ -16,11 +16,6 @@ import { createOrderPayloadSchema, orderSchema } from '@/types/order';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for order creation
- */
-type CreateOrderResponse = ServiceResponse<Order, OrderErrorCode>;
-
-/**
  * Creates a new pending order for ticket purchase
  *
  * @param payload - Order creation data (raffleId, ticketQuantity, optional promoCode)
@@ -28,23 +23,24 @@ type CreateOrderResponse = ServiceResponse<Order, OrderErrorCode>;
  */
 export async function createOrder(
 	payload: CreateOrderPayload,
-): Promise<CreateOrderResponse> {
+): Promise<ServiceResponse<Order, OrderErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Validate payload before sending
+		// Step 1: Validate payload — reject invalid quantity before network call
 		const validationResult = createOrderPayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
 			return failure(ORDER_ERROR_CODES.INVALID_QUANTITY);
 		}
 
+		// Step 2: Create pending order on backend
 		const response = await authenticatedClient.post(
 			'/orders',
 			validationResult.data,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Validate response structure
+		// Step 3: Validate response shape
 		const order = orderSchema.parse(response.data);
 
 		runAfter(async () => {
@@ -65,7 +61,6 @@ export async function createOrder(
 
 		return success(order);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'order', 'create-order');
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);

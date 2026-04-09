@@ -14,13 +14,22 @@ interface ResetPasswordPageProps {
 /**
  * Reset Password Page
  *
- * Displays password reset form with token validation.
+ * Async Server Component — awaits searchParams to extract the reset token.
+ * Data flow: token is extracted server-side and passed as prop to the Client
+ * Component ResetPasswordForm, which calls the resetPassword server action.
+ *
+ * Guard: missing token renders an error with a link to request a new one.
+ * The token itself is NOT validated here — that happens in the server action
+ * to avoid exposing timing information.
+ *
+ * @returns AuthPageShell with either error UI or reset password form
  */
 export default async function ResetPasswordPage({
 	searchParams,
 }: ResetPasswordPageProps) {
 	const { token } = await searchParams;
 
+	// Guard: no token — invalid or manually truncated reset link
 	if (!token) {
 		return (
 			<AuthPageShell>

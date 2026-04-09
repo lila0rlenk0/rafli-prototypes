@@ -53,21 +53,11 @@ export function WinnerVerification({
 	// Derive verified state from query data — null while loading
 	const verified = verification ? verification.merkleVerified : null;
 
-	/**
-	 * Truncates a hex string for display
-	 * @param str - String to truncate
-	 * @returns Truncated string with ellipsis
-	 */
 	function truncateHex(str: string): string {
 		if (str.length <= 16) return str;
 		return `${str.slice(0, 8)}...${str.slice(-6)}`;
 	}
 
-	/**
-	 * Formats ticket count with context
-	 * @param ticketId - Winning ticket number
-	 * @returns Formatted string
-	 */
 	function formatTicketContext(ticketId: number): string {
 		if (totalTickets) {
 			return `#${ticketId.toLocaleString()} of ${totalTickets.toLocaleString()} tickets`;

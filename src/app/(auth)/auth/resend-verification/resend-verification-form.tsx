@@ -19,6 +19,7 @@ import { type ComponentProps, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+/** Email-only schema — no password needed for resend flow */
 const formSchema = z.object({
 	email: z.email('Invalid email address'),
 });
@@ -46,11 +47,16 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 }
 
 /**
- * Resend Verification Email Form
+ * Resend verification email form.
  *
- * Accepts an email address and requests a new verification email.
- * Shows a generic success message regardless of account existence
- * to prevent user enumeration.
+ * 'use client' required: uses useForm for validation, useTransition for
+ * non-blocking server action calls, and useState for success state.
+ *
+ * Shows a generic success message regardless of account existence — prevents
+ * email enumeration attacks. Only infrastructure errors (rate limit, network)
+ * are surfaced to the user.
+ *
+ * @returns Form with email input, or success confirmation after submission
  */
 export function ResendVerificationForm({
 	className,
@@ -67,21 +73,24 @@ export function ResendVerificationForm({
 	const [isPending, startTransition] = useTransition();
 	const [isSuccess, setIsSuccess] = useState(false);
 
+	/** Calls server action and transitions to success or error state */
 	async function handleResend(data: FormType) {
 		startTransition(async () => {
+			// Step 1: Call server action — backend always returns success to prevent enumeration
 			const result = await resendVerificationEmail(data.email);
 
+			// Step 2: Only infrastructure errors bubble up (rate limit, network, timeout)
 			if (!result.success) {
 				const message = getErrorMessage(result.error);
 				setError('root', { message });
 				return;
 			}
 
+			// Step 3: Show generic success — intentionally vague regardless of account existence
 			setIsSuccess(true);
 		});
 	}
 
-	// Success state — generic message to prevent enumeration
 	if (isSuccess) {
 		return (
 			<div

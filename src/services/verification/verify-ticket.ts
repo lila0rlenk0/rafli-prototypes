@@ -27,8 +27,7 @@ export async function verifyTicket(
 		const response = await baseClient.get(
 			`/raffles/${raffleId}/verify-ticket/${ticketCode}`,
 		);
-		const validated = ticketVerificationSchema.parse(response.data);
-		return success(validated);
+		return success(ticketVerificationSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'verification', 'verify-ticket');

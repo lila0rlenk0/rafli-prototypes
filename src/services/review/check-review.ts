@@ -13,37 +13,25 @@ import {
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for checking review eligibility
- */
-type CheckReviewServiceResponse = ServiceResponse<
-	CheckReviewResponse,
-	ReviewErrorCode
->;
-
-/**
- * Checks if the current user can review a raffle
+ * Checks if the current user can review a raffle.
  *
  * @param raffleId - The UUID of the raffle to check
  * @returns ServiceResponse with eligibility data on success, ReviewErrorCode on failure
  */
 export async function checkReview(
 	raffleId: string,
-): Promise<CheckReviewServiceResponse> {
+): Promise<ServiceResponse<CheckReviewResponse, ReviewErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
 			`/raffles/${raffleId}/review`,
 		);
-
-		const validated = checkReviewResponseSchema.parse(response.data);
-
-		return success(validated);
+		return success(checkReviewResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'review', 'check-review');
 			return failure(REVIEW_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapReviewError(error);
-		return failure(errorCode);
+		return failure(mapReviewError(error));
 	}
 }

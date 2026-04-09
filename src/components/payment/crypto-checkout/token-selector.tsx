@@ -7,33 +7,18 @@ import { TokenIcon } from '@web3icons/react/dynamic';
 
 import type { RaffleCryptoToken } from '@/types/raffle';
 
-// ==========================================
-// Types
-// ==========================================
-
 interface TokenSelectorProps {
 	tokens: RaffleCryptoToken[];
 	onSelectToken: (token: RaffleCryptoToken) => void;
 }
 
-// ==========================================
-// Component
-// ==========================================
-
 /**
  * Token selector step for crypto checkout.
  * Shown after chain selection when multiple tokens are available.
- * Auto-skipped by the parent modal when only one token exists.
- *
- * Stablecoins (price === null) show "1:1 USD".
- * Custom-priced tokens show the explicit per-ticket rate from crypto options.
+ * Auto-skipped by parent when only one token exists.
  */
 export function TokenSelector({ tokens, onSelectToken }: TokenSelectorProps) {
-	/**
-	 * Gets the display price label for a token.
-	 * Null price = stablecoin (1:1 USD).
-	 * Non-null = custom-priced token with explicit per-ticket rate.
-	 */
+	// null price = stablecoin (1:1 USD peg); non-null = explicit per-ticket rate
 	function getPriceLabel(token: RaffleCryptoToken): string {
 		if (!token.price) return '1:1 USD';
 		return `${token.price} ${token.symbol}/ticket`;

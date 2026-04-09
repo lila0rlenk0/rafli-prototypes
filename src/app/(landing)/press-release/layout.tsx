@@ -43,8 +43,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * JSON-LD structured data for Article schema
- * Static content — no user input, safe for dangerouslySetInnerHTML
+ * JSON-LD structured data for Article schema.
+ * Static content — no user input, safe for dangerouslySetInnerHTML.
+ * Helps search engines display rich article snippets for the press release.
  */
 const jsonLd = {
 	'@context': 'https://schema.org',
@@ -64,10 +65,16 @@ const jsonLd = {
 };
 
 /**
- * Layout for Press Release page
+ * Layout for Press Release page.
  *
- * Provides metadata and structured data for SEO.
- * Navbar/footer rendered by the page component (landing pattern).
+ * Server Component — provides metadata and JSON-LD structured data for SEO.
+ * Navbar/footer are rendered by the page component, not this layout, because
+ * the press release page needs showDecoration=false on the Navbar.
+ *
+ * Data flow: children is the press-release page.tsx content. This layout only
+ * wraps it with a JSON-LD script tag — no data fetching or auth checks.
+ *
+ * @returns Fragment with JSON-LD script + children
  */
 export default function PressReleaseLayout({
 	children,
@@ -76,6 +83,8 @@ export default function PressReleaseLayout({
 }) {
 	return (
 		<>
+			{/* dangerouslySetInnerHTML is safe here: jsonLd is a hardcoded static object
+			    with no user input — JSON.stringify produces a safe JSON string */}
 			<Script
 				id="press-release-jsonld"
 				type="application/ld+json"

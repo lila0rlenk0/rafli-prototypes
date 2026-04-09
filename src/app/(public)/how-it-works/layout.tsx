@@ -136,16 +136,23 @@ interface HowItWorksLayoutProps {
 /**
  * How It Works Layout Content
  *
- * Internal component that accesses runtime data (cookies via getSession).
- * Must be wrapped in Suspense to prevent blocking the entire page render.
+ * Internal async component isolated behind Suspense — reads cookies via getSession
+ * which would block streaming if called at the layout level.
+ *
+ * Data flow: session cookie → auth state → conditionally wrap with auth stores.
+ * Same pattern as browse and host layouts.
  */
 async function HowItWorksLayoutContent({ children }: HowItWorksLayoutProps) {
+	// Step 1: Read session from httpOnly cookie.
 	const session = await getSession();
 	const isAuthenticated = !!session;
+
+	// Step 2: Parse permissions for provider tree.
 	const permissions = isAuthenticated
 		? parsePermissions(session?.user?.permissions)
 		: [];
 
+	// Step 3: Build navbar + conditional provider wrapping.
 	const content = (
 		<PublicNavbar isAuthenticated={isAuthenticated}>{children}</PublicNavbar>
 	);
@@ -169,6 +176,8 @@ async function HowItWorksLayoutContent({ children }: HowItWorksLayoutProps) {
 export default function HowItWorksLayout({ children }: HowItWorksLayoutProps) {
 	return (
 		<>
+			{/* dangerouslySetInnerHTML safe: jsonLd and faqJsonLd are static constants defined
+			    in this file with no user input. JSON.stringify escapes any special characters. */}
 			<Script
 				id="how-it-works-jsonld"
 				type="application/ld+json"

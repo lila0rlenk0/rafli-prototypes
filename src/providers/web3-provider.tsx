@@ -12,55 +12,50 @@ import {
 	WAGMI_COOKIE_KEY,
 } from '@/lib/web3/config';
 
-// ==========================================
-// Theme
-// ==========================================
+/** Near-black accent — matches the app's border/button color token */
+const ACCENT_COLOR = '#0F0F0F';
+
+/** White foreground for contrast on the dark accent */
+const ACCENT_FOREGROUND = '#FFFFFF';
 
 /**
  * Custom RainbowKit theme matching app's light design system.
  *
  * Overrides:
- * - Black accent (#0F0F0F) to match app's border/button style
+ * - Black accent to match app's border/button style
  * - Large border radius for rounded cards/buttons
  * - System font stack (app uses Clash Display for headings, system for body)
  */
 const appTheme = lightTheme({
-	accentColor: '#0F0F0F',
-	accentColorForeground: '#FFFFFF',
+	accentColor: ACCENT_COLOR,
+	accentColorForeground: ACCENT_FOREGROUND,
 	borderRadius: 'large',
 	fontStack: 'system',
 });
 
-// ==========================================
-// Component
-// ==========================================
-
 interface Web3ProviderProps {
-	children: ReactNode;
-	wagmiCookieValue?: string | null;
+	readonly children: ReactNode;
+	readonly wagmiCookieValue?: string | null;
 }
 
 /**
  * Wraps children with wagmi + RainbowKit for wallet connectivity.
  *
- * Shares the app's QueryClient (from QueryProvider above in the tree) —
- * wagmi uses namespaced query keys internally so there are no cache collisions.
- * A separate QueryClient would override the app's configured defaults
- * (staleTime: Infinity, refetch disabled) since React Query uses the innermost
- * QueryClientProvider, breaking either app queries or wagmi polling.
+ * Scope: sits below QueryProvider and above the page tree. Shares
+ * the app's QueryClient — wagmi uses namespaced query keys internally
+ * so there are no cache collisions. A separate QueryClient would
+ * override the app's configured defaults (staleTime: Infinity, refetch
+ * disabled) since React Query uses the innermost QueryClientProvider.
  *
- * `wagmiCookieValue` is the serialized `wagmi.store` payload from the
- * server-rendered request. Rebuilt as a single-cookie string locally so wagmi
- * can hydrate without exposing unrelated request cookies to client JavaScript.
- *
- * Wagmi hooks that need polling (e.g. useTransactionConfirmations) explicitly
- * set refetchInterval per-query, overriding the global staleTime: Infinity.
+ * `wagmiCookieValue` is the serialized `wagmi.store` payload forwarded
+ * from the server layout. Rebuilt as a single-cookie string locally so
+ * wagmi can hydrate without exposing unrelated request cookies to client JS.
  *
  * Renders children directly (no-op) when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
  * is not configured — ensures card payments and the rest of the app work
  * even without Web3 infrastructure.
  *
- * @returns children wrapped in Web3 providers, or bare children when disabled
+ * @returns Children wrapped in Web3 providers, or bare children when disabled
  */
 export function Web3Provider({
 	children,
@@ -71,7 +66,8 @@ export function Web3Provider({
 	const wagmiConfig = getWagmiConfig();
 
 	// Reconstruct the single cookie string wagmi expects for SSR hydration.
-	// Only recompute when the server-forwarded cookie value changes.
+	// useMemo avoids re-parsing on every render — only recomputes when the
+	// server-forwarded cookie value or config reference changes.
 	const initialState = useMemo(
 		() =>
 			wagmiCookieValue && wagmiConfig

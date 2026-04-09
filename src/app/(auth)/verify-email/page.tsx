@@ -10,14 +10,23 @@ interface VerifyEmailPageProps {
 /**
  * Email Verification Page
  *
- * Receives the token from the verification email link,
- * calls the backend to verify, and auto-signs in the user.
+ * Async Server Component — awaits searchParams to extract the verification token.
+ * Does NOT use the AuthPageShell (minimal centered layout for single-purpose flow).
+ *
+ * Data flow: searchParams.token is passed as a prop to the Client Component
+ * VerifyEmailHandler, which performs the actual verification via server action.
+ *
+ * Guard: missing token renders an error with resend/sign-in links immediately
+ * (no spinner, no Suspense needed for the error case).
+ *
+ * @returns Centered layout with either error links or Suspense-wrapped handler
  */
 export default async function VerifyEmailPage({
 	searchParams,
 }: VerifyEmailPageProps) {
 	const { token } = await searchParams;
 
+	// Guard: no token in URL — invalid or manually truncated verification link
 	if (!token) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
@@ -43,6 +52,7 @@ export default async function VerifyEmailPage({
 
 	return (
 		<div className="flex min-h-screen items-center justify-center">
+			{/* Suspense fallback: spinner while VerifyEmailHandler client bundle loads */}
 			<Suspense fallback={<VerifyEmailLoading />}>
 				<VerifyEmailHandler token={token} />
 			</Suspense>
@@ -50,6 +60,7 @@ export default async function VerifyEmailPage({
 	);
 }
 
+/** Spinner shown while the VerifyEmailHandler client JS bundle is loading */
 function VerifyEmailLoading() {
 	return (
 		<div className="flex flex-col items-center gap-4">

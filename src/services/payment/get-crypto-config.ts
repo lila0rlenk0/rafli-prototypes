@@ -5,7 +5,10 @@ import { ZodError } from 'zod';
 import { baseClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapPaymentError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import { cryptoConfigSchema, type CryptoConfig } from '@/types/crypto-config';
 import type { ServiceResponse } from '@/types/service-response';
@@ -35,6 +38,12 @@ export async function getCryptoConfig(): Promise<
 			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
 		}
 
-		return failure(mapPaymentError(error));
+		// Crypto is a critical service — capture for Sentry alerting
+		const errorCode = mapPaymentError(error);
+		captureServiceError(error, errorCode, {
+			service: 'payment',
+			action: 'get-crypto-config',
+		});
+		return failure(errorCode);
 	}
 }

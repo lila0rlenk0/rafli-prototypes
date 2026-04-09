@@ -47,6 +47,6 @@ interface NotificationIconProps {
  * @param className - Optional className for the icon
  */
 export function NotificationIcon({ type, className }: NotificationIconProps) {
-	const Icon = NOTIFICATION_ICON_MAP[type] || Gift;
+	const Icon = NOTIFICATION_ICON_MAP[type] ?? Gift;
 	return <Icon className={className} />;
 }

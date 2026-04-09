@@ -7,7 +7,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
 interface RestoreDraftModalProps {
 	open: boolean;
@@ -28,17 +28,11 @@ export function RestoreDraftModal({
 	onContinueDraft,
 	onStartFresh,
 }: RestoreDraftModalProps) {
-	/**
-	 * Handles the "Continue where I left off" button click
-	 */
 	function handleContinueDraft() {
 		onContinueDraft();
 		onOpenChange(false);
 	}
 
-	/**
-	 * Handles the "Start from scratch" button click
-	 */
 	function handleStartFresh() {
 		onStartFresh();
 		onOpenChange(false);
@@ -84,11 +78,6 @@ export function RestoreDraftModal({
 	);
 }
 
-/**
- * Draft document icon displayed in the modal header
- *
- * @returns SVG icon element
- */
 function DraftIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -110,11 +99,6 @@ function DraftIcon(props: ComponentProps<'svg'>) {
 	);
 }
 
-/**
- * Decorative colored card shapes for the modal background
- *
- * @returns SVG decorative element
- */
 function ColoredCards(props: ComponentProps<'svg'>) {
 	return (
 		<svg

@@ -3,6 +3,8 @@ import type { ComponentProps } from 'react';
 
 /** @returns Rafli full logo SVG with text */
 export function Logo(props: ComponentProps<'svg'>) {
+	// useId generates a unique ID per instance — prevents clipPath collisions
+	// when multiple Logo components render on the same page (e.g. header + footer)
 	const clipPathId = useId();
 
 	return (

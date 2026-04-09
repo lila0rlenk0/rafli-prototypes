@@ -23,11 +23,11 @@ interface SubmissionDetailPageProps {
 }
 
 /**
- * Admin Submission Detail Page
+ * Admin Submission Detail Page (Server Component)
  *
- * Displays full KYC submission detail for admin review including:
- * form data, uploaded documents, and approve/reject actions for
- * pending submissions.
+ * Data-fetching strategy: fetches submission detail by ID server-side.
+ * Returns 404 on failure — hides existence of submissions from unauthorized users.
+ * No caching — admin reviews must always show the latest status.
  *
  * @returns Detail page with cards for each data section
  */

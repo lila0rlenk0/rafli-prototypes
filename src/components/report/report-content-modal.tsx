@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useTimeout } from '@/lib/hooks/use-timeout';
+import { DIALOG_EXIT_ANIMATION_MS } from '@/lib/ui-constants';
 import { getReportErrorMessage } from '@/lib/errors/report-error-messages';
 import { useCreateReport } from '@/services/report/use-create-report';
 import type { ReportContentType } from '@/types/report';
@@ -22,8 +23,6 @@ import type { ReportContentType } from '@/types/report';
 const MIN_REASON_LENGTH = 10;
 /** Maximum reason length required by createReportSchema */
 const MAX_REASON_LENGTH = 500;
-/** Delay before resetting form — matches Radix Dialog exit animation */
-const DIALOG_EXIT_ANIMATION_MS = 200;
 
 interface ReportContentModalProps {
 	open: boolean;
@@ -37,14 +36,9 @@ interface ReportContentModalProps {
 }
 
 /**
- * Modal for reporting content to moderation
- *
- * Renders a textarea for the user to describe why the content
- * violates guidelines. Shows character count and validates
- * 10-500 char range before enabling submit.
- *
- * Resets form state after close animation completes (200ms delay)
- * to avoid visible content flash during dialog exit transition.
+ * Modal for reporting content to moderation.
+ * Validates 10–500 chars before enabling submit.
+ * Resets form after close animation (200ms) to avoid visible flash during exit transition.
  */
 export function ReportContentModal({
 	open,
@@ -57,17 +51,14 @@ export function ReportContentModal({
 	const mutation = useCreateReport();
 	const setSafeTimeout = useTimeout();
 
-	/** Whether the reason meets minimum length */
 	function isReasonValid(): boolean {
 		return reason.trim().length >= MIN_REASON_LENGTH;
 	}
 
-	/** Updates reason text from textarea input */
 	function handleReasonChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
 		setReason(e.target.value);
 	}
 
-	/** Resets local form state after dialog close animation */
 	function resetForm() {
 		setSafeTimeout(() => {
 			setReason('');
@@ -75,7 +66,6 @@ export function ReportContentModal({
 		}, DIALOG_EXIT_ANIMATION_MS);
 	}
 
-	/** Handles dialog open/close — resets form on close */
 	function handleOpenChange(nextOpen: boolean) {
 		onOpenChange(nextOpen);
 		if (!nextOpen) {
@@ -83,7 +73,6 @@ export function ReportContentModal({
 		}
 	}
 
-	/** Submits the report and shows toast feedback */
 	function handleSubmit() {
 		mutation.mutate(
 			{

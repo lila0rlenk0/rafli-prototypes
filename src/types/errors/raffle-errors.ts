@@ -1,22 +1,7 @@
 import type { ClientErrorCode } from './client-errors';
 import type { CommonErrorCode } from './common-errors';
 
-/**
- * Raffle/Core Error Codes
- *
- * Raffle-specific error codes that match backend "core:*" error codes
- * from raffle endpoints (create, fetch, upload, update, publish).
- *
- * These codes are extracted directly from backend responses using the
- * RFC 7807 URN format or simple code format.
- *
- * Note: Backend uses "core:" prefix instead of "raffle:"
- */
-
-/**
- * Raffle error codes constant object
- * Contains only essential core/raffle error codes used in the application
- */
+/** Note: Backend uses "core:" prefix instead of "raffle:" */
 export const RAFFLE_ERROR_CODES = {
 	// Core raffle errors
 	/** Raffle not found */
@@ -59,10 +44,6 @@ export const RAFFLE_ERROR_CODES = {
 	FETCH_FAILED: 'fetch_failed',
 } as const;
 
-/**
- * Raffle error code type
- * Represents all possible raffle-specific, client-side, and common error codes
- */
 export type RaffleErrorCode =
 	| (typeof RAFFLE_ERROR_CODES)[keyof typeof RAFFLE_ERROR_CODES]
 	| ClientErrorCode

@@ -24,20 +24,30 @@ import type { ServiceResponse } from '@/types/service-response';
 
 type SendMagicLinkResponse = ServiceResponse<void, AuthErrorCode>;
 
+/**
+ * Sends a magic link email for passwordless sign-in.
+ *
+ * @param email - User's email address
+ * @param callbackURL - URL to redirect to after email verification
+ * @returns ServiceResponse with void on success, AuthErrorCode on failure
+ */
 export async function sendMagicLink(
 	email: string,
 	callbackURL: string,
 ): Promise<SendMagicLinkResponse> {
 	try {
-		// Track intent — captures magic link request before email delivery
+		// Step 1: Fire-and-forget intent tracking — captures drop-off before email delivery
 		track(AUTH_EVENTS.SIGN_IN_STARTED, { method: 'magic_link' });
 
+		// Step 2: Request magic link email from backend (browser client, not server action)
 		await browserClient.post('/auth/sign-in/magic-link', {
 			email,
 			callbackURL,
 		});
+
 		return success(undefined);
 	} catch (error) {
+		// Step 3: Map and capture — auth is a critical service
 		const errorCode = mapAuthError(error);
 		captureServiceError(error, errorCode, {
 			service: 'auth',

@@ -172,15 +172,20 @@ export function useXShare({
 	const useTokenizedFlow = xShareEnabled && !claimUsed;
 	const handleVerifyRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
-	// Cleanup auto-retry timer on unmount
+	// useEffect: mount-only cleanup for auto-retry interval timer.
+	// Deps: [] — runs once on mount, cleanup on unmount.
+	// Why effect: must clear interval to prevent memory leak + setState on unmounted component.
 	useEffect(() => {
 		return () => {
 			if (retryTimerRef.current) clearInterval(retryTimerRef.current);
 		};
 	}, []);
 
-	// mount: strip xref token from URL — only meaningful to backend, noisy in address
-	// bar, and could leak the claim token if the user copies the URL.
+	// useEffect: mount-only URL cleanup — strips xref token from address bar.
+	// Deps: [] — runs once after hydration.
+	// Why effect: DOM API (window.history) not available during SSR.
+	// The xref token is only meaningful to backend verification — keeping it in the URL
+	// is noisy and could leak the claim token if the user copies the link.
 	useEffect(() => {
 		const url = new URL(window.location.href);
 		if (!url.searchParams.has('xref')) return;
@@ -189,7 +194,9 @@ export function useXShare({
 		window.history.replaceState(null, '', url.pathname + (url.search || ''));
 	}, []);
 
-	/** Starts a visible countdown that auto-fires handleVerify at zero */
+	// useCallback: stable reference for startAutoRetry.
+	// Deps: [] — interval logic is self-contained, uses handleVerifyRef for latest verify.
+	// Avoids re-creating interval setup on every render.
 	const startAutoRetry = useCallback(() => {
 		// Clear any existing timer
 		if (retryTimerRef.current) clearInterval(retryTimerRef.current);
@@ -263,13 +270,10 @@ export function useXShare({
 		setState('shared');
 	}
 
-	/**
-	 * Verify the share — backend searches X API for the tweet containing
-	 * the tokenized URL and grants one free ticket if found.
-	 *
-	 * When tweet is not yet indexed, starts an auto-retry countdown so the
-	 * user doesn't have to manually tap verify repeatedly.
-	 */
+	// useCallback: stable reference for handleVerify.
+	// Deps: [publicSlug, raffleId, router, startAutoRetry] — re-creates when raffle context changes.
+	// Memoized because it's stored in handleVerifyRef (consumed by auto-retry timer)
+	// and returned to consumers who may place it in their own dependency arrays.
 	const handleVerify = useCallback(async () => {
 		// Cancel any running auto-retry — user tapped manually or auto-retry fired
 		if (retryTimerRef.current) {
@@ -339,8 +343,10 @@ export function useXShare({
 		}
 	}, [publicSlug, raffleId, router, startAutoRetry]);
 
-	// The retry timer needs the freshest verify logic after router/raffle props change.
-	// Keep the ref in sync in an effect so the timer callback never closes over stale state.
+	// useEffect: sync target = keep handleVerifyRef pointing to latest handleVerify.
+	// Deps: [handleVerify] — updates ref whenever verify callback identity changes.
+	// Why effect: the auto-retry setInterval fires handleVerifyRef.current — without
+	// this sync, the timer closure would call a stale verify with outdated router/props.
 	useEffect(() => {
 		handleVerifyRef.current = handleVerify;
 	}, [handleVerify]);

@@ -10,10 +10,11 @@ interface VerificationListPageProps {
 }
 
 /**
- * Admin Verification List Page
+ * Admin Verification List Page (Server Component)
  *
- * Paginated list of KYC submissions with status/type filters.
- * Server component — reads search params and fetches data server-side.
+ * Data-fetching strategy: parses search params with Zod, then fetches
+ * admin submissions server-side. No client-side cache — always fresh on
+ * navigation since admin reviews are time-sensitive.
  *
  * @returns Page with heading, filters, table, and pagination
  */
@@ -22,7 +23,7 @@ export default async function VerificationListPage({
 }: VerificationListPageProps) {
 	const params = await searchParams;
 
-	// Validate and coerce search params — invalid values are silently ignored
+	// Invalid param values are silently ignored — Zod strips unknowns
 	const queryResult = adminKycQuerySchema.safeParse({
 		page: params.page,
 		limit: params.limit,
@@ -31,7 +32,7 @@ export default async function VerificationListPage({
 	});
 	const query = queryResult.success ? queryResult.data : {};
 
-	// Encore requires page/limit in the query string — Rust parser validates before Zod defaults apply
+	// Encore/Rust parser requires page+limit even when Zod defaults apply
 	const result = await getAdminSubmissions({
 		page: query.page ?? 1,
 		limit: query.limit ?? 20,
@@ -47,7 +48,6 @@ export default async function VerificationListPage({
 				KYC Reviews
 			</h1>
 
-			{/* Filters + total count */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<SubmissionsFilters />
 				<p className="text-muted-foreground text-sm">
@@ -55,7 +55,6 @@ export default async function VerificationListPage({
 				</p>
 			</div>
 
-			{/* Submissions table */}
 			<div className="rounded-2xl bg-white p-6">
 				<SubmissionsTable submissions={submissions} />
 				<SubmissionsPagination total={total} />

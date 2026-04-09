@@ -6,31 +6,27 @@ paths:
 
 # React Effects
 
-Avoid `useEffect`. Apply the correct replacement:
+Avoid `useEffect`. Correct replacements:
 
-- Deriving state from state/props — inline computation or `useMemo`
-- Fetching data — React Query hook wrapping a server action
-- Responding to user actions — event handler
-- One-time external sync on mount — `useEffect` with `[]` deps, comment `// mount: <reason>`
-- Resetting state when a prop changes — `key` prop on parent component
+- deriving state from state/props — inline computation or `useMemo`
+- fetching data — React Query hook wrapping server action
+- responding to user actions — event handler
+- one-time external sync on mount — `useEffect` with `[]` deps, comment `// mount: <reason>`
+- resetting state when prop changes — `key` prop on parent
 
-## Smell tests
+## Smells
 
 - `useEffect(() => setX(f(y)), [y])` — derived state, compute inline
-- `useEffect(() => fetch(...).then(setX), [id])` — use React Query
+- `useEffect(() => fetch(...), [id])` — use React Query
 - `useEffect(() => { if (flag) doAction(); setFlag(false); }, [flag])` — move to handler
-- `useEffect(() => setX(null), [id])` — reset via `key` prop
+- `useEffect(() => setX(null), [id])` — reset via `key`
 
-## Legitimate `useEffect` (mount-only with `[]`)
+## Legitimate (mount-only `[]`)
 
-- DOM integration (focus, scroll, IntersectionObserver)
-- Browser API subscriptions (WebSocket, resize, keyboard)
-- Third-party widget lifecycle (GSAP, Lexical commands)
-- Cleanup timers/listeners on unmount
+DOM integration, browser API subscriptions, third-party widget lifecycle, cleanup on unmount
 
-## Additional anti-patterns
+## Anti-patterns
 
-- Notifying parent via effect — call parent callback in the same handler that changes state
-- Chaining effects (state→effect→state→effect) — compute all next state in one handler
-- Subscribing to external stores — use `useSyncExternalStore` instead of `useEffect` + `setState`
-- `[...arr].sort()` in effects — derive sorted data inline with `.toSorted()`, no effect needed
+- notifying parent via effect — call callback in the handler that changes state
+- chaining effects — compute all next state in one handler
+- subscribing to external stores — `useSyncExternalStore`

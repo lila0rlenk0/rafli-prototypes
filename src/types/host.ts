@@ -2,13 +2,10 @@ import { z } from 'zod';
 
 import { paginationQuerySchema } from './pagination';
 
-// ==========================================
-// Schemas
-// ==========================================
-
 /**
- * Schema for host profile data
- * Represents the public profile of a raffle host
+ * Host public profile entity.
+ *
+ * Validation boundary: server-side — parsed in host profile server actions.
  */
 export const hostProfileSchema = z.object({
 	id: z.uuid(),
@@ -21,19 +18,12 @@ export const hostProfileSchema = z.object({
 	totalReviews: z.number(),
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
 export type HostProfile = z.infer<typeof hostProfileSchema>;
 
-// ==========================================
-// Query Schemas
-// ==========================================
-
 /**
- * Schema for querying host raffles
- * Either hostId or username must be provided
+ * Either hostId or username must be provided — the API uses whichever is present.
+ *
+ * Validation boundary: client-side — validated before fetching host raffles.
  */
 export const hostRafflesQuerySchema = paginationQuerySchema.extend({
 	hostId: z.uuid().optional(),

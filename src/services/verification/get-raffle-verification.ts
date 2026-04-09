@@ -23,8 +23,7 @@ export async function getRaffleVerification(
 ): Promise<ServiceResponse<RaffleVerificationData, VerificationErrorCode>> {
 	try {
 		const response = await baseClient.get(`/raffles/${raffleId}/verification`);
-		const validated = raffleVerificationDataSchema.parse(response.data);
-		return success(validated);
+		return success(raffleVerificationDataSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'verification', 'get-raffle-verification');

@@ -20,13 +20,6 @@ interface RaffleCancelledCardProps {
 	myTicketCount: number;
 }
 
-/**
- * RaffleCancelledCard Component
- *
- * Sidebar card shown on the detail page when a raffle is cancelled.
- * Differentiates between host-cancelled and auto-cancelled (system) scenarios,
- * showing contextual messages per reason and viewer role.
- */
 export function RaffleCancelledCard({
 	reason,
 	isOwner,
@@ -36,31 +29,22 @@ export function RaffleCancelledCard({
 	myTicketCount,
 }: RaffleCancelledCardProps) {
 	const isAuto = isAutoReason(reason);
+	const title = isAuto ? 'Auto-Cancelled' : 'Cancelled';
+	const showRefundNotice = !isOwner && myTicketCount > 0;
 
-	/** Pluralizes a noun based on count */
 	function pluralize(count: number, singular: string): string {
 		return count !== 1 ? `${singular}s` : singular;
 	}
 
-	/** Formats "N ticket(s)" for display */
 	function formatTicketCount(count: number): string {
 		return `${count} ${pluralize(count, 'ticket')}`;
 	}
 
-	/** Formats "N participant(s)" for display */
 	function formatParticipantCount(count: number): string {
 		return `${count} ${pluralize(count, 'participant')}`;
 	}
 
-	/** Title text based on cancellation type */
-	function getTitle(): string {
-		return isAuto ? 'Auto-Cancelled' : 'Cancelled';
-	}
-
-	/**
-	 * Contextual message explaining what happened.
-	 * Varies by reason × role (host vs participant).
-	 */
+	// Message varies by cancellation reason × viewer role (host vs participant).
 	function getMessage(): string {
 		switch (reason) {
 			case CANCELLATION_REASON.NO_TICKETS:
@@ -85,14 +69,6 @@ export function RaffleCancelledCard({
 		}
 	}
 
-	/**
-	 * Whether to show refund notice.
-	 * Only relevant for participants who had tickets in a cancelled raffle.
-	 */
-	function shouldShowRefundNotice(): boolean {
-		return !isOwner && myTicketCount > 0;
-	}
-
 	const Icon = isAuto ? UserX : CircleOff;
 
 	return (
@@ -100,12 +76,12 @@ export function RaffleCancelledCard({
 			<Icon className="mx-auto size-12" />
 
 			<h2 className="font-clash-display mt-8 text-center text-2xl font-semibold">
-				{getTitle()}
+				{title}
 			</h2>
 
 			<p className="mt-4 text-center text-sm text-gray-600">{getMessage()}</p>
 
-			{shouldShowRefundNotice() ? (
+			{showRefundNotice ? (
 				<div className="mt-4 rounded-lg bg-[#E1F8FF] p-3 text-center text-sm">
 					<p>
 						You had <strong>{formatTicketCount(myTicketCount)}</strong> &mdash;
@@ -114,11 +90,13 @@ export function RaffleCancelledCard({
 				</div>
 			) : null}
 
-			{isOwner && ticketsSoldCount > 0 ? (
-				<p className="mt-3 text-center text-xs text-gray-500">
-					{formatTicketCount(ticketsSoldCount)} sold &mdash; all purchases are
-					automatically refunded.
-				</p>
+			{isOwner ? (
+				ticketsSoldCount > 0 ? (
+					<p className="mt-3 text-center text-xs text-gray-500">
+						{formatTicketCount(ticketsSoldCount)} sold &mdash; all purchases are
+						automatically refunded.
+					</p>
+				) : null
 			) : null}
 		</div>
 	);

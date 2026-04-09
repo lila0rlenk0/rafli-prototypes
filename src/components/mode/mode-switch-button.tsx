@@ -10,14 +10,6 @@ import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
 
-/**
- * ModeSwitchButton Component
- *
- * Compact pill toggle for switching between Host and Participant modes.
- * Active mode shows black background with white text; inactive is transparent.
- *
- * @returns Pill toggle, "Become a Host" link, or loading state
- */
 export function ModeSwitchButton() {
 	const mode = useUserStore(state => state.mode);
 	const hasPermissions = useUserStore(state => state.permissions.length > 0);
@@ -26,9 +18,6 @@ export function ModeSwitchButton() {
 	const router = useRouter();
 	const [isSwitching, startTransition] = useTransition();
 
-	/**
-	 * Switches to the given target mode if it differs from the current mode
-	 */
 	function handleSwitch(
 		target: typeof USER_MODE.HOST | typeof USER_MODE.PARTICIPANT,
 	) {

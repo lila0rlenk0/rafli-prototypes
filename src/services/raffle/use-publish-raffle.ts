@@ -87,7 +87,10 @@ export function usePublishRaffle({
 					: 'Your raffle is scheduled. It will go live at the start time you set.';
 			toast.info(message);
 			router.push(redirectTo);
-		} catch {
+		} catch (error) {
+			// Unexpected error (network failure, serialization) — updateRaffle/publishRaffle
+			// failures are handled above via ServiceResponse, this catches unhandled throws
+			console.error('[usePublishRaffle] Unexpected error:', error);
 			toast.error('Something went wrong. Please try again');
 		} finally {
 			setIsPublishing(false);

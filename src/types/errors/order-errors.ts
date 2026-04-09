@@ -1,12 +1,6 @@
 import type { ClientErrorCode } from './client-errors';
 import type { CommonErrorCode } from './common-errors';
 
-/**
- * Order Error Codes
- *
- * Order-specific error codes that match backend "core:order:*" error codes
- */
-
 export const ORDER_ERROR_CODES = {
 	// Order errors
 	/** Raffle is not live */
@@ -32,9 +26,6 @@ export const ORDER_ERROR_CODES = {
 	FETCH_FAILED: 'fetch_failed',
 } as const;
 
-/**
- * Order error code type
- */
 export type OrderErrorCode =
 	| (typeof ORDER_ERROR_CODES)[keyof typeof ORDER_ERROR_CODES]
 	| ClientErrorCode

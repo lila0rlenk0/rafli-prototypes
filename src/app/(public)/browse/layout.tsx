@@ -15,21 +15,30 @@ interface PublicBrowseLayoutProps {
 /**
  * Public Browse Layout Content
  *
- * Internal component that accesses runtime data (cookies via getSession).
- * Must be wrapped in Suspense to prevent blocking the entire page render.
- * Provides auth-aware navigation for both authenticated and non-authenticated users.
+ * Internal async component that accesses runtime data (cookies via getSession).
+ * Extracted from the layout so it can be wrapped in Suspense — getSession reads
+ * cookies which blocks streaming if called directly in a layout.
  *
- * @param children - Child components to render
+ * Data flow: reads session cookie → derives auth state + permissions →
+ * conditionally wraps children with auth-aware stores (UserStore, NotificationStore).
+ * Non-authenticated users get the same navbar but skip the provider tree.
+ *
+ * @param children - Child page/layout components from the browse segment
  */
 async function PublicBrowseLayoutContent({
 	children,
 }: PublicBrowseLayoutProps) {
+	// Step 1: Read session from httpOnly cookie — single await, no caching needed.
 	const session = await getSession();
 	const isAuthenticated = !!session;
+
+	// Step 2: Parse permission bitmask for UserStoreProvider.
+	// Empty array for guests — providers are skipped entirely below.
 	const permissions = isAuthenticated
 		? parsePermissions(session?.user?.permissions)
 		: [];
 
+	// Step 3: Build navbar shell — same for both auth states, only providers differ.
 	const content = (
 		<PublicNavbar
 			isAuthenticated={isAuthenticated}
@@ -39,7 +48,8 @@ async function PublicBrowseLayoutContent({
 		</PublicNavbar>
 	);
 
-	// Only wrap with providers for authenticated users
+	// Step 4: Wrap with auth stores only for authenticated users.
+	// Guests skip providers — hooks like useUserStore guard against missing context.
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
@@ -54,16 +64,19 @@ async function PublicBrowseLayoutContent({
 /**
  * Public Browse Layout
  *
- * Server-side layout for public browse pages.
- * Uses Suspense to prevent blocking on runtime data access (cookies, headers).
- * Supports both authenticated and non-authenticated users.
+ * Server Component layout for all /browse/* pages.
+ * Suspense wraps the content component because it calls getSession (reads cookies),
+ * which would block streaming if invoked at the layout level directly.
+ * Fallback shows a full-screen loader until session resolution completes.
  */
 export default function PublicBrowseLayout({
 	children,
 }: PublicBrowseLayoutProps) {
 	return (
 		<main className="relative min-h-screen">
+			{/* Decorative background — fixed position, non-interactive */}
 			<ColoredShapes className="pointer-events-none fixed top-0 left-0 z-[15] origin-top-left scale-[.65]" />
+			{/* Suspense boundary: covers cookie-dependent auth resolution in content component */}
 			<Suspense fallback={<ScreenLoader />}>
 				<PublicBrowseLayoutContent>{children}</PublicBrowseLayoutContent>
 			</Suspense>

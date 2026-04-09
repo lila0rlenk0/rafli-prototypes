@@ -97,6 +97,8 @@ const MARKDOWN_TRANSFORMERS = [
 	}),
 ];
 
+// next/dynamic: lazy-load the Lexical editor — heavy client-only bundle.
+// SSR disabled because Lexical requires browser APIs on init.
 const Editor = dynamic(
 	() =>
 		import('@/components/ui/blocks/editor-md/editor').then(module => ({
@@ -120,7 +122,10 @@ function EditorSkeleton() {
 }
 
 /**
- * Plugin to sync markdown with form field
+ * Plugin to sync markdown between react-hook-form and the Lexical editor.
+ * Uses refs to prevent update loops: isUpdatingRef guards against the
+ * OnChangePlugin firing during programmatic editor updates.
+ * Uses useTimeout for deferred unlock instead of raw setTimeout.
  */
 function MarkdownSyncPlugin({
 	markdownValue,
@@ -130,12 +135,16 @@ function MarkdownSyncPlugin({
 	onMarkdownChange: (markdown: string) => void;
 }) {
 	const [editor] = useLexicalComposerContext();
+	// Ref: tracks the last markdown value written to the editor to deduplicate
 	const lastMarkdownRef = useRef<string>(markdownValue || '');
+	// Ref: true during programmatic editor updates — suppresses OnChangePlugin
 	const isUpdatingRef = useRef(false);
+	// Ref: true after first mount initialization — prevents double-init
 	const isInitializedRef = useRef(false);
+	// Cleanup-safe setTimeout — auto-clears on unmount to prevent memory leaks
 	const setDeferredUnlock = useTimeout();
 
-	// Initialize editor with markdown on mount (even if empty)
+	// mount: seed the editor with the initial markdown value from form state
 	useEffect(() => {
 		if (!isInitializedRef.current) {
 			isUpdatingRef.current = true;
@@ -156,7 +165,8 @@ function MarkdownSyncPlugin({
 		}
 	}, [editor, markdownValue, setDeferredUnlock]);
 
-	// Update editor when markdown value changes externally
+	// Sync: update editor when form value changes externally (e.g. form reset).
+	// Compares against lastMarkdownRef to avoid loops from our own onChange writes.
 	useEffect(() => {
 		if (!isInitializedRef.current || isUpdatingRef.current) return;
 

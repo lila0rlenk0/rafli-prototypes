@@ -18,50 +18,47 @@ import {
 import { revalidateProfile } from './revalidate-profile';
 
 /**
- * Service response type for updating current user data
- */
-type UpdateMeServiceResponse = ServiceResponse<
-	UpdateMeResponse,
-	RaffleErrorCode
->;
-
-/**
- * Updates the current authenticated user's profile data
+ * Updates the current authenticated user's profile data.
+ *
+ * Only sends changed fields (partial update). Returns early if payload
+ * is invalid or empty — prevents pointless network round trips.
  *
  * @param payload - Partial update payload with only changed fields
  * @returns ServiceResponse with updated user data on success, RaffleErrorCode on failure
  */
 export async function updateMe(
 	payload: UpdateMePayload,
-): Promise<UpdateMeServiceResponse> {
+): Promise<ServiceResponse<UpdateMeResponse, RaffleErrorCode>> {
 	try {
-		// Validate payload before sending
+		// Step 1: Validate payload — reject malformed updates before network call
 		const validationResult = updateMePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		// Only send if there are actual changes
+		// Step 2: Guard — no-op if caller passed an empty diff
 		if (Object.keys(validationResult.data).length === 0) {
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
+		// Step 3: Send partial update to backend
 		const response = await authenticatedClient.put(
 			'/me',
 			validationResult.data,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Validate response structure
-		const validatedData = updateMeResponseSchema.parse(response.data);
+		// Step 4: Validate response shape
+		const data = updateMeResponseSchema.parse(response.data);
 
+		// Step 5: Revalidate /profile path so profile page reflects updated data
+		// Revalidation target: /profile path
 		runAfter(async () => {
 			await revalidateProfile();
 		});
 
-		return success(validatedData);
+		return success(data);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'user', 'update-me');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);

@@ -7,26 +7,15 @@ import { Check, Pencil, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-/**
- * Props for the EditableName component
- */
 interface EditableNameProps {
-	/**
-	 * The current user name
-	 */
 	name: string;
 }
 
-/**
- * Matches backend constraint — sanitizeText + max 100 chars
- */
+/** Backend constraint — sanitizeText + max 100 chars */
 const NAME_MAX_LENGTH = 100;
 
 /**
- * EditableName Component
- *
- * Displays the user's full name with inline editing capability.
- * On click of pencil icon, switches to an input field for editing.
+ * Inline-editable full name field. Saves on Enter, cancels on Escape.
  *
  * @returns Inline-editable name field with save/cancel controls
  */

@@ -14,22 +14,8 @@ interface TicketSelectorProps {
 }
 
 /**
- * TicketSelector Component
- *
- * Manages ticket quantity selection with increment/decrement controls,
- * bundle purchase shortcuts, and an editable input field. Enforces minimum (1)
- * and maximum (available tickets) constraints.
- *
- * When maxTickets is 0, it means unlimited - no upper bound is enforced.
- *
- * Features:
- * - +/- controls for precise quantity selection
- * - Editable input field for direct quantity entry
- * - Bundle buttons for quick selection (3, 6, 9 tickets)
- * - Smart overflow handling (bundles respect max limit)
- * - Disabled states when at limits
- * - Real-time total price calculation
- * - Input validation with automatic correction
+ * Ticket quantity selector with +/- controls, direct input, and bundle shortcuts.
+ * `maxTickets === 0` means unlimited — no upper bound enforced.
  */
 export function TicketSelector({
 	maxTickets,
@@ -38,28 +24,17 @@ export function TicketSelector({
 	const [quantity, setQuantity] = useState(1);
 	const [inputValue, setInputValue] = useState('1');
 
-	// 0 means unlimited participants
+	// 0 means unlimited participants — use MAX_SAFE_INTEGER so bound checks always pass
 	const isUnlimited = maxTickets === 0;
-	// Use a high number for unlimited, otherwise use maxTickets
 	const effectiveMax = isUnlimited ? Number.MAX_SAFE_INTEGER : maxTickets;
 
-	/**
-	 * Validates and normalizes a quantity value
-	 * Ensures the value is within valid bounds (1 to effectiveMax)
-	 * @param value - The quantity value to validate
-	 * @returns Validated quantity value
-	 */
 	function validateQuantity(value: number): number {
 		if (isNaN(value) || value < 1) return 1;
 		if (value > effectiveMax) return effectiveMax;
 		return Math.floor(value);
 	}
 
-	/**
-	 * Updates quantity, input value, and notifies parent synchronously.
-	 * Centralizes state + parent sync to avoid useEffect for parent notification.
-	 * @param newQuantity - The new quantity value
-	 */
+	// Centralizes state + parent sync — avoids useEffect for parent notification.
 	function updateQuantity(newQuantity: number) {
 		const validated = validateQuantity(newQuantity);
 		setQuantity(validated);
@@ -67,41 +42,6 @@ export function TicketSelector({
 		onQuantityChange(validated);
 	}
 
-	/**
-	 * Handles incrementing the ticket quantity by 1.
-	 */
-	function handleIncrement() {
-		updateQuantity(quantity + 1);
-	}
-
-	/**
-	 * Handles decrementing the ticket quantity by 1.
-	 */
-	function handleDecrement() {
-		updateQuantity(quantity - 1);
-	}
-
-	/**
-	 * Sets ticket quantity to the given bundle size directly (desktop).
-	 * @param bundleSize - Target ticket count (3, 6, or 9)
-	 */
-	function handleBundleSet(bundleSize: number) {
-		updateQuantity(bundleSize);
-	}
-
-	/**
-	 * Adds tickets to current quantity (mobile bundles).
-	 * @param amount - Number of tickets to add
-	 */
-	function handleBundleAdd(amount: number) {
-		updateQuantity(quantity + amount);
-	}
-
-	/**
-	 * Handles input change while user is typing
-	 * Allows temporary invalid values during typing
-	 * @param event - Input change event
-	 */
 	function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
 		const value = event.target.value;
 		setInputValue(value);
@@ -114,10 +54,6 @@ export function TicketSelector({
 		}
 	}
 
-	/**
-	 * Handles input blur (when user finishes typing)
-	 * Validates and corrects the value if needed
-	 */
 	function handleInputBlur() {
 		const numValue = parseInt(inputValue, 10);
 		if (isNaN(numValue) || numValue < 1) {
@@ -129,51 +65,17 @@ export function TicketSelector({
 		}
 	}
 
-	/**
-	 * Handles Enter key press in input
-	 * Validates and applies the value
-	 * @param event - Keyboard event
-	 */
 	function handleInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
 		if (event.key === 'Enter') {
 			event.currentTarget.blur();
 		}
 	}
 
-	/**
-	 * Checks if a bundle button should be disabled
-	 * Never disabled for unlimited raffles
-	 * @param currentQty - Current ticket quantity
-	 * @returns True if button should be disabled
-	 */
-	function isBundleDisabled(currentQty: number): boolean {
-		if (isUnlimited) return false;
-		return currentQty >= maxTickets;
-	}
-
-	/**
-	 * Checks if increment button should be disabled
-	 * Never disabled for unlimited raffles
-	 * @param currentQty - Current ticket quantity
-	 * @returns True if button should be disabled
-	 */
-	function isIncrementDisabled(currentQty: number): boolean {
-		if (isUnlimited) return false;
-		return currentQty >= maxTickets;
-	}
-
-	/**
-	 * Checks if decrement button should be disabled
-	 * @param currentQty - Current ticket quantity
-	 * @returns True if button should be disabled
-	 */
-	function isDecrementDisabled(currentQty: number): boolean {
-		return currentQty <= 1;
-	}
-
-	const incrementDisabled = isIncrementDisabled(quantity);
-	const decrementDisabled = isDecrementDisabled(quantity);
-	const bundleDisabled = isBundleDisabled(quantity);
+	// Never disabled for unlimited raffles
+	const incrementDisabled = !isUnlimited && quantity >= maxTickets;
+	const decrementDisabled = quantity <= 1;
+	// Bundle disabled when already at the cap — same condition as increment
+	const bundleDisabled = incrementDisabled;
 
 	return (
 		<div className="space-y-4">
@@ -182,7 +84,7 @@ export function TicketSelector({
 				{BUNDLE_SIZES_MOBILE.map(size => (
 					<button
 						key={size}
-						onClick={() => handleBundleAdd(size)}
+						onClick={() => updateQuantity(quantity + size)}
 						disabled={bundleDisabled}
 						className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-3 text-sm transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
 					>
@@ -194,7 +96,7 @@ export function TicketSelector({
 			{/* Quantity counter — full-width on mobile, inline on desktop */}
 			<div className="flex items-center justify-center rounded-full border border-black px-4 py-2 lg:hidden">
 				<button
-					onClick={handleDecrement}
+					onClick={() => updateQuantity(quantity - 1)}
 					disabled={decrementDisabled}
 					aria-label="Decrease ticket quantity"
 					className="cursor-pointer px-2 disabled:cursor-not-allowed disabled:opacity-30"
@@ -213,7 +115,7 @@ export function TicketSelector({
 					aria-label="Ticket quantity"
 				/>
 				<button
-					onClick={handleIncrement}
+					onClick={() => updateQuantity(quantity + 1)}
 					disabled={incrementDisabled}
 					aria-label="Increase ticket quantity"
 					className="cursor-pointer px-2 disabled:cursor-not-allowed disabled:opacity-30"
@@ -228,7 +130,7 @@ export function TicketSelector({
 					<p className="text-sm text-[#7B7B7B]">Number of tickets</p>
 					<div className="flex items-center justify-center gap-2 rounded-full border border-black px-4 py-1">
 						<button
-							onClick={handleDecrement}
+							onClick={() => updateQuantity(quantity - 1)}
 							disabled={decrementDisabled}
 							aria-label="Decrease ticket quantity"
 							aria-disabled={decrementDisabled}
@@ -248,7 +150,7 @@ export function TicketSelector({
 							aria-label="Ticket quantity"
 						/>
 						<button
-							onClick={handleIncrement}
+							onClick={() => updateQuantity(quantity + 1)}
 							disabled={incrementDisabled}
 							aria-label="Increase ticket quantity"
 							aria-disabled={incrementDisabled}
@@ -263,7 +165,7 @@ export function TicketSelector({
 					{BUNDLE_SIZES_DESKTOP.map(size => (
 						<button
 							key={size}
-							onClick={() => handleBundleSet(size)}
+							onClick={() => updateQuantity(size)}
 							disabled={bundleDisabled}
 							className={cn(
 								'flex w-full cursor-pointer items-center justify-center rounded-full border py-2 text-sm transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-30',

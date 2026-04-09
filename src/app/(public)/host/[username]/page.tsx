@@ -34,35 +34,39 @@ const STATUS_FILTERS = {
 /**
  * Public Host Profile Page
  *
- * Displays a host's public profile with their raffles.
- * Supports URL-based tab filtering for active vs ended raffles.
+ * Server Component — displays a host's public profile with their raffles.
+ * Data-fetching: parallel Promise.all for profile + raffles (independent calls).
+ * URL-based tab filtering: ?status=ended switches between active and concluded raffles.
+ *
+ * Data flow: params.username → detect UUID vs username → build query →
+ * parallel fetch profile + raffles → render sidebar card + raffle grid.
  */
 export default async function HostProfilePage({
 	params,
 	searchParams,
 }: PageProps) {
+	// Step 1: Parse route params and determine identifier type.
 	const { username: identifier } = await params;
 	const { status: statusParam } = await searchParams;
 
-	// Determine if identifier is a UUID or username
+	// UUID vs username — backend accepts both, but the query param key differs.
+	// Old raffle links use hostId (UUID), new links use username.
 	const isUUID = z.uuid().safeParse(identifier).success;
 
-	// Determine status filter from URL param (default to active)
+	// Step 2: Build raffle query with status filter from URL.
 	const isEnded = statusParam === 'ended';
 	const statusFilter = isEnded ? STATUS_FILTERS.ended : STATUS_FILTERS.active;
 
-	// Build query params based on identifier type
 	const raffleQuery = isUUID
 		? { hostId: identifier, status: statusFilter, limit: 12 }
 		: { username: identifier, status: statusFilter, limit: 12 };
 
-	// Fetch host profile and raffles in parallel
+	// Step 3: Fetch profile and raffles in parallel — no dependency between them.
 	const [profileResponse, rafflesResponse] = await Promise.all([
 		getHostProfile(identifier),
 		getHostRaffles(raffleQuery),
 	]);
 
-	// Handle host not found
 	if (!profileResponse.success) {
 		if (profileResponse.error === HOST_ERROR_CODES.NOT_FOUND) {
 			notFound();
@@ -91,7 +95,6 @@ export default async function HostProfilePage({
 
 	const host = profileResponse.data;
 
-	// Handle raffles fetch error
 	if (!rafflesResponse.success) {
 		return (
 			<div className="container mx-auto w-full max-w-7xl px-4 py-8 lg:min-w-5xl">
@@ -125,27 +128,18 @@ export default async function HostProfilePage({
 
 	const { raffles } = rafflesResponse.data;
 
-	/**
-	 * Gets the empty state message based on current status filter
-	 */
-	function getEmptyMessage() {
-		if (isEnded) {
-			return {
+	const emptyMessage = isEnded
+		? {
 				title: 'No ended raffles',
 				description: 'This host has no ended raffles yet.',
+			}
+		: {
+				title: 'No active raffles',
+				description: 'This host has no active raffles right now.',
 			};
-		}
-		return {
-			title: 'No active raffles',
-			description: 'This host has no active raffles right now.',
-		};
-	}
-
-	const emptyMessage = getEmptyMessage();
 
 	return (
 		<div className="container mx-auto w-full max-w-7xl px-4 py-8 lg:min-w-5xl">
-			{/* Header Section */}
 			<PageHeader />
 
 			<div className="relative mb-8 flex w-full items-center justify-center">
@@ -154,16 +148,13 @@ export default async function HostProfilePage({
 				</Suspense>
 			</div>
 
-			{/* Content Section */}
 			<div className="flex flex-col gap-8 lg:flex-row">
-				{/* Sidebar - Host Profile Card */}
 				<aside className="w-full shrink-0 lg:w-80">
 					<HostProfileCard host={host} className="lg:sticky lg:top-24" />
 				</aside>
 
-				{/* Main Content - Raffle Grid */}
 				<main className="flex-1">
-					{raffles && raffles.length > 0 ? (
+					{raffles.length > 0 ? (
 						<div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 							{raffles.map(raffle => (
 								<PublicRaffleCard key={raffle.id} raffle={raffle} />

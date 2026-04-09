@@ -12,11 +12,6 @@ import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for activating a raffle
- */
-type ActivateRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
-
-/**
  * Activates a queued raffle, transitioning it to live immediately.
  * Sets startAt to now so the raffle goes live without waiting for the cron.
  *
@@ -25,26 +20,29 @@ type ActivateRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
  */
 export async function activateRaffle(
 	raffleId: string,
-): Promise<ActivateRaffleResponse> {
+): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
 	try {
+		// Step 1: Activate queued raffle — sets startAt to now, transitions to live
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/activate`,
 		);
 
-		const validatedData = raffleSchema.parse(response.data);
+		// Step 2: Validate response shape
+		const raffle = raffleSchema.parse(response.data);
 
+		// Step 3: Revalidate my-raffles cache so host dashboard reflects new status
+		// Revalidation target: MY_RAFFLES tag
 		runAfter(() => {
 			revalidateMyRaffles();
 		});
 
-		return success(validatedData);
+		return success(raffle);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'activate-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

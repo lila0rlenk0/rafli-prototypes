@@ -40,6 +40,14 @@ export function StatusTabs() {
 		router.push(`${pathname}?${params.toString()}`);
 	}
 
+	function handleActiveClick() {
+		handleStatusChange('active');
+	}
+
+	function handleEndedClick() {
+		handleStatusChange('ended');
+	}
+
 	// Determine which tab is active
 	const isActive = !statusParam || statusParam === 'active';
 	const isEnded = statusParam === 'ended';
@@ -49,7 +57,7 @@ export function StatusTabs() {
 			{/* Active Tab */}
 			<button
 				type="button"
-				onClick={() => handleStatusChange('active')}
+				onClick={handleActiveClick}
 				className={cn(
 					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
 					'text-[rgba(15,15,15,0.95)] transition-colors',
@@ -65,7 +73,7 @@ export function StatusTabs() {
 			{/* Ended Tab */}
 			<button
 				type="button"
-				onClick={() => handleStatusChange('ended')}
+				onClick={handleEndedClick}
 				className={cn(
 					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
 					'text-[rgba(15,15,15,0.95)] transition-colors',

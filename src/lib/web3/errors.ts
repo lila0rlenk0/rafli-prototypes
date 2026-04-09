@@ -1,5 +1,8 @@
 import { BaseError, TransactionNotFoundError } from 'viem';
 
+/** EIP-1193 standard code for user-initiated wallet rejection */
+const EIP_1193_USER_REJECTION_CODE = 4001;
+
 /**
  * Detects if an error is a user wallet rejection (e.g. clicked "Reject" in MetaMask).
  * wagmi/viem throw errors with specific codes or messages for user denials.
@@ -9,16 +12,19 @@ import { BaseError, TransactionNotFoundError } from 'viem';
  */
 export function isUserRejection(error: unknown): boolean {
 	if (!(error instanceof Error)) return false;
-	const msg = error.message.toLowerCase();
-	// viem always sets error.name for typed errors — most reliable check
-	// Falls back to message patterns for non-viem wallet SDKs
-	const code = 'code' in error ? (error as { code?: number }).code : undefined;
+	const message = error.message.toLowerCase();
+	// viem always sets error.name for typed errors — most reliable check.
+	// Falls back to message patterns for non-viem wallet SDKs (e.g. MetaMask injected provider).
+	// EIP-1193 providers set `code: 4001` for user rejections — narrowed via `in` guard
+	// then typeof check to avoid unsafe casts.
+	const code =
+		'code' in error && typeof error.code === 'number' ? error.code : undefined;
 	return (
 		error.name === 'UserRejectedRequestError' ||
-		msg.includes('user rejected') ||
-		msg.includes('user denied') ||
-		msg.includes('rejected the request') ||
-		code === 4001
+		message.includes('user rejected') ||
+		message.includes('user denied') ||
+		message.includes('rejected the request') ||
+		code === EIP_1193_USER_REJECTION_CODE
 	);
 }
 
@@ -38,7 +44,8 @@ export function isUserRejection(error: unknown): boolean {
  */
 export function isTransactionNotFound(error: unknown): boolean {
 	if (error instanceof TransactionNotFoundError) return true;
-	if ((error as { name?: string }).name === 'TransactionNotFoundError')
+	// Some bundlers/runtimes break instanceof for cross-realm errors — check name as fallback.
+	if (error instanceof Error && error.name === 'TransactionNotFoundError')
 		return true;
 
 	// viem's BaseError keeps the full typed cause chain. Using walk avoids
@@ -48,7 +55,8 @@ export function isTransactionNotFound(error: unknown): boolean {
 			error.walk(
 				candidate =>
 					candidate instanceof TransactionNotFoundError ||
-					(candidate as { name?: string }).name === 'TransactionNotFoundError',
+					(candidate instanceof Error &&
+						candidate.name === 'TransactionNotFoundError'),
 			) !== null
 		);
 	}

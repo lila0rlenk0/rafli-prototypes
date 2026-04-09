@@ -23,16 +23,8 @@ interface RaffleAutoRefreshProps {
 }
 
 /**
- * RaffleAutoRefresh Component
- *
- * Invisible client component that triggers router.refresh() on an interval
- * when the raffle is in a transitional state (draw pending, VRF in progress).
- * Renders nothing — pure side-effect.
- *
- * Polling activates when:
- * - `live` and past endAt → waiting for backend cron to flip to `ended`
- * - `ended` without winners → VRF draw in progress
- * - `fulfilling` → brief CAS guard before `completed`
+ * Invisible component — triggers router.refresh() on an interval during transitional states.
+ * Active when: live+past endAt (waiting for cron), ended without winners (VRF in progress), fulfilling.
  */
 export function RaffleAutoRefresh({
 	status,
@@ -47,6 +39,9 @@ export function RaffleAutoRefresh({
 		useState<null | RaffleAutoRefreshPhase>(null);
 	const phaseTimedOut = timedOutPhase === phase;
 
+	// Timeout effect — caps how long each phase polls before giving up.
+	// Deps: phase (restart when phase changes), timedOutPhase (skip if already expired).
+	// Cleanup: clears timer if phase changes before budget exhausted.
 	useEffect(() => {
 		if (!phase) return;
 		if (timedOutPhase === phase) return;
@@ -58,6 +53,10 @@ export function RaffleAutoRefresh({
 		return () => clearTimeout(timeout);
 	}, [phase, timedOutPhase]);
 
+	// Polling effect — refreshes the route on POLL_INTERVAL_MS while a transitional phase is active.
+	// Deps: phase (active phase controls start/stop), phaseTimedOut (stops when budget exhausted),
+	// router (stable Next.js router instance — included for exhaustive-deps).
+	// Cleanup: clears interval on phase change, timeout, or unmount.
 	useEffect(() => {
 		if (!phase || phaseTimedOut) return;
 

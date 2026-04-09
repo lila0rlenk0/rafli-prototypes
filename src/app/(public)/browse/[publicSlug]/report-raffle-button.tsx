@@ -26,7 +26,6 @@ interface ReportRaffleButtonProps {
 export function ReportRaffleButton({ raffleId }: ReportRaffleButtonProps) {
 	const [open, setOpen] = useState(false);
 
-	/** Opens the report modal */
 	function handleOpen() {
 		setOpen(true);
 	}

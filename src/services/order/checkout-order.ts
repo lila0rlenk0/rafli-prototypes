@@ -18,23 +18,6 @@ import {
 } from '@/types/order';
 import type { ServiceResponse } from '@/types/service-response';
 
-// ==========================================
-// Schema
-// ==========================================
-
-/**
- * Schema for atomic checkout response.
- *
- * Backend returns a flat order object (not nested under `order` key)
- * with an optional `promoRedemption` field. Fields not in orderSchema
- * (like promoRedemption) are silently stripped by Zod's default behavior.
- */
-const checkoutOrderResponseSchema = orderSchema;
-
-// ==========================================
-// Types
-// ==========================================
-
 /** Payload for the checkout order request — inferred from Zod schema in types/order.ts */
 export type CheckoutOrderPayload = CreateOrderPayload;
 
@@ -45,16 +28,15 @@ export interface CheckoutOrderResponse {
 	isFullyDiscounted: boolean;
 }
 
-// ==========================================
-// Server Action
-// ==========================================
-
 /**
  * Atomically creates or reuses a checkout order with promo handling.
  *
  * Replaces the previous 4-step waterfall (find reusable order → validate promo
  * → create order → redeem promo) with a single backend transaction.
  * Backend handles order reuse, promo validation, and redemption atomically.
+ *
+ * Backend returns a flat order object (not nested under `order` key)
+ * with an optional `promoRedemption` field stripped by Zod's default behavior.
  *
  * @param payload - Raffle ID, ticket quantity, optional promo code
  * @returns ServiceResponse with order and discount info, or error code
@@ -65,14 +47,15 @@ export async function checkoutOrder(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Create or reuse checkout order atomically — backend handles promo & reuse
 		const response = await authenticatedClient.post(
 			'/orders/checkout',
 			payload,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Backend returns flat order object — validate and derive isFullyDiscounted
-		const order = checkoutOrderResponseSchema.parse(response.data);
+		// Step 2: Validate response shape
+		const order = orderSchema.parse(response.data);
 
 		runAfter(async () => {
 			const userId = (await sessionPromise)?.user?.id;

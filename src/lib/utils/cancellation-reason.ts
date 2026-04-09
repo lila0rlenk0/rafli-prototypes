@@ -45,11 +45,14 @@ export function getCancellationReason(
 		| 'vrfRequestId'
 	>,
 ): CancellationReason | null {
+	// Step 1: Guard — only cancelled raffles have a cancellation reason.
 	if (raffle.status !== RAFFLE_STATUS.CANCELLED) return null;
 
+	// Step 2: Derive heuristic signals from existing fields.
 	const isPastEnd = new Date(raffle.endAt) <= new Date();
 	const hadNoVrfDraw = !raffle.vrfRequestId;
 
+	// Step 3: Match against known auto-cancel scenarios (most specific first).
 	// Auto-cancel: raffle expired with zero tickets sold
 	if (isPastEnd && raffle.ticketsSoldCount === 0 && hadNoVrfDraw) {
 		return CANCELLATION_REASON.NO_TICKETS;

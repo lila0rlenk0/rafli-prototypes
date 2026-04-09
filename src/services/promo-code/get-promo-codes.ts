@@ -15,24 +15,14 @@ import {
 } from '@/types/promo-code';
 import type { ServiceResponse } from '@/types/service-response';
 
-/**
- * Response type for getting promo codes
- */
-type GetPromoCodesServiceResponse = ServiceResponse<
-	ListPromoCodesResponse,
-	PromoCodeErrorCode
->;
-
-/**
- * Pagination parameters for fetching promo codes
- */
+/** Pagination parameters for fetching promo codes */
 interface GetPromoCodesParams {
 	limit?: number;
 	offset?: number;
 }
 
 /**
- * Fetches promo codes for a raffle (host only)
+ * Fetches promo codes for a raffle (host only).
  *
  * @param raffleId - The ID of the raffle
  * @param params - Optional pagination parameters (limit, offset)
@@ -41,23 +31,13 @@ interface GetPromoCodesParams {
 export async function getPromoCodes(
 	raffleId: string,
 	params?: GetPromoCodesParams,
-): Promise<GetPromoCodesServiceResponse> {
+): Promise<ServiceResponse<ListPromoCodesResponse, PromoCodeErrorCode>> {
 	try {
-		// Step 1: Request promo codes list.
 		const response = await authenticatedClient.get(
 			`/raffles/${raffleId}/promo-codes`,
-			{
-				params: {
-					limit: params?.limit,
-					offset: params?.offset,
-				},
-			},
+			{ params },
 		);
-		// Step 2: Validate response shape.
-		const validated = listPromoCodesResponseSchema.parse(response.data);
-
-		// Step 3: Return typed success.
-		return success(validated);
+		return success(listPromoCodesResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'promo-code', 'get-promo-codes');

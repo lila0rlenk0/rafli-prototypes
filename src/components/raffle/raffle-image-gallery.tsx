@@ -13,12 +13,7 @@ interface RaffleImageGalleryProps {
 }
 
 /**
- * Raffle detail image gallery with lightbox support.
- * Combines the ImageCarousel (cover + gallery slides) with clickable
- * gallery thumbnails. Clicking any image opens a full-screen lightbox
- * with navigation across all images.
- *
- * @returns Image carousel, gallery thumbnails grid, and lightbox modal
+ * Image gallery with lightbox. Clicking any image opens full-screen navigation across all images.
  */
 export function RaffleImageGallery({
 	coverImage,

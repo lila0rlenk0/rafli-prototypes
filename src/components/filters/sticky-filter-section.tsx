@@ -29,14 +29,16 @@ export function StickyFilterSection({ children }: StickyFilterSectionProps) {
 	const [isSticky, setIsSticky] = useState(false);
 	const [barHeight, setBarHeight] = useState(0);
 
-	/**
-	 * Measures the bar height so the placeholder keeps the same space
-	 */
+	// useCallback: avoids re-creating the measurement closure each render.
+	// Stable identity prevents the IntersectionObserver effect from re-running unnecessarily.
 	const measureBar = useCallback(() => {
 		if (!barRef.current) return;
 		setBarHeight(barRef.current.offsetHeight);
 	}, []);
 
+	// mount: sets up IntersectionObserver on sentinel + resize listener.
+	// Deps: measureBar (stable via useCallback).
+	// Cleanup: disconnects observer and removes resize listener.
 	useEffect(() => {
 		const sentinel = sentinelRef.current;
 		if (!sentinel) return;

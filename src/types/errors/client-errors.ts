@@ -1,12 +1,6 @@
 /**
- * Client-Side Validation Error Codes
- *
- * These errors occur during client-side validation BEFORE calling the API.
- * They use the "client:" prefix to differentiate them from backend errors.
- */
-
-/**
- * Client-side validation error codes
+ * Client-side validation errors — occur before the API is called.
+ * Use the "client:" prefix to differentiate from backend errors.
  */
 export const CLIENT_ERROR_CODES = {
 	// Raffle validation errors
@@ -18,8 +12,5 @@ export const CLIENT_ERROR_CODES = {
 	UPLOAD_TOO_MANY_FILES: 'client:upload:too-many-files',
 } as const;
 
-/**
- * Type representing all possible client-side validation error codes
- */
 export type ClientErrorCode =
 	(typeof CLIENT_ERROR_CODES)[keyof typeof CLIENT_ERROR_CODES];

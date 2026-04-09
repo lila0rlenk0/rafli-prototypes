@@ -89,10 +89,12 @@ export function withLogging<
 	return async function logged(
 		...args: TArgs
 	): Promise<ServiceResponse<TData, TError>> {
+		// Step 1: Initialize the wide event with a unique request ID and start timer.
 		const event = createWideEvent(crypto.randomUUID(), service, action);
 		const start = performance.now();
 
-		// Collect user + IP in parallel (getCurrentUser is React.cache'd — zero cost if already called)
+		// Step 2: Collect user context and client IP in parallel.
+		// getCurrentUser is React.cache'd — zero cost if already called this request.
 		const [user, clientIp] = await Promise.all([
 			getCurrentUser().catch(() => null),
 			getClientIp().catch(() => null),
@@ -101,12 +103,14 @@ export function withLogging<
 		event.userId = user?.id ?? null;
 		event.clientIp = clientIp;
 
-		// Merge static context fields (orderId, etc.) into extras bag
-		if (options?.context) {
-			Object.assign(event.extras, options.context);
+		// Step 3: Merge caller-supplied static fields (orderId, raffleId, etc.) into extras bag.
+		const staticContext = options?.context;
+		if (staticContext) {
+			Object.assign(event.extras, staticContext);
 		}
 
 		try {
+			// Step 4: Execute the wrapped server action.
 			const result = await fn(...args);
 
 			event.success = result.success;
@@ -114,8 +118,8 @@ export function withLogging<
 
 			return result;
 		} catch (error) {
-			// Server actions shouldn't throw (they return ServiceResponse),
-			// but if they do, capture it as an unhandled exception.
+			// Step 4b: Capture unhandled exceptions (server actions should return ServiceResponse,
+			// but if they throw, classify the error for observability).
 			event.success = false;
 			event.errorSource = classifyError(error);
 
@@ -125,6 +129,7 @@ export function withLogging<
 
 			throw error;
 		} finally {
+			// Step 5: Record duration and emit the event if it passes tail sampling.
 			event.durationMs = Math.round(performance.now() - start);
 
 			if (shouldSample(event)) {

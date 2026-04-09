@@ -26,7 +26,11 @@ function isActive(status: string): boolean {
 }
 
 /**
- * Verification Page
+ * Verification Page (Server Component)
+ *
+ * Data-fetching strategy: parallel-fetches submissions list and verification
+ * status — independent endpoints. No caching — verification state changes
+ * frequently during the review cycle.
  *
  * Shows the user's existing KYC/KYB submissions and a multi-step form
  * to start a new verification. Users can submit all three types

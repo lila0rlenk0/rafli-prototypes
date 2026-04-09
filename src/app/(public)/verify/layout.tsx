@@ -78,16 +78,23 @@ interface VerifyLayoutProps {
 /**
  * Verify Layout Content
  *
- * Internal component that accesses runtime data (cookies via getSession).
- * Must be wrapped in Suspense to prevent blocking the entire page render.
+ * Internal async component isolated behind Suspense — reads cookies via getSession.
+ * Same auth-aware pattern as browse/host/how-it-works layouts.
+ * Note: no NotificationStoreProvider here — verify pages don't show notification UI.
+ *
+ * Data flow: session cookie → auth state → conditional UserStoreProvider wrapping.
  */
 async function VerifyLayoutContent({ children }: VerifyLayoutProps) {
+	// Step 1: Read session from cookie.
 	const session = await getSession();
 	const isAuthenticated = !!session;
+
+	// Step 2: Parse permissions for UserStoreProvider.
 	const permissions = isAuthenticated
 		? parsePermissions(session?.user?.permissions)
 		: [];
 
+	// Step 3: Build navbar + conditional provider wrapping.
 	const content = (
 		<PublicNavbar isAuthenticated={isAuthenticated}>{children}</PublicNavbar>
 	);
@@ -109,6 +116,8 @@ async function VerifyLayoutContent({ children }: VerifyLayoutProps) {
 export default function VerifyLayout({ children }: VerifyLayoutProps) {
 	return (
 		<>
+			{/* dangerouslySetInnerHTML safe: jsonLd is a static constant defined in this file
+			    with no user input. JSON.stringify escapes any special characters. */}
 			<Script
 				id="verify-jsonld"
 				type="application/ld+json"

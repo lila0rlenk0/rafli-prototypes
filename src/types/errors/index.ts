@@ -1,9 +1,3 @@
-/**
- * Error Types Barrel Export
- *
- * Re-exports all error type definitions for convenient importing.
- */
-
 export * from './common-errors';
 export * from './auth-errors';
 export * from './raffle-errors';

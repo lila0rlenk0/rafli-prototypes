@@ -5,7 +5,10 @@ import { ZodError } from 'zod';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapPaymentError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { COMMON_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -43,6 +46,12 @@ export async function getCreditHistory(
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
-		return failure(mapPaymentError(error));
+		// Payment is a critical service — capture for Sentry alerting
+		const errorCode = mapPaymentError(error);
+		captureServiceError(error, errorCode, {
+			service: 'payment',
+			action: 'get-credit-history',
+		});
+		return failure(errorCode);
 	}
 }

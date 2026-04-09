@@ -5,33 +5,19 @@ paths:
 
 # Environment Variables
 
-Parsed with `@t3-oss/env-nextjs` + Zod validation.
+Parsed with `@t3-oss/env-nextjs` + Zod.
 
-## Files
+- `server.ts` — server-only (secrets, backend URLs). `import { env } from '@/env/server'`
+- `client.ts` — client-side (`NEXT_PUBLIC_` prefix). `import { clientEnv } from '@/env/client'`
 
-- `server.ts` — server-only variables (secrets, backend URLs). Import: `import { env } from '@/env/server'`
-- `client.ts` — client-side variables (`NEXT_PUBLIC_` prefix required). Import: `import { clientEnv } from '@/env/client'`
+## Adding Variables
 
-## Adding New Variables
-
-1. Add Zod schema to `server.ts` or `client.ts`
-2. Add to `runtimeEnv` mapping
-3. Add to `.env.example`
-4. Update `.env.local` with actual value
-
-```typescript
-export const env = createEnv({
-	server: {
-		NEW_API_KEY: z.string().min(1),
-	},
-	runtimeEnv: {
-		NEW_API_KEY: process.env.NEW_API_KEY,
-	},
-});
-```
+1. add Zod schema to `server.ts` or `client.ts`
+2. add to `runtimeEnv` mapping
+3. add to `.env.example` and `.env.local`
 
 ## Security
 
-- Server variables are never exposed to browser
-- Client variables are bundled into JS — never put secrets here
-- `S2S_SECRET` is for server-to-server authentication
+- server vars never exposed to browser
+- client vars bundled into JS — no secrets
+- `S2S_SECRET` for server-to-server auth

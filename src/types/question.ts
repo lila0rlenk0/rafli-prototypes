@@ -1,13 +1,6 @@
 import { z } from 'zod';
 
-// ==========================================
-// Schemas
-// ==========================================
-
-/**
- * Schema for question option
- * Represents a single answer option for a check-in question
- */
+/** Single answer option within a check-in question. */
 export const questionOptionSchema = z.object({
 	id: z.string(),
 	text: z.string(),
@@ -15,8 +8,9 @@ export const questionOptionSchema = z.object({
 });
 
 /**
- * Schema for check-in question
- * Represents a question that participants answer before joining a raffle
+ * Check-in question that participants answer before joining a raffle.
+ *
+ * Validation boundary: server-side — parsed from GET /questions response.
  */
 export const questionSchema = z.object({
 	id: z.string(),
@@ -29,19 +23,15 @@ export const questionSchema = z.object({
 	updatedAt: z.string(),
 });
 
-/**
- * Schema for questions response from the backend
- * Returns a list of questions with pagination total
- */
+/** Response from GET /questions — list of available check-in questions for a category. */
 export const questionsResponseSchema = z.object({
 	questions: z.array(questionSchema),
 	total: z.number(),
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
+/** Single answer option within a check-in question. */
 export type QuestionOption = z.infer<typeof questionOptionSchema>;
+/** Check-in question with its answer options. */
 export type Question = z.infer<typeof questionSchema>;
+/** Response from the questions listing endpoint. */
 export type QuestionsResponse = z.infer<typeof questionsResponseSchema>;

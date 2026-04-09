@@ -13,8 +13,14 @@ mock.module('@/lib/api/client', () => ({
 	baseClient: { get: mock() },
 }));
 
+// All session exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
 mock.module('@/lib/auth/session', () => ({
 	getSession: mock(() => Promise.resolve({ user: { id: 'user-1' } })),
+	setAuthCookies: mock(),
+	getAuthToken: mock(),
+	getCurrentUser: mock(),
+	requireAuth: mock(),
+	requireEmailVerification: mock(),
 }));
 
 mock.module('@/lib/analytics/mixpanel-server', () => ({

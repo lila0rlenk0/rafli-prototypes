@@ -4,13 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import {
 	createContext,
-	ReactNode,
+	type ReactNode,
 	useCallback,
 	useContext,
 	useMemo,
 	useState,
 } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -73,10 +73,7 @@ interface EditFormProviderProps {
 }
 
 /**
- * EditFormProvider Component
- *
- * Provides a context for managing multi-step raffle edit form state.
- * Similar to MultiStepFormProvider but for editing existing raffles.
+ * Context provider for the multi-step raffle edit form.
  * Handles field restrictions, diff computation, and partial updates.
  */
 export function EditFormProvider({
@@ -91,8 +88,11 @@ export function EditFormProvider({
 	totalRaffles,
 }: EditFormProviderProps) {
 	const router = useRouter();
+	// Wizard navigation — 0-indexed step position
 	const [currentStep, setCurrentStep] = useState(0);
+	// Tracks in-flight API calls during raffle update to disable submit
 	const [isUpdating, setIsUpdating] = useState(false);
+	// usePublishRaffle: encapsulates publish logic + "go live now" vs "schedule" split
 	const { isPublishing, handlePublish } = usePublishRaffle({
 		raffleId: raffle.id,
 		startAt: raffle.startAt,
@@ -106,37 +106,25 @@ export function EditFormProvider({
 		defaultValues,
 	});
 
-	// Compute restrictions based on raffle state
+	// useMemo: restrictions derive from raffle state — recompute only when raffle
+	// object changes (which only happens on page navigation, not mid-edit)
 	const restrictions = useMemo(() => computeRestrictions(raffle), [raffle]);
 
-	// Extract existing image URLs
 	const existingCoverUrl = initialCoverUrl;
 	const existingGalleryUrls = initialGalleryUrls;
 
-	/**
-	 * Advances to the next step in the form
-	 * Does nothing if already on the last step
-	 */
 	const nextStep = useCallback(() => {
 		if (currentStep < totalSteps - 1) {
 			setCurrentStep(prev => prev + 1);
 		}
 	}, [currentStep, totalSteps]);
 
-	/**
-	 * Returns to the previous step in the form
-	 * Does nothing if already on the first step
-	 */
 	const previousStep = useCallback(() => {
 		if (currentStep > 0) {
 			setCurrentStep(prev => prev - 1);
 		}
 	}, [currentStep]);
 
-	/**
-	 * Navigates to a specific step in the form
-	 * @param step - The step index to navigate to (0-based)
-	 */
 	const goToStep = useCallback(
 		(step: number) => {
 			if (step >= 0 && step < totalSteps) {
@@ -185,18 +173,21 @@ export function EditFormProvider({
 	}
 
 	/**
-	 * Handles raffle update by computing diff and calling the update service
-	 * Only sends changed fields to the backend (partial update)
-	 *
-	 * @param data - The validated edit form data
+	 * Multi-phase raffle update pipeline:
+	 * 1. Check for actual changes (images or field diff)
+	 * 2. Validate category and question presence
+	 * 3. Compute and send field diff (partial update)
+	 * 4. Upload new cover image (if provided)
+	 * 5. Upload new gallery images (if provided)
+	 * 6. Auto-publish draft if start datetime is now/past
+	 * 7. Navigate back to my-raffles
 	 */
 	const handleUpdateRaffle = useCallback(
 		async (data: EditFormData) => {
 			setIsUpdating(true);
 
 			try {
-				// First check if form has any changes compared to original raffle
-				// Button should be disabled if no changes, but double-check here as safety
+				// Step 1: Check for actual changes — button should be disabled, but double-check
 				const hasNewImages = data.coverImage && data.coverImage.length > 0;
 				const hasFieldChanges = hasRaffleChanges(
 					raffle,
@@ -208,19 +199,18 @@ export function EditFormProvider({
 					return;
 				}
 
-				// Category is now stored as UUID directly from the backend
+				// Step 2: Validate required selects (not covered by Zod since they're UUIDs)
 				if (!data.category) {
 					toast.error('Invalid category selected');
 					return;
 				}
 
-				// checkInQuestion now stores the question UUID directly
 				if (!data.checkInQuestion) {
 					toast.error('Please select a check-in question');
 					return;
 				}
 
-				// Compute diff for partial update
+				// Step 3: Partial update — only send fields that changed
 				const diff = computeRaffleDiff(
 					raffle,
 					data,
@@ -228,14 +218,12 @@ export function EditFormProvider({
 					data.checkInQuestion,
 				);
 
-				// Only call update if there are field changes
 				if (Object.keys(diff).length > 0) {
 					const result = await updateRaffle(raffle.id, diff);
 
 					if (!result.success) {
 						const { message, field } = getRaffleServerError(result.error);
 						toast.error(message);
-						// Navigate to the relevant step and set field-level error
 						if (field) {
 							form.setError(field, { message });
 							// Tickets step = index 1 (minParticipants, endDate live there)
@@ -245,7 +233,7 @@ export function EditFormProvider({
 					}
 				}
 
-				// Upload new cover if provided
+				// Step 4: Upload new cover image (first file in coverImage array)
 				if (data.coverImage && data.coverImage.length > 0) {
 					const coverResult = await uploadCover(raffle.id, data.coverImage[0]);
 					if (!coverResult.success) {
@@ -254,7 +242,7 @@ export function EditFormProvider({
 					}
 				}
 
-				// Upload new gallery images if provided (additional images beyond cover)
+				// Step 5: Upload new gallery images (slots 2+ of coverImage array)
 				if (data.coverImage && data.coverImage.length > 1) {
 					const galleryFiles = data.coverImage.slice(1);
 					const galleryResult = await uploadGalleryImages(
@@ -267,9 +255,10 @@ export function EditFormProvider({
 					}
 				}
 
+				// Step 6: Auto-publish draft if start datetime is now/past.
 				// Queued raffles are already published — calling publishRaffle would fail with not-draft.
 				if (raffle.status === RAFFLE_STATUS.DRAFT) {
-					// Combine date + time for accurate comparison
+					// Combine date + time for accurate past/future comparison
 					const startDateTime = new Date(
 						`${data.startDate}T${data.startTime || '00:00'}`,
 					);
@@ -287,7 +276,6 @@ export function EditFormProvider({
 
 				toast.success('Raffle updated successfully!');
 
-				// Reset form state before redirect
 				form.reset(defaultValues);
 				setCurrentStep(0);
 
@@ -302,12 +290,6 @@ export function EditFormProvider({
 		[raffle, router, form, defaultValues],
 	);
 
-	/**
-	 * Handles form submission
-	 * Advances to the next step or triggers raffle update on the last step
-	 *
-	 * @param data - The validated edit form data
-	 */
 	const handleSubmit = useCallback(
 		(data: EditFormData) => {
 			if (isLastStep) {

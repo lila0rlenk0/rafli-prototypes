@@ -1,10 +1,13 @@
 'use client';
 
 /**
- * Mixpanel Provider
+ * Mixpanel Provider — side-effect-only wrapper that handles SDK
+ * initialization and user identification.
  *
- * Handles: initialization, user identification
- * Autocapture handles: page views, clicks, scrolls, forms (configured in mixpanel-client)
+ * Scope: wraps the entire app layout so every route transition is
+ * visible to the identification effect. Autocapture (page views,
+ * clicks, scrolls, forms) is configured in mixpanel-client — this
+ * provider only owns init + identify/reset lifecycle.
  */
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -14,7 +17,10 @@ import { AUTH_COOKIES } from '@/lib/auth/config';
 import { authUserSchema, type AuthUser } from '@/types/auth';
 
 /**
- * Parse user from session cookie with validation
+ * Parse user from session cookie with Zod validation.
+ * Reads document.cookie directly — avoids a server round-trip for
+ * analytics-only data that is already available client-side.
+ *
  * @returns Parsed AuthUser if valid session cookie exists, null otherwise
  */
 function getUserFromCookie(): AuthUser | null {
@@ -35,23 +41,25 @@ function getUserFromCookie(): AuthUser | null {
 	}
 }
 
-interface MixpanelProviderProps {
-	children: ReactNode;
-}
-
 /**
  * Initializes Mixpanel and handles user identification based on session cookie.
- * Autocapture handles page views, clicks, scrolls, forms (configured in mixpanel-client).
  *
  * @returns Children wrapped in a fragment — provider is side-effect only
  */
-export function MixpanelProvider({ children }: MixpanelProviderProps) {
+export function MixpanelProvider({ children }: { children: ReactNode }) {
 	const [isReady, setIsReady] = useState(false);
+
+	// Ref instead of state: identity tracking is fire-and-forget metadata,
+	// changes should NOT trigger re-renders of the entire subtree.
 	const identifiedUserId = useRef<string | null>(null);
+
+	// Tracks last pathname to debounce the identification effect —
+	// prevents redundant identify() calls when React re-renders
+	// without an actual navigation.
 	const lastPathnameRef = useRef<string | null>(null);
 
-	// Initialize once — initMixpanel dynamically imports mixpanel-browser,
-	// so the bundle is deferred until after hydration
+	// mount: dynamically import mixpanel-browser so the ~40KB bundle
+	// is deferred until after hydration completes.
 	useEffect(() => {
 		let cancelled = false;
 
@@ -63,24 +71,29 @@ export function MixpanelProvider({ children }: MixpanelProviderProps) {
 				}
 			});
 
+		// Cleanup: if the component unmounts before init resolves,
+		// prevent the state update to avoid a React warning.
 		return () => {
 			cancelled = true;
 		};
 	}, []);
 
-	// Handle user identification based on session cookie
-	// Use window.location.pathname directly to avoid SSR issues with usePathname()
+	// Sync Mixpanel identity on every navigation.
+	// No deps array — runs after every render so it catches client-side
+	// route transitions (App Router doesn't remount layout providers).
+	// The lastPathnameRef guard short-circuits when pathname is unchanged.
 	useEffect(() => {
 		if (!isReady || typeof window === 'undefined') return;
 
 		const currentPathname = window.location.pathname;
 
-		// Skip if pathname hasn't changed (prevents unnecessary re-runs)
+		// Skip if pathname hasn't changed — prevents redundant identify calls
 		if (lastPathnameRef.current === currentPathname) return;
 		lastPathnameRef.current = currentPathname;
 
 		const user = getUserFromCookie();
 
+		// Identify new user or user change
 		if (user && user.id !== identifiedUserId.current) {
 			identify(user.id, {
 				$email: user.email,
@@ -88,7 +101,11 @@ export function MixpanelProvider({ children }: MixpanelProviderProps) {
 				$avatar: user.image,
 			});
 			identifiedUserId.current = user.id;
-		} else if (!user && identifiedUserId.current) {
+			return;
+		}
+
+		// Reset identity on sign-out (cookie removed but ref still set)
+		if (!user && identifiedUserId.current) {
 			reset();
 			identifiedUserId.current = null;
 		}

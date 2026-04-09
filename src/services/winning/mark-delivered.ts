@@ -15,14 +15,8 @@ import type { ServiceResponse } from '@/types/service-response';
 import { type Winning, winningSchema } from '@/types/winning';
 
 /**
- * Response type for marking a winning as delivered
- */
-type MarkDeliveredServiceResponse = ServiceResponse<Winning, WinningErrorCode>;
-
-/**
- * Marks a winning prize as delivered by the host
+ * Marks a winning prize as delivered by the host.
  *
- * Called by the raffle host to indicate the prize has been delivered.
  * Starts the 48-hour auto-confirm countdown.
  * Transitions status from sent to delivered.
  *
@@ -32,16 +26,21 @@ type MarkDeliveredServiceResponse = ServiceResponse<Winning, WinningErrorCode>;
 export async function markDelivered(
 	winningId: string,
 	publicSlug?: string,
-): Promise<MarkDeliveredServiceResponse> {
+): Promise<ServiceResponse<Winning, WinningErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Mark delivered — transitions sent → delivered, starts 48h auto-confirm
 		const response = await authenticatedClient.post(
 			`/winnings/${winningId}/mark-delivered`,
 		);
 
+		// Step 2: Validate response shape
 		const validated = winningSchema.parse(response.data);
+
+		// Step 3: Non-blocking cache revalidation + analytics
 		runAfter(async () => {
+			// Revalidation target: winning detail and list pages
 			revalidateWinningPaths(publicSlug);
 
 			const userId = (await sessionPromise)?.user?.id;

@@ -1,6 +1,6 @@
 'use client';
 
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
 /**
  * Profile sidebar item configuration
@@ -26,6 +26,17 @@ interface ProfileSidebarProps {
  * @returns Sidebar with settings icon and section navigation
  */
 export function ProfileSidebar({ items }: ProfileSidebarProps) {
+	/** Scrolls the target section into view with smooth animation */
+	function handleScrollToSection(sectionId: string) {
+		const element = document.getElementById(sectionId);
+		if (element) {
+			element.scrollIntoView({
+				behavior: 'smooth',
+				block: 'start',
+			});
+		}
+	}
+
 	return (
 		<div className="sticky top-8 hidden h-fit shrink-0 flex-col rounded-3xl border border-black bg-white/95 py-10 pr-10 pl-8 md:flex">
 			<SettingsIcon className="size-15" />
@@ -39,15 +50,7 @@ export function ProfileSidebar({ items }: ProfileSidebarProps) {
 							<button
 								key={item.sectionId}
 								type="button"
-								onClick={() => {
-									const element = document.getElementById(item.sectionId);
-									if (element) {
-										element.scrollIntoView({
-											behavior: 'smooth',
-											block: 'start',
-										});
-									}
-								}}
+								onClick={() => handleScrollToSection(item.sectionId)}
 								className="flex w-fit items-center gap-4 text-left transition-colors hover:text-black"
 							>
 								<SidebarItemIcon className="size-4 shrink-0" />

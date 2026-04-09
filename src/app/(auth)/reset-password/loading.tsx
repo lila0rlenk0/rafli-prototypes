@@ -3,7 +3,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 /**
  * Loading State for Reset Password Page
  *
- * Displays a skeleton loading UI that matches the structure of the ResetPasswordPage.
+ * Next.js loading.tsx — shown as instant fallback while the async ResetPasswordPage
+ * awaits searchParams. Displays a skeleton that approximates the reset form layout.
+ *
+ * Note: the skeleton layout here mirrors the form structure (title, description,
+ * two password fields, submit button) but uses the legacy grid layout rather than
+ * AuthPageShell. This is acceptable because the skeleton is visible for <100ms
+ * while searchParams resolve.
+ *
+ * @returns Skeleton placeholder for the reset password page
  */
 export default function Loading() {
 	return (

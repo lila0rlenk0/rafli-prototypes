@@ -39,21 +39,22 @@ export async function reviewSubmission(
 	input: unknown,
 ): Promise<ServiceResponse<AdminKycReviewResponse, AdminKycErrorCode>> {
 	try {
-		// Defense-in-depth: verify admin:kyc:review permission before calling backend.
-		// The layout gate hides the UI, but server actions are directly callable.
+		// Step 1: Defense-in-depth permission check — server actions are directly callable,
+		// the layout gate only hides the UI
 		const session = await getSession();
 		const permissions = parsePermissions(session?.user?.permissions);
 		if (!permissions.includes(PERMISSIONS.KYC_REVIEW)) {
 			return failure(COMMON_ERROR_CODES.FORBIDDEN);
 		}
 
-		// Validate input shape — server actions are public endpoints,
+		// Step 2: Validate input shape — server actions are public endpoints,
 		// callers can send arbitrary payloads
 		const validatedInput = adminKycReviewInputSchema.safeParse(input);
 		if (!validatedInput.success) {
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
+		// Step 3: Submit review decision to backend
 		const response = await authenticatedClient.patch(
 			`/admin/verification/${id}/review`,
 			validatedInput.data,
@@ -62,14 +63,17 @@ export async function reviewSubmission(
 			},
 		);
 
-		const result = adminKycReviewResponseSchema.parse(response.data);
+		// Step 4: Validate response shape
+		const data = adminKycReviewResponseSchema.parse(response.data);
 
+		// Step 5: Revalidate admin verification pages so list and detail reflect updated status
+		// Revalidation targets: /admin/verification (list) and /admin/verification/:id (detail)
 		runAfter(() => {
 			revalidatePath('/admin/verification');
 			revalidatePath(`/admin/verification/${id}`);
 		});
 
-		return success(result);
+		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'admin-kyc', 'review-submission');

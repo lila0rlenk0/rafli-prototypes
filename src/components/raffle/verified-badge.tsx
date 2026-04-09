@@ -7,12 +7,7 @@ interface VerifiedBadgeProps {
 	className?: string;
 }
 
-/**
- * VerifiedBadge Component
- *
- * Displays verification status with an icon.
- * Shows "Verifying..." when null, "Verified" when true, "Failed" when false.
- */
+/** null→"Verifying...", true→"Verified" (green), false→"Failed" (red). */
 export function VerifiedBadge({ verified, className }: VerifiedBadgeProps) {
 	if (verified === null) {
 		return (

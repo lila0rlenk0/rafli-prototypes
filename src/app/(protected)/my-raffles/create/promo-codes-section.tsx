@@ -119,6 +119,14 @@ export function PromoCodesSection() {
 		});
 	}
 
+	function handleOpenModal() {
+		setIsModalOpen(true);
+	}
+
+	function handleCloseModal() {
+		setIsModalOpen(false);
+	}
+
 	return (
 		<div className="flex flex-col gap-6 rounded-2xl bg-white p-8">
 			<div className="flex flex-col gap-2">
@@ -135,7 +143,7 @@ export function PromoCodesSection() {
 				<div className="flex items-center gap-3">
 					<Button
 						type="button"
-						onClick={() => setIsModalOpen(true)}
+						onClick={handleOpenModal}
 						disabled={isLimitReached()}
 						className="font-clash-display cursor-pointer border-2 border-black bg-white px-8 font-semibold text-black hover:bg-black hover:text-white"
 					>
@@ -293,7 +301,7 @@ export function PromoCodesSection() {
 
 			<CreatePromoCodeModal
 				isOpen={isModalOpen}
-				onClose={() => setIsModalOpen(false)}
+				onClose={handleCloseModal}
 				onCreate={handleCreate}
 				allowFreeTickets
 			/>

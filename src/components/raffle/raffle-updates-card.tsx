@@ -19,14 +19,7 @@ interface RaffleUpdatesCardProps {
 }
 
 /**
- * RaffleUpdatesCard Component
- *
- * Server component that displays updates from the host in an accordion.
- * Shows a timeline of updates (newest first) when expanded.
- * Shows empty state if no updates exist.
- *
- * @param raffleId - The ID of the raffle to fetch updates for
- * @param actionSlot - Optional action element (e.g., Add update button)
+ * Server component — fetches and displays host updates in a collapsible accordion.
  */
 export async function RaffleUpdatesCard({
 	raffleId,

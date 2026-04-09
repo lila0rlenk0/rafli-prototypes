@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-// ==========================================
-// Constants
-// ==========================================
-
 /**
  * Stripe payment session statuses — BE-authoritative.
  *
@@ -21,21 +17,10 @@ export const PAYMENT_STATUS = {
 	EXPIRED: 'expired',
 } as const;
 
-// ==========================================
-// Types from Constants
-// ==========================================
-
 /** Union of Stripe PAYMENT_STATUS values — use instead of raw string literals. */
 export type PaymentStatus =
 	(typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 
-// ==========================================
-// Schemas
-// ==========================================
-
-/**
- * Zod schema for PaymentStatus
- */
 export const paymentStatusSchema = z.enum([
 	PAYMENT_STATUS.PENDING,
 	PAYMENT_STATUS.COMPLETED,
@@ -46,6 +31,8 @@ export const paymentStatusSchema = z.enum([
 /**
  * Schema for payment session from backend (matches BE PaymentSessionResponseDto).
  * Removed fields that BE doesn't send: raffleId, ticketQuantity, stripePaymentIntentId, updatedAt.
+ *
+ * Validation boundary: server-side — parsed in payment-related server actions.
  */
 export const paymentSessionSchema = z.object({
 	id: z.uuid(),
@@ -77,15 +64,14 @@ export const checkoutSessionResponseSchema = z.object({
  * Schema for creating checkout session (request payload).
  * `publicSlug` is FE-only — used for URL construction, not sent to BE.
  * BE accepts only { orderId, successUrl, cancelUrl }.
+ *
+ * Validation boundary: client-side — validated before the server action
+ * transforms this into the actual BE payload shape.
  */
 export const createCheckoutPayloadSchema = z.object({
 	orderId: z.uuid(),
 	publicSlug: z.string().min(1),
 });
-
-// ==========================================
-// Inferred Types
-// ==========================================
 
 /** Stripe payment session entity from BE — used in order detail and status checks. */
 export type PaymentSession = z.infer<typeof paymentSessionSchema>;
@@ -95,10 +81,6 @@ export type CheckoutSessionResponse = z.infer<
 >;
 /** FE payload for creating a Stripe checkout session. `publicSlug` is FE-only for URL construction. */
 export type CreateCheckoutPayload = z.infer<typeof createCheckoutPayloadSchema>;
-
-// ==========================================
-// Crypto Payment
-// ==========================================
 
 /**
  * Crypto payment session statuses — must match BE `CryptoSessionStatus` enum exactly.

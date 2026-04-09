@@ -127,48 +127,24 @@ function mapSimpleCode(code: string): string {
 function mapCommonError(
 	error: unknown,
 ): (typeof COMMON_ERROR_CODES)[keyof typeof COMMON_ERROR_CODES] {
-	if (!(error instanceof AxiosError)) {
-		// Not an axios error - unknown source
-		return COMMON_ERROR_CODES.UNKNOWN_ERROR;
-	}
+	if (!(error instanceof AxiosError)) return COMMON_ERROR_CODES.UNKNOWN_ERROR;
 
-	// -----------------------------------------------------------------
-	// Network errors - request never reached backend
-	// Detected via axios error.code property
-	// -----------------------------------------------------------------
-
-	if (error.code === 'ECONNABORTED') {
-		// Request timeout - axios aborted after timeout period
-		return COMMON_ERROR_CODES.TIMEOUT_ERROR;
-	}
-	if (error.code === 'ERR_NETWORK') {
-		// No network - device offline or server unreachable
-		return COMMON_ERROR_CODES.NETWORK_ERROR;
-	}
-	if (error.code === 'ERR_BAD_REQUEST') {
-		// Malformed request - axios couldn't send it
+	// Step 1: Check axios error codes — request never reached backend.
+	if (error.code === 'ECONNABORTED') return COMMON_ERROR_CODES.TIMEOUT_ERROR;
+	if (error.code === 'ERR_NETWORK') return COMMON_ERROR_CODES.NETWORK_ERROR;
+	if (error.code === 'ERR_BAD_REQUEST')
 		return COMMON_ERROR_CODES.VALIDATION_ERROR;
-	}
 
-	// -----------------------------------------------------------------
-	// HTTP status fallbacks - backend returned status without error code
-	// Used when extractErrorCode() returned null
-	// -----------------------------------------------------------------
-
+	// Step 2: HTTP status fallbacks — backend returned status without an error body.
 	if (error.response) {
-		const status = error.response.status;
-
-		// Client errors (4xx)
+		const { status } = error.response;
 		if (status === 400) return COMMON_ERROR_CODES.VALIDATION_ERROR;
 		if (status === 401) return COMMON_ERROR_CODES.UNAUTHORIZED;
 		if (status === 403) return COMMON_ERROR_CODES.FORBIDDEN;
-
-		// Server errors (5xx)
 		if (status === 500) return COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR;
 		if (status === 503) return COMMON_ERROR_CODES.SERVICE_UNAVAILABLE;
 	}
 
-	// Catch-all for unhandled cases
 	return COMMON_ERROR_CODES.UNKNOWN_ERROR;
 }
 
@@ -188,8 +164,6 @@ export function mapAuthError(error: unknown): AuthErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "auth:user:invalid-credentials", "global:ratelimit:exceeded"
 		if (
 			extractedCode.startsWith('auth:') ||
 			extractedCode.startsWith('global:')
@@ -197,15 +171,13 @@ export function mapAuthError(error: unknown): AuthErrorCode {
 			return extractedCode as AuthErrorCode;
 		}
 
-		// Simple code - try to map to full code
-		// Example: "unauthenticated" → "global:auth:unauthenticated"
+		// Handles shorthand codes e.g. "unauthenticated" → "global:auth:unauthenticated"
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('auth:') || mappedCode.startsWith('global:')) {
 			return mappedCode as AuthErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback (network error or HTTP status)
 	return mapCommonError(error);
 }
 
@@ -221,8 +193,6 @@ export function mapRaffleError(error: unknown): RaffleErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:raffle:not-found", "global:upload:file-too-large"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -230,14 +200,12 @@ export function mapRaffleError(error: unknown): RaffleErrorCode {
 			return extractedCode as RaffleErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as RaffleErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -253,7 +221,6 @@ export function mapOrderError(error: unknown): OrderErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
 		if (
 			extractedCode.startsWith('core:order:') ||
 			extractedCode.startsWith('core:raffle:') ||
@@ -262,7 +229,6 @@ export function mapOrderError(error: unknown): OrderErrorCode {
 			return extractedCode as OrderErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('core:order:') ||
@@ -273,7 +239,6 @@ export function mapOrderError(error: unknown): OrderErrorCode {
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -289,7 +254,6 @@ export function mapWalletError(error: unknown): WalletErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
 		if (
 			extractedCode.startsWith('auth:wallet:') ||
 			extractedCode.startsWith('global:')
@@ -297,7 +261,6 @@ export function mapWalletError(error: unknown): WalletErrorCode {
 			return extractedCode as WalletErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('auth:wallet:') ||
@@ -307,7 +270,6 @@ export function mapWalletError(error: unknown): WalletErrorCode {
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -323,8 +285,6 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "payments:checkout:failed", "core:order:not-found", "global:auth:unauthenticated"
 		// Accepts core:* because crypto checkout can return core:order:* errors
 		if (
 			extractedCode.startsWith('payments:') ||
@@ -334,7 +294,6 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 			return extractedCode as PaymentErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('payments:') ||
@@ -345,7 +304,6 @@ export function mapPaymentError(error: unknown): PaymentErrorCode {
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -361,8 +319,6 @@ export function mapTicketError(error: unknown): TicketErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:ticket:no-tickets", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -370,14 +326,12 @@ export function mapTicketError(error: unknown): TicketErrorCode {
 			return extractedCode as TicketErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as TicketErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -393,8 +347,6 @@ export function mapHostError(error: unknown): HostErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:user:not-found", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -402,14 +354,12 @@ export function mapHostError(error: unknown): HostErrorCode {
 			return extractedCode as HostErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as HostErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -425,8 +375,6 @@ export function mapWinningError(error: unknown): WinningErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:winning:not-found", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -434,14 +382,12 @@ export function mapWinningError(error: unknown): WinningErrorCode {
 			return extractedCode as WinningErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as WinningErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -457,8 +403,6 @@ export function mapUpdateError(error: unknown): UpdateErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:update:not-found", "core:raffle:not-live", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -466,14 +410,12 @@ export function mapUpdateError(error: unknown): UpdateErrorCode {
 			return extractedCode as UpdateErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as UpdateErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -489,8 +431,6 @@ export function mapVerificationError(error: unknown): VerificationErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:verification:winner-not-found", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -498,14 +438,12 @@ export function mapVerificationError(error: unknown): VerificationErrorCode {
 			return extractedCode as VerificationErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as VerificationErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -521,8 +459,6 @@ export function mapNotificationError(error: unknown): NotificationErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:notification:not-found", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -530,14 +466,12 @@ export function mapNotificationError(error: unknown): NotificationErrorCode {
 			return extractedCode as NotificationErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as NotificationErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -553,8 +487,6 @@ export function mapReviewError(error: unknown): ReviewErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:review:not-eligible", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -562,14 +494,12 @@ export function mapReviewError(error: unknown): ReviewErrorCode {
 			return extractedCode as ReviewErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as ReviewErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -585,8 +515,6 @@ export function mapCommentError(error: unknown): CommentErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:comment:not-found", "core:raffle:not-commentable", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -594,14 +522,12 @@ export function mapCommentError(error: unknown): CommentErrorCode {
 			return extractedCode as CommentErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as CommentErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -617,8 +543,6 @@ export function mapReportError(error: unknown): ReportErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "moderation:report:duplicate", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('moderation:') ||
 			extractedCode.startsWith('global:')
@@ -626,7 +550,6 @@ export function mapReportError(error: unknown): ReportErrorCode {
 			return extractedCode as ReportErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (
 			mappedCode.startsWith('moderation:') ||
@@ -636,7 +559,6 @@ export function mapReportError(error: unknown): ReportErrorCode {
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -652,8 +574,6 @@ export function mapPromoCodeError(error: unknown): PromoCodeErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:promo:not-found", "core:raffle:not-found", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -661,14 +581,12 @@ export function mapPromoCodeError(error: unknown): PromoCodeErrorCode {
 			return extractedCode as PromoCodeErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as PromoCodeErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
@@ -684,8 +602,6 @@ export function mapKycSubmissionError(error: unknown): KycSubmissionErrorCode {
 	const extractedCode = extractErrorCode(error);
 
 	if (extractedCode) {
-		// Backend code with known prefix - use directly
-		// Examples: "core:verification:already-pending", "global:auth:unauthenticated"
 		if (
 			extractedCode.startsWith('core:') ||
 			extractedCode.startsWith('global:')
@@ -693,27 +609,29 @@ export function mapKycSubmissionError(error: unknown): KycSubmissionErrorCode {
 			return extractedCode as KycSubmissionErrorCode;
 		}
 
-		// Simple code - try to map
 		const mappedCode = mapSimpleCode(extractedCode);
 		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
 			return mappedCode as KycSubmissionErrorCode;
 		}
 	}
 
-	// No backend code - use frontend-only fallback
 	return mapCommonError(error);
 }
 
 /**
  * Maps admin KYC review errors to AdminKycErrorCode.
- * Delegates to mapKycSubmissionError — both share the same backend
- * module (`core:verification:*`) so the extraction logic is identical.
- * The cast is safe because both types include CommonErrorCode and
- * backend `core:*` strings are trusted at runtime regardless of type.
+ *
+ * Both AdminKycErrorCode and KycSubmissionErrorCode share the same backend
+ * module (`core:verification:*`) and CommonErrorCode union — the extraction
+ * logic is identical. The cast is sound because:
+ * 1. CommonErrorCode (the mapCommonError fallback) is in both unions
+ * 2. Backend `core:verification:*` strings are trusted at runtime
  *
  * @param error - Caught error (usually AxiosError)
  * @returns AdminKycErrorCode (either backend code or frontend fallback)
  */
 export function mapAdminKycError(error: unknown): AdminKycErrorCode {
+	// Cast sound: KycSubmissionErrorCode and AdminKycErrorCode are structurally
+	// identical (same backend module + same CommonErrorCode fallback).
 	return mapKycSubmissionError(error) as AdminKycErrorCode;
 }

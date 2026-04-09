@@ -67,10 +67,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * Root Layout
- *
- * Application-wide layout providing fonts, analytics, and toast notifications.
- * Wraps all pages with MixpanelProvider for autocapture analytics.
+ * Application-wide layout. Fonts, analytics, toast.
+ * Suspense here is required for wagmi SSR hydration — ProvidersClient reads
+ * the wagmi cookie in an async server component.
  */
 export default function RootLayout({
 	children,

@@ -45,6 +45,10 @@ export function TypeSelectionStep() {
 	const { setVerificationType, nextStep } = useVerificationForm();
 	const [selected, setSelected] = useState<VerificationType | null>(null);
 
+	function handleSelect(value: VerificationType) {
+		setSelected(value);
+	}
+
 	function handleContinue() {
 		if (!selected) return;
 		setVerificationType(selected);
@@ -63,7 +67,7 @@ export function TypeSelectionStep() {
 					<button
 						key={option.value}
 						type="button"
-						onClick={() => setSelected(option.value)}
+						onClick={() => handleSelect(option.value)}
 						className={cn(
 							'flex items-start gap-4 rounded-xl border p-5 text-left transition-colors',
 							selected === option.value

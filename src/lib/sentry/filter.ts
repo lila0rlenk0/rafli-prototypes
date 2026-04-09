@@ -253,7 +253,7 @@ const EXPECTED_ERROR_CODES = new Set<string>([
 // ==========================================
 
 /** Error messages from browser extensions and irrelevant browser APIs */
-const BROWSER_NOISE_PATTERNS = [
+const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	'ResizeObserver loop',
 	'ChunkLoadError',
 	'Loading chunk',
@@ -261,6 +261,9 @@ const BROWSER_NOISE_PATTERNS = [
 	'moz-extension://',
 	'chrome-extension://',
 ];
+
+/** Keep 10% of network/timeout errors — enough to detect trends without quota spam */
+const NETWORK_SAMPLE_RATE = 0.1;
 
 /** Network/timeout error codes that get sampled instead of fully reported */
 const NETWORK_ERROR_CODES = new Set([
@@ -287,25 +290,28 @@ export function filterEvent(
 ): ErrorEvent | null {
 	const errorCode = event.tags?.errorCode as string | undefined;
 
-	// Drop expected business/user errors
+	// Step 1: Drop expected business/user errors (e.g. invalid credentials, sold out).
 	if (errorCode && EXPECTED_ERROR_CODES.has(errorCode)) {
 		return null;
 	}
 
-	// Sample network/timeout errors at 10%, fingerprint into one group
+	// Step 2: Sample network/timeout errors at 10%, fingerprint into one group
+	// to avoid quota exhaustion during transient outages.
 	if (errorCode && NETWORK_ERROR_CODES.has(errorCode)) {
-		if (Math.random() > 0.1) return null;
+		if (Math.random() > NETWORK_SAMPLE_RATE) return null;
 		event.fingerprint = ['network-transient'];
 		return event;
 	}
 
-	// Drop browser noise
-	const message =
+	// Step 3: Drop browser noise (extensions, known browser API false-positives).
+	const exceptionMessage =
 		hint.originalException instanceof Error
 			? hint.originalException.message
 			: String(hint.originalException ?? '');
 
-	if (BROWSER_NOISE_PATTERNS.some(pattern => message.includes(pattern))) {
+	if (
+		BROWSER_NOISE_PATTERNS.some(pattern => exceptionMessage.includes(pattern))
+	) {
 		return null;
 	}
 

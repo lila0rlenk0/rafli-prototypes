@@ -1,11 +1,9 @@
 import { z } from 'zod';
 
-// ==========================================
-// Schemas
-// ==========================================
-
 /**
- * Schema for ticket verification response
+ * Schema for verifying a single ticket against the merkle manifest.
+ *
+ * Validation boundary: server-side — parsed from verification API responses.
  */
 export const ticketVerificationSchema = z.object({
 	ticketId: z.number(),
@@ -18,9 +16,7 @@ export const ticketVerificationSchema = z.object({
 	winnerPosition: z.number().optional(),
 });
 
-/**
- * Schema for winner verification response
- */
+/** Schema for verifying a winner selection — proves VRF → ticket mapping. */
 export const winnerVerificationSchema = z.object({
 	position: z.number(),
 	actualTicketId: z.number(),
@@ -31,9 +27,7 @@ export const winnerVerificationSchema = z.object({
 	merkleVerified: z.boolean(),
 });
 
-/**
- * Schema for merkle proof response
- */
+/** Schema for a merkle inclusion proof for a specific ticket. */
 export const merkleProofSchema = z.object({
 	ticketId: z.number(),
 	leafHash: z.string(),
@@ -43,9 +37,7 @@ export const merkleProofSchema = z.object({
 	merkleVerified: z.boolean(),
 });
 
-/**
- * Schema for aggregated raffle verification data
- */
+/** Full verification data for a completed raffle — on-chain anchors + winner proofs. */
 export const raffleVerificationDataSchema = z.object({
 	raffleId: z.string(),
 	title: z.string(),
@@ -57,13 +49,13 @@ export const raffleVerificationDataSchema = z.object({
 	winners: z.array(winnerVerificationSchema),
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
+/** Single ticket verification result against merkle manifest. */
 export type TicketVerification = z.infer<typeof ticketVerificationSchema>;
+/** Winner selection audit trail — VRF random → ticket mapping proof. */
 export type WinnerVerification = z.infer<typeof winnerVerificationSchema>;
+/** Merkle inclusion proof for a ticket. */
 export type MerkleProof = z.infer<typeof merkleProofSchema>;
+/** Complete raffle verification data including on-chain anchors and winner proofs. */
 export type RaffleVerificationData = z.infer<
 	typeof raffleVerificationDataSchema
 >;

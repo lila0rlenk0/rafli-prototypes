@@ -4,28 +4,15 @@ import {
 	type KycSubmissionStatus,
 } from '@/types/kyc-submission';
 
-/**
- * Props for KycStatusBadge
- */
 interface KycStatusBadgeProps {
 	status: KycSubmissionStatus;
 	className?: string;
 }
 
 /**
- * Displays KYC submission status with color coding.
- * Follows the project's status badge pattern (OrderStatusBadge).
- *
- * - pending → yellow
- * - approved → green
- * - rejected → red
- *
- * @returns Colored status pill span
+ * Status pill: pending → yellow, approved → green, rejected → red.
  */
 export function KycStatusBadge({ status, className }: KycStatusBadgeProps) {
-	/**
-	 * Maps status to Tailwind color classes
-	 */
 	function getStatusClasses(): string {
 		switch (status) {
 			case KYC_SUBMISSION_STATUS.PENDING:
@@ -39,9 +26,6 @@ export function KycStatusBadge({ status, className }: KycStatusBadgeProps) {
 		}
 	}
 
-	/**
-	 * Maps status to display label
-	 */
 	function getStatusLabel(): string {
 		switch (status) {
 			case KYC_SUBMISSION_STATUS.PENDING:

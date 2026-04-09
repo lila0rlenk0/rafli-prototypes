@@ -1,16 +1,6 @@
 import type { ClientErrorCode } from './client-errors';
 import type { CommonErrorCode } from './common-errors';
 
-/**
- * Review Error Codes
- *
- * Error codes for review operations.
- * Uses "core:review:" prefix to align with backend conventions.
- */
-
-/**
- * Review error codes constant object
- */
 export const REVIEW_ERROR_CODES = {
 	/** User cannot review this raffle (not a winner) */
 	NOT_ELIGIBLE: 'core:review:not-eligible',
@@ -26,10 +16,6 @@ export const REVIEW_ERROR_CODES = {
 	CREATE_FAILED: 'create_failed',
 } as const;
 
-/**
- * Review error code type
- * Represents all possible review-specific, client-side, and common error codes
- */
 export type ReviewErrorCode =
 	| (typeof REVIEW_ERROR_CODES)[keyof typeof REVIEW_ERROR_CODES]
 	| ClientErrorCode

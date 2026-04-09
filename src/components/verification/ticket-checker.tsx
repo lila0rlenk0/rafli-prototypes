@@ -20,9 +20,6 @@ type VerificationResult =
 	| { type: 'success'; data: TicketVerification }
 	| { type: 'error'; message: string };
 
-/**
- * Gets user-friendly error message from verification error code
- */
 function getErrorMessage(code: VerificationErrorCode): string {
 	switch (code) {
 		case VERIFICATION_ERROR_CODES.TICKET_NOT_FOUND:
@@ -38,20 +35,12 @@ function getErrorMessage(code: VerificationErrorCode): string {
 	}
 }
 
-/**
- * TicketChecker Component
- *
- * Interactive form for verifying ticket existence and status.
- */
 export function TicketChecker() {
 	const [raffleSlug, setRaffleSlug] = useState('');
 	const [ticketCode, setTicketCode] = useState('');
 	const [result, setResult] = useState<VerificationResult | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	/**
-	 * Handles verification form submission
-	 */
 	async function handleVerify(e: React.FormEvent) {
 		e.preventDefault();
 
@@ -71,9 +60,6 @@ export function TicketChecker() {
 		setLoading(false);
 	}
 
-	/**
-	 * Resets the form to initial state
-	 */
 	function handleReset() {
 		setResult(null);
 		setRaffleSlug('');
@@ -162,15 +148,7 @@ interface VerificationSuccessProps {
 	onReset: () => void;
 }
 
-/**
- * Displays successful verification result
- */
 function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
-	/** Formats winner position as 1-based label */
-	function getWinnerPositionLabel(position: number | null | undefined): string {
-		return `Position #${(position ?? 0) + 1}`;
-	}
-
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center gap-2 text-green-600">
@@ -214,7 +192,7 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 						label="Winner"
 						value={
 							<span className="flex items-center gap-1 text-amber-600">
-								{getWinnerPositionLabel(data.winnerPosition)}
+								{`Position #${(data.winnerPosition ?? 0) + 1}`}
 							</span>
 						}
 					/>
@@ -237,9 +215,6 @@ interface VerificationErrorProps {
 	onReset: () => void;
 }
 
-/**
- * Displays verification error
- */
 function VerificationError({ message, onReset }: VerificationErrorProps) {
 	return (
 		<div className="space-y-4">
@@ -267,9 +242,6 @@ interface VerificationRowProps {
 	mono?: boolean;
 }
 
-/**
- * Row in verification result
- */
 function VerificationRow({ label, value, mono }: VerificationRowProps) {
 	return (
 		<div className="flex items-center justify-between text-sm">

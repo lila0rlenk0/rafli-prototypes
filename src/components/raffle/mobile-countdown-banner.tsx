@@ -8,10 +8,7 @@ interface MobileCountdownBannerProps {
 
 /**
  * Compact yellow countdown banner for mobile.
- * Shows "ENDS IN 03 Days 04 Hours 03 Minutes 03 Seconds" inline.
- * Hidden on lg+ breakpoints where the full countdown card is visible.
- *
- * @returns Yellow banner with countdown or null before hydration
+ * Hidden on lg+ where the full countdown card is visible.
  */
 export function MobileCountdownBanner({ endAt }: MobileCountdownBannerProps) {
 	const { isExpired, isHydrated, ...time } = useRaffleSaleWindow(endAt);
@@ -28,11 +25,6 @@ export function MobileCountdownBanner({ endAt }: MobileCountdownBannerProps) {
 		);
 	}
 
-	/** Formats a number as two-digit string */
-	function pad(n: number): string {
-		return String(n).padStart(2, '0');
-	}
-
 	return (
 		<div className="fixed inset-x-0 top-14 z-30 flex w-full items-center justify-between bg-[#F6FF8B] px-4 py-2 lg:hidden">
 			<p className="font-clash-display text-lg font-semibold">ENDS IN</p>
@@ -46,12 +38,15 @@ export function MobileCountdownBanner({ endAt }: MobileCountdownBannerProps) {
 	);
 }
 
+function pad(n: number): string {
+	return String(n).padStart(2, '0');
+}
+
 interface CountdownUnitProps {
 	value: string;
 	label: string;
 }
 
-/** Single countdown unit for the mobile banner */
 function CountdownUnit({ value, label }: CountdownUnitProps) {
 	return (
 		<div className="flex flex-col items-center">

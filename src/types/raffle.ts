@@ -73,28 +73,11 @@ export const RAFFLE_SORT_OPTION = {
 	TRENDING: 'trending',
 } as const;
 
-// ==========================================
-// Types
-// ==========================================
-
-/**
- * Represents the status of a raffle.
- */
 export type RaffleStatus = (typeof RAFFLE_STATUS)[keyof typeof RAFFLE_STATUS];
 
-/**
- * Represents the sorting options for raffles.
- */
 export type RaffleSortOption =
 	(typeof RAFFLE_SORT_OPTION)[keyof typeof RAFFLE_SORT_OPTION];
 
-// ==========================================
-// Schemas
-// ==========================================
-
-/**
- * Zod schema for RaffleStatus
- */
 export const raffleStatusSchema = z.enum([
 	RAFFLE_STATUS.CANCELLED,
 	RAFFLE_STATUS.COMPLETED,
@@ -105,9 +88,6 @@ export const raffleStatusSchema = z.enum([
 	RAFFLE_STATUS.QUEUED,
 ]);
 
-/**
- * Zod schema for RaffleSortOption
- */
 export const raffleSortOptionSchema = z.enum([
 	RAFFLE_SORT_OPTION.ENDING_SOON,
 	RAFFLE_SORT_OPTION.LOWEST_PRICE,
@@ -123,10 +103,6 @@ const hostSchema = z.object({
 	totalRaffles: z.number().optional(),
 });
 
-/**
- * Schema for raffle winner info
- * Represents a winner entry returned by the API
- */
 export const raffleWinnerSchema = z.object({
 	oddsId: z.number().optional(),
 	ticketCode: z.string().optional(),
@@ -136,8 +112,11 @@ export const raffleWinnerSchema = z.object({
 });
 
 /**
- * Schema for the raffle response from the backend
- * Represents the complete raffle object as returned by the API
+ * Core raffle entity schema — the most-used schema in the codebase.
+ *
+ * Validation boundary: server-side — parsed in every raffle-fetching server action.
+ * `.catch()` on optional fields ensures graceful degradation when backend
+ * adds new fields or changes optional field shapes.
  */
 export const raffleSchema = z.object({
 	id: z.string(),
@@ -149,6 +128,7 @@ export const raffleSchema = z.object({
 	featuredCoverUrl: z.string().nullable().optional().catch(null),
 	/** Admin-curated featured status — derived from featuredAt on the backend */
 	isFeatured: z.boolean().optional().catch(false),
+	/** Immutable gallery URLs — components should never mutate this array directly */
 	galleryMediaUrls: z.array(z.string()),
 	declaredValueAmount: z.string(),
 	declaredValueCurrency: z.string(),
@@ -173,6 +153,7 @@ export const raffleSchema = z.object({
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	host: hostSchema.optional(),
+	/** Draw winners — readonly, populated only after raffle concludes */
 	winners: z.array(raffleWinnerSchema).optional(),
 	totalTicketsAtDraw: z.number().optional(),
 	manifestHash: z.string().nullable().optional(),
@@ -237,19 +218,11 @@ export const raffleSchema = z.object({
 		.catch(null),
 });
 
-/**
- * Schema for raffle cover image response
- * Returned by GET /raffles/:id/cover
- */
 export const raffleCoverResponseSchema = z.object({
 	raffleId: z.string(),
 	cover: z.string().nullable(),
 });
 
-/**
- * Schema for raffle gallery response
- * Returned by GET /raffles/:id/gallery
- */
 export const raffleGalleryResponseSchema = paginationMetadataSchema.extend({
 	raffleId: z.string(),
 	gallery: z.array(z.string()),
@@ -268,7 +241,10 @@ export const tokenPricingEntrySchema = z.object({
 });
 
 /**
- * Schema for creating a raffle (input form)
+ * Client-side form input schema for the multi-step raffle creation wizard.
+ *
+ * Validation boundary: client-side only — this is the raw form shape.
+ * The server action transforms this into `createRafflePayloadSchema` before API call.
  */
 export const createRaffleInputSchema = z.object({
 	title: z.string(),
@@ -303,9 +279,11 @@ const cryptoPayloadFields = {
 };
 
 /**
- * Schema for the payload sent to create a raffle
+ * Schema for the payload sent to POST /raffles — creates a new raffle.
  *
- * This is a copy of BE schema to avoid conflicts
+ * Validation boundary: both — client-side safeParse in the create form,
+ * then server-side strip/transform in the server action before forwarding to API.
+ * Mirrors BE schema constraints to catch errors early on the client.
  */
 export const createRafflePayloadSchema = z.object({
 	categoryId: z.uuid(),
@@ -343,10 +321,7 @@ export const uploadGalleryResponseSchema = z.object({
 	galleryMediaUrls: z.array(z.string()),
 });
 
-/**
- * Schema for the payload sent to update a raffle (partial update)
- * All fields are optional - only changed fields should be sent
- */
+/** All fields optional — only changed fields should be sent */
 export const updateRafflePayloadSchema = z.object({
 	title: z.string().min(3).max(200).optional(),
 	description: z.string().min(10).max(5_000).optional(),
@@ -372,10 +347,6 @@ export const updateRafflePayloadSchema = z.object({
 	...cryptoPayloadFields,
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
 export type RaffleWinner = z.infer<typeof raffleWinnerSchema>;
 export type Raffle = z.infer<typeof raffleSchema>;
 
@@ -396,14 +367,9 @@ export type UpdateRafflePayload = z.infer<typeof updateRafflePayloadSchema>;
 export type UploadCoverResponse = z.infer<typeof uploadCoverResponseSchema>;
 export type UploadGalleryResponse = z.infer<typeof uploadGalleryResponseSchema>;
 
-// ==========================================
-// Query Schemas
-// ==========================================
-
 /**
- * Schema for querying raffles with filters and pagination
- * Status can be a single status or multiple statuses separated by comma (e.g., "draft,queued" or "cancelled,completed,ended")
- * The API accepts comma-separated statuses, so we accept string here and let the API validate
+ * Status can be a single value or comma-separated (e.g., "draft,queued").
+ * Accepts string here — the API validates the individual values.
  */
 export const myRafflesQuerySchema = paginationQuerySchema.extend({
 	category: z.string().optional(),
@@ -411,39 +377,24 @@ export const myRafflesQuerySchema = paginationQuerySchema.extend({
 	status: z.string().optional(), // Accepts single status or comma-separated statuses (validated by API)
 });
 
-/**
- * Schema for list raffles response (paginated raffles)
- */
 export const listRafflesResponseSchema = paginationMetadataSchema.extend({
 	raffles: z.array(raffleSchema),
 });
 
-/**
- * Schema for raffle with user's ticket count (participant mode)
- */
+/** Raffle with user's ticket count — participant mode */
 export const enrolledRaffleSchema = raffleSchema.extend({
 	myTicketCount: z.number(),
 });
 
-/**
- * Schema for enrolled raffles list response
- */
 export const listEnrolledRafflesResponseSchema =
 	paginationMetadataSchema.extend({
 		raffles: z.array(enrolledRaffleSchema),
 	});
 
-/**
- * Query schema for enrolled raffles (no category/question filters)
- */
 export const enrolledRafflesQuerySchema = paginationQuerySchema.extend({
 	sort: raffleSortOptionSchema.optional(),
 	status: z.string().optional(),
 });
-
-// ==========================================
-// Query Types
-// ==========================================
 
 export type MyRafflesQuery = z.infer<typeof myRafflesQuerySchema>;
 export type ListRafflesResponse = z.infer<typeof listRafflesResponseSchema>;
@@ -461,9 +412,6 @@ export type ListEnrolledRafflesResponse = z.infer<
 >;
 export type EnrolledRafflesQuery = z.infer<typeof enrolledRafflesQuerySchema>;
 
-/**
- * Union type for my-raffles page items
- */
 export type MyRaffleItem = Raffle | EnrolledRaffle;
 
 /**

@@ -1,11 +1,8 @@
-import { AuthUser } from '@/types/auth';
+import type { AuthUser } from '@/types/auth';
 import { EditableAvatar } from './editable-avatar';
 import { EditableBio } from './editable-bio';
 import { EditableName } from './editable-name';
 
-/**
- * Props for the PersonalInformationSection component
- */
 interface PersonalInformationSectionProps {
 	user?: AuthUser;
 	/** Fresh name from API — preferred over JWT-decoded user.name which may be stale */
@@ -15,10 +12,7 @@ interface PersonalInformationSectionProps {
 }
 
 /**
- * PersonalInformationSection Component
- *
- * Displays the user's personal information including avatar,
- * full name, email, and bio.
+ * Profile card showing avatar, name, email, and editable bio.
  *
  * @returns Profile card with avatar, name, email, and editable bio
  */
@@ -28,18 +22,13 @@ export function PersonalInformationSection({
 	avatarUrl,
 	bio,
 }: PersonalInformationSectionProps) {
-	/**
-	 * @returns The user's name or 'Participant' as fallback
-	 */
 	function getUserName(): string {
 		if (profileName) return profileName;
 		if (!user) return 'Participant';
 		return user.name;
 	}
 
-	/**
-	 * @returns Uppercase initials (max 2 characters)
-	 */
+	/** Uppercase initials (max 2 characters) */
 	function getUserInitials(): string {
 		const userName = getUserName();
 		return userName
@@ -50,19 +39,9 @@ export function PersonalInformationSection({
 			.toUpperCase();
 	}
 
-	/**
-	 * @returns The user's email or 'N/A' if not available
-	 */
 	function getUserEmail(): string {
 		if (!user) return 'N/A';
 		return user.email;
-	}
-
-	/**
-	 * @returns The avatar image URL or null
-	 */
-	function getUserAvatarUrl(): string | null {
-		return avatarUrl ?? null;
 	}
 
 	return (
@@ -71,7 +50,7 @@ export function PersonalInformationSection({
 			id="personal-information"
 		>
 			<EditableAvatar
-				avatarUrl={getUserAvatarUrl()}
+				avatarUrl={avatarUrl ?? null}
 				initials={getUserInitials()}
 				size={120}
 			/>

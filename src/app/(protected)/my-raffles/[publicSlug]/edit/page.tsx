@@ -1,7 +1,7 @@
 import { Copy } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
 import { getSession } from '@/lib/auth/session';
 import { extractCryptoFormFields } from '@/lib/utils/crypto-form';
@@ -101,14 +101,15 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 }
 
 /**
- * Edit Raffle Page
+ * Edit Raffle Page (Server Component)
  *
- * Multi-step form for editing an existing draft raffle.
- * Server-side protected - only accessible by the raffle host.
- * Redirects to /my-raffles if:
- * - Raffle not found
- * - User is not the host
- * - Raffle is not in draft status
+ * Data-fetching strategy: two-phase fetch.
+ * Phase 1: parallel session + raffle fetch for authorization checks.
+ * Phase 2 (post-auth): parallel cover, gallery, questions, categories, raffles count.
+ * Uses RAFFLE_DETAIL cache (300s TTL) for raffle, CATEGORIES (3600s) for categories.
+ *
+ * Server-side protected — only accessible by the raffle host for draft raffles.
+ * Redirects to /my-raffles if unauthorized or wrong status, 404 if not found.
  */
 export default async function EditRafflePage({ params }: PageProps) {
 	const { publicSlug } = await params;
@@ -129,20 +130,17 @@ export default async function EditRafflePage({ params }: PageProps) {
 
 	const raffle = raffleResult.data;
 
-	// Verify ownership - only host can edit
+	// Only the host can edit their own draft
 	if (raffle.hostId !== session.user.id) {
 		redirect('/my-raffles');
 	}
 
-	// Only allow editing draft raffles
 	if (raffle.status !== RAFFLE_STATUS.DRAFT) {
 		redirect('/my-raffles');
 	}
 
-	// Get user information
 	const userName = session?.user?.name || 'Raffle Host';
 
-	// Fetch images, questions, categories, and user's total raffles in parallel
 	const [
 		coverResult,
 		galleryResult,
@@ -157,17 +155,14 @@ export default async function EditRafflePage({ params }: PageProps) {
 		getMyRaffles(),
 	]);
 
-	// Filter active questions only
 	const questions = questionsResult.success
 		? questionsResult.data.questions.filter(q => q.isActive)
 		: [];
 
-	// Filter active categories only
 	const categories = categoriesResult.success
 		? categoriesResult.data.categories.filter(c => c.isActive)
 		: [];
 
-	// Get total raffles count
 	const totalRaffles = rafflesResult.success
 		? rafflesResult.data.total || 0
 		: 0;
@@ -183,7 +178,6 @@ export default async function EditRafflePage({ params }: PageProps) {
 			? galleryResult.data.gallery
 			: raffle.galleryMediaUrls;
 
-	// Map raffle to form data
 	const defaultValues = mapRaffleToFormData(raffle);
 
 	return (
@@ -195,14 +189,14 @@ export default async function EditRafflePage({ params }: PageProps) {
 					How to build the best Raffle?
 				</span>
 
-				{LEFT_PANEL_LINKS.map(item => (
+				{LEFT_PANEL_LINKS.map(link => (
 					<Link
-						key={item.href}
-						href={item.href}
+						key={link.href}
+						href={link.href}
 						className="flex w-fit items-center gap-4"
 					>
 						<Copy className="size-6" />
-						<span className="text-[#6E6E6E]">{item.label}</span>
+						<span className="text-[#6E6E6E]">{link.label}</span>
 					</Link>
 				))}
 			</div>

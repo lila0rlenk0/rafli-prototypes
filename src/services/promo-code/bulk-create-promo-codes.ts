@@ -32,7 +32,7 @@ interface BulkCreatePromoCodesPayload {
 }
 
 /**
- * Bulk creates promo codes for a raffle (host only)
+ * Bulk creates promo codes for a raffle (host only).
  *
  * @param raffleId - The ID of the raffle
  * @param payload - The bulk promo code configuration
@@ -45,15 +45,16 @@ export async function bulkCreatePromoCodes(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Step 1: Send create request to backend.
+		// Step 1: Bulk create promo codes on backend
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/promo-codes/bulk`,
 			payload,
 		);
-		// Step 2: Validate response shape.
-		const validated = bulkCreatePromoCodesResponseSchema.parse(response.data);
 
-		// Fire-and-forget — promo creation is not latency-sensitive
+		// Step 2: Validate response shape
+		const data = bulkCreatePromoCodesResponseSchema.parse(response.data);
+
+		// Step 3: Fire-and-forget analytics — promo creation is not latency-sensitive
 		void sessionPromise.then(session =>
 			trackServer(
 				PROMO_CODE_EVENTS.BULK_CREATED,
@@ -69,8 +70,7 @@ export async function bulkCreatePromoCodes(
 			),
 		);
 
-		// Step 3: Return typed success.
-		return success(validated);
+		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'promo-code', 'bulk-create-promo-codes');

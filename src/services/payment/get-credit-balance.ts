@@ -5,7 +5,10 @@ import { ZodError } from 'zod';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapPaymentError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { COMMON_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -26,10 +29,12 @@ export async function getCreditBalance(): Promise<
 	ServiceResponse<CreditBalanceResponse, PaymentErrorCode>
 > {
 	try {
+		// Step 1: Fetch credit balance — used in navbar badge and checkout flow
 		const response = await authenticatedClient.get('/me/credits', {
 			timeout: API_TIMEOUTS.QUERY,
 		});
 
+		// Step 2: Validate response shape
 		const data = creditBalanceResponseSchema.parse(response.data);
 		return success(data);
 	} catch (error) {
@@ -38,6 +43,12 @@ export async function getCreditBalance(): Promise<
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
-		return failure(mapPaymentError(error));
+		// Payment is a critical service — capture for Sentry alerting
+		const errorCode = mapPaymentError(error);
+		captureServiceError(error, errorCode, {
+			service: 'payment',
+			action: 'get-credit-balance',
+		});
+		return failure(errorCode);
 	}
 }

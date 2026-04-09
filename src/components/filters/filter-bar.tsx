@@ -9,10 +9,6 @@ import type { Category } from '@/types/category';
 import { RAFFLE_SORT_OPTION } from '@/types/raffle';
 import { FilterSelect, type FilterOption } from './filter-select';
 
-// ==========================================
-// Filter Options
-// ==========================================
-
 const SORT_OPTIONS: readonly FilterOption[] = [
 	{ value: RAFFLE_SORT_OPTION.NEWEST, label: 'Newest' },
 	{ value: RAFFLE_SORT_OPTION.ENDING_SOON, label: 'Ending Soon' },
@@ -39,10 +35,8 @@ export function FilterBar({ categories }: FilterBarProps) {
 	const category = searchParams.get('category') ?? '';
 	const sort = searchParams.get('sort') ?? RAFFLE_SORT_OPTION.NEWEST;
 
-	/**
-	 * Transforms categories into filter options format
-	 * Includes "All Categories" as the first option
-	 */
+	// useMemo: avoids rebuilding category option list on every render.
+	// Only recalculates when the categories array reference changes (prop from server).
 	const categoryOptions = useMemo(
 		(): FilterOption[] => [
 			{ value: '', label: 'All Categories' },
@@ -54,9 +48,6 @@ export function FilterBar({ categories }: FilterBarProps) {
 		[categories],
 	);
 
-	/**
-	 * Updates the URL with new filter parameters
-	 */
 	function updateFilters(key: string, value: string): void {
 		const params = new URLSearchParams(searchParams);
 
@@ -72,9 +63,6 @@ export function FilterBar({ categories }: FilterBarProps) {
 		router.push(`${pathname}?${params.toString()}`);
 	}
 
-	/**
-	 * Handles category filter change
-	 */
 	function handleCategoryChange(value: string): void {
 		track(RAFFLE_EVENTS.FILTERED, {
 			filter_type: 'category',
@@ -84,9 +72,6 @@ export function FilterBar({ categories }: FilterBarProps) {
 		updateFilters('category', value);
 	}
 
-	/**
-	 * Handles sort option change
-	 */
 	function handleSortChange(value: string): void {
 		track(RAFFLE_EVENTS.FILTERED, {
 			filter_type: 'sort',
@@ -98,10 +83,8 @@ export function FilterBar({ categories }: FilterBarProps) {
 
 	return (
 		<div className="flex items-center gap-4">
-			{/* Filters Label */}
 			<p className="text-sm leading-6 font-semibold text-[#182135]">Filters</p>
 
-			{/* Category Filter */}
 			<FilterSelect
 				options={categoryOptions}
 				value={category}
@@ -109,7 +92,6 @@ export function FilterBar({ categories }: FilterBarProps) {
 				placeholder="All Categories"
 			/>
 
-			{/* Sort Filter */}
 			<FilterSelect
 				options={SORT_OPTIONS}
 				value={sort}

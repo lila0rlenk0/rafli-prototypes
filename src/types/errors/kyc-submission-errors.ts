@@ -1,10 +1,5 @@
 import type { CommonErrorCode } from './common-errors';
 
-/**
- * KYC Submission Error Codes
- *
- * Backend errors for KYB/KYC verification submission endpoints (`core:verification:*` prefix).
- */
 export const KYC_SUBMISSION_ERROR_CODES = {
 	/** User already has a pending or approved submission of this type */
 	ALREADY_PENDING: 'core:verification:already-pending',
@@ -32,9 +27,6 @@ export const KYC_SUBMISSION_ERROR_CODES = {
 	FETCH_FAILED: 'fetch_failed',
 } as const;
 
-/**
- * Type representing all possible KYC submission error codes
- */
 export type KycSubmissionErrorCode =
 	| (typeof KYC_SUBMISSION_ERROR_CODES)[keyof typeof KYC_SUBMISSION_ERROR_CODES]
 	| CommonErrorCode;

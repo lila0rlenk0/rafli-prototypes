@@ -10,40 +10,34 @@ import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for password reset request
- * Always returns success to prevent user enumeration
- */
-type RequestPasswordResetResponse = ServiceResponse<void, AuthErrorCode>;
-
-/**
- * Requests a password reset email
- * Always returns success to prevent user enumeration attacks
+ * Requests a password reset email.
+ * Always returns success to prevent user enumeration attacks — only infrastructure
+ * errors (network, timeout, 5XX) surface as failures so the user knows to retry.
  *
  * @param input - Email and optional redirect URL
- * @returns ServiceResponse with void data on success
+ * @returns ServiceResponse with void on success
  */
 export async function requestPasswordReset(
 	input: RequestPasswordResetInput,
-): Promise<RequestPasswordResetResponse> {
+): Promise<ServiceResponse<void, AuthErrorCode>> {
 	try {
+		// Step 1: Request password reset email from backend
 		await baseClient.post('/auth/forget-password', input);
 
-		// Fire-and-forget — no userId available (unauthenticated flow)
+		// Step 2: Fire-and-forget analytics — no userId available (unauthenticated flow)
 		void trackServer(ACCOUNT_EVENTS.PASSWORD_RESET_REQUESTED, {});
 
 		return success(undefined);
 	} catch (error) {
+		// Step 3: Map and capture — auth is a critical service
 		const errorCode = mapAuthError(error);
-
-		// Capture all errors — the Sentry filter drops expected business codes.
-		// Infrastructure errors (5XX, network) pass through for alerting.
 		captureServiceError(error, errorCode, {
 			service: 'auth',
 			action: 'request-password-reset',
 		});
 
-		// For infrastructure errors, return failure (user should know)
-		// For user-related errors (not found), return success to prevent enumeration
+		// Step 4: Only surface infrastructure errors — 4XX errors return success
+		// to prevent user enumeration (attacker can't tell if email exists)
 		if (
 			errorCode === COMMON_ERROR_CODES.NETWORK_ERROR ||
 			errorCode === COMMON_ERROR_CODES.TIMEOUT_ERROR ||
@@ -53,7 +47,6 @@ export async function requestPasswordReset(
 			return failure(errorCode);
 		}
 
-		// Return success for all other cases to prevent enumeration
 		return success(undefined);
 	}
 }

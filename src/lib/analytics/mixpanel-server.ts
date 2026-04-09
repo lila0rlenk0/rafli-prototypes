@@ -20,7 +20,11 @@ export interface TrackOptions {
 }
 
 /**
- * Track server-side event (auto-fetches client IP)
+ * Track server-side event (auto-fetches client IP for geolocation).
+ *
+ * @param event - Mixpanel event name (use constants from events.ts)
+ * @param properties - Event properties (business context: raffleId, amount, etc.)
+ * @param options - User/device identification
  * @returns Promise that resolves when tracking is complete
  */
 export async function trackServer(
@@ -35,6 +39,7 @@ export async function trackServer(
 
 	mp.track(event, {
 		...properties,
+		// Mixpanel requires distinct_id — fall back to "anonymous" for unauthenticated events
 		distinct_id: userId || deviceId || 'anonymous',
 		$user_id: userId,
 		$device_id: deviceId,

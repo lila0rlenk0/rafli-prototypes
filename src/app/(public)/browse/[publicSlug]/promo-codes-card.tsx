@@ -58,15 +58,7 @@ function PromoCodesCardContent({
 }: PromoCodesCardProps) {
 	const mode = useUserStore(state => state.mode);
 
-	/**
-	 * Determines if the card should be shown
-	 */
-	function shouldShow(): boolean {
-		if (mode === null) return false;
-		return isOwner && isManageable && mode === USER_MODE.HOST;
-	}
-
-	if (!shouldShow()) {
+	if (mode === null || !isOwner || !isManageable || mode !== USER_MODE.HOST) {
 		return null;
 	}
 

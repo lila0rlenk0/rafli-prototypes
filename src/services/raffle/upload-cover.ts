@@ -23,14 +23,6 @@ const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 /**
- * Response type for cover upload
- */
-type UploadCoverServiceResponse = ServiceResponse<
-	UploadCoverResponse,
-	RaffleErrorCode
->;
-
-/**
  * Uploads a cover image for a raffle
  *
  * @param raffleId - The ID of the raffle
@@ -40,11 +32,10 @@ type UploadCoverServiceResponse = ServiceResponse<
 export async function uploadCover(
 	raffleId: string,
 	file: File,
-): Promise<UploadCoverServiceResponse> {
+): Promise<ServiceResponse<UploadCoverResponse, RaffleErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Client-side validation
 		if (!ACCEPTED_TYPES.includes(file.type)) {
 			return failure(CLIENT_ERROR_CODES.UPLOAD_INVALID_TYPE);
 		}
@@ -69,7 +60,6 @@ export async function uploadCover(
 			},
 		);
 
-		// Validate response structure
 		const parsed = uploadCoverResponseSchema.parse(response.data);
 
 		// Fire-and-forget — upload tracking must not block
@@ -87,13 +77,11 @@ export async function uploadCover(
 
 		return success(parsed);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'upload-cover');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

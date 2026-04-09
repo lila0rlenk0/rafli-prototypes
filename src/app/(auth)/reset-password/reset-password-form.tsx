@@ -45,7 +45,9 @@ interface ResetPasswordFormProps extends ComponentProps<'form'> {
 }
 
 /**
- * Maps error codes to user-friendly messages
+ * Maps auth and infrastructure error codes to user-friendly messages.
+ * Token errors (invalid, expired) prompt user to request a new link.
+ * Password-specific errors (compromised) ask for a different password.
  */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
@@ -68,10 +70,13 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 }
 
 /**
- * ResetPasswordForm Component
+ * Password reset form. Requires a valid one-time token from the reset email.
  *
- * Displays password reset form with new password and confirmation.
- * Requires valid token from email link.
+ * 'use client' required: uses useForm for validation with Zod refinement
+ * (password match), useTransition for non-blocking server action, useRouter
+ * for post-reset redirect, and toast for success feedback.
+ *
+ * @returns Form with new password + confirm password fields
  */
 export function ResetPasswordForm({
 	token,
@@ -89,19 +94,23 @@ export function ResetPasswordForm({
 	const [isPending, startTransition] = useTransition();
 	const router = useRouter();
 
+	/** Submits the new password with the one-time reset token */
 	async function handleResetPassword(data: FormType) {
 		startTransition(async () => {
+			// Step 1: Call server action with the token and new password
 			const result = await resetPassword({
 				token,
 				newPassword: data.newPassword,
 			});
 
+			// Step 2: Surface error — token may be expired or password compromised
 			if (!result.success) {
 				const message = getErrorMessage(result.error);
 				setError('root', { message });
 				return;
 			}
 
+			// Step 3: Success — toast confirmation and redirect to sign-in
 			toast.success('Password reset successfully!');
 			router.push('/sign-in');
 		});

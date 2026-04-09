@@ -20,15 +20,18 @@ import { clearAuthCookies } from './clear-auth';
  * @returns Never returns - always redirects to /sign-in
  */
 export async function signOutUser(): Promise<never> {
-	// Capture session before clearing cookies — getSession() reads from cookies,
-	// so we must start the read before clearAuthCookies() runs in the finally block.
-	const sessionPromise = getSession();
+	// Step 1: Capture session before clearing cookies — getSession() reads from cookies,
+	// so we must snapshot the user ID before clearAuthCookies() deletes them.
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 2: Invalidate backend session (best-effort — cookie clearing below ensures clean FE state)
 		await authenticatedClient.post('/auth/sign-out');
 	} catch {
-		// Backend session cleanup is best-effort — cookie clearing below ensures clean FE state
+		// Swallowed intentionally — backend session cleanup is best-effort.
+		// If the backend is down, we still need to clear FE cookies and redirect.
 	} finally {
+		// Step 3: Non-blocking sign-out analytics
 		runAfter(async () => {
 			const userId = (await sessionPromise)?.user?.id;
 			if (!userId) return;
@@ -36,10 +39,14 @@ export async function signOutUser(): Promise<never> {
 			await trackServer(AUTH_EVENTS.SIGN_OUT, {}, { userId });
 		});
 
+		// Step 4: Clear all auth cookies
+		// Side-effects: deletes raffly-token, raffly-session, raffly-user-mode cookies
 		await clearAuthCookies();
-		// Detach user from Sentry scope so post-logout errors aren't misattributed
+
+		// Step 5: Detach user from Sentry scope so post-logout errors aren't misattributed
 		clearSentryUser();
 	}
 
+	// Step 6: Redirect — never returns
 	redirect('/sign-in');
 }

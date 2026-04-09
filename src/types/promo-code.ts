@@ -1,12 +1,6 @@
 import { z } from 'zod';
 
-// ==========================================
-// Constants
-// ==========================================
-
-/**
- * Allowed characters in promo codes (excludes ambiguous O/0/I/1)
- */
+/** Allowed characters in promo codes (excludes ambiguous O/0/I/1) */
 export const PROMO_CODE_REGEX = /^[A-Z2-9]{4}-[A-Z2-9]{4}$/;
 
 export const PROMO_CODE_TYPE = {
@@ -22,22 +16,11 @@ export const PROMO_CODE_STATUS = {
 	EXHAUSTED: 'exhausted',
 } as const;
 
-// ==========================================
-// Types from Constants
-// ==========================================
-
 export type PromoCodeType =
 	(typeof PROMO_CODE_TYPE)[keyof typeof PROMO_CODE_TYPE];
 export type PromoCodeStatus =
 	(typeof PROMO_CODE_STATUS)[keyof typeof PROMO_CODE_STATUS];
 
-// ==========================================
-// Schemas
-// ==========================================
-
-/**
- * Schema for promo code type enum
- */
 export const promoCodeTypeSchema = z.enum([
 	PROMO_CODE_TYPE.FREE_TICKETS,
 	PROMO_CODE_TYPE.DISCOUNT_FIXED,
@@ -45,7 +28,11 @@ export const promoCodeTypeSchema = z.enum([
 ]);
 
 /**
- * Schema for promo code response from backend
+ * Promo code entity from backend.
+ *
+ * Validation boundary: server-side — parsed in promo code server actions.
+ * `bulkId` defaults to null for backward compat with older payloads.
+ * `maxRedemptionsPerUser` defaults to 0 (unlimited) for the same reason.
  */
 export const promoCodeSchema = z.object({
 	id: z.string(),
@@ -64,9 +51,6 @@ export const promoCodeSchema = z.object({
 	createdAt: z.string(),
 });
 
-/**
- * Schema for list promo codes response (offset-based pagination)
- */
 export const listPromoCodesResponseSchema = z.object({
 	items: z.array(promoCodeSchema),
 	limit: z.number(),
@@ -74,10 +58,7 @@ export const listPromoCodesResponseSchema = z.object({
 	total: z.number(),
 });
 
-/**
- * Schema for promo code string input (XXXX-XXXX format)
- * Transforms to uppercase and validates format
- */
+/** XXXX-XXXX format — transforms to uppercase then validates */
 export const promoCodeStringSchema = z
 	.preprocess(
 		value => (typeof value === 'string' ? value.trim().toUpperCase() : value),
@@ -85,9 +66,6 @@ export const promoCodeStringSchema = z
 	)
 	.refine(v => PROMO_CODE_REGEX.test(v), 'Invalid promo code format');
 
-/**
- * Schema for export promo codes query params
- */
 export const exportPromoCodesQuerySchema = z.object({
 	bulkId: z.string().uuid().optional(),
 	include: z.enum(['all', 'redeemed', 'unredeemed']).default('all'),
@@ -102,23 +80,12 @@ export const exportPromoCodesQuerySchema = z.object({
 		.default('all'),
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
 export type PromoCode = z.infer<typeof promoCodeSchema>;
 export type ListPromoCodesResponse = z.infer<
 	typeof listPromoCodesResponseSchema
 >;
 export type ExportPromoCodesQuery = z.infer<typeof exportPromoCodesQuerySchema>;
 
-// ==========================================
-// Bulk Creation Schemas
-// ==========================================
-
-/**
- * Schema for bulk creating promo codes
- */
 export const bulkCreatePromoCodesInputSchema = z
 	.object({
 		count: z.number().int().min(1).max(100),
@@ -151,9 +118,6 @@ export const bulkCreatePromoCodesInputSchema = z
 		},
 	);
 
-/**
- * Schema for bulk create response
- */
 export const bulkCreatePromoCodesResponseSchema = z.object({
 	bulkId: z.string().uuid(),
 	created: z.number(),
@@ -167,13 +131,9 @@ export type BulkCreatePromoCodesResponse = z.infer<
 	typeof bulkCreatePromoCodesResponseSchema
 >;
 
-// ==========================================
-// Utilities
-// ==========================================
-
 /**
- * Derives display status from promo code data
- * Backend stores isActive flag, but display status depends on expiry and usage
+ * Derives display status from promo code data.
+ * Backend stores isActive flag, but display status depends on expiry and usage.
  *
  * @param code - Promo code object
  * @returns Computed display status
@@ -199,15 +159,15 @@ export function getPromoCodeStatus(code: PromoCode): PromoCodeStatus {
 }
 
 /**
- * Formats promo code value for display
+ * Formats promo code value for display.
  *
  * @param code - Promo code object
- * @returns Formatted value string
+ * @returns Formatted value string (e.g., "3 tickets", "$5.00", "10%")
  */
 export function formatPromoCodeValue(code: PromoCode): string {
 	const value = parseFloat(code.value);
 
-	// Step 1: Format by promo type.
+	// Step 1: Format by promo type — exhaustive switch ensures all types handled.
 	switch (code.type) {
 		case PROMO_CODE_TYPE.FREE_TICKETS:
 			return `${Math.floor(value)} ticket${value !== 1 ? 's' : ''}`;
@@ -215,8 +175,11 @@ export function formatPromoCodeValue(code: PromoCode): string {
 			return `$${value.toFixed(2)}`;
 		case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
 			return `${Math.floor(value)}%`;
-		default:
-			return code.value;
+		default: {
+			// Exhaustiveness guard — TS errors here if a new type is added to PromoCodeType
+			const _exhaustive: never = code.type;
+			return String(_exhaustive);
+		}
 	}
 }
 
@@ -242,12 +205,7 @@ export function formatUsageLimit(limit: number): string {
 	return limit === 0 ? '∞' : String(limit);
 }
 
-// ==========================================
-// Validation Schemas (Participant Flow)
-// ==========================================
-
 /**
- * Schema for backend validation response
  * Backend returns different fields based on promo type:
  * - free_tickets: { valid, type, ticketsGranted }
  * - discount_*: { valid, type, discountAmount }
@@ -284,18 +242,18 @@ export const validatedPromoCodeSchema = z.object({
 export type ValidatedPromoCode = z.infer<typeof validatedPromoCodeSchema>;
 
 /**
- * Gets human-readable description for a validated promo code
+ * Gets human-readable description for a validated promo code.
  *
  * Note: For discount_percent, backend returns per-ticket discount amount
  * (not the percentage), so we show it as a per-ticket discount.
  *
  * @param promo - Validated promo code
- * @returns Description string for display
+ * @returns Description string for display (e.g., "3 free tickets", "$5.00 off your order")
  */
 export function getPromoCodeDescription(promo: ValidatedPromoCode): string {
 	const value = parseFloat(promo.value);
 
-	// Step 1: Format description by promo type.
+	// Step 1: Format description by promo type — exhaustive switch.
 	switch (promo.type) {
 		case PROMO_CODE_TYPE.FREE_TICKETS:
 			return `${Math.floor(value)} free ticket${value !== 1 ? 's' : ''}`;
@@ -304,7 +262,10 @@ export function getPromoCodeDescription(promo: ValidatedPromoCode): string {
 		case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
 			// Backend returns per-ticket discount amount, not percentage
 			return `$${value.toFixed(2)} off per ticket`;
-		default:
-			return 'Discount applied';
+		default: {
+			// Exhaustiveness guard — TS errors here if a new type is added to PromoCodeType
+			const _exhaustive: never = promo.type;
+			return String(_exhaustive);
+		}
 	}
 }

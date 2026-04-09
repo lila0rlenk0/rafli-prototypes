@@ -6,24 +6,14 @@ import { cn } from '@/lib/utils';
 type StepStatus = 'completed' | 'active' | 'pending';
 
 interface TimelineStepProps {
-	/** Step title */
 	title: string;
-	/** Step description */
 	description: string;
-	/** Current step status */
 	status: StepStatus;
-	/** Whether this is the last step */
+	/** Omits the connector line below this step */
 	isLast?: boolean;
-	/** Optional action button */
 	action?: ReactNode;
 }
 
-/**
- * TimelineStep Component
- *
- * Renders a single step in the fulfillment timeline.
- * Shows completed/active/pending states with appropriate visual indicators.
- */
 export function TimelineStep({
 	title,
 	description,
@@ -64,11 +54,11 @@ export function TimelineStep({
 			</div>
 
 			{/* Content column */}
-			<div className={cn('flex-1 pb-6', isLast && 'pb-0')}>
+			<div className={cn('flex-1 pb-6', isLast ? 'pb-0' : undefined)}>
 				<h4
 					className={cn(
 						'font-semibold',
-						status === 'pending' && 'text-gray-400',
+						status === 'pending' ? 'text-gray-400' : undefined,
 					)}
 				>
 					{title}
@@ -81,8 +71,10 @@ export function TimelineStep({
 				>
 					{description}
 				</p>
-				{action && status === 'active' ? (
-					<div className="mt-3">{action}</div>
+				{action ? (
+					status === 'active' ? (
+						<div className="mt-3">{action}</div>
+					) : null
 				) : null}
 			</div>
 		</div>

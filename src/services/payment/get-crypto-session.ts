@@ -5,14 +5,13 @@ import { z, ZodError } from 'zod';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapPaymentError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import { cryptoPaymentStatusSchema } from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
-
-// ==========================================
-// Schema
-// ==========================================
 
 /**
  * Schema for crypto session polling response.
@@ -44,10 +43,6 @@ const cryptoSessionResponseSchema = z.object({
 
 export type CryptoSessionResponse = z.infer<typeof cryptoSessionResponseSchema>;
 
-// ==========================================
-// Server Action
-// ==========================================
-
 /**
  * Fetches current state of a crypto payment session.
  *
@@ -62,19 +57,26 @@ export async function getCryptoSession(
 	sessionId: string,
 ): Promise<ServiceResponse<CryptoSessionResponse, PaymentErrorCode>> {
 	try {
+		// Step 1: Fetch authoritative session state from backend
 		const response = await authenticatedClient.get(
 			`/payments/crypto/sessions/${encodeURIComponent(sessionId)}`,
 			{ timeout: API_TIMEOUTS.QUERY },
 		);
 
-		const data = cryptoSessionResponseSchema.parse(response.data);
-		return success(data);
+		// Step 2: Validate response — crypto session data is critical for payment flow
+		return success(cryptoSessionResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'payment', 'get-crypto-session');
 			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
 		}
 
-		return failure(mapPaymentError(error));
+		// Crypto is a critical service — capture for Sentry alerting
+		const errorCode = mapPaymentError(error);
+		captureServiceError(error, errorCode, {
+			service: 'payment',
+			action: 'get-crypto-session',
+		});
+		return failure(errorCode);
 	}
 }

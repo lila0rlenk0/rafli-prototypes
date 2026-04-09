@@ -12,11 +12,11 @@ mock.module('@/lib/web3/config', () => ({
 
 const mockProvidersClient = mock((props: unknown) => props);
 
-mock.module('./providers-client', () => ({
+mock.module('@/app/providers-client', () => ({
 	ProvidersClient: mockProvidersClient,
 }));
 
-const { Providers } = await import('./providers');
+const { Providers } = await import('@/app/providers');
 
 describe('Providers', () => {
 	test('forwards only the wagmi cookie value into client props', async () => {

@@ -41,12 +41,14 @@ export async function confirmCryptoTx(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Request backend to finalize crypto payment — idempotent if already completed
 		const response = await authenticatedClient.post(
 			'/payments/crypto/confirm',
 			payload,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
+		// Step 2: Validate response shape
 		const data = cryptoTxMutationResponseSchema.parse(response.data);
 
 		runAfter(async () => {

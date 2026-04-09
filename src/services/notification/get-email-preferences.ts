@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapNotificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -12,26 +14,18 @@ import {
 	type NotificationErrorCode,
 } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
 
 /**
- * Response type for fetching email preferences
- */
-type GetEmailPreferencesResponse = ServiceResponse<
-	EmailPreferences,
-	NotificationErrorCode
->;
-
-/**
- * Fetches email notification preferences for the current user
+ * Fetches email notification preferences for the current user.
  *
  * @returns ServiceResponse with email preferences on success
  */
-export async function getEmailPreferences(): Promise<GetEmailPreferencesResponse> {
+export async function getEmailPreferences(): Promise<
+	ServiceResponse<EmailPreferences, NotificationErrorCode>
+> {
 	try {
 		const response = await authenticatedClient.get('/email/preferences');
-		const validated = emailPreferencesSchema.parse(response.data);
-		return success(validated);
+		return success(emailPreferencesSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'notification', 'get-email-preferences');

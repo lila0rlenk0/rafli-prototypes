@@ -8,11 +8,6 @@ import type { AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for password change
- */
-type ChangePasswordResponse = ServiceResponse<void, AuthErrorCode>;
-
-/**
  * Changes user password (requires authentication)
  * Validates current password before setting new password
  *
@@ -21,12 +16,14 @@ type ChangePasswordResponse = ServiceResponse<void, AuthErrorCode>;
  */
 export async function changePassword(
 	input: ChangePasswordInput,
-): Promise<ChangePasswordResponse> {
+): Promise<ServiceResponse<void, AuthErrorCode>> {
 	try {
+		// Step 1: Send password change request — backend validates current password
 		await authenticatedClient.post('/auth/change-password', input);
 
 		return success(undefined);
 	} catch (error) {
+		// Step 2: Map and capture — auth is a critical service
 		const errorCode = mapAuthError(error);
 		captureServiceError(error, errorCode, {
 			service: 'auth',

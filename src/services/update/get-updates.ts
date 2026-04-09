@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { baseClient } from '@/lib/api/client';
 import { failure, mapUpdateError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -9,26 +11,15 @@ import {
 	listUpdatesResponseSchema,
 	type ListUpdatesResponse,
 } from '@/types/update';
-import { ZodError } from 'zod';
 
-/**
- * Response type for getting updates
- */
-type GetUpdatesServiceResponse = ServiceResponse<
-	ListUpdatesResponse,
-	UpdateErrorCode
->;
-
-/**
- * Optional pagination parameters for fetching updates
- */
+/** Optional pagination parameters for fetching updates */
 interface GetUpdatesParams {
 	limit?: number;
 	offset?: number;
 }
 
 /**
- * Fetches updates for a raffle
+ * Fetches updates for a raffle.
  *
  * @param raffleId - The ID of the raffle
  * @param params - Optional pagination parameters (limit, offset)
@@ -37,17 +28,12 @@ interface GetUpdatesParams {
 export async function getUpdates(
 	raffleId: string,
 	params?: GetUpdatesParams,
-): Promise<GetUpdatesServiceResponse> {
+): Promise<ServiceResponse<ListUpdatesResponse, UpdateErrorCode>> {
 	try {
 		const response = await baseClient.get(`/raffles/${raffleId}/updates`, {
-			params: {
-				limit: params?.limit,
-				offset: params?.offset,
-			},
+			params,
 		});
-		const validated = listUpdatesResponseSchema.parse(response.data);
-
-		return success(validated);
+		return success(listUpdatesResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'update', 'get-updates');

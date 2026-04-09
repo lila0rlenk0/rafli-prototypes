@@ -11,15 +11,12 @@ import {
 } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
-/**
- * Schema for deactivate promo code response
- */
 const deactivatePromoCodeResponseSchema = z.object({
 	success: z.literal(true),
 });
 
 /**
- * Deactivates a promo code (host only)
+ * Deactivates a promo code (host only).
  *
  * @param promoCodeId - The ID of the promo code to deactivate
  * @returns ServiceResponse with void on success, PromoCodeErrorCode on failure
@@ -28,14 +25,10 @@ export async function deactivatePromoCode(
 	promoCodeId: string,
 ): Promise<ServiceResponse<void, PromoCodeErrorCode>> {
 	try {
-		// Step 1: Send deactivate request.
 		const response = await authenticatedClient.delete(
 			`/promo-codes/${promoCodeId}`,
 		);
-		// Step 2: Validate response.
 		deactivatePromoCodeResponseSchema.parse(response.data);
-
-		// Step 3: Return typed success.
 		return success(undefined);
 	} catch (error) {
 		if (error instanceof ZodError) {

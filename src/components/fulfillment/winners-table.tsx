@@ -14,12 +14,6 @@ interface WinnersTableProps {
 	publicSlug: string;
 }
 
-/**
- * WinnersTable Component
- *
- * Displays all winners in a table format for host fulfillment management.
- * Supports inline status updates via action menu.
- */
 export function WinnersTable({
 	winners: initialWinners,
 	publicSlug,
@@ -27,18 +21,13 @@ export function WinnersTable({
 	const [winners, setWinners] = useState(initialWinners);
 	const [expandedWinnerId, setExpandedWinnerId] = useState<string | null>(null);
 
-	/**
-	 * Handles status change from action menu
-	 */
 	function handleStatusChange(winningId: string, newStatus: WinningStatus) {
 		setWinners(prev =>
 			prev.map(w => (w.id === winningId ? { ...w, status: newStatus } : w)),
 		);
 	}
 
-	/**
-	 * Formats display name: max 2 names, max 20 chars
-	 */
+	// Caps at 2 name parts and 20 chars to keep the table column narrow
 	function formatDisplayName(name: string | null, position: number): string {
 		if (!name || name.trim().toLowerCase() === 'unknown') {
 			// Backend positions are 0-based; display as 1-based for users
@@ -49,19 +38,6 @@ export function WinnersTable({
 		return twoNames.length > 20 ? twoNames.slice(0, 17) + '...' : twoNames;
 	}
 
-	/** Converts 0-based position to 1-based for display */
-	function getDisplayPosition(position: number): number {
-		return position + 1;
-	}
-
-	/** Toggle label for shipping details expand/collapse */
-	function getToggleLabel(isExpanded: boolean): string {
-		return isExpanded ? 'Hide details' : 'View details';
-	}
-
-	/**
-	 * Gets location from shipping info
-	 */
 	function getLocation(winner: HostWinnerEntry): string {
 		if (!winner.shippingInfo) return 'No address';
 		const { city, country } = winner.shippingInfo;
@@ -107,7 +83,7 @@ export function WinnersTable({
 							<Fragment key={winner.id}>
 								<tr className="text-sm">
 									<td className="px-6 py-4 font-medium">
-										{getDisplayPosition(winner.position)}
+										{winner.position + 1}
 									</td>
 									<td className="px-6 py-4">
 										{formatDisplayName(winner.userName, winner.position)}
@@ -121,7 +97,7 @@ export function WinnersTable({
 													onClick={() => toggleExpanded(winner.id)}
 													className="cursor-pointer text-xs font-semibold text-black underline"
 												>
-													{getToggleLabel(isExpanded)}
+													{isExpanded ? 'Hide details' : 'View details'}
 												</button>
 											) : null}
 										</div>
@@ -138,37 +114,39 @@ export function WinnersTable({
 									</td>
 								</tr>
 
-								{isExpanded && shipping ? (
-									<tr className="bg-gray-50 text-sm">
-										<td colSpan={5} className="px-6 py-4">
-											<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-												<p>
-													<span className="font-semibold">Name:</span>{' '}
-													{shipping.name}
-												</p>
-												<p>
-													<span className="font-semibold">Phone:</span>{' '}
-													{shipping.phone || 'Not provided'}
-												</p>
-												<p className="sm:col-span-2">
-													<span className="font-semibold">Address:</span>{' '}
-													{shipping.address}
-												</p>
-												<p>
-													<span className="font-semibold">City:</span>{' '}
-													{shipping.city}
-												</p>
-												<p>
-													<span className="font-semibold">ZIP:</span>{' '}
-													{shipping.zip}
-												</p>
-												<p>
-													<span className="font-semibold">Country:</span>{' '}
-													{shipping.country}
-												</p>
-											</div>
-										</td>
-									</tr>
+								{isExpanded ? (
+									shipping ? (
+										<tr className="bg-gray-50 text-sm">
+											<td colSpan={5} className="px-6 py-4">
+												<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+													<p>
+														<span className="font-semibold">Name:</span>{' '}
+														{shipping.name}
+													</p>
+													<p>
+														<span className="font-semibold">Phone:</span>{' '}
+														{shipping.phone || 'Not provided'}
+													</p>
+													<p className="sm:col-span-2">
+														<span className="font-semibold">Address:</span>{' '}
+														{shipping.address}
+													</p>
+													<p>
+														<span className="font-semibold">City:</span>{' '}
+														{shipping.city}
+													</p>
+													<p>
+														<span className="font-semibold">ZIP:</span>{' '}
+														{shipping.zip}
+													</p>
+													<p>
+														<span className="font-semibold">Country:</span>{' '}
+														{shipping.country}
+													</p>
+												</div>
+											</td>
+										</tr>
+									) : null
 								) : null}
 							</Fragment>
 						);

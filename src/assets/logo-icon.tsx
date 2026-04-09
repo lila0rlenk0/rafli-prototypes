@@ -3,6 +3,8 @@ import type { ComponentProps } from 'react';
 
 /** @returns Rafli icon-only logo SVG */
 export function LogoIcon(props: ComponentProps<'svg'>) {
+	// useId generates a unique ID per instance — prevents clipPath collisions
+	// when multiple LogoIcon components render on the same page
 	const clipPathId = useId();
 
 	return (

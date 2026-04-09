@@ -5,12 +5,6 @@ interface HeroSectionProps {
 	totalPrizeValue: number;
 }
 
-/**
- * HeroSection Component
- *
- * Displays the browse page hero with headline, subtitle, and dynamic stat badges.
- * Responsive: 40px heading on mobile, 64px on desktop. Badges stack vertically on mobile.
- */
 export function HeroSection({ raffles, totalPrizeValue }: HeroSectionProps) {
 	const activeCount = raffles.length;
 

@@ -13,27 +13,7 @@ import { USER_MODE } from '@/types/user-mode';
 export function PageHeader() {
 	const mode = useUserStore(state => state.mode);
 
-	/**
-	 * Gets the page title based on user mode
-	 */
-	function getPageTitle(): string {
-		if (mode === USER_MODE.HOST) {
-			return 'My Created Raffles';
-		}
-		return 'My Entered Raffles';
-	}
-
-	/**
-	 * Gets the mode display label
-	 */
-	function getModeLabel(): string {
-		if (mode === USER_MODE.HOST) {
-			return 'Host Mode';
-		}
-		return 'Participant Mode';
-	}
-
-	// Show skeleton while mode is initializing
+	// Null while mode is hydrating from cookie — show skeleton to avoid layout shift
 	if (mode === null) {
 		return (
 			<div className="mb-12 text-center">
@@ -44,6 +24,8 @@ export function PageHeader() {
 	}
 
 	const isHostMode = mode === USER_MODE.HOST;
+	const modeLabel = isHostMode ? 'Host Mode' : 'Participant Mode';
+	const pageTitle = isHostMode ? 'My Created Raffles' : 'My Entered Raffles';
 
 	return (
 		<div className="mb-16 text-center">
@@ -54,10 +36,10 @@ export function PageHeader() {
 						: 'bg-[#BEFFDB] text-[#44B476]'
 				}`}
 			>
-				{getModeLabel()}
+				{modeLabel}
 			</div>
 			<h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-				{getPageTitle()}
+				{pageTitle}
 			</h1>
 		</div>
 	);

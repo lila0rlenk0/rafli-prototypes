@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapNotificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -12,30 +14,21 @@ import {
 	wsTokenResponseSchema,
 } from '@/types/notification';
 import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
 
 /**
- * Response type for fetching WebSocket token
- */
-type GetWsTokenResponse = ServiceResponse<
-	WsTokenResponse,
-	NotificationErrorCode
->;
-
-/**
- * Fetches a short-lived WebSocket authentication token
+ * Fetches a short-lived WebSocket authentication token.
  *
- * Token is used for query param auth on notification stream endpoint.
+ * Used for query param auth on the notification stream endpoint.
  * Each request generates a new token, invalidating previous ones.
  *
  * @returns ServiceResponse with token on success
  */
-export async function getWsToken(): Promise<GetWsTokenResponse> {
+export async function getWsToken(): Promise<
+	ServiceResponse<WsTokenResponse, NotificationErrorCode>
+> {
 	try {
 		const response = await authenticatedClient.get('/me/ws-token');
-
-		const validated = wsTokenResponseSchema.parse(response.data);
-		return success(validated);
+		return success(wsTokenResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'notification', 'get-ws-token');

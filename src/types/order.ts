@@ -2,10 +2,6 @@ import { z } from 'zod';
 
 import { cryptoPaymentStatusSchema } from './payment';
 
-// ==========================================
-// Constants
-// ==========================================
-
 /**
  * Order lifecycle statuses — BE-authoritative.
  *
@@ -23,20 +19,9 @@ export const ORDER_STATUS = {
 	REFUNDED: 'refunded',
 } as const;
 
-// ==========================================
-// Types from Constants
-// ==========================================
-
 /** Union of ORDER_STATUS values — use instead of raw string literals. */
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 
-// ==========================================
-// Schemas
-// ==========================================
-
-/**
- * Zod schema for OrderStatus
- */
 export const orderStatusSchema = z.enum([
 	ORDER_STATUS.PENDING,
 	ORDER_STATUS.COMPLETED,
@@ -45,7 +30,10 @@ export const orderStatusSchema = z.enum([
 ]);
 
 /**
- * Schema for the order entity from backend
+ * Order entity — central to checkout, payment, and order history flows.
+ *
+ * Validation boundary: server-side — parsed in every order-fetching server action.
+ * Monetary values are decimal strings (e.g., "10.0000") to avoid floating-point drift.
  */
 export const orderSchema = z.object({
 	id: z.uuid(),
@@ -78,38 +66,23 @@ export const orderSchema = z.object({
 		.optional(),
 });
 
-/**
- * Schema for creating an order (request payload)
- */
 export const createOrderPayloadSchema = z.object({
 	raffleId: z.uuid(),
 	ticketQuantity: z.number().int().positive(),
 	promoCode: z.string().optional(),
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
 /** Order entity from BE — used across order listing, checkout status, and payment flows. */
 export type Order = z.infer<typeof orderSchema>;
 /** Payload for POST /orders/checkout — creates or reuses a pending order. */
 export type CreateOrderPayload = z.infer<typeof createOrderPayloadSchema>;
 
-// ==========================================
-// Order with Raffle Schema (for list view)
-// ==========================================
-
 /**
- * Schema for order in list views (same as orderSchema, alias for clarity)
+ * Semantic alias for Order — used in list views where `raffleName`/`raffleSlug`
+ * are expected to be populated. Same shape, different intent: signals that
+ * the component requires the optional raffle display fields.
  */
-export const orderWithRaffleSchema = orderSchema;
-
-export type OrderWithRaffle = z.infer<typeof orderWithRaffleSchema>;
-
-// ==========================================
-// Orders Response Schema (paginated)
-// ==========================================
+export type OrderWithRaffle = Order;
 
 /**
  * Schema for backend orders response — includes full pagination metadata.
@@ -117,7 +90,7 @@ export type OrderWithRaffle = z.infer<typeof orderWithRaffleSchema>;
  */
 export const ordersBackendResponseSchema = z.object({
 	limit: z.number(),
-	orders: z.array(orderWithRaffleSchema),
+	orders: z.array(orderSchema),
 	page: z.number(),
 	total: z.number(),
 	totalPages: z.number(),
@@ -125,7 +98,7 @@ export const ordersBackendResponseSchema = z.object({
 
 /** FE-normalized wrapper over ordersBackendResponseSchema — produced in get-my-orders.ts. */
 export const ordersResponseSchema = z.object({
-	items: z.array(orderWithRaffleSchema),
+	items: z.array(orderSchema),
 	total: z.number(),
 	page: z.number(),
 	limit: z.number(),

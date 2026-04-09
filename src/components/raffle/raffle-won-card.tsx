@@ -23,13 +23,7 @@ export function RaffleWonCard({
 	ticketCode,
 	actionsSlot,
 }: RaffleWonCardProps) {
-	/**
-	 * Gets the first initial of the user's name
-	 * @returns The first character of the name
-	 */
-	function getUserInitial(): string {
-		return userName.charAt(0).toUpperCase();
-	}
+	const userInitial = userName.charAt(0).toUpperCase();
 
 	return (
 		<div className="rounded-2xl border border-black bg-white px-16 py-8">
@@ -56,7 +50,7 @@ export function RaffleWonCard({
 							className="object-cover"
 						/>
 					) : (
-						getUserInitial()
+						userInitial
 					)}
 				</div>
 

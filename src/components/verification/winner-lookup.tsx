@@ -23,9 +23,6 @@ type ResultState =
 	| { type: 'success'; data: WinnerVerification }
 	| { type: 'error'; message: string };
 
-/**
- * Gets user-friendly error message from verification error code
- */
 function getErrorMessage(code: VerificationErrorCode): string {
 	switch (code) {
 		case VERIFICATION_ERROR_CODES.WINNER_NOT_FOUND:
@@ -41,20 +38,12 @@ function getErrorMessage(code: VerificationErrorCode): string {
 	}
 }
 
-/**
- * WinnerLookup Component
- *
- * Allows verification of any winner by raffle ID and position.
- */
 export function WinnerLookup() {
 	const [raffleId, setRaffleId] = useState('');
 	const [position, setPosition] = useState('1');
 	const [result, setResult] = useState<ResultState | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	/**
-	 * Handles lookup form submission
-	 */
 	async function handleLookup(e: React.FormEvent) {
 		e.preventDefault();
 
@@ -76,9 +65,6 @@ export function WinnerLookup() {
 		setLoading(false);
 	}
 
-	/**
-	 * Resets the form to initial state
-	 */
 	function handleReset() {
 		setResult(null);
 		setRaffleId('');
@@ -173,18 +159,7 @@ interface WinnerSuccessProps {
 	onReset: () => void;
 }
 
-/**
- * Displays successful winner verification result
- */
 function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
-	/** Formats verified winner title with 1-based position */
-	function getVerifiedWinnerTitle(position: number): string {
-		return `Winner #${position + 1} Verified`;
-	}
-
-	/**
-	 * Truncates a hex string for display
-	 */
 	function truncateHex(str: string): string {
 		if (str.length <= 16) return str;
 		return `${str.slice(0, 10)}...${str.slice(-8)}`;
@@ -195,7 +170,7 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 			<div className="flex items-center gap-2 text-amber-600">
 				<Trophy className="size-5" />
 				<span className="font-semibold">
-					{getVerifiedWinnerTitle(data.position)}
+					{`Winner #${data.position + 1} Verified`}
 				</span>
 			</div>
 
@@ -302,9 +277,6 @@ interface LookupErrorProps {
 	onReset: () => void;
 }
 
-/**
- * Displays lookup error
- */
 function LookupError({ message, onReset }: LookupErrorProps) {
 	return (
 		<div className="space-y-4">
@@ -332,9 +304,6 @@ interface WinnerRowProps {
 	mono?: boolean;
 }
 
-/**
- * Row in winner result
- */
 function WinnerRow({ label, value, mono }: WinnerRowProps) {
 	return (
 		<div className="flex items-center justify-between text-sm">

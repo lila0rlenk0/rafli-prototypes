@@ -8,13 +8,7 @@ interface ProvablyFairBadgeProps {
 	raffleId?: string;
 }
 
-/**
- * ProvablyFairBadge Component
- *
- * Compact trust signal badge for concluded raffles.
- * Indicates the raffle used verifiable random selection.
- * Links to verification page when raffleId provided.
- */
+/** Trust signal badge — links to verification page when raffleId provided. */
 export function ProvablyFairBadge({
 	className,
 	raffleId,

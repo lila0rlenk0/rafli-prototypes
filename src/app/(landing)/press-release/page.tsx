@@ -1,3 +1,5 @@
+// 'use client' required: ScrollReveal and ScrollRevealStagger use
+// IntersectionObserver and framer-motion for scroll-triggered animations.
 'use client';
 
 import Image from 'next/image';
@@ -12,9 +14,8 @@ import { Footer } from '../footer';
 import { Navbar } from '../navbar';
 
 /**
- * Section label component
- * @param props - Component props
- * @param props.children - Label text
+ * Section label — green uppercase badge above section headings.
+ * @returns Styled label div
  */
 function SectionLabel({ children }: { children: ReactNode }) {
 	return (
@@ -30,10 +31,8 @@ interface PullQuoteProps {
 }
 
 /**
- * Pull quote block with decorative quotation mark
- * @param props - Component props
- * @param props.quote - Quote text
- * @param props.attribution - Attribution text
+ * Pull quote block with decorative quotation mark on dark background.
+ * @returns Styled blockquote with attribution
  */
 function PullQuote({ quote, attribution }: PullQuoteProps) {
 	return (
@@ -61,11 +60,11 @@ interface FeatureCardProps {
 }
 
 /**
- * Feature card with colored background
- * @param props - Component props
+ * Feature card with numbered heading and colored background.
+ * @returns Styled card with number badge, title, and description
  */
 function FeatureCard({ num, title, description, color }: FeatureCardProps) {
-	/** Maps color name to Tailwind bg class */
+	/** Maps semantic color name to Tailwind bg class — exhaustive switch over FeatureColor union */
 	function getColorClass(): string {
 		switch (color) {
 			case 'sky':
@@ -98,8 +97,8 @@ interface StepItemProps {
 }
 
 /**
- * Numbered step item with badge
- * @param props - Component props
+ * Numbered step item with badge — used in the "How It Works" section.
+ * @returns Row with number badge and step description
  */
 function StepItem({ number, children }: StepItemProps) {
 	return (
@@ -121,11 +120,15 @@ const PRESS_IMAGES = {
 } as const;
 
 /**
- * Press Release page
+ * Press Release page — static blog-style article introducing Rafli.
  *
- * Static blog-style article introducing Rafli.
- * Follows landing page pattern with its own Navbar + Footer.
- * Client component required for ScrollReveal/GSAP animations.
+ * Follows the landing page pattern with its own Navbar (decoration disabled)
+ * and Footer. Client component required for ScrollReveal/GSAP animations.
+ *
+ * Sections: Hero > Overview > Problem > Quote > Solution > How It Works >
+ * For Participants > For Hosts > Quote > Looking Ahead > Press Contact.
+ *
+ * @returns Full press release article page
  */
 export default function PressReleasePage() {
 	return (

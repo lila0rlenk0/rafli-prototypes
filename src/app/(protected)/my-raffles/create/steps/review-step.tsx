@@ -5,10 +5,20 @@ import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
 import { cn } from '@/lib/utils';
 import { getCryptoSummary } from '@/lib/utils/crypto-form';
 import { formatDateTime } from '@/lib/utils/date-format';
-import { Clock, Image as ImageIcon } from 'lucide-react';
-import Image from 'next/image';
+import { Clock } from 'lucide-react';
 import { useMultiStepForm } from '../multi-step-form-provider';
+import { ImagePreview } from './image-preview';
 
+/**
+ * ReviewStep Component
+ *
+ * Final step of the raffle creation wizard. Displays a read-only preview
+ * of all form data so the host can verify before submitting.
+ * Uses ImagePreview for blob URL lifecycle management (avoids memory leaks
+ * from inline URL.createObjectURL calls that never get revoked).
+ *
+ * @returns Form review card with submit button
+ */
 export function ReviewStep() {
 	const {
 		form,
@@ -128,19 +138,14 @@ export function ReviewStep() {
 
 	return (
 		<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-8">
+			{/* Cover + gallery preview — uses ImagePreview for safe blob URL lifecycle */}
 			<div className="flex flex-col gap-4">
 				<div className="relative flex aspect-video max-h-64 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
-					{coverImage?.[0] ? (
-						<Image
-							src={URL.createObjectURL(coverImage[0])}
-							alt="Cover"
-							fill
-							sizes="(max-width: 780px) 100vw, 780px"
-							className="object-cover"
-						/>
-					) : (
-						<ImageIcon className="size-12 text-gray-400" />
-					)}
+					<ImagePreview
+						file={coverImage?.[0]}
+						alt="Cover"
+						className="object-cover"
+					/>
 				</div>
 
 				<div className="grid grid-cols-3 gap-4">
@@ -151,17 +156,11 @@ export function ReviewStep() {
 								key={index}
 								className="relative flex aspect-square max-h-24 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
 							>
-								{file ? (
-									<Image
-										src={URL.createObjectURL(file)}
-										alt={`Preview ${index + 2}`}
-										fill
-										sizes="33vw"
-										className="object-cover"
-									/>
-								) : (
-									<ImageIcon className="size-6 text-gray-400" />
-								)}
+								<ImagePreview
+									file={file}
+									alt={`Preview ${index + 2}`}
+									className="object-cover"
+								/>
 							</div>
 						);
 					})}

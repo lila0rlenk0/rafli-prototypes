@@ -14,8 +14,6 @@ import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
 
-type UnpublishRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
-
 /**
  * Reverts a queued raffle back to draft so the host can edit it.
  * Only queued raffles (no participants yet) can be unpublished.
@@ -25,7 +23,7 @@ type UnpublishRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
  */
 export async function unpublishRaffle(
 	raffleId: string,
-): Promise<UnpublishRaffleResponse> {
+): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
@@ -33,7 +31,7 @@ export async function unpublishRaffle(
 			`/raffles/${raffleId}/unpublish`,
 		);
 
-		const validatedData = raffleSchema.parse(response.data);
+		const raffle = raffleSchema.parse(response.data);
 
 		runAfter(async () => {
 			revalidateMyRaffles();
@@ -41,19 +39,18 @@ export async function unpublishRaffle(
 			const userId = (await sessionPromise)?.user?.id;
 			await trackServer(
 				RAFFLE_EVENTS.UNPUBLISHED,
-				{ raffle_id: validatedData.id },
+				{ raffle_id: raffle.id },
 				{ userId },
 			);
 		});
 
-		return success(validatedData);
+		return success(raffle);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'unpublish-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

@@ -17,39 +17,45 @@ interface PageProps {
 /**
  * Fulfillment Management Page
  *
- * Host-only page to manage fulfillment for all winners of a raffle.
- * Protected by manual auth check (host ownership).
+ * Server Component — host-only page to manage fulfillment for all winners.
+ * No middleware auth — manual guard chain: auth → raffle exists → ownership → concluded status.
+ * Each guard redirects to the appropriate fallback.
+ *
+ * Data-fetching: session + raffle in parallel (Step 1), winners sequential (Step 2, depends on raffle.id).
  */
 export default async function FulfillmentPage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
-	// Parallel fetch — session and raffle are independent
+	// Step 1: Fetch session and raffle in parallel — neither depends on the other.
 	const [session, raffleResult] = await Promise.all([
 		getSession(),
 		getRaffle(publicSlug),
 	]);
 
+	// Guard: require authentication
 	if (!session?.user?.id) {
 		redirect('/sign-in');
 	}
 
+	// Guard: raffle must exist
 	if (!raffleResult.success) {
 		redirect(`/browse/${publicSlug}`);
 	}
 
 	const raffle = raffleResult.data;
 
-	// Host ownership check
+	// Guard: only the raffle host can access fulfillment
 	if (raffle.hostId !== session.user.id) {
 		redirect(`/browse/${publicSlug}`);
 	}
 
-	// Raffle must be concluded
+	// Guard: raffle must be in a concluded status (ended/fulfilling/completed)
 	if (!CONCLUDED_STATUSES.includes(raffle.status as ConcludedStatus)) {
 		redirect(`/browse/${publicSlug}`);
 	}
 
-	// Fetch winners — default limit=100 to avoid truncation (full pagination UI out of scope)
+	// Step 2: Fetch winners — depends on raffle.id from Step 1.
+	// limit=100 — full pagination UI is out of scope; truncation acceptable at this scale.
 	const winnersResult = await getRaffleWinnings(raffle.id, { limit: 100 });
 	const winners = winnersResult.success ? winnersResult.data.items : [];
 

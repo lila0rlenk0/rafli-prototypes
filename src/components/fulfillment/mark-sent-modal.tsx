@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { useTimeout } from '@/lib/hooks/use-timeout';
+import { DIALOG_EXIT_ANIMATION_MS } from '@/lib/ui-constants';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -46,11 +47,6 @@ interface MarkSentModalProps {
 	onSuccess: (winning: Winning) => void;
 }
 
-/**
- * MarkSentModal Component
- *
- * Modal for host to mark prize as shipped with tracking/proof URL.
- */
 export function MarkSentModal({
 	open,
 	onOpenChange,
@@ -69,9 +65,6 @@ export function MarkSentModal({
 	const [isPending, startTransition] = useTransition();
 	const setCloseTimeout = useTimeout();
 
-	/**
-	 * Handles form submission
-	 */
 	function handleMarkSent(data: FormType) {
 		startTransition(async () => {
 			const result = await markSent(
@@ -94,15 +87,12 @@ export function MarkSentModal({
 		});
 	}
 
-	/**
-	 * Resets form state when modal closes
-	 */
 	function handleOpenChange(newOpen: boolean) {
 		if (!newOpen) {
 			// Reset form after Dialog close animation completes
 			setCloseTimeout(() => {
 				reset();
-			}, 200);
+			}, DIALOG_EXIT_ANIMATION_MS);
 		}
 		onOpenChange(newOpen);
 	}
@@ -162,9 +152,6 @@ export function MarkSentModal({
 	);
 }
 
-/**
- * Shipping truck icon for mark sent modal
- */
 function ShippingIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -183,9 +170,6 @@ function ShippingIcon(props: ComponentProps<'svg'>) {
 	);
 }
 
-/**
- * Left decorative colored cards SVG
- */
 function LeftColoredCard(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -212,9 +196,6 @@ function LeftColoredCard(props: ComponentProps<'svg'>) {
 	);
 }
 
-/**
- * Right decorative colored cards SVG
- */
 function RightColoredCard(props: ComponentProps<'svg'>) {
 	return (
 		<svg

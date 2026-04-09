@@ -17,14 +17,9 @@ const SORT_OPTIONS: { value: CommentSort; label: string }[] = [
 ];
 
 /**
- * Sort tabs for comment section
- *
- * Uses `<span role="tab">` instead of `<button>` because this component
- * renders inside AccordionTrigger (a `<button>`) — nested buttons are
- * invalid HTML and trigger React hydration warnings.
- *
- * @param sort - Currently active sort option
- * @param onSort - Callback when sort changes
+ * Sort tabs for the comment section.
+ * Uses `<span role="tab">` not `<button>` — this renders inside AccordionTrigger (a button),
+ * and nested buttons are invalid HTML.
  */
 export function CommentSortTabs({ sort, onSort }: CommentSortTabsProps) {
 	return (

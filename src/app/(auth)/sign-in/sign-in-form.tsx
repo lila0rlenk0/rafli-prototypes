@@ -33,6 +33,7 @@ import { z } from 'zod';
 
 // === Schemas ===
 
+/** Email + password schema for traditional sign-in */
 const passwordFormSchema = z.object({
 	email: z.email('Invalid email address'),
 	password: z
@@ -41,6 +42,7 @@ const passwordFormSchema = z.object({
 		.max(128),
 });
 
+/** Email-only schema for magic link sign-in */
 const magicLinkEmailSchema = z.object({
 	email: z.email('Invalid email address'),
 });
@@ -48,9 +50,14 @@ const magicLinkEmailSchema = z.object({
 type PasswordFormType = z.infer<typeof passwordFormSchema>;
 type MagicLinkEmailFormType = z.infer<typeof magicLinkEmailSchema>;
 
+/** Shared card container class — reused by all three sign-in mode components */
 const CARD_CLASS =
 	'flex w-full max-w-md flex-col rounded-2xl border border-black bg-white px-8 py-10 lg:px-12 lg:py-12';
 
+/**
+ * Maps auth and infrastructure error codes to user-friendly messages.
+ * Covers credential errors, social login failures, and common infrastructure issues.
+ */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
 		case AUTH_ERROR_CODES.INVALID_CREDENTIALS:
@@ -82,8 +89,18 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 
 // === Sign-In Form ===
 
+/** Tracks which sign-in UI step is currently visible */
 type SignInMode = 'password' | 'magic-link-email' | 'magic-link-sent';
 
+/**
+ * Root sign-in form orchestrator — manages mode switching between magic link,
+ * password, and "link sent" confirmation steps.
+ *
+ * 'use client' required: uses useSearchParams, useState, useMemo, useRouter.
+ * Google OAuth handler is lifted here to share across both input modes.
+ *
+ * @returns The currently active sign-in step component
+ */
 export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	// Magic link is the primary sign-in method — password is the fallback
 	const [mode, setMode] = useState<SignInMode>('magic-link-email');
@@ -91,28 +108,62 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 	const [isSocialPending, setIsSocialPending] = useState(false);
 	const [socialError, setSocialError] = useState<string | null>(null);
 	const searchParams = useSearchParams();
+	// useMemo: avoid re-running validateReturnTo on every render — searchParams
+	// only changes on URL navigation, so this effectively caches the validated path.
 	const returnTo = useMemo(
 		() => validateReturnTo(searchParams.get('returnTo')),
 		[searchParams],
 	);
 
-	// Shared across both sign-in modes — lifted here to avoid duplication
+	/**
+	 * Shared across both sign-in modes — lifted here to avoid duplication.
+	 * Initiates Google OAuth flow via server action and redirects to Google's consent screen.
+	 */
 	async function handleGoogleSignIn() {
 		setIsSocialPending(true);
 		setSocialError(null);
 
+		// Step 1: Call server action to get the Google OAuth URL
 		const result = await initiateSocialSignIn({
 			provider: 'google',
 			callbackURL: buildOAuthCallbackUrl(window.location.origin, returnTo),
 		});
 
+		// Step 2: Surface error if the server action failed
 		if (!result.success) {
 			setSocialError(getErrorMessage(result.error));
 			setIsSocialPending(false);
 			return;
 		}
 
+		// Step 3: Full-page redirect to Google's OAuth consent screen.
+		// We use window.location.href (not router.push) because this is a cross-origin redirect.
 		window.location.href = result.data.url;
+	}
+
+	/** Transitions to "link sent" confirmation after magic link is dispatched */
+	function handleMagicLinkSent(email: string) {
+		setMagicLinkEmail(email);
+		setMode('magic-link-sent');
+	}
+
+	/** Switches to password form, clearing any prior social auth errors */
+	function handleSwitchToPassword() {
+		setMode('password');
+		setSocialError(null);
+	}
+
+	/** Switches to magic link form, resetting email and social errors */
+	function handleSwitchToMagicLink() {
+		setMode('magic-link-email');
+		setMagicLinkEmail('');
+		setSocialError(null);
+	}
+
+	/** Returns to the magic link email input from the "link sent" step */
+	function handleBackToMagicLink() {
+		setMode('magic-link-email');
+		setMagicLinkEmail('');
 	}
 
 	if (mode === 'magic-link-email') {
@@ -120,14 +171,8 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 			<MagicLinkEmailStep
 				className={className}
 				returnTo={returnTo}
-				onLinkSent={email => {
-					setMagicLinkEmail(email);
-					setMode('magic-link-sent');
-				}}
-				onSwitchToPassword={() => {
-					setMode('password');
-					setSocialError(null);
-				}}
+				onLinkSent={handleMagicLinkSent}
+				onSwitchToPassword={handleSwitchToPassword}
 				onGoogleSignIn={handleGoogleSignIn}
 				isSocialPending={isSocialPending}
 				socialError={socialError}
@@ -141,11 +186,7 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 			<PasswordSignInForm
 				className={className}
 				returnTo={returnTo}
-				onSwitchToMagicLink={() => {
-					setMode('magic-link-email');
-					setMagicLinkEmail('');
-					setSocialError(null);
-				}}
+				onSwitchToMagicLink={handleSwitchToMagicLink}
 				onGoogleSignIn={handleGoogleSignIn}
 				isSocialPending={isSocialPending}
 				socialError={socialError}
@@ -159,15 +200,12 @@ export function SignInForm({ className, ...props }: ComponentProps<'form'>) {
 			className={className}
 			email={magicLinkEmail}
 			returnTo={returnTo}
-			onBack={() => {
-				setMode('magic-link-email');
-				setMagicLinkEmail('');
-			}}
+			onBack={handleBackToMagicLink}
 		/>
 	);
 }
 
-// === Password Sign-In Form ===
+// === Password Sign-In Form — traditional email + password sign-in ===
 
 interface PasswordSignInFormProps extends ComponentProps<'form'> {
 	returnTo: string;
@@ -177,6 +215,7 @@ interface PasswordSignInFormProps extends ComponentProps<'form'> {
 	socialError: string | null;
 }
 
+/** Email + password sign-in form with forgot-password and magic-link toggle */
 function PasswordSignInForm({
 	className,
 	returnTo,
@@ -199,19 +238,24 @@ function PasswordSignInForm({
 	const [hasLoginError, setHasLoginError] = useState(false);
 	const router = useRouter();
 
+	/** Authenticates with email/password via server action */
 	async function handleSignIn(data: PasswordFormType) {
 		clearErrors('root');
 		setHasLoginError(false);
 
 		startTransition(async () => {
+			// Step 1: Call signInUser server action — sets auth cookies on success
 			const result = await signInUser(data);
 
+			// Step 2: Show error with "just signed up?" hint for unverified accounts
 			if (!result.success) {
 				setError('root', { message: getErrorMessage(result.error) });
+				// hasLoginError drives the "check your inbox" hint below the error
 				setHasLoginError(true);
 				return;
 			}
 
+			// Step 3: Redirect to the validated returnTo path and refresh server state
 			router.push(returnTo);
 			router.refresh();
 		});
@@ -309,7 +353,7 @@ function PasswordSignInForm({
 	);
 }
 
-// === Magic Link Email Step ===
+// === Magic Link Email Step — primary sign-in method, email-only ===
 
 interface MagicLinkEmailStepProps extends ComponentProps<'form'> {
 	returnTo: string;
@@ -320,6 +364,7 @@ interface MagicLinkEmailStepProps extends ComponentProps<'form'> {
 	socialError: string | null;
 }
 
+/** Email input step that sends a magic link — primary sign-in method */
 function MagicLinkEmailStep({
 	className,
 	returnTo,
@@ -341,16 +386,20 @@ function MagicLinkEmailStep({
 	});
 	const [isPending, setIsPending] = useState(false);
 
+	/** Sends magic link via server action and transitions to "link sent" step */
 	async function handleSendLink(data: MagicLinkEmailFormType) {
 		setIsPending(true);
 		clearErrors('root');
 
-		// callbackURL reuses the existing OAuth callback page.
-		// After magic link verification, Better-Auth sets session cookie and redirects here.
+		// Step 1: Build callback URL — magic link reuses the OAuth callback page.
+		// After clicking the link, Better-Auth sets a session cookie and redirects
+		// to /auth/callback, which exchanges it for a JWT.
 		const callbackURL = buildOAuthCallbackUrl(window.location.origin, returnTo);
 
+		// Step 2: Call server action to send the magic link email
 		const result = await sendMagicLink(data.email, callbackURL);
 
+		// Step 3: Surface error or transition to "check your email" step
 		if (!result.success) {
 			setError('root', { message: getErrorMessage(result.error) });
 			setIsPending(false);
@@ -497,15 +546,31 @@ function MagicLinkSentStep({
 		'idle',
 	);
 
+	/** Resends the magic link to the same email address */
 	async function handleResend() {
 		setIsResending(true);
 		setResendStatus('idle');
 
+		// Reuse the same OAuth callback URL — magic link and OAuth share the callback page
 		const callbackURL = buildOAuthCallbackUrl(window.location.origin, returnTo);
 		const result = await sendMagicLink(email, callbackURL);
 
 		setIsResending(false);
 		setResendStatus(result.success ? 'sent' : 'error');
+	}
+
+	/** Maps resend state to button label — extracted to avoid nested ternary in JSX */
+	function getResendLabel(): string {
+		if (isResending) return 'Sending...';
+
+		switch (resendStatus) {
+			case 'sent':
+				return 'Link resent!';
+			case 'error':
+				return 'Failed to resend. Try again';
+			case 'idle':
+				return "Didn't get the email? Resend";
+		}
 	}
 
 	return (
@@ -534,13 +599,7 @@ function MagicLinkSentStep({
 						disabled={isResending}
 						className="text-muted-foreground text-sm underline-offset-4 hover:underline"
 					>
-						{isResending
-							? 'Sending...'
-							: resendStatus === 'sent'
-								? 'Link resent!'
-								: resendStatus === 'error'
-									? 'Failed to resend. Try again'
-									: "Didn't get the email? Resend"}
+						{getResendLabel()}
 					</button>
 					<button
 						type="button"

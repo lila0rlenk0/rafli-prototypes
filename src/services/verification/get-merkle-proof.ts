@@ -24,8 +24,7 @@ export async function getMerkleProof(
 		const response = await baseClient.get(
 			`/raffles/${raffleId}/merkle-proof/${ticketId}`,
 		);
-		const validated = merkleProofSchema.parse(response.data);
-		return success(validated);
+		return success(merkleProofSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'verification', 'get-merkle-proof');

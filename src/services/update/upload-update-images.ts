@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapUpdateError, success } from '@/lib/errors';
@@ -14,22 +16,15 @@ import {
 	uploadUpdateImagesResponseSchema,
 	type UploadUpdateImagesResponse,
 } from '@/types/update';
-import { ZodError } from 'zod';
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES = 5;
 
 /**
- * Response type for upload update images
- */
-type UploadUpdateImagesServiceResponse = ServiceResponse<
-	UploadUpdateImagesResponse,
-	UpdateErrorCode
->;
-
-/**
- * Uploads images for a raffle update
+ * Uploads images for a raffle update.
+ *
+ * Backend expects multiple 'files' fields in the FormData.
  *
  * @param updateId - The ID of the update to attach images to
  * @param files - Array of image files to upload (max 5)
@@ -38,18 +33,19 @@ type UploadUpdateImagesServiceResponse = ServiceResponse<
 export async function uploadUpdateImages(
 	updateId: string,
 	files: File[],
-): Promise<UploadUpdateImagesServiceResponse> {
+): Promise<ServiceResponse<UploadUpdateImagesResponse, UpdateErrorCode>> {
 	try {
-		// Client-side validation
+		// Step 1: Guard — at least one file required
 		if (files.length === 0) {
 			return failure(CLIENT_ERROR_CODES.UPLOAD_INVALID_TYPE);
 		}
 
+		// Step 2: Guard — max 5 images per update
 		if (files.length > MAX_IMAGES) {
 			return failure(CLIENT_ERROR_CODES.UPLOAD_TOO_MANY_FILES);
 		}
 
-		// Validate each file
+		// Step 3: Validate each file's type and size
 		for (const file of files) {
 			if (!ACCEPTED_TYPES.includes(file.type)) {
 				return failure(CLIENT_ERROR_CODES.UPLOAD_INVALID_TYPE);
@@ -60,8 +56,8 @@ export async function uploadUpdateImages(
 			}
 		}
 
+		// Step 4: Build multipart form and upload — backend expects multiple 'files' fields
 		const formData = new FormData();
-		// Backend expects multiple 'files' fields
 		files.forEach(file => {
 			formData.append('files', file);
 		});
@@ -72,24 +68,19 @@ export async function uploadUpdateImages(
 			{
 				timeout: API_TIMEOUTS.UPLOAD,
 				headers: {
-					// Axios detects FormData and sets Content-Type automatically
 					'Content-Type': 'multipart/form-data',
 				},
 			},
 		);
 
-		// Validate response structure
-		const parsed = uploadUpdateImagesResponseSchema.parse(response.data);
-
-		return success(parsed);
+		// Step 5: Validate response — contains uploaded image URLs
+		return success(uploadUpdateImagesResponseSchema.parse(response.data));
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'update', 'upload-update-images');
 			return failure(UPDATE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapUpdateError(error);
-		return failure(errorCode);
+		return failure(mapUpdateError(error));
 	}
 }

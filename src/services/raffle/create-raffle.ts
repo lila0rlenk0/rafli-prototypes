@@ -16,11 +16,6 @@ import { createRafflePayloadSchema, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for raffle creation
- */
-type CreateRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
-
-/**
  * Creates a new raffle
  *
  * @param input - Raffle creation data
@@ -28,7 +23,7 @@ type CreateRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
  */
 export async function createRaffle(
 	input: CreateRaffleInput,
-): Promise<CreateRaffleResponse> {
+): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
@@ -57,7 +52,6 @@ export async function createRaffle(
 			cryptoTokenPricing: input.cryptoTokenPricing,
 		};
 
-		// Validate payload before sending
 		const validationResult = createRafflePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
@@ -69,7 +63,6 @@ export async function createRaffle(
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Validate response structure
 		const raffle = raffleSchema.parse(response.data);
 
 		runAfter(async () => {
@@ -93,7 +86,6 @@ export async function createRaffle(
 
 		return success(raffle);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'create-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);

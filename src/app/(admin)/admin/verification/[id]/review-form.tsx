@@ -63,17 +63,18 @@ interface ReviewFormProps {
  */
 export function ReviewForm({ submissionId }: ReviewFormProps) {
 	const router = useRouter();
+	// useTransition: keeps the UI responsive during server action calls —
+	// isPending disables buttons to prevent double-submit
 	const [isPending, startTransition] = useTransition();
 
+	// Which confirmation dialog is open — null when neither is shown.
+	// Discriminated union avoids two separate boolean states.
 	const [activeDialog, setActiveDialog] = useState<'approve' | 'reject' | null>(
 		null,
 	);
+	// Rejection reason text — cleared on dialog close, validated before submit
 	const [rejectionReason, setRejectionReason] = useState('');
 
-	/**
-	 * Submits the approve decision to the backend.
-	 * Closes dialog and refreshes page on success.
-	 */
 	function handleApprove() {
 		startTransition(async () => {
 			const result = await reviewSubmission(submissionId, {
@@ -93,10 +94,6 @@ export function ReviewForm({ submissionId }: ReviewFormProps) {
 		});
 	}
 
-	/**
-	 * Submits the reject decision with reason.
-	 * Validates that a reason is provided before sending.
-	 */
 	function handleReject() {
 		if (!rejectionReason.trim()) {
 			toast.error('Please provide a rejection reason');
@@ -121,21 +118,37 @@ export function ReviewForm({ submissionId }: ReviewFormProps) {
 		});
 	}
 
-	/**
-	 * Closes the active dialog and resets state
-	 */
 	function handleClose() {
 		if (isPending) return;
 		setActiveDialog(null);
 		setRejectionReason('');
 	}
 
+	function handleOpenApproveDialog() {
+		setActiveDialog('approve');
+	}
+
+	function handleOpenRejectDialog() {
+		setActiveDialog('reject');
+	}
+
+	function handleRejectionReasonChange(
+		e: React.ChangeEvent<HTMLTextAreaElement>,
+	) {
+		setRejectionReason(e.target.value);
+	}
+
+	/** Close dialog when user dismisses — Dialog passes false on dismiss */
+	function handleDialogOpenChange(open: boolean) {
+		if (!open) handleClose();
+	}
+
 	return (
 		<>
 			{/* Action buttons */}
 			<div className="flex items-center gap-3">
-				<Button onClick={() => setActiveDialog('approve')}>Approve</Button>
-				<Button variant="destructive" onClick={() => setActiveDialog('reject')}>
+				<Button onClick={handleOpenApproveDialog}>Approve</Button>
+				<Button variant="destructive" onClick={handleOpenRejectDialog}>
 					Reject
 				</Button>
 			</div>
@@ -143,7 +156,7 @@ export function ReviewForm({ submissionId }: ReviewFormProps) {
 			{/* Approve confirmation dialog */}
 			<Dialog
 				open={activeDialog === 'approve'}
-				onOpenChange={open => !open && handleClose()}
+				onOpenChange={handleDialogOpenChange}
 			>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
@@ -178,7 +191,7 @@ export function ReviewForm({ submissionId }: ReviewFormProps) {
 			{/* Reject confirmation dialog */}
 			<Dialog
 				open={activeDialog === 'reject'}
-				onOpenChange={open => !open && handleClose()}
+				onOpenChange={handleDialogOpenChange}
 			>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
@@ -193,7 +206,7 @@ export function ReviewForm({ submissionId }: ReviewFormProps) {
 						<Textarea
 							placeholder="Rejection reason (required)"
 							value={rejectionReason}
-							onChange={e => setRejectionReason(e.target.value)}
+							onChange={handleRejectionReasonChange}
 							maxLength={MAX_REJECTION_REASON_LENGTH}
 							className="min-h-24"
 							disabled={isPending}

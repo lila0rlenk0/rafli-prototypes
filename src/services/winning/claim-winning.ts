@@ -19,12 +19,7 @@ import {
 } from '@/types/winning';
 
 /**
- * Response type for claiming a winning
- */
-type ClaimWinningServiceResponse = ServiceResponse<Winning, WinningErrorCode>;
-
-/**
- * Claims a winning prize by submitting shipping information
+ * Claims a winning prize by submitting shipping information.
  *
  * Called by the winner to provide their shipping address.
  * Transitions status from 'pending' to 'awaiting_host'.
@@ -37,17 +32,22 @@ export async function claimWinning(
 	raffleId: string,
 	payload: ClaimWinningPayload,
 	publicSlug?: string,
-): Promise<ClaimWinningServiceResponse> {
+): Promise<ServiceResponse<Winning, WinningErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Submit claim with shipping info — transitions pending → awaiting_host
 		const response = await authenticatedClient.post(
 			`/winnings/${raffleId}/claim`,
 			payload,
 		);
 
+		// Step 2: Validate response shape
 		const validated = winningSchema.parse(response.data);
+
+		// Step 3: Non-blocking cache revalidation + analytics
 		runAfter(async () => {
+			// Revalidation target: winning detail and list pages
 			revalidateWinningPaths(publicSlug);
 
 			const userId = (await sessionPromise)?.user?.id;

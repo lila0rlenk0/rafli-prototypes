@@ -19,17 +19,8 @@ interface CommentInputProps {
 }
 
 /**
- * Textarea + submit button for composing comments or replies
- *
- * Uses the unified useCreateComment mutation which routes to the
- * correct endpoint based on parentId presence.
- * Clears input and calls onSuccess on successful submit.
- *
- * @param raffleId - The raffle ID
- * @param parentId - Optional parent comment ID for replies
- * @param onSuccess - Optional callback after successful creation
- * @param autoFocus - Whether to auto-focus the textarea
- * @param placeholder - Custom placeholder text
+ * Textarea + submit for comments/replies.
+ * Routes to reply endpoint when parentId is set (via useCreateComment).
  */
 export function CommentInput({
 	raffleId,
@@ -41,12 +32,10 @@ export function CommentInput({
 	const [body, setBody] = useState('');
 	const createMutation = useCreateComment();
 
-	/** Whether the submit button should be disabled */
 	function isSubmitDisabled(): boolean {
 		return body.trim().length === 0 || createMutation.isPending;
 	}
 
-	/** Handles form submission */
 	function handleSubmit() {
 		const trimmed = body.trim();
 		if (trimmed.length === 0) return;
@@ -65,7 +54,7 @@ export function CommentInput({
 		);
 	}
 
-	/** Handles Enter key — submit on Enter, newline on Shift+Enter */
+	// Enter=submit, Shift+Enter=newline
 	function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();

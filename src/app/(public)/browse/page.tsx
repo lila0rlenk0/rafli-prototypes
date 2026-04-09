@@ -32,16 +32,23 @@ interface PageProps {
 /**
  * Browse Raffles Page
  *
- * Public-facing page displaying all available raffles with filtering and sorting.
- * Features a hero section, featured raffle cards, and a filterable grid of all raffles.
+ * Server Component — public-facing page displaying all available raffles.
+ * Data-fetching: parallel Promise.all for raffles, featured, categories, and session.
+ * Enrolled raffles fetched sequentially only when authenticated (depends on session).
+ * No caching tags — uses default ISR via getRaffles/getCategories internal caching.
+ *
+ * Data flow: searchParams → parse sort/page/category → fetch grid data →
+ * render hero stats + featured cards + filterable grid.
  */
 export default async function BrowseRafflesPage({ searchParams }: PageProps) {
+	// Step 1: Parse URL search params into typed filter values.
 	const params = await searchParams;
 	const sort = parseRaffleSortOption(params.sort);
 	const page = parsePage(params.page);
 	const category = params.category;
 
-	// Fetch raffles, featured, categories, and session in parallel
+	// Step 2: Fetch primary data in parallel — no dependencies between these calls.
+	// 12 items per page — matches the 4-column grid (3 rows visible above fold).
 	const [response, featuredResponse, categoriesResponse, session] =
 		await Promise.all([
 			getRaffles({
@@ -56,7 +63,9 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			getSession(),
 		]);
 
-	// Fetch enrolled raffles for authenticated users
+	// Step 3: Fetch enrolled raffles only for authenticated users.
+	// Sequential — depends on session result. Used to show "Participant" badge on cards.
+	// limit: 100 — practical ceiling; users rarely enroll in more live raffles simultaneously.
 	const enrolledIds = new Set<string>();
 	if (session) {
 		const enrolledResponse = await getEnrolledRaffles({
@@ -71,9 +80,11 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	}
 
 	/**
-	 * Determines user's role for a raffle
-	 * @param raffle - The raffle to check
-	 * @returns Role or undefined for non-authenticated users
+	 * Determines user's role for a raffle — host, participant, or undefined (guest/unrelated).
+	 * O(1) lookup via enrolledIds Set built in Step 3.
+	 *
+	 * @param raffle - The raffle to check role for
+	 * @returns Role badge type or undefined for non-authenticated users
 	 */
 	function getRaffleRole(raffle: Raffle): RaffleRole | undefined {
 		if (!session) return undefined;
@@ -82,11 +93,12 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 		return undefined;
 	}
 
-	// Filter active categories only
+	// Step 4: Filter to active categories — inactive ones are admin-disabled.
 	const categories = categoriesResponse.success
 		? categoriesResponse.data.categories.filter(c => c.isActive)
 		: [];
 
+	// Step 5: Guard — early return on raffle fetch failure.
 	if (!response.success) {
 		return (
 			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 text-center">
@@ -109,6 +121,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 		);
 	}
 
+	// Step 6: Derive render data from successful responses.
 	const { raffles } = response.data;
 
 	// Admin-curated featured raffles from dedicated endpoint (0-2 items).
@@ -117,7 +130,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 		? featuredResponse.data.raffles
 		: [];
 
-	// Calculate total prize value for hero stats
+	// Aggregate prize value for hero section stats display
 	const totalPrizeValue = raffles.reduce(
 		(sum, r) => sum + Number(r.declaredValueAmount),
 		0,

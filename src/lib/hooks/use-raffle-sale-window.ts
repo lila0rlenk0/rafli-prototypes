@@ -29,6 +29,9 @@ export function useRaffleSaleWindow(endAt: string): UseRaffleSaleWindowResult {
 		now ?? new Date(),
 	);
 
+	// Sync target: browser clock → React state. Deps: [endAt] because the
+	// expiry check inside syncNow compares against this deadline.
+	// Cleanup: clears both the immediate hydration timeout and the 1s interval.
 	useEffect(() => {
 		let interval: ReturnType<typeof setInterval> | null = null;
 

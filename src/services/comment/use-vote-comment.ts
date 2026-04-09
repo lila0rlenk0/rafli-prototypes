@@ -54,12 +54,12 @@ export function useVoteComment() {
 		currentVote: 'upvote' | 'downvote' | null,
 		newVoteType: VoteType,
 	): number {
-		// Step 1: Remove existing vote effect (if any)
+		// Remove existing vote effect before applying the new one
 		let score = currentScore;
 		if (currentVote === 'upvote') score -= 1;
 		if (currentVote === 'downvote') score += 1;
 
-		// Step 2: Apply new vote (unless toggling off — same direction)
+		// Same direction = toggle off; different direction = apply the new vote
 		if (currentVote !== newVoteType) {
 			if (newVoteType === 'upvote') score += 1;
 			if (newVoteType === 'downvote') score -= 1;
@@ -94,10 +94,10 @@ export function useVoteComment() {
 			return result.data;
 		},
 		onMutate: async function optimisticUpdate(variables) {
-			// Step 1: Cancel in-flight queries to prevent overwriting our optimistic update
+			// Cancel in-flight queries to prevent overwriting our optimistic update
 			await queryClient.cancelQueries({ queryKey: ['comment'] });
 
-			// Step 2: Snapshot all comment query caches for rollback
+			// Snapshot all comment query caches for rollback
 			const queryCache = queryClient.getQueryCache();
 			const commentQueries = queryCache.findAll({
 				queryKey: ['comment'],
@@ -105,8 +105,7 @@ export function useVoteComment() {
 
 			const previousData = new Map<string, InfiniteCommentsData | undefined>();
 
-			// Step 3: Optimistically update every matching infinite query
-			//         Comment could be in top-level list or any reply list
+			// Comment could be in top-level list or any reply list — update all
 			for (const query of commentQueries) {
 				const key = JSON.stringify(query.queryKey);
 				const data = query.state.data as InfiniteCommentsData | undefined;
@@ -138,7 +137,6 @@ export function useVoteComment() {
 			return { previousData };
 		},
 		onError(error, _variables, context) {
-			// Step 4: Rollback — restore all cached data from snapshot + notify user
 			toast.error(getVoteErrorMessage(error.code));
 
 			if (!context?.previousData) return;
@@ -152,10 +150,8 @@ export function useVoteComment() {
 			}
 		},
 		onSuccess(serverData, variables) {
-			// Step 5: Apply server-authoritative vote state to cache
-			//         Don't use invalidateQueries — it refetches and can race with
-			//         backend commit timing, causing the optimistic update to revert.
-			//         Instead, patch the cache directly with the server response.
+			// Patch cache directly — invalidateQueries would refetch and can race with
+			// backend commit timing, reverting the optimistic update.
 			const queryCache = queryClient.getQueryCache();
 			const commentQueries = queryCache.findAll({
 				queryKey: ['comment'],

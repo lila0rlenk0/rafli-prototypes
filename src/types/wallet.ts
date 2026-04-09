@@ -3,10 +3,6 @@ import { z } from 'zod';
 
 import { orderStatusSchema } from './order';
 
-// ==========================================
-// Shared Validators
-// ==========================================
-
 /**
  * Validates and normalizes EVM addresses to EIP-55 checksum format.
  * Uses viem's `isAddress` for validation, then `getAddress` for checksumming.
@@ -28,6 +24,7 @@ function isBigIntString(value: string): boolean {
 	try {
 		return BigInt(value) >= BigInt(0);
 	} catch {
+		// BigInt() throws on non-integer strings (decimals, letters, empty) — expected
 		return false;
 	}
 }
@@ -35,12 +32,11 @@ const bigIntStringSchema = z
 	.string()
 	.refine(isBigIntString, 'Must be a non-negative integer string');
 
-// ==========================================
-// Schemas
-// ==========================================
-
 /**
- * Schema for wallet entity returned by GET /me/wallets
+ * Verified wallet entity from backend.
+ *
+ * Validation boundary: server-side — parsed in wallet-related server actions.
+ * Address is normalized to EIP-55 checksum format via the `evmAddressSchema` transform.
  */
 export const walletResponseSchema = z.object({
 	id: z.string(),
@@ -115,9 +111,6 @@ export const confirmCryptoTxPayloadSchema = z.object({
 	confirmations: z.number().min(1),
 });
 
-/**
- * Schema for wallets list response
- */
 export const walletsListResponseSchema = z.object({
 	wallets: z.array(walletResponseSchema),
 });
@@ -156,10 +149,6 @@ export const atomicCryptoCheckoutResponseSchema = z.object({
 	/** True when backend cancelled an incompatible session (Stripe or stale crypto) */
 	previousSessionCancelled: z.boolean(),
 });
-
-// ==========================================
-// Inferred Types
-// ==========================================
 
 /** Verified wallet entity from GET /me/wallets. */
 export type WalletResponse = z.infer<typeof walletResponseSchema>;

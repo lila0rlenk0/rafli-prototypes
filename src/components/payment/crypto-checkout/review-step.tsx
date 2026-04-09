@@ -9,10 +9,6 @@ import { getChainName } from '@/lib/web3/block-explorers';
 import type { CryptoChainConfig } from '@/types/crypto-config';
 import type { CryptoCheckoutSession } from '@/types/wallet';
 
-// ==========================================
-// Types
-// ==========================================
-
 interface ReviewStepProps {
 	session: CryptoCheckoutSession | null;
 	raffleEndAt: string;
@@ -45,10 +41,6 @@ interface ReviewStepProps {
 	onPay: () => void;
 }
 
-// ==========================================
-// Component
-// ==========================================
-
 /**
  * Review & pay step for crypto checkout.
  * Shows payment summary (network, token, balance, amount) and Pay button.
@@ -73,10 +65,7 @@ export function ReviewStep({
 	// isExpired not needed — isClosingSoon is only true when secondsRemaining > 0
 	const { isClosingSoon, isHydrated } = useRaffleSaleWindow(raffleEndAt);
 
-	/**
-	 * Checks if user has enough tokens for the payment.
-	 * Returns false when balance is still loading or not yet started — prevents premature pay.
-	 */
+	// Returns false while loading — prevents premature pay before balance arrives
 	function hasEnoughTokens(): boolean {
 		if (isBalanceCheckPending || isTokenBalanceLoading) return false;
 		// If balance loaded but data is undefined (RPC error, unsupported token),
@@ -85,19 +74,13 @@ export function ReviewStep({
 		return tokenBalance.value >= BigInt(session.amountRaw);
 	}
 
-	/**
-	 * Whether to show the "Insufficient balance" warning.
-	 * Only after balance loaded successfully and it's not enough.
-	 */
+	// Only shown after balance loaded successfully and it's not enough
 	function shouldShowInsufficientWarning(): boolean {
 		if (isBalanceCheckPending || isTokenBalanceLoading || isTokenBalanceError)
 			return false;
 		return !hasEnoughTokens();
 	}
 
-	/**
-	 * Gets pay button text based on current state
-	 */
 	function getPayButtonText(): string {
 		if (isProcessing || txSubmitted) return 'Processing...';
 		if (sessionBlockMessage) return 'Continue Again';
@@ -106,11 +89,7 @@ export function ReviewStep({
 		return `Pay ${formatPaymentAmount(session)} ${tokenSymbol}`;
 	}
 
-	/**
-	 * Whether the pay button should be disabled.
-	 * hasEnoughTokens() already returns false when balance is loading,
-	 * so no need to check isTokenBalanceLoading separately.
-	 */
+	// hasEnoughTokens() already returns false while loading — no separate loading check needed
 	function isPayDisabled(): boolean {
 		return (
 			isProcessing ||
@@ -120,21 +99,13 @@ export function ReviewStep({
 		);
 	}
 
-	/**
-	 * Text color for the balance row — red when insufficient, normal otherwise.
-	 * isTokenBalanceLoading check avoids flashing red before balance arrives.
-	 */
 	function getBalanceTextClass(): string {
-		// Skip red styling when balance is pending, loading, or errored —
-		// "Failed to load" shouldn't look like "Insufficient balance"
+		// Skip red styling when pending/loading/errored — "Failed to load" ≠ "Insufficient balance"
 		if (isBalanceCheckPending || isTokenBalanceLoading || isTokenBalanceError)
 			return '';
 		return !hasEnoughTokens() ? 'text-red-500' : '';
 	}
 
-	/**
-	 * Balance display text — shows loading/error/formatted value
-	 */
 	function getBalanceDisplay(): string {
 		if (isBalanceCheckPending || isTokenBalanceLoading) return 'Loading...';
 		if (isTokenBalanceError) return 'Failed to load';
@@ -200,19 +171,23 @@ export function ReviewStep({
 			) : null}
 
 			{/* Chain switch notice */}
-			{!isCorrectChain && hasEnoughTokens() ? (
-				<p className="text-center text-xs text-amber-600">
-					You&apos;ll be prompted to switch to{' '}
-					{getChainName(selectedChainId, chains)}
-				</p>
+			{!isCorrectChain ? (
+				hasEnoughTokens() ? (
+					<p className="text-center text-xs text-amber-600">
+						You&apos;ll be prompted to switch to{' '}
+						{getChainName(selectedChainId, chains)}
+					</p>
+				) : null
 			) : null}
 
-			{isHydrated && isClosingSoon ? (
-				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
-					Less than 10 minutes remain. Crypto confirmations can continue after
-					the raffle ends. If settlement lands after draw start, support may
-					need to review the purchase.
-				</div>
+			{isHydrated ? (
+				isClosingSoon ? (
+					<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
+						Less than 10 minutes remain. Crypto confirmations can continue after
+						the raffle ends. If settlement lands after draw start, support may
+						need to review the purchase.
+					</div>
+				) : null
 			) : null}
 
 			<Button

@@ -21,16 +21,9 @@ interface GetRaffleWinningsParams {
 }
 
 /**
- * Response type for fetching raffle winnings (host-only)
- */
-type GetRaffleWinningsResponse = ServiceResponse<
-	HostRaffleWinningsResponse,
-	WinningErrorCode
->;
-
-/**
- * Fetches winnings for a raffle (host-only endpoint)
- * Supports pagination and status filtering via backend query params
+ * Fetches winnings for a raffle (host-only endpoint).
+ *
+ * Supports pagination and status filtering via backend query params.
  *
  * @param raffleId - The raffle ID to fetch winnings for
  * @param params - Optional pagination/filter params (page, limit, status)
@@ -39,16 +32,14 @@ type GetRaffleWinningsResponse = ServiceResponse<
 export async function getRaffleWinnings(
 	raffleId: string,
 	params?: GetRaffleWinningsParams,
-): Promise<GetRaffleWinningsResponse> {
+): Promise<ServiceResponse<HostRaffleWinningsResponse, WinningErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
 			`/raffles/${raffleId}/winners`,
 			{ params },
 		);
 
-		const validated = hostRaffleWinningsResponseSchema.parse(response.data);
-
-		return success(validated);
+		return success(hostRaffleWinningsResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'winning', 'get-raffle-winnings');

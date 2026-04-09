@@ -13,10 +13,6 @@ import {
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
-// =============================================================================
-// RESPONSE SCHEMA
-// =============================================================================
-
 const verifyXShareResponseSchema = z.object({
 	claimId: z.string(),
 	reason: z.enum(['not_found']).nullable(),
@@ -25,15 +21,6 @@ const verifyXShareResponseSchema = z.object({
 });
 
 type VerifyXShareResponse = z.infer<typeof verifyXShareResponseSchema>;
-
-type VerifyXShareServiceResponse = ServiceResponse<
-	VerifyXShareResponse,
-	RaffleErrorCode
->;
-
-// =============================================================================
-// SERVER ACTION
-// =============================================================================
 
 /**
  * Verifies that the user posted the tokenized share URL on X.
@@ -45,23 +32,23 @@ type VerifyXShareServiceResponse = ServiceResponse<
  */
 export async function verifyXShare(
 	raffleId: string,
-): Promise<VerifyXShareServiceResponse> {
+): Promise<ServiceResponse<VerifyXShareResponse, RaffleErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/verify-x-share`,
 		);
 
-		const validated = verifyXShareResponseSchema.parse(response.data);
+		const verified = verifyXShareResponseSchema.parse(response.data);
 
 		// Revalidate raffle cache so server components reflect updated ticket count
 		// and claim status without a full page reload
-		if (validated.status === 'verified') {
+		if (verified.status === 'verified') {
 			runAfter(() => {
 				revalidateRaffleDetail(raffleId);
 			});
 		}
 
-		return success(validated);
+		return success(verified);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'verify-x-share');
@@ -71,7 +58,7 @@ export async function verifyXShare(
 		const errorCode = mapRaffleError(error);
 		captureServiceError(error, errorCode, {
 			service: 'raffle',
-			action: 'verifyXShare',
+			action: 'verify-x-share',
 		});
 		return failure(errorCode);
 	}

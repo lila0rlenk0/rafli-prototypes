@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-// ==========================================
-// Constants
-// ==========================================
-
 /** Content types that can be reported for moderation */
 export const REPORT_CONTENT_TYPE = {
 	RAFFLE: 'raffle',
@@ -20,18 +16,10 @@ export const REPORT_STATUS = {
 	DISMISSED: 'dismissed',
 } as const;
 
-// ==========================================
-// Types from Constants
-// ==========================================
-
 export type ReportContentType =
 	(typeof REPORT_CONTENT_TYPE)[keyof typeof REPORT_CONTENT_TYPE];
 
 export type ReportStatus = (typeof REPORT_STATUS)[keyof typeof REPORT_STATUS];
-
-// ==========================================
-// Schemas
-// ==========================================
 
 export const reportContentTypeSchema = z.enum([
 	REPORT_CONTENT_TYPE.RAFFLE,
@@ -47,17 +35,22 @@ export const reportStatusSchema = z.enum([
 	REPORT_STATUS.DISMISSED,
 ]);
 
-/** Content types that require a raffleId for context */
-const RAFFLE_SCOPED_TYPES: readonly ReportContentType[] = [
+/** Content types that require a raffleId for context — comments, reviews, and chat live under a raffle.
+ * Set for O(1) lookup and broader `.has()` type signature (avoids TS2345 with union narrowing). */
+const RAFFLE_SCOPED_TYPES: ReadonlySet<ReportContentType> = new Set([
 	REPORT_CONTENT_TYPE.COMMENT,
 	REPORT_CONTENT_TYPE.REVIEW,
 	REPORT_CONTENT_TYPE.CHAT_MESSAGE,
-];
+]);
 
 /**
  * Schema for creating a new content report.
  * raffleId is required when contentType is 'comment', 'review', or 'chat_message'
  * since those content items live under a specific raffle.
+ *
+ * Validation boundary: client-side — validated in the report modal before server action.
+ * The `superRefine` enforces the conditional raffleId requirement that a plain `.required()`
+ * cannot express.
  */
 export const createReportSchema = z
 	.object({
@@ -68,7 +61,7 @@ export const createReportSchema = z
 	})
 	.superRefine((data, ctx) => {
 		// Raffle-scoped content types need raffleId to locate the content
-		if (RAFFLE_SCOPED_TYPES.includes(data.contentType) && !data.raffleId) {
+		if (RAFFLE_SCOPED_TYPES.has(data.contentType) && !data.raffleId) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
 				message: 'raffleId is required for this content type',
@@ -77,9 +70,6 @@ export const createReportSchema = z
 		}
 	});
 
-/**
- * Schema for the report response returned by the API after creation
- */
 export const userReportResponseSchema = z.object({
 	id: z.string(),
 	contentId: z.string(),
@@ -91,10 +81,6 @@ export const userReportResponseSchema = z.object({
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });
-
-// ==========================================
-// Inferred Types
-// ==========================================
 
 export type CreateReportPayload = z.infer<typeof createReportSchema>;
 export type UserReportResponse = z.infer<typeof userReportResponseSchema>;

@@ -5,12 +5,6 @@ interface PrizeBreakdownCardProps {
 	raffle: Raffle;
 }
 
-/**
- * PrizeBreakdownCard Component
- *
- * Displays prize details for winners on concluded raffles.
- * Shows declared prize value with revenue overview.
- */
 export function PrizeBreakdownCard({ raffle }: PrizeBreakdownCardProps) {
 	return (
 		<div className="my-4 rounded-2xl border border-black bg-white p-6">

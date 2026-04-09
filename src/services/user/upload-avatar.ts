@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { failure, mapRaffleError, success } from '@/lib/errors';
@@ -11,60 +13,55 @@ import {
 } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import { uploadAvatarResponseSchema } from '@/types/user';
-import { ZodError } from 'zod';
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 /**
- * Response type for avatar upload
- * Returns void — caller should revalidate /me to get the presigned URL
- */
-type UploadAvatarServiceResponse = ServiceResponse<undefined, RaffleErrorCode>;
-
-/**
- * Uploads a user avatar image
+ * Uploads a user avatar image.
+ *
+ * Returns void on success — caller should revalidate /me to get the updated URL.
+ * Backend expects 'file' field for avatar upload.
  *
  * @param file - The image file to upload
- * @returns ServiceResponse with avatar URL on success, RaffleErrorCode on failure
+ * @returns ServiceResponse void on success, RaffleErrorCode on failure
  */
 export async function uploadAvatar(
 	file: File,
-): Promise<UploadAvatarServiceResponse> {
+): Promise<ServiceResponse<undefined, RaffleErrorCode>> {
 	try {
-		// Client-side validation
+		// Step 1: Validate file type — reject unsupported formats before upload
 		if (!ACCEPTED_TYPES.includes(file.type)) {
 			return failure(CLIENT_ERROR_CODES.UPLOAD_INVALID_TYPE);
 		}
 
+		// Step 2: Validate file size — reject oversized files (5MB limit)
 		if (file.size > MAX_SIZE) {
 			return failure(CLIENT_ERROR_CODES.UPLOAD_TOO_LARGE);
 		}
 
+		// Step 3: Upload avatar — backend expects 'file' field
+		// Side-effects: caller should revalidate /me to get updated avatar URL
 		const formData = new FormData();
-		// Backend expects 'file' field for avatar upload
 		formData.append('file', file);
 
 		const response = await authenticatedClient.post('/me/avatar', formData, {
 			timeout: API_TIMEOUTS.UPLOAD,
 			headers: {
-				// Axios detects FormData and sets Content-Type automatically
 				'Content-Type': 'multipart/form-data',
 			},
 		});
 
-		// Validate response structure
+		// Step 4: Validate response to detect contract drift
 		uploadAvatarResponseSchema.parse(response.data);
 
 		return success(undefined);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'user', 'upload-avatar');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

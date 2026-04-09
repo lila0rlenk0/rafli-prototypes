@@ -1,26 +1,13 @@
 import { cn } from '@/lib/utils';
 import { ORDER_STATUS, type OrderStatus } from '@/types/order';
 
-/**
- * Props for OrderStatusBadge
- */
 interface OrderStatusBadgeProps {
 	status: OrderStatus;
 	className?: string;
 }
 
-/**
- * Displays order status with color coding
- *
- * - completed → green
- * - pending → yellow
- * - failed → red
- * - refunded → gray
- */
+// completed→green, pending→yellow, failed→red, refunded→gray
 export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
-	/**
-	 * Returns Tailwind classes for status color
-	 */
 	function getStatusClasses(): string {
 		switch (status) {
 			case ORDER_STATUS.COMPLETED:
@@ -36,9 +23,6 @@ export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
 		}
 	}
 
-	/**
-	 * Returns display label for status
-	 */
 	function getStatusLabel(): string {
 		switch (status) {
 			case ORDER_STATUS.COMPLETED:

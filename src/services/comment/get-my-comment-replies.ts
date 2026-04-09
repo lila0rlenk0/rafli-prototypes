@@ -38,8 +38,7 @@ export async function getMyCommentReplies(
 			`/me/raffles/${raffleId}/comments/${commentId}/replies`,
 			{ params },
 		);
-		const validated = listCommentsResponseSchema.parse(response.data);
-		return success(validated);
+		return success(listCommentsResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'comment', 'get-my-comment-replies');

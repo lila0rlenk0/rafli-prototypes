@@ -2,6 +2,8 @@
 
 import { useState, type ReactNode } from 'react';
 
+import { cn } from '@/lib/utils';
+
 interface BrowseTabsProps {
 	featuredContent: ReactNode;
 	filtersContent: ReactNode;
@@ -9,13 +11,8 @@ interface BrowseTabsProps {
 }
 
 /**
- * BrowseTabs Component
- *
- * Mobile-only tabs that switch between "Featured" and "All Raffles" views.
- * Filters are always visible. On desktop, the section title and filters sit
- * on the same line. When "Featured" is active on mobile, the all raffles
- * grid also shows below the featured cards so users see it on scroll.
- * On desktop (sm+), both sections are visible without tabs.
+ * Mobile-only tabs for "Featured" vs "All Raffles". Filters always visible.
+ * On desktop (sm+) both sections show without tabs.
  */
 export function BrowseTabs({
 	featuredContent,
@@ -36,22 +33,24 @@ export function BrowseTabs({
 				<button
 					type="button"
 					onClick={() => setActiveTab('featured')}
-					className={`font-clash-display text-2xl font-semibold tracking-[0.12px] text-[#151516] ${
+					className={cn(
+						'font-clash-display text-2xl font-semibold tracking-[0.12px] text-[#151516]',
 						activeTab === 'featured'
 							? 'border-b-[3px] border-black pb-1'
-							: 'pb-[7px] opacity-50'
-					}`}
+							: 'pb-[7px] opacity-50',
+					)}
 				>
 					Featured
 				</button>
 				<button
 					type="button"
 					onClick={() => setActiveTab('all')}
-					className={`font-clash-display text-2xl font-semibold tracking-[0.12px] text-[#151516] ${
+					className={cn(
+						'font-clash-display text-2xl font-semibold tracking-[0.12px] text-[#151516]',
 						activeTab === 'all'
 							? 'border-b-[3px] border-black pb-1'
-							: 'pb-[7px] opacity-50'
-					}`}
+							: 'pb-[7px] opacity-50',
+					)}
 				>
 					All Raffles
 				</button>

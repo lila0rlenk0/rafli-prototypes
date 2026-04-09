@@ -50,6 +50,14 @@ export function SubmissionsPagination({ total }: SubmissionsPaginationProps) {
 		router.push(`/admin/verification?${params.toString()}`);
 	}
 
+	function handlePreviousPage() {
+		goToPage(currentPage - 1);
+	}
+
+	function handleNextPage() {
+		goToPage(currentPage + 1);
+	}
+
 	// Don't show pagination for single-page results
 	if (totalPages <= 1) return null;
 
@@ -58,7 +66,7 @@ export function SubmissionsPagination({ total }: SubmissionsPaginationProps) {
 			<Button
 				variant="outline"
 				size="sm"
-				onClick={() => goToPage(currentPage - 1)}
+				onClick={handlePreviousPage}
 				disabled={currentPage === 1}
 			>
 				Previous
@@ -69,7 +77,7 @@ export function SubmissionsPagination({ total }: SubmissionsPaginationProps) {
 			<Button
 				variant="outline"
 				size="sm"
-				onClick={() => goToPage(currentPage + 1)}
+				onClick={handleNextPage}
 				disabled={currentPage === totalPages}
 			>
 				Next

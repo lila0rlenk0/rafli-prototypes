@@ -53,14 +53,16 @@ export async function buildCheckoutOrder(
 ): Promise<BuildCheckoutOrderResult | null> {
 	const { raffleId, ticketQuantity, promoCode, onPromoInvalid } = params;
 
+	// Step 1: Call backend to create/reuse order with optional promo code.
 	const result = await checkoutOrder({
 		raffleId,
 		ticketQuantity,
 		promoCode,
 	});
 
+	// Step 2: Handle failure — show appropriate toast and optionally clear promo UI.
 	if (!result.success) {
-		// Promo-specific errors trigger the clear callback so UI can reset
+		// Promo-specific errors clear the code from the UI; order errors show a generic message
 		if (shouldClearPromo(result.error)) {
 			toast.error(getPromoErrorMessage(result.error));
 			onPromoInvalid?.();
@@ -70,6 +72,7 @@ export async function buildCheckoutOrder(
 		return null;
 	}
 
+	// Step 3: Notify on fully-discounted orders (promo covered 100% of the price).
 	if (result.data.isFullyDiscounted) {
 		toast.success('Promo applied. Tickets claimed successfully!');
 	}

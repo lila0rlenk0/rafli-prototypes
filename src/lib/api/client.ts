@@ -104,7 +104,9 @@ function addRetryInterceptor(client: AxiosInstance): void {
 	client.interceptors.response.use(undefined, async (error: AxiosError) => {
 		if (!shouldRetry(error)) return Promise.reject(error);
 
-		const config = error.config as RetryableConfig;
+		// Safe cast: shouldRetry already verified config exists and checked __retryCount
+		const config = error.config as RetryableConfig | undefined;
+		if (!config) return Promise.reject(error);
 		config.__retryCount = (config.__retryCount ?? 0) + 1;
 
 		return client.request(config);
@@ -123,17 +125,14 @@ const baseClient: AxiosInstance = axios.create({
 	},
 });
 
-/**
- * Request interceptor to inject S2S secret and client IP
- */
+/** Request interceptor to inject S2S secret and client IP */
 baseClient.interceptors.request.use(
 	async config => {
 		const clientIp = await getClientIp();
 
-		// Server-to-server authentication
 		config.headers['X-S2S-Secret'] = env.S2S_SECRET;
 
-		// Forward client IP (trusted because of S2S secret)
+		// Trusted because backend validates X-S2S-Secret before reading X-Client-IP
 		if (clientIp) {
 			config.headers['X-Client-IP'] = clientIp;
 		}
@@ -157,49 +156,51 @@ const authenticatedClient: AxiosInstance = axios.create({
 });
 
 /**
- * Request interceptor to validate and inject token + client IP
- * Automatically:
- * - Retrieves the token via getAuthToken()
- * - Validates if the token exists
- * - Injects the token in the Authorization header
- * - Injects the client IP in the X-Client-IP header
- * - Rejects the request with 401 error if there's no token
+ * Request interceptor to inject auth token + client IP.
+ * Rejects with a real AxiosError (not a plain rejection) when no token exists,
+ * so `error instanceof AxiosError` succeeds in extractErrorCode.
  */
 authenticatedClient.interceptors.request.use(
 	async config => {
-		const results = await Promise.allSettled([getAuthToken(), getClientIp()]);
+		const [tokenResult, ipResult] = await Promise.allSettled([
+			getAuthToken(),
+			getClientIp(),
+		]);
 
-		const token = results[0].status === 'fulfilled' ? results[0].value : null;
-		const clientIp =
-			results[1].status === 'fulfilled' ? results[1].value : null;
+		const token = tokenResult.status === 'fulfilled' ? tokenResult.value : null;
+		const clientIp = ipResult.status === 'fulfilled' ? ipResult.value : null;
 
-		// Validates token presence — reject with a real AxiosError so
-		// `error instanceof AxiosError` succeeds in error-mapper.ts extractErrorCode
 		if (!token) {
+			// AxiosError constructor expects AxiosResponse for the 5th arg, but we're
+			// synthesizing a 401 without a real HTTP response. The shape satisfies
+			// AxiosResponse at runtime — the fields error mappers read (status, data)
+			// are present and correctly typed. This is the only way to make
+			// `error instanceof AxiosError` succeed in extractErrorCode downstream.
+			const syntheticResponse = {
+				status: 401,
+				data: { message: 'You must be signed in to perform this action' },
+				headers: {},
+				statusText: 'Unauthorized',
+				config,
+			};
+
 			return Promise.reject(
 				new AxiosError(
 					'You must be signed in to perform this action',
 					'ERR_UNAUTHORIZED',
 					config,
 					null,
-					{
-						status: 401,
-						data: { message: 'You must be signed in to perform this action' },
-						headers: {},
-						statusText: 'Unauthorized',
-						config,
-					} as never,
+					// Cast is sound: syntheticResponse has all fields AxiosResponse
+					// requires, and downstream code only reads `.status` and `.data`.
+					syntheticResponse as AxiosError['response'],
 				),
 			);
 		}
 
-		// Server-to-server authentication
 		config.headers['X-S2S-Secret'] = env.S2S_SECRET;
-
-		// Injects the token in the header
 		config.headers.Authorization = `Bearer ${token}`;
 
-		// Injects the client IP if available (trusted because of S2S secret)
+		// Trusted because backend validates X-S2S-Secret before reading X-Client-IP
 		if (clientIp) {
 			config.headers['X-Client-IP'] = clientIp;
 		}
@@ -230,7 +231,8 @@ authenticatedClient.interceptors.response.use(
 				cookieStore.delete(AUTH_COOKIES.TOKEN);
 				cookieStore.delete(AUTH_COOKIES.SESSION);
 			} catch {
-				// Cookie cleanup is best-effort — may fail outside request context
+				// Best-effort cleanup — fails silently outside request context (e.g. during build)
+				// No action needed: stale cookies will be caught by the next request cycle
 			}
 		}
 		return Promise.reject(error);

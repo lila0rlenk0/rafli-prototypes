@@ -36,49 +36,37 @@ export function stripMarkdown(markdown: string): string {
 
 	let text = markdown;
 
-	// Remove code blocks (```code```)
+	// Step 1: Remove block-level structures (code blocks, headers, rules, quotes, lists).
 	text = text.replace(RE_CODE_BLOCK, '');
-	// Remove inline code (`code`)
 	text = text.replace(RE_INLINE_CODE, '');
-	// Remove headers (# ## ### #### ##### ######)
 	text = text.replace(RE_HEADERS, '');
-	// Remove horizontal rules (--- *** ___)
 	text = text.replace(RE_HORIZONTAL_RULES, '');
-	// Remove blockquotes (>)
 	text = text.replace(RE_BLOCKQUOTES, '');
-	// Remove list markers (- * +) and numbered lists (1. 2. etc)
 	text = text.replace(RE_UNORDERED_LIST, '');
 	text = text.replace(RE_ORDERED_LIST, '');
-	// Remove task list markers (- [ ] - [x])
 	text = text.replace(RE_TASK_LIST, '');
-	// Remove bold (**text** or __text__)
+
+	// Step 2: Unwrap inline formatting (bold, italic, strikethrough) — keep inner text.
 	text = text.replace(RE_BOLD_ASTERISK, '$1');
 	text = text.replace(RE_BOLD_UNDERSCORE, '$1');
-	// Remove italic (*text* or _text_)
 	text = text.replace(RE_ITALIC_ASTERISK, '$1');
 	text = text.replace(RE_ITALIC_UNDERSCORE, '$1');
-	// Remove strikethrough (~~text~~)
 	text = text.replace(RE_STRIKETHROUGH, '$1');
-	// Remove images ![alt](url)
+
+	// Step 3: Unwrap links/images — keep alt text or link text, discard URLs.
 	text = text.replace(RE_IMAGES, '$1');
-	// Remove links [text](url)
 	text = text.replace(RE_INLINE_LINKS, '$1');
-	// Remove reference-style links [text][ref]
 	text = text.replace(RE_REF_LINKS, '$1');
-	// Remove reference definitions [ref]: url
 	text = text.replace(RE_REF_DEFINITIONS, '');
-	// Remove HTML tags if any
+
+	// Step 4: Strip remaining HTML tags and normalize whitespace.
 	text = text.replace(RE_HTML_TAGS, '');
-	// Remove multiple spaces and normalize whitespace
 	text = text.replace(RE_MULTIPLE_SPACES, ' ');
-	// Remove leading/trailing whitespace from each line
 	text = text
 		.split('\n')
 		.map(line => line.trim())
 		.join('\n');
-	// Remove multiple consecutive newlines
 	text = text.replace(RE_MULTIPLE_NEWLINES, '\n\n');
-	// Trim final result
 	text = text.trim();
 
 	return text;

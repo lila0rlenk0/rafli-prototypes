@@ -26,9 +26,8 @@ export function SubmissionsFilters() {
 	const currentType = searchParams.get('type') ?? 'all';
 
 	/**
-	 * Updates a single search param while preserving others.
-	 * Resets page to 1 when filters change — prevents showing
-	 * an empty page if the filtered results are fewer.
+	 * Updates a single search param, clears page — prevents landing on empty pages
+	 * when the filtered result count is lower than the current offset.
 	 */
 	function updateParam(key: string, value: string) {
 		const params = new URLSearchParams(searchParams.toString());
@@ -39,24 +38,17 @@ export function SubmissionsFilters() {
 			params.set(key, value);
 		}
 
-		// Reset to first page on filter change
 		params.delete('page');
 
 		router.push(`/admin/verification?${params.toString()}`);
 	}
 
-	function handleStatusChange(value: string) {
-		updateParam('status', value);
-	}
-
-	function handleTypeChange(value: string) {
-		updateParam('type', value);
-	}
-
 	return (
 		<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-			{/* Status filter */}
-			<Select value={currentStatus} onValueChange={handleStatusChange}>
+			<Select
+				value={currentStatus}
+				onValueChange={value => updateParam('status', value)}
+			>
 				<SelectTrigger className="w-full sm:w-40">
 					<SelectValue placeholder="All statuses" />
 				</SelectTrigger>
@@ -68,8 +60,10 @@ export function SubmissionsFilters() {
 				</SelectContent>
 			</Select>
 
-			{/* Verification type filter */}
-			<Select value={currentType} onValueChange={handleTypeChange}>
+			<Select
+				value={currentType}
+				onValueChange={value => updateParam('type', value)}
+			>
 				<SelectTrigger className="w-full sm:w-48">
 					<SelectValue placeholder="All types" />
 				</SelectTrigger>

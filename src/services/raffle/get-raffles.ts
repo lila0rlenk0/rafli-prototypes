@@ -15,11 +15,6 @@ import {
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for fetching raffles list
- */
-type GetRafflesResponse = ServiceResponse<ListRafflesResponse, RaffleErrorCode>;
-
-/**
  * Fetches all raffles with optional filtering (public/browsing)
  *
  * @param query - Optional query parameters for filtering raffles
@@ -27,26 +22,18 @@ type GetRafflesResponse = ServiceResponse<ListRafflesResponse, RaffleErrorCode>;
  */
 export async function getRaffles(
 	query?: MyRafflesQuery,
-): Promise<GetRafflesResponse> {
+): Promise<ServiceResponse<ListRafflesResponse, RaffleErrorCode>> {
 	try {
-		const params = buildQueryParams(query);
-
 		const response = await baseClient.get('/raffles', {
-			params,
+			params: buildQueryParams(query),
 		});
-
-		// Validate response data structure
-		const validatedData = listRafflesResponseSchema.parse(response.data);
-
-		return success(validatedData);
+		return success(listRafflesResponseSchema.parse(response.data));
 	} catch (error) {
-		// Handle validation errors separately
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'get-raffles');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

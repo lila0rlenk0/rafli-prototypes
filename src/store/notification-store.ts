@@ -1,27 +1,33 @@
 import { createStore } from 'zustand/vanilla';
 
+// --- State & Action interfaces ---
+// Separated so the provider can type the initial state without actions.
+
 export interface NotificationStoreState {
-	unreadCount: number;
+	readonly unreadCount: number;
 }
 
 export interface NotificationStoreActions {
-	setUnreadCount: (count: number) => void;
-	decrementUnreadCount: () => void;
-	clearUnreadCount: () => void;
+	readonly setUnreadCount: (count: number) => void;
+	readonly decrementUnreadCount: () => void;
+	readonly clearUnreadCount: () => void;
 }
 
 export type NotificationStore = NotificationStoreState &
 	NotificationStoreActions;
 
-export const defaultInitState: NotificationStoreState = {
+/** Default state — zero unread until hydrated from the server */
+export const defaultInitState: Readonly<NotificationStoreState> = {
 	unreadCount: 0,
 };
 
 /**
- * Creates a new notification store instance
+ * Creates a vanilla Zustand store for notification badge state.
+ * Vanilla (non-React) so the provider owns the single instance and
+ * passes it via context — follows the createStore + provider pattern.
  *
  * @param initState - Initial state for the store
- * @returns Zustand store instance
+ * @returns Zustand vanilla store instance
  */
 export function createNotificationStore(
 	initState: NotificationStoreState = defaultInitState,
@@ -29,27 +35,18 @@ export function createNotificationStore(
 	return createStore<NotificationStore>()(set => ({
 		...initState,
 
-		/**
-		 * Set the unread count from server
-		 *
-		 * @param count - New unread count
-		 */
-		setUnreadCount: (count: number) => {
+		setUnreadCount: count => {
 			set({ unreadCount: count });
 		},
 
-		/**
-		 * Decrement unread count by 1 (optimistic update on mark-read)
-		 */
+		// Math.max prevents going negative on out-of-order server/client events
+		// (e.g. WebSocket "mark read" arrives before the SSE decrement)
 		decrementUnreadCount: () => {
 			set(state => ({
 				unreadCount: Math.max(0, state.unreadCount - 1),
 			}));
 		},
 
-		/**
-		 * Clear unread count to 0 (after mark-all-read)
-		 */
 		clearUnreadCount: () => {
 			set({ unreadCount: 0 });
 		},

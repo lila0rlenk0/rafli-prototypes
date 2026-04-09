@@ -33,12 +33,12 @@ export function useCommentReplies(options: {
 	return useInfiniteQuery({
 		queryKey: commentRepliesKey(options.commentId),
 		queryFn: async function fetchReplies({ pageParam }) {
-			// Step 1: Choose endpoint based on auth state
+			// Authenticated users get userVote enrichment via the /me/ endpoint
 			const fetcher = options.isAuthenticated
 				? getMyCommentReplies
 				: getCommentReplies;
 
-			// Step 2: Fetch page — replies don't need sort (always chronological)
+			// Replies are always chronological — no sort param needed
 			const result = await fetcher(options.raffleId, options.commentId, {
 				page: pageParam,
 				limit: REPLIES_PAGE_SIZE,

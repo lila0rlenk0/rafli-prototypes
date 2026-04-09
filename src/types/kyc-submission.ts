@@ -1,48 +1,22 @@
 import { z } from 'zod';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants ──────────────────────────────────────────────────────────────
 
-/**
- * Verification type constants matching backend verification types
- */
+/** Verification submission types — KYB for hosts, KYC for winners. */
 export const VERIFICATION_TYPE = {
 	KYB_INDIVIDUAL: 'kyb_individual',
 	KYB_COMPANY: 'kyb_company',
 	KYC_WINNER: 'kyc_winner',
 } as const;
 
-/**
- * Maps verification type constant to a user-facing label.
- * Centralized here to avoid duplicating the switch in every component
- * that displays verification type.
- *
- * @returns Readable label like "Individual Host", "Company Host", "Raffle Winner"
- */
-export function getVerificationTypeLabel(type: string): string {
-	switch (type) {
-		case VERIFICATION_TYPE.KYB_INDIVIDUAL:
-			return 'Individual Host';
-		case VERIFICATION_TYPE.KYB_COMPANY:
-			return 'Company Host';
-		case VERIFICATION_TYPE.KYC_WINNER:
-			return 'Raffle Winner';
-		default:
-			return 'Verification';
-	}
-}
-
-/**
- * Government-issued identity document types accepted for verification
- */
+/** Government-issued identity document types accepted for verification */
 export const IDENTITY_DOC_TYPE = {
 	PASSPORT: 'passport',
 	DRIVERS_LICENSE: 'drivers_license',
 	NATIONAL_ID: 'national_id',
 } as const;
 
-/**
- * Address proof document types accepted for KYB individual verification
- */
+/** Address proof document types accepted for KYB individual verification */
 export const ADDRESS_DOC_TYPE = {
 	UTILITY_BILL: 'utility_bill',
 	BANK_STATEMENT: 'bank_statement',
@@ -50,9 +24,7 @@ export const ADDRESS_DOC_TYPE = {
 	GOVERNMENT_CORRESPONDENCE: 'government_correspondence',
 } as const;
 
-/**
- * Raffle categories that a host can plan to offer
- */
+/** Raffle categories that a host can plan to offer */
 export const PLANNED_CATEGORY = {
 	ELECTRONICS: 'electronics',
 	FASHION: 'fashion',
@@ -64,9 +36,7 @@ export const PLANNED_CATEGORY = {
 	OTHER: 'other',
 } as const;
 
-/**
- * Document purpose identifiers for upload endpoints
- */
+/** Document purpose identifiers for upload endpoints */
 export const DOCUMENT_PURPOSE = {
 	ID_FRONT: 'id_front',
 	ID_BACK: 'id_back',
@@ -75,33 +45,7 @@ export const DOCUMENT_PURPOSE = {
 	PROOF_OF_BUSINESS_ADDRESS: 'proof_of_business_address',
 } as const;
 
-/**
- * Maps document purpose constant to a user-facing label.
- * Centralized here alongside DOCUMENT_PURPOSE to avoid
- * duplicating the switch in every component.
- *
- * @returns Readable label like "ID Front", "Proof of Address"
- */
-export function getDocumentPurposeLabel(purpose: string): string {
-	switch (purpose) {
-		case DOCUMENT_PURPOSE.ID_FRONT:
-			return 'ID Front';
-		case DOCUMENT_PURPOSE.ID_BACK:
-			return 'ID Back';
-		case DOCUMENT_PURPOSE.PROOF_OF_ADDRESS:
-			return 'Proof of Address';
-		case DOCUMENT_PURPOSE.COMPANY_DOCS:
-			return 'Company Documents';
-		case DOCUMENT_PURPOSE.PROOF_OF_BUSINESS_ADDRESS:
-			return 'Business Address Proof';
-		default:
-			return purpose;
-	}
-}
-
-/**
- * KYC submission review statuses
- */
+/** Backend submission review statuses — pending/approved/rejected lifecycle. */
 export const KYC_SUBMISSION_STATUS = {
 	PENDING: 'pending',
 	APPROVED: 'approved',
@@ -121,7 +65,7 @@ export const ACCEPTED_DOC_TYPES = [
 	'image/webp',
 ] as const;
 
-// ─── Types from Constants ────────────────────────────────────────────────────
+// ─── Types from Constants ───────────────────────────────────────────────────
 
 export type VerificationType =
 	(typeof VERIFICATION_TYPE)[keyof typeof VERIFICATION_TYPE];
@@ -141,7 +85,7 @@ export type DocumentPurpose =
 export type KycSubmissionStatus =
 	(typeof KYC_SUBMISSION_STATUS)[keyof typeof KYC_SUBMISSION_STATUS];
 
-// ─── Schemas ─────────────────────────────────────────────────────────────────
+// ─── Schemas ────────────────────────────────────────────────────────────────
 
 export const verificationTypeSchema = z.enum([
 	VERIFICATION_TYPE.KYB_INDIVIDUAL,
@@ -179,7 +123,7 @@ export const kycSubmissionStatusSchema = z.enum([
 	KYC_SUBMISSION_STATUS.REJECTED,
 ]);
 
-/** Schema for submission creation response */
+/** Backend response for a single submission summary (list items). */
 export const kycSubmissionResponseSchema = z.object({
 	id: z.string(),
 	type: verificationTypeSchema,
@@ -187,21 +131,18 @@ export const kycSubmissionResponseSchema = z.object({
 	submittedAt: z.string(),
 });
 
-/** Schema for document upload response */
+/** Schema for a single uploaded KYC document with a signed download URL. */
 export const documentUploadResponseSchema = z.object({
 	documentId: z.string(),
 	purpose: z.string(),
 });
 
-/** Schema for a single submission in the user's list — same shape as creation response */
-export const kycSubmissionSummarySchema = kycSubmissionResponseSchema;
-
-/** Schema for the my-verifications list response — wrapped in { submissions } */
+/** Schema for GET /me/verification — all user submissions. */
 export const mySubmissionsResponseSchema = z.object({
-	submissions: z.array(kycSubmissionSummarySchema),
+	submissions: z.array(kycSubmissionResponseSchema),
 });
 
-/** Schema for a document in the user's submission detail (with signed URL) */
+/** Schema for a document attached to a KYC submission detail. */
 export const kycDocumentSchema = z.object({
 	id: z.string(),
 	purpose: z.string(),
@@ -211,7 +152,11 @@ export const kycDocumentSchema = z.object({
 	url: z.string().nullable(),
 });
 
-/** Schema for the user-facing submission detail response (GET /verification/:id) */
+/**
+ * Schema for GET /verification/:id — user-facing submission detail.
+ *
+ * Validation boundary: server-side — parsed in KYC detail server actions.
+ */
 export const kycSubmissionDetailSchema = z.object({
 	id: z.string(),
 	type: verificationTypeSchema,
@@ -225,20 +170,12 @@ export const kycSubmissionDetailSchema = z.object({
 	rejectionReason: z.string().nullable(),
 });
 
-// ─── Inferred Types ──────────────────────────────────────────────────────────
-
-export type KycSubmissionResponse = z.infer<typeof kycSubmissionResponseSchema>;
-export type DocumentUploadResponse = z.infer<
-	typeof documentUploadResponseSchema
->;
-export type KycDocument = z.infer<typeof kycDocumentSchema>;
-export type KycSubmissionDetail = z.infer<typeof kycSubmissionDetailSchema>;
-export type KycSubmissionSummary = z.infer<typeof kycSubmissionSummarySchema>;
-export type MySubmissionsResponse = z.infer<typeof mySubmissionsResponseSchema>;
-
-// ─── Input Schemas ──────────────────────────────────────────────────────────
-
-/** Schema for KYB individual submission input — validated via safeParse in the server action */
+/**
+ * KYB individual form input.
+ *
+ * Validation boundary: both — client-side in the form, server-side via safeParse
+ * in the server action before forwarding to API.
+ */
 export const kybIndividualInputSchema = z.object({
 	fullLegalName: z.string().min(1),
 	dateOfBirth: z.string().min(1),
@@ -250,7 +187,11 @@ export const kybIndividualInputSchema = z.object({
 	plannedCategories: z.array(plannedCategorySchema).min(1),
 });
 
-/** Schema for KYB company submission input — validated via safeParse in the server action */
+/**
+ * KYB company form input.
+ *
+ * Validation boundary: both — client-side in the form, server-side via safeParse.
+ */
 export const kybCompanyInputSchema = z.object({
 	legalEntityName: z.string().min(1),
 	businessRegistrationNumber: z.string().min(1),
@@ -259,7 +200,11 @@ export const kybCompanyInputSchema = z.object({
 	contactEmail: z.string().email(),
 });
 
-/** Schema for KYC winner submission input — validated via safeParse in the server action */
+/**
+ * KYC winner form input.
+ *
+ * Validation boundary: both — client-side in the form, server-side via safeParse.
+ */
 export const kycWinnerInputSchema = z.object({
 	fullLegalName: z.string().min(1),
 	dateOfBirth: z.string().min(1),
@@ -269,8 +214,70 @@ export const kycWinnerInputSchema = z.object({
 	shippingAddress: z.string().nullable(),
 });
 
-// ─── Input Types ────────────────────────────────────────────────────────────
+// ─── Inferred Types ─────────────────────────────────────────────────────────
 
+/** Submission summary from list endpoints. */
+export type KycSubmissionResponse = z.infer<typeof kycSubmissionResponseSchema>;
+/** Response from document upload endpoint. */
+export type DocumentUploadResponse = z.infer<
+	typeof documentUploadResponseSchema
+>;
+/** KYC document with signed download URL. */
+export type KycDocument = z.infer<typeof kycDocumentSchema>;
+/** Full submission detail from GET /verification/:id. */
+export type KycSubmissionDetail = z.infer<typeof kycSubmissionDetailSchema>;
+/** Same shape as KycSubmissionResponse — a submission in the user's list */
+export type KycSubmissionSummary = KycSubmissionResponse;
+/** List of all user's KYC submissions. */
+export type MySubmissionsResponse = z.infer<typeof mySubmissionsResponseSchema>;
+/** KYB individual form input. */
 export type KybIndividualInput = z.infer<typeof kybIndividualInputSchema>;
+/** KYB company form input. */
 export type KybCompanyInput = z.infer<typeof kybCompanyInputSchema>;
+/** KYC winner form input. */
 export type KycWinnerInput = z.infer<typeof kycWinnerInputSchema>;
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Maps verification type to a user-facing label.
+ * Centralized here to avoid duplicating the switch in every component.
+ *
+ * @returns Readable label like "Individual Host", "Company Host", "Raffle Winner"
+ */
+export function getVerificationTypeLabel(type: string): string {
+	switch (type) {
+		case VERIFICATION_TYPE.KYB_INDIVIDUAL:
+			return 'Individual Host';
+		case VERIFICATION_TYPE.KYB_COMPANY:
+			return 'Company Host';
+		case VERIFICATION_TYPE.KYC_WINNER:
+			return 'Raffle Winner';
+		default:
+			return 'Verification';
+	}
+}
+
+/**
+ * Maps document purpose to a user-facing label.
+ * Centralized here alongside DOCUMENT_PURPOSE to avoid
+ * duplicating the switch in every component.
+ *
+ * @returns Readable label like "ID Front", "Proof of Address"
+ */
+export function getDocumentPurposeLabel(purpose: string): string {
+	switch (purpose) {
+		case DOCUMENT_PURPOSE.ID_FRONT:
+			return 'ID Front';
+		case DOCUMENT_PURPOSE.ID_BACK:
+			return 'ID Back';
+		case DOCUMENT_PURPOSE.PROOF_OF_ADDRESS:
+			return 'Proof of Address';
+		case DOCUMENT_PURPOSE.COMPANY_DOCS:
+			return 'Company Documents';
+		case DOCUMENT_PURPOSE.PROOF_OF_BUSINESS_ADDRESS:
+			return 'Business Address Proof';
+		default:
+			return purpose;
+	}
+}

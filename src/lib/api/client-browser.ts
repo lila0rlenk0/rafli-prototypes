@@ -31,9 +31,12 @@ const API_BASE_URL = `${clientEnv.NEXT_PUBLIC_BACKEND_URL}/api/v1`;
  * - No S2S secret (would be exposed in browser)
  * - Uses public backend URL from client env
  */
+/** Browser-side request timeout — shorter than server since no cold-start latency */
+const BROWSER_TIMEOUT_MS = 10_000;
+
 const browserClient: AxiosInstance = axios.create({
 	baseURL: API_BASE_URL,
-	timeout: 10_000, // 10 seconds
+	timeout: BROWSER_TIMEOUT_MS,
 	withCredentials: true,
 	headers: {
 		'Content-Type': 'application/json',

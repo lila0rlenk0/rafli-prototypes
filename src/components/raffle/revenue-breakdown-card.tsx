@@ -1,35 +1,22 @@
 import { formatCurrency } from '@/lib/utils/format-currency';
 import type { Raffle } from '@/types/raffle';
-import { Separator } from '../ui/separator';
+import { Separator } from '@/components/ui/separator';
 
 interface RevenueBreakdownCardProps {
 	raffle: Raffle;
 }
 
-/**
- * RevenueBreakdownCard Component
- *
- * Displays revenue breakdown for hosts on concluded raffles.
- * Shows tickets sold, total revenue, estimated fee, and host earnings.
- */
 export function RevenueBreakdownCard({ raffle }: RevenueBreakdownCardProps) {
-	/**
-	 * Estimates host earnings (revenue minus 10% platform fee)
-	 * @returns Formatted estimated earnings string
-	 */
-	function getEstimatedHostEarnings(): string {
-		const revenue = parseFloat(raffle.revenueAmount);
-		return formatCurrency(revenue * 0.9, raffle.ticketPriceCurrency);
-	}
-
-	/**
-	 * Estimates the platform fee (10% of revenue)
-	 * @returns Formatted estimated fee string
-	 */
-	function getEstimatedFee(): string {
-		const revenue = parseFloat(raffle.revenueAmount);
-		return formatCurrency(revenue * 0.1, raffle.ticketPriceCurrency);
-	}
+	// 10% platform fee — kept as named consts so the 0.9/0.1 factors are self-evident
+	const revenue = parseFloat(raffle.revenueAmount);
+	const estimatedFee = formatCurrency(
+		revenue * 0.1,
+		raffle.ticketPriceCurrency,
+	);
+	const estimatedHostEarnings = formatCurrency(
+		revenue * 0.9,
+		raffle.ticketPriceCurrency,
+	);
 
 	return (
 		<div className="rounded-2xl border border-black bg-white p-6">
@@ -53,7 +40,7 @@ export function RevenueBreakdownCard({ raffle }: RevenueBreakdownCardProps) {
 
 					<div className="flex justify-between text-sm">
 						<span className="text-[#7B7B7B]">Platform Fee (10%)</span>
-						<span className="font-medium">-{getEstimatedFee()}</span>
+						<span className="font-medium">-{estimatedFee}</span>
 					</div>
 				</div>
 
@@ -62,7 +49,7 @@ export function RevenueBreakdownCard({ raffle }: RevenueBreakdownCardProps) {
 				<div className="rounded-lg bg-[#beffdb] px-4 py-3">
 					<div className="flex justify-between text-sm">
 						<span className="font-semibold">Your Earnings</span>
-						<span className="font-semibold">{getEstimatedHostEarnings()}</span>
+						<span className="font-semibold">{estimatedHostEarnings}</span>
 					</div>
 				</div>
 

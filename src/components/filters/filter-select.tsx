@@ -46,16 +46,10 @@ export function FilterSelect({
 }: FilterSelectProps) {
 	const [open, setOpen] = React.useState(false);
 
-	/**
-	 * Gets the selected option based on current value
-	 */
 	function getSelectedOption(): FilterOption | undefined {
 		return options.find(option => option.value === value);
 	}
 
-	/**
-	 * Handles option selection
-	 */
 	function handleSelect(selectedValue: string): void {
 		onValueChange?.(selectedValue === value ? '' : selectedValue);
 		setOpen(false);
@@ -78,7 +72,7 @@ export function FilterSelect({
 					<span className="text-sm leading-6">
 						{selectedOption ? selectedOption.label : placeholder}
 					</span>
-					<ChevronsUpDown className="h-4 w-4 shrink-0" />
+					<ChevronsUpDown className="size-4 shrink-0" />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="w-[200px] p-0" align="start">

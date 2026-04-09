@@ -66,6 +66,10 @@ export function StatusTabs() {
 		handleStatusChange(endedStatuses);
 	}
 
+	function handleLiveClick() {
+		handleStatusChange(RAFFLE_STATUS.LIVE);
+	}
+
 	const isHost = mode === USER_MODE.HOST;
 
 	// Determine which tab is active by checking if current status is in the group
@@ -107,7 +111,7 @@ export function StatusTabs() {
 			{/* Participating Tab */}
 			<button
 				type="button"
-				onClick={() => handleStatusChange(RAFFLE_STATUS.LIVE)}
+				onClick={handleLiveClick}
 				className={cn(
 					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
 					'text-[rgba(15,15,15,0.95)] transition-colors',

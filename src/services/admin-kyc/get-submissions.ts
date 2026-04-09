@@ -31,21 +31,21 @@ export async function getAdminSubmissions(
 	query?: AdminKycQuery,
 ): Promise<ServiceResponse<AdminKycListResponse, AdminKycErrorCode>> {
 	try {
-		// Defense-in-depth: verify admin:kyc:review permission before calling backend.
-		// The layout gate hides the UI, but server actions are directly callable.
+		// Step 1: Defense-in-depth permission check — server actions are directly callable
 		const session = await getSession();
 		const permissions = parsePermissions(session?.user?.permissions);
 		if (!permissions.includes(PERMISSIONS.KYC_REVIEW)) {
 			return failure(COMMON_ERROR_CODES.FORBIDDEN);
 		}
 
+		// Step 2: Fetch paginated submissions with optional status/type filters
 		const response = await authenticatedClient.get('/admin/verification', {
 			params: query,
 			timeout: API_TIMEOUTS.QUERY,
 		});
 
-		const parsed = adminKycListResponseSchema.parse(response.data);
-		return success(parsed);
+		// Step 3: Validate response shape
+		return success(adminKycListResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'admin-kyc', 'get-submissions');

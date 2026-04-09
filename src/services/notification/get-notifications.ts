@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
 import { failure, mapNotificationError, success } from '@/lib/errors';
@@ -14,33 +16,21 @@ import {
 	type NotificationQuery,
 } from '@/types/notification';
 import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
 
 /**
- * Response type for fetching notifications
- */
-type GetNotificationsResponse = ServiceResponse<
-	ListNotificationsResponse,
-	NotificationErrorCode
->;
-
-/**
- * Fetches paginated notifications for the current user
+ * Fetches paginated notifications for the current user.
  *
  * @param query - Optional pagination parameters (limit, offset)
  * @returns ServiceResponse with notifications list on success
  */
 export async function getNotifications(
 	query?: NotificationQuery,
-): Promise<GetNotificationsResponse> {
+): Promise<ServiceResponse<ListNotificationsResponse, NotificationErrorCode>> {
 	try {
-		const params = buildQueryParams(query);
 		const response = await authenticatedClient.get('/me/notifications', {
-			params,
+			params: buildQueryParams(query),
 		});
-
-		const validated = listNotificationsResponseSchema.parse(response.data);
-		return success(validated);
+		return success(listNotificationsResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'notification', 'get-notifications');

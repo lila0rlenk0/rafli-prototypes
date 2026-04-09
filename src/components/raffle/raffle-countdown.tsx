@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
+import { cn } from '@/lib/utils';
 
 /** Props for the live countdown timer displayed on raffle pages. */
 interface RaffleCountdownProps {
@@ -27,23 +28,7 @@ function CountdownUnit({
 	label,
 	isClosingSoon = false,
 }: CountdownUnitProps) {
-	/** Formats the value as a two-digit string for consistent column width. */
-	function getFormattedValue(num: number): string {
-		return String(num).padStart(2, '0');
-	}
-
-	/** Value text — amber-900 in closing-soon mode for urgency contrast. */
-	function getValueClass(): string {
-		const base = 'font-clash-display text-4xl font-semibold';
-		return isClosingSoon ? `${base} text-amber-900` : base;
-	}
-
-	/** Label text — amber-700 in closing-soon, muted gray otherwise. */
-	function getLabelClass(): string {
-		return isClosingSoon ? 'text-sm text-amber-700' : 'text-sm text-[#7B7B7B]';
-	}
-
-	const formattedValue = getFormattedValue(value);
+	const formattedValue = String(value).padStart(2, '0');
 
 	return (
 		<div className="flex flex-col items-center gap-2">
@@ -54,12 +39,21 @@ function CountdownUnit({
 					animate={{ y: 0, opacity: 1 }}
 					exit={{ y: 20, opacity: 0 }}
 					transition={{ duration: 0.3, ease: 'easeOut' }}
-					className={getValueClass()}
+					className={cn(
+						'font-clash-display text-4xl font-semibold',
+						isClosingSoon && 'text-amber-900',
+					)}
 				>
 					{formattedValue}
 				</motion.p>
 			</AnimatePresence>
-			<p className={getLabelClass()}>{label}</p>
+			<p
+				className={
+					isClosingSoon ? 'text-sm text-amber-700' : 'text-sm text-[#7B7B7B]'
+				}
+			>
+				{label}
+			</p>
 		</div>
 	);
 }
@@ -81,14 +75,6 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 	const { isClosingSoon, isExpired, isHydrated, ...timeRemaining } =
 		useRaffleSaleWindow(endAt);
 
-	/** Container classes — amber theme in final 10 minutes, green otherwise. */
-	function getContainerClass(): string {
-		const base = 'rounded-2xl p-4';
-		return isClosingSoon
-			? `${base} border border-amber-200 bg-amber-50`
-			: `${base} bg-[#F6FF8B]`;
-	}
-
 	if (!isHydrated) return null;
 
 	// Once expired, replace frozen zeros with a clear message
@@ -103,7 +89,13 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 	}
 
 	return (
-		<div className={getContainerClass()}>
+		<div
+			className={
+				isClosingSoon
+					? 'rounded-2xl border border-amber-200 bg-amber-50 p-4'
+					: 'rounded-2xl bg-[#F6FF8B] p-4'
+			}
+		>
 			{isClosingSoon ? (
 				<p className="mb-3 text-center text-xs font-semibold tracking-[0.2em] text-amber-700 uppercase">
 					Final 10 minutes

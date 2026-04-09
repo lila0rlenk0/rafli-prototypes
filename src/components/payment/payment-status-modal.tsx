@@ -25,10 +25,6 @@ import { getStripeSessionStatus } from '@/services/payment/get-stripe-session-st
 import type { PaymentErrorCode } from '@/types/errors';
 import { USER_MODE } from '@/types/user-mode';
 
-// ==========================================
-// Types
-// ==========================================
-
 interface PaymentStatusModalProps {
 	publicSlug: string;
 	/** Stripe checkout session ID — used to verify actual payment status */
@@ -53,16 +49,9 @@ const STRIPE_STATUS_POLL_INTERVAL_MS = 3_000;
  */
 const MAX_STRIPE_POLL_ATTEMPTS = 40;
 
-// ==========================================
-// Component
-// ==========================================
-
 /**
- * PaymentStatusModal Component
- *
- * Displays post-Stripe redirect UI with real backend-verified status.
- * Calls GET /payments/stripe/sessions/:id/status on mount to avoid
- * blindly showing "success" based on URL params alone.
+ * Post-Stripe redirect modal — verifies payment status with backend before showing success.
+ * Polls until terminal state to avoid showing "success" based on URL params alone.
  */
 export function PaymentStatusModal({
 	publicSlug,
@@ -85,7 +74,10 @@ export function PaymentStatusModal({
 		getStripeVerificationFailureCopy(verificationError);
 	const signInHref = `/sign-in?returnTo=${encodeURIComponent(buildStripeVerificationReturnTo(publicSlug, stripeSessionId))}`;
 
-	// Verify Stripe session status until it reaches a terminal state.
+	// Stripe verification polling effect.
+	// Syncs with: open (start/stop), stripeSessionId (new checkout), verificationAttempt (manual retry).
+	// Cleanup: cancels in-flight fetch and clears timer to prevent leaked state updates.
+	//
 	// Why poll instead of one-shot:
 	// - Stripe can redirect the browser before our webhook persists `completed`
 	// - the first verification call can therefore still observe `unpaid`
@@ -136,11 +128,6 @@ export function PaymentStatusModal({
 		};
 	}, [open, stripeSessionId, verificationAttempt]);
 
-	// ==========================================
-	// SVG Helpers
-	// ==========================================
-
-	/** Ticket icon SVG for the payment success modal. */
 	function renderTicketIcon(props?: ComponentProps<'svg'>): React.ReactNode {
 		return (
 			<svg
@@ -159,7 +146,6 @@ export function PaymentStatusModal({
 		);
 	}
 
-	/** Decorative colored shapes rendered at the top-left of the success modal. */
 	function renderLeftColoredCard(
 		props?: ComponentProps<'svg'>,
 	): React.ReactNode {
@@ -188,7 +174,6 @@ export function PaymentStatusModal({
 		);
 	}
 
-	/** Decorative colored shapes rendered at the top-right of the success modal. */
 	function renderRightColoredCard(
 		props?: ComponentProps<'svg'>,
 	): React.ReactNode {
@@ -217,7 +202,6 @@ export function PaymentStatusModal({
 		);
 	}
 
-	/** Copies the raffle link to the clipboard */
 	function handleCopyLink() {
 		const link = `${window.location.origin}/browse/${publicSlug}`;
 		void navigator.clipboard.writeText(link).then(
@@ -226,9 +210,6 @@ export function PaymentStatusModal({
 		);
 	}
 
-	/**
-	 * Opens a Twitter/X share intent in a new tab
-	 */
 	function handleShare() {
 		const text = 'Check out this raffle';
 		const link = `${window.location.origin}/browse/${publicSlug}`;
@@ -236,22 +217,13 @@ export function PaymentStatusModal({
 		window.open(url, '_blank', 'noopener,noreferrer');
 	}
 
-	/**
-	 * Manual recovery for transient verification failures.
-	 * Keep this user-driven instead of auto-looping on errors so the modal never
-	 * mislabels an unrecoverable verification failure as "still processing".
-	 */
+	// User-driven rather than auto-loop — avoids mislabeling permanent failures as "still processing"
 	function handleRetryVerification() {
 		setStatus('loading');
 		setVerificationError(null);
 		setVerificationAttempt(prev => prev + 1);
 	}
 
-	// ==========================================
-	// Status-specific rendering
-	// ==========================================
-
-	/** Loading state while verifying with backend */
 	function renderLoadingContent(): React.ReactNode {
 		return (
 			<DialogHeader className="z-1 flex items-center justify-center space-y-2">
@@ -266,7 +238,6 @@ export function PaymentStatusModal({
 		);
 	}
 
-	/** Success state — payment verified as paid */
 	function renderPaidContent(): React.ReactNode {
 		return (
 			<>
@@ -301,7 +272,7 @@ export function PaymentStatusModal({
 							onClick={handleShare}
 							className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
 						>
-							<FaXTwitter className="h-4 w-4" />
+							<FaXTwitter className="size-4" />
 							Share on X
 						</button>
 						<button
@@ -309,7 +280,7 @@ export function PaymentStatusModal({
 							onClick={handleCopyLink}
 							className="flex items-center justify-center gap-2 text-sm font-medium"
 						>
-							<Copy className="h-4 w-4" />
+							<Copy className="size-4" />
 							Copy Raffle link
 						</button>
 					</div>
@@ -318,7 +289,6 @@ export function PaymentStatusModal({
 		);
 	}
 
-	/** Unpaid state — payment not yet processed (still processing at Stripe) */
 	function renderUnpaidContent(): React.ReactNode {
 		return (
 			<DialogHeader className="z-1 flex items-center justify-center space-y-2">
@@ -344,7 +314,6 @@ export function PaymentStatusModal({
 		);
 	}
 
-	/** Expired state — Stripe session timed out */
 	function renderExpiredContent(): React.ReactNode {
 		return (
 			<DialogHeader className="z-1 flex items-center justify-center space-y-2">
@@ -360,7 +329,6 @@ export function PaymentStatusModal({
 		);
 	}
 
-	/** Verification failed — recovery depends on the backend/client error class. */
 	function renderVerificationFailedContent(): React.ReactNode {
 		return (
 			<DialogHeader className="z-1 flex items-center justify-center space-y-2">
@@ -387,15 +355,16 @@ export function PaymentStatusModal({
 							<Link href={signInHref}>Sign in to verify</Link>
 						</Button>
 					) : null}
-					{!verificationFailureCopy.requiresSignIn &&
-					verificationFailureCopy.canRetry ? (
-						<Button
-							type="button"
-							onClick={handleRetryVerification}
-							className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
-						>
-							Retry verification
-						</Button>
+					{!verificationFailureCopy.requiresSignIn ? (
+						verificationFailureCopy.canRetry ? (
+							<Button
+								type="button"
+								onClick={handleRetryVerification}
+								className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
+							>
+								Retry verification
+							</Button>
+						) : null
 					) : null}
 				</div>
 				{isParticipant ? (
@@ -411,7 +380,6 @@ export function PaymentStatusModal({
 		);
 	}
 
-	/** Selects the correct content renderer based on verified status */
 	function renderContent(): React.ReactNode {
 		switch (status) {
 			case 'loading':

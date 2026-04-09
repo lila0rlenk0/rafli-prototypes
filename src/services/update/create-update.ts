@@ -17,12 +17,7 @@ import {
 } from '@/types/update';
 
 /**
- * Response type for creating an update
- */
-type CreateUpdateServiceResponse = ServiceResponse<Update, UpdateErrorCode>;
-
-/**
- * Creates a new update for a raffle
+ * Creates a new update for a raffle.
  *
  * @param raffleId - The ID of the raffle
  * @param payload - The update content (text and optional imageUrls)
@@ -31,30 +26,33 @@ type CreateUpdateServiceResponse = ServiceResponse<Update, UpdateErrorCode>;
 export async function createUpdate(
 	raffleId: string,
 	payload: CreateUpdatePayload,
-): Promise<CreateUpdateServiceResponse> {
+): Promise<ServiceResponse<Update, UpdateErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Submit update to backend
 		const response = await authenticatedClient.post(
 			`/raffles/${raffleId}/updates`,
 			payload,
 		);
-		const validated = updateSchema.parse(response.data);
 
-		// Fire-and-forget — update posting is not revenue-critical
+		// Step 2: Validate response shape
+		const data = updateSchema.parse(response.data);
+
+		// Step 3: Fire-and-forget analytics — update posting is not revenue-critical
 		void sessionPromise.then(session =>
 			trackServer(
 				RAFFLE_EVENTS.UPDATE_POSTED,
 				{
 					raffle_id: raffleId,
-					update_id: validated.id,
+					update_id: data.id,
 					body_length: payload.text.length,
 				},
 				{ userId: session?.user?.id },
 			),
 		);
 
-		return success(validated);
+		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'update', 'create-update');

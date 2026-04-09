@@ -1,11 +1,6 @@
+// 'use client' — CSS marquee animation requires client rendering for smooth playback
 'use client';
 
-/**
- * MarqueeBanner Component
- *
- * A horizontally scrolling yellow banner that displays a repeating promotional message.
- * Rendered via the topBanner slot in PublicNavbar, directly under the navbar border.
- */
 export function MarqueeBanner() {
 	const message = 'Share selected raffle on X and get a free tickets!';
 

@@ -32,19 +32,19 @@ export async function createReport(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Step 1: Validate payload before sending to backend
+		// Step 1: Validate payload — reject malformed reports before network call
 		const parsed = createReportSchema.safeParse(payload);
 		if (!parsed.success) {
 			return failure(REPORT_ERROR_CODES.VALIDATION_FAILED);
 		}
 
-		// Step 2: POST to reports endpoint
+		// Step 2: Submit report — backend performs authorization + duplicate checks
 		const response = await authenticatedClient.post('/reports', parsed.data);
 
 		// Step 3: Validate response shape
-		const validated = userReportResponseSchema.parse(response.data);
+		const data = userReportResponseSchema.parse(response.data);
 
-		// Fire-and-forget — report submission must not be delayed by analytics
+		// Step 4: Fire-and-forget analytics — report submission must not be delayed
 		void sessionPromise.then(session =>
 			trackServer(
 				MODERATION_EVENTS.CONTENT_REPORTED,
@@ -58,7 +58,7 @@ export async function createReport(
 			),
 		);
 
-		return success(validated);
+		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'report', 'create-report');

@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { EnhancedTicketChecker } from '@/components/verification/enhanced-ticket-checker';
 import { WinnerLookup } from '@/components/verification/winner-lookup';
 
-// GSAP ScrollTrigger-dependent — dynamic import keeps it out of initial bundle
+// next/dynamic: lazy-loaded because ScrollReveal pulls in GSAP + ScrollTrigger (~40KB).
+// Verify page content is static — scroll animations are progressive enhancement,
+// so deferring this import doesn't affect core functionality or SEO.
 const ScrollReveal = dynamic(() =>
 	import('@/components/ui/scroll-reveal').then(mod => ({
 		default: mod.ScrollReveal,

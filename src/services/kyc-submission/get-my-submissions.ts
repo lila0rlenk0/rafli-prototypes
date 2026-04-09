@@ -13,8 +13,10 @@ import {
 	KYC_SUBMISSION_ERROR_CODES,
 	type KycSubmissionErrorCode,
 } from '@/types/errors';
-import type { MySubmissionsResponse } from '@/types/kyc-submission';
-import { mySubmissionsResponseSchema } from '@/types/kyc-submission';
+import {
+	mySubmissionsResponseSchema,
+	type MySubmissionsResponse,
+} from '@/types/kyc-submission';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
@@ -30,8 +32,7 @@ export async function getMySubmissions(): Promise<
 			timeout: API_TIMEOUTS.QUERY,
 		});
 
-		const parsed = mySubmissionsResponseSchema.parse(response.data);
-		return success(parsed);
+		return success(mySubmissionsResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'kyc-submission', 'get-my-submissions');

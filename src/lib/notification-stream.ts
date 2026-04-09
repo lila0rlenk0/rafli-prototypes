@@ -67,22 +67,14 @@ export class NotificationStream {
 		this.config = config;
 	}
 
-	/**
-	 * Connects to notification stream
-	 *
-	 * Fetches token via config callback and establishes connection.
-	 */
+	/** Fetches a fresh token and opens the WebSocket connection. */
 	async connect(): Promise<void> {
 		this.intentionalClose = false;
 		this.reconnectAttempts = 0;
 		await this.fetchTokenAndConnect();
 	}
 
-	/**
-	 * Disconnects from notification stream
-	 *
-	 * Performs clean close, prevents reconnection attempts.
-	 */
+	/** Cleanly closes the connection and prevents any further reconnect attempts. */
 	disconnect(): void {
 		this.intentionalClose = true;
 		this.clearReconnectTimeout();
@@ -97,16 +89,15 @@ export class NotificationStream {
 		this.reconnectAttempts = 0;
 	}
 
-	/**
-	 * Fetches fresh token and creates WebSocket connection
-	 */
 	private async fetchTokenAndConnect(): Promise<void> {
+		// Step 1: Fetch a fresh WS auth token from the caller's token provider.
 		const tokenData = await this.config.getToken();
-
 		if (!tokenData || this.intentionalClose) return;
 
+		// Step 2: Schedule proactive token refresh before expiry.
 		this.scheduleTokenRefresh(tokenData.expiresIn);
 
+		// Step 3: Open WebSocket connection with the fresh token.
 		const url = buildWsUrl(tokenData.token);
 		this.ws = new WebSocket(url);
 
@@ -135,21 +126,19 @@ export class NotificationStream {
 		}
 	}
 
-	/**
-	 * Handles incoming message
-	 *
-	 * @param event - WebSocket message event
-	 */
 	private handleMessage(event: MessageEvent): void {
 		try {
-			const data: unknown = JSON.parse(event.data as string);
+			// MessageEvent.data is typed as `any` by the DOM spec. WebSocket text frames
+			// always deliver strings, so this String() is a no-op safety net.
+			const data: unknown = JSON.parse(String(event.data));
 			const parsed = notificationStreamEventSchema.safeParse(data);
 
 			if (parsed.success && parsed.data.event === 'new_notification') {
 				this.config.onNewNotification();
 			}
 		} catch {
-			// Invalid message format, ignore
+			// Non-JSON or schema-invalid frame — safe to discard. Backend only sends
+			// structured events; malformed frames indicate proxy noise or partial writes.
 		}
 	}
 
@@ -200,6 +189,7 @@ export class NotificationStream {
 	 * Gives up after MAX_RECONNECT_ATTEMPTS to avoid infinite retry loops.
 	 */
 	private scheduleReconnect(): void {
+		// Step 1: Check if max attempts exhausted — fall back to slow polling.
 		if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
 			if (isDev) {
 				console.warn(
@@ -210,6 +200,7 @@ export class NotificationStream {
 			return;
 		}
 
+		// Step 2: Calculate exponential backoff delay, capped at MAX_RECONNECT_DELAY_MS.
 		const delay = Math.min(
 			BASE_RECONNECT_DELAY_MS * Math.pow(2, this.reconnectAttempts),
 			MAX_RECONNECT_DELAY_MS,
@@ -222,16 +213,13 @@ export class NotificationStream {
 			);
 		}
 
+		// Step 3: Schedule reconnect with fresh token fetch.
 		this.reconnectTimeoutId = setTimeout(() => {
 			this.fetchTokenAndConnect();
 		}, delay);
 	}
 
-	/**
-	 * Schedules token refresh before expiration
-	 *
-	 * @param expiresIn - Token TTL in seconds
-	 */
+	/** @param expiresIn - Token TTL in seconds */
 	private scheduleTokenRefresh(expiresIn: number): void {
 		this.clearTokenRefreshTimeout();
 
@@ -248,9 +236,6 @@ export class NotificationStream {
 		}, refreshDelay);
 	}
 
-	/**
-	 * Refreshes token and reconnects
-	 */
 	private async refreshToken(): Promise<void> {
 		if (this.intentionalClose) return;
 
@@ -289,9 +274,6 @@ export class NotificationStream {
 		}, POLL_FALLBACK_INTERVAL_MS);
 	}
 
-	/**
-	 * Clears poll fallback interval
-	 */
 	private clearPollFallback(): void {
 		if (this.pollIntervalId) {
 			clearInterval(this.pollIntervalId);
@@ -299,9 +281,6 @@ export class NotificationStream {
 		}
 	}
 
-	/**
-	 * Clears pending reconnect timeout
-	 */
 	private clearReconnectTimeout(): void {
 		if (this.reconnectTimeoutId) {
 			clearTimeout(this.reconnectTimeoutId);
@@ -309,9 +288,6 @@ export class NotificationStream {
 		}
 	}
 
-	/**
-	 * Clears pending token refresh timeout
-	 */
 	private clearTokenRefreshTimeout(): void {
 		if (this.tokenRefreshTimeoutId) {
 			clearTimeout(this.tokenRefreshTimeoutId);

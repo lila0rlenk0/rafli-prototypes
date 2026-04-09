@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
-// ==========================================
-// Schemas
-// ==========================================
-
 /**
- * Schema for email notification preferences
+ * User's email notification preferences — one boolean per notification category.
+ *
+ * Validation boundary: both — server-side for GET response parsing,
+ * client-side for the toggle form before PATCH.
  */
 export const emailPreferencesSchema = z.object({
 	hostNotifications: z.boolean(),
@@ -14,17 +13,13 @@ export const emailPreferencesSchema = z.object({
 	reviewNotifications: z.boolean(),
 });
 
-/**
- * Schema for partial email preferences update
- */
+/** Partial update — only send fields to change */
 export const updateEmailPreferencesSchema = emailPreferencesSchema.partial();
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
+/** Full email preferences shape from GET /me/email-preferences. */
 export type EmailPreferences = z.infer<typeof emailPreferencesSchema>;
 
+/** Partial email preferences for PATCH /me/email-preferences. */
 export type UpdateEmailPreferences = z.infer<
 	typeof updateEmailPreferencesSchema
 >;

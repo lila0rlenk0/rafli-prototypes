@@ -14,24 +14,30 @@ interface PublicHostLayoutProps {
 /**
  * Public Host Layout Content
  *
- * Internal component that accesses runtime data (cookies via getSession).
- * Must be wrapped in Suspense to prevent blocking the entire page render.
- * Provides auth-aware navigation for both authenticated and non-authenticated users.
+ * Internal async component extracted from layout to isolate cookie reads behind Suspense.
+ * getSession reads cookies → blocks streaming if called at layout level directly.
  *
- * @param children - Child components to render
+ * Data flow: session cookie → auth state + permissions → conditionally wrap children
+ * with UserStore + NotificationStore. Guests get navbar only, no provider tree.
+ *
+ * @param children - Child page components from host/[username] segment
  */
 async function PublicHostLayoutContent({ children }: PublicHostLayoutProps) {
+	// Step 1: Read session — determines provider tree shape.
 	const session = await getSession();
 	const isAuthenticated = !!session;
+
+	// Step 2: Parse permissions for authenticated users.
 	const permissions = isAuthenticated
 		? parsePermissions(session?.user?.permissions)
 		: [];
 
+	// Step 3: Build navbar — same for both auth states.
 	const content = (
 		<PublicNavbar isAuthenticated={isAuthenticated}>{children}</PublicNavbar>
 	);
 
-	// Only wrap with UserStoreProvider for authenticated users
+	// Step 4: Wrap with auth stores only for authenticated users.
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
@@ -46,22 +52,25 @@ async function PublicHostLayoutContent({ children }: PublicHostLayoutProps) {
 /**
  * Public Host Layout
  *
- * Server-side layout for public host profile pages.
- * Uses Suspense to prevent blocking on runtime data access (cookies, headers).
- * Supports both authenticated and non-authenticated users.
+ * Server Component layout for /host/* pages.
+ * Suspense wraps the content component because it reads cookies via getSession.
+ * Fallback shows full-screen loader until session resolution completes.
  */
 export default function PublicHostLayout({ children }: PublicHostLayoutProps) {
 	return (
 		<main className="relative min-h-screen">
+			{/* Suspense boundary: covers cookie-dependent auth resolution */}
 			<Suspense fallback={<ScreenLoader />}>
 				<PublicHostLayoutContent>{children}</PublicHostLayoutContent>
 			</Suspense>
+			{/* Decorative background shapes — fixed position, non-interactive */}
 			<LeftColoredShapes className="pointer-events-none fixed bottom-0 left-0 z-[15] origin-bottom-left scale-[.65]" />
 			<RightColoredShapes className="pointer-events-none fixed right-0 bottom-0 z-[15] origin-bottom-right scale-[.65]" />
 		</main>
 	);
 }
 
+/** Decorative SVG shapes for the bottom-left background corner. */
 function LeftColoredShapes(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -88,6 +97,7 @@ function LeftColoredShapes(props: ComponentProps<'svg'>) {
 	);
 }
 
+/** Decorative SVG shapes for the bottom-right background corner. */
 function RightColoredShapes(props: ComponentProps<'svg'>) {
 	return (
 		<svg

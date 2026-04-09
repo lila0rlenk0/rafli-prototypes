@@ -20,20 +20,20 @@ export async function setAuthCookiesClient(
 	token: string,
 ): Promise<{ success: boolean }> {
 	try {
+		// Step 1: Decode JWT to extract user data (no signature verification — backend handles that).
 		const payload = decodeJwt(token);
 		const user = jwtPayloadToUser(payload);
+
+		// Step 2: Set auth cookies — token (httpOnly) + session (readable for client hydration).
 		const cookieStore = await cookies();
-
-		// Store token in httpOnly cookie
 		cookieStore.set(AUTH_COOKIES.TOKEN, token, COOKIE_OPTIONS);
-
-		// Store user data in separate cookie (can be read client-side if needed)
+		// httpOnly: false so client can hydrate user state without a server round-trip
 		cookieStore.set(AUTH_COOKIES.SESSION, JSON.stringify(user), {
 			...COOKIE_OPTIONS,
 			httpOnly: false,
 		});
 
-		// Tag all subsequent Sentry errors with this user ID
+		// Step 3: Tag all subsequent Sentry errors with this user ID.
 		setSentryUser(user.id);
 
 		return { success: true };

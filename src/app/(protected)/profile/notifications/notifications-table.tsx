@@ -23,7 +23,10 @@ interface NotificationsTableProps {
  */
 export function NotificationsTable({ notifications }: NotificationsTableProps) {
 	const router = useRouter();
+	// Optimistic read state — tracks IDs marked as read before server confirms.
+	// Set instead of array for O(1) lookups in isRead().
 	const [readIds, setReadIds] = useState<Set<string>>(new Set());
+	// Zustand selector — only re-renders when decrementUnreadCount reference changes
 	const decrementUnreadCount = useNotificationStore(
 		s => s.decrementUnreadCount,
 	);

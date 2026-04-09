@@ -1,20 +1,20 @@
 import { redirect } from 'next/navigation';
 import { type ReactNode } from 'react';
 
-import { getSession } from '@/lib/auth/session';
+import { getCurrentUser } from '@/lib/auth/session';
 
 interface AuthGuardProps {
 	children: ReactNode;
 }
 
 /**
- * Server component that gates routes behind authentication.
- * Redirects to sign-in if no valid session exists.
- *
- * @returns Children when authenticated
+ * Server component — gates routes behind auth, redirects to /sign-in if no session.
+ * Uses getCurrentUser (React.cache-wrapped) to avoid redundant JWT decoding
+ * when multiple layout segments check auth in the same request.
+ * @returns Children if authenticated, redirects otherwise
  */
 export async function AuthGuard({ children }: AuthGuardProps) {
-	const session = await getSession();
+	const session = await getCurrentUser();
 
 	if (!session) {
 		redirect('/sign-in');

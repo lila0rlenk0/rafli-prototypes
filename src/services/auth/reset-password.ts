@@ -10,28 +10,25 @@ import type { AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for password reset completion
- */
-type ResetPasswordResponse = ServiceResponse<void, AuthErrorCode>;
-
-/**
- * Resets user password using token from email
- * Throws if token is invalid or expired
+ * Resets user password using token from email.
+ * Fails with token-invalid error if the token has expired.
  *
  * @param input - Reset token and new password
- * @returns ServiceResponse with void data on success, AuthErrorCode on failure
+ * @returns ServiceResponse with void on success, AuthErrorCode on failure
  */
 export async function resetPassword(
 	input: ResetPasswordInput,
-): Promise<ResetPasswordResponse> {
+): Promise<ServiceResponse<void, AuthErrorCode>> {
 	try {
+		// Step 1: Submit new password with reset token
 		await baseClient.post('/auth/reset-password', input);
 
-		// Fire-and-forget — no userId available (token-based flow)
+		// Step 2: Fire-and-forget analytics — no userId available (token-based flow)
 		void trackServer(ACCOUNT_EVENTS.PASSWORD_RESET_COMPLETED, {});
 
 		return success(undefined);
 	} catch (error) {
+		// Step 3: Map and capture — auth is a critical service
 		const errorCode = mapAuthError(error);
 		captureServiceError(error, errorCode, {
 			service: 'auth',

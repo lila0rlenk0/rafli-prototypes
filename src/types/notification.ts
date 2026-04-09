@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-// ==========================================
-// Constants
-// ==========================================
-
 /**
  * Notification type constants — synced with BE core/db/schema.ts notification_type enum.
  * 31 BE values, 27 active. Keep alphabetical within sections for easy diffing.
@@ -42,18 +38,9 @@ export const NOTIFICATION_TYPE = {
 	WINNER_CLAIMED: 'winner_claimed',
 } as const;
 
-// ==========================================
-// Types from Constants
-// ==========================================
-
 export type NotificationType =
 	(typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
-// ==========================================
-// Schemas
-// ==========================================
-
-/** Schema for notification type enum — all BE notification types */
 export const notificationTypeSchema = z.enum([
 	NOTIFICATION_TYPE.CHAT_MESSAGE,
 	NOTIFICATION_TYPE.COMMENT_ON_RAFFLE,
@@ -106,8 +93,11 @@ export const notificationMetadataSchema = z.object({
 });
 
 /**
- * Schema for a single notification
- * Type uses z.string() to tolerate deprecated/new BE types without breaking the list
+ * Schema for a single notification.
+ * Uses z.string() for type (not notificationTypeSchema) to tolerate
+ * deprecated/new BE types without breaking the entire list parse.
+ *
+ * Validation boundary: server-side — parsed in notification server actions.
  */
 export const notificationSchema = z.object({
 	id: z.string(),
@@ -120,9 +110,6 @@ export const notificationSchema = z.object({
 	createdAt: z.string(),
 });
 
-/**
- * Schema for list notifications response (paginated)
- */
 export const listNotificationsResponseSchema = z.object({
 	notifications: z.array(notificationSchema),
 	total: z.number(),
@@ -131,23 +118,14 @@ export const listNotificationsResponseSchema = z.object({
 	offset: z.number(),
 });
 
-/**
- * Schema for unread count response
- */
 export const unreadCountResponseSchema = z.object({
 	count: z.number(),
 });
 
-/**
- * Schema for mark read response
- */
 export const markReadResponseSchema = z.object({
 	success: z.boolean(),
 });
 
-/**
- * Schema for WebSocket token response
- */
 export const wsTokenResponseSchema = z.object({
 	token: z.string(),
 	expiresIn: z.number(),
@@ -161,26 +139,21 @@ export const notificationStreamEventSchema = z.object({
 	event: z.enum(['new_notification', 'heartbeat']),
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
+/** Deep-link metadata attached to a notification. */
 export type NotificationMetadata = z.infer<typeof notificationMetadataSchema>;
+/** Single notification entity. */
 export type Notification = z.infer<typeof notificationSchema>;
+/** Paginated notification list with unread count. */
 export type ListNotificationsResponse = z.infer<
 	typeof listNotificationsResponseSchema
 >;
+/** Response for GET /notifications/unread-count. */
 export type UnreadCountResponse = z.infer<typeof unreadCountResponseSchema>;
+/** Response for PATCH /notifications/mark-read. */
 export type MarkReadResponse = z.infer<typeof markReadResponseSchema>;
+/** Response for POST /notifications/ws-token — short-lived WebSocket auth token. */
 export type WsTokenResponse = z.infer<typeof wsTokenResponseSchema>;
 
-// ==========================================
-// Query Types
-// ==========================================
-
-/**
- * Schema for notification query parameters
- */
 export const notificationQuerySchema = z.object({
 	limit: z.number().optional(),
 	offset: z.number().optional(),

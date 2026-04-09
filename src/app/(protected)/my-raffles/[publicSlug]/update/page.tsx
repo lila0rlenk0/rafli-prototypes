@@ -15,19 +15,17 @@ interface PageProps {
 }
 
 /**
- * Create Update Page
+ * Create Update Page (Server Component)
  *
- * Allows hosts to post updates for raffles in update-manageable statuses.
- * Server-side protected - only accessible by raffle host in allowed statuses.
- * Redirects to /my-raffles if:
- * - Raffle not found
- * - User is not the host
- * - Raffle status is blocked for updates
+ * Data-fetching strategy: parallel session + raffle fetch for authorization.
+ * Update form is fully client-side — no server data beyond the raffle ID.
+ *
+ * Server-side protected — only accessible by raffle host in update-manageable statuses.
+ * Redirects to /my-raffles if unauthorized or wrong status, 404 if not found.
  */
 export default async function CreateUpdatePage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
-	// Parallel fetch — session and raffle are independent
 	const [session, raffleResult] = await Promise.all([
 		getSession(),
 		getRaffle(publicSlug),
@@ -43,12 +41,11 @@ export default async function CreateUpdatePage({ params }: PageProps) {
 
 	const raffle = raffleResult.data;
 
-	// Verify ownership - only host can post updates
 	if (raffle.hostId !== session.user.id) {
 		redirect('/my-raffles');
 	}
 
-	// Only allow updates for statuses where host communication still matters
+	// Only allow updates for statuses where host communication is still meaningful
 	if (
 		!UPDATE_MANAGEABLE_STATUSES.includes(
 			raffle.status as UpdateManageableStatus,

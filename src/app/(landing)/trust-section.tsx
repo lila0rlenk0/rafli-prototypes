@@ -1,3 +1,5 @@
+'use client';
+
 import { TicketIcon } from '@/assets/ticket-icon';
 import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
@@ -8,6 +10,7 @@ const SplitText = dynamic(
 	() => import('@/components/ui/animations/split-text'),
 );
 
+/** Platform participation steps — displayed as stacked animated cards */
 const steps = [
 	{
 		number: 1,
@@ -36,6 +39,7 @@ const steps = [
 	},
 ] as const;
 
+/** Slight rotations per card — creates a "scattered stack" visual effect */
 const cardTransforms = [
 	'rotate-[1.5deg] -translate-x-2',
 	'-rotate-[1.5deg] translate-x-4',
@@ -44,8 +48,18 @@ const cardTransforms = [
 	'rotate-[1.5deg] translate-x-1',
 ] as const;
 
+/** Maps step variant to Tailwind background color class */
+function getStepBgColor(variant: 'green' | 'yellow'): string {
+	return variant === 'yellow' ? 'bg-[#F6FF8B]' : 'bg-[#BEFFDB]';
+}
+
 /**
- * Section explaining the platform's trust-focused approach
+ * Section explaining the platform's trust-focused approach.
+ *
+ * 'use client' required: uses framer-motion for scroll-triggered card animations
+ * and SplitText (GSAP) for headline character reveal.
+ *
+ * @returns Three subsections: trust headline, participation steps, and blockchain footer
  */
 export function TrustSection() {
 	return (
@@ -98,8 +112,7 @@ export function TrustSection() {
 				</h2>
 				<div className="mx-auto flex max-w-[900px] flex-col gap-4">
 					{steps.map((step, index) => {
-						const bgColor =
-							step.variant === 'yellow' ? 'bg-[#F6FF8B]' : 'bg-[#BEFFDB]';
+						const bgColor = getStepBgColor(step.variant);
 						const transform = cardTransforms[index] ?? '';
 
 						return (

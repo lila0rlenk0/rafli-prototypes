@@ -17,12 +17,6 @@ interface NotificationItemProps {
 	onClose: () => void;
 }
 
-/**
- * Renders a single notification item
- *
- * @param notification - The notification to display
- * @param onClose - Callback to close the popover
- */
 export function NotificationItem({
 	notification,
 	onClose,
@@ -32,10 +26,6 @@ export function NotificationItem({
 		s => s.decrementUnreadCount,
 	);
 
-	/**
-	 * Handles click on notification
-	 * Marks as read (optimistic) and navigates if applicable
-	 */
 	async function handleClick() {
 		track(NOTIFICATION_EVENTS.TAPPED, {
 			notification_id: notification.id,
@@ -43,10 +33,9 @@ export function NotificationItem({
 			was_unread: !notification.read,
 		});
 
-		// Optimistic update
 		if (!notification.read) {
 			decrementUnreadCount();
-			// Fire and forget - don't block navigation
+			// fire-and-forget — don't block navigation
 			markNotificationRead(notification.id);
 		}
 

@@ -1,5 +1,12 @@
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
+/**
+ * Profile Layout
+ *
+ * Wraps profile pages with decorative background shapes.
+ *
+ * @returns Children with fixed colored shapes behind content
+ */
 export default function ProfileLayout({
 	children,
 }: {

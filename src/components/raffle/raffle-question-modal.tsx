@@ -26,12 +26,6 @@ interface RaffleQuestionModalProps {
 	onCorrectAnswer: () => void;
 }
 
-/**
- * RaffleQuestionModal Component
- *
- * Displays a question modal that users must answer correctly before purchasing tickets.
- * Fetches the question on mount and handles answer submission.
- */
 export function RaffleQuestionModal({
 	open,
 	onOpenChange,
@@ -43,6 +37,8 @@ export function RaffleQuestionModal({
 	const [isLoading, setIsLoading] = useState(false);
 	const [isFetching, setIsFetching] = useState(false);
 
+	// useCallback: stable identity prevents fetchQuestion's useEffect (which depends on
+	// handleOpenChange indirectly via fetchQuestion → handleOpenChange) from re-running.
 	const handleOpenChange = useCallback(
 		(nextOpen: boolean) => {
 			if (!nextOpen) {
@@ -54,11 +50,6 @@ export function RaffleQuestionModal({
 		[onOpenChange],
 	);
 
-	/**
-	 * Gets user-friendly error message for error codes
-	 * @param errorCode - The error code
-	 * @returns User-friendly error message
-	 */
 	function getErrorMessage(errorCode: RaffleErrorCode): string {
 		switch (errorCode) {
 			case 'core:raffle:question-not-found':
@@ -81,9 +72,8 @@ export function RaffleQuestionModal({
 		}
 	}
 
-	/**
-	 * Fetches the question from the API
-	 */
+	// useCallback: stable reference prevents the mount effect from re-fetching when
+	// unrelated state (selectedOptionId, isLoading) changes and triggers re-renders.
 	const fetchQuestion = useCallback(async () => {
 		setIsFetching(true);
 
@@ -107,18 +97,13 @@ export function RaffleQuestionModal({
 		}
 	}, [handleOpenChange, raffleId]);
 
-	/**
-	 * Fetches the raffle question when modal opens
-	 */
+	// mount: fetch question on first open; skip if already loaded
 	useEffect(() => {
 		if (open && !question) {
 			fetchQuestion();
 		}
 	}, [open, question, fetchQuestion]);
 
-	/**
-	 * Handles the answer submission
-	 */
 	async function handleSubmit() {
 		if (!selectedOptionId) {
 			toast.error('Please select an answer');
@@ -151,11 +136,6 @@ export function RaffleQuestionModal({
 		}
 	}
 
-	/**
-	 * Sorts options by their sortOrder field
-	 * @param options - Array of question options
-	 * @returns Sorted options array
-	 */
 	function getSortedOptions(options: RaffleQuestion['options']) {
 		return options.toSorted((a, b) => a.sortOrder - b.sortOrder);
 	}
@@ -230,9 +210,6 @@ export function RaffleQuestionModal({
 	);
 }
 
-/**
- * Question mark icon SVG component
- */
 function QuestionMarkIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg

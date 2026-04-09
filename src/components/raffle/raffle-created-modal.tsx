@@ -21,13 +21,6 @@ interface RaffleCreatedModalProps {
 	onOpenChange: (open: boolean) => void;
 }
 
-/**
- * RaffleCreatedModal Component
- *
- * Displays success message after creating a raffle.
- * Shows different content based on whether the start date is today or in the future.
- * When start date is today, includes share functionality.
- */
 export function RaffleCreatedModal({
 	publicSlug,
 	raffleStartDate,
@@ -35,63 +28,32 @@ export function RaffleCreatedModal({
 	onOpenChange,
 }: RaffleCreatedModalProps) {
 	const router = useRouter();
-	/**
-	 * Checks if the start date is today
-	 * Normalizes both dates to local midnight to avoid timezone issues
-	 * @param startDate - The start date string (format: YYYY-MM-DD)
-	 * @returns true if start date is today, false otherwise
-	 */
-	function checkIfStartDateIsToday(startDate: string): boolean {
-		if (!startDate) return false;
 
-		// Parse the date string and normalize to local midnight
+	// Normalizes to local midnight to avoid timezone-shifting the date string.
+	function checkStartsToday(startDate: string): boolean {
+		if (!startDate) return false;
 		const [year, month, day] = startDate.split('-').map(Number);
 		const start = new Date(year, month - 1, day);
-
-		// Get today's date normalized to local midnight
 		const today = new Date();
-		const todayNormalized = new Date(
-			today.getFullYear(),
-			today.getMonth(),
-			today.getDate(),
-		);
-
-		// Compare year, month, and day only (both normalized to local midnight)
 		return (
-			start.getFullYear() === todayNormalized.getFullYear() &&
-			start.getMonth() === todayNormalized.getMonth() &&
-			start.getDate() === todayNormalized.getDate()
+			start.getFullYear() === today.getFullYear() &&
+			start.getMonth() === today.getMonth() &&
+			start.getDate() === today.getDate()
 		);
 	}
 
-	/**
-	 * Formats the start date for display
-	 * @param dateString - The start date string
-	 * @returns Formatted date string (e.g., "12 December")
-	 */
-	function formatStartDate(dateString: string): string {
-		const date = new Date(dateString);
-		return date.toLocaleDateString('en-US', {
-			day: 'numeric',
-			month: 'long',
-		});
-	}
+	const startsToday = checkStartsToday(raffleStartDate);
+	const formattedStartDate = new Date(raffleStartDate).toLocaleDateString(
+		'en-US',
+		{ day: 'numeric', month: 'long' },
+	);
 
-	const isStartDateToday = checkIfStartDateIsToday(raffleStartDate);
-	const formattedStartDate = formatStartDate(raffleStartDate);
-
-	/**
-	 * Copies the raffle link to the clipboard
-	 */
 	function handleCopyLink() {
 		const link = `${window.location.origin}/browse/${publicSlug}`;
 		navigator.clipboard.writeText(link);
 		toast.success('Raffle link copied to clipboard!');
 	}
 
-	/**
-	 * Opens a Twitter/X share intent in a new tab
-	 */
 	function handleShare() {
 		const text = 'Check out this raffle';
 		const link = `${window.location.origin}/browse/${publicSlug}`;
@@ -119,15 +81,15 @@ export function RaffleCreatedModal({
 
 				<DialogHeader className="z-1 flex items-center justify-center space-y-2">
 					<div className="flex justify-center pb-4">
-						{isStartDateToday ? <SuccessCheckIcon /> : <PauseIcon />}
+						{startsToday ? <SuccessCheckIcon /> : <PauseIcon />}
 					</div>
 					<DialogTitle className="font-clash-display text-3xl">
-						{isStartDateToday
+						{startsToday
 							? 'Your raffle is live!'
 							: 'All set! Your raffle is in the queue'}
 					</DialogTitle>
 					<DialogDescription className="max-w-md text-center text-black">
-						{isStartDateToday ? (
+						{startsToday ? (
 							<>
 								Everything&apos;s set — participants can now join and start
 								buying tickets. Track entries and engagement from your
@@ -151,7 +113,7 @@ export function RaffleCreatedModal({
 						</button>
 					</div>
 				</DialogHeader>
-				{isStartDateToday ? (
+				{startsToday ? (
 					<div className="z-1 flex w-full flex-col items-center justify-center gap-4">
 						<p className="text-xl font-medium">Share your raffle!</p>
 						<div className="flex items-center justify-center gap-8">
@@ -159,14 +121,14 @@ export function RaffleCreatedModal({
 								onClick={handleShare}
 								className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-black"
 							>
-								<FaXTwitter className="h-4 w-4" />
+								<FaXTwitter className="size-4" />
 								Share on X
 							</button>
 							<button
 								onClick={handleCopyLink}
 								className="flex items-center justify-center gap-2 text-sm font-medium"
 							>
-								<Copy className="h-4 w-4" />
+								<Copy className="size-4" />
 								Copy Raffle link
 							</button>
 						</div>

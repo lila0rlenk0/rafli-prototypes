@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
 import { failure, mapTicketError, success } from '@/lib/errors';
@@ -11,39 +13,27 @@ import {
 	type TicketsResponse,
 	ticketsResponseSchema,
 } from '@/types/ticket';
-import { ZodError } from 'zod';
 
 /**
- * Response type for fetching user's ticket balances
- */
-type GetMyTicketsResponse = ServiceResponse<TicketsResponse, TicketErrorCode>;
-
-/**
- * Fetches the current user's ticket balances with optional raffle filtering
+ * Fetches the current user's ticket balances with optional raffle filtering.
  *
  * @param query - Optional query parameters for filtering by raffle
  * @returns ServiceResponse with ticket balances on success, TicketErrorCode on failure
  */
 export async function getMyTickets(
 	query?: TicketsQuery,
-): Promise<GetMyTicketsResponse> {
+): Promise<ServiceResponse<TicketsResponse, TicketErrorCode>> {
 	try {
-		const params = buildQueryParams(query);
-
 		const response = await authenticatedClient.get('/me/tickets', {
-			params,
+			params: buildQueryParams(query),
 		});
-
-		const validatedData = ticketsResponseSchema.parse(response.data);
-
-		return success(validatedData);
+		return success(ticketsResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'ticket', 'get-my-tickets');
 			return failure(TICKET_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapTicketError(error);
-		return failure(errorCode);
+		return failure(mapTicketError(error));
 	}
 }

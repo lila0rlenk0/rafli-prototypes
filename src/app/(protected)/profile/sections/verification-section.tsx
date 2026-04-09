@@ -22,11 +22,6 @@ export async function VerificationSection() {
 	const result = await getMySubmissions();
 	const submissions = result.success ? result.data.submissions : [];
 
-	/**
-	 * Renders a single submission row linking to its detail page
-	 *
-	 * @returns Row with type label, date, and status badge
-	 */
 	function renderSubmissionRow(submission: KycSubmissionSummary) {
 		return (
 			<Link
@@ -47,13 +42,12 @@ export async function VerificationSection() {
 		);
 	}
 
-	/** Label changes based on whether user has existing submissions */
+	/** Label clarifies whether this is the user's first verification */
 	function getButtonLabel(): string {
 		if (submissions.length === 0) return 'Start Verification';
 		return 'New Verification';
 	}
 
-	/** Renders the empty state or submissions list */
 	function renderSubmissionsList() {
 		if (submissions.length === 0) {
 			return (

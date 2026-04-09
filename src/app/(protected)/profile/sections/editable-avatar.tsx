@@ -43,8 +43,12 @@ export function EditableAvatar({
 	initials,
 	size = 120,
 }: EditableAvatarProps) {
+	// Ref instead of state — direct DOM access to trigger the hidden file input.
+	// No re-render needed when the ref is set.
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	// Tracks mouse hover for the edit overlay — purely visual, no side effects
 	const [isHovered, setIsHovered] = useState(false);
+	// Tracks in-flight upload to show spinner and disable interaction
 	const [isUploading, setIsUploading] = useState(false);
 
 	/**
@@ -116,12 +120,20 @@ export function EditableAvatar({
 		fileInputRef.current?.click();
 	}
 
+	function handleMouseEnter() {
+		setIsHovered(true);
+	}
+
+	function handleMouseLeave() {
+		setIsHovered(false);
+	}
+
 	return (
 		<div
 			className="relative cursor-pointer overflow-hidden rounded-full transition-all duration-300"
 			style={{ width: size, height: size }}
-			onMouseEnter={() => setIsHovered(true)}
-			onMouseLeave={() => setIsHovered(false)}
+			onMouseEnter={handleMouseEnter}
+			onMouseLeave={handleMouseLeave}
 			onClick={handleAvatarClick}
 		>
 			<input

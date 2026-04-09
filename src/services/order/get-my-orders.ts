@@ -31,6 +31,7 @@ export async function getMyOrders(
 	const { page = 1, limit = 10, excludeStale } = params;
 
 	try {
+		// Step 1: Fetch paginated orders from backend
 		const response = await authenticatedClient.get('/me/orders', {
 			params: {
 				page,
@@ -40,24 +41,21 @@ export async function getMyOrders(
 			timeout: API_TIMEOUTS.QUERY,
 		});
 
-		// Checkout order reuse depends on this response being trustworthy.
-		// Treat null/missing payloads as fetch failures instead of "no orders",
-		// otherwise degraded `/me/orders` responses can create duplicate orders.
+		// Step 2: Guard — null/missing payloads would mask "no orders" vs degraded backend.
+		// Checkout order reuse depends on this response being trustworthy — fail closed.
 		if (!response.data) {
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 
-		// Parse backend response format { total, orders }
+		// Step 3: Validate with safeParse — invalid shape means payload drifted,
+		// callers can't safely distinguish "no orders" from broken contract
 		const result = ordersBackendResponseSchema.safeParse(response.data);
 		if (!result.success) {
-			// Invalid shape means the caller cannot safely distinguish "no orders"
-			// from "orders exist but the payload drifted". Fail closed and let callers
-			// decide whether creating new orders is still safe.
 			captureContractDrift(result.error, 'order', 'get-my-orders');
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 
-		// Use BE pagination values directly to avoid divergence in totalPages calculation
+		// Step 4: Map to frontend response shape — use BE pagination values directly
 		return success({
 			items: result.data.orders,
 			total: result.data.total,

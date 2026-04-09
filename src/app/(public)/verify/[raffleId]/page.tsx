@@ -40,7 +40,10 @@ export async function generateMetadata({
 /**
  * Raffle Verification Deep Dive Page
  *
- * Shows complete verification data for a specific raffle.
+ * Server Component — shows complete verification data for a specific raffle.
+ * No server-side data fetching here — VerificationDeepDive is a client component
+ * that fetches verification data via React Query (needs loading/error states client-side).
+ * This page only resolves the raffleId param and renders the static shell.
  */
 export default async function RaffleVerificationPage({ params }: PageProps) {
 	const { raffleId } = await params;

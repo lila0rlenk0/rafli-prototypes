@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-// ==========================================
-// Constants
-// ==========================================
-
 /**
  * Credit ledger entry types — direction is implied:
  * - grant/reversal: increases balance
@@ -15,9 +11,7 @@ export const CREDIT_ENTRY_TYPE = {
 	REVERSAL: 'reversal',
 } as const;
 
-/**
- * Business reasons for credit mutations — matches BE CreditReason enum.
- */
+/** Business reasons for credit mutations — matches BE CreditReason enum. */
 export const CREDIT_REASON = {
 	ADMIN_GRANT: 'admin_grant',
 	CANCELLATION_REFUND: 'cancellation_refund',
@@ -26,29 +20,17 @@ export const CREDIT_REASON = {
 	SUBSCRIPTION_RENEWAL: 'subscription_renewal',
 } as const;
 
-// ==========================================
-// Types from Constants
-// ==========================================
-
-/** Union of credit entry types — grant, spend, reversal. */
 export type CreditEntryType =
 	(typeof CREDIT_ENTRY_TYPE)[keyof typeof CREDIT_ENTRY_TYPE];
 
-/** Union of credit reasons — admin_grant, cancellation_refund, checkout_spend, order_reversal. */
 export type CreditReason = (typeof CREDIT_REASON)[keyof typeof CREDIT_REASON];
 
-// ==========================================
-// Schemas
-// ==========================================
-
-/** Schema for credit entry type */
 export const creditEntryTypeSchema = z.enum([
 	CREDIT_ENTRY_TYPE.GRANT,
 	CREDIT_ENTRY_TYPE.SPEND,
 	CREDIT_ENTRY_TYPE.REVERSAL,
 ]);
 
-/** Schema for credit reason */
 export const creditReasonSchema = z.enum([
 	CREDIT_REASON.ADMIN_GRANT,
 	CREDIT_REASON.CANCELLATION_REFUND,
@@ -67,10 +49,7 @@ export const creditBalanceResponseSchema = z.object({
 	totalSpent: z.string(),
 });
 
-/**
- * Schema for a single credit history entry.
- * Matches BE CreditHistoryEntryDto.
- */
+/** Matches BE CreditHistoryEntryDto. */
 export const creditHistoryEntrySchema = z.object({
 	id: z.number(),
 	type: creditEntryTypeSchema,
@@ -103,25 +82,10 @@ export const spendCreditsResponseSchema = z.object({
 	success: z.boolean(),
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
-/** User's credit balance summary. */
 export type CreditBalanceResponse = z.infer<typeof creditBalanceResponseSchema>;
-
-/** Single credit history entry from the ledger. */
 export type CreditHistoryEntry = z.infer<typeof creditHistoryEntrySchema>;
-
-/** Paginated credit history response. */
 export type CreditHistoryResponse = z.infer<typeof creditHistoryResponseSchema>;
-
-/** Response from paying with credits. */
 export type SpendCreditsResponse = z.infer<typeof spendCreditsResponseSchema>;
-
-// ==========================================
-// Query Schemas
-// ==========================================
 
 /** Query params for credit history endpoint. */
 export const creditHistoryQuerySchema = z.object({
@@ -129,5 +93,4 @@ export const creditHistoryQuerySchema = z.object({
 	limit: z.number().optional(),
 });
 
-/** Query params for credit history. */
 export type CreditHistoryQuery = z.infer<typeof creditHistoryQuerySchema>;

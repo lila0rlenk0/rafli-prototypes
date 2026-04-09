@@ -8,8 +8,14 @@ import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
 
 const mockGetSession = mock();
 
+// All session exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
 mock.module('@/lib/auth/session', () => ({
 	getSession: mockGetSession,
+	setAuthCookies: mock(),
+	getAuthToken: mock(),
+	getCurrentUser: mock(),
+	requireAuth: mock(),
+	requireEmailVerification: mock(),
 }));
 
 const mockGet = mock();
@@ -22,8 +28,14 @@ mock.module('@/lib/api/client', () => ({
 	},
 }));
 
+// All next/cache exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
 mock.module('next/cache', () => ({
+	cacheLife: mock(),
+	cacheTag: mock(),
+	unstable_cacheLife: mock(),
+	unstable_cacheTag: mock(),
 	revalidatePath: mock(),
+	revalidateTag: mock(),
 }));
 mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),

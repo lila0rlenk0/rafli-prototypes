@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button';
-import { CheckIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
+
+import { CheckmarkIcon, DiamondIcon } from './shared-icons';
 
 // GSAP-dependent — dynamic import avoids loading the full GSAP bundle upfront
 const SplitText = dynamic(
@@ -10,9 +11,15 @@ const SplitText = dynamic(
 );
 
 /**
- * Section for participants with benefits list
+ * Section for participants with benefits list and CTA to explore raffles.
+ *
+ * Server Component — no hooks or browser APIs. SplitText is dynamically imported
+ * (lazy-loaded) to avoid loading the full GSAP bundle upfront.
+ *
+ * @returns Participant section with benefits list, decorative shapes, and CTA button
  */
 export function ParticipantSection() {
+	/** Participant trust signals — displayed as a checkmark list */
 	const benefits = [
 		'Raffles hosted by verified creators',
 		'Winners selected using verifiable randomness',
@@ -108,49 +115,5 @@ function TadaIcon(props: ComponentProps<'svg'>) {
 				fill="black"
 			/>
 		</svg>
-	);
-}
-
-/**
- * Decorative diamond icon for participant section
- */
-function DiamondIcon() {
-	return (
-		<svg
-			width="201"
-			height="201"
-			viewBox="0 0 201 201"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			className="h-32 w-32 lg:h-[201px] lg:w-[201px]"
-		>
-			<path
-				d="M100.5 0L150.75 50.25L100.5 100.5L50.25 50.25L100.5 0Z"
-				fill="black"
-			/>
-			<path
-				d="M100.5 100.5L150.75 150.75L100.5 201L50.25 150.75L100.5 100.5Z"
-				fill="black"
-			/>
-			<path
-				d="M0 100.5L50.25 50.25L100.5 100.5L50.25 150.75L0 100.5Z"
-				fill="black"
-			/>
-			<path
-				d="M100.5 100.5L150.75 50.25L201 100.5L150.75 150.75L100.5 100.5Z"
-				fill="black"
-			/>
-		</svg>
-	);
-}
-
-/**
- * Checkmark icon for feature lists
- */
-function CheckmarkIcon() {
-	return (
-		<div className="flex h-6 w-6 shrink-0 items-center justify-center">
-			<CheckIcon className="h-5 w-5 text-black" strokeWidth={3} />
-		</div>
 	);
 }

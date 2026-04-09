@@ -9,11 +9,16 @@
  * @see src/app/(auth)/auth/callback/callback-handler.tsx for callback handling
  */
 
+import { ZodError } from 'zod';
+
 import { AUTH_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
 import { browserClient } from '@/lib/api/client-browser';
 import { failure, mapAuthError, success } from '@/lib/errors';
-import { captureServiceError } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import {
 	socialSignInInputSchema,
 	socialSignInResponseSchema,
@@ -46,6 +51,7 @@ type SocialSignInServiceResponse = ServiceResponse<
 export async function initiateSocialSignIn(
 	input: SocialSignInInput,
 ): Promise<SocialSignInServiceResponse> {
+	// safeParse for input — server actions are public endpoints
 	const validation = socialSignInInputSchema.safeParse(input);
 	if (!validation.success) {
 		return failure(AUTH_ERROR_CODES.SOCIAL_LOGIN_FAILED);
@@ -63,15 +69,14 @@ export async function initiateSocialSignIn(
 			validation.data,
 		);
 
-		const responseValidation = socialSignInResponseSchema.safeParse(
-			response.data,
-		);
-		if (!responseValidation.success) {
+		// .parse() for response — throws ZodError into catch for contract drift detection
+		return success(socialSignInResponseSchema.parse(response.data));
+	} catch (error) {
+		if (error instanceof ZodError) {
+			captureContractDrift(error, 'auth', 'social-sign-in');
 			return failure(AUTH_ERROR_CODES.SOCIAL_PROVIDER_ERROR);
 		}
 
-		return success(responseValidation.data);
-	} catch (error) {
 		const errorCode = mapAuthError(error);
 		captureServiceError(error, errorCode, {
 			service: 'auth',

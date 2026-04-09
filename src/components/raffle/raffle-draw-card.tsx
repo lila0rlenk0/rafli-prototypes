@@ -1,12 +1,6 @@
 import { Loader2 } from 'lucide-react';
 
-/**
- * RaffleDrawCard Component
- *
- * Shown during the VRF draw period — after the raffle ends but before winners
- * are determined. Communicates that on-chain verification is in progress.
- * Replaces the misleading "not won" card during the `ended` status.
- */
+/** Shown during the VRF draw (ended but no winners yet) — replaces the "not won" card. */
 export function RaffleDrawCard() {
 	return (
 		<div className="rounded-2xl border border-black bg-white px-16 py-8">

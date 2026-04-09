@@ -2,12 +2,12 @@ import { createEnv } from '@t3-oss/env-nextjs';
 import z from 'zod';
 
 /**
- * Client Environment Variables
+ * Client-side environment variables — validated at build time via Zod.
+ * SECURITY: Never put secrets here — all values are bundled into client JS.
  *
- * Variables accessible in browser code.
- * All variables MUST use NEXT_PUBLIC_ prefix (except NODE_ENV which is built-in).
- *
- * SECURITY: Never put secrets here - they will be bundled into client JS.
+ * The `process.env` references in `runtimeEnv` are required by @t3-oss/env-nextjs
+ * for static analysis — Next.js inlines NEXT_PUBLIC_ vars at build time, so the
+ * library needs the literal `process.env.NEXT_PUBLIC_X` expression to resolve them.
  *
  * @returns Validated client environment variables
  */
@@ -28,9 +28,12 @@ export const clientEnv = createEnv({
 		NEXT_PUBLIC_IPFS_GATEWAY_URL: z
 			.url()
 			.default('https://gateway.pinata.cloud/ipfs/'),
+		// Optional — Web3 features degrade gracefully when unset
 		NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
+		// Optional — Sentry disabled when unset (local dev)
 		NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
 	},
+	// Required by @t3-oss/env-nextjs — literal process.env references for static analysis
 	runtimeEnv: {
 		NODE_ENV: process.env.NODE_ENV,
 		NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
@@ -44,5 +47,6 @@ export const clientEnv = createEnv({
 			process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
 		NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
 	},
+	// CI builds skip validation — env vars may not be present during type-checking
 	skipValidation: process.env.CI === 'true',
 });

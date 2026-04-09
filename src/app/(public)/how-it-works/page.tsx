@@ -39,10 +39,14 @@ export default function HowItWorksPage() {
 	const [selectedTech, setSelectedTech] = useState<string | null>(null);
 
 	/**
-	 * Handles technology card selection
+	 * Handles technology card selection — toggles on repeat click
 	 */
 	function handleTechSelect(id: string) {
 		setSelectedTech(selectedTech === id ? null : id);
+	}
+
+	function handleCloseTechPanel() {
+		setSelectedTech(null);
 	}
 
 	return (
@@ -186,72 +190,13 @@ export default function HowItWorksPage() {
 					})}
 				</ScrollRevealStagger>
 
-				{/* Full-width expansion */}
+				{/* Full-width expansion — renders detail panel for selected technology */}
 				<AnimatePresence>
 					{selectedTech ? (
-						<motion.div
-							initial={{ opacity: 0, height: 0 }}
-							animate={{ opacity: 1, height: 'auto' }}
-							exit={{ opacity: 0, height: 0 }}
-							transition={{ duration: 0.3 }}
-							className="overflow-hidden"
-						>
-							{(() => {
-								const tech = TECHNOLOGIES.find(t => t.id === selectedTech);
-								if (!tech) return null;
-								const colors = COLOR_CLASSES[tech.color];
-								const Icon = tech.icon;
-
-								return (
-									<div
-										className={`mt-4 rounded-xl border ${colors.border} ${colors.bg} p-6`}
-									>
-										<div className="mb-4 flex items-start justify-between">
-											<div className="flex items-center gap-3">
-												<Icon className={`size-8 ${colors.icon}`} />
-												<div>
-													<h3 className="text-lg font-semibold">
-														{tech.title}
-													</h3>
-													<p className="text-sm text-neutral-600">
-														{tech.description}
-													</p>
-												</div>
-											</div>
-											<button
-												type="button"
-												onClick={() => setSelectedTech(null)}
-												className="rounded-full p-1 hover:bg-black/5"
-											>
-												<X className="size-5 text-neutral-500" />
-											</button>
-										</div>
-
-										<p className="mb-4 text-sm text-neutral-500 italic">
-											&ldquo;{tech.analogy}&rdquo;
-										</p>
-
-										<CodeSnippet code={tech.code} language="typescript" />
-
-										{tech.links.length > 0 ? (
-											<div className="mt-4 flex gap-3">
-												{tech.links.map(link => (
-													<a
-														key={link.href}
-														href={link.href}
-														target="_blank"
-														rel="noopener noreferrer"
-														className="text-sm text-blue-600 hover:underline"
-													>
-														{link.label} →
-													</a>
-												))}
-											</div>
-										) : null}
-									</div>
-								);
-							})()}
-						</motion.div>
+						<ExpandedTechPanel
+							selectedTech={selectedTech}
+							onClose={handleCloseTechPanel}
+						/>
 					) : null}
 				</AnimatePresence>
 			</section>
@@ -350,6 +295,77 @@ export default function HowItWorksPage() {
 				</section>
 			</ScrollReveal>
 		</div>
+	);
+}
+
+interface ExpandedTechPanelProps {
+	selectedTech: string;
+	onClose: () => void;
+}
+
+/**
+ * Expanded detail panel for a selected technology card.
+ * Extracted from HowItWorksPage to avoid inline IIFE in JSX.
+ * Shows description, analogy, code snippet, and external links.
+ */
+function ExpandedTechPanel({ selectedTech, onClose }: ExpandedTechPanelProps) {
+	const tech = TECHNOLOGIES.find(t => t.id === selectedTech);
+	if (!tech) return null;
+
+	const colors = COLOR_CLASSES[tech.color];
+	const Icon = tech.icon;
+
+	return (
+		<motion.div
+			initial={{ opacity: 0, height: 0 }}
+			animate={{ opacity: 1, height: 'auto' }}
+			exit={{ opacity: 0, height: 0 }}
+			transition={{ duration: 0.3 }}
+			className="overflow-hidden"
+		>
+			<div
+				className={`mt-4 rounded-xl border ${colors.border} ${colors.bg} p-6`}
+			>
+				<div className="mb-4 flex items-start justify-between">
+					<div className="flex items-center gap-3">
+						<Icon className={`size-8 ${colors.icon}`} />
+						<div>
+							<h3 className="text-lg font-semibold">{tech.title}</h3>
+							<p className="text-sm text-neutral-600">{tech.description}</p>
+						</div>
+					</div>
+					<button
+						type="button"
+						onClick={onClose}
+						className="rounded-full p-1 hover:bg-black/5"
+					>
+						<X className="size-5 text-neutral-500" />
+					</button>
+				</div>
+
+				<p className="mb-4 text-sm text-neutral-500 italic">
+					&ldquo;{tech.analogy}&rdquo;
+				</p>
+
+				<CodeSnippet code={tech.code} language="typescript" />
+
+				{tech.links.length > 0 ? (
+					<div className="mt-4 flex gap-3">
+						{tech.links.map(link => (
+							<a
+								key={link.href}
+								href={link.href}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-sm text-blue-600 hover:underline"
+							>
+								{link.label} →
+							</a>
+						))}
+					</div>
+				) : null}
+			</div>
+		</motion.div>
 	);
 }
 

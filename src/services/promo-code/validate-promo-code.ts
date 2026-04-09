@@ -20,7 +20,10 @@ import {
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Validates a promo code for a specific raffle
+ * Validates a promo code for a specific raffle.
+ *
+ * Normalizes (trim + uppercase) before the regex check to avoid
+ * rejecting codes with accidental whitespace or lowercase input.
  *
  * @param raffleId - The raffle ID to validate the code for
  * @param code - The promo code string to validate
@@ -35,19 +38,17 @@ export async function validatePromoCode(
 	try {
 		const normalizedCode = code.trim().toUpperCase();
 
-		// Step 1: Early format validation.
+		// Early format check — avoids a round trip for malformed codes
 		if (!PROMO_CODE_REGEX.test(normalizedCode)) {
 			return failure(PROMO_CODE_ERROR_CODES.INVALID_CODE);
 		}
 
-		// Step 2: Send validation request.
 		const response = await authenticatedClient.post('/promo-codes/validate', {
 			raffleId,
 			code: normalizedCode,
 		});
 
-		// Step 3: Validate response and return success.
-		const validated = validatePromoCodeResponseSchema.parse(response.data);
+		const data = validatePromoCodeResponseSchema.parse(response.data);
 
 		// Fire-and-forget — validation is a read-like operation, don't block
 		void sessionPromise.then(session =>
@@ -56,13 +57,13 @@ export async function validatePromoCode(
 				{
 					code: normalizedCode,
 					raffle_id: raffleId,
-					valid: validated.valid,
+					valid: data.valid,
 				},
 				{ userId: session?.user?.id },
 			),
 		);
 
-		return success(validated);
+		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'promo-code', 'validate-promo-code');

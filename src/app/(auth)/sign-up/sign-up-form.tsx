@@ -26,7 +26,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useTransition, type ComponentProps } from 'react';
+import { useMemo, useState, useTransition, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaGoogle } from 'react-icons/fa';
 import { toast } from 'sonner';
@@ -44,7 +44,9 @@ const formSchema = z.object({
 type FormType = z.infer<typeof formSchema>;
 
 /**
- * Maps error codes to user-friendly messages
+ * Maps auth and infrastructure error codes to user-friendly messages.
+ * USER_ALREADY_EXISTS and SIGNUP_FAILED use a generic message to prevent
+ * user enumeration — the caller cannot distinguish between the two.
  */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
@@ -75,6 +77,14 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 	}
 }
 
+/**
+ * Sign-up form with name/email/password fields and Google OAuth option.
+ *
+ * 'use client' required: uses useForm, useTransition, useState, useSearchParams,
+ * useRouter, and useMemo.
+ *
+ * @returns Registration form with social sign-in alternative
+ */
 export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 	const {
 		register,
@@ -88,22 +98,26 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 	const [isSocialPending, setIsSocialPending] = useState(false);
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const returnTo = validateReturnTo(searchParams.get('returnTo'));
+	// useMemo: avoid re-running validateReturnTo on every render — searchParams
+	// only changes on URL navigation, so this effectively caches the validated path.
+	const returnTo = useMemo(
+		() => validateReturnTo(searchParams.get('returnTo')),
+		[searchParams],
+	);
 
+	/** Registers a new account via server action and redirects to sign-in */
 	async function handleSignUp(data: FormType) {
 		startTransition(async () => {
-			// Step 1: Call registration service.
+			// Step 1: Call registerUser server action with form data
 			const result = await registerUser(data);
 
-			// Type-safe response handling
+			// Step 2: Surface error — generic message prevents enumeration
 			if (!result.success) {
-				// Step 2: Surface error.
-				const message = getErrorMessage(result.error);
-				setError('root', { message });
+				setError('root', { message: getErrorMessage(result.error) });
 				return;
 			}
 
-			// Step 3: Notify and redirect to sign-in with returnTo preserved.
+			// Step 3: Success — toast confirmation and redirect to sign-in with returnTo preserved
 			toast.success(
 				'Account created! Check your email to verify before signing in.',
 			);
@@ -112,26 +126,26 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 	}
 
 	/**
-	 * Handles Google sign-in button click
-	 * Initiates OAuth flow by redirecting to Google
+	 * Initiates Google OAuth flow via server action.
+	 * Redirects to Google's consent screen — same flow as sign-in.
 	 */
 	async function handleGoogleSignIn() {
 		setIsSocialPending(true);
 
-		// Step 1: Build callback URL with validated returnTo.
+		// Step 1: Get OAuth URL from server action
 		const result = await initiateSocialSignIn({
 			provider: 'google',
 			callbackURL: buildOAuthCallbackUrl(window.location.origin, returnTo),
 		});
 
+		// Step 2: Surface error or redirect to Google
 		if (!result.success) {
-			// Step 2: Surface error.
 			setError('root', { message: getErrorMessage(result.error) });
 			setIsSocialPending(false);
 			return;
 		}
 
-		// Step 3: Redirect to provider.
+		// Cross-origin redirect — must use window.location, not router.push
 		window.location.href = result.data.url;
 	}
 

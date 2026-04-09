@@ -1,3 +1,6 @@
+import Link from 'next/link';
+import { Suspense } from 'react';
+
 import {
 	parsePage,
 	parseRaffleStatus,
@@ -10,8 +13,6 @@ import { getEnrolledRaffles } from '@/services/raffle/get-enrolled-raffles';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
-import Link from 'next/link';
-import { Suspense } from 'react';
 import { CreateRaffleButton } from './create-raffle-button';
 import { PageHeader } from './page-header';
 
@@ -40,9 +41,13 @@ function filterParticipantStatus(status: string): string {
 }
 
 /**
- * My Raffles Page
+ * My Raffles Page (Server Component)
  *
- * Mode-aware dashboard showing user's raffles filtered by status.
+ * Data-fetching strategy: reads searchParams and user mode cookie in parallel,
+ * then fetches raffles server-side via the appropriate endpoint based on mode.
+ * Uses MY_RAFFLES cache tag (60s TTL) — revalidated on create/publish/delete.
+ *
+ * Mode-aware dashboard:
  * - Host mode: Shows raffles created by the user (via /me/raffles)
  * - Participant mode: Shows raffles user has enrolled in (via /me/enrolled-raffles)
  */

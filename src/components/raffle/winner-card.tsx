@@ -25,19 +25,14 @@ export function WinnerCard({
 	commitTxHash,
 	isCurrentUser,
 }: WinnerCardProps) {
-	/**
-	 * Gets the display name for the winner
-	 * @returns "You" if current user, winner's name, or fallback
-	 */
-	function getDisplayName(): string {
-		if (isCurrentUser) return 'You';
-		return winner.name || `Winner #${winner.position + 1}`;
-	}
+	const displayName = isCurrentUser
+		? 'You'
+		: winner.name || `Winner #${winner.position + 1}`;
 
 	return (
 		<div className="space-y-4 rounded-2xl border border-black bg-white px-6 py-4">
 			<div className="space-y-1">
-				<p className="font-semibold">{getDisplayName()}</p>
+				<p className="font-semibold">{displayName}</p>
 				{winner.ticketCode ? (
 					<div
 						key={winner.ticketCode}

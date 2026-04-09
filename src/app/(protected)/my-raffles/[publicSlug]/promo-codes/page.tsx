@@ -21,20 +21,22 @@ interface PageProps {
 }
 
 /**
- * Promo Codes Page
+ * Promo Codes Page (Server Component)
  *
- * Allows hosts to manage promo codes for their raffles.
+ * Data-fetching strategy: parallel session + raffle fetch for authorization.
+ * Promo code data is fetched client-side via React Query in PromoCodesContent.
  * Read-only for ended/completed/cancelled raffles.
  */
+/**
+ * Checks if raffle status allows promo code management (create/deactivate).
+ * Non-manageable statuses (ended, completed, cancelled) get read-only view.
+ */
+function isManageableStatus(status: string): boolean {
+	return PROMO_MANAGEABLE_STATUSES.includes(status as PromoManageableStatus);
+}
+
 export default async function PromoCodesPage({ params }: PageProps) {
 	const { publicSlug } = await params;
-
-	/**
-	 * Checks if raffle status allows promo code management
-	 */
-	function isManageableStatus(status: string): boolean {
-		return PROMO_MANAGEABLE_STATUSES.includes(status as PromoManageableStatus);
-	}
 
 	// Parallel fetch — session and raffle are independent
 	const [session, raffleResult] = await Promise.all([

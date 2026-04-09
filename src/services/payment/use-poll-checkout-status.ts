@@ -9,10 +9,6 @@ import { CHECKOUT_PHASE, type CheckoutStatus } from '@/types/checkout-status';
 
 import { getCheckoutStatus } from './get-checkout-status';
 
-// ==========================================
-// Constants
-// ==========================================
-
 /**
  * Determines if polling should stop for the given checkout status.
  *
@@ -46,10 +42,6 @@ const POLL_INTERVAL_MS = 5_000;
  */
 const DEFAULT_MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
 
-// ==========================================
-// Helpers
-// ==========================================
-
 /**
  * Query key for checkout status polling — exported for cache invalidation.
  *
@@ -59,10 +51,6 @@ const DEFAULT_MAX_POLL_DURATION_MS = 5 * 60 * 1_000;
 export function pollCheckoutStatusKey(orderId: string | null) {
 	return ['checkout-status', 'poll', orderId] as const;
 }
-
-// ==========================================
-// Hook
-// ==========================================
 
 /**
  * Polls unified checkout status every 5s until terminal phase or timeout.

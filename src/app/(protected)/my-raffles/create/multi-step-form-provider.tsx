@@ -3,14 +3,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
 	createContext,
-	ReactNode,
 	useCallback,
 	useContext,
 	useEffect,
 	useRef,
 	useState,
+	type ReactNode,
 } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -85,16 +85,24 @@ export function MultiStepFormProvider({
 	questions,
 	categories,
 }: MultiStepFormProviderProps) {
+	// Wizard navigation — 0-indexed step position
 	const [currentStep, setCurrentStep] = useState(0);
+	// Tracks in-flight API calls during raffle creation to disable submit
 	const [isCreating, setIsCreating] = useState(false);
+	// Controls the "Raffle Created" success modal visibility
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	// Controls the "Save Draft" exit confirmation modal
 	const [showExitModal, setShowExitModal] = useState(false);
+	// Guards against re-showing the restore modal after initial draft detection
 	const [draftLoaded, setDraftLoaded] = useState(false);
+	// Controls the "Restore Draft" modal on page entry
 	const [showRestoreModal, setShowRestoreModal] = useState(false);
+	// Stores created raffle info for the success modal — null until creation succeeds
 	const [createdRaffle, setCreatedRaffle] = useState<{
 		publicSlug: string;
 		raffleStartDate: string;
 	} | null>(null);
+	// Promo codes queued for creation after raffle is saved — not yet persisted
 	const [pendingPromoCodes, setPendingPromoCodes] = useState<
 		CreatePromoCodeData[]
 	>([]);
@@ -120,10 +128,13 @@ export function MultiStepFormProvider({
 		setPendingPromoCodes([]);
 	}, []);
 
-	/** Stores the href the user tried to navigate to before being intercepted */
+	// Ref instead of state — stores the href the user tried to navigate to before
+	// being intercepted. Does not trigger re-renders; read only in callbacks.
 	const pendingNavigationRef = useRef<string | null>(null);
 
-	/** When true, bypasses the beforeunload dialog (user already confirmed exit) */
+	// Ref instead of state — boolean flag that bypasses the beforeunload dialog
+	// after the user has already confirmed exit. Must survive across renders
+	// without triggering them.
 	const isLeavingRef = useRef(false);
 
 	const {
@@ -444,8 +455,17 @@ export function MultiStepFormProvider({
 	}
 
 	/**
-	 * Handles raffle creation by calling the server action
-	 * Shows modal on success instead of redirecting immediately
+	 * Handles raffle creation through a multi-phase server action pipeline.
+	 * Shows modal on success instead of redirecting immediately.
+	 *
+	 * Steps:
+	 * 1. Validate check-in question presence (client guard before API call)
+	 * 2. Create raffle record via server action
+	 * 3. Upload cover image (if provided)
+	 * 4. Upload gallery images (if provided, slots 2-4)
+	 * 5. Bulk-create pending promo codes
+	 * 6. Auto-publish if start datetime is now/past and cover uploaded
+	 * 7. Clear draft and open success modal
 	 *
 	 * @param data - The validated raffle form data
 	 */
@@ -456,13 +476,14 @@ export function MultiStepFormProvider({
 			try {
 				const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-				// checkInQuestion now stores the question UUID directly
+				// Step 1: Client-side guard — backend requires a question ID
 				if (!data.checkInQuestion) {
 					toast.error('Please select a check-in question');
 					setIsCreating(false);
 					return;
 				}
 
+				// Step 2: Create the raffle record
 				const result = await createRaffle({
 					title: data.title,
 					description: data.description,
@@ -499,6 +520,7 @@ export function MultiStepFormProvider({
 				const raffleId = result.data.id;
 				let coverUploaded = false;
 
+				// Step 3: Upload cover image (first file in coverImage array)
 				if (data.coverImage && data.coverImage.length > 0) {
 					const coverResult = await uploadCover(raffleId, data.coverImage[0]);
 					if (!coverResult.success) {
@@ -509,6 +531,7 @@ export function MultiStepFormProvider({
 					}
 				}
 
+				// Step 4: Upload gallery images (slots 2-4 of coverImage array)
 				if (data.coverImage && data.coverImage.length > 1) {
 					const galleryFiles = data.coverImage.slice(1);
 					const galleryResult = await uploadGalleryImages(
@@ -521,7 +544,7 @@ export function MultiStepFormProvider({
 					}
 				}
 
-				// Create pending promo codes
+				// Step 5: Create pending promo codes — sequential to avoid rate limits
 				if (pendingPromoCodes.length > 0) {
 					let failedCount = 0;
 					for (const promoCode of pendingPromoCodes) {
@@ -538,7 +561,7 @@ export function MultiStepFormProvider({
 					}
 				}
 
-				// Auto-publish only if start datetime is now or in the past and cover was uploaded
+				// Step 6: Auto-publish only if start datetime is now or in the past and cover was uploaded
 				const startDateTime = new Date(data.startDate);
 
 				if (startDateTime <= new Date() && coverUploaded) {
@@ -551,7 +574,7 @@ export function MultiStepFormProvider({
 					}
 				}
 
-				// Clear draft and reset form state for next creation
+				// Step 7: Clear draft and reset form state for next creation
 				clearDraft();
 				form.reset({
 					title: '',

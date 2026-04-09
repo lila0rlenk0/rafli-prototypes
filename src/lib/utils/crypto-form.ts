@@ -47,22 +47,33 @@ export function extractCryptoFormFields(
 		};
 	}
 
-	// Extract chain IDs
-	const cryptoChainIds = cryptoOptions.chains.map(c => c.chainId);
+	const cryptoChainIds = cryptoOptions.chains.map(chain => chain.chainId);
 
 	// Flatten and deduplicate token IDs across all chains
 	const cryptoTokens = [
-		...new Set(cryptoOptions.chains.flatMap(c => c.tokens.map(t => t.tokenId))),
+		...new Set(
+			cryptoOptions.chains.flatMap(chain =>
+				chain.tokens.map(token => token.tokenId),
+			),
+		),
 	];
 
-	// Extract non-stablecoin pricing (deduplicated by tokenId)
+	// Extract non-stablecoin pricing, deduplicated by tokenId.
+	// Stablecoins use a fixed 1:1 USD rate so they have no per-raffle price entry.
 	const cryptoTokenPricing = cryptoOptions.chains
-		.flatMap(c => c.tokens.filter(t => !t.isStablecoin && t.price))
-		.reduce<TokenPricingEntry[]>((acc, t) => {
-			if (!acc.some(e => e.tokenId === t.tokenId)) {
-				acc.push({ tokenId: t.tokenId, price: t.price! });
+		.flatMap(chain =>
+			// Filter guarantees token.price is truthy (non-null string), so the
+			// downstream access in reduce is safe without a non-null assertion.
+			chain.tokens.filter(
+				(token): token is typeof token & { price: string } =>
+					!token.isStablecoin && !!token.price,
+			),
+		)
+		.reduce<TokenPricingEntry[]>((seen, token) => {
+			if (!seen.some(entry => entry.tokenId === token.tokenId)) {
+				seen.push({ tokenId: token.tokenId, price: token.price });
 			}
-			return acc;
+			return seen;
 		}, []);
 
 	return {
@@ -93,15 +104,15 @@ export function getCryptoSummary(
 ): string {
 	if (!acceptsCrypto) return 'Card only';
 
-	/** Checks if all items are selected */
-	function isAll(count: number, total?: number): boolean {
-		return total !== undefined && count === total;
-	}
+	const chainsAllSelected =
+		totalChains !== undefined && cryptoChainIds.length === totalChains;
+	const tokensAllSelected =
+		totalTokens !== undefined && cryptoTokens.length === totalTokens;
 
-	const chains = isAll(cryptoChainIds.length, totalChains)
+	const chains = chainsAllSelected
 		? 'All chains'
 		: `${cryptoChainIds.length} chain(s)`;
-	const tokens = isAll(cryptoTokens.length, totalTokens)
+	const tokens = tokensAllSelected
 		? 'All tokens'
 		: `${cryptoTokens.length} token(s)`;
 

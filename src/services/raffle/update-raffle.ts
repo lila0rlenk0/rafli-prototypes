@@ -15,15 +15,8 @@ import { raffleSchema, updateRafflePayloadSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for raffle update
- */
-type UpdateRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
-
-/**
- * Updates an existing draft raffle
- *
- * Only sends changed fields to the backend (partial update).
- * Backend restricts updates to draft raffles only.
+ * Updates an existing draft raffle.
+ * Only sends changed fields (partial update). Backend restricts updates to draft raffles only.
  *
  * @param raffleId - The ID of the raffle to update
  * @param payload - Partial update payload with only changed fields
@@ -32,31 +25,32 @@ type UpdateRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
 export async function updateRaffle(
 	raffleId: string,
 	payload: UpdateRafflePayload,
-): Promise<UpdateRaffleResponse> {
+): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Validate payload before sending
+		// Step 1: Validate payload — reject malformed updates before network call
 		const validationResult = updateRafflePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		// Only send if there are actual changes
+		// Step 2: Guard — no-op if caller passed an empty diff
 		if (Object.keys(validationResult.data).length === 0) {
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
+		// Step 3: Send partial update — backend restricts to draft raffles only
 		const response = await authenticatedClient.put(
 			`/raffles/${raffleId}`,
 			validationResult.data,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Validate response structure
+		// Step 4: Validate response shape
 		const raffle = raffleSchema.parse(response.data);
 
-		// Fire-and-forget — update is frequent, don't block
+		// Step 5: Fire-and-forget analytics — update is frequent, don't block
 		void sessionPromise.then(session =>
 			trackServer(
 				RAFFLE_EVENTS.UPDATED,
@@ -70,7 +64,6 @@ export async function updateRaffle(
 
 		return success(raffle);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'update-raffle');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);

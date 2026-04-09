@@ -34,7 +34,6 @@ export function PromoCodeStatusBadge({
 	 * Returns Tailwind classes for status color
 	 */
 	function getStatusClasses(status: PromoCodeStatus): string {
-		// Step 1: Map status to color classes.
 		switch (status) {
 			case PROMO_CODE_STATUS.ACTIVE:
 				return 'bg-green-100 text-green-700';

@@ -72,8 +72,20 @@ export type VerificationStatusResponse = z.infer<
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
+ * Priority order for aggregate status badge — highest priority first.
+ * "approved" trumps everything because it means the user is verified.
+ * "in_review" next because it signals active progress.
+ * "rejected" before "draft" because it requires user action.
+ */
+const STATUS_PRIORITY: readonly VerificationStatus[] = [
+	VERIFICATION_STATUS.APPROVED,
+	VERIFICATION_STATUS.IN_REVIEW,
+	VERIFICATION_STATUS.REJECTED,
+	VERIFICATION_STATUS.DRAFT,
+] as const;
+
+/**
  * Derives the most prominent status across all three verification types.
- * Priority: approved > in_review > rejected > draft > none.
  * Used by the profile badge to show a single aggregate indicator.
  *
  * @returns The highest-priority status and its rejection reason (if rejected)
@@ -82,37 +94,23 @@ export function deriveAggregateStatus(response: VerificationStatusResponse): {
 	status: VerificationStatus;
 	rejectionReason: string | null;
 } {
-	const statuses = [
+	const allTypes = [
 		response.kybIndividual,
 		response.kybCompany,
 		response.kycWinner,
 	];
 
-	// Priority order — first match wins
-	const approved = statuses.find(
-		s => s.status === VERIFICATION_STATUS.APPROVED,
-	);
-	if (approved)
-		return { status: VERIFICATION_STATUS.APPROVED, rejectionReason: null };
+	// Step 1: Walk priority list — first matching status wins.
+	for (const priority of STATUS_PRIORITY) {
+		const match = allTypes.find(s => s.status === priority);
+		if (!match) continue;
 
-	const inReview = statuses.find(
-		s => s.status === VERIFICATION_STATUS.IN_REVIEW,
-	);
-	if (inReview)
-		return { status: VERIFICATION_STATUS.IN_REVIEW, rejectionReason: null };
+		// Only rejected carries a reason — all others are null
+		const rejectionReason =
+			priority === VERIFICATION_STATUS.REJECTED ? match.rejectionReason : null;
+		return { status: priority, rejectionReason };
+	}
 
-	const rejected = statuses.find(
-		s => s.status === VERIFICATION_STATUS.REJECTED,
-	);
-	if (rejected)
-		return {
-			status: VERIFICATION_STATUS.REJECTED,
-			rejectionReason: rejected.rejectionReason,
-		};
-
-	const draft = statuses.find(s => s.status === VERIFICATION_STATUS.DRAFT);
-	if (draft)
-		return { status: VERIFICATION_STATUS.DRAFT, rejectionReason: null };
-
+	// Step 2: No submission exists for any type.
 	return { status: VERIFICATION_STATUS.NONE, rejectionReason: null };
 }

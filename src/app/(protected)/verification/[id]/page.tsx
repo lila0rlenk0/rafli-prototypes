@@ -93,7 +93,11 @@ function DocumentCard({ doc }: { doc: KycDocument }) {
 }
 
 /**
- * User-facing submission detail page.
+ * User-facing submission detail page (Server Component).
+ *
+ * Data-fetching strategy: fetches submission detail by ID server-side.
+ * Returns 404 on failure. No caching — status changes during review cycle.
+ *
  * Shows the form data and documents the user submitted,
  * along with status, dates, and rejection reason if applicable.
  *

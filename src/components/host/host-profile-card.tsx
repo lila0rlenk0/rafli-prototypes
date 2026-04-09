@@ -1,6 +1,8 @@
 import type { HostProfile } from '@/types/host';
 import Image from 'next/image';
 
+import { cn } from '@/lib/utils';
+
 import { StarRating } from './star-rating';
 
 interface HostProfileCardProps {
@@ -11,36 +13,14 @@ interface HostProfileCardProps {
 }
 
 /**
- * HostProfileCard Component
- *
  * Displays host profile information in a sidebar card.
  * Server component - no client-side interactivity needed.
+ * @returns Host profile card element
  */
-export function HostProfileCard({
-	host,
-	className = '',
-}: HostProfileCardProps) {
-	/**
-	 * Gets the display name for the host
-	 * @returns Host name or fallback username
-	 */
-	function getDisplayName(): string {
-		return host.name || host.username || 'Raffle Host';
-	}
+export function HostProfileCard({ host, className }: HostProfileCardProps) {
+	const displayName = host.name ?? host.username ?? 'Raffle Host';
+	const hostInitial = displayName.charAt(0).toUpperCase();
 
-	/**
-	 * Gets the first initial of the host's name
-	 * @returns First character of the name
-	 */
-	function getHostInitial(): string {
-		const name = getDisplayName();
-		return name.charAt(0).toUpperCase();
-	}
-
-	/**
-	 * Formats the rating label for display
-	 * @returns Formatted rating string or 'No reviews yet'
-	 */
 	function formatRatingLabel(): string {
 		if (host.averageRating === null || host.totalReviews === 0) {
 			return 'No reviews yet';
@@ -50,20 +30,23 @@ export function HostProfileCard({
 
 	return (
 		<div
-			className={`flex flex-col overflow-hidden rounded-2xl bg-white p-6 ${className}`}
+			className={cn(
+				'flex flex-col overflow-hidden rounded-2xl bg-white p-6',
+				className,
+			)}
 		>
 			{/* Profile Image */}
 			<div className="relative mx-auto mb-4 flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-3xl font-semibold">
 				{host.image ? (
 					<Image
 						src={host.image}
-						alt={getDisplayName()}
+						alt={displayName}
 						fill
 						sizes="112px"
 						className="object-cover"
 					/>
 				) : (
-					getHostInitial()
+					hostInitial
 				)}
 			</div>
 
@@ -79,7 +62,7 @@ export function HostProfileCard({
 				<div className="flex flex-col items-center">
 					<p className="text-[#7B7B7B]">Name</p>
 					<p className="mb-1 text-center text-xl font-semibold">
-						{getDisplayName()}
+						{displayName}
 					</p>
 				</div>
 

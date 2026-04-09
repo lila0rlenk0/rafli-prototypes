@@ -39,21 +39,7 @@ export const CHECKOUT_PHASE = {
 export type CheckoutPhase =
 	(typeof CHECKOUT_PHASE)[keyof typeof CHECKOUT_PHASE];
 
-// ==========================================
-// Schemas
-// ==========================================
-
 // Sub-schemas — not exported; composed into checkoutStatusSchema only.
-
-/**
- * Schema for the unified checkout status endpoint.
- * GET /payments/checkout-status/:orderId returns a single object that
- * merges order state, session state, and actionability flags.
- *
- * Replaces the FE's guard functions (getReviewSessionGuard,
- * getPaySessionRevalidationDecision, resolveCheckoutHydrationDecision)
- * with backend-authoritative decisions.
- */
 const checkoutStatusStripeSchema = z.object({
 	expiresAt: z.string(),
 	id: z.string(),
@@ -77,6 +63,11 @@ const checkoutStatusCryptoSchema = z.object({
 	txHash: z.string().nullable(),
 });
 
+/**
+ * Unified checkout status — single endpoint replaces multi-endpoint hydration.
+ *
+ * Validation boundary: server-side — parsed from GET /payments/checkout-status/:orderId.
+ */
 export const checkoutStatusSchema = z.object({
 	/** Which payment method still owns the pending order */
 	activeMethod: z.enum(['crypto', 'none', 'stripe']),
@@ -98,10 +89,6 @@ export const checkoutStatusSchema = z.object({
 	/** Latest Stripe session snapshot — null if Stripe was never opened */
 	stripe: checkoutStatusStripeSchema.nullable(),
 });
-
-// ==========================================
-// Inferred Types
-// ==========================================
 
 /** Unified checkout status from GET /payments/checkout-status/:orderId. */
 export type CheckoutStatus = z.infer<typeof checkoutStatusSchema>;

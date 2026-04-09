@@ -19,22 +19,11 @@ export const CLAIM_TYPE = {
 	WALLET: 'wallet',
 } as const;
 
-// ==========================================
-// Types from Constants
-// ==========================================
-
 export type WinningStatus =
 	(typeof WINNING_STATUS)[keyof typeof WINNING_STATUS];
 
 export type ClaimType = (typeof CLAIM_TYPE)[keyof typeof CLAIM_TYPE];
 
-// ==========================================
-// Schemas
-// ==========================================
-
-/**
- * Zod schema for WinningStatus
- */
 export const winningStatusSchema = z.enum([
 	WINNING_STATUS.PENDING,
 	WINNING_STATUS.AWAITING_HOST,
@@ -45,14 +34,8 @@ export const winningStatusSchema = z.enum([
 	WINNING_STATUS.RESOLVED,
 ]);
 
-/**
- * Zod schema for ClaimType
- */
 export const claimTypeSchema = z.enum([CLAIM_TYPE.SHIPPING, CLAIM_TYPE.WALLET]);
 
-/**
- * Schema for shipping address information
- */
 export const shippingInfoSchema = z.object({
 	name: z.string(),
 	address: z.string(),
@@ -64,8 +47,11 @@ export const shippingInfoSchema = z.object({
 });
 
 /**
- * Schema for a single winning entry
- * Matches backend WinningResponseDto — includes all 5 fields previously stripped
+ * Matches backend WinningResponseDto — full winning entity.
+ *
+ * Validation boundary: server-side — parsed in winning-related server actions.
+ * Timestamp fields are nullable because they're populated progressively
+ * as the winning moves through its lifecycle (claim → send → deliver → receive).
  */
 export const winningSchema = z.object({
 	id: z.string(),
@@ -87,9 +73,6 @@ export const winningSchema = z.object({
 	updatedAt: z.string(),
 });
 
-/**
- * Schema for list winnings response
- */
 export const listWinningsResponseSchema = z.object({
 	limit: z.number(),
 	page: z.number(),
@@ -98,12 +81,10 @@ export const listWinningsResponseSchema = z.object({
 	winnings: z.array(winningSchema),
 });
 
-// ==========================================
-// Request Payload Schemas
-// ==========================================
-
 /**
- * Schema for claim winning request payload
+ * Claim winning payload — currently only shipping is supported.
+ *
+ * Validation boundary: client-side — validated in the claim form before server action call.
  */
 export const claimWinningPayloadSchema = z.object({
 	claimType: z.literal('shipping'),
@@ -117,17 +98,10 @@ export const claimWinningPayloadSchema = z.object({
 	}),
 });
 
-/**
- * Schema for mark sent request payload
- */
 export const markSentPayloadSchema = z.object({
 	proofUrl: z.string().url().max(512),
 	hostNotes: z.string().max(2_000).optional(),
 });
-
-// ==========================================
-// Inferred Types
-// ==========================================
 
 export type ShippingInfo = z.infer<typeof shippingInfoSchema>;
 export type Winning = z.infer<typeof winningSchema>;
@@ -135,23 +109,17 @@ export type ListWinningsResponse = z.infer<typeof listWinningsResponseSchema>;
 export type ClaimWinningPayload = z.infer<typeof claimWinningPayloadSchema>;
 export type MarkSentPayload = z.infer<typeof markSentPayloadSchema>;
 
-// ==========================================
-// Host Winner Entry (for fulfillment management)
-// ==========================================
-
 /**
- * Schema for a winner entry in host's fulfillment list view
- * Extends winningSchema with host-specific display fields (userName, userAvatar)
- * Backend: HostWinnerDto extends WinningResponseDto
+ * Host's view of a winner — extends winningSchema with display fields.
+ * Backend: HostWinnerDto extends WinningResponseDto.
+ *
+ * Validation boundary: server-side — parsed in host winning management server actions.
  */
 export const hostWinnerEntrySchema = winningSchema.extend({
 	userName: z.string().nullable(),
 	userAvatar: z.string().nullable(),
 });
 
-/**
- * Schema for host's raffle winners paginated response
- */
 export const hostRaffleWinningsResponseSchema = z.object({
 	items: z.array(hostWinnerEntrySchema),
 	limit: z.number(),

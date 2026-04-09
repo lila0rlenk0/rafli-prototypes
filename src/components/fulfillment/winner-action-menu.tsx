@@ -26,12 +26,6 @@ interface WinnerActionMenuProps {
 	onStatusChange: (winningId: string, newStatus: WinningStatus) => void;
 }
 
-/**
- * WinnerActionMenu Component
- *
- * Three-dot dropdown menu for host actions on a winner.
- * Shows different actions based on current status and shipping info.
- */
 export function WinnerActionMenu({
 	winner,
 	publicSlug,
@@ -55,9 +49,6 @@ export function WinnerActionMenu({
 	const canMarkSent = isAwaitingHost && !isMarkingDelivered;
 	const canMarkDelivered = isSent && !isMarkingDelivered;
 
-	/**
-	 * Handles mark as delivered action
-	 */
 	function handleMarkDelivered() {
 		setOpen(false);
 		startTransition(async () => {
@@ -74,17 +65,11 @@ export function WinnerActionMenu({
 		});
 	}
 
-	/**
-	 * Handles successful mark sent
-	 */
 	function handleMarkSentSuccess() {
 		onStatusChange(winner.id, 'sent');
 		router.refresh();
 	}
 
-	/**
-	 * Opens mark sent modal
-	 */
 	function handleOpenMarkSent() {
 		setOpen(false);
 		setMarkSentModalOpen(true);

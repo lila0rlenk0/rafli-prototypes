@@ -77,22 +77,26 @@ interface PageProps {
 /**
  * Raffle Detail Page
  *
- * Displays full details of a specific raffle including cover image, gallery,
- * description, and category. Allows authenticated users to purchase tickets.
- * Non-authenticated users can view all details but must sign in to purchase.
+ * Server Component — displays full details of a specific raffle.
+ * Data-fetching strategy:
+ *   1. Parallel fetch: raffle + categories (no auth dependency)
+ *   2. Sequential: session check (cookie read)
+ *   3. Conditional parallel: user-specific data (tickets, winnings, profile, credits)
+ *      only when authenticated — avoids 401s for guests.
  *
- * Fetches data server-side using the getRaffle service.
- * Handles payment status modal after Stripe redirect.
+ * Caching: getRaffle uses RAFFLE_DETAIL tag (300s TTL), getCategories uses CATEGORIES tag (3600s).
+ * searchParams.session_id drives the Stripe payment status modal after redirect.
  */
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;
 
 	/**
-	 * Gets the category name from a list of categories by ID
+	 * Resolves a category ID to its display name.
+	 * Falls back to 'Other' when category is missing or not found in the active list.
 	 *
-	 * @param categories - List of available categories
-	 * @param categoryId - The category ID to look up
-	 * @returns The category name or 'Other' if not found
+	 * @param categories - Active categories fetched from getCategories
+	 * @param categoryId - The raffle's categoryId (nullable — drafts may omit it)
+	 * @returns Human-readable category name
 	 */
 	function getCategoryName(
 		categories: Category[],
@@ -103,13 +107,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		return category?.name || 'Other';
 	}
 
-	// Step 1: Fetch raffle + categories in parallel.
+	// Step 1: Fetch raffle + categories in parallel — neither depends on auth.
+	// Categories cached 3600s, raffle cached 300s (RAFFLE_DETAIL tag).
 	const [response, categoriesResponse] = await Promise.all([
 		getRaffle(publicSlug),
 		getCategories(),
 	]);
 
-	// Filter active categories only
+	// Filter to active categories only — inactive ones are admin-disabled
 	const categories = categoriesResponse.success
 		? categoriesResponse.data.categories.filter(c => c.isActive)
 		: [];
@@ -119,6 +124,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		notFound();
 	}
 
+	// Guard: early return on non-404 raffle fetch failure
 	if (!response.success) {
 		return (
 			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 text-center">
@@ -144,12 +150,13 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 	const raffle = response.data;
 
-	// Step 2: Load session and user-specific data if authenticated.
+	// Step 2: Load session — sequential because it reads cookies (runtime data).
+	// Cannot be parallelized with Step 1 safely in all deployment modes.
 	const session = await getSession();
 	const isAuthenticated = !!session;
 	const currentUserId = session?.user?.id ?? null;
 
-	// Fire-and-forget — raffle view is high-volume, must not block render.
+	// Fire-and-forget analytics — raffle view is high-volume, must not block render.
 	// Tracks category, price, status, and host for funnel analysis + host attribution.
 	void trackServer(
 		RAFFLE_EVENTS.VIEWED,
@@ -167,7 +174,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		{ userId: currentUserId ?? undefined },
 	);
 
-	// Only fetch user's ticket codes if authenticated
+	// Step 3: Fetch user-specific data only when authenticated.
+	// Parallel Promise.all avoids waterfall — all four calls are independent.
+	// Guests skip entirely to avoid 401 responses.
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
 	let myWinning: Winning | null = null;
@@ -177,7 +186,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	let availableCredits: string | null = null;
 
 	if (isAuthenticated) {
-		// Fetch user data in parallel to avoid waterfall
 		const [
 			ticketCodesResponse,
 			winningsResponse,
@@ -275,8 +283,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const isCancelled = raffle.status === RAFFLE_STATUS.CANCELLED;
 	const cancellationReason = getCancellationReason(raffle);
 
+	// Step 4: Derive visibility flags for conditional card rendering.
+	// Each function encapsulates a business rule for which sidebar card to show.
+
 	/**
-	 * Checks if winner card should be shown (user won)
+	 * Checks if winner card should be shown — user participated and won
 	 */
 	function shouldShowWinnerCard(): boolean {
 		return isConcluded && didUserWin && !!myWinning;
@@ -385,7 +396,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		return Math.max(0, maxParticipants - participantsCount);
 	}
 
-	// Step 3: Calculate derived values for render.
+	// Step 5: Calculate derived values for render.
 	const ticketPrice = parseTicketPrice(raffle.ticketPriceAmount);
 	const availableTickets = calculateAvailableTickets(
 		raffle.maxParticipants,

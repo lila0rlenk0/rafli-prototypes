@@ -35,7 +35,7 @@ export const cryptoChainConfigSchema = z.object({
 	/** Block explorer tx URL prefix (e.g., "https://arbiscan.io/tx") — append /{txHash} */
 	explorerTxUrl: z.string(),
 	name: z.string(),
-	/** Tokens deployed and available for payment on this chain */
+	/** Tokens deployed and available for payment on this chain — immutable config data */
 	tokens: z.array(cryptoConfigTokenSchema),
 });
 

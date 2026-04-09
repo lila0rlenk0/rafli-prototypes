@@ -46,26 +46,28 @@ const RE_BASE64_UNDERSCORE = /_/g;
  * @returns Decoded string
  */
 function base64UrlDecode(str: string): string {
-	// Replace URL-safe characters with standard base64 equivalents
+	// Step 1: Replace URL-safe characters with standard base64 equivalents.
 	let base64 = str
 		.replace(RE_BASE64_MINUS, '+')
 		.replace(RE_BASE64_UNDERSCORE, '/');
 
-	// Add padding if needed
+	// Step 2: Add padding if needed (base64 requires length to be a multiple of 4).
 	const pad = base64.length % 4;
 	if (pad) {
+		// pad === 1 is impossible in valid base64 — each 3-byte group encodes to 4 chars
 		if (pad === 1) {
 			throw new Error('Invalid base64 string');
 		}
 		base64 += new Array(5 - pad).join('=');
 	}
 
-	// Decode using native atob (works in both environments)
+	// Step 3: Decode using native atob (works in both Node.js and Edge Runtime).
 	try {
+		// Percent-encode each byte so decodeURIComponent can handle multi-byte UTF-8 chars
 		return decodeURIComponent(
 			atob(base64)
 				.split('')
-				.map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+				.map(byte => '%' + ('00' + byte.charCodeAt(0).toString(16)).slice(-2))
 				.join(''),
 		);
 	} catch {
@@ -82,14 +84,18 @@ function base64UrlDecode(str: string): string {
  */
 export function decodeJwt(token: string): JwtPayload {
 	try {
+		// Step 1: Extract the payload segment (second dot-separated part).
 		const [, payloadBase64] = token.split('.');
 
 		if (!payloadBase64) {
 			throw new Error('Invalid JWT format');
 		}
 
+		// Step 2: Base64-decode and JSON-parse the payload.
 		const payloadJson = base64UrlDecode(payloadBase64);
 		const parsed: unknown = JSON.parse(payloadJson);
+
+		// Step 3: Validate against Zod schema to catch contract drift early.
 		return jwtPayloadSchema.parse(parsed);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : 'Unknown error';
@@ -117,6 +123,7 @@ export function isJwtExpired(token: string): boolean {
 		// Subtract tolerance so tokens are considered valid for 60s past server-side exp
 		return payload.exp < nowInSeconds - CLOCK_SKEW_TOLERANCE_SECONDS;
 	} catch {
+		// Malformed token — treat as expired to force re-authentication
 		return true;
 	}
 }

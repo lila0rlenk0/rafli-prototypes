@@ -144,14 +144,16 @@ export function CommentItem({
 						/>
 
 						{/* Reply button — only for top-level comments, authenticated users */}
-						{!isReply && isAuthenticated ? (
-							<button
-								type="button"
-								onClick={handleToggleReply}
-								className="text-xs font-medium text-gray-500 hover:text-gray-700"
-							>
-								Reply
-							</button>
+						{!isReply ? (
+							isAuthenticated ? (
+								<button
+									type="button"
+									onClick={handleToggleReply}
+									className="text-xs font-medium text-gray-500 hover:text-gray-700"
+								>
+									Reply
+								</button>
+							) : null
 						) : null}
 
 						{/* Actions dropdown — portal-based to avoid overflow clipping */}
@@ -171,7 +173,11 @@ export function CommentItem({
 											Delete comment
 										</DropdownMenuItem>
 									) : null}
-									{deletable && reportable ? <DropdownMenuSeparator /> : null}
+									{deletable ? (
+										reportable ? (
+											<DropdownMenuSeparator />
+										) : null
+									) : null}
 									{reportable ? (
 										<ReportMenuItem
 											contentType={REPORT_CONTENT_TYPE.COMMENT}
@@ -186,28 +192,32 @@ export function CommentItem({
 				) : null}
 
 				{/* Reply input — shown on toggle for top-level comments */}
-				{showReplyInput && !isReply ? (
-					<div className="mt-3">
-						<CommentInput
-							raffleId={raffleId}
-							parentId={comment.id}
-							autoFocus
-							placeholder="Write a reply..."
-							onSuccess={handleReplySuccess}
-						/>
-					</div>
+				{showReplyInput ? (
+					!isReply ? (
+						<div className="mt-3">
+							<CommentInput
+								raffleId={raffleId}
+								parentId={comment.id}
+								autoFocus
+								placeholder="Write a reply..."
+								onSuccess={handleReplySuccess}
+							/>
+						</div>
+					) : null
 				) : null}
 
 				{/* Nested replies — only for top-level comments */}
-				{!isReply && comment.replyCount > 0 ? (
-					<CommentReplies
-						raffleId={raffleId}
-						commentId={comment.id}
-						replyCount={comment.replyCount}
-						isAuthenticated={isAuthenticated}
-						isOwner={isOwner}
-						currentUserId={currentUserId}
-					/>
+				{!isReply ? (
+					comment.replyCount > 0 ? (
+						<CommentReplies
+							raffleId={raffleId}
+							commentId={comment.id}
+							replyCount={comment.replyCount}
+							isAuthenticated={isAuthenticated}
+							isOwner={isOwner}
+							currentUserId={currentUserId}
+						/>
+					) : null
 				) : null}
 			</div>
 		</div>

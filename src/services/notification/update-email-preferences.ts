@@ -1,5 +1,7 @@
 'use server';
 
+import { ZodError } from 'zod';
+
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapNotificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -13,32 +15,22 @@ import {
 	type NotificationErrorCode,
 } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
 
 /**
- * Response type for updating email preferences
- */
-type UpdateEmailPreferencesResponse = ServiceResponse<
-	EmailPreferences,
-	NotificationErrorCode
->;
-
-/**
- * Updates email notification preferences for the current user
+ * Updates email notification preferences for the current user.
  *
  * @param input - Partial email preferences to update
  * @returns ServiceResponse with updated email preferences on success
  */
 export async function updateEmailPreferences(
 	input: UpdateEmailPreferences,
-): Promise<UpdateEmailPreferencesResponse> {
+): Promise<ServiceResponse<EmailPreferences, NotificationErrorCode>> {
 	try {
 		const response = await authenticatedClient.patch(
 			'/email/preferences',
 			input,
 		);
-		const validated = emailPreferencesSchema.parse(response.data);
-		return success(validated);
+		return success(emailPreferencesSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'notification', 'update-email-preferences');

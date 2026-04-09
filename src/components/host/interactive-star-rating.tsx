@@ -33,39 +33,22 @@ export function InteractiveStarRating({
 }: InteractiveStarRatingProps) {
 	const [hoverRating, setHoverRating] = useState(0);
 
-	/**
-	 * Handles star click to set rating
-	 * @param starIndex - 1-based star index
-	 */
 	function handleClick(starIndex: number) {
 		if (disabled) return;
 		onChange(starIndex);
 	}
 
-	/**
-	 * Handles mouse enter on star
-	 * @param starIndex - 1-based star index
-	 */
 	function handleMouseEnter(starIndex: number) {
 		if (disabled) return;
 		setHoverRating(starIndex);
 	}
 
-	/**
-	 * Handles mouse leave from rating container
-	 */
 	function handleMouseLeave() {
 		setHoverRating(0);
 	}
 
-	/**
-	 * Gets fill state for a star based on current/hover rating
-	 * @param starIndex - 1-based star index
-	 * @returns Whether star should be filled
-	 */
 	function isFilled(starIndex: number): boolean {
-		const activeRating = hoverRating || rating;
-		return starIndex <= activeRating;
+		return starIndex <= (hoverRating || rating);
 	}
 
 	return (

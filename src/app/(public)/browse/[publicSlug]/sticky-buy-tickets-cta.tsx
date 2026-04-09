@@ -48,7 +48,11 @@ export function StickyBuyTicketsCta({
 			xShareClaimStatus,
 		});
 
-	// mount: observe checkout section visibility for scroll-to / click-through CTA
+	// useEffect: mount-only IntersectionObserver for checkout section visibility.
+	// Deps: [] — target element is static, observer setup runs once.
+	// Cleanup: disconnects observer to prevent memory leak on unmount.
+	// Why effect: browser API (IntersectionObserver) requires DOM access post-mount.
+	// Drives CTA behavior: scroll-to when hidden, click-through when visible.
 	useEffect(() => {
 		const target = document.getElementById('checkout-section');
 		if (!target) return;

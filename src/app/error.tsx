@@ -7,6 +7,7 @@ import { captureErrorBoundary } from '@/lib/sentry/capture';
 /**
  * Route-level error boundary.
  * Catches unhandled errors in page components and reports to Sentry.
+ * 'use client' required — error boundaries need browser interactivity (reset button).
  */
 export default function Error({
 	error,
@@ -15,6 +16,8 @@ export default function Error({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
+	// mount: report error to Sentry — fires once per error instance,
+	// re-fires if React replaces the error object after a retry
 	useEffect(() => {
 		captureErrorBoundary(error);
 	}, [error]);

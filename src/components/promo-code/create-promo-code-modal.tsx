@@ -154,6 +154,8 @@ export function CreatePromoCodeModal({
 	const watchUnlimitedUses = form.watch('unlimitedUses');
 	const watchUnlimitedPerUser = form.watch('unlimitedPerUser');
 
+	// Sync effect — forces type to DISCOUNT_FIXED when Free Tickets is disallowed
+	// (raffle has no question set). Fires when allowFreeTickets prop or watchType changes.
 	useEffect(() => {
 		if (!allowFreeTickets && watchType === PROMO_CODE_TYPE.FREE_TICKETS) {
 			form.setValue('type', PROMO_CODE_TYPE.DISCOUNT_FIXED);
@@ -383,16 +385,18 @@ export function CreatePromoCodeModal({
 											</>
 										)}
 									</Button>
-									{createdCodes.bulkId && onExportBatch ? (
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={() => onExportBatch(createdCodes.bulkId!)}
-											className="flex-1"
-										>
-											<Download className="size-4" />
-											Export Batch
-										</Button>
+									{createdCodes.bulkId ? (
+										onExportBatch ? (
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => onExportBatch(createdCodes.bulkId!)}
+												className="flex-1"
+											>
+												<Download className="size-4" />
+												Export Batch
+											</Button>
+										) : null
 									) : null}
 								</div>
 							</>

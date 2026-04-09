@@ -19,14 +19,8 @@ import {
 } from '@/types/winning';
 
 /**
- * Response type for marking a winning as sent
- */
-type MarkSentServiceResponse = ServiceResponse<Winning, WinningErrorCode>;
-
-/**
- * Marks a winning prize as sent by the host
+ * Marks a winning prize as sent by the host.
  *
- * Called by the raffle host to indicate the prize has been shipped.
  * Requires a proof URL (tracking link or shipping receipt).
  * Transitions status from awaiting_host to sent.
  *
@@ -38,17 +32,22 @@ export async function markSent(
 	winningId: string,
 	payload: MarkSentPayload,
 	publicSlug?: string,
-): Promise<MarkSentServiceResponse> {
+): Promise<ServiceResponse<Winning, WinningErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
+		// Step 1: Mark sent with proof URL — transitions awaiting_host → sent
 		const response = await authenticatedClient.post(
 			`/winnings/${winningId}/mark-sent`,
 			payload,
 		);
 
+		// Step 2: Validate response shape
 		const validated = winningSchema.parse(response.data);
+
+		// Step 3: Non-blocking cache revalidation + analytics
 		runAfter(async () => {
+			// Revalidation target: winning detail and list pages
 			revalidateWinningPaths(publicSlug);
 
 			const userId = (await sessionPromise)?.user?.id;

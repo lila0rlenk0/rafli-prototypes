@@ -10,13 +10,6 @@ import { cn } from '@/lib/utils';
 import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
 
-/**
- * Full-width toggle for switching between Host and Participant modes on mobile.
- * Two side-by-side buttons separated by a 1px divider.
- * Selected mode has black background + white text; unselected is transparent + black text.
- *
- * @returns Mode toggle or "Become a Host" link if user lacks permission
- */
 export function ModeSwitchToggle() {
 	const mode = useUserStore(state => state.mode);
 	const hasPermissions = useUserStore(state => state.permissions.length > 0);
@@ -25,9 +18,6 @@ export function ModeSwitchToggle() {
 	const router = useRouter();
 	const [isSwitching, startTransition] = useTransition();
 
-	/**
-	 * Switches to the given target mode if it differs from the current mode
-	 */
 	function handleSwitch(
 		target: typeof USER_MODE.HOST | typeof USER_MODE.PARTICIPANT,
 	) {

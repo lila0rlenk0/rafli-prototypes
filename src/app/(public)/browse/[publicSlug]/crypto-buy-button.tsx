@@ -107,10 +107,10 @@ export function CryptoBuyButton({
 	// Auto-proceed after wallet connection
 	// ==========================================
 
-	/**
-	 * Safety timeout — clears pendingCheckout after 30s if wallet never connects.
-	 * Prevents stale state if user dismisses the RainbowKit modal without connecting.
-	 */
+	// useEffect: sync target = clear stale checkout intent after 30s timeout.
+	// Deps: [pendingCheckout] — only re-arm when intent changes.
+	// Cleanup: clears timeout if component unmounts or pendingCheckout toggles.
+	// Why effect: external timer integration — no user event to hook into.
 	useEffect(() => {
 		if (!pendingCheckout) return;
 
@@ -123,12 +123,11 @@ export function CryptoBuyButton({
 		return () => clearTimeout(timeout);
 	}, [pendingCheckout]);
 
-	/**
-	 * Resolve ticket sync once the polling hook reaches a terminal state.
-	 *
-	 * The microtask keeps the effect focused on wiring external poll results back
-	 * into UI state without triggering the set-state-in-effect lint rule.
-	 */
+	// useEffect: sync target = resolve ticket polling when hook reaches terminal state.
+	// Deps: [isTicketSyncComplete, isTicketSyncExpired, router, ticketSyncTarget]
+	// — re-evaluates whenever poll status or sync target changes.
+	// Cleanup: none needed — queueMicrotask is fire-and-forget.
+	// Why effect: bridges external polling hook state into component state + router.
 	useEffect(() => {
 		const didSyncSettle = isTicketSyncComplete || isTicketSyncExpired;
 
@@ -208,27 +207,17 @@ export function CryptoBuyButton({
 	// Callbacks
 	// ==========================================
 
-	/**
-	 * Handles confirming state change from the crypto checkout modal.
-	 * When modal transitions to/from confirming, we track it here so the
-	 * button reflects the pending transaction even when modal is closed.
-	 *
-	 * useCallback required — passed as prop to modal where it sits in a useEffect
-	 * dependency array. Without stable reference, every parent render triggers
-	 * a spurious effect fire in the child.
-	 */
+	// useCallback: stable reference for handleConfirmingChange.
+	// Avoids re-render cascade — this callback is in CryptoCheckoutModal's useEffect deps.
+	// Without memoization, every parent render triggers a spurious child effect fire.
 	const handleConfirmingChange = useCallback((confirming: boolean) => {
 		setIsConfirming(confirming);
 	}, []);
 
-	/**
-	 * Accepts the confirmed quantity from the modal (the session's actual quantity)
-	 * instead of closing over the parent's ticketQuantity prop, which can drift
-	 * during the 30-120s confirming window if the user changes the ticket selector.
-	 *
-	 * Refresh immediately for raffle counters, then keep a background sync alive
-	 * until the bought tickets actually appear.
-	 */
+	// useCallback: stable reference for handleCryptoSuccess.
+	// Deps: [myTicketsTotal, router] — re-creates when baseline ticket count or router changes.
+	// Accepts confirmed quantity from modal (not parent prop) because ticketQuantity can drift
+	// during the 30-120s confirming window if user changes the ticket selector.
 	const handleCryptoSuccess = useCallback(
 		(confirmedQuantity: number) => {
 			resolvedTicketSyncTarget.current = null;

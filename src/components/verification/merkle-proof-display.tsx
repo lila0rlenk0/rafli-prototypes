@@ -12,20 +12,12 @@ interface MerkleProofDisplayProps {
 	className?: string;
 }
 
-/**
- * MerkleProofDisplay Component
- *
- * Collapsible display of Merkle proof path for ticket verification.
- */
 export function MerkleProofDisplay({
 	proof,
 	className,
 }: MerkleProofDisplayProps) {
 	const [expanded, setExpanded] = useState(false);
 
-	/**
-	 * Truncates a hex string for display
-	 */
 	function truncateHex(str: string): string {
 		if (str.length <= 16) return str;
 		return `${str.slice(0, 10)}...${str.slice(-8)}`;
@@ -132,9 +124,6 @@ interface ProofRowProps {
 	value: string;
 }
 
-/**
- * Simple row for proof metadata
- */
 function ProofRow({ label, value }: ProofRowProps) {
 	return (
 		<div className="flex items-center justify-between text-xs">

@@ -3,37 +3,35 @@ paths:
   - 'src/components/**'
 ---
 
-# shadcn/ui Conventions
+# shadcn/ui
 
-Project uses shadcn components in `src/components/ui/`. CLI: `bunx --bun shadcn@latest`.
+Components in `src/components/ui/`. CLI: `bunx --bun shadcn@latest`.
 
 ## Styling
 
-- `className` for layout only — never override component colors or typography
-- `gap-*` not `space-x-*`/`space-y-*` — use `flex` with `gap-*`, vertical stacks: `flex flex-col gap-*`
-- `size-*` when width equals height — `size-10` not `w-10 h-10`
-- `truncate` shorthand — not `overflow-hidden text-ellipsis whitespace-nowrap`
-- No manual `dark:` overrides — use semantic tokens (`bg-background`, `text-muted-foreground`)
+- `className` for layout only — never override component colors/typography
+- `gap-*` not `space-x-*`/`space-y-*`
+- `size-*` when width = height
+- `truncate` shorthand
+- no manual `dark:` — use semantic tokens (`bg-background`, `text-muted-foreground`)
 - `cn()` for conditional classes — no template literal ternaries
-- No manual `z-index` on overlay components (Dialog, Sheet, Popover handle stacking)
+- no manual `z-index` on overlays
 
 ## Composition
 
-- Items inside their Group: `SelectItem` in `SelectGroup`, `DropdownMenuItem` in `DropdownMenuGroup`
-- Dialog/Sheet/Drawer always need a Title component (use `className="sr-only"` if hidden)
-- Full Card composition: `CardHeader`/`CardTitle`/`CardDescription`/`CardContent`/`CardFooter`
-- `TabsTrigger` must be inside `TabsList`
-- `Avatar` always needs `AvatarFallback`
-- Use `Alert` for callouts, `Badge` for status, `Skeleton` for loading, `Separator` for dividers
-- Toast via `sonner` — `toast()` from `sonner`
+- items inside groups: `SelectItem` in `SelectGroup`, `DropdownMenuItem` in `DropdownMenuGroup`
+- Dialog/Sheet/Drawer need Title (use `className="sr-only"` if hidden)
+- full Card: `CardHeader`/`CardTitle`/`CardDescription`/`CardContent`/`CardFooter`
+- `TabsTrigger` inside `TabsList`
+- `Avatar` needs `AvatarFallback`
+- toast via `sonner` — `toast()` from `sonner`
 
 ## Icons
 
-- Icons in Button use `data-icon="inline-start"` or `data-icon="inline-end"`
-- No sizing classes on icons inside shadcn components — CSS handles it
-- Import from `lucide-react` (barrel imports, tree-shaken via `optimizePackageImports`)
+- `data-icon="inline-start"` or `data-icon="inline-end"` in Button
+- no sizing classes on icons inside shadcn — CSS handles it
+- import from `lucide-react` (tree-shaken via `optimizePackageImports`)
 
-## Semantic Colors
+## Colors
 
-- `bg-primary`, `text-muted-foreground` — never raw values like `bg-blue-500`
-- Use built-in variants (`variant="outline"`, `size="sm"`) before custom styles
+Semantic tokens only (`bg-primary`, `text-muted-foreground`), never raw (`bg-blue-500`). Built-in variants before custom styles.

@@ -31,11 +31,14 @@ interface DocumentViewerProps {
  * @returns Grid of document cards with preview dialog
  */
 export function DocumentViewer({ documents }: DocumentViewerProps) {
+	// Controls whether the fullscreen preview dialog is open
 	const [previewOpen, setPreviewOpen] = useState(false);
+	// Index into the documents array for the currently previewed document
 	const [currentIndex, setCurrentIndex] = useState(0);
 
-	// Only documents with a valid URL are previewable — memoized so
-	// useCallback/useEffect deps remain stable across renders
+	// useMemo: precompute which document indices have valid URLs for preview.
+	// Avoids re-filtering on every render — also stabilizes downstream deps
+	// in useCallback/useEffect (goToPrevious, goToNext, keyboard handler).
 	const previewableIndices = useMemo(
 		() => documents.map((doc, i) => (doc.url ? i : -1)).filter(i => i !== -1),
 		[documents],
@@ -59,6 +62,8 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 		setPreviewOpen(true);
 	}
 
+	// useCallback: stable reference for keyboard event handler effect dep.
+	// Without memoization, the effect would re-subscribe on every render.
 	/** Navigate to the previous previewable document */
 	const goToPrevious = useCallback(() => {
 		if (currentPosition > 0) {
@@ -66,6 +71,7 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 		}
 	}, [previewableIndices, currentPosition]);
 
+	// useCallback: same rationale as goToPrevious — keyboard effect dep stability
 	/** Navigate to the next previewable document */
 	const goToNext = useCallback(() => {
 		if (currentPosition < previewableIndices.length - 1) {
@@ -85,6 +91,11 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 		window.addEventListener('keydown', handleKeyDown);
 		return () => window.removeEventListener('keydown', handleKeyDown);
 	}, [previewOpen, goToPrevious, goToNext]);
+
+	/** Navigates to a specific document index for the dot indicators */
+	function handleDotClick(docIndex: number) {
+		setCurrentIndex(docIndex);
+	}
 
 	if (documents.length === 0) {
 		return (
@@ -237,7 +248,7 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 									<button
 										key={docIndex}
 										type="button"
-										onClick={() => setCurrentIndex(docIndex)}
+										onClick={() => handleDotClick(docIndex)}
 										className={cn(
 											'size-2 rounded-full transition-colors',
 											isActive ? 'bg-white' : 'bg-white/40 hover:bg-white/60',

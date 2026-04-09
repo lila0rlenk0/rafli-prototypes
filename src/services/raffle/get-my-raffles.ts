@@ -14,14 +14,6 @@ import type { ServiceResponse } from '@/types/service-response';
 import { ZodError } from 'zod';
 
 /**
- * Response type for fetching user's raffles list
- */
-type GetMyRafflesResponse = ServiceResponse<
-	ListRafflesResponse,
-	RaffleErrorCode
->;
-
-/**
  * Fetches the current user's raffles with optional filtering
  *
  * @param query - Optional query parameters for filtering raffles
@@ -29,26 +21,18 @@ type GetMyRafflesResponse = ServiceResponse<
  */
 export async function getMyRaffles(
 	query?: MyRafflesQuery,
-): Promise<GetMyRafflesResponse> {
+): Promise<ServiceResponse<ListRafflesResponse, RaffleErrorCode>> {
 	try {
-		const params = buildQueryParamsWithStatus(query);
-
 		const response = await authenticatedClient.get('/me/raffles', {
-			params,
+			params: buildQueryParamsWithStatus(query),
 		});
-
-		// Validate response data structure
-		const validatedData = listRafflesResponseSchema.parse(response.data);
-
-		return success(validatedData);
+		return success(listRafflesResponseSchema.parse(response.data));
 	} catch (error) {
-		// Handle validation errors separately
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'get-my-raffles');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

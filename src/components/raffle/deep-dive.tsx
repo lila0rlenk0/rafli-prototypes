@@ -27,18 +27,11 @@ export function DeepDive({
 }: DeepDiveProps) {
 	const [isOpen, setIsOpen] = useState(defaultOpen);
 
-	/**
-	 * Toggles the expanded state
-	 */
-	function handleToggle() {
-		setIsOpen(!isOpen);
-	}
-
 	return (
 		<div className={cn('mt-4', className)}>
 			<button
 				type="button"
-				onClick={handleToggle}
+				onClick={() => setIsOpen(prev => !prev)}
 				className="flex items-center gap-2 text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
 			>
 				<Code className="size-4" />

@@ -19,6 +19,7 @@ import { type ComponentProps, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+/** Email-only schema — no password needed for forgot-password flow */
 const formSchema = z.object({
 	email: z.email('Invalid email address'),
 });
@@ -26,7 +27,9 @@ const formSchema = z.object({
 type FormType = z.infer<typeof formSchema>;
 
 /**
- * Maps error codes to user-friendly messages
+ * Maps infrastructure error codes to user-friendly messages.
+ * Only infrastructure errors reach here — the service layer swallows
+ * account-existence signals to prevent email enumeration.
  */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
@@ -44,10 +47,15 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 }
 
 /**
- * ForgotPasswordForm Component
+ * Email input form to request a password reset link.
  *
- * Displays email input to request password reset.
- * Shows success message after submission.
+ * 'use client' required: uses useForm for validation, useTransition for
+ * non-blocking server action calls, and useState for success state.
+ *
+ * Shows a generic success state to prevent user enumeration — the backend
+ * always returns success regardless of whether the email exists.
+ *
+ * @returns Form with email input, or success confirmation after submission
  */
 export function ForgotPasswordForm({
 	className,
@@ -64,19 +72,23 @@ export function ForgotPasswordForm({
 	const [isPending, startTransition] = useTransition();
 	const [isSuccess, setIsSuccess] = useState(false);
 
+	/** Calls server action to request password reset email */
 	async function handleRequestReset(data: FormType) {
 		startTransition(async () => {
+			// Step 1: Request reset — redirectTo tells backend where the reset link should point
 			const result = await requestPasswordReset({
 				email: data.email,
 				redirectTo: `${window.location.origin}/reset-password`,
 			});
 
+			// Step 2: Only infrastructure errors surface (rate limit, network, timeout)
 			if (!result.success) {
 				const message = getErrorMessage(result.error);
 				setError('root', { message });
 				return;
 			}
 
+			// Step 3: Generic success — intentionally vague to prevent enumeration
 			setIsSuccess(true);
 		});
 	}

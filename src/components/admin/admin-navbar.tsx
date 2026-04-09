@@ -22,11 +22,8 @@ interface AdminNavbarProps {
 }
 
 /**
- * Admin-specific navbar matching the existing Navbar structure exactly.
- * Same sticky positioning, same spacing, same responsive breakpoints.
- * Simplified: no mode switch, no notifications, no feedback button.
- *
- * @returns Admin navbar wrapping page content
+ * Admin-specific navbar — same structure as user Navbar.
+ * No mode switch, notifications, or feedback button.
  */
 export function AdminNavbar({ children }: AdminNavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -40,10 +37,7 @@ export function AdminNavbar({ children }: AdminNavbarProps) {
 		setIsMenuOpen(false);
 	}
 
-	/**
-	 * Checks if a nav link is active based on current pathname.
-	 * Uses startsWith for nested routes (e.g. /admin/verification/[id]).
-	 */
+	// startsWith handles nested routes (e.g. /admin/verification/[id])
 	function isActiveLink(href: string): boolean {
 		return pathname.startsWith(href);
 	}

@@ -13,24 +13,13 @@ interface CollapsibleDescriptionProps {
 
 /**
  * Renders a raffle description with "Read more" / "Read less" toggle.
- * Truncates content to 3 lines by default using line-clamp.
- * When expanded, also reveals the expandedSlot (e.g. category badges).
- *
- * @returns Collapsible description section with label and toggle
+ * Truncates content to 3 lines by default; when expanded, reveals `expandedSlot`.
  */
 export function CollapsibleDescription({
 	content,
 	expandedSlot,
 }: CollapsibleDescriptionProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
-
-	function handleToggle() {
-		setIsExpanded(prev => !prev);
-	}
-
-	function getToggleLabel(): string {
-		return isExpanded ? 'Read less' : 'Read more';
-	}
 
 	return (
 		<div className="flex min-w-0 flex-col gap-2">
@@ -40,14 +29,14 @@ export function CollapsibleDescription({
 				<MarkdownRenderer content={content} className="text-sm" />
 			</div>
 
-			{isExpanded && expandedSlot}
+			{isExpanded ? expandedSlot : null}
 
 			<button
 				type="button"
-				onClick={handleToggle}
+				onClick={() => setIsExpanded(prev => !prev)}
 				className="cursor-pointer self-start text-sm font-medium text-black underline underline-offset-2"
 			>
-				{getToggleLabel()}
+				{isExpanded ? 'Read less' : 'Read more'}
 			</button>
 		</div>
 	);

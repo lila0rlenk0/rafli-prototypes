@@ -4,8 +4,9 @@ import { Logo } from '@/assets/logo';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
-import { ComponentProps, useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 
+/** External Google Form URL for user feedback — linked from nav and mobile menu */
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 
 interface NavbarProps {
@@ -13,9 +14,13 @@ interface NavbarProps {
 }
 
 /**
- * Navigation bar component for the landing page
- * @param props - Component props
- * @param props.showDecoration - Whether to show decorative colored cards (default: true)
+ * Navigation bar for the landing page with responsive mobile menu.
+ *
+ * 'use client' required: useState for mobile menu toggle.
+ *
+ * @param props.showDecoration - Whether to show decorative colored cards (default: true).
+ *   Set to false on press-release page where the cards would overlap article content.
+ * @returns Fixed nav bar with desktop links + mobile hamburger overlay
  */
 export function Navbar({ showDecoration = true }: NavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -148,6 +153,7 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 	);
 }
 
+/** Decorative colored card shapes positioned in the top-right corner of the navbar */
 function ColoredCard(props: ComponentProps<'svg'>) {
 	return (
 		<svg

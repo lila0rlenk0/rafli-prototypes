@@ -3,10 +3,6 @@
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
-// ==========================================
-// Types
-// ==========================================
-
 interface ChainSelectorProps {
 	/** Chain IDs to display — already resolved and filtered by parent */
 	cryptoChainIds: number[];
@@ -15,13 +11,8 @@ interface ChainSelectorProps {
 	onSelectChain: (chainId: number) => void;
 }
 
-// ==========================================
-// Component
-// ==========================================
-
 /**
  * Chain selector step for crypto checkout.
- * Displays supported chains with icons from @web3icons/react.
  * Chain names and token labels come from raffle's cryptoOptions (backend-resolved).
  */
 export function ChainSelector({
@@ -29,20 +20,15 @@ export function ChainSelector({
 	cryptoOptions,
 	onSelectChain,
 }: ChainSelectorProps) {
-	/** Finds the chain entry from raffle's crypto options */
 	function getChainOption(chainId: number) {
 		return cryptoOptions.chains.find(c => c.chainId === chainId);
 	}
 
-	/** Gets chain display name from raffle's crypto options, falls back to chain ID */
 	function getChainName(chainId: number): string {
 		return getChainOption(chainId)?.name ?? `Chain ${chainId}`;
 	}
 
-	/**
-	 * Gets dot-separated token symbols for a chain.
-	 * Backend already filtered by allowlist and pricing — no client-side logic needed.
-	 */
+	// Backend already filtered by allowlist and pricing — no client-side logic needed
 	function getTokenLabels(chainId: number): string {
 		const chainOption = getChainOption(chainId);
 		if (!chainOption || chainOption.tokens.length === 0) return 'USDC';

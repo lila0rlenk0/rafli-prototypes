@@ -6,6 +6,11 @@ import type { ComponentProps, ReactNode } from 'react';
  *
  * Used by: sign-in, sign-up, forgot-password, reset-password, resend-verification.
  * NOT used by: verify-email (minimal centered layout without the split shell).
+ *
+ * Server Component — purely presentational, no data fetching.
+ * Children (form components) are Client Components that cross the boundary here.
+ *
+ * @returns Split-pane layout with branded left panel and content slot on right
  */
 export function AuthPageShell({ children }: { children: ReactNode }) {
 	return (
@@ -30,6 +35,7 @@ export function AuthPageShell({ children }: { children: ReactNode }) {
 	);
 }
 
+/** Decorative colored card shapes for the left panel background */
 function ColoredCards(props: ComponentProps<'svg'>) {
 	return (
 		<svg
@@ -56,6 +62,7 @@ function ColoredCards(props: ComponentProps<'svg'>) {
 	);
 }
 
+/** Ticket icon shown above the headline on the left panel */
 function TicketIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg

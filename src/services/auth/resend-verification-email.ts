@@ -7,37 +7,34 @@ import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for resend verification email.
- * Always returns success to prevent user enumeration — mirrors backend behavior.
- */
-type ResendVerificationEmailResponse = ServiceResponse<void, AuthErrorCode>;
-
-/**
  * Requests a new verification email for the given address.
  * Backend always returns 200 regardless of account existence (enumeration-safe).
  *
  * Only infrastructure errors (network, timeout, rate limit) surface as failures
  * so the user knows to retry — all other errors silently succeed to prevent
  * leaking whether an account exists.
+ *
+ * @param email - Email address to send verification to
+ * @returns ServiceResponse with void on success, AuthErrorCode only for infra errors
  */
 export async function resendVerificationEmail(
 	email: string,
-): Promise<ResendVerificationEmailResponse> {
+): Promise<ServiceResponse<void, AuthErrorCode>> {
 	try {
+		// Step 1: Request verification email — backend returns 200 regardless of account existence
 		await baseClient.post('/auth/send-verification-email', { email });
 
 		return success(undefined);
 	} catch (error) {
+		// Step 2: Map and capture — auth is a critical service
 		const errorCode = mapAuthError(error);
-
-		// Capture all errors — the Sentry filter drops expected business codes.
-		// Infrastructure errors (5XX, network) pass through for alerting.
 		captureServiceError(error, errorCode, {
 			service: 'auth',
 			action: 'resend-verification-email',
 		});
 
-		// Infrastructure errors — user should know to retry
+		// Step 3: Only surface infrastructure errors — 4XX errors return success
+		// to prevent user enumeration (attacker can't tell if email exists)
 		if (
 			errorCode === COMMON_ERROR_CODES.NETWORK_ERROR ||
 			errorCode === COMMON_ERROR_CODES.TIMEOUT_ERROR ||
@@ -47,7 +44,6 @@ export async function resendVerificationEmail(
 			return failure(errorCode);
 		}
 
-		// All other errors return success to prevent enumeration
 		return success(undefined);
 	}
 }

@@ -1,57 +1,27 @@
-# Error Handling and Observability
+# Error Handling
 
-## ServiceResponse Pattern
+## ServiceResponse
 
-All services return a discriminated union defined in `@/types/service-response`:
+Discriminated union in `@/types/service-response`:
 
-```typescript
-type ServiceResponse<T, E> =
-	| { success: true; data: T }
-	| { success: false; error: E };
+```ts
+type ServiceResponse<T, E> = { success: true; data: T } | { success: false; error: E };
 ```
 
-Helpers in `@/lib/errors`:
-
-```typescript
-return success(data); // success with data
-return success(undefined); // success without data (void operations)
-return failure(ERROR_CODES.X); // failure with typed error code
-```
-
-Never throw raw errors. Always map through `ServiceResponse`.
+Helpers: `success(data)`, `success(undefined)` for void ops, `failure(ERROR_CODES.X)`. Never throw raw errors.
 
 ## Error Mappers
 
-One mapper per domain in `@/lib/errors/error-mapper`. Available: `mapAuthError`, `mapRaffleError`, `mapOrderError`, `mapWalletError`, `mapPaymentError`, `mapTicketError`, `mapHostError`, `mapWinningError`, `mapUpdateError`, `mapVerificationError`, `mapNotificationError`, `mapReviewError`, `mapCommentError`, `mapReportError`, `mapPromoCodeError`.
+One per domain in `@/lib/errors/error-mapper`: `mapAuthError`, `mapRaffleError`, `mapOrderError`, `mapWalletError`, `mapPaymentError`, `mapTicketError`, `mapHostError`, `mapWinningError`, `mapUpdateError`, `mapVerificationError`, `mapNotificationError`, `mapReviewError`, `mapCommentError`, `mapReportError`, `mapPromoCodeError`.
 
-Auto-mapped codes: 401 `unauthorized`, 403 `forbidden`, 500 `internal_server_error`, `ECONNABORTED` `timeout_error`, `ERR_NETWORK` `network_error`.
+Auto-mapped: 401 `unauthorized`, 403 `forbidden`, 500 `internal_server_error`, `ECONNABORTED` `timeout_error`, `ERR_NETWORK` `network_error`.
 
-## Sentry Integration
+## Sentry
 
-`captureServiceError()` from `@/lib/sentry/capture` — required in critical services (auth, payments, crypto). Optional for simple CRUD where error mappers provide enough context.
+`captureServiceError()` from `@/lib/sentry/capture` — required for critical services (auth, payments, crypto), optional for simple CRUD.
 
-```typescript
-const errorCode = mapDomainError(error);
-captureServiceError(error, errorCode, {
-	service: 'domain-name',
-	action: 'action-name',
-});
-return failure(errorCode);
-```
-
-`beforeSend` in `src/lib/sentry/filter.ts` classifies automatically — no need to check if the error is expected. Expected errors (wrong password, sold out, validation) are dropped. Network/timeout errors are sampled at 10%.
-
-To add a new expected error code, add the string to `EXPECTED_ERROR_CODES` set in `src/lib/sentry/filter.ts`.
+`beforeSend` in `src/lib/sentry/filter.ts` auto-classifies. Expected errors dropped, network/timeout sampled 10%. Add new expected codes to `EXPECTED_ERROR_CODES` set.
 
 ## Component Error Handling
 
-Map error codes to user-facing messages with a switch. Use early return pattern.
-
-```typescript
-const result = await signIn(data);
-if (!result.success) {
-	setError('root', { message: getErrorMessage(result.error) });
-	return;
-}
-// TypeScript narrows: result.data exists here
-```
+Map error codes to messages with switch. Early return on failure, TypeScript narrows `result.data` on success path.

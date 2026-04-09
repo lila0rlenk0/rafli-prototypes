@@ -25,12 +25,7 @@ const VARIANT_STYLES: Record<
 	outline: 'border border-black/20 bg-transparent text-black hover:bg-black/5',
 };
 
-/**
- * Sign-out button with variant support for different contexts.
- * Default red filled style for profile, ghost/outline for admin navbar.
- *
- * @returns Styled button that signs out and resets the user store
- */
+/** Sign-out button — default red for profile, ghost/outline for admin navbar. */
 export function SignOutButton({
 	className,
 	variant = 'default',

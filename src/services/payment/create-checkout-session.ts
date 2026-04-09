@@ -24,41 +24,36 @@ import {
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for checkout session creation
- */
-type CreateCheckoutSessionResponse = ServiceResponse<
-	CheckoutSessionResponse,
-	PaymentErrorCode
->;
-
-/**
- * Creates a Stripe Checkout Session for an order
+ * Creates a Stripe Checkout Session for an order.
+ *
+ * Validates the payload locally so we never hit the network with bad data.
+ * Uses `publicSlug` for success/cancel URL construction — encodeURIComponent
+ * prevents path traversal via malformed slugs.
+ * BE `createCheckoutDtoSchema` only accepts `{ orderId, successUrl, cancelUrl }`.
  *
  * @param payload - Checkout creation data (orderId, raffleId)
  * @returns ServiceResponse with checkout session data on success, PaymentErrorCode on failure
  */
 export async function createCheckoutSession(
 	payload: CreateCheckoutPayload,
-): Promise<CreateCheckoutSessionResponse> {
+): Promise<ServiceResponse<CheckoutSessionResponse, PaymentErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Validate payload before sending
+		// Step 1: Validate payload — reject bad data before network call
 		const validationResult = createCheckoutPayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
 			return failure(PAYMENT_ERROR_CODES.CHECKOUT_FAILED);
 		}
 
+		// Step 2: Build success/cancel URLs — encodeURIComponent prevents path traversal
 		const { orderId, publicSlug } = validationResult.data;
-
-		// Use publicSlug for URL construction (matches the page route).
-		// encodeURIComponent prevents path traversal via malformed slugs.
 		const baseUrl = new URL(
 			`/browse/${encodeURIComponent(publicSlug)}`,
 			env.APP_URL,
 		);
 
-		// BE createCheckoutDtoSchema only accepts { orderId, successUrl, cancelUrl }
+		// Step 3: Create Stripe checkout session — backend returns session URL for redirect
 		const response = await authenticatedClient.post(
 			'/payments/checkout',
 			{
@@ -69,7 +64,7 @@ export async function createCheckoutSession(
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Validate response structure
+		// Step 4: Validate response shape
 		const checkoutSession = checkoutSessionResponseSchema.parse(response.data);
 
 		runAfter(async () => {
@@ -88,7 +83,6 @@ export async function createCheckoutSession(
 
 		return success(checkoutSession);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'payment', 'create-checkout-session');
 			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);

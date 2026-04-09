@@ -1,18 +1,8 @@
 import type { ClientErrorCode } from './client-errors';
 import type { CommonErrorCode } from './common-errors';
 
-/**
- * Promo Code Error Codes
- *
- * Error codes for promo code operations (create, list, deactivate, validate, export).
- * Uses `core:promo:*` prefix matching backend error codes.
- */
-
+/** Uses `core:promo:*` prefix matching backend error codes */
 export const PROMO_CODE_ERROR_CODES = {
-	// ==========================================
-	// Backend Error Codes (core:promo:*)
-	// ==========================================
-
 	/** Promo code not found */
 	NOT_FOUND: 'core:promo:not-found',
 	/** User is not the host of this raffle */
@@ -48,20 +38,12 @@ export const PROMO_CODE_ERROR_CODES = {
 	/** Invalid request payload */
 	INVALID_ARGUMENT: 'global:validation:invalid-argument',
 
-	// ==========================================
-	// Frontend-only Error Codes
-	// ==========================================
-
 	/** Generic fetch failure (Zod validation, etc.) */
 	FETCH_FAILED: 'fetch_failed',
 	/** Invalid promo code format (early validation) */
 	INVALID_CODE: 'invalid_code',
 } as const;
 
-/**
- * Promo code error code type
- * Combines promo-specific, client-side, and common error codes
- */
 export type PromoCodeErrorCode =
 	| (typeof PROMO_CODE_ERROR_CODES)[keyof typeof PROMO_CODE_ERROR_CODES]
 	| ClientErrorCode

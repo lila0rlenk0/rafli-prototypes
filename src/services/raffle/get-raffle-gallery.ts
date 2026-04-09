@@ -14,58 +14,47 @@ import {
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Response type for fetching raffle gallery images
- */
-type GetRaffleGalleryResponse = ServiceResponse<
-	RaffleGalleryResponse,
-	RaffleErrorCode
->;
-
-/**
- * Fetches raffle gallery images with expiration-aware caching
+ * Fetches raffle gallery images with expiration-aware caching.
  *
- * Uses Next.js 16 'use cache' directive with dynamic cache duration
- * based on the earliest expiring pre-signed URL in the gallery.
- *
- * Note: Pagination is supported but not used initially.
- * Current UI shows only first 3 images.
+ * Uses Next.js 'use cache' with a fixed 5-minute cache since URLs are now
+ * plain strings. Pagination is supported but the current UI shows only the
+ * first 3 images.
  *
  * @param raffleId - UUID of the raffle
  * @param limit - Optional pagination limit
  * @param page - Optional page number
- * @returns ServiceResponse with gallery URLs and expirations on success, RaffleErrorCode on failure
+ * @returns ServiceResponse with gallery URLs on success, RaffleErrorCode on failure
  */
 export async function getRaffleGallery(
 	raffleId: string,
 	limit?: number,
 	page?: number,
-): Promise<GetRaffleGalleryResponse> {
+): Promise<ServiceResponse<RaffleGalleryResponse, RaffleErrorCode>> {
 	'use cache';
 
 	try {
-		const params: Record<string, unknown> = {};
-		if (limit) params.limit = limit;
-		if (page) params.page = page;
-
+		// Step 1: Fetch gallery images — pagination supported, current UI shows first 3
 		const response = await baseClient.get(`/raffles/${raffleId}/gallery`, {
-			params,
+			params: {
+				...(limit ? { limit } : undefined),
+				...(page ? { page } : undefined),
+			},
 		});
 
-		// Validate response structure
+		// Step 2: Validate response shape
 		const validatedData = raffleGalleryResponseSchema.parse(response.data);
 
-		// URLs are now plain strings — use fixed 5-minute cache
+		// Step 3: Cache for 5 minutes — URLs are plain strings, not pre-signed
+		// revalidate: 300s (5min), expire: 360s (6min)
 		cacheLife({ stale: 0, revalidate: 300, expire: 360 });
 
 		return success(validatedData);
 	} catch (error) {
-		// Handle validation errors
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'get-raffle-gallery');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapRaffleError(error);
-		return failure(errorCode);
+		return failure(mapRaffleError(error));
 	}
 }

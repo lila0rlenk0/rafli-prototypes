@@ -10,23 +10,10 @@ interface UpdateTimelineItemProps {
 	hostName?: string;
 }
 
-/**
- * UpdateTimelineItem Component
- *
- * Renders a single update card.
- * Shows: host name, published date, image carousel (if any), and description.
- *
- * @param update - The update object to display
- */
 export function UpdateTimelineItem({
 	update,
 	hostName,
 }: UpdateTimelineItemProps) {
-	/**
-	 * Formats the update date and time
-	 * @param dateString - ISO date string
-	 * @returns Formatted date string (e.g., "January 21, 2026, 19:01")
-	 */
 	function formatDateTime(dateString: string): string {
 		const date = new Date(dateString);
 		const formattedDate = date.toLocaleDateString('en-US', {
@@ -42,11 +29,6 @@ export function UpdateTimelineItem({
 		return `${formattedDate}, ${formattedTime}`;
 	}
 
-	/**
-	 * Checks if a URL string is a valid URL
-	 * @param url - URL string to validate
-	 * @returns true if valid URL, false otherwise
-	 */
 	function isValidUrl(url: string): boolean {
 		try {
 			new URL(url);

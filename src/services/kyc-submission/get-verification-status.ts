@@ -14,8 +14,10 @@ import {
 	type KycSubmissionErrorCode,
 } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
-import type { VerificationStatusResponse } from '@/types/verification-status';
-import { verificationStatusResponseSchema } from '@/types/verification-status';
+import {
+	verificationStatusResponseSchema,
+	type VerificationStatusResponse,
+} from '@/types/verification-status';
 
 /**
  * Fetches the current user's aggregate verification status.
@@ -33,8 +35,7 @@ export async function getVerificationStatus(): Promise<
 			timeout: API_TIMEOUTS.QUERY,
 		});
 
-		const parsed = verificationStatusResponseSchema.parse(response.data);
-		return success(parsed);
+		return success(verificationStatusResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'kyc-submission', 'get-verification-status');

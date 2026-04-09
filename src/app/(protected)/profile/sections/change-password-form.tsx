@@ -36,11 +36,6 @@ const formSchema = z
 
 type FormType = z.infer<typeof formSchema>;
 
-/**
- * Maps error codes to user-friendly messages
- *
- * @returns Human-readable error message
- */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
 		case AUTH_ERROR_CODES.PASSWORD_INVALID:
@@ -65,10 +60,7 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
 }
 
 /**
- * ChangePasswordForm Component
- *
  * Form for authenticated users to change their password.
- * Always displays the three password fields inline.
  *
  * @returns Password change form with current, new, and confirm fields
  */
@@ -82,11 +74,10 @@ export function ChangePasswordForm() {
 	} = useForm<FormType>({
 		resolver: zodResolver(formSchema),
 	});
+	// useTransition: keeps the form interactive during server action call.
+	// isPending disables submit button to prevent double-submit.
 	const [isPending, startTransition] = useTransition();
 
-	/**
-	 * Handles form submission
-	 */
 	function handleChangePassword(data: FormType) {
 		startTransition(async () => {
 			const result = await changePassword({

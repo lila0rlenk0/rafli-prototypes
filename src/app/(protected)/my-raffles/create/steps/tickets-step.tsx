@@ -18,6 +18,12 @@ import { CryptoConfigSection } from '../crypto-config-section';
 import { useMultiStepForm } from '../multi-step-form-provider';
 import { PromoCodesSection } from '../promo-codes-section';
 
+/**
+ * Step 2 of the raffle creation wizard — configures dates, ticket pricing,
+ * participant limits, crypto payment, promo codes, and check-in question.
+ *
+ * @returns Form fields for the tickets step with continue/clear actions
+ */
 export function TicketsStep() {
 	const {
 		form,
@@ -60,7 +66,8 @@ export function TicketsStep() {
 		pendingPromoCodes.length > 0,
 	);
 
-	// Find the selected question to show options preview
+	// useMemo: find the selected question to show its options preview.
+	// Avoids O(n) array scan on every render — only recomputes when selection changes.
 	const selectedQuestion = useMemo(() => {
 		if (!checkInQuestion) return null;
 		return questions.find(q => q.id === checkInQuestion) || null;
@@ -115,7 +122,8 @@ export function TicketsStep() {
 		return new Date(y, m - 1, d, h, min);
 	}
 
-	// Check if end datetime is after start datetime
+	// useMemo: validate that end datetime is at least 24h after start datetime.
+	// Derived from four watched fields — avoids redundant Date construction on every render.
 	const isDateRangeValid = useMemo(() => {
 		if (!startDate || !endDate) return true;
 		const start = buildDateTime(startDate, startTime);
@@ -125,7 +133,8 @@ export function TicketsStep() {
 		return end.getTime() - start.getTime() >= MS_PER_DAY;
 	}, [startDate, startTime, endDate, endTime]);
 
-	// Check if end date is within 6 months from start date
+	// useMemo: validate that end date is within 6 months of start date.
+	// Platform policy limit — prevents unreasonably long raffle durations.
 	const isEndDateWithin6Months = useMemo(() => {
 		if (!startDate || !endDate) return true;
 		const start = buildDateTime(startDate, startTime);
@@ -301,25 +310,7 @@ export function TicketsStep() {
 				</div>
 
 				{endDate && endTime ? (
-					<div className="flex items-center gap-2 text-xs text-gray-500">
-						<Globe className="size-3.5 shrink-0" />
-						<span>
-							Times are in your local timezone (
-							{Intl.DateTimeFormat().resolvedOptions().timeZone}).
-							{(() => {
-								// Show the UTC equivalent so hosts know the absolute time
-								const utc = buildDateTime(endDate, endTime);
-								const utcLabel = utc.toLocaleString('en-US', {
-									timeZone: 'UTC',
-									month: 'short',
-									day: 'numeric',
-									hour: 'numeric',
-									minute: '2-digit',
-								});
-								return ` Ends ${utcLabel} UTC.`;
-							})()}
-						</span>
-					</div>
+					<TimezoneNotice endDate={endDate} endTime={endTime} />
 				) : null}
 
 				{!isStartDateToday ? (
@@ -557,6 +548,46 @@ export function TicketsStep() {
 					<span className="text-sm font-semibold">Clear all</span>
 				</Button>
 			</div>
+		</div>
+	);
+}
+
+// ─── Extracted Components ──────────────────────────────────────────────────
+
+/**
+ * Displays the user's local timezone and the UTC equivalent of the raffle end time.
+ * Helps hosts understand the absolute end time for international participants.
+ */
+function TimezoneNotice({
+	endDate,
+	endTime,
+}: {
+	endDate: string;
+	endTime: string;
+}) {
+	/** Build a local Date from separate date/time strings */
+	function buildEndDateTime(): Date {
+		const [y, m, d] = endDate.split('-').map(Number);
+		const [h, min] = (endTime || '00:00').split(':').map(Number);
+		return new Date(y, m - 1, d, h, min);
+	}
+
+	const utcLabel = buildEndDateTime().toLocaleString('en-US', {
+		timeZone: 'UTC',
+		month: 'short',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit',
+	});
+
+	return (
+		<div className="flex items-center gap-2 text-xs text-gray-500">
+			<Globe className="size-3.5 shrink-0" />
+			<span>
+				Times are in your local timezone (
+				{Intl.DateTimeFormat().resolvedOptions().timeZone}). Ends {utcLabel}{' '}
+				UTC.
+			</span>
 		</div>
 	);
 }

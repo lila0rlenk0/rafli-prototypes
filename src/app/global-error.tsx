@@ -6,7 +6,9 @@ import { captureErrorBoundary } from '@/lib/sentry/capture';
 
 /**
  * Root-level error boundary.
- * Catches errors in the root layout and reports to Sentry.
+ * Catches errors in the root layout itself and reports to Sentry.
+ * Must render its own <html>/<body> since the root layout has errored.
+ * 'use client' required — error boundaries need browser interactivity (reset button).
  */
 export default function GlobalError({
 	error,
@@ -15,6 +17,8 @@ export default function GlobalError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
+	// mount: report error to Sentry — fires once per error instance,
+	// re-fires if React replaces the error object after a retry
 	useEffect(() => {
 		captureErrorBoundary(error);
 	}, [error]);

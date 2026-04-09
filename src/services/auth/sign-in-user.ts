@@ -1,5 +1,7 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
+
 import { AUTH_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
@@ -32,6 +34,10 @@ export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
+		// Fire-and-forget: track intent before API call — captures drop-off between
+		// form submit and completion. Not awaited so it doesn't block the response.
+		void trackServer(AUTH_EVENTS.SIGN_IN_STARTED, { method: 'email' });
+
 		const response = await baseClient.post(
 			'/auth/sign-in/email',
 			validationResult.data,
@@ -50,12 +56,13 @@ export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 		// Tag all subsequent Sentry errors with this user ID
 		setSentryUser(user.id);
 
-		// Track successful sign-in (awaited to ensure completion in serverless)
-		await trackServer(
-			AUTH_EVENTS.SIGN_IN_COMPLETED,
-			{ method: 'email' },
-			{ userId: user.id },
-		);
+		runAfter(async () => {
+			await trackServer(
+				AUTH_EVENTS.SIGN_IN_COMPLETED,
+				{ method: 'email' },
+				{ userId: user.id },
+			);
+		});
 
 		return success(undefined);
 	} catch (error) {
@@ -65,10 +72,11 @@ export async function signInUser(input: SignInInput): Promise<SignInResponse> {
 			action: 'sign-in-user',
 		});
 
-		// Track failed sign-in (awaited to ensure completion in serverless)
-		await trackServer(AUTH_EVENTS.SIGN_IN_FAILED, {
-			method: 'email',
-			error_code: errorCode,
+		runAfter(async () => {
+			await trackServer(AUTH_EVENTS.SIGN_IN_FAILED, {
+				method: 'email',
+				error_code: errorCode,
+			});
 		});
 
 		return failure(errorCode);

@@ -92,9 +92,9 @@ export function WinnerDetailsStep() {
 							placeholder="As shown on your government-issued ID"
 							{...register('fullLegalName' as keyof WinnerFormData)}
 						/>
-						{fieldErrors.fullLegalName && (
+						{fieldErrors.fullLegalName ? (
 							<FieldError>{fieldErrors.fullLegalName.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -108,9 +108,9 @@ export function WinnerDetailsStep() {
 							fromYear={1920}
 							toYear={new Date().getFullYear()}
 						/>
-						{fieldErrors.dateOfBirth && (
+						{fieldErrors.dateOfBirth ? (
 							<FieldError>{fieldErrors.dateOfBirth.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -122,9 +122,9 @@ export function WinnerDetailsStep() {
 							placeholder="e.g., United States, Brazil"
 							{...register('countryOfResidence' as keyof WinnerFormData)}
 						/>
-						{fieldErrors.countryOfResidence && (
+						{fieldErrors.countryOfResidence ? (
 							<FieldError>{fieldErrors.countryOfResidence.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -144,9 +144,9 @@ export function WinnerDetailsStep() {
 								))}
 							</SelectContent>
 						</Select>
-						{fieldErrors.identityDocType && (
+						{fieldErrors.identityDocType ? (
 							<FieldError>{fieldErrors.identityDocType.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -162,9 +162,9 @@ export function WinnerDetailsStep() {
 							placeholder="Bank account number or crypto wallet address"
 							{...register('bankAccountOrWallet' as keyof WinnerFormData)}
 						/>
-						{fieldErrors.bankAccountOrWallet && (
+						{fieldErrors.bankAccountOrWallet ? (
 							<FieldError>{fieldErrors.bankAccountOrWallet.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -179,9 +179,9 @@ export function WinnerDetailsStep() {
 							placeholder="Full shipping address"
 							{...register('shippingAddress' as keyof WinnerFormData)}
 						/>
-						{fieldErrors.shippingAddress && (
+						{fieldErrors.shippingAddress ? (
 							<FieldError>{fieldErrors.shippingAddress.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 				</FieldGroup>
 			</FieldSet>

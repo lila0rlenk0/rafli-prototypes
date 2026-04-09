@@ -134,11 +134,11 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 					<StatusTabs />
 				</Suspense>
 
-				{isHost && (
+				{isHost ? (
 					<div className="absolute right-0">
 						<CreateRaffleButton />
 					</div>
-				)}
+				) : null}
 			</div>
 
 			{/* Grid Section */}

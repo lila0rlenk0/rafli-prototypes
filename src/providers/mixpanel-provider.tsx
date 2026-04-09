@@ -7,7 +7,7 @@
  * Autocapture handles: page views, clicks, scrolls, forms (configured in mixpanel-client)
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { identify, initMixpanel, reset } from '@/lib/analytics/mixpanel-client';
 import { AUTH_COOKIES } from '@/lib/auth/config';
@@ -15,6 +15,7 @@ import { authUserSchema, type AuthUser } from '@/types/auth';
 
 /**
  * Parse user from session cookie with validation
+ * @returns Parsed AuthUser if valid session cookie exists, null otherwise
  */
 function getUserFromCookie(): AuthUser | null {
 	if (typeof document === 'undefined') return null;
@@ -35,26 +36,42 @@ function getUserFromCookie(): AuthUser | null {
 }
 
 interface MixpanelProviderProps {
-	children: React.ReactNode;
+	children: ReactNode;
 }
 
+/**
+ * Initializes Mixpanel and handles user identification based on session cookie.
+ * Autocapture handles page views, clicks, scrolls, forms (configured in mixpanel-client).
+ *
+ * @returns Children wrapped in a fragment — provider is side-effect only
+ */
 export function MixpanelProvider({ children }: MixpanelProviderProps) {
-	const initialized = useRef(false);
+	const [isReady, setIsReady] = useState(false);
 	const identifiedUserId = useRef<string | null>(null);
 	const lastPathnameRef = useRef<string | null>(null);
 
 	// Initialize once — initMixpanel dynamically imports mixpanel-browser,
 	// so the bundle is deferred until after hydration
 	useEffect(() => {
-		if (initialized.current) return;
-		initialized.current = true;
-		initMixpanel();
+		let cancelled = false;
+
+		void initMixpanel()
+			.catch(() => undefined)
+			.finally(() => {
+				if (!cancelled) {
+					setIsReady(true);
+				}
+			});
+
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
 	// Handle user identification based on session cookie
 	// Use window.location.pathname directly to avoid SSR issues with usePathname()
 	useEffect(() => {
-		if (!initialized.current || typeof window === 'undefined') return;
+		if (!isReady || typeof window === 'undefined') return;
 
 		const currentPathname = window.location.pathname;
 

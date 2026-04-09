@@ -7,8 +7,10 @@ import { cookies } from 'next/headers';
 /**
  * Clears all authentication and user preference cookies
  * Should be called on sign out to ensure clean state
+ *
+ * @returns Promise that resolves when all cookies are cleared
  */
-export async function clearAuthCookies() {
+export async function clearAuthCookies(): Promise<void> {
 	const cookieStore = await cookies();
 	cookieStore.delete(AUTH_COOKIES.TOKEN);
 	cookieStore.delete(AUTH_COOKIES.SESSION);

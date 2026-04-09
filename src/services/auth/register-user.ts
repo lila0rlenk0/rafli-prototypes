@@ -1,5 +1,7 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
+
 import { AUTH_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
@@ -35,6 +37,10 @@ export async function registerUser(
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
+		// Fire-and-forget: track intent before API call — captures drop-off between
+		// form submit and completion. Not awaited so it doesn't block the response.
+		void trackServer(AUTH_EVENTS.SIGN_UP_STARTED, { method: 'email' });
+
 		const response = await baseClient.post(
 			'/auth/sign-up/email',
 			validationResult.data,
@@ -45,12 +51,16 @@ export async function registerUser(
 			return failure(AUTH_ERROR_CODES.SIGNUP_FAILED);
 		}
 
-		// Track successful sign-up (awaited to ensure completion in serverless)
-		await trackServer(
-			AUTH_EVENTS.SIGN_UP_COMPLETED,
-			{ method: 'email' },
-			{ userId: response.data.user.id },
-		);
+		runAfter(async () => {
+			await trackServer(
+				AUTH_EVENTS.SIGN_UP_COMPLETED,
+				{
+					method: 'email',
+					user_id: response.data.user.id,
+				},
+				{ userId: response.data.user.id },
+			);
+		});
 
 		return success(undefined);
 	} catch (error) {
@@ -60,10 +70,11 @@ export async function registerUser(
 			action: 'register-user',
 		});
 
-		// Track failed sign-up (awaited to ensure completion in serverless)
-		await trackServer(AUTH_EVENTS.SIGN_UP_FAILED, {
-			method: 'email',
-			error_code: errorCode,
+		runAfter(async () => {
+			await trackServer(AUTH_EVENTS.SIGN_UP_FAILED, {
+				method: 'email',
+				error_code: errorCode,
+			});
 		});
 
 		return failure(errorCode);

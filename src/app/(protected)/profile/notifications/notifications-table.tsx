@@ -90,9 +90,9 @@ export function NotificationsTable({ notifications }: NotificationsTableProps) {
 						<span className="text-muted-foreground/70 text-xs whitespace-nowrap">
 							{formatTimeAgo(notification.createdAt)}
 						</span>
-						{!isRead(notification) && (
+						{!isRead(notification) ? (
 							<div className="size-2 shrink-0 rounded-full bg-blue-500" />
-						)}
+						) : null}
 					</div>
 				</button>
 			))}

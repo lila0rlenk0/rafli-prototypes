@@ -32,8 +32,7 @@ export async function createUpdate(
 	raffleId: string,
 	payload: CreateUpdatePayload,
 ): Promise<CreateUpdateServiceResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -43,10 +42,16 @@ export async function createUpdate(
 		const validated = updateSchema.parse(response.data);
 
 		// Fire-and-forget — update posting is not revenue-critical
-		void trackServer(
-			RAFFLE_EVENTS.UPDATE_POSTED,
-			{ raffle_id: raffleId },
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				RAFFLE_EVENTS.UPDATE_POSTED,
+				{
+					raffle_id: raffleId,
+					update_id: validated.id,
+					body_length: payload.text.length,
+				},
+				{ userId: session?.user?.id },
+			),
 		);
 
 		return success(validated);

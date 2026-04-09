@@ -27,8 +27,7 @@ export async function createComment(
 	raffleId: string,
 	payload: CreateCommentPayload,
 ): Promise<ServiceResponse<Comment, CommentErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -38,10 +37,17 @@ export async function createComment(
 		const validated = commentSchema.parse(response.data);
 
 		// Fire-and-forget — don't block comment UX
-		void trackServer(
-			COMMENT_EVENTS.CREATED,
-			{ raffle_id: raffleId, is_reply: false },
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				COMMENT_EVENTS.CREATED,
+				{
+					raffle_id: raffleId,
+					comment_id: validated.id,
+					is_reply: false,
+					body_length: payload.body.length,
+				},
+				{ userId: session?.user?.id },
+			),
 		);
 
 		return success(validated);

@@ -5,9 +5,12 @@ import {
 } from '@/types/errors';
 
 /**
- * Maps comment vote error codes to user-friendly messages
+ * Maps comment vote error codes to user-friendly messages.
  * Uses constants to ensure compile-time safety if backend codes change.
  * Used in the vote mutation's onError handler.
+ *
+ * @param errorCode - Comment error code from vote service action
+ * @returns Human-readable error string for toast/UI display
  */
 export function getVoteErrorMessage(errorCode: CommentErrorCode): string {
 	switch (errorCode) {

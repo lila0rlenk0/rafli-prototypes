@@ -139,9 +139,9 @@ export function IndividualDetailsStep() {
 							placeholder="As shown on your government-issued ID"
 							{...register('fullLegalName' as keyof IndividualFormData)}
 						/>
-						{fieldErrors.fullLegalName && (
+						{fieldErrors.fullLegalName ? (
 							<FieldError>{fieldErrors.fullLegalName.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -155,9 +155,9 @@ export function IndividualDetailsStep() {
 							fromYear={1920}
 							toYear={new Date().getFullYear()}
 						/>
-						{fieldErrors.dateOfBirth && (
+						{fieldErrors.dateOfBirth ? (
 							<FieldError>{fieldErrors.dateOfBirth.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -169,9 +169,9 @@ export function IndividualDetailsStep() {
 							{...register('phoneNumber' as keyof IndividualFormData)}
 							onChange={handlePhoneChange}
 						/>
-						{fieldErrors.phoneNumber && (
+						{fieldErrors.phoneNumber ? (
 							<FieldError>{fieldErrors.phoneNumber.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -183,9 +183,9 @@ export function IndividualDetailsStep() {
 							placeholder="Street, city, state/province, country, zip code"
 							{...register('residentialAddress' as keyof IndividualFormData)}
 						/>
-						{fieldErrors.residentialAddress && (
+						{fieldErrors.residentialAddress ? (
 							<FieldError>{fieldErrors.residentialAddress.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -205,9 +205,9 @@ export function IndividualDetailsStep() {
 								))}
 							</SelectContent>
 						</Select>
-						{fieldErrors.identityDocType && (
+						{fieldErrors.identityDocType ? (
 							<FieldError>{fieldErrors.identityDocType.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -227,9 +227,9 @@ export function IndividualDetailsStep() {
 								))}
 							</SelectContent>
 						</Select>
-						{fieldErrors.addressDocType && (
+						{fieldErrors.addressDocType ? (
 							<FieldError>{fieldErrors.addressDocType.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -253,9 +253,9 @@ export function IndividualDetailsStep() {
 								</button>
 							))}
 						</div>
-						{fieldErrors.plannedCategories && (
+						{fieldErrors.plannedCategories ? (
 							<FieldError>{fieldErrors.plannedCategories.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 				</FieldGroup>
 			</FieldSet>

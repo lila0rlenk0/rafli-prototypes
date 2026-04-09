@@ -276,10 +276,10 @@ function PasswordSignInForm({
 					Login with a magic link
 				</button>
 				<FieldError errors={[errors.root]} />
-				{socialError && (
+				{socialError ? (
 					<p className="text-destructive text-sm">{socialError}</p>
-				)}
-				{hasLoginError && (
+				) : null}
+				{hasLoginError ? (
 					<p className="text-muted-foreground text-xs">
 						Just signed up? Check your inbox for the verification email.{' '}
 						<Link
@@ -289,7 +289,7 @@ function PasswordSignInForm({
 							Resend it
 						</Link>
 					</p>
-				)}
+				) : null}
 				<Field className="mt-4">
 					<Button
 						type="submit"
@@ -401,9 +401,9 @@ function MagicLinkEmailStep({
 					Login with a password
 				</button>
 				<FieldError errors={[errors.root]} />
-				{socialError && (
+				{socialError ? (
 					<p className="text-destructive text-sm">{socialError}</p>
-				)}
+				) : null}
 				<Field className="mt-4">
 					<Button
 						type="submit"

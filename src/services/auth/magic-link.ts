@@ -14,6 +14,8 @@
  * 4. Existing OAuth callback handler exchanges session cookie for JWT
  */
 
+import { AUTH_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { browserClient } from '@/lib/api/client-browser';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -27,6 +29,9 @@ export async function sendMagicLink(
 	callbackURL: string,
 ): Promise<SendMagicLinkResponse> {
 	try {
+		// Track intent — captures magic link request before email delivery
+		track(AUTH_EVENTS.SIGN_IN_STARTED, { method: 'magic_link' });
+
 		await browserClient.post('/auth/sign-in/magic-link', {
 			email,
 			callbackURL,

@@ -7,8 +7,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapPaymentError } from '@/lib/errors/error-mapper';
+import { failure, mapPaymentError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -45,8 +44,7 @@ export type StripeSessionStatus = z.infer<typeof stripeSessionStatusSchema>;
 export async function getStripeSessionStatus(
 	sessionId: string,
 ): Promise<ServiceResponse<StripeSessionStatus, PaymentErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.get(
@@ -58,13 +56,32 @@ export async function getStripeSessionStatus(
 
 		// Track purchase completed when Stripe confirms payment
 		if (data.status === 'paid') {
-			void trackServer(
-				PURCHASE_EVENTS.COMPLETED,
-				{
-					order_id: data.orderId,
-					payment_method: 'stripe',
-				},
-				{ userId },
+			void sessionPromise.then(session =>
+				trackServer(
+					PURCHASE_EVENTS.COMPLETED,
+					{
+						order_id: data.orderId,
+						payment_method: 'stripe',
+						stripe_session_id: sessionId,
+					},
+					{ userId: session?.user?.id },
+				),
+			);
+		}
+
+		// Track Stripe failures — expired sessions or unpaid terminal states
+		if (data.status === 'expired') {
+			void sessionPromise.then(session =>
+				trackServer(
+					PURCHASE_EVENTS.FAILED,
+					{
+						order_id: data.orderId,
+						payment_method: 'stripe',
+						stripe_session_id: sessionId,
+						failure_reason: data.status,
+					},
+					{ userId: session?.user?.id },
+				),
 			);
 		}
 

@@ -218,11 +218,11 @@ export function TicketsStep() {
 							placeholder="Select start date"
 							minDate={todayDate}
 						/>
-						{touchedFields.startDate && errors.startDate && (
+						{touchedFields.startDate && errors.startDate ? (
 							<span className="text-sm text-red-500">
 								{errors.startDate.message}
 							</span>
-						)}
+						) : null}
 					</div>
 
 					<div className="flex flex-col gap-2">
@@ -238,11 +238,11 @@ export function TicketsStep() {
 							}
 							placeholder="Select start time"
 						/>
-						{touchedFields.startTime && errors.startTime && (
+						{touchedFields.startTime && errors.startTime ? (
 							<span className="text-sm text-red-500">
 								{errors.startTime.message}
 							</span>
-						)}
+						) : null}
 					</div>
 				</div>
 
@@ -259,24 +259,24 @@ export function TicketsStep() {
 							placeholder="Select end date"
 							minDate={todayDate}
 						/>
-						{touchedFields.endDate && errors.endDate && (
+						{touchedFields.endDate && errors.endDate ? (
 							<span className="text-sm text-red-500">
 								{errors.endDate.message}
 							</span>
-						)}
-						{startDate && endDate && !isDateRangeValid && (
+						) : null}
+						{startDate && endDate && !isDateRangeValid ? (
 							<span className="text-sm text-red-500">
 								End date must be at least 24 hours after start date
 							</span>
-						)}
+						) : null}
 						{startDate &&
-							endDate &&
-							isDateRangeValid &&
-							!isEndDateWithin6Months && (
-								<span className="text-sm text-red-500">
-									End date must be within 6 months of start date
-								</span>
-							)}
+						endDate &&
+						isDateRangeValid &&
+						!isEndDateWithin6Months ? (
+							<span className="text-sm text-red-500">
+								End date must be within 6 months of start date
+							</span>
+						) : null}
 					</div>
 
 					<div className="flex flex-col gap-2">
@@ -292,15 +292,15 @@ export function TicketsStep() {
 							}
 							placeholder="Select end time"
 						/>
-						{touchedFields.endTime && errors.endTime && (
+						{touchedFields.endTime && errors.endTime ? (
 							<span className="text-sm text-red-500">
 								{errors.endTime.message}
 							</span>
-						)}
+						) : null}
 					</div>
 				</div>
 
-				{endDate && endTime && (
+				{endDate && endTime ? (
 					<div className="flex items-center gap-2 text-xs text-gray-500">
 						<Globe className="size-3.5 shrink-0" />
 						<span>
@@ -320,9 +320,9 @@ export function TicketsStep() {
 							})()}
 						</span>
 					</div>
-				)}
+				) : null}
 
-				{!isStartDateToday && (
+				{!isStartDateToday ? (
 					<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
 						<div className="flex items-center gap-2">
 							<Clock className="size-4 text-[#2870BD]" />
@@ -336,7 +336,7 @@ export function TicketsStep() {
 							<span className="text-sm">Draft</span>
 						</div>
 					</div>
-				)}
+				) : null}
 			</div>
 
 			{/* Tickets section */}
@@ -360,11 +360,11 @@ export function TicketsStep() {
 								{...register('pricePerTicket', { valueAsNumber: true })}
 							/>
 						</div>
-						{touchedFields.pricePerTicket && errors.pricePerTicket && (
+						{touchedFields.pricePerTicket && errors.pricePerTicket ? (
 							<span className="text-sm text-red-500">
 								{errors.pricePerTicket.message}
 							</span>
-						)}
+						) : null}
 					</div>
 
 					<div className="flex flex-col gap-2">
@@ -378,11 +378,11 @@ export function TicketsStep() {
 							placeholder="0"
 							{...register('numberOfWinners', { valueAsNumber: true })}
 						/>
-						{touchedFields.numberOfWinners && errors.numberOfWinners && (
+						{touchedFields.numberOfWinners && errors.numberOfWinners ? (
 							<span className="text-sm text-red-500">
 								{errors.numberOfWinners.message}
 							</span>
-						)}
+						) : null}
 					</div>
 				</div>
 
@@ -401,11 +401,11 @@ export function TicketsStep() {
 						<span className="text-xs text-gray-500">
 							Set to 0 to disable. Must exceed number of winners when enabled.
 						</span>
-						{touchedFields.minParticipants && errors.minParticipants && (
+						{touchedFields.minParticipants && errors.minParticipants ? (
 							<span className="text-sm text-red-500">
 								{errors.minParticipants.message}
 							</span>
-						)}
+						) : null}
 					</div>
 
 					<div className="flex flex-col gap-2">
@@ -422,11 +422,11 @@ export function TicketsStep() {
 						<span className="text-xs text-gray-500">
 							Set to 0 for unlimited participants
 						</span>
-						{touchedFields.maxParticipants && errors.maxParticipants && (
+						{touchedFields.maxParticipants && errors.maxParticipants ? (
 							<span className="text-sm text-red-500">
 								{errors.maxParticipants.message}
 							</span>
-						)}
+						) : null}
 					</div>
 				</div>
 
@@ -439,7 +439,7 @@ export function TicketsStep() {
 					</div>
 				</div>
 
-				{numberOfWinners > 0 && (
+				{numberOfWinners > 0 ? (
 					<div className="flex w-full flex-col gap-2 rounded-lg bg-[#FEFFE3] p-4">
 						<div className="flex items-center gap-2">
 							<InfoIcon className="size-4 shrink-0 text-[#B7CE00]" />
@@ -448,19 +448,19 @@ export function TicketsStep() {
 							</span>
 						</div>
 						<ul className="ml-6 list-disc space-y-1 text-sm text-gray-700">
-							{minParticipants > 0 && (
+							{minParticipants > 0 ? (
 								<li>
 									<strong>Full draw</strong> — {minParticipants}+ participants:
 									winners receive the declared prize
 								</li>
-							)}
-							{shouldShowPartialDrawInfo() && (
+							) : null}
+							{shouldShowPartialDrawInfo() ? (
 								<li>
 									<strong>Partial draw</strong> — {numberOfWinners} to{' '}
 									{minParticipants - 1} participants: winners split the revenue
 									(cash distribution)
 								</li>
-							)}
+							) : null}
 							<li>
 								<strong>Auto-cancel</strong> — fewer than {numberOfWinners}{' '}
 								{formatParticipantLabel(numberOfWinners)}: raffle is cancelled
@@ -468,7 +468,7 @@ export function TicketsStep() {
 							</li>
 						</ul>
 					</div>
-				)}
+				) : null}
 			</div>
 
 			{/* Crypto payment config */}
@@ -516,24 +516,24 @@ export function TicketsStep() {
 						emptyText="No question found."
 						className="max-w-md"
 					/>
-					{touchedFields.checkInQuestion && errors.checkInQuestion && (
+					{touchedFields.checkInQuestion && errors.checkInQuestion ? (
 						<span className="text-sm text-red-500">
 							{errors.checkInQuestion.message}
 						</span>
-					)}
+					) : null}
 				</div>
 
-				{selectedQuestion && (
+				{selectedQuestion ? (
 					<div className="flex flex-col gap-2">
 						{selectedQuestion.options
-							.sort((a, b) => a.sortOrder - b.sortOrder)
+							.toSorted((a, b) => a.sortOrder - b.sortOrder)
 							.map(option => (
 								<div key={option.id}>
 									<span className="text-sm text-gray-500">{option.text}</span>
 								</div>
 							))}
 					</div>
-				)}
+				) : null}
 			</div>
 
 			{/* Continue/Clear buttons */}

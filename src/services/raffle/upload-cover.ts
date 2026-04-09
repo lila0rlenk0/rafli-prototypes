@@ -1,7 +1,10 @@
 'use server';
 
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
@@ -38,6 +41,8 @@ export async function uploadCover(
 	raffleId: string,
 	file: File,
 ): Promise<UploadCoverServiceResponse> {
+	const sessionPromise = Promise.resolve(getSession());
+
 	try {
 		// Client-side validation
 		if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -66,6 +71,19 @@ export async function uploadCover(
 
 		// Validate response structure
 		const parsed = uploadCoverResponseSchema.parse(response.data);
+
+		// Fire-and-forget — upload tracking must not block
+		void sessionPromise.then(session =>
+			trackServer(
+				RAFFLE_EVENTS.COVER_UPLOADED,
+				{
+					raffle_id: raffleId,
+					file_type: file.type,
+					file_size_bytes: file.size,
+				},
+				{ userId: session?.user?.id },
+			),
+		);
 
 		return success(parsed);
 	} catch (error) {

@@ -167,7 +167,7 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 					{/* Top-right controls: download + close */}
 					<div className="absolute top-4 right-4 z-10 flex items-center gap-2">
 						{/* Download button — opens the signed URL in a new tab */}
-						{currentDoc?.url && (
+						{currentDoc?.url ? (
 							<a
 								href={currentDoc.url}
 								target="_blank"
@@ -177,7 +177,7 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 							>
 								<Download className="size-5 text-white" />
 							</a>
-						)}
+						) : null}
 						<DialogClose className="flex size-10 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30">
 							<X className="size-5 text-white" />
 							<span className="sr-only">Close</span>
@@ -195,7 +195,7 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 					{/* Main preview area */}
 					<div className="relative flex h-full w-full items-center justify-center p-8">
 						{/* Previous button */}
-						{hasPrevious && (
+						{hasPrevious ? (
 							<button
 								type="button"
 								onClick={goToPrevious}
@@ -204,19 +204,19 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 							>
 								<ChevronLeft className="size-6 text-white" />
 							</button>
-						)}
+						) : null}
 
 						{/* Render based on content type */}
-						{currentDoc?.url && (
+						{currentDoc?.url ? (
 							<DocumentPreview
 								url={currentDoc.url}
 								contentType={currentDoc.contentType}
 								filename={currentDoc.originalFilename}
 							/>
-						)}
+						) : null}
 
 						{/* Next button */}
-						{hasNext && (
+						{hasNext ? (
 							<button
 								type="button"
 								onClick={goToNext}
@@ -225,11 +225,11 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 							>
 								<ChevronRight className="size-6 text-white" />
 							</button>
-						)}
+						) : null}
 					</div>
 
 					{/* Dot indicators */}
-					{previewableIndices.length > 1 && (
+					{previewableIndices.length > 1 ? (
 						<div className="absolute bottom-4 flex gap-2">
 							{previewableIndices.map(function renderDot(docIndex, dotIndex) {
 								const isActive = currentPosition === dotIndex;
@@ -247,7 +247,7 @@ export function DocumentViewer({ documents }: DocumentViewerProps) {
 								);
 							})}
 						</div>
-					)}
+					) : null}
 				</DialogContent>
 			</Dialog>
 		</>

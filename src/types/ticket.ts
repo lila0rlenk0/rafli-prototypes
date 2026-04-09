@@ -3,33 +3,8 @@ import { z } from 'zod';
 import { paginationMetadataSchema, paginationQuerySchema } from './pagination';
 
 // ==========================================
-// Constants
-// ==========================================
-
-export const TICKET_SOURCE = {
-	GIFT: 'gift',
-	PURCHASE: 'purchase',
-	REFERRAL: 'referral',
-} as const;
-
-// ==========================================
-// Types from Constants
-// ==========================================
-
-export type TicketSource = (typeof TICKET_SOURCE)[keyof typeof TICKET_SOURCE];
-
-// ==========================================
 // Schemas
 // ==========================================
-
-/**
- * Schema for ticket source enum
- */
-export const ticketSourceSchema = z.enum([
-	TICKET_SOURCE.GIFT,
-	TICKET_SOURCE.PURCHASE,
-	TICKET_SOURCE.REFERRAL,
-]);
 
 /**
  * Schema for a single ticket code item.

@@ -30,6 +30,10 @@ export function getSelectableCryptoChains(
 
 /**
  * Boolean convenience wrapper for CTA-level gating.
+ *
+ * @param cryptoOptions - Raffle's crypto payment configuration
+ * @param supportedChainIds - Chain IDs this FE build supports
+ * @returns true when at least one selectable chain remains
  */
 export function hasSelectableCryptoChains(
 	cryptoOptions: RaffleCryptoOptions | null | undefined,

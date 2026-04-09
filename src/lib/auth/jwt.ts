@@ -35,6 +35,10 @@ const jwtPayloadSchema = z
  */
 export type JwtPayload = z.infer<typeof jwtPayloadSchema>;
 
+// Hoisted RegExp — avoid re-creation on every decode call
+const RE_BASE64_MINUS = /-/g;
+const RE_BASE64_UNDERSCORE = /_/g;
+
 /**
  * Base64 URL decode - works in both Node.js and Edge Runtime
  *
@@ -42,8 +46,10 @@ export type JwtPayload = z.infer<typeof jwtPayloadSchema>;
  * @returns Decoded string
  */
 function base64UrlDecode(str: string): string {
-	// Replace URL-safe characters
-	let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+	// Replace URL-safe characters with standard base64 equivalents
+	let base64 = str
+		.replace(RE_BASE64_MINUS, '+')
+		.replace(RE_BASE64_UNDERSCORE, '/');
 
 	// Add padding if needed
 	const pad = base64.length % 4;

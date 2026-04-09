@@ -57,9 +57,9 @@ export function StatusTabs() {
 				)}
 			>
 				Active
-				{isActive && (
+				{isActive ? (
 					<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
-				)}
+				) : null}
 			</button>
 
 			{/* Ended Tab */}
@@ -73,9 +73,9 @@ export function StatusTabs() {
 				)}
 			>
 				Ended
-				{isEnded && (
+				{isEnded ? (
 					<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
-				)}
+				) : null}
 			</button>
 		</div>
 	);

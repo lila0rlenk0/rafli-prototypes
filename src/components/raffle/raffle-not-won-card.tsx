@@ -49,20 +49,20 @@ export function RaffleNotWonCard({ status }: RaffleNotWonCardProps) {
 				{getMessage()}
 			</h2>
 
-			{shouldShowFulfillmentBadge() && (
+			{shouldShowFulfillmentBadge() ? (
 				<div className="mt-4">
 					<FulfillmentBadge />
 				</div>
-			)}
+			) : null}
 
-			{isFulfilling && (
+			{isFulfilling ? (
 				<Link
 					href="/how-it-works"
 					className="mt-4 block text-center text-sm text-gray-600 underline hover:text-black"
 				>
 					Learn how it works
 				</Link>
-			)}
+			) : null}
 		</div>
 	);
 }

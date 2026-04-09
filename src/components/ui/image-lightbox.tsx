@@ -126,7 +126,7 @@ export function ImageLightbox({
 				{/* Main image container */}
 				<div className="relative flex h-full w-full items-center justify-center p-8">
 					{/* Previous button */}
-					{hasPrevious && (
+					{hasPrevious ? (
 						<button
 							type="button"
 							onClick={goToPrevious}
@@ -135,7 +135,7 @@ export function ImageLightbox({
 						>
 							<ChevronLeft className="size-6 text-white" />
 						</button>
-					)}
+					) : null}
 
 					{/* Image */}
 					<div className="relative h-full w-full">
@@ -150,7 +150,7 @@ export function ImageLightbox({
 					</div>
 
 					{/* Next button */}
-					{hasNext && (
+					{hasNext ? (
 						<button
 							type="button"
 							onClick={goToNext}
@@ -159,11 +159,11 @@ export function ImageLightbox({
 						>
 							<ChevronRight className="size-6 text-white" />
 						</button>
-					)}
+					) : null}
 				</div>
 
 				{/* Dot indicators */}
-				{validImages.length > 1 && (
+				{validImages.length > 1 ? (
 					<div className="absolute bottom-4 flex gap-2">
 						{validImages.map((item, idx) => (
 							<button
@@ -180,7 +180,7 @@ export function ImageLightbox({
 							/>
 						))}
 					</div>
-				)}
+				) : null}
 			</DialogContent>
 		</Dialog>
 	);

@@ -64,9 +64,9 @@ export function ChainSelector({
 						onClick={() => onSelectChain(chainId)}
 					>
 						<span className="flex items-center gap-3">
-							{ChainIcon && (
+							{ChainIcon ? (
 								<ChainIcon variant="branded" size={24} className="shrink-0" />
-							)}
+							) : null}
 							<span className="text-sm font-medium">{chainName}</span>
 						</span>
 						<span className="text-xs text-[#7B7B7B] transition-colors group-hover:text-black">

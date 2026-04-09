@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
@@ -7,8 +8,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapPaymentError } from '@/lib/errors/error-mapper';
+import { failure, mapPaymentError, success } from '@/lib/errors';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -41,8 +41,7 @@ import {
 export async function createAtomicCryptoCheckout(
 	payload: AtomicCryptoCheckoutPayload,
 ): Promise<ServiceResponse<AtomicCryptoCheckoutResponse, PaymentErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -53,17 +52,22 @@ export async function createAtomicCryptoCheckout(
 
 		const data = atomicCryptoCheckoutResponseSchema.parse(response.data);
 
-		// Track crypto checkout started (awaited to ensure completion in serverless)
-		await trackServer(
-			PURCHASE_EVENTS.CRYPTO_CHECKOUT_STARTED,
-			{
-				order_id: data.order.id,
-				raffle_id: payload.raffleId,
-				chain_id: payload.chainId,
-				amount: data.order.totalAmount,
-			},
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.CRYPTO_CHECKOUT_STARTED,
+				{
+					order_id: data.order.id,
+					raffle_id: payload.raffleId,
+					chain_id: payload.chainId,
+					amount: data.order.totalAmount,
+					ticket_quantity: payload.ticketQuantity,
+					has_promo: !!payload.promoCode,
+				},
+				{ userId },
+			);
+		});
 
 		return success(data);
 	} catch (error) {

@@ -151,7 +151,7 @@ export function RaffleCreatedModal({
 						</button>
 					</div>
 				</DialogHeader>
-				{isStartDateToday && (
+				{isStartDateToday ? (
 					<div className="z-1 flex w-full flex-col items-center justify-center gap-4">
 						<p className="text-xl font-medium">Share your raffle!</p>
 						<div className="flex items-center justify-center gap-8">
@@ -171,7 +171,7 @@ export function RaffleCreatedModal({
 							</button>
 						</div>
 					</div>
-				)}
+				) : null}
 			</DialogContent>
 		</Dialog>
 	);

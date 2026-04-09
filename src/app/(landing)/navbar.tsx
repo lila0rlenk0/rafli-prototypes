@@ -37,9 +37,9 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 	return (
 		<>
 			<nav className="relative w-full border-b border-black">
-				{showDecoration && (
+				{showDecoration ? (
 					<ColoredCard className="absolute top-0 right-0 z-0 origin-top-right scale-[.55] md:scale-[.85]" />
-				)}
+				) : null}
 
 				<div className="relative z-10 mx-auto flex max-w-[1720px] items-center justify-between px-6 py-4 lg:px-[100px] lg:py-5">
 					<div className="flex items-center gap-8 lg:gap-[60px]">
@@ -94,7 +94,7 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 			</nav>
 
 			{/* Mobile menu overlay */}
-			{isMenuOpen && (
+			{isMenuOpen ? (
 				<div className="fixed inset-0 z-50 bg-[#f9f8f4] md:hidden">
 					<div className="flex items-center justify-between px-6 py-4">
 						<Link href="/" aria-label="Home" onClick={closeMenu}>
@@ -143,7 +143,7 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 						</a>
 					</div>
 				</div>
-			)}
+			) : null}
 		</>
 	);
 }

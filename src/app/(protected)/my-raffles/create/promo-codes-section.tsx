@@ -142,14 +142,14 @@ export function PromoCodesSection() {
 						<Plus className="size-4" />
 						Create Code
 					</Button>
-					{isLimitReached() && (
+					{isLimitReached() ? (
 						<span className="text-xs text-gray-500">
 							Maximum of {MAX_PENDING_CODES} codes reached
 						</span>
-					)}
+					) : null}
 				</div>
 
-				{pendingPromoCodes.length > 0 && (
+				{pendingPromoCodes.length > 0 ? (
 					<div className="flex w-full items-start gap-2 rounded-lg bg-[#FEFFE3] p-4">
 						<Info className="mt-0.5 size-4 shrink-0 text-[#B7CE00]" />
 						<p className="text-sm">
@@ -157,9 +157,9 @@ export function PromoCodesSection() {
 							your raffle is scheduled (enters the queue).
 						</p>
 					</div>
-				)}
+				) : null}
 
-				{pendingPromoCodes.length > 0 && (
+				{pendingPromoCodes.length > 0 ? (
 					<>
 						{/* Desktop Table */}
 						<div className="hidden overflow-x-auto md:block">
@@ -288,7 +288,7 @@ export function PromoCodesSection() {
 							))}
 						</div>
 					</>
-				)}
+				) : null}
 			</div>
 
 			<CreatePromoCodeModal

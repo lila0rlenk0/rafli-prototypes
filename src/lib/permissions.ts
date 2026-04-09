@@ -16,7 +16,7 @@ export const PERMISSIONS = {
  * @param permissions - Array of permissions
  * @returns True if user has raffle:create permission
  */
-export function hasHostPermission(permissions: string[]) {
+export function hasHostPermission(permissions: string[]): boolean {
 	return permissions.includes(PERMISSIONS.RAFFLE_CREATE);
 }
 

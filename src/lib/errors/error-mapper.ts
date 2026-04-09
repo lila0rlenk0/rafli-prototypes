@@ -38,6 +38,9 @@ import {
  * - `snake_case` → Frontend-only (network errors, HTTP status fallbacks)
  */
 
+// Hoisted RegExp — avoid re-creation on every extractErrorCode call
+const RE_URN_PREFIX = /^urn:raffles:problem:(.+)$/;
+
 /**
  * Extracts error code from backend RFC 7807 response
  *
@@ -60,7 +63,7 @@ function extractErrorCode(error: unknown): string | null {
 	// Step 2: Try RFC 7807 'type' field (e.g. "urn:raffles:problem:auth:user:invalid-credentials").
 	// Returns: "auth:user:invalid-credentials"
 	if (data.type && typeof data.type === 'string') {
-		const urnMatch = data.type.match(/^urn:raffles:problem:(.+)$/);
+		const urnMatch = data.type.match(RE_URN_PREFIX);
 		if (urnMatch) {
 			return urnMatch[1];
 		}

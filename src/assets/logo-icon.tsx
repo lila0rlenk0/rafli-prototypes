@@ -1,6 +1,10 @@
-import { ComponentProps } from 'react';
+import { useId } from 'react';
+import type { ComponentProps } from 'react';
 
+/** @returns Rafli icon-only logo SVG */
 export function LogoIcon(props: ComponentProps<'svg'>) {
+	const clipPathId = useId();
+
 	return (
 		<svg
 			width="54"
@@ -10,7 +14,7 @@ export function LogoIcon(props: ComponentProps<'svg'>) {
 			xmlns="http://www.w3.org/2000/svg"
 			{...props}
 		>
-			<g clipPath="url(#clip0_713_2118)">
+			<g clipPath={`url(#${clipPathId})`}>
 				<path
 					d="M50.233 48.7055C51.5221 47.4164 52.5165 45.8577 53.1594 44.1186C53.8023 42.3794 54.081 40.4938 53.9797 38.5694C53.8784 36.645 53.3991 34.7195 52.5691 32.9028C51.7391 31.0862 50.5746 29.4139 49.1422 27.9815C47.7099 26.5492 46.0376 25.3847 44.2209 24.5547C42.4042 23.7247 40.4787 23.2454 38.5543 23.1441C36.6299 23.0428 34.7443 23.3216 33.0051 23.9644C31.2659 24.6073 29.7073 25.6017 28.4181 26.8908L50.233 48.7055Z"
 					fill="black"
@@ -29,7 +33,7 @@ export function LogoIcon(props: ComponentProps<'svg'>) {
 				/>
 			</g>
 			<defs>
-				<clipPath id="clip0_713_2118">
+				<clipPath id={clipPathId}>
 					<rect width="54" height="54" fill="white" />
 				</clipPath>
 			</defs>

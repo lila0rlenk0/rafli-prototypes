@@ -141,12 +141,12 @@ export function DocumentUploadStep() {
 							<Field key={field.name}>
 								<FieldLabel>
 									{field.label}
-									{!field.required && (
+									{!field.required ? (
 										<span className="text-muted-foreground font-normal">
 											{' '}
 											(optional)
 										</span>
-									)}
+									) : null}
 								</FieldLabel>
 								<FieldDescription>{field.description}</FieldDescription>
 								<Dropzone
@@ -163,9 +163,9 @@ export function DocumentUploadStep() {
 									<DropzoneContent />
 									<DropzoneEmptyState />
 								</Dropzone>
-								{fieldErrors[field.name] && (
+								{fieldErrors[field.name] ? (
 									<FieldError>{fieldErrors[field.name].message}</FieldError>
-								)}
+								) : null}
 							</Field>
 						);
 					})}

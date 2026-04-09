@@ -3,13 +3,13 @@
 import '@rainbow-me/rainbowkit/styles.css';
 
 import { lightTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { cookieToInitialState, WagmiProvider } from 'wagmi';
 
 import {
+	getWagmiConfig,
 	isWeb3Enabled,
 	WAGMI_COOKIE_KEY,
-	wagmiConfig,
 } from '@/lib/web3/config';
 
 // ==========================================
@@ -36,7 +36,7 @@ const appTheme = lightTheme({
 // ==========================================
 
 interface Web3ProviderProps {
-	children: React.ReactNode;
+	children: ReactNode;
 	wagmiCookieValue?: string | null;
 }
 
@@ -66,6 +66,10 @@ export function Web3Provider({
 	children,
 	wagmiCookieValue,
 }: Web3ProviderProps) {
+	// Lazy singleton — only calls getDefaultConfig() on the first client render.
+	// Returns null on the server so children render as a passthrough (no crash).
+	const wagmiConfig = getWagmiConfig();
+
 	// Reconstruct the single cookie string wagmi expects for SSR hydration.
 	// Only recompute when the server-forwarded cookie value changes.
 	const initialState = useMemo(
@@ -76,11 +80,11 @@ export function Web3Provider({
 						`${WAGMI_COOKIE_KEY}=${wagmiCookieValue}`,
 					)
 				: undefined,
-		[wagmiCookieValue],
+		[wagmiCookieValue, wagmiConfig],
 	);
 
-	// No WalletConnect project ID → skip Web3 providers entirely.
-	// Keeps the app functional for card-only payments.
+	// No WalletConnect project ID or server-side → skip Web3 providers entirely.
+	// Keeps the app functional for card-only payments and prevents SSR crashes.
 	if (!isWeb3Enabled || !wagmiConfig) {
 		return <>{children}</>;
 	}

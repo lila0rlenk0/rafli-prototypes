@@ -32,6 +32,9 @@ export function isUserRejection(error: unknown): boolean {
  *
  * viem nests typed errors through `cause`, so walk the chain instead of only
  * checking the top-level error instance.
+ *
+ * @param error - Error from wagmi/viem transaction polling
+ * @returns True if the error indicates the transaction was dropped from the mempool
  */
 export function isTransactionNotFound(error: unknown): boolean {
 	if (error instanceof TransactionNotFoundError) return true;

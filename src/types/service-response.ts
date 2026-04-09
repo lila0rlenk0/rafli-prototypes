@@ -28,10 +28,10 @@ export type ServiceResponse<TData, TErrorCode extends string = string> =
  *
  * @template TData - The type of the data payload
  */
-export interface ServiceSuccess<TData> {
+export type ServiceSuccess<TData> = {
 	success: true;
 	data: TData;
-}
+};
 
 /**
  * Failure response shape with typed error code
@@ -39,47 +39,7 @@ export interface ServiceSuccess<TData> {
  *
  * @template TErrorCode - Union type of possible error codes
  */
-export interface ServiceFailure<TErrorCode extends string> {
+export type ServiceFailure<TErrorCode extends string> = {
 	success: false;
 	error: TErrorCode;
-}
-
-/**
- * Type guard to check if response is successful
- * Narrows type to ServiceSuccess<TData>
- *
- * @param response - The service response to check
- * @returns True if the response is successful
- *
- * @example
- * const response = await signInUser(data);
- * if (isSuccess(response)) {
- *   // TypeScript knows: response.data exists
- *   console.log(response.data);
- * }
- */
-export function isSuccess<TData, TErrorCode extends string>(
-	response: ServiceResponse<TData, TErrorCode>,
-): response is ServiceSuccess<TData> {
-	return response.success === true;
-}
-
-/**
- * Type guard to check if response is a failure
- * Narrows type to ServiceFailure<TErrorCode>
- *
- * @param response - The service response to check
- * @returns True if the response is a failure
- *
- * @example
- * const response = await signInUser(data);
- * if (isFailure(response)) {
- *   // TypeScript knows: response.error exists
- *   console.log(response.error);
- * }
- */
-export function isFailure<TData, TErrorCode extends string>(
-	response: ServiceResponse<TData, TErrorCode>,
-): response is ServiceFailure<TErrorCode> {
-	return response.success === false;
-}
+};

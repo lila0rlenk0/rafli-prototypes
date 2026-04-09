@@ -1,5 +1,6 @@
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
+/** @returns Left decorative background cubes SVG */
 export function BackgroundCubeLeft(props: ComponentProps<'svg'>) {
 	return (
 		<svg

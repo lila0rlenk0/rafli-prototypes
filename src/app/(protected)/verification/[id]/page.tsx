@@ -77,7 +77,7 @@ function DocumentCard({ doc }: { doc: KycDocument }) {
 				<span className="text-muted-foreground truncate text-xs">
 					{doc.originalFilename}
 				</span>
-				{doc.url && (
+				{doc.url ? (
 					<a
 						href={doc.url}
 						target="_blank"
@@ -86,7 +86,7 @@ function DocumentCard({ doc }: { doc: KycDocument }) {
 					>
 						{isImage || isPdf ? 'View full size' : 'Download'}
 					</a>
-				)}
+				) : null}
 			</div>
 		</div>
 	);
@@ -160,14 +160,14 @@ export default async function SubmissionDetailPage({
 				</div>
 
 				{/* Rejection reason */}
-				{detail.rejectionReason && (
+				{detail.rejectionReason ? (
 					<div className="mt-4 rounded-lg bg-red-50 p-4">
 						<p className="text-sm font-medium text-red-700">Rejection Reason</p>
 						<p className="mt-1 text-sm text-red-600">
 							{detail.rejectionReason}
 						</p>
 					</div>
-				)}
+				) : null}
 			</div>
 
 			{/* Form data card */}
@@ -192,7 +192,7 @@ export default async function SubmissionDetailPage({
 			</div>
 
 			{/* Documents card */}
-			{detail.documents.length > 0 && (
+			{detail.documents.length > 0 ? (
 				<div className="rounded-2xl bg-white p-8">
 					<h2 className="font-clash-display mb-5 text-xl font-semibold">
 						Documents
@@ -203,7 +203,7 @@ export default async function SubmissionDetailPage({
 						})}
 					</div>
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

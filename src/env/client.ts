@@ -8,6 +8,8 @@ import z from 'zod';
  * All variables MUST use NEXT_PUBLIC_ prefix (except NODE_ENV which is built-in).
  *
  * SECURITY: Never put secrets here - they will be bundled into client JS.
+ *
+ * @returns Validated client environment variables
  */
 export const clientEnv = createEnv({
 	shared: {

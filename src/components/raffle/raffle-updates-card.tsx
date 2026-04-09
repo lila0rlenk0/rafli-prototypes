@@ -48,11 +48,11 @@ export async function RaffleUpdatesCard({
 								<h3 className="font-clash-display text-3xl font-semibold">
 									Updates from the host
 								</h3>
-								{hasUpdates && (
+								{hasUpdates ? (
 									<span className="rounded-full bg-black px-2 py-0.5 text-xs text-white">
 										{updates.length}
 									</span>
-								)}
+								) : null}
 							</div>
 							{actionSlot}
 						</div>
@@ -63,9 +63,9 @@ export async function RaffleUpdatesCard({
 								{updates.map((update, index) => (
 									<div key={update.id}>
 										<UpdateTimelineItem update={update} hostName={hostName} />
-										{index < updates.length - 1 && (
+										{index < updates.length - 1 ? (
 											<div className="mb-6 h-px w-full bg-[#e5e5e5]" />
-										)}
+										) : null}
 									</div>
 								))}
 							</div>

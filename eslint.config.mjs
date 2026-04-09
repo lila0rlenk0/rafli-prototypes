@@ -15,9 +15,27 @@ const eslintConfig = defineConfig([
 		'next-env.d.ts',
 	]),
 	{
+		// Repo policy treats suppressions as hard failures.
+		// Leaving this at "warn" lets forbidden `eslint-disable` drift linger.
+		linterOptions: {
+			reportUnusedDisableDirectives: 'error',
+		},
 		rules: {
+			// `.claude/rules/eslint.md` bans all ts-comment escapes.
+			'@typescript-eslint/ban-ts-comment': [
+				'error',
+				{
+					'ts-check': false,
+					'ts-expect-error': true,
+					'ts-ignore': true,
+					'ts-nocheck': true,
+				},
+			],
 			'@typescript-eslint/no-unused-vars': 'error',
 			'@typescript-eslint/no-explicit-any': 'error',
+			// Imported config downgrades these; repo policy treats them as real failures.
+			'no-unused-expressions': 'error',
+			'@typescript-eslint/no-unused-expressions': 'error',
 		},
 	},
 	// Disable ESLint rules that conflict with Prettier — must be last

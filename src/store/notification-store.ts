@@ -26,7 +26,7 @@ export const defaultInitState: NotificationStoreState = {
 export function createNotificationStore(
 	initState: NotificationStoreState = defaultInitState,
 ) {
-	return createStore<NotificationStore>()((set, get) => ({
+	return createStore<NotificationStore>()(set => ({
 		...initState,
 
 		/**
@@ -42,10 +42,9 @@ export function createNotificationStore(
 		 * Decrement unread count by 1 (optimistic update on mark-read)
 		 */
 		decrementUnreadCount: () => {
-			const { unreadCount } = get();
-			if (unreadCount > 0) {
-				set({ unreadCount: unreadCount - 1 });
-			}
+			set(state => ({
+				unreadCount: Math.max(0, state.unreadCount - 1),
+			}));
 		},
 
 		/**

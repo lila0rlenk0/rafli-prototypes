@@ -69,20 +69,20 @@ export default async function VerificationPage() {
 			<SubmissionsList submissions={submissions} />
 
 			{/* Rejection banner — only when the user has a rejected submission */}
-			{rejectedNotice && (
+			{rejectedNotice ? (
 				<RejectedSubmissionNotice
 					submission={rejectedNotice.submission}
 					rejectionReason={rejectedNotice.rejectionReason}
 				/>
-			)}
+			) : null}
 
 			{/* Multi-step form — hidden when all types are covered */}
-			{!allTypesActive && (
+			{!allTypesActive ? (
 				<VerificationFormProvider userEmail={userEmail}>
 					<FormHeader />
 					<FormStepComponent />
 				</VerificationFormProvider>
-			)}
+			) : null}
 		</div>
 	);
 }

@@ -160,21 +160,38 @@ export function CreatePromoCodeModal({
 		}
 	}, [allowFreeTickets, watchType, form]);
 
-	// Reset to sensible default when toggling off unlimited
-	useEffect(() => {
-		if (!watchUnlimitedUses && form.getValues('maxUses') === 0) {
-			form.setValue('maxUses', 1);
-		}
-	}, [watchUnlimitedUses, form]);
+	function handleTypeChange(type: PromoCodeType) {
+		form.setValue('type', type);
 
-	useEffect(() => {
-		if (
-			!watchUnlimitedPerUser &&
-			form.getValues('maxRedemptionsPerUser') === 0
-		) {
-			form.setValue('maxRedemptionsPerUser', 1);
+		// Free tickets must stay integer-backed so the form never renders a
+		// decimal quantity that the schema will reject on submit.
+		if (type === PROMO_CODE_TYPE.FREE_TICKETS) {
+			form.setValue('value', Math.max(1, Math.floor(form.getValues('value'))));
 		}
-	}, [watchUnlimitedPerUser, form]);
+	}
+
+	function handleUnlimitedUsesChange(checked: boolean) {
+		form.setValue('unlimitedUses', checked);
+		form.setValue(
+			'maxUses',
+			checked ? 0 : Math.max(1, form.getValues('maxUses')),
+		);
+	}
+
+	function handleUnlimitedPerUserChange(checked: boolean) {
+		form.setValue('unlimitedPerUser', checked);
+		form.setValue(
+			'maxRedemptionsPerUser',
+			checked ? 0 : Math.max(1, form.getValues('maxRedemptionsPerUser')),
+		);
+	}
+
+	function handleNoExpirationChange(checked: boolean) {
+		form.setValue('noExpiration', checked);
+		if (checked) {
+			form.setValue('expiresAt', undefined);
+		}
+	}
 
 	/**
 	 * Returns label for value input based on type
@@ -341,12 +358,12 @@ export function CreatePromoCodeModal({
 										</button>
 									))}
 								</div>
-								{remainingCount > 0 && (
+								{remainingCount > 0 ? (
 									<p className="text-xs text-gray-500">
 										+{remainingCount} more code{remainingCount !== 1 ? 's' : ''}{' '}
 										(use Copy All or Export)
 									</p>
-								)}
+								) : null}
 								<div className="flex gap-2">
 									<Button
 										variant="outline"
@@ -366,7 +383,7 @@ export function CreatePromoCodeModal({
 											</>
 										)}
 									</Button>
-									{createdCodes.bulkId && onExportBatch && (
+									{createdCodes.bulkId && onExportBatch ? (
 										<Button
 											variant="outline"
 											size="sm"
@@ -376,7 +393,7 @@ export function CreatePromoCodeModal({
 											<Download className="size-4" />
 											Export Batch
 										</Button>
-									)}
+									) : null}
 								</div>
 							</>
 						)}
@@ -427,11 +444,11 @@ export function CreatePromoCodeModal({
 							max={100}
 							{...form.register('count', { valueAsNumber: true })}
 						/>
-						{form.formState.errors.count && (
+						{form.formState.errors.count ? (
 							<p className="text-sm text-red-500">
 								{form.formState.errors.count.message}
 							</p>
-						)}
+						) : null}
 						<p className="text-xs text-gray-500">
 							Generate 1-100 codes at once
 						</p>
@@ -442,9 +459,7 @@ export function CreatePromoCodeModal({
 						<Label>Type</Label>
 						<RadioGroup
 							value={watchType}
-							onValueChange={value =>
-								form.setValue('type', value as PromoCodeType)
-							}
+							onValueChange={value => handleTypeChange(value as PromoCodeType)}
 							className="flex gap-4"
 						>
 							<div className="flex items-center space-x-2">
@@ -482,11 +497,11 @@ export function CreatePromoCodeModal({
 								</Label>
 							</div>
 						</RadioGroup>
-						{!allowFreeTickets && (
+						{!allowFreeTickets ? (
 							<p className="text-xs text-gray-500">
 								Free tickets require a raffle question.
 							</p>
-						)}
+						) : null}
 					</div>
 
 					{/* Value Input */}
@@ -502,11 +517,11 @@ export function CreatePromoCodeModal({
 							}
 							{...form.register('value', { valueAsNumber: true })}
 						/>
-						{form.formState.errors.value && (
+						{form.formState.errors.value ? (
 							<p className="text-sm text-red-500">
 								{form.formState.errors.value.message}
 							</p>
-						)}
+						) : null}
 					</div>
 
 					{/* Max Uses Per Code */}
@@ -516,14 +531,17 @@ export function CreatePromoCodeModal({
 							<input
 								type="checkbox"
 								id="unlimitedUses"
-								{...form.register('unlimitedUses')}
+								checked={watchUnlimitedUses}
+								onChange={event =>
+									handleUnlimitedUsesChange(event.target.checked)
+								}
 								className="size-4 rounded border-gray-300"
 							/>
 							<Label htmlFor="unlimitedUses" className="cursor-pointer">
 								Unlimited uses
 							</Label>
 						</div>
-						{!watchUnlimitedUses && (
+						{!watchUnlimitedUses ? (
 							<Input
 								id="maxUses"
 								type="number"
@@ -531,7 +549,7 @@ export function CreatePromoCodeModal({
 								max={10_000}
 								{...form.register('maxUses', { valueAsNumber: true })}
 							/>
-						)}
+						) : null}
 						<p className="text-xs text-gray-500">
 							How many times each code can be redeemed in total
 						</p>
@@ -544,14 +562,17 @@ export function CreatePromoCodeModal({
 							<input
 								type="checkbox"
 								id="unlimitedPerUser"
-								{...form.register('unlimitedPerUser')}
+								checked={watchUnlimitedPerUser}
+								onChange={event =>
+									handleUnlimitedPerUserChange(event.target.checked)
+								}
 								className="size-4 rounded border-gray-300"
 							/>
 							<Label htmlFor="unlimitedPerUser" className="cursor-pointer">
 								Unlimited per user
 							</Label>
 						</div>
-						{!watchUnlimitedPerUser && (
+						{!watchUnlimitedPerUser ? (
 							<Input
 								id="maxRedemptionsPerUser"
 								type="number"
@@ -561,7 +582,7 @@ export function CreatePromoCodeModal({
 									valueAsNumber: true,
 								})}
 							/>
-						)}
+						) : null}
 						<p className="text-xs text-gray-500">
 							How many codes from this batch a single user can redeem
 						</p>
@@ -574,14 +595,17 @@ export function CreatePromoCodeModal({
 							<input
 								type="checkbox"
 								id="noExpiration"
-								{...form.register('noExpiration')}
+								checked={watchNoExpiration}
+								onChange={event =>
+									handleNoExpirationChange(event.target.checked)
+								}
 								className="size-4 rounded border-gray-300"
 							/>
 							<Label htmlFor="noExpiration" className="cursor-pointer">
 								No expiration
 							</Label>
 						</div>
-						{!watchNoExpiration && (
+						{!watchNoExpiration ? (
 							<>
 								<DatePicker
 									value={form.watch('expiresAt')}
@@ -589,13 +613,13 @@ export function CreatePromoCodeModal({
 									placeholder="Select expiration date"
 									minDate={new Date()}
 								/>
-								{form.formState.errors.expiresAt && (
+								{form.formState.errors.expiresAt ? (
 									<p className="text-sm text-red-500">
 										{form.formState.errors.expiresAt.message}
 									</p>
-								)}
+								) : null}
 							</>
-						)}
+						) : null}
 					</div>
 
 					<DialogFooter className="sm:justify-center">

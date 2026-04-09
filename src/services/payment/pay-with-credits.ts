@@ -1,11 +1,14 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
+import { PURCHASE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
-import { failure, success } from '@/lib/errors';
-import { mapPaymentError } from '@/lib/errors/error-mapper';
+import { getSession } from '@/lib/auth/session';
+import { failure, mapPaymentError, success } from '@/lib/errors';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -31,7 +34,22 @@ import {
 export async function payWithCredits(
 	orderId: string,
 ): Promise<ServiceResponse<SpendCreditsResponse, PaymentErrorCode>> {
+	const sessionPromise = Promise.resolve(getSession());
+
 	try {
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.CHECKOUT_STARTED,
+				{
+					order_id: orderId,
+					payment_method: 'credits',
+				},
+				{ userId },
+			);
+		});
+
 		const response = await authenticatedClient.post(
 			'/payments/credits/pay',
 			{ orderId },
@@ -39,6 +57,21 @@ export async function payWithCredits(
 		);
 
 		const data = spendCreditsResponseSchema.parse(response.data);
+
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.COMPLETED,
+				{
+					order_id: orderId,
+					payment_method: 'credits',
+					remaining_balance: data.balanceAfter,
+				},
+				{ userId },
+			);
+		});
+
 		return success(data);
 	} catch (error) {
 		if (error instanceof ZodError) {
@@ -51,6 +84,20 @@ export async function payWithCredits(
 			service: 'payment',
 			action: 'pay-with-credits',
 			orderId,
+		});
+
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.FAILED,
+				{
+					order_id: orderId,
+					payment_method: 'credits',
+					error_code: errorCode,
+				},
+				{ userId },
+			);
 		});
 
 		return failure(errorCode);

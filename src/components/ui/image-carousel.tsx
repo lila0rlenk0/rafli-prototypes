@@ -151,7 +151,12 @@ export function ImageCarousel({
 
 	return (
 		<div
-			className={`relative ${aspectRatio} ${maxHeight} w-full overflow-hidden rounded-2xl bg-gray-100 ${className}`}
+			className={cn(
+				'relative w-full overflow-hidden rounded-2xl bg-gray-100',
+				aspectRatio,
+				maxHeight,
+				className,
+			)}
 		>
 			{currentImageUrl ? (
 				<AnimatePresence initial={false} custom={direction} mode="popLayout">
@@ -191,7 +196,7 @@ export function ImageCarousel({
 				</div>
 			)}
 
-			{showNavigation && (
+			{showNavigation ? (
 				<>
 					<button
 						type="button"
@@ -210,9 +215,9 @@ export function ImageCarousel({
 						<ChevronRight className="h-5 w-5" />
 					</button>
 				</>
-			)}
+			) : null}
 
-			{showNavigation && (
+			{showNavigation ? (
 				<div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
 					{images.map((_, index) => (
 						<div
@@ -223,7 +228,7 @@ export function ImageCarousel({
 						/>
 					))}
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

@@ -98,7 +98,7 @@ export function FeaturedRaffleCard({
 			</div>
 
 			{/* Cover image - below text on mobile, right side on desktop */}
-			{heroImage && (
+			{heroImage ? (
 				<div className="relative aspect-square w-full flex-shrink-0 overflow-hidden rounded-3xl sm:w-[182px]">
 					<Image
 						src={heroImage}
@@ -108,7 +108,7 @@ export function FeaturedRaffleCard({
 						sizes="(max-width: 640px) 100vw, 182px"
 					/>
 				</div>
-			)}
+			) : null}
 		</Link>
 	);
 }

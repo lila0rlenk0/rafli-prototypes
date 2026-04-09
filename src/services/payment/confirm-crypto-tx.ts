@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
@@ -7,8 +8,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapPaymentError } from '@/lib/errors/error-mapper';
+import { failure, mapPaymentError, success } from '@/lib/errors';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -38,8 +38,7 @@ import type { ConfirmCryptoTxPayload } from '@/types/wallet';
 export async function confirmCryptoTx(
 	payload: ConfirmCryptoTxPayload,
 ): Promise<ServiceResponse<CryptoTxMutationResponse, PaymentErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -50,27 +49,32 @@ export async function confirmCryptoTx(
 
 		const data = cryptoTxMutationResponseSchema.parse(response.data);
 
-		// Track crypto tx confirmed (awaited to ensure completion in serverless)
-		await trackServer(
-			PURCHASE_EVENTS.CRYPTO_TX_CONFIRMED,
-			{
-				session_id: payload.sessionId,
-				tx_hash: payload.txHash,
-			},
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
 
-		// Track purchase completed when crypto payment is finalized
-		if (data.status === CRYPTO_PAYMENT_STATUS.COMPLETED) {
-			void trackServer(
+			await trackServer(
+				PURCHASE_EVENTS.CRYPTO_TX_CONFIRMED,
+				{
+					session_id: payload.sessionId,
+					tx_hash: payload.txHash,
+					chain_id: payload.chainId,
+					confirmations: payload.confirmations,
+				},
+				{ userId },
+			);
+
+			if (data.status !== CRYPTO_PAYMENT_STATUS.COMPLETED) return;
+
+			await trackServer(
 				PURCHASE_EVENTS.COMPLETED,
 				{
 					session_id: payload.sessionId,
 					payment_method: 'crypto',
+					chain_id: payload.chainId,
 				},
 				{ userId },
 			);
-		}
+		});
 
 		return success(data);
 	} catch (error) {
@@ -84,6 +88,21 @@ export async function confirmCryptoTx(
 			service: 'payment',
 			action: 'confirm-crypto-tx',
 		});
+
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.FAILED,
+				{
+					session_id: payload.sessionId,
+					payment_method: 'crypto',
+					error_code: errorCode,
+				},
+				{ userId },
+			);
+		});
+
 		return failure(errorCode);
 	}
 }

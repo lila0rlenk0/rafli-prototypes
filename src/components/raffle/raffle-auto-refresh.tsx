@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import type { RaffleStatus } from '@/types/raffle';
 import {
 	getAutoRefreshTimeoutMs,
+	type RaffleAutoRefreshPhase,
 	resolveRaffleAutoRefreshPhase,
 } from '@/components/raffle/raffle-auto-refresh-state';
 
@@ -42,20 +43,20 @@ export function RaffleAutoRefresh({
 	const phase = resolveRaffleAutoRefreshPhase({ status, endAt, hasWinners });
 	// Once a phase exhausts its budget, stop refreshing until the server moves the raffle
 	// into a different phase (or a steady state).
-	const [phaseTimedOut, setPhaseTimedOut] = useState(false);
+	const [timedOutPhase, setTimedOutPhase] =
+		useState<null | RaffleAutoRefreshPhase>(null);
+	const phaseTimedOut = timedOutPhase === phase;
 
 	useEffect(() => {
 		if (!phase) return;
+		if (timedOutPhase === phase) return;
 
 		const timeout = setTimeout(() => {
-			setPhaseTimedOut(true);
+			setTimedOutPhase(phase);
 		}, getAutoRefreshTimeoutMs(phase));
 
-		return function cleanup() {
-			clearTimeout(timeout);
-			setPhaseTimedOut(false);
-		};
-	}, [phase]);
+		return () => clearTimeout(timeout);
+	}, [phase, timedOutPhase]);
 
 	useEffect(() => {
 		if (!phase || phaseTimedOut) return;

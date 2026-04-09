@@ -59,11 +59,11 @@ export function FormHeader() {
 				</h1>
 
 				<div className="flex items-center gap-2">
-					{currentStep > 0 && (
+					{currentStep > 0 ? (
 						<Button variant="outline" onClick={handlePreviousStep}>
 							Previous page
 						</Button>
-					)}
+					) : null}
 					<Button
 						variant="ghost"
 						size="icon"

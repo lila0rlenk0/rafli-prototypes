@@ -178,7 +178,7 @@ export function RaffleInfoCard({
 					<div className="flex items-center justify-between">
 						<h3 className="flex items-center gap-1 text-sm font-medium text-[#7B7B7B]">
 							Min. Participants
-							{isBelowMinParticipants() && (
+							{isBelowMinParticipants() ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<InfoIcon className="size-3.5 cursor-help text-[#7B7B7B]" />
@@ -188,7 +188,7 @@ export function RaffleInfoCard({
 										share of the revenue instead of the declared prize.
 									</TooltipContent>
 								</Tooltip>
-							)}
+							) : null}
 						</h3>
 						<p className="text-sm font-medium">
 							{raffle.minParticipants.toLocaleString()}
@@ -204,7 +204,7 @@ export function RaffleInfoCard({
 				</div>
 
 				{/* My Tickets Section - Only shown for authenticated users */}
-				{isAuthenticated && (
+				{isAuthenticated ? (
 					<>
 						<Separator className="my-4 bg-[#B4B4B4]" />
 
@@ -215,7 +215,7 @@ export function RaffleInfoCard({
 								</h3>
 								<div className="flex items-center gap-2">
 									<p>{getMyTotalTickets()}</p>
-									{myTicketsTotal > 0 && (
+									{myTicketsTotal > 0 ? (
 										<Tooltip>
 											<TooltipTrigger asChild>
 												<Link
@@ -242,19 +242,19 @@ export function RaffleInfoCard({
 															{ticket.ticketCode}
 														</span>
 													))}
-												{myTicketsTotal > MAX_VISIBLE_TICKETS && (
+												{myTicketsTotal > MAX_VISIBLE_TICKETS ? (
 													<p className="mt-1 text-xs text-[#7B7B7B]">
 														+{myTicketsTotal - MAX_VISIBLE_TICKETS} more
 													</p>
-												)}
+												) : null}
 											</TooltipContent>
 										</Tooltip>
-									)}
+									) : null}
 								</div>
 							</div>
 						</div>
 					</>
-				)}
+				) : null}
 
 				<Separator className="my-4 bg-[#B4B4B4]" />
 

@@ -7,11 +7,6 @@ import { z } from 'zod';
 /**
  * Allowed characters in promo codes (excludes ambiguous O/0/I/1)
  */
-export const PROMO_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-/**
- * Regex pattern for promo code format: XXXX-XXXX (8 chars + hyphen)
- */
 export const PROMO_CODE_REGEX = /^[A-Z2-9]{4}-[A-Z2-9]{4}$/;
 
 export const PROMO_CODE_TYPE = {

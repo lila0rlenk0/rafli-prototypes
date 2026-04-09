@@ -214,6 +214,22 @@ export function CryptoCheckoutModal({
 	// left the wallet but the tx vanished. When true, "Try Again" is hidden to
 	// prevent duplicate payments. Passed as explicit prop to FailureStep.
 	const [fundsAtRisk, setFundsAtRisk] = useState(false);
+	const goToStep = useCallback(
+		(nextStep: CheckoutStep) => {
+			setStep(currentStep => {
+				if (currentStep === nextStep) return currentStep;
+
+				const currentIsConfirming = currentStep === 'confirming';
+				const nextIsConfirming = nextStep === 'confirming';
+				if (currentIsConfirming !== nextIsConfirming) {
+					onConfirmingChange?.(nextIsConfirming);
+				}
+
+				return nextStep;
+			});
+		},
+		[onConfirmingChange],
+	);
 
 	// Crypto config — chain metadata (names, explorers, confirmation targets)
 	const { data: cryptoConfig } = useCryptoConfig();
@@ -345,8 +361,8 @@ export function CryptoCheckoutModal({
 		setErrorMessage(
 			'Transaction was sent, but the server could not safely register it. Please contact support with your transaction hash.',
 		);
-		setStep('failure');
-	}, []);
+		goToStep('failure');
+	}, [goToStep]);
 
 	/**
 	 * Handles the backend-immutable-hash edge case.
@@ -372,9 +388,9 @@ export function CryptoCheckoutModal({
 				);
 			}
 
-			setStep('failure');
+			goToStep('failure');
 		},
-		[],
+		[goToStep],
 	);
 
 	/**
@@ -397,8 +413,8 @@ export function CryptoCheckoutModal({
 			setErrorMessage('Checkout session expired. Please try again.');
 		}
 
-		setStep('failure');
-	}, [txHash]);
+		goToStep('failure');
+	}, [goToStep, txHash]);
 
 	/**
 	 * Minimal fallback token when backend returns a stored session for a token the
@@ -451,12 +467,12 @@ export function CryptoCheckoutModal({
 	const transitionToSuccess = useCallback(() => {
 		if (successTransitioned.current) return;
 		successTransitioned.current = true;
-		setStep('success');
+		goToStep('success');
 		// Pass the checkout-time quantity captured in confirmedTicketQuantity ref,
 		// not the parent's live ticketQuantity prop which can drift during the
 		// 30-120s confirming window if the user changes the ticket selector.
 		onSuccess?.(confirmedTicketQuantity.current);
-	}, [onSuccess]);
+	}, [goToStep, onSuccess]);
 
 	/**
 	 * Applies the canonical runtime state for the current checkout attempt.
@@ -585,17 +601,18 @@ export function CryptoCheckoutModal({
 			}
 
 			if (nextStep === 'failure') {
-				setStep('failure');
+				goToStep('failure');
 				return 'failure';
 			}
 
-			setStep(nextStep);
+			goToStep(nextStep);
 			return 'step';
 		},
 		[
 			applyCheckoutRuntimeState,
 			applyCheckoutSessionState,
 			buildRecoveredToken,
+			goToStep,
 			transitionToSuccess,
 		],
 	);
@@ -667,7 +684,7 @@ export function CryptoCheckoutModal({
 	const returnToWalletStep = useCallback(
 		(reason: 'wallet-changed' | 'session-expired', message?: string) => {
 			clearSessionBoundCheckout();
-			setStep('connect-wallet');
+			goToStep('connect-wallet');
 			if (message) {
 				toast.error(message);
 				return;
@@ -678,7 +695,7 @@ export function CryptoCheckoutModal({
 					: 'Checkout session expired. Continue again to refresh this crypto checkout.',
 			);
 		},
-		[clearSessionBoundCheckout],
+		[clearSessionBoundCheckout, goToStep],
 	);
 
 	/**
@@ -719,7 +736,7 @@ export function CryptoCheckoutModal({
 					txHash: undefined,
 					txSubmitted: false,
 				});
-				setStep('review');
+				goToStep('review');
 				return true;
 			}
 
@@ -735,8 +752,9 @@ export function CryptoCheckoutModal({
 		},
 		[
 			applyCheckoutSessionState,
-			applyServerHydration,
 			applyCheckoutRuntimeState,
+			applyServerHydration,
+			goToStep,
 			isPreConfirmingFlowCurrent,
 		],
 	);
@@ -839,7 +857,7 @@ export function CryptoCheckoutModal({
 			applyCheckoutRuntimeState({ txHash: undefined, txSubmitted: false });
 			payInFlight.current = false;
 			toast.info('Transaction cancelled.');
-			setStep('review');
+			goToStep('review');
 			return;
 		}
 
@@ -979,6 +997,9 @@ export function CryptoCheckoutModal({
 		// Guard on userId — without auth, getWallets returns 401 silently
 		enabled: open && !!userId,
 	});
+	const submitDeadline = session?.submitDeadline;
+	const confirmDeadline = session?.confirmDeadline;
+	const activeConfirmingDeadline = txHash ? confirmDeadline : submitDeadline;
 	// Order/session polling should live for exactly the same remaining grace window
 	// as the expiry timer. Otherwise the modal can stop receiving backend state
 	// updates long before the backend has actually given up on the payment.
@@ -988,16 +1009,9 @@ export function CryptoCheckoutModal({
 	// every render. That would reset the polling hooks' useEffect (which depends on
 	// resolvedMaxDurationMs), causing isExpired to flicker false→true on each cycle.
 	const confirmingPollWindowMs = useMemo(() => {
-		if (step !== 'confirming' || !session) return undefined;
-		// After tx submission, use the longer confirming deadline;
-		// before submission, use the shorter submit deadline.
-		const deadline = txHash ? session.confirmDeadline : session.submitDeadline;
-		return getCryptoSessionGraceWindowMs(deadline);
-		// Only the deadline strings matter for the poll window computation.
-		// Including the full session object would cause unnecessary recomputation
-		// on every session reference change (e.g. revalidation refresh).
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [step, session?.submitDeadline, session?.confirmDeadline, txHash]);
+		if (step !== 'confirming' || !activeConfirmingDeadline) return undefined;
+		return getCryptoSessionGraceWindowMs(activeConfirmingDeadline);
+	}, [activeConfirmingDeadline, step]);
 	// Avoid polling the backend while the wallet signature/send prompt is still open.
 	// We start polling once there is a tx hash, a submit recovery path, or we know
 	// backend already owns the session (txSubmittedToBackend is true from polling).
@@ -1068,7 +1082,7 @@ export function CryptoCheckoutModal({
 		const reviewGuard = getReviewSessionGuard({
 			connectedAddress: checksummedAddress,
 			sessionWalletAddress,
-			submitDeadline: session?.submitDeadline,
+			submitDeadline,
 		});
 
 		switch (reviewGuard.kind) {
@@ -1079,20 +1093,11 @@ export function CryptoCheckoutModal({
 			default:
 				return null;
 		}
-	}, [checksummedAddress, session?.submitDeadline, sessionWalletAddress]);
+	}, [checksummedAddress, sessionWalletAddress, submitDeadline]);
 
 	// ==========================================
 	// Effects
 	// ==========================================
-
-	/**
-	 * Notify parent of confirming state changes — drives the persistent
-	 * "pending transaction" button in CryptoBuyButton.
-	 * Fires on step transitions to/from 'confirming'.
-	 */
-	useEffect(() => {
-		onConfirmingChange?.(step === 'confirming');
-	}, [step, onConfirmingChange]);
 
 	/**
 	 * Reopen cancels any delayed reset scheduled by the previous close.
@@ -1323,19 +1328,19 @@ export function CryptoCheckoutModal({
 			const reason =
 				polledCheckoutStatus.crypto?.failureReason ?? FALLBACK_FAILURE_MESSAGE;
 			setErrorMessage(reason);
-			setStep('failure');
+			goToStep('failure');
 		} else if (polledCheckoutStatus.phase === CHECKOUT_PHASE.AWAITING_PAYMENT) {
 			// Session expired or was abandoned while we were confirming — no active tx
 			// to wait for. Transition to failure immediately instead of waiting for poll timeout.
 			if (!polledCheckoutStatus.crypto?.txHash) {
 				setErrorMessage('Payment session expired. Please try again.');
-				setStep('failure');
+				goToStep('failure');
 			}
 			// else: txHash present but phase is awaiting_payment — this transient state
 			// means the backend hasn't advanced to confirming yet (e.g. cron hasn't run).
 			// Safe to continue polling; the cron or next poll tick will move to confirming.
 		}
-	}, [polledCheckoutStatus, step, transitionToSuccess]);
+	}, [goToStep, polledCheckoutStatus, step, transitionToSuccess]);
 
 	/**
 	 * Cancel the confirm-retry timer when leaving the confirming step.
@@ -1396,7 +1401,7 @@ export function CryptoCheckoutModal({
 				setErrorMessage(
 					'Transaction may have been removed from the blockchain. Please contact support.',
 				);
-				setStep('failure');
+				goToStep('failure');
 				return;
 			}
 
@@ -1416,15 +1421,16 @@ export function CryptoCheckoutModal({
 					'Your transaction may have been affected by a chain reorganization. Please contact support with your transaction hash for assistance.',
 				);
 			}
-			setStep('failure');
+			goToStep('failure');
 		}
 
 		void handlePossibleReorg();
 	}, [
+		goToStep,
 		step,
-		txHash,
 		txError,
 		txFailureCount,
+		txHash,
 		session,
 		refetchConfirmingBalance,
 	]);
@@ -1437,12 +1443,11 @@ export function CryptoCheckoutModal({
 	 * The txHash state drives which deadline is active.
 	 */
 	useEffect(() => {
-		if (step !== 'confirming' || !session) return;
+		if (step !== 'confirming' || !activeConfirmingDeadline) return;
 
-		// After tx submission, use the longer confirming deadline;
-		// before submission, use the shorter submit deadline.
-		const deadline = txHash ? session.confirmDeadline : session.submitDeadline;
-		const msUntilExpiry = getCryptoSessionGraceWindowMs(deadline);
+		const msUntilExpiry = getCryptoSessionGraceWindowMs(
+			activeConfirmingDeadline,
+		);
 
 		// Already beyond the backend grace window — transition immediately
 		if (msUntilExpiry <= 0) {
@@ -1452,17 +1457,7 @@ export function CryptoCheckoutModal({
 
 		const timer = setTimeout(failConfirmingWindowExpired, msUntilExpiry);
 		return () => clearTimeout(timer);
-		// Only the deadline strings drive the timer — avoid re-arming the
-		// setTimeout on unrelated session field changes by pinning to the
-		// exact values this effect reads.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [
-		failConfirmingWindowExpired,
-		session?.submitDeadline,
-		session?.confirmDeadline,
-		step,
-		txHash,
-	]);
+	}, [activeConfirmingDeadline, failConfirmingWindowExpired, step]);
 
 	// ==========================================
 	// Handlers
@@ -1483,12 +1478,12 @@ export function CryptoCheckoutModal({
 		// chains that have zero allowed tokens.
 		if (tokens.length <= 1) {
 			setSelectedToken(tokens[0]!);
-			setStep('connect-wallet');
+			goToStep('connect-wallet');
 			return;
 		}
 
 		// Multiple tokens — show token selector
-		setStep('select-token');
+		goToStep('select-token');
 	}
 
 	/**
@@ -1496,7 +1491,7 @@ export function CryptoCheckoutModal({
 	 */
 	function handleSelectToken(token: RaffleCryptoToken) {
 		setSelectedToken(token);
-		setStep('connect-wallet');
+		goToStep('connect-wallet');
 	}
 
 	/**
@@ -1605,7 +1600,7 @@ export function CryptoCheckoutModal({
 					onPromoInvalid?.();
 				}
 				setErrorMessage(getPaymentErrorMessage(checkoutResult.error));
-				setStep('failure');
+				goToStep('failure');
 				return;
 			}
 
@@ -1778,7 +1773,7 @@ export function CryptoCheckoutModal({
 			// This is intentional: the confirming-preservation path is more important
 			// (real tx in-flight) than the brief invisible review snap-back on rejection.
 			setTxSubmitted(true);
-			setStep('confirming');
+			goToStep('confirming');
 
 			// Execute ERC20 transfer
 			// amountRaw is already in token's smallest unit (6 decimals for USDC, 18 for EARNM)
@@ -1819,14 +1814,14 @@ export function CryptoCheckoutModal({
 			if (isUserRejection(error)) {
 				toast.info('Transaction cancelled.');
 				// Return to review since we optimistically moved to confirming
-				setStep('review');
+				goToStep('review');
 				return;
 			}
 
 			console.error('Crypto payment error:', error);
 			setRetryBlocked(false);
 			setErrorMessage('Transaction failed. Please try again.');
-			setStep('failure');
+			goToStep('failure');
 		}
 	}
 
@@ -1841,7 +1836,7 @@ export function CryptoCheckoutModal({
 			confirmRetryTimerRef.current = null;
 		}
 		invalidatePreConfirmingFlow();
-		setStep('select-chain');
+		goToStep('select-chain');
 		setSelectedChainId(null);
 		setSelectedToken(null);
 		setSession(null);
@@ -1913,24 +1908,24 @@ export function CryptoCheckoutModal({
 			case 'select-token':
 				setSelectedChainId(null);
 				setSelectedToken(null);
-				setStep('select-chain');
+				goToStep('select-chain');
 				break;
 			case 'connect-wallet':
 				// If chain has multiple allowed tokens, go back to token selector.
 				// If auto-skipped, go back to chain selector.
 				if (selectedChainId && getTokensForChain(selectedChainId).length > 1) {
 					setSelectedToken(null);
-					setStep('select-token');
+					goToStep('select-token');
 				} else {
 					setSelectedChainId(null);
 					setSelectedToken(null);
-					setStep('select-chain');
+					goToStep('select-chain');
 				}
 				break;
 			case 'review':
 				// Keep session — reuse check in handleWalletReady skips API call
 				// only when chain + token + verified sender wallet still match.
-				setStep('connect-wallet');
+				goToStep('connect-wallet');
 				break;
 			default:
 				break;
@@ -2095,7 +2090,7 @@ export function CryptoCheckoutModal({
 			<DialogContent className="max-w-md overflow-hidden border border-[#0F0F0FF2] bg-white px-8 py-10">
 				{/* Header with back button and step indicator */}
 				<DialogHeader className="relative">
-					{showBackButton() && (
+					{showBackButton() ? (
 						<button
 							type="button"
 							onClick={handleBack}
@@ -2104,39 +2099,39 @@ export function CryptoCheckoutModal({
 						>
 							<ArrowLeft className="size-4" />
 						</button>
-					)}
+					) : null}
 					<DialogTitle className={getDialogTitleClass()}>
 						{getStepTitle()}
 					</DialogTitle>
 
 					{/* Step progress dots */}
-					{getStepNumber() > 0 && (
+					{getStepNumber() > 0 ? (
 						<div className="flex items-center justify-center gap-1.5 pt-1">
 							{getStepNumbers().map(n => (
 								<div key={n} className={getStepDotClass(n)} />
 							))}
 						</div>
-					)}
+					) : null}
 				</DialogHeader>
 
 				<div className="flex flex-col gap-4 pt-2">
 					{step === 'select-chain' &&
 						resolvedChainIds.length === 0 &&
 						renderUnavailableChainState()}
-					{step === 'select-chain' && resolvedChainIds.length > 0 && (
+					{step === 'select-chain' && resolvedChainIds.length > 0 ? (
 						<ChainSelector
 							cryptoChainIds={resolvedChainIds}
 							cryptoOptions={cryptoOptions}
 							onSelectChain={handleSelectChain}
 						/>
-					)}
-					{shouldShowTokenSelector() && (
+					) : null}
+					{shouldShowTokenSelector() ? (
 						<TokenSelector
 							tokens={getTokensForChain(selectedChainId!)}
 							onSelectToken={handleSelectToken}
 						/>
-					)}
-					{step === 'connect-wallet' && (
+					) : null}
+					{step === 'connect-wallet' ? (
 						<WalletStep
 							address={address}
 							isWalletVerified={isWalletVerified}
@@ -2144,8 +2139,8 @@ export function CryptoCheckoutModal({
 							nativeBalance={nativeBalance ?? undefined}
 							onWalletReady={handleWalletReady}
 						/>
-					)}
-					{shouldShowReviewStep() && (
+					) : null}
+					{shouldShowReviewStep() ? (
 						<ReviewStep
 							session={session}
 							raffleEndAt={raffleEndAt}
@@ -2162,8 +2157,8 @@ export function CryptoCheckoutModal({
 							chains={chains}
 							onPay={handlePay}
 						/>
-					)}
-					{shouldShowConfirmingStep() && (
+					) : null}
+					{shouldShowConfirmingStep() ? (
 						<ConfirmingStep
 							txHash={txHash}
 							selectedChainId={selectedChainId!}
@@ -2172,16 +2167,16 @@ export function CryptoCheckoutModal({
 							finalizationRequested={finalizationRequested}
 							chains={chains}
 						/>
-					)}
-					{shouldShowSuccessStep() && (
+					) : null}
+					{shouldShowSuccessStep() ? (
 						<SuccessStep
 							txHash={txHash}
 							selectedChainId={selectedChainId!}
 							chains={chains}
 							onClose={handleClose}
 						/>
-					)}
-					{shouldShowFailureStep() && (
+					) : null}
+					{shouldShowFailureStep() ? (
 						<FailureStep
 							txHash={txHash}
 							selectedChainId={selectedChainId ?? undefined}
@@ -2192,7 +2187,7 @@ export function CryptoCheckoutModal({
 							onClose={handleClose}
 							onReset={handleReset}
 						/>
-					)}
+					) : null}
 				</div>
 			</DialogContent>
 		</Dialog>

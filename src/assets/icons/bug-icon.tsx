@@ -1,5 +1,6 @@
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
+/** @returns Bug SVG icon */
 export function BugIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg

@@ -246,7 +246,7 @@ export function ImageResizer({
 	};
 	return (
 		<div ref={controlWrapperRef}>
-			{!showCaption && captionsEnabled && (
+			{!showCaption && captionsEnabled ? (
 				<Button
 					className="image-caption-button absolute bottom-1 left-1/2 -translate-x-1/2"
 					ref={buttonRef}
@@ -257,7 +257,7 @@ export function ImageResizer({
 				>
 					Add Caption
 				</Button>
-			)}
+			) : null}
 			<div
 				className="image-resizer image-resizer-n bg-primary absolute -top-2.5 left-1/2 h-2 w-2 -translate-x-1/2 cursor-ns-resize"
 				onPointerDown={event => {

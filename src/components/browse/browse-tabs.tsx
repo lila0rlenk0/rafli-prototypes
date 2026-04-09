@@ -64,13 +64,14 @@ export function BrowseTabs({
 
 			{/* Mobile: Featured tab shows featured + grid below; All tab shows grid only */}
 			<div className="sm:hidden">
-				{activeTab === 'featured' && (
+				{activeTab === 'featured' ? (
 					<>
 						{featuredContent}
 						{gridContent}
 					</>
+				) : (
+					gridContent
 				)}
-				{activeTab === 'all' && gridContent}
 			</div>
 
 			{/* Desktop: show both sections */}

@@ -192,7 +192,7 @@ function FloatingTextFormat({
 			ref={popupCharStylesEditorRef}
 			className="bg-background absolute top-0 left-0 flex gap-1 rounded-md border p-1 opacity-0 shadow-md transition-opacity duration-300 will-change-transform"
 		>
-			{editor.isEditable() && (
+			{editor.isEditable() ? (
 				<>
 					<ToggleGroup
 						type="multiple"
@@ -296,7 +296,7 @@ function FloatingTextFormat({
 						</ToggleGroupItem>
 					</ToggleGroup>
 				</>
-			)}
+			) : null}
 		</div>
 	);
 }

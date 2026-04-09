@@ -193,13 +193,8 @@ export const documentUploadResponseSchema = z.object({
 	purpose: z.string(),
 });
 
-/** Schema for a single submission in the user's list */
-export const kycSubmissionSummarySchema = z.object({
-	id: z.string(),
-	type: verificationTypeSchema,
-	status: kycSubmissionStatusSchema,
-	submittedAt: z.string(),
-});
+/** Schema for a single submission in the user's list — same shape as creation response */
+export const kycSubmissionSummarySchema = kycSubmissionResponseSchema;
 
 /** Schema for the my-verifications list response — wrapped in { submissions } */
 export const mySubmissionsResponseSchema = z.object({

@@ -55,7 +55,7 @@ export function FormHeader() {
 					>
 						Previous page
 					</Button>
-					{isDraft && <PublishRaffleButton />}
+					{isDraft ? <PublishRaffleButton /> : null}
 					<Button
 						variant="ghost"
 						size="icon"

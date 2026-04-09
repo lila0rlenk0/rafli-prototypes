@@ -202,11 +202,11 @@ export function BasicInfoStep() {
 					<DropzoneEmptyState />
 					<DropzoneContent />
 				</Dropzone>
-				{touchedFields.coverImage && errors.coverImage && (
+				{touchedFields.coverImage && errors.coverImage ? (
 					<span className="text-sm text-red-500">
 						{errors.coverImage.message}
 					</span>
-				)}
+				) : null}
 
 				<div className="grid grid-cols-4 gap-4">
 					{Array.from({ length: 4 }).map((_, index) => {
@@ -240,9 +240,9 @@ export function BasicInfoStep() {
 					aria-describedby={errors.title ? 'title-error' : undefined}
 					{...register('title')}
 				/>
-				{touchedFields.title && errors.title && (
+				{touchedFields.title && errors.title ? (
 					<span className="text-sm text-red-500">{errors.title.message}</span>
-				)}
+				) : null}
 			</div>
 
 			<DescriptionEditor control={form.control} trigger={trigger} />
@@ -264,9 +264,9 @@ export function BasicInfoStep() {
 							{...register('price', { valueAsNumber: true })}
 						/>
 					</div>
-					{touchedFields.price && errors.price && (
+					{touchedFields.price && errors.price ? (
 						<span className="text-sm text-red-500">{errors.price.message}</span>
-					)}
+					) : null}
 				</div>
 				<div className="flex flex-col gap-2">
 					<label htmlFor="category" className="font-medium">
@@ -282,11 +282,11 @@ export function BasicInfoStep() {
 						searchPlaceholder="Search category..."
 						emptyText="No category found."
 					/>
-					{touchedFields.category && errors.category && (
+					{touchedFields.category && errors.category ? (
 						<span className="text-sm text-red-500">
 							{errors.category.message}
 						</span>
-					)}
+					) : null}
 				</div>
 			</div>
 

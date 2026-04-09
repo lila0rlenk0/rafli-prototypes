@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
@@ -30,8 +31,7 @@ type PublishRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
 export async function publishRaffle(
 	raffleId: string,
 ): Promise<PublishRaffleResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -41,17 +41,21 @@ export async function publishRaffle(
 		// Validate response data structure
 		const validatedData = raffleSchema.parse(response.data);
 
-		// Track raffle published (awaited to ensure completion in serverless)
-		await trackServer(
-			RAFFLE_EVENTS.PUBLISHED,
-			{
-				raffle_id: validatedData.id,
-				category_id: validatedData.categoryId,
-				ticket_price: validatedData.ticketPriceAmount,
-				max_participants: validatedData.maxParticipants,
-			},
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				RAFFLE_EVENTS.PUBLISHED,
+				{
+					raffle_id: validatedData.id,
+					category_id: validatedData.categoryId,
+					ticket_price: validatedData.ticketPriceAmount,
+					max_participants: validatedData.maxParticipants,
+					number_of_winners: validatedData.numberOfWinners,
+				},
+				{ userId },
+			);
+		});
 
 		return success(validatedData);
 	} catch (error) {

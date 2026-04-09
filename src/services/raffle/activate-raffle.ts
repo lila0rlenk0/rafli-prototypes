@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
@@ -32,8 +33,9 @@ export async function activateRaffle(
 
 		const validatedData = raffleSchema.parse(response.data);
 
-		// Revalidate my-raffles so the card reflects the new live status
-		revalidateMyRaffles();
+		runAfter(() => {
+			revalidateMyRaffles();
+		});
 
 		return success(validatedData);
 	} catch (error) {

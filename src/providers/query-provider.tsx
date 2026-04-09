@@ -8,6 +8,7 @@ import { createQueryClient } from '@/lib/query/client';
 /**
  * React Query provider with stable client instance
  * @param children - Child components
+ * @returns QueryClientProvider wrapping children with a stable client instance
  */
 export function QueryProvider({ children }: { children: ReactNode }) {
 	const [queryClient] = useState(() => createQueryClient());

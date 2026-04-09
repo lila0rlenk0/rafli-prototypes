@@ -415,7 +415,7 @@ export function FulfillmentTimeline({
 		<div className="rounded-2xl border border-black bg-white p-6">
 			<div className="mb-6 flex items-center justify-between">
 				<h3 className="text-lg font-semibold">Delivery status</h3>
-				{isHost && (
+				{isHost ? (
 					<Link
 						href={`/browse/${publicSlug}/fulfillment`}
 						className="flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors hover:text-black"
@@ -423,7 +423,7 @@ export function FulfillmentTimeline({
 						<Users className="size-4" />
 						Manage All Winners
 					</Link>
-				)}
+				) : null}
 			</div>
 
 			<div className="space-y-0">

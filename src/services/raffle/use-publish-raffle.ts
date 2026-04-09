@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -51,52 +51,48 @@ export function usePublishRaffle({
 	const router = useRouter();
 	const [isPublishing, setIsPublishing] = useState(false);
 
-	const handlePublish = useCallback(
-		async (mode: PublishMode) => {
-			setIsPublishing(true);
+	async function handlePublish(mode: PublishMode) {
+		setIsPublishing(true);
 
-			try {
-				// For 'now': update startAt to current time so backend transitions to live
-				// Skip if startAt is already today or past
-				if (mode === 'now') {
-					const startDate = new Date(startAt);
-					startDate.setHours(0, 0, 0, 0);
-					const today = new Date();
-					today.setHours(0, 0, 0, 0);
+		try {
+			// For 'now': update startAt to current time so backend transitions to live
+			// Skip if startAt is already today or past
+			if (mode === 'now') {
+				const startDate = new Date(startAt);
+				startDate.setHours(0, 0, 0, 0);
+				const today = new Date();
+				today.setHours(0, 0, 0, 0);
 
-					if (startDate > today) {
-						const updateResult = await updateRaffle(raffleId, {
-							startAt: new Date().toISOString(),
-						});
-						if (!updateResult.success) {
-							toast.error(getPublishErrorMessage(updateResult.error));
-							return;
-						}
+				if (startDate > today) {
+					const updateResult = await updateRaffle(raffleId, {
+						startAt: new Date().toISOString(),
+					});
+					if (!updateResult.success) {
+						toast.error(getPublishErrorMessage(updateResult.error));
+						return;
 					}
 				}
-
-				const result = await publishRaffle(raffleId);
-				if (!result.success) {
-					toast.error(getPublishErrorMessage(result.error));
-					return;
-				}
-
-				// Feedback matches the selected mode so hosts know what to expect
-				const message =
-					mode === 'now'
-						? 'Your raffle is going live! It may take 1-2 minutes.'
-						: 'Your raffle is scheduled. It will go live at the start time you set.';
-				toast.info(message);
-				router.push(redirectTo);
-			} catch (error) {
-				console.error('Publish raffle error:', error);
-				toast.error('Something went wrong. Please try again');
-			} finally {
-				setIsPublishing(false);
 			}
-		},
-		[raffleId, startAt, redirectTo, router],
-	);
+
+			const result = await publishRaffle(raffleId);
+			if (!result.success) {
+				toast.error(getPublishErrorMessage(result.error));
+				return;
+			}
+
+			// Feedback matches the selected mode so hosts know what to expect
+			const message =
+				mode === 'now'
+					? 'Your raffle is going live! It may take 1-2 minutes.'
+					: 'Your raffle is scheduled. It will go live at the start time you set.';
+			toast.info(message);
+			router.push(redirectTo);
+		} catch {
+			toast.error('Something went wrong. Please try again');
+		} finally {
+			setIsPublishing(false);
+		}
+	}
 
 	return { isPublishing, handlePublish };
 }

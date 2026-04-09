@@ -56,7 +56,7 @@ export const commentSchema = z.object({
 	isDeleted: z.boolean(),
 	voteScore: z.number(),
 	/** null when fetched via public endpoint (no auth), 'upvote'|'downvote' when authenticated */
-	userVote: z.enum(['upvote', 'downvote']).nullable(),
+	userVote: z.enum([VOTE_TYPE.UPVOTE, VOTE_TYPE.DOWNVOTE]).nullable(),
 	replyCount: z.number(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
@@ -78,7 +78,7 @@ export const voteResponseSchema = z.object({
 	commentId: z.string(),
 	voteScore: z.number(),
 	/** Backend returns `voteType` (null when toggled off) */
-	voteType: z.enum(['upvote', 'downvote']).nullable(),
+	voteType: z.enum([VOTE_TYPE.UPVOTE, VOTE_TYPE.DOWNVOTE]).nullable(),
 });
 
 /**

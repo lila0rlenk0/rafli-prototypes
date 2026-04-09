@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { ACCOUNT_EVENTS } from '@/lib/analytics/events';
@@ -7,8 +8,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapWalletError } from '@/lib/errors/error-mapper';
+import { failure, mapWalletError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { WALLET_ERROR_CODES, type WalletErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -24,8 +24,7 @@ import { walletResponseSchema } from '@/types/wallet';
 export async function verifyWallet(
 	payload: VerifyWalletPayload,
 ): Promise<ServiceResponse<WalletResponse, WalletErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -36,12 +35,15 @@ export async function verifyWallet(
 
 		const wallet = walletResponseSchema.parse(response.data);
 
-		// Track wallet verified (awaited — important for crypto readiness metrics)
-		await trackServer(
-			ACCOUNT_EVENTS.WALLET_VERIFIED,
-			{ chain: 'evm' },
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				ACCOUNT_EVENTS.WALLET_VERIFIED,
+				{ chain: 'evm' },
+				{ userId },
+			);
+		});
 
 		return success(wallet);
 	} catch (error) {
@@ -50,6 +52,22 @@ export async function verifyWallet(
 			return failure(WALLET_ERROR_CODES.VALIDATION_FAILED);
 		}
 
-		return failure(mapWalletError(error));
+		const errorCode = mapWalletError(error);
+
+		// Track wallet verification failure — measures Web3 onboarding friction
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				ACCOUNT_EVENTS.WALLET_VERIFICATION_FAILED,
+				{
+					chain: 'evm',
+					error_code: errorCode,
+				},
+				{ userId },
+			);
+		});
+
+		return failure(errorCode);
 	}
 }

@@ -60,7 +60,7 @@ export function RaffleImageGallery({
 				onImageClick={handleCarouselClick}
 			/>
 
-			{galleryImages.length > 0 && (
+			{galleryImages.length > 0 ? (
 				<div className="grid grid-cols-3 gap-4">
 					{galleryImages.map((image, index) => (
 						<button
@@ -79,7 +79,7 @@ export function RaffleImageGallery({
 						</button>
 					))}
 				</div>
-			)}
+			) : null}
 
 			<ImageLightbox
 				images={allImages}

@@ -1,7 +1,10 @@
 'use server';
 
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
@@ -39,6 +42,8 @@ export async function uploadGalleryImages(
 	raffleId: string,
 	files: File[],
 ): Promise<UploadGalleryServiceResponse> {
+	const sessionPromise = Promise.resolve(getSession());
+
 	try {
 		// Client-side validation
 		if (files.length === 0) {
@@ -80,6 +85,19 @@ export async function uploadGalleryImages(
 
 		// Validate response structure
 		const parsed = uploadGalleryResponseSchema.parse(response.data);
+
+		// Fire-and-forget — upload tracking must not block
+		void sessionPromise.then(session =>
+			trackServer(
+				RAFFLE_EVENTS.GALLERY_UPLOADED,
+				{
+					raffle_id: raffleId,
+					image_count: files.length,
+					total_size_bytes: files.reduce((sum, f) => sum + f.size, 0),
+				},
+				{ userId: session?.user?.id },
+			),
+		);
 
 		return success(parsed);
 	} catch (error) {

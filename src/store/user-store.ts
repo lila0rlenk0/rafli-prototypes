@@ -109,12 +109,11 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 				 */
 				initializeMode: () => {
 					const { mode, canSwitchMode } = get();
+					const isInvalidHostMode = mode === USER_MODE.HOST && !canSwitchMode();
 
 					// Resolve effective mode: demote if permission lost, default if unset
 					const effectiveMode =
-						(mode === USER_MODE.HOST && !canSwitchMode()) || mode === null
-							? USER_MODE.PARTICIPANT
-							: mode;
+						isInvalidHostMode || mode === null ? USER_MODE.PARTICIPANT : mode;
 
 					if (effectiveMode !== mode) {
 						set({ mode: effectiveMode });

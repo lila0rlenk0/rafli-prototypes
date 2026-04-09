@@ -57,17 +57,17 @@ export function FormHeader() {
 				</h1>
 
 				<div className="flex items-center gap-2">
-					{!isFirstStep && !isSubmitting && (
+					{!isFirstStep && !isSubmitting ? (
 						<Button variant="outline" onClick={previousStep}>
 							<ArrowLeft data-icon="inline-start" />
 							Previous
 						</Button>
-					)}
-					{isFirstStep && (
+					) : null}
+					{isFirstStep ? (
 						<Button asChild variant="outline">
 							<Link href="/">Cancel</Link>
 						</Button>
-					)}
+					) : null}
 				</div>
 			</div>
 
@@ -79,12 +79,12 @@ export function FormHeader() {
 				/>
 			</div>
 
-			{phaseLabel && (
+			{phaseLabel ? (
 				<div className="text-muted-foreground flex items-center gap-2 py-2 text-sm">
 					<Spinner className="size-4" />
 					{phaseLabel}
 				</div>
-			)}
+			) : null}
 		</>
 	);
 }

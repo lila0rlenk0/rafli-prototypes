@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
@@ -37,10 +38,6 @@ export async function updateMe(
 		// Validate payload before sending
 		const validationResult = updateMePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			console.error(
-				'Update me payload validation failed:',
-				validationResult.error,
-			);
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
@@ -58,8 +55,9 @@ export async function updateMe(
 		// Validate response structure
 		const validatedData = updateMeResponseSchema.parse(response.data);
 
-		// Revalidate profile cache
-		await revalidateProfile();
+		runAfter(async () => {
+			await revalidateProfile();
+		});
 
 		return success(validatedData);
 	} catch (error) {

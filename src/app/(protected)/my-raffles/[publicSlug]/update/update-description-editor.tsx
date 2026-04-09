@@ -13,12 +13,12 @@ import { CodeNode } from '@lexical/code';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { $getRoot } from 'lexical';
-import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useEffect, useRef } from 'react';
 import { useController } from 'react-hook-form';
 
 import { useTimeout } from '@/lib/hooks/use-timeout';
 
-import { Editor } from '@/components/ui/blocks/editor-md/editor';
 import { useUpdateForm } from './update-form-provider';
 import type { UpdateFormData } from './schema';
 
@@ -96,6 +96,28 @@ const MARKDOWN_TRANSFORMERS = [
 		return true;
 	}),
 ];
+
+const Editor = dynamic(
+	() =>
+		import('@/components/ui/blocks/editor-md/editor').then(module => ({
+			default: module.Editor,
+		})),
+	{
+		ssr: false,
+		loading: () => <EditorSkeleton />,
+	},
+);
+
+function EditorSkeleton() {
+	return (
+		<div className="flex flex-col gap-2">
+			<label htmlFor="text" className="font-medium">
+				Description
+			</label>
+			<div className="h-[185px] w-full animate-pulse rounded-lg bg-gray-50" />
+		</div>
+	);
+}
 
 /**
  * Plugin to sync markdown with form field
@@ -184,20 +206,12 @@ function MarkdownSyncPlugin({
  * Markdown editor for update text, connected to react-hook-form.
  */
 export function UpdateDescriptionEditor() {
-	const [mounted, setMounted] = useState(false);
-	const setMountTimeout = useTimeout();
 	const { form } = useUpdateForm();
 
 	const { field, fieldState } = useController<UpdateFormData, 'text'>({
 		control: form.control,
 		name: 'text',
 	});
-
-	// Defer mount flag to next tick to avoid SSR hydration mismatch
-	useEffect(() => {
-		if (mounted) return;
-		setMountTimeout(() => setMounted(true), 0);
-	}, [mounted, setMountTimeout]);
 
 	/**
 	 * Handles markdown changes from the editor
@@ -206,17 +220,6 @@ export function UpdateDescriptionEditor() {
 	function handleMarkdownChange(markdown: string) {
 		field.onChange(markdown);
 		form.trigger('text');
-	}
-
-	if (!mounted) {
-		return (
-			<div className="flex flex-col gap-2">
-				<label htmlFor="text" className="font-medium">
-					Description
-				</label>
-				<div className="h-[185px] w-full animate-pulse rounded-lg bg-gray-50" />
-			</div>
-		);
 	}
 
 	return (
@@ -237,9 +240,9 @@ export function UpdateDescriptionEditor() {
 					/>
 				</Editor>
 			</div>
-			{fieldState.isTouched && fieldState.error && (
+			{fieldState.isTouched && fieldState.error ? (
 				<span className="text-sm text-red-500">{fieldState.error.message}</span>
-			)}
+			) : null}
 		</div>
 	);
 }

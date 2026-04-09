@@ -282,7 +282,7 @@ export function PaymentStatusModal({
 						Winners will be announced once the draw closes.
 					</DialogDescription>
 
-					{isParticipant && (
+					{isParticipant ? (
 						<div className="my-6">
 							<Link
 								href="/my-raffles"
@@ -291,7 +291,7 @@ export function PaymentStatusModal({
 								View my raffles
 							</Link>
 						</div>
-					)}
+					) : null}
 				</DialogHeader>
 				<div className="z-1 flex w-full flex-col items-center justify-center gap-4">
 					<p className="text-xl font-medium">Share your raffle!</p>
@@ -330,7 +330,7 @@ export function PaymentStatusModal({
 					<br />
 					This usually takes a few seconds. Please check back shortly.
 				</DialogDescription>
-				{isParticipant && (
+				{isParticipant ? (
 					<div className="my-6">
 						<Link
 							href="/my-raffles"
@@ -339,7 +339,7 @@ export function PaymentStatusModal({
 							View my raffles
 						</Link>
 					</div>
-				)}
+				) : null}
 			</DialogHeader>
 		);
 	}
@@ -379,26 +379,26 @@ export function PaymentStatusModal({
 					>
 						Close
 					</Button>
-					{verificationFailureCopy.requiresSignIn && (
+					{verificationFailureCopy.requiresSignIn ? (
 						<Button
 							asChild
 							className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
 						>
 							<Link href={signInHref}>Sign in to verify</Link>
 						</Button>
-					)}
+					) : null}
 					{!verificationFailureCopy.requiresSignIn &&
-						verificationFailureCopy.canRetry && (
-							<Button
-								type="button"
-								onClick={handleRetryVerification}
-								className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
-							>
-								Retry verification
-							</Button>
-						)}
+					verificationFailureCopy.canRetry ? (
+						<Button
+							type="button"
+							onClick={handleRetryVerification}
+							className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
+						>
+							Retry verification
+						</Button>
+					) : null}
 				</div>
-				{isParticipant && (
+				{isParticipant ? (
 					<Button
 						asChild
 						variant="outline"
@@ -406,7 +406,7 @@ export function PaymentStatusModal({
 					>
 						<Link href="/my-raffles">View my raffles</Link>
 					</Button>
-				)}
+				) : null}
 			</DialogHeader>
 		);
 	}
@@ -430,12 +430,12 @@ export function PaymentStatusModal({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl border border-[#0F0F0FF2] py-24">
-				{status === 'paid' && (
+				{status === 'paid' ? (
 					<>
 						{renderLeftColoredCard({ className: 'absolute top-0 left-0' })}
 						{renderRightColoredCard({ className: 'absolute top-0 right-0' })}
 					</>
-				)}
+				) : null}
 				{renderContent()}
 			</DialogContent>
 		</Dialog>

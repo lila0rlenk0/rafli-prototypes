@@ -66,7 +66,7 @@ export function PublishSplitButton({
 				disabled={isPublishing}
 				className="flex flex-1 items-center justify-center gap-2 rounded-l-full border-2 border-r-0 border-black bg-black px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-black disabled:pointer-events-none disabled:opacity-50"
 			>
-				{isPublishing && <Loader2Icon className="size-4 animate-spin" />}
+				{isPublishing ? <Loader2Icon className="size-4 animate-spin" /> : null}
 				{getSelectedLabel()}
 			</button>
 

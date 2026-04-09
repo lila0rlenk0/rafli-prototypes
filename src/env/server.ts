@@ -9,6 +9,8 @@ import z from 'zod';
  *
  * SECURITY: S2S_SECRET is used to authenticate server-to-server calls.
  * Backend MUST validate this before trusting X-Client-IP header.
+ *
+ * @returns Validated server environment variables
  */
 export const env = createEnv({
 	server: {
@@ -21,7 +23,7 @@ export const env = createEnv({
 	},
 	runtimeEnv: {
 		BACKEND_URL: process.env.BACKEND_URL,
-		APP_URL: process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL,
+		APP_URL: process.env.APP_URL,
 		S2S_SECRET: process.env.S2S_SECRET,
 		MIXPANEL_TOKEN: process.env.MIXPANEL_TOKEN,
 		SENTRY_DSN: process.env.SENTRY_DSN,

@@ -81,11 +81,11 @@ export function CommentReplies({
 			</button>
 
 			{/* Reply list */}
-			{showReplies && (
+			{showReplies ? (
 				<div className="space-y-3">
-					{isLoading && (
+					{isLoading ? (
 						<p className="text-xs text-gray-400">Loading replies...</p>
-					)}
+					) : null}
 
 					{replies.map(reply => (
 						<CommentItem
@@ -100,7 +100,7 @@ export function CommentReplies({
 					))}
 
 					{/* Load more replies */}
-					{hasNextPage && (
+					{hasNextPage ? (
 						<button
 							type="button"
 							onClick={function loadMore() {
@@ -111,9 +111,9 @@ export function CommentReplies({
 						>
 							{isFetchingNextPage ? 'Loading...' : 'Load more replies'}
 						</button>
-					)}
+					) : null}
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

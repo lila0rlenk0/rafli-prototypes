@@ -291,30 +291,30 @@ export function CryptoConfigSection({
 			</div>
 
 			{/* Collapsed state — nothing else to show */}
-			{!acceptsCrypto && (
+			{!acceptsCrypto ? (
 				<div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
 					<InfoIcon className="size-4 text-gray-400" />
 					<span className="text-sm text-gray-500">
 						Only card payments (Stripe) will be available
 					</span>
 				</div>
-			)}
+			) : null}
 
 			{/* Expanded state — chain/token config */}
-			{acceptsCrypto && (
+			{acceptsCrypto ? (
 				<>
 					{/* Loading state while fetching global config */}
-					{isLoading && (
+					{isLoading ? (
 						<div className="flex items-center justify-center gap-2 py-8">
 							<Loader2 className="size-4 animate-spin text-gray-400" />
 							<span className="text-sm text-gray-500">
 								Loading crypto configuration...
 							</span>
 						</div>
-					)}
+					) : null}
 
 					{/* Config loaded */}
-					{cryptoConfig && (
+					{cryptoConfig ? (
 						<div className="flex flex-col gap-6">
 							{/* Chain + Token selectors — side by side */}
 							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -364,7 +364,7 @@ export function CryptoConfigSection({
 							</div>
 
 							{/* Non-stablecoin pricing */}
-							{nonStablecoinTokens.length > 0 && (
+							{nonStablecoinTokens.length > 0 ? (
 								<div className="flex flex-col gap-3">
 									<label className="text-sm font-medium">
 										Token Pricing (per ticket)
@@ -397,7 +397,7 @@ export function CryptoConfigSection({
 										))}
 									</div>
 								</div>
-							)}
+							) : null}
 
 							{/* Info banner */}
 							<div className="flex items-center gap-2 rounded-lg bg-[#E1F8FF] p-3">
@@ -408,9 +408,9 @@ export function CryptoConfigSection({
 								</span>
 							</div>
 						</div>
-					)}
+					) : null}
 				</>
-			)}
+			) : null}
 		</div>
 	);
 }

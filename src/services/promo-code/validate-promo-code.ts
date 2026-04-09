@@ -30,8 +30,7 @@ export async function validatePromoCode(
 	raffleId: string,
 	code: string,
 ): Promise<ServiceResponse<ValidatePromoCodeResponse, PromoCodeErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const normalizedCode = code.trim().toUpperCase();
@@ -51,14 +50,16 @@ export async function validatePromoCode(
 		const validated = validatePromoCodeResponseSchema.parse(response.data);
 
 		// Fire-and-forget — validation is a read-like operation, don't block
-		void trackServer(
-			PROMO_CODE_EVENTS.VALIDATED,
-			{
-				code: normalizedCode,
-				raffle_id: raffleId,
-				valid: validated.valid,
-			},
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				PROMO_CODE_EVENTS.VALIDATED,
+				{
+					code: normalizedCode,
+					raffle_id: raffleId,
+					valid: validated.valid,
+				},
+				{ userId: session?.user?.id },
+			),
 		);
 
 		return success(validated);

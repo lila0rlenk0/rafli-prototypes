@@ -30,8 +30,7 @@ type CreateReviewServiceResponse = ServiceResponse<Review, ReviewErrorCode>;
 export async function createReview(
 	payload: CreateReviewPayload,
 ): Promise<CreateReviewServiceResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post('/reviews', payload);
@@ -39,14 +38,17 @@ export async function createReview(
 		const validated = reviewSchema.parse(response.data);
 
 		// Fire-and-forget — don't block review submission
-		void trackServer(
-			REVIEW_EVENTS.CREATED,
-			{
-				raffle_id: payload.raffleId,
-				host_id: payload.hostId,
-				rating: payload.rating,
-			},
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				REVIEW_EVENTS.CREATED,
+				{
+					raffle_id: payload.raffleId,
+					host_id: payload.hostId,
+					rating: payload.rating,
+					has_comment: !!payload.comment,
+				},
+				{ userId: session?.user?.id },
+			),
 		);
 
 		return success(validated);

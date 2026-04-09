@@ -63,7 +63,7 @@ export function RaffleWonCard({
 				<div className="mt-4 space-y-1 text-center">
 					<span className="text-sm text-[#7B7B7B]">Winner</span>
 					<p className="font-semibold">{userName}</p>
-					{ticketCode && <p className="text-sm">{ticketCode}</p>}
+					{ticketCode ? <p className="text-sm">{ticketCode}</p> : null}
 				</div>
 			</div>
 

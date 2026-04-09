@@ -84,7 +84,7 @@ export function WalletStep({
 			{/* Custom connect button — styled to match app.
 			    RainbowKit docs: check mounted + authenticationStatus for readiness,
 			    guard openConnectModal with optional chaining. */}
-			{!address && (
+			{!address ? (
 				<ConnectButton.Custom>
 					{({ openConnectModal, mounted, authenticationStatus }) => {
 						// RainbowKit does not guarantee modal handlers exist before the
@@ -120,10 +120,10 @@ export function WalletStep({
 						);
 					}}
 				</ConnectButton.Custom>
-			)}
+			) : null}
 
 			{/* Connected wallet info card */}
-			{address && (
+			{address ? (
 				<div className="w-full rounded-2xl border border-[#E5E5E5] p-5">
 					<div className="flex flex-col gap-3">
 						{/* Wallet address */}
@@ -152,19 +152,21 @@ export function WalletStep({
 						</div>
 					</div>
 				</div>
-			)}
+			) : null}
 
 			{/* Verify / Continue button */}
-			{address && (
+			{address ? (
 				<Button
 					onClick={onWalletReady}
 					disabled={isProcessing}
 					className="h-12 w-full border-2 border-black bg-black hover:bg-white hover:text-black"
 				>
-					{isProcessing && <Loader2 className="mr-2 size-4 animate-spin" />}
+					{isProcessing ? (
+						<Loader2 className="mr-2 size-4 animate-spin" />
+					) : null}
 					{getButtonText()}
 				</Button>
-			)}
+			) : null}
 		</div>
 	);
 }

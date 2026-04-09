@@ -148,14 +148,14 @@ export function FailureStep({
 				>
 					Close
 				</Button>
-				{!hideRetry && (
+				{!hideRetry ? (
 					<Button
 						onClick={onReset}
 						className="h-12 flex-1 border-2 border-black bg-black hover:bg-white hover:text-black"
 					>
 						Try Again
 					</Button>
-				)}
+				) : null}
 			</div>
 		</div>
 	);

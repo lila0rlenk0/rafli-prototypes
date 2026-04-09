@@ -108,7 +108,7 @@ export function AdminNavbar({ children }: AdminNavbarProps) {
 				</div>
 
 				{/* Mobile menu overlay — same accent-green as user Navbar */}
-				{isMenuOpen && (
+				{isMenuOpen ? (
 					<div className="fixed inset-0 z-50 bg-[#beffdb] sm:hidden">
 						<div className="flex items-center justify-between border-b border-[#e6e8ec] px-4 py-4">
 							<Link href="/admin" onClick={closeMenu}>
@@ -138,7 +138,7 @@ export function AdminNavbar({ children }: AdminNavbarProps) {
 							<SignOutButton variant="outline" className="mt-4" />
 						</div>
 					</div>
-				)}
+				) : null}
 			</nav>
 
 			{/* Content wrapper — same spacing as user Navbar */}

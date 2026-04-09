@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
@@ -63,9 +64,10 @@ export async function reviewSubmission(
 
 		const result = adminKycReviewResponseSchema.parse(response.data);
 
-		// Revalidate both the list and detail pages so the UI reflects the change
-		revalidatePath('/admin/verification');
-		revalidatePath(`/admin/verification/${id}`);
+		runAfter(() => {
+			revalidatePath('/admin/verification');
+			revalidatePath(`/admin/verification/${id}`);
+		});
 
 		return success(result);
 	} catch (error) {

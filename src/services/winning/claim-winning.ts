@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { WINNING_EVENTS } from '@/lib/analytics/events';
@@ -37,8 +38,7 @@ export async function claimWinning(
 	payload: ClaimWinningPayload,
 	publicSlug?: string,
 ): Promise<ClaimWinningServiceResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -47,17 +47,19 @@ export async function claimWinning(
 		);
 
 		const validated = winningSchema.parse(response.data);
-		revalidateWinningPaths(publicSlug);
+		runAfter(async () => {
+			revalidateWinningPaths(publicSlug);
 
-		// Track winning claimed (awaited — important for fulfillment funnel)
-		await trackServer(
-			WINNING_EVENTS.CLAIMED,
-			{
-				winning_id: validated.id,
-				raffle_id: validated.raffleId,
-			},
-			{ userId },
-		);
+			const userId = (await sessionPromise)?.user?.id;
+			await trackServer(
+				WINNING_EVENTS.CLAIMED,
+				{
+					winning_id: validated.id,
+					raffle_id: validated.raffleId,
+				},
+				{ userId },
+			);
+		});
 
 		return success(validated);
 	} catch (error) {

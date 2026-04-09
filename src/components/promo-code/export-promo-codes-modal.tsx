@@ -119,9 +119,9 @@ export function ExportPromoCodesModal({
 							placeholder="e.g. 0192d4f8-7a3b-7def-8c12-abc123def456"
 							className={hasInvalidBulkId ? 'border-red-500' : ''}
 						/>
-						{hasInvalidBulkId && (
+						{hasInvalidBulkId ? (
 							<p className="text-xs text-red-500">Invalid UUID format</p>
-						)}
+						) : null}
 						<p className="text-xs text-gray-500">
 							Export only codes from a specific batch
 						</p>

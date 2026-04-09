@@ -83,11 +83,11 @@ export default async function PromoCodesPage({ params }: PageProps) {
 			</div>
 
 			{/* Read-only notice */}
-			{isReadOnly && (
+			{isReadOnly ? (
 				<div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
 					This raffle has ended. Promo codes are view-only.
 				</div>
-			)}
+			) : null}
 
 			{/* Main content */}
 			<PromoCodesContent

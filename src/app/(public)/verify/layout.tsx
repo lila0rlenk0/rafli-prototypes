@@ -6,8 +6,8 @@ import { PublicNavbar } from '@/components/ui/public-navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { env } from '@/env/server';
 import { getSession } from '@/lib/auth/session';
+import { parsePermissions } from '@/lib/permissions';
 import { UserStoreProvider } from '@/providers/user-store-provider';
-import { permissionSchema, type Permission } from '@/types/user-mode';
 
 export const metadata: Metadata = {
 	title: 'Verify Raffle Results | Raffly',
@@ -70,18 +70,6 @@ const jsonLd = {
 		'IPFS manifest access',
 	],
 };
-
-/**
- * Validates and filters permissions from session
- * @param rawPermissions - Raw permission strings from session
- * @returns Array of valid Permission values
- */
-function parsePermissions(rawPermissions: string[] | undefined): Permission[] {
-	if (!rawPermissions) return [];
-	return rawPermissions.filter(
-		(p): p is Permission => permissionSchema.safeParse(p).success,
-	);
-}
 
 interface VerifyLayoutProps {
 	children: ReactNode;

@@ -83,7 +83,7 @@ export function WinnerVerification({
 		<div className="space-y-2">
 			<VerifiedBadge verified={verified} />
 
-			{verification && (
+			{verification ? (
 				<Accordion type="single" collapsible className="w-full">
 					<AccordionItem value="details" className="border-none">
 						<AccordionTrigger className="py-1 text-xs text-gray-500 hover:no-underline">
@@ -140,7 +140,7 @@ export function WinnerVerification({
 									</TooltipContent>
 								</Tooltip>
 
-								{manifestHash && (
+								{manifestHash ? (
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<a
@@ -157,9 +157,9 @@ export function WinnerVerification({
 											Ticket data locked to IPFS before the draw
 										</TooltipContent>
 									</Tooltip>
-								)}
+								) : null}
 
-								{commitTxHash && (
+								{commitTxHash ? (
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<a
@@ -177,7 +177,7 @@ export function WinnerVerification({
 											randomness
 										</TooltipContent>
 									</Tooltip>
-								)}
+								) : null}
 							</div>
 
 							<Link
@@ -190,7 +190,7 @@ export function WinnerVerification({
 						</AccordionContent>
 					</AccordionItem>
 				</Accordion>
-			)}
+			) : null}
 		</div>
 	);
 }

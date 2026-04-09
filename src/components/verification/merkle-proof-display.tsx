@@ -64,7 +64,7 @@ export function MerkleProofDisplay({
 				</span>
 			</button>
 
-			{expanded && (
+			{expanded ? (
 				<div className="space-y-3 border-t p-3">
 					<ProofRow label="Ticket ID" value={`#${proof.ticketId}`} />
 					<ProofRow label="Chunk Index" value={proof.chunkIndex.toString()} />
@@ -122,7 +122,7 @@ export function MerkleProofDisplay({
 						</div>
 					</div>
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

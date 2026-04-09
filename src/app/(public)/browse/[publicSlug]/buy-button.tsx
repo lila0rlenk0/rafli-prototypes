@@ -71,6 +71,8 @@ export function BuyButton({
 			raffle_id: raffleId,
 			quantity: ticketQuantity,
 			payment_method: 'stripe',
+			has_promo: !!promoCode,
+			is_free_tickets: isFreeTickets,
 		});
 		if (questionId) {
 			setShowQuestionModal(true);
@@ -207,18 +209,20 @@ export function BuyButton({
 				disabled={isLoading || disabled}
 				className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
 			>
-				{isLoading && <Loader2Icon className="mr-2 size-4 animate-spin" />}
+				{isLoading ? (
+					<Loader2Icon className="mr-2 size-4 animate-spin" />
+				) : null}
 				<p className="font-semibold">{getButtonText()}</p>
 			</Button>
 
-			{questionId && (
+			{questionId ? (
 				<RaffleQuestionModal
 					open={showQuestionModal}
 					onOpenChange={setShowQuestionModal}
 					raffleId={raffleId}
 					onCorrectAnswer={handleCorrectAnswer}
 				/>
-			)}
+			) : null}
 		</>
 	);
 }

@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
@@ -7,8 +8,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapOrderError } from '@/lib/errors/error-mapper';
+import { failure, mapOrderError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import type { CreateOrderPayload, Order } from '@/types/order';
@@ -29,14 +29,12 @@ type CreateOrderResponse = ServiceResponse<Order, OrderErrorCode>;
 export async function createOrder(
 	payload: CreateOrderPayload,
 ): Promise<CreateOrderResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		// Validate payload before sending
 		const validationResult = createOrderPayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			console.error('Order payload validation failed:', validationResult.error);
 			return failure(ORDER_ERROR_CODES.INVALID_QUANTITY);
 		}
 
@@ -49,16 +47,21 @@ export async function createOrder(
 		// Validate response structure
 		const order = orderSchema.parse(response.data);
 
-		// Track order created (awaited to ensure completion in serverless)
-		await trackServer(
-			PURCHASE_EVENTS.ORDER_CREATED,
-			{
-				order_id: order.id,
-				raffle_id: payload.raffleId,
-				quantity: payload.ticketQuantity,
-			},
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.ORDER_CREATED,
+				{
+					order_id: order.id,
+					raffle_id: payload.raffleId,
+					quantity: payload.ticketQuantity,
+					has_promo: !!payload.promoCode,
+					total_amount: order.totalAmount,
+				},
+				{ userId },
+			);
+		});
 
 		return success(order);
 	} catch (error) {
@@ -70,12 +73,15 @@ export async function createOrder(
 
 		const errorCode = mapOrderError(error);
 
-		// Track order failed (awaited to ensure completion in serverless)
-		await trackServer(
-			PURCHASE_EVENTS.ORDER_FAILED,
-			{ raffle_id: payload.raffleId, error_code: errorCode },
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.ORDER_FAILED,
+				{ raffle_id: payload.raffleId, error_code: errorCode },
+				{ userId },
+			);
+		});
 
 		return failure(errorCode);
 	}

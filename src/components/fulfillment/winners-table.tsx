@@ -115,7 +115,7 @@ export function WinnersTable({
 									<td className="px-6 py-4 text-gray-500">
 										<div className="flex items-center gap-2">
 											<span>{getLocation(winner)}</span>
-											{shipping && (
+											{shipping ? (
 												<button
 													type="button"
 													onClick={() => toggleExpanded(winner.id)}
@@ -123,7 +123,7 @@ export function WinnersTable({
 												>
 													{getToggleLabel(isExpanded)}
 												</button>
-											)}
+											) : null}
 										</div>
 									</td>
 									<td className="px-6 py-4">
@@ -138,7 +138,7 @@ export function WinnersTable({
 									</td>
 								</tr>
 
-								{isExpanded && shipping && (
+								{isExpanded && shipping ? (
 									<tr className="bg-gray-50 text-sm">
 										<td colSpan={5} className="px-6 py-4">
 											<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -169,7 +169,7 @@ export function WinnersTable({
 											</div>
 										</td>
 									</tr>
-								)}
+								) : null}
 							</Fragment>
 						);
 					})}

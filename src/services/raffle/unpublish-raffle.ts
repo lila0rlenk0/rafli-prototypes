@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
@@ -25,8 +26,7 @@ type UnpublishRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
 export async function unpublishRaffle(
 	raffleId: string,
 ): Promise<UnpublishRaffleResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -35,15 +35,16 @@ export async function unpublishRaffle(
 
 		const validatedData = raffleSchema.parse(response.data);
 
-		// Revalidate my-raffles so the card reflects the reverted draft status
-		revalidateMyRaffles();
+		runAfter(async () => {
+			revalidateMyRaffles();
 
-		// Fire-and-forget — unpublish is not revenue-critical
-		void trackServer(
-			RAFFLE_EVENTS.UNPUBLISHED,
-			{ raffle_id: validatedData.id },
-			{ userId },
-		);
+			const userId = (await sessionPromise)?.user?.id;
+			await trackServer(
+				RAFFLE_EVENTS.UNPUBLISHED,
+				{ raffle_id: validatedData.id },
+				{ userId },
+			);
+		});
 
 		return success(validatedData);
 	} catch (error) {

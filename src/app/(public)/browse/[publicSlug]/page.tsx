@@ -1,3 +1,5 @@
+import { RAFFLE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { CommentSection } from '@/components/raffle/comments/comment-section';
 import { FulfillmentTimeline } from '@/components/fulfillment/fulfillment-timeline';
 import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-card';
@@ -146,6 +148,24 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	const session = await getSession();
 	const isAuthenticated = !!session;
 	const currentUserId = session?.user?.id ?? null;
+
+	// Fire-and-forget — raffle view is high-volume, must not block render.
+	// Tracks category, price, status, and host for funnel analysis + host attribution.
+	void trackServer(
+		RAFFLE_EVENTS.VIEWED,
+		{
+			raffle_id: raffle.id,
+			raffle_slug: raffle.publicSlugOrCode,
+			category: getCategoryName(categories, raffle.categoryId),
+			status: raffle.status,
+			ticket_price: raffle.ticketPriceAmount,
+			host_id: raffle.hostId,
+			participants_count: raffle.participantsCount,
+			max_participants: raffle.maxParticipants,
+			is_authenticated: isAuthenticated,
+		},
+		{ userId: currentUserId ?? undefined },
+	);
 
 	// Only fetch user's ticket codes if authenticated
 	let myTicketCodes: TicketCode[] = [];
@@ -393,13 +413,13 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			</div>
 
 			{/* Mobile: fixed countdown banner — shown for active raffles */}
-			{shouldShowActiveCard() && (
+			{shouldShowActiveCard() ? (
 				<>
 					<MobileCountdownBanner endAt={raffle.endAt} />
 					{/* Spacer for fixed banner height on mobile */}
 					<div className="h-12 lg:hidden" />
 				</>
-			)}
+			) : null}
 
 			<div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_24rem] lg:gap-8">
 				{/* Left column */}
@@ -418,15 +438,15 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							<h2 className="font-clash-display text-[22px] leading-tight font-semibold tracking-tight text-[#182135] lg:text-4xl">
 								{raffle.title}
 							</h2>
-							{isAuthenticated && !isOwner && myTicketsTotal > 0 && (
+							{isAuthenticated && !isOwner && myTicketsTotal > 0 ? (
 								<span className="rounded-lg bg-[#BEFFDB] px-6 py-1 text-[13px] font-semibold tracking-wide text-[#44B476]">
 									Participant
 								</span>
-							)}
+							) : null}
 							<CopyRaffleLinkButton publicSlug={publicSlug} />
-							{isAuthenticated && !isOwner && (
+							{isAuthenticated && !isOwner ? (
 								<ReportRaffleButton raffleId={raffle.id} />
-							)}
+							) : null}
 						</div>
 
 						{/* Host info */}
@@ -472,7 +492,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						/>
 
 						{/* Mobile: inline purchase section */}
-						{shouldShowActiveCard() && (
+						{shouldShowActiveCard() ? (
 							<div className="lg:hidden">
 								<RaffleExpiredGate endAt={raffle.endAt}>
 									<Suspense
@@ -497,24 +517,24 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										/>
 									</Suspense>
 
-									{disablePurchase && !showEditButton && (
+									{disablePurchase && !showEditButton ? (
 										<p className="mt-2 text-center text-sm text-gray-500">
 											You cannot purchase tickets for your own raffle
 										</p>
-									)}
+									) : null}
 								</RaffleExpiredGate>
 
 								{/* KYC notice — mobile */}
-								{!isConcluded && !isCancelled && (
+								{!isConcluded && !isCancelled ? (
 									<div className="mt-4 flex items-center gap-2">
 										<InfoIcon className="size-4 shrink-0 text-[#7B7B7B]" />
 										<p className="text-sm text-[#7B7B7B]">
 											You&apos;ll only need KYC if you win
 										</p>
 									</div>
-								)}
+								) : null}
 							</div>
-						)}
+						) : null}
 					</div>
 
 					{/* Updates from host */}
@@ -533,7 +553,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					</div>
 
 					{/* Comment section */}
-					{isCommentable && (
+					{isCommentable ? (
 						<div className="order-4">
 							<CommentSection
 								raffleId={raffle.id}
@@ -542,7 +562,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								currentUserId={currentUserId}
 							/>
 						</div>
-					)}
+					) : null}
 
 					{/* FAQ */}
 					<div className="order-5 flex w-full flex-col gap-5 rounded-3xl bg-white px-4 py-6 lg:overflow-hidden lg:p-8">
@@ -613,7 +633,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 				{/* Right sidebar — hidden on mobile for active raffles (purchase is inline), shown on desktop */}
 				<div className="order-2 space-y-2 lg:col-start-2">
-					{shouldShowWinnerCard() && myWinning && (
+					{shouldShowWinnerCard() && myWinning ? (
 						<>
 							<RaffleWonCard
 								userName={myUserName ?? 'Winner'}
@@ -629,9 +649,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								publicSlug={publicSlug}
 							/>
 						</>
-					)}
+					) : null}
 
-					{shouldShowHostFulfillment() && (
+					{shouldShowHostFulfillment() ? (
 						<>
 							<HostFulfillmentCard
 								publicSlug={publicSlug}
@@ -646,11 +666,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								publicSlug={publicSlug}
 							/>
 						</>
-					)}
+					) : null}
 
-					{shouldShowDrawInProgress() && <RaffleDrawCard />}
+					{shouldShowDrawInProgress() ? <RaffleDrawCard /> : null}
 
-					{shouldShowCancelledCard() && (
+					{shouldShowCancelledCard() ? (
 						<RaffleCancelledCard
 							reason={cancellationReason!}
 							isOwner={isOwner}
@@ -659,14 +679,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							ticketsSoldCount={raffle.ticketsSoldCount}
 							myTicketCount={myTicketsTotal}
 						/>
-					)}
+					) : null}
 
-					{shouldShowNotWonCard() && (
+					{shouldShowNotWonCard() ? (
 						<RaffleNotWonCard status={raffle.status} />
-					)}
+					) : null}
 
 					{/* Desktop: active raffle card with countdown + purchase */}
-					{shouldShowActiveCard() && (
+					{shouldShowActiveCard() ? (
 						<div
 							id="checkout-section"
 							className="hidden h-fit rounded-2xl border border-black bg-white/95 p-8 lg:block"
@@ -704,20 +724,20 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									/>
 								</Suspense>
 
-								{disablePurchase && !showEditButton && (
+								{disablePurchase && !showEditButton ? (
 									<p className="mt-2 text-center text-sm text-gray-500">
 										You cannot purchase tickets for your own raffle
 									</p>
-								)}
+								) : null}
 							</RaffleExpiredGate>
 
 							{/* Only authenticated users can earn free tickets — sharing without an account
 							    can't be attributed to anyone, so the button is meaningless for guests. */}
 							{isAuthenticated ? <ShareOnXButton {...xShareConfig} /> : null}
 						</div>
-					)}
+					) : null}
 
-					{isConcluded && hasWinners && raffle.winners && (
+					{isConcluded && hasWinners && raffle.winners ? (
 						<WinnersList
 							winners={raffle.winners}
 							raffleId={raffle.id}
@@ -726,9 +746,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							commitTxHash={raffle.commitTxHash}
 							currentUserWinnerPosition={myWinning?.position ?? null}
 						/>
-					)}
+					) : null}
 
-					{!isConcluded && (
+					{!isConcluded ? (
 						<RaffleInfoCard
 							raffle={raffle}
 							myTicketCodes={myTicketCodes}
@@ -736,7 +756,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							isAuthenticated={isAuthenticated}
 							publicSlug={publicSlug}
 						/>
-					)}
+					) : null}
 
 					<PromoCodesCard
 						publicSlug={publicSlug}
@@ -745,14 +765,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					/>
 
 					{/* Desktop: KYC notice */}
-					{!isConcluded && !isCancelled && (
+					{!isConcluded && !isCancelled ? (
 						<div className="hidden items-center justify-center gap-2 lg:flex">
 							<InfoIcon className="size-4 text-[#7B7B7B]" />
 							<p className="text-sm text-[#7B7B7B]">
 								You&apos;ll only need KYC if you win
 							</p>
 						</div>
-					)}
+					) : null}
 
 					{/* Auto-refresh during transitional states */}
 					<RaffleAutoRefresh
@@ -767,12 +787,12 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 				searchParams={searchParams}
 			/>
 
-			{shouldShowActiveCard() && (
+			{shouldShowActiveCard() ? (
 				<StickyBuyTicketsCta
 					{...xShareConfig}
 					isAuthenticated={isAuthenticated}
 				/>
-			)}
+			) : null}
 		</div>
 	);
 }

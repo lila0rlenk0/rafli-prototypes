@@ -113,11 +113,11 @@ export function CommentItem({
 				{/* Header: name + host badge + time */}
 				<div className="flex items-center gap-2">
 					<span className="text-sm font-semibold">{authorName}</span>
-					{comment.isHost && (
+					{comment.isHost ? (
 						<span className="rounded bg-[#DFFFED] px-1.5 py-0.5 text-[10px] font-medium text-black">
 							Host
 						</span>
-					)}
+					) : null}
 					<span className="text-xs text-gray-400">
 						{formatTimeAgo(comment.createdAt)}
 					</span>
@@ -133,7 +133,7 @@ export function CommentItem({
 				)}
 
 				{/* Actions row: vote + reply + delete */}
-				{!comment.isDeleted && (
+				{!comment.isDeleted ? (
 					<div className="mt-2 flex items-center gap-3">
 						<CommentVoteButtons
 							commentId={comment.id}
@@ -144,7 +144,7 @@ export function CommentItem({
 						/>
 
 						{/* Reply button — only for top-level comments, authenticated users */}
-						{!isReply && isAuthenticated && (
+						{!isReply && isAuthenticated ? (
 							<button
 								type="button"
 								onClick={handleToggleReply}
@@ -152,16 +152,16 @@ export function CommentItem({
 							>
 								Reply
 							</button>
-						)}
+						) : null}
 
 						{/* Actions dropdown — portal-based to avoid overflow clipping */}
-						{(deletable || reportable) && (
+						{deletable || reportable ? (
 							<DropdownMenu>
 								<DropdownMenuTrigger className="rounded p-0.5 text-gray-400 outline-none hover:text-gray-600">
 									<MoreHorizontalIcon className="size-4" />
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="start">
-									{deletable && (
+									{deletable ? (
 										<DropdownMenuItem
 											onClick={handleDelete}
 											disabled={deleteMutation.isPending}
@@ -170,23 +170,23 @@ export function CommentItem({
 											<TrashIcon className="size-3" />
 											Delete comment
 										</DropdownMenuItem>
-									)}
-									{deletable && reportable && <DropdownMenuSeparator />}
-									{reportable && (
+									) : null}
+									{deletable && reportable ? <DropdownMenuSeparator /> : null}
+									{reportable ? (
 										<ReportMenuItem
 											contentType={REPORT_CONTENT_TYPE.COMMENT}
 											contentId={comment.id}
 											raffleId={raffleId}
 										/>
-									)}
+									) : null}
 								</DropdownMenuContent>
 							</DropdownMenu>
-						)}
+						) : null}
 					</div>
-				)}
+				) : null}
 
 				{/* Reply input — shown on toggle for top-level comments */}
-				{showReplyInput && !isReply && (
+				{showReplyInput && !isReply ? (
 					<div className="mt-3">
 						<CommentInput
 							raffleId={raffleId}
@@ -196,10 +196,10 @@ export function CommentItem({
 							onSuccess={handleReplySuccess}
 						/>
 					</div>
-				)}
+				) : null}
 
 				{/* Nested replies — only for top-level comments */}
-				{!isReply && comment.replyCount > 0 && (
+				{!isReply && comment.replyCount > 0 ? (
 					<CommentReplies
 						raffleId={raffleId}
 						commentId={comment.id}
@@ -208,7 +208,7 @@ export function CommentItem({
 						isOwner={isOwner}
 						currentUserId={currentUserId}
 					/>
-				)}
+				) : null}
 			</div>
 		</div>
 	);

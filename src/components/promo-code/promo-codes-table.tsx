@@ -199,7 +199,7 @@ export function PromoCodesTable({
 									<div className="flex items-center gap-2">
 										<span className="font-mono">{code.code}</span>
 										<CopyButton value={code.code} />
-										{publicSlug && (
+										{publicSlug ? (
 											<Button
 												variant="ghost"
 												size="icon-sm"
@@ -209,7 +209,7 @@ export function PromoCodesTable({
 											>
 												<Link2 className="size-4" />
 											</Button>
-										)}
+										) : null}
 									</div>
 								</td>
 								<td className="py-4">
@@ -230,7 +230,7 @@ export function PromoCodesTable({
 								</td>
 								<td className="py-4">{formatExpiration(code.expiresAt)}</td>
 								<td className="py-4 text-right">
-									{hasActions(code) && (
+									{hasActions(code) ? (
 										<DropdownMenu>
 											<DropdownMenuTrigger asChild>
 												<Button
@@ -242,15 +242,15 @@ export function PromoCodesTable({
 												</Button>
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end">
-												{code.bulkId && (
+												{code.bulkId ? (
 													<DropdownMenuItem
 														onClick={() => handleCopyBatchId(code.bulkId!)}
 													>
 														<Copy className="size-4" />
 														Copy Batch ID
 													</DropdownMenuItem>
-												)}
-												{canDeactivate(code) && (
+												) : null}
+												{canDeactivate(code) ? (
 													<DropdownMenuItem
 														onClick={() => setDeactivatingCode(code)}
 														className="text-red-600 focus:text-red-600"
@@ -258,10 +258,10 @@ export function PromoCodesTable({
 														<XCircle className="size-4" />
 														Deactivate
 													</DropdownMenuItem>
-												)}
+												) : null}
 											</DropdownMenuContent>
 										</DropdownMenu>
-									)}
+									) : null}
 								</td>
 							</tr>
 						))}
@@ -280,7 +280,7 @@ export function PromoCodesTable({
 							<div className="flex items-center gap-2">
 								<span className="font-mono font-medium">{code.code}</span>
 								<CopyButton value={code.code} size="sm" />
-								{publicSlug && (
+								{publicSlug ? (
 									<Button
 										variant="ghost"
 										size="icon-sm"
@@ -290,9 +290,9 @@ export function PromoCodesTable({
 									>
 										<Link2 className="size-3.5" />
 									</Button>
-								)}
+								) : null}
 							</div>
-							{hasActions(code) && (
+							{hasActions(code) ? (
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
 										<Button
@@ -304,15 +304,15 @@ export function PromoCodesTable({
 										</Button>
 									</DropdownMenuTrigger>
 									<DropdownMenuContent align="end">
-										{code.bulkId && (
+										{code.bulkId ? (
 											<DropdownMenuItem
 												onClick={() => handleCopyBatchId(code.bulkId!)}
 											>
 												<Copy className="size-4" />
 												Copy Batch ID
 											</DropdownMenuItem>
-										)}
-										{canDeactivate(code) && (
+										) : null}
+										{canDeactivate(code) ? (
 											<DropdownMenuItem
 												onClick={() => setDeactivatingCode(code)}
 												className="text-red-600 focus:text-red-600"
@@ -320,10 +320,10 @@ export function PromoCodesTable({
 												<XCircle className="size-4" />
 												Deactivate
 											</DropdownMenuItem>
-										)}
+										) : null}
 									</DropdownMenuContent>
 								</DropdownMenu>
-							)}
+							) : null}
 						</div>
 
 						<div className="mt-3 flex items-center gap-2 text-sm">

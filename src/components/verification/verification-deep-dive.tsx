@@ -271,7 +271,7 @@ function ProofLink({
 					{truncateHex(hash)}
 				</code>
 				<CopyButton value={hash} />
-				{url && (
+				{url ? (
 					<a
 						href={url}
 						target="_blank"
@@ -280,7 +280,7 @@ function ProofLink({
 					>
 						<ExternalLink className="size-4" />
 					</a>
-				)}
+				) : null}
 			</div>
 		</div>
 	);
@@ -404,7 +404,7 @@ function WinnerCard({
 			</button>
 
 			<AnimatePresence>
-				{isExpanded && (
+				{isExpanded ? (
 					<motion.div
 						initial={{ height: 0, opacity: 0 }}
 						animate={{ height: 'auto', opacity: 1 }}
@@ -473,7 +473,7 @@ function WinnerCard({
 							</div>
 						</div>
 					</motion.div>
-				)}
+				) : null}
 			</AnimatePresence>
 		</div>
 	);

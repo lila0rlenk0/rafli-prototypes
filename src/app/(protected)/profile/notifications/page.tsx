@@ -52,29 +52,29 @@ export default async function NotificationsPage({
 
 				<NotificationsTable notifications={notifications} />
 
-				{totalPages > 1 && (
+				{totalPages > 1 ? (
 					<div className="mt-6 flex items-center justify-center gap-2">
-						{page > 1 && (
+						{page > 1 ? (
 							<Link
 								href={getPageUrl(page - 1)}
 								className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
 							>
 								Previous
 							</Link>
-						)}
+						) : null}
 						<span className="text-muted-foreground px-3 text-sm">
 							Page {page} of {totalPages}
 						</span>
-						{page < totalPages && (
+						{page < totalPages ? (
 							<Link
 								href={getPageUrl(page + 1)}
 								className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
 							>
 								Next
 							</Link>
-						)}
+						) : null}
 					</div>
-				)}
+				) : null}
 			</div>
 		</div>
 	);

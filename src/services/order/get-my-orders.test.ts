@@ -1,4 +1,4 @@
-import { describe, expect, mock, spyOn, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
 import { ORDER_ERROR_CODES } from '@/types/errors';
 
@@ -60,7 +60,6 @@ describe('getMyOrders', () => {
 
 	test('returns FETCH_FAILED when backend response is null', async () => {
 		mockGet.mockReset();
-		const consoleSpy = spyOn(console, 'error').mockImplementation(() => {});
 		mockGet.mockResolvedValueOnce(mockAxiosResponse(null));
 
 		const result = await getMyOrders({ page: 1, limit: 10 });
@@ -69,9 +68,6 @@ describe('getMyOrders', () => {
 			success: false,
 			error: ORDER_ERROR_CODES.FETCH_FAILED,
 		});
-		// Asserts the null-data guard path (line 48 of get-my-orders.ts) fires
-		expect(consoleSpy).toHaveBeenCalledTimes(1);
-		consoleSpy.mockRestore();
 	});
 
 	test('returns FETCH_FAILED when backend response shape is invalid', async () => {

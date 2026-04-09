@@ -266,22 +266,22 @@ export function TicketPurchaseCard({
 	return (
 		<div className="mt-0 space-y-4 lg:space-y-2">
 			{/* Price per ticket - hide for free tickets */}
-			{!isFree && (
+			{!isFree ? (
 				<div className="flex items-center justify-between">
 					<p className="text-sm text-[#929292]">Per ticket</p>
 					<p className="font-clash-display text-2xl font-semibold lg:text-3xl">
 						{formatPrice(price, currency)}
 					</p>
 				</div>
-			)}
+			) : null}
 
 			{/* Ticket selector - hide for free tickets */}
-			{!isFree && (
+			{!isFree ? (
 				<TicketSelector
 					maxTickets={maxTickets}
 					onQuantityChange={setTicketQuantity}
 				/>
-			)}
+			) : null}
 
 			{/* Promo code input */}
 			{isAuthenticated ? (
@@ -298,19 +298,19 @@ export function TicketPurchaseCard({
 			)}
 
 			{/* Mobile: Selected Tickets row */}
-			{!isFree && (
+			{!isFree ? (
 				<div className="flex items-center justify-between lg:hidden">
 					<p className="text-sm text-[#929292]">Selected Tickets</p>
 					<p className="font-clash-display text-3xl font-semibold">
 						{ticketQuantity}
 					</p>
 				</div>
-			)}
+			) : null}
 
 			<Separator className="my-4 bg-[#B4B4B4]" />
 
 			{/* Price breakdown */}
-			{hasDiscount && !isFree && (
+			{hasDiscount && !isFree ? (
 				<>
 					<div className="flex items-center justify-between text-sm">
 						<span className="text-[#7B7B7B]">Subtotal</span>
@@ -321,7 +321,7 @@ export function TicketPurchaseCard({
 						<span>-{formatPrice(discount, currency)}</span>
 					</div>
 				</>
-			)}
+			) : null}
 
 			{/* Total price */}
 			<div className="flex items-center justify-between">
@@ -332,18 +332,18 @@ export function TicketPurchaseCard({
 			</div>
 
 			{/* Free tickets info */}
-			{isFree && (
+			{isFree ? (
 				<p className="text-center text-sm text-green-600">
 					{freeTicketCount} free ticket
 					{freeTicketCount !== 1 ? 's' : ''} with this code
 				</p>
-			)}
+			) : null}
 
-			{shouldShowClosingSoonWarning && (
+			{shouldShowClosingSoonWarning ? (
 				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
 					{getClosingSoonWarning()}
 				</div>
-			)}
+			) : null}
 
 			{/* Buy button or Sign In button */}
 			{isAuthenticated ? (
@@ -361,7 +361,7 @@ export function TicketPurchaseCard({
 					/>
 
 					{/* Credits buy button — shown when user has credits and order costs money */}
-					{showCreditsOption && availableCredits && (
+					{showCreditsOption && availableCredits ? (
 						<CreditsBuyButton
 							raffleId={raffleId}
 							ticketQuantity={ticketQuantity}
@@ -373,10 +373,10 @@ export function TicketPurchaseCard({
 							orderTotal={total}
 							currency={currency}
 						/>
-					)}
+					) : null}
 
 					{/* Crypto buy button — only when raffle has crypto options AND Web3 is configured */}
-					{cryptoOptions && hasSelectableCryptoPaymentOption && (
+					{cryptoOptions && hasSelectableCryptoPaymentOption ? (
 						<CryptoBuyButton
 							raffleId={raffleId}
 							endAt={endAt}
@@ -389,7 +389,7 @@ export function TicketPurchaseCard({
 							myTicketsTotal={myTicketsTotal}
 							userId={userId}
 						/>
-					)}
+					) : null}
 				</>
 			) : (
 				<SignInToBuyButton />

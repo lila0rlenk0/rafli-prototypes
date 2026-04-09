@@ -59,18 +59,18 @@ export function NotificationPopover() {
 					aria-label="Notifications"
 				>
 					<Bell className="size-5" />
-					{unreadCount > 0 && (
+					{unreadCount > 0 ? (
 						<span className="bg-primary text-primary-foreground absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full text-[10px] font-medium">
 							{unreadCount > 9 ? '9+' : unreadCount}
 						</span>
-					)}
+					) : null}
 				</button>
 			</PopoverTrigger>
 			<PopoverContent align="end" className="w-96 p-0">
 				<div className="flex items-center justify-between border-b px-4 py-3">
 					<h3 className="text-sm font-semibold">Notifications</h3>
 					<div className="flex items-center gap-2">
-						{unreadCount > 0 && (
+						{unreadCount > 0 ? (
 							<Button
 								variant="ghost"
 								size="sm"
@@ -80,7 +80,7 @@ export function NotificationPopover() {
 							>
 								{markAllRead.isPending ? 'Marking...' : 'Mark all read'}
 							</Button>
-						)}
+						) : null}
 						<Link
 							href="/profile/notifications"
 							onClick={handleClose}

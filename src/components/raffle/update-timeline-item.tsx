@@ -76,7 +76,7 @@ export function UpdateTimelineItem({
 			<p className="mb-4">{formatDateTime(update.createdAt)}</p>
 
 			{/* Image carousel */}
-			{hasImages && (
+			{hasImages ? (
 				<ImageCarousel
 					images={validImages}
 					alt="Update"
@@ -85,15 +85,15 @@ export function UpdateTimelineItem({
 					className="rounded-xl"
 					sizes="(max-width: 1024px) 100vw, 736px"
 				/>
-			)}
+			) : null}
 
 			{/* Description */}
-			{hasText && (
+			{hasText ? (
 				<div className="mt-4 space-y-2">
 					<p className="text-[#7B7B7B]">Description</p>
 					<MarkdownRenderer content={update.text} />
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

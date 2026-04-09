@@ -104,11 +104,11 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 
 	return (
 		<div className={getContainerClass()}>
-			{isClosingSoon && (
+			{isClosingSoon ? (
 				<p className="mb-3 text-center text-xs font-semibold tracking-[0.2em] text-amber-700 uppercase">
 					Final 10 minutes
 				</p>
-			)}
+			) : null}
 			<div className="flex items-center justify-center gap-4">
 				<CountdownUnit
 					value={timeRemaining.days}

@@ -452,7 +452,7 @@ export default function ImageComponent({
 					)}
 				</div>
 
-				{showCaption && (
+				{showCaption ? (
 					<div className="image-caption-container absolute right-0 bottom-1 left-0 m-0 block min-w-[100px] overflow-hidden border-t bg-white/90 p-0">
 						<LexicalNestedComposer
 							initialEditor={caption}
@@ -472,8 +472,8 @@ export default function ImageComponent({
 							/>
 						</LexicalNestedComposer>
 					</div>
-				)}
-				{resizable && $isNodeSelection(selection) && isFocused && (
+				) : null}
+				{resizable && $isNodeSelection(selection) && isFocused ? (
 					<ImageResizer
 						showCaption={showCaption}
 						setShowCaption={setShowCaption}
@@ -485,7 +485,7 @@ export default function ImageComponent({
 						onResizeEnd={onResizeEnd}
 						captionsEnabled={!isLoadError && captionsEnabled}
 					/>
-				)}
+				) : null}
 			</>
 		</Suspense>
 	);

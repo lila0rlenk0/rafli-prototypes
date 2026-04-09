@@ -1,6 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { AUTH_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { browserClient } from '@/lib/api/client-browser';
 import { mapAuthError } from '@/lib/errors';
 import { setAuthCookiesClient } from '@/lib/auth/session-client';
@@ -44,6 +46,10 @@ export function CallbackHandler() {
 				// Step 1: Check for OAuth error in URL params
 				const oauthError = searchParams.get('error');
 				if (oauthError) {
+					track(AUTH_EVENTS.SIGN_IN_FAILED, {
+						method: 'social',
+						error_code: oauthError,
+					});
 					setError('Google sign in was cancelled or failed. Please try again.');
 					setIsProcessing(false);
 					return;
@@ -74,6 +80,11 @@ export function CallbackHandler() {
 					setIsProcessing(false);
 					return;
 				}
+
+				// Track OAuth/magic-link sign-in completion — all social logins resolve here.
+				// Method cannot be determined client-side (OAuth + magic-link both redirect here),
+				// so we track as 'callback' and let Mixpanel attribute via the prior SIGN_IN_STARTED event.
+				track(AUTH_EVENTS.SIGN_IN_COMPLETED, { method: 'callback' });
 
 				// Step 4: Redirect to validated returnTo or default to browse
 				const returnTo = validateReturnTo(searchParams.get('returnTo'));

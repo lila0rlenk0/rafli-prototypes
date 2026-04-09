@@ -108,13 +108,13 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 									{raffle.title}
 								</Link>
 							</h3>
-							{roleTag && (
+							{roleTag ? (
 								<span
 									className={`inline-flex h-[19px] items-center justify-center rounded-lg px-6 py-1.5 text-[13px] font-semibold tracking-[0.26px] ${roleTag.className}`}
 								>
 									{roleTag.label}
 								</span>
-							)}
+							) : null}
 						</div>
 
 						{/* Host + Verified Badge */}
@@ -140,14 +140,14 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 						</div>
 
 						{/* Progress Bar */}
-						{!isUnlimited && (
+						{!isUnlimited ? (
 							<div className="h-[11px] w-full overflow-hidden rounded-lg bg-[#eee]">
 								<div
 									className="h-full rounded-lg bg-[#84dcff] transition-all duration-300 ease-out"
 									style={{ width: `${progress}%` }}
 								/>
 							</div>
-						)}
+						) : null}
 					</div>
 				</div>
 

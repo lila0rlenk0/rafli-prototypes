@@ -1,5 +1,6 @@
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
+/** @returns EarnM coin SVG icon */
 export function EarnMCoin(props: ComponentProps<'svg'>) {
 	return (
 		<svg

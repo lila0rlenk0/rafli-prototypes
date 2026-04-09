@@ -7,7 +7,7 @@
 		"build": "next build",
 		"start": "next start",
 		"test": "bun test src/ tests/",
-		"lint": "eslint",
+		"lint": "eslint . --max-warnings=0",
 		"format": "prettier --write 'src/**/*.{ts,tsx}'",
 		"format:check": "prettier --check 'src/**/*.{ts,tsx}'",
 		"test:e2e": "bunx playwright test",

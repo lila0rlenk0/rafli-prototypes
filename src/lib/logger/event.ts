@@ -86,6 +86,7 @@ export function createWideEvent(
  * Vercel's log drain captures stdout automatically — no transport library needed.
  *
  * @param event - Completed wide event with all fields populated
+ * @returns void
  */
 export function emitWideEvent(event: WideEvent): void {
 	// Single JSON line — structured for log drain ingestion.

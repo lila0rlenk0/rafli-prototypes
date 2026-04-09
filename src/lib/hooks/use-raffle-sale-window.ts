@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
 	getRaffleSaleWindow,
@@ -18,13 +18,16 @@ interface UseRaffleSaleWindowResult extends RaffleSaleWindow {
  * - countdown + warning banners depend on "now"
  * - rendering them during SSR risks hydration mismatch near threshold boundaries
  * - callers can suppress time-sensitive UI until the browser clock takes over
+ *
+ * @param endAt - ISO 8601 raffle end date
+ * @returns Sale window state with hydration flag
  */
 export function useRaffleSaleWindow(endAt: string): UseRaffleSaleWindowResult {
 	const [now, setNow] = useState<Date | null>(null);
-
-	const saleWindow = useMemo<RaffleSaleWindow>(() => {
-		return getRaffleSaleWindow(endAt, now ?? new Date());
-	}, [endAt, now]);
+	const saleWindow: RaffleSaleWindow = getRaffleSaleWindow(
+		endAt,
+		now ?? new Date(),
+	);
 
 	useEffect(() => {
 		let interval: ReturnType<typeof setInterval> | null = null;

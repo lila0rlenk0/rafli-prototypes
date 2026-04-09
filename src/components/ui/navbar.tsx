@@ -120,7 +120,7 @@ export function Navbar({ children }: NavbarProps) {
 				</div>
 
 				{/* Mobile menu overlay */}
-				{isMenuOpen && (
+				{isMenuOpen ? (
 					<div className="fixed inset-0 z-50 bg-[#beffdb] sm:hidden">
 						<div className="flex items-center justify-between border-b border-black px-4 py-4">
 							<Link href="/browse" onClick={closeMenu}>
@@ -182,7 +182,7 @@ export function Navbar({ children }: NavbarProps) {
 							</a>
 						</div>
 					</div>
-				)}
+				) : null}
 			</nav>
 
 			<div className="mx-auto mt-6 max-w-[1440px] overflow-x-hidden px-4 pb-10 sm:mt-10">

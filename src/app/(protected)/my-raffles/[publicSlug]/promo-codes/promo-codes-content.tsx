@@ -184,7 +184,7 @@ export function PromoCodesContent({
 			<div className="mb-6 flex flex-wrap items-center justify-between gap-4">
 				<div className="flex items-center gap-2">
 					<h2 className="text-lg font-semibold">{getHeaderText()}</h2>
-					{!isLoading && (
+					{!isLoading ? (
 						<Button
 							variant="ghost"
 							size="icon-sm"
@@ -194,11 +194,11 @@ export function PromoCodesContent({
 						>
 							<RefreshCw className={getRefreshIconClass()} />
 						</Button>
-					)}
+					) : null}
 				</div>
 
 				<div className="flex items-center gap-2">
-					{total > 0 && (
+					{total > 0 ? (
 						<Button
 							onClick={() => setIsExportModalOpen(true)}
 							className="cursor-pointer gap-1.5 rounded-full border-2 border-black bg-white px-6 font-semibold text-black hover:bg-black hover:text-white"
@@ -206,9 +206,9 @@ export function PromoCodesContent({
 							<Download className="size-4" />
 							Export
 						</Button>
-					)}
+					) : null}
 
-					{!isReadOnly && (
+					{!isReadOnly ? (
 						<Button
 							onClick={() => setIsCreateModalOpen(true)}
 							className="font-clash-display hover:bg-background cursor-pointer border-2 border-black bg-black px-8 font-semibold hover:text-black"
@@ -216,26 +216,26 @@ export function PromoCodesContent({
 							<Plus className="size-4" />
 							Create Code
 						</Button>
-					)}
+					) : null}
 				</div>
 			</div>
 
 			{/* Content */}
-			{isLoading && <PromoCodesTableSkeleton />}
-			{!isLoading && codes.length === 0 && (
+			{isLoading ? <PromoCodesTableSkeleton /> : null}
+			{!isLoading && codes.length === 0 ? (
 				<PromoCodesEmptyState isReadOnly={isReadOnly} />
-			)}
-			{!isLoading && codes.length > 0 && (
+			) : null}
+			{!isLoading && codes.length > 0 ? (
 				<PromoCodesTable
 					codes={codes}
 					isReadOnly={isReadOnly}
 					onDeactivate={handleDeactivate}
 					publicSlug={publicSlug}
 				/>
-			)}
+			) : null}
 
 			{/* Pagination */}
-			{hasMultiplePages && !isLoading && (
+			{hasMultiplePages && !isLoading ? (
 				<div className="mt-6 flex items-center justify-center gap-2">
 					<Button
 						variant="outline"
@@ -259,7 +259,7 @@ export function PromoCodesContent({
 						Next
 					</Button>
 				</div>
-			)}
+			) : null}
 
 			{/* Modals */}
 			<CreatePromoCodeModal

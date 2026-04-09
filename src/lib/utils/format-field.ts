@@ -5,6 +5,11 @@
 
 import { formatDate } from './date-format';
 
+// Hoisted RegExp — avoid re-creation on every call
+const RE_UNDERSCORES = /_/g;
+const RE_CAMEL_CASE = /([a-z])([A-Z])/g;
+const RE_WORD_START = /\b\w/g;
+
 /**
  * Wraps formatDate with null handling — finalizedAt and reviewedAt
  * are null for draft/pending submissions.
@@ -23,9 +28,9 @@ export function formatNullableDate(date: string | null): string {
  */
 export function formatFieldLabel(key: string): string {
 	return key
-		.replace(/_/g, ' ')
-		.replace(/([a-z])([A-Z])/g, '$1 $2')
-		.replace(/\b\w/g, char => char.toUpperCase());
+		.replace(RE_UNDERSCORES, ' ')
+		.replace(RE_CAMEL_CASE, '$1 $2')
+		.replace(RE_WORD_START, char => char.toUpperCase());
 }
 
 /**

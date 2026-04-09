@@ -62,9 +62,9 @@ export function CompanyDetailsStep() {
 							placeholder="Full legal name of the company"
 							{...register('legalEntityName' as keyof CompanyFormData)}
 						/>
-						{fieldErrors.legalEntityName && (
+						{fieldErrors.legalEntityName ? (
 							<FieldError>{fieldErrors.legalEntityName.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -78,11 +78,11 @@ export function CompanyDetailsStep() {
 								'businessRegistrationNumber' as keyof CompanyFormData,
 							)}
 						/>
-						{fieldErrors.businessRegistrationNumber && (
+						{fieldErrors.businessRegistrationNumber ? (
 							<FieldError>
 								{fieldErrors.businessRegistrationNumber.message}
 							</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -94,11 +94,11 @@ export function CompanyDetailsStep() {
 							placeholder="e.g., United States, United Kingdom"
 							{...register('countryOfIncorporation' as keyof CompanyFormData)}
 						/>
-						{fieldErrors.countryOfIncorporation && (
+						{fieldErrors.countryOfIncorporation ? (
 							<FieldError>
 								{fieldErrors.countryOfIncorporation.message}
 							</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -110,9 +110,9 @@ export function CompanyDetailsStep() {
 							placeholder="Name of the primary contact"
 							{...register('contactPersonName' as keyof CompanyFormData)}
 						/>
-						{fieldErrors.contactPersonName && (
+						{fieldErrors.contactPersonName ? (
 							<FieldError>{fieldErrors.contactPersonName.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 
 					<Field>
@@ -123,9 +123,9 @@ export function CompanyDetailsStep() {
 							placeholder="Business contact email address"
 							{...register('contactEmail' as keyof CompanyFormData)}
 						/>
-						{fieldErrors.contactEmail && (
+						{fieldErrors.contactEmail ? (
 							<FieldError>{fieldErrors.contactEmail.message}</FieldError>
-						)}
+						) : null}
 					</Field>
 				</FieldGroup>
 			</FieldSet>

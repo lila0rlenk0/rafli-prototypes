@@ -105,11 +105,11 @@ export function CommentSection({
 								<h3 className="font-clash-display text-3xl font-semibold">
 									Comments
 								</h3>
-								{totalCount > 0 && (
+								{totalCount > 0 ? (
 									<span className="rounded-full bg-black px-2 py-0.5 text-xs text-white">
 										{totalCount}
 									</span>
-								)}
+								) : null}
 							</div>
 							{/* Sort tabs — stop accordion toggle propagation */}
 							<div
@@ -165,7 +165,7 @@ export function CommentSection({
 								))}
 
 								{/* Load more button */}
-								{hasNextPage && (
+								{hasNextPage ? (
 									<div className="flex justify-center pt-2">
 										<button
 											type="button"
@@ -178,7 +178,7 @@ export function CommentSection({
 											{isFetchingNextPage ? 'Loading...' : 'Load more comments'}
 										</button>
 									</div>
-								)}
+								) : null}
 							</div>
 						)}
 					</AccordionContent>

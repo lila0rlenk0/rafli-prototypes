@@ -85,20 +85,20 @@ export function PublicNavbar({
 							Browse
 						</Link>
 
-						{isAuthenticated && (
+						{isAuthenticated ? (
 							<Link
 								href="/my-raffles"
 								className="hidden text-sm font-semibold sm:block"
 							>
 								My Raffles
 							</Link>
-						)}
+						) : null}
 					</div>
 
 					{/* Desktop: Right side */}
 					<div className="hidden items-center gap-4 sm:flex">
 						{/* Badge before feedback link — mirrors navbar.tsx order */}
-						{isAuthenticated && <CreditBalanceBadge />}
+						{isAuthenticated ? <CreditBalanceBadge /> : null}
 						<a
 							href={FEEDBACK_FORM_URL}
 							target="_blank"
@@ -145,7 +145,7 @@ export function PublicNavbar({
 				</div>
 
 				{/* Mobile menu overlay */}
-				{isMenuOpen && (
+				{isMenuOpen ? (
 					<div className="fixed inset-0 z-50 bg-[#beffdb] sm:hidden">
 						<div className="flex items-center justify-between border-b border-black px-4 py-4">
 							<Link href="/browse" onClick={closeMenu}>
@@ -161,13 +161,13 @@ export function PublicNavbar({
 						</div>
 
 						<div className="flex flex-col gap-8 px-6 pt-8">
-							{isAuthenticated && <ModeSwitchToggle />}
+							{isAuthenticated ? <ModeSwitchToggle /> : null}
 							{/* Bubble click closes mobile overlay on badge tap */}
-							{isAuthenticated && (
+							{isAuthenticated ? (
 								<div onClick={closeMenu} role="presentation">
 									<CreditBalanceBadge />
 								</div>
-							)}
+							) : null}
 
 							<Link
 								href="/browse"
@@ -223,7 +223,7 @@ export function PublicNavbar({
 							</a>
 						</div>
 					</div>
-				)}
+				) : null}
 			</nav>
 
 			{topBanner}

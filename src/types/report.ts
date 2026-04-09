@@ -48,7 +48,7 @@ export const reportStatusSchema = z.enum([
 ]);
 
 /** Content types that require a raffleId for context */
-const RAFFLE_SCOPED_TYPES: ReportContentType[] = [
+const RAFFLE_SCOPED_TYPES: readonly ReportContentType[] = [
 	REPORT_CONTENT_TYPE.COMMENT,
 	REPORT_CONTENT_TYPE.REVIEW,
 	REPORT_CONTENT_TYPE.CHAT_MESSAGE,

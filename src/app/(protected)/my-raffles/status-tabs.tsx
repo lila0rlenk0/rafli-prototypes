@@ -87,7 +87,7 @@ export function StatusTabs() {
 	return (
 		<div className="relative flex items-start justify-center gap-6 pb-1">
 			{/* Scheduled Tab - Host only */}
-			{isHost && (
+			{isHost ? (
 				<button
 					type="button"
 					onClick={handleScheduledClick}
@@ -98,11 +98,11 @@ export function StatusTabs() {
 					)}
 				>
 					Scheduled
-					{isScheduled && (
+					{isScheduled ? (
 						<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
-					)}
+					) : null}
 				</button>
-			)}
+			) : null}
 
 			{/* Participating Tab */}
 			<button
@@ -115,9 +115,9 @@ export function StatusTabs() {
 				)}
 			>
 				Live
-				{isParticipating && (
+				{isParticipating ? (
 					<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
-				)}
+				) : null}
 			</button>
 
 			{/* Ended Tab */}
@@ -131,9 +131,9 @@ export function StatusTabs() {
 				)}
 			>
 				Ended
-				{isEnded && (
+				{isEnded ? (
 					<div className="absolute top-full right-0 left-0 mt-1 h-0.5 w-full bg-black" />
-				)}
+				) : null}
 			</button>
 		</div>
 	);

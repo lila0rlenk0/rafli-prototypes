@@ -9,6 +9,8 @@
  * @see src/app/(auth)/auth/callback/callback-handler.tsx for callback handling
  */
 
+import { AUTH_EVENTS } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/mixpanel-client';
 import { browserClient } from '@/lib/api/client-browser';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -50,6 +52,12 @@ export async function initiateSocialSignIn(
 	}
 
 	try {
+		// Track intent — captures OAuth flow drop-off (user may cancel on provider screen)
+		track(AUTH_EVENTS.SIGN_IN_STARTED, {
+			method: 'social',
+			provider: validation.data.provider,
+		});
+
 		const response = await browserClient.post<unknown>(
 			'/auth/sign-in/social',
 			validation.data,

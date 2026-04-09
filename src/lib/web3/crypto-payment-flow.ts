@@ -37,6 +37,9 @@ export type CryptoTxSubmitOutcome =
  *
  * Backend PR 40 lowercases tx hashes on submit, so the FE must do the same before
  * comparing local wallet hashes against polled session data.
+ *
+ * @param hash - Raw transaction hash from wallet
+ * @returns Lowercased hash for consistent comparisons
  */
 export function normalizeTxHash(hash: string): string {
 	return hash.toLowerCase();
@@ -45,6 +48,10 @@ export function normalizeTxHash(hash: string): string {
 /**
  * Converts a backend-provided deadline into remaining milliseconds.
  * Clamped at zero so callers can pass directly into timeout logic.
+ *
+ * @param deadline - ISO 8601 deadline string from the backend
+ * @param now - Current timestamp in ms (default: Date.now())
+ * @returns Remaining milliseconds until deadline, clamped at zero
  */
 export function getCryptoSessionGraceWindowMs(
 	deadline: string,
@@ -62,6 +69,9 @@ export function getCryptoSessionGraceWindowMs(
  *
  * Backend re-verifies confirmations independently, so the FE should not invent
  * a different counting scheme here.
+ *
+ * @param confirmations - Raw confirmation count from wagmi (bigint, number, or undefined)
+ * @returns Normalized confirmation count as a plain number, clamped at zero
  */
 export function getObservedConfirmationCount(
 	confirmations: bigint | number | undefined,
@@ -84,6 +94,9 @@ export function getObservedConfirmationCount(
  * - timeout/network/5xx: backend may already have accepted the hash, so retry once
  * - already-confirming/concurrent-update: backend already moved the session, so poll
  * - submit-failed: response shape broke, but polling can still recover the session
+ *
+ * @param error - Payment error code from crypto tx submit
+ * @returns Outcome classification: retry, poll, or terminal
  */
 export function getCryptoTxSubmitOutcome(
 	error: PaymentErrorCode,

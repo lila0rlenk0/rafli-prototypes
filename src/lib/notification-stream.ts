@@ -60,7 +60,6 @@ export class NotificationStream {
 	private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
 	private tokenRefreshTimeoutId: ReturnType<typeof setTimeout> | null = null;
 	private pollIntervalId: ReturnType<typeof setInterval> | null = null;
-	private currentToken: string | null = null;
 	private intentionalClose = false;
 	private config: NotificationStreamConfig;
 
@@ -95,7 +94,6 @@ export class NotificationStream {
 			this.ws = null;
 		}
 
-		this.currentToken = null;
 		this.reconnectAttempts = 0;
 	}
 
@@ -107,10 +105,9 @@ export class NotificationStream {
 
 		if (!tokenData || this.intentionalClose) return;
 
-		this.currentToken = tokenData.token;
 		this.scheduleTokenRefresh(tokenData.expiresIn);
 
-		const url = buildWsUrl(this.currentToken);
+		const url = buildWsUrl(tokenData.token);
 		this.ws = new WebSocket(url);
 
 		this.ws.onopen = this.handleOpen.bind(this);

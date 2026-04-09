@@ -6,9 +6,9 @@ import { PublicNavbar } from '@/components/ui/public-navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { env } from '@/env/server';
 import { getSession } from '@/lib/auth/session';
+import { parsePermissions } from '@/lib/permissions';
 import { NotificationStoreProvider } from '@/providers/notification-store-provider';
 import { UserStoreProvider } from '@/providers/user-store-provider';
-import { permissionSchema, type Permission } from '@/types/user-mode';
 
 export const metadata: Metadata = {
 	title: 'How Provably Fair Raffles Work | Raffly',
@@ -128,18 +128,6 @@ const faqJsonLd = {
 		},
 	],
 };
-
-/**
- * Validates and filters permissions from session
- * @param rawPermissions - Raw permission strings from session
- * @returns Array of valid Permission values
- */
-function parsePermissions(rawPermissions: string[] | undefined): Permission[] {
-	if (!rawPermissions) return [];
-	return rawPermissions.filter(
-		(p): p is Permission => permissionSchema.safeParse(p).success,
-	);
-}
 
 interface HowItWorksLayoutProps {
 	children: ReactNode;

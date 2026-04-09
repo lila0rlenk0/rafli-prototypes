@@ -8,7 +8,12 @@ import {
 	useState,
 	type ReactNode,
 } from 'react';
-import { useForm, type UseFormReturn } from 'react-hook-form';
+import {
+	useForm,
+	type DefaultValues,
+	type Resolver,
+	type UseFormReturn,
+} from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { finalizeSubmission } from '@/services/kyc-submission/finalize-submission';
@@ -27,7 +32,13 @@ import {
 	getSubmissionErrorMessage,
 	resolveSubmissionId,
 } from './submission-recovery';
-import { verificationFormSchema, type VerificationFormData } from './schema';
+import {
+	verificationFormSchema,
+	type CompanyFormData,
+	type IndividualFormData,
+	type VerificationFormData,
+	type WinnerFormData,
+} from './schema';
 
 // ─── Submission Phase Tracking ───────────────────────────────────────────────
 
@@ -68,6 +79,63 @@ const VerificationFormContext = createContext<
 
 /** Derived from STEP_TITLES to prevent drift between title array and step count */
 const TOTAL_STEPS = STEP_TITLES.length;
+
+const INITIAL_FORM_VALUES: DefaultValues<VerificationFormData> = {
+	verificationType: undefined,
+	fullLegalName: '',
+	dateOfBirth: '',
+	phoneNumber: '',
+	residentialAddress: '',
+	identityDocType: undefined,
+	addressDocType: undefined,
+	plannedCategories: [],
+	idFront: [],
+	idBack: [],
+	proofOfAddress: [],
+};
+
+function getIndividualDefaults(): DefaultValues<IndividualFormData> {
+	return {
+		verificationType: VERIFICATION_TYPE.KYB_INDIVIDUAL,
+		fullLegalName: '',
+		dateOfBirth: '',
+		phoneNumber: '',
+		residentialAddress: '',
+		identityDocType: undefined,
+		addressDocType: undefined,
+		plannedCategories: [],
+		idFront: [],
+		idBack: [],
+		proofOfAddress: [],
+	};
+}
+
+function getCompanyDefaults(): DefaultValues<CompanyFormData> {
+	return {
+		verificationType: VERIFICATION_TYPE.KYB_COMPANY,
+		legalEntityName: '',
+		businessRegistrationNumber: '',
+		countryOfIncorporation: '',
+		contactPersonName: '',
+		contactEmail: '',
+		companyDocs: [],
+		proofOfBusinessAddress: [],
+	};
+}
+
+function getWinnerDefaults(): DefaultValues<WinnerFormData> {
+	return {
+		verificationType: VERIFICATION_TYPE.KYC_WINNER,
+		fullLegalName: '',
+		dateOfBirth: '',
+		countryOfResidence: '',
+		identityDocType: undefined,
+		bankAccountOrWallet: '',
+		shippingAddress: '',
+		idFront: [],
+		idBack: [],
+	};
+}
 
 // ─── Document Extraction ─────────────────────────────────────────────────────
 
@@ -164,22 +232,11 @@ export function VerificationFormProvider({
 	// zodResolver cast needed: Zod v4 discriminated union output types
 	// don't align exactly with react-hook-form's Resolver generics
 	const form = useForm<VerificationFormData>({
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		resolver: zodResolver(verificationFormSchema) as any,
+		resolver: zodResolver(
+			verificationFormSchema,
+		) as Resolver<VerificationFormData>,
 		mode: 'onChange',
-		defaultValues: {
-			verificationType: undefined as unknown as VerificationType,
-			fullLegalName: '',
-			dateOfBirth: '',
-			phoneNumber: '',
-			residentialAddress: '',
-			identityDocType: undefined,
-			addressDocType: undefined,
-			plannedCategories: [],
-			idFront: [],
-			idBack: [],
-			proofOfAddress: [],
-		} as unknown as VerificationFormData,
+		defaultValues: INITIAL_FORM_VALUES,
 	});
 
 	/**
@@ -191,74 +248,27 @@ export function VerificationFormProvider({
 			setVerificationTypeState(type);
 
 			if (type === VERIFICATION_TYPE.KYB_INDIVIDUAL) {
-				form.reset({
-					verificationType: VERIFICATION_TYPE.KYB_INDIVIDUAL,
-					fullLegalName: '',
-					dateOfBirth: '',
-					phoneNumber: '',
-					residentialAddress: '',
-					identityDocType:
-						undefined as unknown as VerificationFormData extends {
-							identityDocType: infer T;
-						}
-							? T
-							: never,
-					addressDocType: undefined as unknown as VerificationFormData extends {
-						addressDocType: infer T;
-					}
-						? T
-						: never,
-					plannedCategories: [],
-					idFront: [],
-					idBack: [],
-					proofOfAddress: [],
-				} as VerificationFormData);
-			} else if (type === VERIFICATION_TYPE.KYB_COMPANY) {
-				form.reset({
-					verificationType: VERIFICATION_TYPE.KYB_COMPANY,
-					legalEntityName: '',
-					businessRegistrationNumber: '',
-					countryOfIncorporation: '',
-					contactPersonName: '',
-					contactEmail: '',
-					companyDocs: [],
-					proofOfBusinessAddress: [],
-				} as VerificationFormData);
-			} else {
-				form.reset({
-					verificationType: VERIFICATION_TYPE.KYC_WINNER,
-					fullLegalName: '',
-					dateOfBirth: '',
-					countryOfResidence: '',
-					identityDocType:
-						undefined as unknown as VerificationFormData extends {
-							identityDocType: infer T;
-						}
-							? T
-							: never,
-					bankAccountOrWallet: '',
-					shippingAddress: '',
-					idFront: [],
-					idBack: [],
-				} as VerificationFormData);
+				form.reset(getIndividualDefaults());
+				return;
 			}
+
+			if (type === VERIFICATION_TYPE.KYB_COMPANY) {
+				form.reset(getCompanyDefaults());
+				return;
+			}
+
+			form.reset(getWinnerDefaults());
 		},
-		// form.reset is a stable reference from useForm
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[],
+		[form],
 	);
 
 	const nextStep = useCallback(() => {
-		if (currentStep < TOTAL_STEPS - 1) {
-			setCurrentStep(prev => prev + 1);
-		}
-	}, [currentStep]);
+		setCurrentStep(prev => (prev < TOTAL_STEPS - 1 ? prev + 1 : prev));
+	}, []);
 
 	const previousStep = useCallback(() => {
-		if (currentStep > 0) {
-			setCurrentStep(prev => prev - 1);
-		}
-	}, [currentStep]);
+		setCurrentStep(prev => (prev > 0 ? prev - 1 : prev));
+	}, []);
 
 	const isFirstStep = currentStep === 0;
 	const isLastStep = currentStep === TOTAL_STEPS - 1;

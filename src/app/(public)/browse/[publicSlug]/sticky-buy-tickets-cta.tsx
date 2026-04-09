@@ -82,7 +82,7 @@ export function StickyBuyTicketsCta({
 	}
 
 	function renderShareButton() {
-		// Terminal claim — show disabled button so user sees the feature is consumed
+		// Terminal claim — disabled button so user sees the feature is consumed
 		if (claimUsed) {
 			return (
 				<Button
@@ -90,7 +90,7 @@ export function StickyBuyTicketsCta({
 					disabled
 					className="h-12 w-full rounded-full border-2 border-gray-300 bg-gray-50 text-gray-400"
 				>
-					<p className="font-semibold">Free ticket already redeemed</p>
+					<p className="font-semibold">Already claimed free entry</p>
 				</Button>
 			);
 		}

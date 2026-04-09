@@ -89,7 +89,9 @@ export function StickyFilterSection({ children }: StickyFilterSectionProps) {
 			<div ref={sentinelRef} className="h-0 w-full" aria-hidden="true" />
 
 			{/* Placeholder — prevents layout jump when bar goes fixed */}
-			{isSticky && <div style={{ height: barHeight }} aria-hidden="true" />}
+			{isSticky ? (
+				<div style={{ height: barHeight }} aria-hidden="true" />
+			) : null}
 
 			<div
 				ref={barRef}

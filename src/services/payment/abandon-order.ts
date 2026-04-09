@@ -7,8 +7,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapPaymentError } from '@/lib/errors/error-mapper';
+import { failure, mapPaymentError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -42,8 +41,7 @@ export async function abandonOrder(
 	orderId: string,
 	paymentMethod?: string,
 ): Promise<ServiceResponse<AbandonOrderResponse, PaymentErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -55,13 +53,15 @@ export async function abandonOrder(
 		const data = abandonOrderResponseSchema.parse(response.data);
 
 		// Fire-and-forget — abandon is best-effort, analytics must not block
-		void trackServer(
-			PURCHASE_EVENTS.ORDER_ABANDONED,
-			{
-				order_id: orderId,
-				...(paymentMethod && { payment_method: paymentMethod }),
-			},
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				PURCHASE_EVENTS.ORDER_ABANDONED,
+				{
+					order_id: orderId,
+					...(paymentMethod && { payment_method: paymentMethod }),
+				},
+				{ userId: session?.user?.id },
+			),
 		);
 
 		return success(data);

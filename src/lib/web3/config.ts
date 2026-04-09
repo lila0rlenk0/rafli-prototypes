@@ -118,21 +118,46 @@ const wallets: WalletList = [
  * and @metamask/sdk must be installed for their respective wallets to work.
  * getDefaultConfig dynamically imports them at runtime via wagmi's connector factories.
  *
+ * **Lazy singleton** — NOT initialized at module scope. @walletconnect/ethereum-provider
+ * accesses `indexedDB` during connector instantiation, which crashes Node.js during SSR
+ * (indexedDB is a browser-only API). Deferring to a getter ensures the call only happens
+ * on the client, while still allowing safe module-level imports of other exports
+ * (isWeb3Enabled, SUPPORTED_WEB3_CHAIN_IDS, etc.) from both server and client code.
+ *
  * Only initialized when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is set —
  * without it, WalletConnect handshake fails and breaks the provider tree.
  * Callers must check `isWeb3Enabled` before using this config.
  *
- * @returns wagmi Config or null when Web3 is disabled
+ * @returns wagmi Config or null when Web3 is disabled or running on the server
  */
-export const wagmiConfig = isWeb3Enabled
-	? getDefaultConfig({
-			appName: 'Rafli',
-			projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-			chains: configuredChains,
-			storage: wagmiStorage,
-			wallets,
-			// Required for Next.js App Router — delays store hydration to
-			// avoid server/client mismatch on first render
-			ssr: true,
-		})
-	: null;
+let _wagmiConfig: ReturnType<typeof getDefaultConfig> | null | undefined;
+
+export function getWagmiConfig(): ReturnType<typeof getDefaultConfig> | null {
+	// Return cached instance after first initialization
+	if (typeof _wagmiConfig !== 'undefined') return _wagmiConfig;
+
+	// Server-side — return null so the provider falls through to a children passthrough.
+	// Context providers (WagmiProvider, RainbowKitProvider) produce no DOM nodes,
+	// so the server/client HTML is identical regardless of this guard.
+	if (typeof window === 'undefined') return null;
+
+	// Web3 disabled — no WalletConnect project ID configured
+	if (!isWeb3Enabled) {
+		_wagmiConfig = null;
+		return null;
+	}
+
+	// Client-side first call — initialize once and cache
+	_wagmiConfig = getDefaultConfig({
+		appName: 'Rafli',
+		projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
+		chains: configuredChains,
+		storage: wagmiStorage,
+		wallets,
+		// Required for Next.js App Router — delays store hydration to
+		// avoid server/client mismatch on first render
+		ssr: true,
+	});
+
+	return _wagmiConfig;
+}

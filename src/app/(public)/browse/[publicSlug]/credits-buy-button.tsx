@@ -88,6 +88,9 @@ export function CreditsBuyButton({
 			raffle_id: raffleId,
 			quantity: ticketQuantity,
 			payment_method: 'credits',
+			has_promo: !!promoCode,
+			available_credits: availableCredits,
+			order_total: orderTotal,
 		});
 
 		if (questionId) {
@@ -212,14 +215,14 @@ export function CreditsBuyButton({
 				<p className="font-semibold">{getButtonText()}</p>
 			</Button>
 
-			{questionId && (
+			{questionId ? (
 				<RaffleQuestionModal
 					open={showQuestionModal}
 					onOpenChange={setShowQuestionModal}
 					raffleId={raffleId}
 					onCorrectAnswer={handleCorrectAnswer}
 				/>
-			)}
+			) : null}
 		</>
 	);
 }

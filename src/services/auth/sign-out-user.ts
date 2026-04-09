@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { redirect } from 'next/navigation';
 
 import { AUTH_EVENTS } from '@/lib/analytics/events';
@@ -19,18 +20,22 @@ import { clearAuthCookies } from './clear-auth';
  * @returns Never returns - always redirects to /sign-in
  */
 export async function signOutUser(): Promise<never> {
-	const session = await getSession();
-
-	// Track sign out BEFORE clearing cookies (redirect() throws, so tracking after would never execute)
-	if (session?.user) {
-		await trackServer(AUTH_EVENTS.SIGN_OUT, {}, { userId: session.user.id });
-	}
+	// Capture session before clearing cookies — getSession() reads from cookies,
+	// so we must start the read before clearAuthCookies() runs in the finally block.
+	const sessionPromise = getSession();
 
 	try {
 		await authenticatedClient.post('/auth/sign-out');
-	} catch (error) {
-		console.error('Sign out error:', error);
+	} catch {
+		// Backend session cleanup is best-effort — cookie clearing below ensures clean FE state
 	} finally {
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+			if (!userId) return;
+
+			await trackServer(AUTH_EVENTS.SIGN_OUT, {}, { userId });
+		});
+
 		await clearAuthCookies();
 		// Detach user from Sentry scope so post-logout errors aren't misattributed
 		clearSentryUser();

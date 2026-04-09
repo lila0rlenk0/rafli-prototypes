@@ -186,16 +186,20 @@ export function MultiStepFormProvider({
 
 	const hasUnsavedChanges = checkHasUnsavedChanges();
 
-	/**
-	 * Shows restore modal when a draft is detected on mount
-	 * The user decides whether to continue the draft or start fresh
-	 */
+	// mount: track creation wizard entry — measures how many users start vs complete
 	useEffect(() => {
-		if (isDraftLoading || draftLoaded || !hasDraft || !draft) return;
+		track(RAFFLE_EVENTS.CREATE_STARTED, {});
+	}, []);
 
+	/**
+	 * Draft detection is pure state derivation from the storage hook.
+	 * Promote it into render-time state syncing so the modal opens in the same
+	 * render pass that draft data becomes available, without an extra effect hop.
+	 */
+	if (!isDraftLoading && !draftLoaded && hasDraft && draft) {
 		setShowRestoreModal(true);
 		setDraftLoaded(true);
-	}, [isDraftLoading, draftLoaded, hasDraft, draft]);
+	}
 
 	/**
 	 * Loads draft data into form when user chooses to continue
@@ -633,7 +637,7 @@ export function MultiStepFormProvider({
 			}}
 		>
 			{children}
-			{createdRaffle && (
+			{createdRaffle ? (
 				<RaffleCreatedModal
 					publicSlug={createdRaffle.publicSlug}
 					raffleStartDate={createdRaffle.raffleStartDate}
@@ -643,7 +647,7 @@ export function MultiStepFormProvider({
 						if (!open) setCreatedRaffle(null);
 					}}
 				/>
-			)}
+			) : null}
 			<SaveDraftModal
 				open={showExitModal}
 				onOpenChange={setShowExitModal}

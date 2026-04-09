@@ -148,7 +148,7 @@ export function EditableAvatar({
 				</div>
 			)}
 			{/* Overlay with pencil icon on hover */}
-			{!isUploading && (
+			{!isUploading ? (
 				<div
 					className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity duration-300 ${
 						isHovered ? 'opacity-100' : 'pointer-events-none opacity-0'
@@ -156,13 +156,13 @@ export function EditableAvatar({
 				>
 					<Pencil className="size-5 text-white" />
 				</div>
-			)}
+			) : null}
 			{/* Loading overlay */}
-			{isUploading && (
+			{isUploading ? (
 				<div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity duration-300">
 					<div className="size-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

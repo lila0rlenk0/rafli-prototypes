@@ -1,5 +1,3 @@
-'use client';
-
 import { ShieldCheck } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';

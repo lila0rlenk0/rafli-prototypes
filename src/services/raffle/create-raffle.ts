@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
@@ -28,8 +29,7 @@ type CreateRaffleResponse = ServiceResponse<Raffle, RaffleErrorCode>;
 export async function createRaffle(
 	input: CreateRaffleInput,
 ): Promise<CreateRaffleResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const payload = {
@@ -60,7 +60,6 @@ export async function createRaffle(
 		// Validate payload before sending
 		const validationResult = createRafflePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			console.error('Payload validation failed:', validationResult.error);
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
@@ -73,17 +72,24 @@ export async function createRaffle(
 		// Validate response structure
 		const raffle = raffleSchema.parse(response.data);
 
-		// Track raffle created (awaited to ensure completion in serverless)
-		await trackServer(
-			RAFFLE_EVENTS.CREATED,
-			{
-				raffle_id: raffle.id,
-				category: input.category,
-				ticket_price: input.pricePerTicket,
-				max_participants: input.maxParticipants,
-			},
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				RAFFLE_EVENTS.CREATED,
+				{
+					raffle_id: raffle.id,
+					category: input.category,
+					ticket_price: input.pricePerTicket,
+					max_participants: input.maxParticipants,
+					min_participants: input.minParticipants,
+					number_of_winners: input.numberOfWinners,
+					accepts_crypto: input.acceptsCrypto,
+					has_question: !!input.checkInQuestion,
+				},
+				{ userId },
+			);
+		});
 
 		return success(raffle);
 	} catch (error) {
@@ -95,12 +101,15 @@ export async function createRaffle(
 
 		const errorCode = mapRaffleError(error);
 
-		// Track raffle creation failed (awaited to ensure completion in serverless)
-		await trackServer(
-			RAFFLE_EVENTS.CREATE_FAILED,
-			{ error_code: errorCode },
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				RAFFLE_EVENTS.CREATE_FAILED,
+				{ error_code: errorCode },
+				{ userId },
+			);
+		});
 
 		return failure(errorCode);
 	}

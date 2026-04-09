@@ -101,7 +101,7 @@ export function ImagePreviewCard({
 						className="object-cover"
 						unoptimized={typeof src === 'string'}
 					/>
-					{onRemove && (
+					{onRemove ? (
 						<button
 							type="button"
 							onClick={handleRemove}
@@ -110,7 +110,7 @@ export function ImagePreviewCard({
 						>
 							<Trash2 className="size-3 text-white" />
 						</button>
-					)}
+					) : null}
 				</>
 			) : (
 				<ImageIcon className="size-6 text-gray-400" />

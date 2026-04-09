@@ -1,8 +1,7 @@
 'use server';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { failure, success } from '@/lib/errors';
-import { mapNotificationError } from '@/lib/errors';
+import { failure, mapNotificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	NOTIFICATION_ERROR_CODES,

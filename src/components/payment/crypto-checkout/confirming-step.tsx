@@ -151,14 +151,14 @@ export function ConfirmingStep({
 								<span className={getPhaseTextClass(phase.status)}>
 									{phase.label}
 								</span>
-								{phase.detail && (
+								{phase.detail ? (
 									<span className="text-xs text-[#7B7B7B]">{phase.detail}</span>
-								)}
+								) : null}
 							</div>
 							{/* Spinner on active phase */}
-							{phase.status === 'active' && (
+							{phase.status === 'active' ? (
 								<Loader2 className="ml-auto size-3.5 animate-spin text-[#7B7B7B]" />
-							)}
+							) : null}
 						</div>
 
 						{/* Connecting line between phases (not after last) */}

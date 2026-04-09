@@ -1,4 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
+'use client';
+
+import React, { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText as GSAPSplitText } from 'gsap/SplitText';
@@ -47,7 +49,8 @@ const SplitText: React.FC<SplitTextProps> = ({
 		() => typeof document !== 'undefined' && document.fonts.status === 'loaded',
 	);
 
-	// Keep callback ref updated
+	// GSAP callbacks outlive a single render. Sync the latest completion handler
+	// after commit so animation finish always calls the freshest prop.
 	useEffect(() => {
 		onCompleteRef.current = onLetterAnimationComplete;
 	}, [onLetterAnimationComplete]);

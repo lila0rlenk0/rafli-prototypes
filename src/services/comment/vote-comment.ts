@@ -30,8 +30,7 @@ export async function voteComment(
 	commentId: string,
 	type: VoteType,
 ): Promise<ServiceResponse<VoteResponse, CommentErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -41,10 +40,12 @@ export async function voteComment(
 		const validated = voteResponseSchema.parse(response.data);
 
 		// Fire-and-forget — don't block vote UX
-		void trackServer(
-			COMMENT_EVENTS.VOTED,
-			{ comment_id: commentId, direction: type },
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				COMMENT_EVENTS.VOTED,
+				{ comment_id: commentId, direction: type },
+				{ userId: session?.user?.id },
+			),
 		);
 
 		return success(validated);

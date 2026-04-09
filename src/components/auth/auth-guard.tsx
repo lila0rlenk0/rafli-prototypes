@@ -1,11 +1,18 @@
-import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
+
+import { getSession } from '@/lib/auth/session';
 
 interface AuthGuardProps {
 	children: ReactNode;
 }
 
+/**
+ * Server component that gates routes behind authentication.
+ * Redirects to sign-in if no valid session exists.
+ *
+ * @returns Children when authenticated
+ */
 export async function AuthGuard({ children }: AuthGuardProps) {
 	const session = await getSession();
 
@@ -13,5 +20,6 @@ export async function AuthGuard({ children }: AuthGuardProps) {
 		redirect('/sign-in');
 	}
 
-	return <>{children}</>;
+	// Fragment wrapper removed — single child passes through directly
+	return children;
 }

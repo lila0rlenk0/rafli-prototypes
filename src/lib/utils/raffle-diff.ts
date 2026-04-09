@@ -121,24 +121,24 @@ export function computeRaffleDiff(
 	}
 
 	// Compare chain IDs (sorted for stable comparison)
-	const currentChainIds = [...current.cryptoChainIds].sort();
-	const originalChainIds = [...originalCrypto.cryptoChainIds].sort();
+	const currentChainIds = current.cryptoChainIds.toSorted();
+	const originalChainIds = originalCrypto.cryptoChainIds.toSorted();
 	if (JSON.stringify(currentChainIds) !== JSON.stringify(originalChainIds)) {
 		diff.cryptoChainIds = current.cryptoChainIds;
 	}
 
 	// Compare token IDs (sorted for stable comparison)
-	const currentTokenIds = [...current.cryptoTokens].sort();
-	const originalTokenIds = [...originalCrypto.cryptoTokens].sort();
+	const currentTokenIds = current.cryptoTokens.toSorted();
+	const originalTokenIds = originalCrypto.cryptoTokens.toSorted();
 	if (JSON.stringify(currentTokenIds) !== JSON.stringify(originalTokenIds)) {
 		diff.cryptoTokens = current.cryptoTokens;
 	}
 
 	// Compare token pricing (sorted by tokenId for stable comparison)
-	const currentPricing = [...current.cryptoTokenPricing].sort((a, b) =>
+	const currentPricing = current.cryptoTokenPricing.toSorted((a, b) =>
 		a.tokenId.localeCompare(b.tokenId),
 	);
-	const originalPricing = [...originalCrypto.cryptoTokenPricing].sort((a, b) =>
+	const originalPricing = originalCrypto.cryptoTokenPricing.toSorted((a, b) =>
 		a.tokenId.localeCompare(b.tokenId),
 	);
 	if (JSON.stringify(currentPricing) !== JSON.stringify(originalPricing)) {

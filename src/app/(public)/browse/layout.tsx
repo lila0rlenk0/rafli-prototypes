@@ -4,25 +4,12 @@ import { MarqueeBanner } from '@/components/browse/marquee-banner';
 import { PublicNavbar } from '@/components/ui/public-navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { getSession } from '@/lib/auth/session';
+import { parsePermissions } from '@/lib/permissions';
 import { NotificationStoreProvider } from '@/providers/notification-store-provider';
 import { UserStoreProvider } from '@/providers/user-store-provider';
-import { permissionSchema, type Permission } from '@/types/user-mode';
 
 interface PublicBrowseLayoutProps {
 	children: ReactNode;
-}
-
-/**
- * Validates and filters permissions from session
- * Only includes valid Permission values, discards unknown permissions
- * @param rawPermissions - Raw permission strings from session
- * @returns Array of valid Permission values
- */
-function parsePermissions(rawPermissions: string[] | undefined): Permission[] {
-	if (!rawPermissions) return [];
-	return rawPermissions.filter(
-		(p): p is Permission => permissionSchema.safeParse(p).success,
-	);
 }
 
 /**

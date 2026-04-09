@@ -43,6 +43,17 @@ export function RaffleQuestionModal({
 	const [isLoading, setIsLoading] = useState(false);
 	const [isFetching, setIsFetching] = useState(false);
 
+	const handleOpenChange = useCallback(
+		(nextOpen: boolean) => {
+			if (!nextOpen) {
+				setSelectedOptionId('');
+			}
+
+			onOpenChange(nextOpen);
+		},
+		[onOpenChange],
+	);
+
 	/**
 	 * Gets user-friendly error message for error codes
 	 * @param errorCode - The error code
@@ -82,7 +93,7 @@ export function RaffleQuestionModal({
 			if (!result.success) {
 				const message = getErrorMessage(result.error);
 				toast.error(message);
-				onOpenChange(false);
+				handleOpenChange(false);
 				return;
 			}
 
@@ -90,11 +101,11 @@ export function RaffleQuestionModal({
 		} catch (error) {
 			console.error('Unexpected error fetching question:', error);
 			toast.error('Failed to load question. Please try again.');
-			onOpenChange(false);
+			handleOpenChange(false);
 		} finally {
 			setIsFetching(false);
 		}
-	}, [raffleId, onOpenChange]);
+	}, [handleOpenChange, raffleId]);
 
 	/**
 	 * Fetches the raffle question when modal opens
@@ -104,15 +115,6 @@ export function RaffleQuestionModal({
 			fetchQuestion();
 		}
 	}, [open, question, fetchQuestion]);
-
-	/**
-	 * Resets state when modal closes
-	 */
-	useEffect(() => {
-		if (!open) {
-			setSelectedOptionId('');
-		}
-	}, [open]);
 
 	/**
 	 * Handles the answer submission
@@ -136,7 +138,7 @@ export function RaffleQuestionModal({
 
 			if (result.data.correct) {
 				onCorrectAnswer();
-				onOpenChange(false);
+				handleOpenChange(false);
 			} else {
 				toast.error('Incorrect answer. Please try again.');
 				setSelectedOptionId('');
@@ -155,11 +157,11 @@ export function RaffleQuestionModal({
 	 * @returns Sorted options array
 	 */
 	function getSortedOptions(options: RaffleQuestion['options']) {
-		return [...options].sort((a, b) => a.sortOrder - b.sortOrder);
+		return options.toSorted((a, b) => a.sortOrder - b.sortOrder);
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogContent
 				className="max-w-3xl border border-[#0F0F0FF2] bg-white px-6 py-8 sm:px-32 sm:py-24"
 				showCloseButton={true}
@@ -215,9 +217,9 @@ export function RaffleQuestionModal({
 								disabled={isLoading || !selectedOptionId}
 								className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
 							>
-								{isLoading && (
+								{isLoading ? (
 									<Loader2Icon className="mr-2 size-4 animate-spin" />
-								)}
+								) : null}
 								<span className="font-semibold">Confirm</span>
 							</Button>
 						</div>

@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
@@ -7,8 +8,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapOrderError } from '@/lib/errors/error-mapper';
+import { failure, mapOrderError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import {
@@ -62,8 +62,7 @@ export interface CheckoutOrderResponse {
 export async function checkoutOrder(
 	payload: CheckoutOrderPayload,
 ): Promise<ServiceResponse<CheckoutOrderResponse, OrderErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -75,16 +74,22 @@ export async function checkoutOrder(
 		// Backend returns flat order object — validate and derive isFullyDiscounted
 		const order = checkoutOrderResponseSchema.parse(response.data);
 
-		// Track order created
-		await trackServer(
-			PURCHASE_EVENTS.ORDER_CREATED,
-			{
-				order_id: order.id,
-				raffle_id: payload.raffleId,
-				quantity: payload.ticketQuantity,
-			},
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.ORDER_CREATED,
+				{
+					order_id: order.id,
+					raffle_id: payload.raffleId,
+					quantity: payload.ticketQuantity,
+					has_promo: !!payload.promoCode,
+					total_amount: order.totalAmount,
+					is_fully_discounted: parseFloat(order.totalAmount) === 0,
+				},
+				{ userId },
+			);
+		});
 
 		return success({
 			order,
@@ -97,15 +102,17 @@ export async function checkoutOrder(
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 
-		console.error('Checkout order error:', error);
 		const errorCode = mapOrderError(error);
 
-		// Fire-and-forget — analytics failures must not mask the original checkout error
-		void trackServer(
-			PURCHASE_EVENTS.ORDER_FAILED,
-			{ raffle_id: payload.raffleId, error_code: errorCode },
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.ORDER_FAILED,
+				{ raffle_id: payload.raffleId, error_code: errorCode },
+				{ userId },
+			);
+		});
 
 		return failure(errorCode);
 	}

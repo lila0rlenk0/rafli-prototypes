@@ -6,7 +6,7 @@ import { AUTH_COOKIES, MODE_COOKIE_OPTIONS } from '@/lib/auth/config';
 import { USER_MODE, userModeSchema, type UserMode } from '@/types/user-mode';
 
 /**
- * Gets user mode from cookie
+ * Gets user mode from cookie.
  * @returns UserMode or default PARTICIPANT if not set/invalid
  */
 export async function getUserModeCookie(): Promise<UserMode> {
@@ -20,8 +20,9 @@ export async function getUserModeCookie(): Promise<UserMode> {
 }
 
 /**
- * Sets user mode cookie (called from client via server action)
+ * Sets user mode cookie (called from client via server action).
  * @param mode - UserMode to set
+ * @returns Promise that resolves when cookie is set
  */
 export async function setUserModeCookie(mode: UserMode): Promise<void> {
 	const cookieStore = await cookies();
@@ -29,7 +30,8 @@ export async function setUserModeCookie(mode: UserMode): Promise<void> {
 }
 
 /**
- * Clears user mode cookie (called on sign out)
+ * Clears user mode cookie (called on sign out).
+ * @returns Promise that resolves when cookie is deleted
  */
 export async function clearUserModeCookie(): Promise<void> {
 	const cookieStore = await cookies();

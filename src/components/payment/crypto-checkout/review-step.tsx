@@ -177,52 +177,52 @@ export function ReviewStep({
 			</div>
 
 			{/* Token balance RPC error — explain why Pay is disabled */}
-			{isTokenBalanceError && (
+			{isTokenBalanceError ? (
 				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-600">
 					Unable to read token balance. Check your wallet connection and try
 					again.
 				</div>
-			)}
+			) : null}
 
 			{/* Review session drift — sending is blocked until wallet step refreshes the session */}
-			{sessionBlockMessage && (
+			{sessionBlockMessage ? (
 				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
 					{sessionBlockMessage}
 				</div>
-			)}
+			) : null}
 
 			{/* Insufficient balance warning — only after balance loaded successfully */}
-			{shouldShowInsufficientWarning() && (
+			{shouldShowInsufficientWarning() ? (
 				<div className="rounded-xl bg-red-50 px-4 py-3 text-center text-xs text-red-600">
 					Insufficient {tokenSymbol} balance. You need{' '}
 					{formatPaymentAmount(session)} {tokenSymbol}.
 				</div>
-			)}
+			) : null}
 
 			{/* Chain switch notice */}
-			{!isCorrectChain && hasEnoughTokens() && (
+			{!isCorrectChain && hasEnoughTokens() ? (
 				<p className="text-center text-xs text-amber-600">
 					You&apos;ll be prompted to switch to{' '}
 					{getChainName(selectedChainId, chains)}
 				</p>
-			)}
+			) : null}
 
-			{isHydrated && isClosingSoon && (
+			{isHydrated && isClosingSoon ? (
 				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
 					Less than 10 minutes remain. Crypto confirmations can continue after
 					the raffle ends. If settlement lands after draw start, support may
 					need to review the purchase.
 				</div>
-			)}
+			) : null}
 
 			<Button
 				onClick={onPay}
 				disabled={isPayDisabled()}
 				className="h-12 w-full border-2 border-black bg-black hover:bg-white hover:text-black"
 			>
-				{(isProcessing || !!txSubmitted) && (
+				{isProcessing || !!txSubmitted ? (
 					<Loader2 className="mr-2 size-4 animate-spin" />
-				)}
+				) : null}
 				{getPayButtonText()}
 			</Button>
 		</div>

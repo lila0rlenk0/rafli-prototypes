@@ -1,5 +1,6 @@
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 
+/** @returns Ticket SVG icon */
 export function TicketIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg

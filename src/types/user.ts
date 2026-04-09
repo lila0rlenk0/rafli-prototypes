@@ -30,10 +30,6 @@ export const uploadAvatarResponseSchema = z.object({
 	image: z.string(),
 });
 
-// ==========================================
-// Inferred Types
-// ==========================================
-
 /**
  * Schema for updating user profile
  * Used by PUT /me endpoint

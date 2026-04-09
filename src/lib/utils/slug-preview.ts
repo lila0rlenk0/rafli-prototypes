@@ -1,6 +1,13 @@
 const SLUG_SUFFIX_LENGTH = 5;
 const MAX_TITLE_LENGTH = 50;
 
+// Hoisted RegExp — avoid re-creation on every call
+const RE_ACCENTS = /[\u0300-\u036f]/g;
+const RE_NON_ALPHANUMERIC = /[^a-z0-9\s-]/g;
+const RE_SPACES_UNDERSCORES = /[\s_]+/g;
+const RE_MULTIPLE_HYPHENS = /-+/g;
+const RE_EDGE_HYPHENS = /^-|-$/g;
+
 /**
  * Generates a preview slug from title with deterministic suffix.
  * Format: <slugified-title>-<5-char-alphanumeric>
@@ -29,11 +36,11 @@ function slugifyTitle(title: string): string {
 	return title
 		.toLowerCase()
 		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '') // Remove accents
-		.replace(/[^a-z0-9\s-]/g, '') // Keep alphanumeric, spaces, hyphens
-		.replace(/[\s_]+/g, '-') // Spaces/underscores → hyphen
-		.replace(/-+/g, '-') // Collapse multiple hyphens
-		.replace(/^-|-$/g, '') // Trim edge hyphens
+		.replace(RE_ACCENTS, '') // Remove accents
+		.replace(RE_NON_ALPHANUMERIC, '') // Keep alphanumeric, spaces, hyphens
+		.replace(RE_SPACES_UNDERSCORES, '-') // Spaces/underscores → hyphen
+		.replace(RE_MULTIPLE_HYPHENS, '-') // Collapse multiple hyphens
+		.replace(RE_EDGE_HYPHENS, '') // Trim edge hyphens
 		.slice(0, MAX_TITLE_LENGTH);
 }
 

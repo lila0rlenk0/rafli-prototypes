@@ -48,8 +48,6 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
 			<Suspense fallback={<ScreenLoader />}>
 				<ProtectedLayoutContent>{children}</ProtectedLayoutContent>
 			</Suspense>
-			{/*<BackgroundCubeLeft className="absolute bottom-0 left-0 z-[-1] origin-bottom-left scale-[0.76]" />
-			<BackgroundCubeRight className="absolute right-0 bottom-0 z-[-1] origin-bottom-right scale-[0.76]" />*/}
 		</div>
 	);
 }

@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { env } from '@/env/server';
@@ -8,8 +9,7 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapPaymentError } from '@/lib/errors/error-mapper';
+import { failure, mapPaymentError, success } from '@/lib/errors';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -40,17 +40,12 @@ type CreateCheckoutSessionResponse = ServiceResponse<
 export async function createCheckoutSession(
 	payload: CreateCheckoutPayload,
 ): Promise<CreateCheckoutSessionResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		// Validate payload before sending
 		const validationResult = createCheckoutPayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			console.error(
-				'Checkout payload validation failed:',
-				validationResult.error,
-			);
 			return failure(PAYMENT_ERROR_CODES.CHECKOUT_FAILED);
 		}
 
@@ -77,15 +72,19 @@ export async function createCheckoutSession(
 		// Validate response structure
 		const checkoutSession = checkoutSessionResponseSchema.parse(response.data);
 
-		// Fire-and-forget — analytics latency must not delay checkout redirect
-		void trackServer(
-			PURCHASE_EVENTS.CHECKOUT_STARTED,
-			{
-				order_id: orderId,
-				session_id: checkoutSession.id,
-			},
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.CHECKOUT_STARTED,
+				{
+					order_id: orderId,
+					session_id: checkoutSession.id,
+					payment_method: 'stripe',
+				},
+				{ userId },
+			);
+		});
 
 		return success(checkoutSession);
 	} catch (error) {
@@ -95,9 +94,6 @@ export async function createCheckoutSession(
 			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
 		}
 
-		// Log full error for debugging
-		console.error('Checkout session creation error:', error);
-
 		const errorCode = mapPaymentError(error);
 		captureServiceError(error, errorCode, {
 			service: 'payment',
@@ -105,12 +101,15 @@ export async function createCheckoutSession(
 			orderId: payload.orderId,
 		});
 
-		// Track checkout failed (awaited to ensure completion in serverless)
-		await trackServer(
-			PURCHASE_EVENTS.FAILED,
-			{ order_id: payload.orderId, error_code: errorCode },
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PURCHASE_EVENTS.FAILED,
+				{ order_id: payload.orderId, error_code: errorCode },
+				{ userId },
+			);
+		});
 
 		return failure(errorCode);
 	}

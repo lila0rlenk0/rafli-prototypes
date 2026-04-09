@@ -42,8 +42,7 @@ export async function bulkCreatePromoCodes(
 	raffleId: string,
 	payload: BulkCreatePromoCodesPayload,
 ): Promise<ServiceResponse<BulkCreatePromoCodesResponse, PromoCodeErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		// Step 1: Send create request to backend.
@@ -55,14 +54,19 @@ export async function bulkCreatePromoCodes(
 		const validated = bulkCreatePromoCodesResponseSchema.parse(response.data);
 
 		// Fire-and-forget — promo creation is not latency-sensitive
-		void trackServer(
-			PROMO_CODE_EVENTS.BULK_CREATED,
-			{
-				raffle_id: raffleId,
-				count: payload.count,
-				type: payload.type,
-			},
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				PROMO_CODE_EVENTS.BULK_CREATED,
+				{
+					raffle_id: raffleId,
+					count: payload.count,
+					type: payload.type,
+					value: payload.value,
+					has_expiry: !!payload.expiresAt,
+					max_uses: payload.maxUses,
+				},
+				{ userId: session?.user?.id },
+			),
 		);
 
 		// Step 3: Return typed success.

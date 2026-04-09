@@ -53,8 +53,8 @@ export type NotificationType =
 // Schemas
 // ==========================================
 
-/** Raw enum schema — all BE notification types */
-const rawNotificationTypeSchema = z.enum([
+/** Schema for notification type enum — all BE notification types */
+export const notificationTypeSchema = z.enum([
 	NOTIFICATION_TYPE.CHAT_MESSAGE,
 	NOTIFICATION_TYPE.COMMENT_ON_RAFFLE,
 	NOTIFICATION_TYPE.CONFIRM_RECEIPT_REMINDER,
@@ -87,11 +87,6 @@ const rawNotificationTypeSchema = z.enum([
 	NOTIFICATION_TYPE.REVIEW_RECEIVED,
 	NOTIFICATION_TYPE.WINNER_CLAIMED,
 ]);
-
-/**
- * Schema for notification type enum.
- */
-export const notificationTypeSchema = rawNotificationTypeSchema;
 
 /**
  * Schema for notification metadata — synced with BE notifications/dto/notification.dto.ts.
@@ -184,9 +179,11 @@ export type WsTokenResponse = z.infer<typeof wsTokenResponseSchema>;
 // ==========================================
 
 /**
- * Query parameters for fetching notifications
+ * Schema for notification query parameters
  */
-export interface NotificationQuery {
-	limit?: number;
-	offset?: number;
-}
+export const notificationQuerySchema = z.object({
+	limit: z.number().optional(),
+	offset: z.number().optional(),
+});
+
+export type NotificationQuery = z.infer<typeof notificationQuerySchema>;

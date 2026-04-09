@@ -173,26 +173,26 @@ export function ReviewStep() {
 						label="Identity Document"
 						value={ID_TYPE_LABELS[values.identityDocType]}
 					/>
-					{values.bankAccountOrWallet && (
+					{values.bankAccountOrWallet ? (
 						<ReviewRow
 							label="Bank Account / Wallet"
 							value={values.bankAccountOrWallet}
 						/>
-					)}
-					{values.shippingAddress && (
+					) : null}
+					{values.shippingAddress ? (
 						<ReviewRow
 							label="Shipping Address"
 							value={values.shippingAddress}
 						/>
-					)}
+					) : null}
 				</div>
 
 				<div className="flex flex-col gap-3 rounded-xl border p-5">
 					<h3 className="text-sm font-semibold">Documents</h3>
 					<DocumentRow label="ID Front" files={values.idFront} />
-					{values.idBack && values.idBack.length > 0 && (
+					{values.idBack && values.idBack.length > 0 ? (
 						<DocumentRow label="ID Back" files={values.idBack} />
-					)}
+					) : null}
 				</div>
 			</>
 		);

@@ -29,8 +29,7 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function createReport(
 	payload: CreateReportPayload,
 ): Promise<ServiceResponse<UserReportResponse, ReportErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		// Step 1: Validate payload before sending to backend
@@ -46,13 +45,17 @@ export async function createReport(
 		const validated = userReportResponseSchema.parse(response.data);
 
 		// Fire-and-forget — report submission must not be delayed by analytics
-		void trackServer(
-			MODERATION_EVENTS.CONTENT_REPORTED,
-			{
-				content_type: parsed.data.contentType,
-				content_id: parsed.data.contentId,
-			},
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				MODERATION_EVENTS.CONTENT_REPORTED,
+				{
+					content_type: parsed.data.contentType,
+					content_id: parsed.data.contentId,
+					reason: parsed.data.reason,
+					has_raffle_context: !!parsed.data.raffleId,
+				},
+				{ userId: session?.user?.id },
+			),
 		);
 
 		return success(validated);

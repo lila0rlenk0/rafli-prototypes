@@ -1,5 +1,3 @@
-'use client';
-
 import { HeroSection } from './hero-section';
 import { Navbar } from './navbar';
 import { TrustSection } from './trust-section';
@@ -13,6 +11,7 @@ import { Footer } from './footer';
  *
  * Showcases the platform's features, benefits for participants and hosts,
  * and provides call-to-action buttons to enter the app.
+ * Server Component — all interactivity is handled by child client components.
  */
 export default function LandingPage() {
 	return (

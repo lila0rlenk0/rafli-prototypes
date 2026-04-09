@@ -1,12 +1,6 @@
 'use client';
 
-import {
-	createContext,
-	useContext,
-	useEffect,
-	useState,
-	type ReactNode,
-} from 'react';
+import { createContext, use, useEffect, useState, type ReactNode } from 'react';
 import { useStore } from 'zustand';
 
 import { createUserStore, type UserStore } from '@/store/user-store';
@@ -32,6 +26,7 @@ export interface UserStoreProviderProps {
  *
  * @param children - Child components
  * @param permissions - User permissions from server session (always fresh)
+ * @returns Provider wrapping children with user store context
  */
 export function UserStoreProvider({
 	children,
@@ -47,7 +42,7 @@ export function UserStoreProvider({
 	// Serialize permissions by value — server renders produce a new array reference
 	// each time even when contents are identical (same JWT). Without this, the effect
 	// re-fires on every router.refresh(), causing redundant cookie writes.
-	const permissionsKey = permissions.join('||');
+	const permissionsKey = JSON.stringify(permissions);
 
 	/**
 	 * Sync permissions and initialize mode after hydration completes.
@@ -61,9 +56,7 @@ export function UserStoreProvider({
 	useEffect(() => {
 		// Reconstruct permissions from the serialized key — avoids closing over
 		// the permissions prop whose array reference changes on every server render
-		const derived = permissionsKey
-			? (permissionsKey.split('||') as Permission[])
-			: [];
+		const derived = JSON.parse(permissionsKey) as Permission[];
 
 		function syncAndInitialize() {
 			const state = store.getState();
@@ -97,7 +90,7 @@ export function UserStoreProvider({
  * @throws Error if used outside UserStoreProvider
  */
 export function useUserStore<T>(selector: (store: UserStore) => T): T {
-	const userStoreContext = useContext(UserStoreContext);
+	const userStoreContext = use(UserStoreContext);
 
 	if (!userStoreContext) {
 		throw new Error(`useUserStore must be used within UserStoreProvider`);

@@ -116,20 +116,20 @@ export function MultiSelect({
 										: 'border-input',
 								)}
 							>
-								{isSelected(option.value) && <Check className="size-3" />}
+								{isSelected(option.value) ? <Check className="size-3" /> : null}
 							</span>
-							{option.icon && (
+							{option.icon ? (
 								<span className="flex shrink-0 items-center">
 									{option.icon}
 								</span>
-							)}
+							) : null}
 							<span className="flex min-w-0 flex-col items-start">
 								<span className="truncate text-sm">{option.label}</span>
-								{option.description && (
+								{option.description ? (
 									<span className="text-muted-foreground truncate text-xs">
 										{option.description}
 									</span>
-								)}
+								) : null}
 							</span>
 						</button>
 					))}

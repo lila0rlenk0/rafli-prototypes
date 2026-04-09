@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
+interface BlobUrlState {
+	file: File | null | undefined;
+	url: string | null;
+}
+
 /**
  * Manages a browser blob URL lifecycle for a File object.
  *
@@ -12,23 +17,39 @@ import { useEffect, useState } from 'react';
  * @returns Blob URL string when file is present, null otherwise
  */
 export function useBlobUrl(file: File | null | undefined): string | null {
-	const [blobUrl, setBlobUrl] = useState<string | null>(null);
+	const [blobUrlState, setBlobUrlState] = useState<BlobUrlState>({
+		file: null,
+		url: null,
+	});
 
-	/* eslint-disable react-hooks/set-state-in-effect -- blob URL API is external system sync:
-	   createObjectURL allocates a browser-managed resource that must be stored in state for
-	   rendering and revoked on cleanup. No alternative avoids setState here. */
+	// Blob URLs are browser-managed resources, so the effect owns allocation +
+	// revocation. The state keeps the source File alongside the URL so render can
+	// ignore stale URLs while a replacement is still being created.
 	useEffect(() => {
 		if (!file) return;
 
 		const url = URL.createObjectURL(file);
-		setBlobUrl(url);
+		let isCurrent = true;
+
+		// Defer the React state update out of the effect body. This keeps the
+		// effect focused on external resource sync while still publishing the
+		// ready-to-render URL immediately after commit.
+		queueMicrotask(() => {
+			if (!isCurrent) return;
+
+			setBlobUrlState({
+				file,
+				url,
+			});
+		});
 
 		return () => {
+			isCurrent = false;
 			URL.revokeObjectURL(url);
 		};
 	}, [file]);
-	/* eslint-enable react-hooks/set-state-in-effect */
 
-	// When file is absent, derive null directly instead of relying on stale state
-	return file ? blobUrl : null;
+	// Only expose the URL when it belongs to the current File. This prevents a
+	// just-revoked previous URL from flashing during file swaps.
+	return blobUrlState.file === file ? blobUrlState.url : null;
 }

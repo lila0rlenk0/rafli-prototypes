@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError } from 'zod';
 
 import { WINNING_EVENTS } from '@/lib/analytics/events';
@@ -38,8 +39,7 @@ export async function markSent(
 	payload: MarkSentPayload,
 	publicSlug?: string,
 ): Promise<MarkSentServiceResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -48,17 +48,19 @@ export async function markSent(
 		);
 
 		const validated = winningSchema.parse(response.data);
-		revalidateWinningPaths(publicSlug);
+		runAfter(async () => {
+			revalidateWinningPaths(publicSlug);
 
-		// Fire-and-forget — fulfillment tracking must not block UX
-		void trackServer(
-			WINNING_EVENTS.MARKED_SENT,
-			{
-				winning_id: validated.id,
-				raffle_id: validated.raffleId,
-			},
-			{ userId },
-		);
+			const userId = (await sessionPromise)?.user?.id;
+			await trackServer(
+				WINNING_EVENTS.MARKED_SENT,
+				{
+					winning_id: validated.id,
+					raffle_id: validated.raffleId,
+				},
+				{ userId },
+			);
+		});
 
 		return success(validated);
 	} catch (error) {

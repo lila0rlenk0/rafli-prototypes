@@ -46,7 +46,9 @@ export async function verifyEmail(
 		if (response.data.user?.id) {
 			void trackServer(
 				ACCOUNT_EVENTS.EMAIL_VERIFIED,
-				{},
+				{
+					user_email: response.data.user.email,
+				},
 				{ userId: response.data.user.id },
 			);
 		}

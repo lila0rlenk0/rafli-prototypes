@@ -13,10 +13,10 @@ import { CodeNode } from '@lexical/code';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { $getRoot } from 'lexical';
-import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useEffect, useRef } from 'react';
 import { useController, type Control } from 'react-hook-form';
 
-import { Editor } from '@/components/ui/blocks/editor-md/editor';
 import type { RaffleFormData } from './schema';
 
 type DescriptionEditorProps = {
@@ -95,6 +95,28 @@ const MARKDOWN_TRANSFORMERS = [
 		return true;
 	}),
 ];
+
+const Editor = dynamic(
+	() =>
+		import('@/components/ui/blocks/editor-md/editor').then(module => ({
+			default: module.Editor,
+		})),
+	{
+		ssr: false,
+		loading: () => <EditorSkeleton />,
+	},
+);
+
+function EditorSkeleton() {
+	return (
+		<div className="flex flex-col gap-2">
+			<label htmlFor="description" className="font-medium">
+				Description
+			</label>
+			<div className="h-[185px] w-full animate-pulse rounded-lg bg-gray-50" />
+		</div>
+	);
+}
 
 // Plugin to sync markdown with form field
 function MarkdownSyncPlugin({
@@ -177,38 +199,21 @@ export function DescriptionEditor({
 	name = 'description',
 	trigger,
 }: DescriptionEditorProps) {
-	const [mounted, setMounted] = useState(false);
-
 	const { field, fieldState } = useController({
 		control,
 		name,
 	});
 
-	useEffect(() => {
-		if (mounted) return;
-
-		setTimeout(() => {
-			setMounted(true);
-		}, 0);
-	}, [mounted]);
-
-	const handleMarkdownChange = (markdown: string) => {
+	/**
+	 * Handles markdown changes from the editor and triggers validation
+	 * @param markdown - New markdown content
+	 */
+	function handleMarkdownChange(markdown: string) {
 		field.onChange(markdown);
 		// Trigger validation after change
 		if (trigger) {
 			trigger(name);
 		}
-	};
-
-	if (!mounted) {
-		return (
-			<div className="flex flex-col gap-2">
-				<label htmlFor="description" className="font-medium">
-					Description
-				</label>
-				<div className="h-[185px] w-full animate-pulse rounded-lg bg-gray-50" />
-			</div>
-		);
 	}
 
 	return (
@@ -229,9 +234,9 @@ export function DescriptionEditor({
 					/>
 				</Editor>
 			</div>
-			{fieldState.isTouched && fieldState.error && (
+			{fieldState.isTouched && fieldState.error ? (
 				<span className="text-sm text-red-500">{fieldState.error.message}</span>
-			)}
+			) : null}
 		</div>
 	);
 }

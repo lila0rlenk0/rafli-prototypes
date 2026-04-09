@@ -39,14 +39,14 @@ export function RejectedSubmissionNotice({
 					Your {getVerificationTypeLabel(submission.type)} verification was not
 					approved.
 					{/* Show rejection reason if the status endpoint provided one */}
-					{rejectionReason && (
+					{rejectionReason ? (
 						<>
 							<br />
 							<span className="font-medium text-red-700">
 								Reason: {rejectionReason}
 							</span>
 						</>
-					)}
+					) : null}
 				</p>
 			</div>
 

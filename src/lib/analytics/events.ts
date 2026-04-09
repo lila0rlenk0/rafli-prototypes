@@ -16,13 +16,13 @@
  * Tracked server-side for accuracy (15-30% more reliable than client-side)
  */
 export const AUTH_EVENTS = {
-	/** User initiated sign-up flow */
+	/** User initiated sign-up flow (form submitted, before API call) */
 	SIGN_UP_STARTED: 'Sign Up Started',
 	/** User successfully created account */
 	SIGN_UP_COMPLETED: 'Sign Up Completed',
 	/** Sign-up attempt failed (includes error_code property) */
 	SIGN_UP_FAILED: 'Sign Up Failed',
-	/** User initiated sign-in flow */
+	/** User initiated sign-in flow (form submitted, before API call) */
 	SIGN_IN_STARTED: 'Sign In Started',
 	/** User successfully authenticated */
 	SIGN_IN_COMPLETED: 'Sign In Completed',
@@ -33,28 +33,15 @@ export const AUTH_EVENTS = {
 } as const;
 
 /**
- * Navigation events
- * Handled by Mixpanel autocapture - manual tracking not needed
- */
-export const NAV_EVENTS = {
-	/** Page view event (autocapture handles this) */
-	PAGE_VIEW: 'Page View',
-} as const;
-
-/**
  * Raffle lifecycle events
  * Tracked server-side for business-critical actions
  */
 export const RAFFLE_EVENTS = {
 	/** User viewed a raffle detail page */
 	VIEWED: 'Raffle Viewed',
-	/** User filtered raffle list */
-	LIST_FILTERED: 'Raffle List Filtered',
-	/** User sorted raffle list */
-	LIST_SORTED: 'Raffle List Sorted',
 	/** User shared a raffle (includes method: twitter/copy_link) */
 	SHARED: 'Raffle Shared',
-	/** User filtered raffle list by category or sort */
+	/** User filtered raffle list (category or sort changed) */
 	FILTERED: 'Raffle Filtered',
 	/** User answered a raffle gating question */
 	QUESTION_ANSWERED: 'Raffle Question Answered',
@@ -81,13 +68,26 @@ export const RAFFLE_EVENTS = {
 } as const;
 
 /**
+ * X Share events
+ * Tracked client/server-side — measures share-for-free-ticket funnel
+ */
+export const X_SHARE_EVENTS = {
+	/** User initiated X share intent (tokenized flow) */
+	INTENT_CREATED: 'X Share Intent Created',
+	/** User's X share was verified and free ticket granted */
+	VERIFIED: 'X Share Verified',
+	/** X share verification failed (includes reason) */
+	VERIFICATION_FAILED: 'X Share Verification Failed',
+} as const;
+
+/**
  * Purchase flow events
- * Tracked server-side - critical for revenue attribution
+ * Tracked server-side — critical for revenue attribution
  */
 export const PURCHASE_EVENTS = {
 	/** User clicked buy/checkout button — intent to purchase before order creation */
 	TICKET_SELECTION_VIEWED: 'Ticket Selection Viewed',
-	/** User initiated purchase flow */
+	/** User initiated purchase flow (order creation started) */
 	STARTED: 'Purchase Started',
 	/** Order successfully created (pending payment) */
 	ORDER_CREATED: 'Order Created',
@@ -95,9 +95,9 @@ export const PURCHASE_EVENTS = {
 	ORDER_FAILED: 'Order Failed',
 	/** Stripe checkout session initiated */
 	CHECKOUT_STARTED: 'Checkout Started',
-	/** Payment completed successfully (Stripe or crypto) */
+	/** Payment completed successfully (Stripe, crypto, or credits) */
 	COMPLETED: 'Purchase Completed',
-	/** Checkout/payment failed (includes error_code property) */
+	/** Checkout/payment failed (includes error_code, payment_method) */
 	FAILED: 'Purchase Failed',
 	/** Crypto checkout session created atomically with order */
 	CRYPTO_CHECKOUT_STARTED: 'Crypto Checkout Started',
@@ -111,20 +111,22 @@ export const PURCHASE_EVENTS = {
 
 /**
  * Promo code events
- * Tracked server-side - measures promo effectiveness and revenue impact
+ * Tracked server-side — measures promo effectiveness and revenue impact
  */
 export const PROMO_CODE_EVENTS = {
 	/** Promo code successfully validated (includes validity result) */
 	VALIDATED: 'Promo Code Validated',
 	/** Promo code successfully redeemed (discount applied or tickets granted) */
 	REDEEMED: 'Promo Code Redeemed',
+	/** Promo code redemption failed (includes error_code) */
+	REDEEM_FAILED: 'Promo Code Redeem Failed',
 	/** Host bulk created promo codes for a raffle */
 	BULK_CREATED: 'Promo Codes Created',
 } as const;
 
 /**
  * Winning/fulfillment events
- * Tracked server-side - measures fulfillment speed and trust
+ * Tracked server-side — measures fulfillment speed and trust
  */
 export const WINNING_EVENTS = {
 	/** Host marked prize as sent with proof URL */
@@ -139,7 +141,7 @@ export const WINNING_EVENTS = {
 
 /**
  * Comment events
- * Tracked server-side - measures community engagement
+ * Tracked server-side — measures community engagement
  */
 export const COMMENT_EVENTS = {
 	/** User created a comment or reply */
@@ -150,7 +152,7 @@ export const COMMENT_EVENTS = {
 
 /**
  * Review events
- * Tracked server-side - measures trust ecosystem health
+ * Tracked server-side — measures trust ecosystem health
  */
 export const REVIEW_EVENTS = {
 	/** User created a review for a raffle host */
@@ -159,7 +161,7 @@ export const REVIEW_EVENTS = {
 
 /**
  * Account health events
- * Tracked server-side - measures signup-to-verified funnel and security
+ * Tracked server-side — measures signup-to-verified funnel and security
  */
 export const ACCOUNT_EVENTS = {
 	/** User completed email verification */
@@ -170,11 +172,13 @@ export const ACCOUNT_EVENTS = {
 	PASSWORD_RESET_COMPLETED: 'Password Reset Completed',
 	/** User verified and linked an EVM wallet */
 	WALLET_VERIFIED: 'Wallet Verified',
+	/** Wallet verification failed (includes error_code) */
+	WALLET_VERIFICATION_FAILED: 'Wallet Verification Failed',
 } as const;
 
 /**
  * Content moderation events
- * Tracked server-side - measures trust and safety
+ * Tracked server-side — measures trust and safety
  */
 export const MODERATION_EVENTS = {
 	/** User reported content for moderation */
@@ -196,9 +200,26 @@ export const PROFILE_EVENTS = {
 
 /**
  * Notification events
- * Tracked client-side - measures notification engagement
+ * Tracked client-side — measures notification engagement
  */
 export const NOTIFICATION_EVENTS = {
 	/** User clicked on an in-app notification */
 	TAPPED: 'Notification Tapped',
+} as const;
+
+/**
+ * KYC/Verification events
+ * Tracked server-side — measures host onboarding funnel and winner claim compliance
+ */
+export const KYC_EVENTS = {
+	/** User submitted individual KYB verification */
+	INDIVIDUAL_SUBMITTED: 'KYC Individual Submitted',
+	/** User submitted company KYB verification */
+	COMPANY_SUBMITTED: 'KYC Company Submitted',
+	/** Winner submitted KYC verification for prize claim */
+	WINNER_SUBMITTED: 'KYC Winner Submitted',
+	/** User finalized their verification submission */
+	FINALIZED: 'KYC Submission Finalized',
+	/** KYC submission failed (includes error_code, type) */
+	SUBMISSION_FAILED: 'KYC Submission Failed',
 } as const;

@@ -134,9 +134,9 @@ export function ReportContentModal({
 							disabled={!isReasonValid() || mutation.isPending}
 							size="sm"
 						>
-							{mutation.isPending && (
+							{mutation.isPending ? (
 								<Loader2Icon className="mr-1.5 size-3.5 animate-spin" />
-							)}
+							) : null}
 							Submit Report
 						</Button>
 					</div>

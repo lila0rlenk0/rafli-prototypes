@@ -76,7 +76,11 @@ export function FilterBar({ categories }: FilterBarProps) {
 	 * Handles category filter change
 	 */
 	function handleCategoryChange(value: string): void {
-		track(RAFFLE_EVENTS.FILTERED, { category: value || 'all', sort });
+		track(RAFFLE_EVENTS.FILTERED, {
+			filter_type: 'category',
+			category: value || 'all',
+			sort,
+		});
 		updateFilters('category', value);
 	}
 
@@ -84,7 +88,11 @@ export function FilterBar({ categories }: FilterBarProps) {
 	 * Handles sort option change
 	 */
 	function handleSortChange(value: string): void {
-		track(RAFFLE_EVENTS.FILTERED, { category: category || 'all', sort: value });
+		track(RAFFLE_EVENTS.FILTERED, {
+			filter_type: 'sort',
+			category: category || 'all',
+			sort: value,
+		});
 		updateFilters('sort', value);
 	}
 

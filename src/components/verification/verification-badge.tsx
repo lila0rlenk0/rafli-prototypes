@@ -110,9 +110,9 @@ export function VerificationBadge({
 			)}
 		>
 			{/* Checkmark icon only for approved — visual confirmation of verified status */}
-			{status === VERIFICATION_STATUS.APPROVED && (
+			{status === VERIFICATION_STATUS.APPROVED ? (
 				<CheckCircle className="size-3" />
-			)}
+			) : null}
 			{getStatusLabel()}
 		</span>
 	);

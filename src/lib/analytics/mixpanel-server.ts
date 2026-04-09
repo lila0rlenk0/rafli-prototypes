@@ -21,6 +21,7 @@ export interface TrackOptions {
 
 /**
  * Track server-side event (auto-fetches client IP)
+ * @returns Promise that resolves when tracking is complete
  */
 export async function trackServer(
 	event: string,
@@ -44,6 +45,8 @@ export async function trackServer(
 
 /**
  * Set user profile properties
+ * @param userId - Mixpanel distinct user ID
+ * @param properties - Key-value profile properties to set
  */
 export function setUserProperties(
 	userId: string,
@@ -55,6 +58,9 @@ export function setUserProperties(
 
 /**
  * Increment a user property (e.g., total_purchases)
+ * @param userId - Mixpanel distinct user ID
+ * @param property - Property name to increment
+ * @param value - Amount to increment by (default 1)
  */
 export function incrementUserProperty(
 	userId: string,

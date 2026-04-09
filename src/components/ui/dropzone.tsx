@@ -150,9 +150,9 @@ export const DropzoneContent = ({
 			<p className="text-muted-foreground w-full text-xs text-wrap">
 				PNG, JPEG, WebP up to 5MB
 			</p>
-			{hint && (
+			{hint ? (
 				<p className="text-muted-foreground mt-1 text-xs text-wrap">{hint}</p>
-			)}
+			) : null}
 		</div>
 	);
 };
@@ -203,12 +203,12 @@ export const DropzoneEmptyState = ({
 			<p className="text-muted-foreground w-full truncate text-xs text-wrap">
 				Drag and drop or click to upload
 			</p>
-			{caption && (
+			{caption ? (
 				<p className="text-muted-foreground text-xs text-wrap">{caption}.</p>
-			)}
-			{hint && (
+			) : null}
+			{hint ? (
 				<p className="text-muted-foreground mt-1 text-xs text-wrap">{hint}</p>
-			)}
+			) : null}
 		</div>
 	);
 };

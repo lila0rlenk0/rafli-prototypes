@@ -1,7 +1,7 @@
 'use client';
 
 import { Minus, Plus } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -56,65 +56,46 @@ export function TicketSelector({
 	}
 
 	/**
-	 * Updates quantity and input value synchronously
+	 * Updates quantity, input value, and notifies parent synchronously.
+	 * Centralizes state + parent sync to avoid useEffect for parent notification.
 	 * @param newQuantity - The new quantity value
 	 */
 	function updateQuantity(newQuantity: number) {
 		const validated = validateQuantity(newQuantity);
 		setQuantity(validated);
 		setInputValue(validated.toString());
+		onQuantityChange(validated);
 	}
 
 	/**
-	 * Handles incrementing the ticket quantity by 1
+	 * Handles incrementing the ticket quantity by 1.
 	 */
-	const handleIncrement = useCallback(() => {
-		setQuantity(prev => {
-			const newValue = Math.min(prev + 1, effectiveMax);
-			setInputValue(newValue.toString());
-			return newValue;
-		});
-	}, [effectiveMax]);
+	function handleIncrement() {
+		updateQuantity(quantity + 1);
+	}
 
 	/**
-	 * Handles decrementing the ticket quantity by 1
+	 * Handles decrementing the ticket quantity by 1.
 	 */
-	const handleDecrement = useCallback(() => {
-		setQuantity(prev => {
-			const newValue = Math.max(prev - 1, 1);
-			setInputValue(newValue.toString());
-			return newValue;
-		});
-	}, []);
+	function handleDecrement() {
+		updateQuantity(quantity - 1);
+	}
 
 	/**
-	 * Sets ticket quantity to the given bundle size directly (desktop)
-	 * Respects max limit and clamps to available tickets
+	 * Sets ticket quantity to the given bundle size directly (desktop).
 	 * @param bundleSize - Target ticket count (3, 6, or 9)
 	 */
-	const handleBundleSet = useCallback(
-		(bundleSize: number) => {
-			const newValue = Math.min(bundleSize, effectiveMax);
-			setQuantity(newValue);
-			setInputValue(newValue.toString());
-		},
-		[effectiveMax],
-	);
+	function handleBundleSet(bundleSize: number) {
+		updateQuantity(bundleSize);
+	}
 
 	/**
-	 * Adds tickets to current quantity (mobile bundles)
+	 * Adds tickets to current quantity (mobile bundles).
 	 * @param amount - Number of tickets to add
 	 */
-	const handleBundleAdd = useCallback(
-		(amount: number) => {
-			setQuantity(prev => {
-				const newValue = Math.min(prev + amount, effectiveMax);
-				setInputValue(newValue.toString());
-				return newValue;
-			});
-		},
-		[effectiveMax],
-	);
+	function handleBundleAdd(amount: number) {
+		updateQuantity(quantity + amount);
+	}
 
 	/**
 	 * Handles input change while user is typing
@@ -125,10 +106,11 @@ export function TicketSelector({
 		const value = event.target.value;
 		setInputValue(value);
 
-		// Only update quantity if value is a valid number
+		// Only update quantity and notify parent if value is a valid number
 		const numValue = parseInt(value, 10);
 		if (!isNaN(numValue) && numValue >= 1 && numValue <= effectiveMax) {
 			setQuantity(numValue);
+			onQuantityChange(numValue);
 		}
 	}
 
@@ -188,16 +170,6 @@ export function TicketSelector({
 	function isDecrementDisabled(currentQty: number): boolean {
 		return currentQty <= 1;
 	}
-
-	// Sync input value when quantity changes (from buttons/bundles)
-	useEffect(() => {
-		setInputValue(quantity.toString());
-	}, [quantity]);
-
-	// Notify parent component when quantity changes
-	useEffect(() => {
-		onQuantityChange(quantity);
-	}, [quantity, onQuantityChange]);
 
 	const incrementDisabled = isIncrementDisabled(quantity);
 	const decrementDisabled = isDecrementDisabled(quantity);

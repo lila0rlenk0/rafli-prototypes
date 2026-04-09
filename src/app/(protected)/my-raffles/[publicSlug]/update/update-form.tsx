@@ -119,11 +119,11 @@ export function UpdateForm() {
 						<DropzoneEmptyState />
 						<DropzoneContent />
 					</Dropzone>
-					{errors.images && (
+					{errors.images ? (
 						<span className="text-sm text-red-500">
 							{errors.images.message}
 						</span>
-					)}
+					) : null}
 
 					{/* Image Previews - Always show 5 slots */}
 					<div className="grid grid-cols-5 gap-2">

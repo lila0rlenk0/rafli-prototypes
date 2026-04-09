@@ -34,11 +34,11 @@ export function PromoCodesEmptyState({
 					: 'Create one to offer discounts or free tickets to participants.'}
 			</p>
 
-			{!isReadOnly && onCreateClick && (
+			{!isReadOnly && onCreateClick ? (
 				<Button onClick={onCreateClick} className="mt-4">
 					Create Promo Code
 				</Button>
-			)}
+			) : null}
 		</div>
 	);
 }

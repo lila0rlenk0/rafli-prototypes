@@ -227,11 +227,11 @@ export function ReviewStep() {
 			</div>
 
 			<div className="flex flex-wrap gap-2">
-				{getCategoryName() && (
+				{getCategoryName() ? (
 					<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
 						<span className="text-sm capitalize">{getCategoryName()}</span>
 					</div>
-				)}
+				) : null}
 			</div>
 
 			<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -271,7 +271,7 @@ export function ReviewStep() {
 				</div>
 			</div>
 
-			{willStartNow && (
+			{willStartNow ? (
 				<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
 					<div className="flex items-center gap-2">
 						<Clock className="size-6 text-[#2870BD]" />
@@ -280,7 +280,7 @@ export function ReviewStep() {
 						</span>
 					</div>
 				</div>
-			)}
+			) : null}
 
 			<div className="flex items-center gap-2">
 				<Button

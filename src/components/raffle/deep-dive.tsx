@@ -52,7 +52,7 @@ export function DeepDive({
 			</button>
 
 			<AnimatePresence>
-				{isOpen && (
+				{isOpen ? (
 					<motion.div
 						initial={{ height: 0, opacity: 0 }}
 						animate={{ height: 'auto', opacity: 1 }}
@@ -62,7 +62,7 @@ export function DeepDive({
 					>
 						<div className="pt-4">{children}</div>
 					</motion.div>
-				)}
+				) : null}
 			</AnimatePresence>
 		</div>
 	);

@@ -105,21 +105,21 @@ export function RaffleCancelledCard({
 
 			<p className="mt-4 text-center text-sm text-gray-600">{getMessage()}</p>
 
-			{shouldShowRefundNotice() && (
+			{shouldShowRefundNotice() ? (
 				<div className="mt-4 rounded-lg bg-[#E1F8FF] p-3 text-center text-sm">
 					<p>
 						You had <strong>{formatTicketCount(myTicketCount)}</strong> &mdash;
 						all purchases are automatically refunded.
 					</p>
 				</div>
-			)}
+			) : null}
 
-			{isOwner && ticketsSoldCount > 0 && (
+			{isOwner && ticketsSoldCount > 0 ? (
 				<p className="mt-3 text-center text-xs text-gray-500">
 					{formatTicketCount(ticketsSoldCount)} sold &mdash; all purchases are
 					automatically refunded.
 				</p>
-			)}
+			) : null}
 		</div>
 	);
 }

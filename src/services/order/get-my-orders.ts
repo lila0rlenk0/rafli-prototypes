@@ -2,9 +2,8 @@
 
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
-import { failure, success } from '@/lib/errors';
+import { failure, mapOrderError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
-import { mapOrderError } from '@/lib/errors/error-mapper';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import type { OrdersResponse } from '@/types/order';
 import { ordersBackendResponseSchema } from '@/types/order';
@@ -45,7 +44,6 @@ export async function getMyOrders(
 		// Treat null/missing payloads as fetch failures instead of "no orders",
 		// otherwise degraded `/me/orders` responses can create duplicate orders.
 		if (!response.data) {
-			console.error('Orders response missing data:', { page, limit });
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 

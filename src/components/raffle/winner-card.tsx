@@ -38,14 +38,14 @@ export function WinnerCard({
 		<div className="space-y-4 rounded-2xl border border-black bg-white px-6 py-4">
 			<div className="space-y-1">
 				<p className="font-semibold">{getDisplayName()}</p>
-				{winner.ticketCode && (
+				{winner.ticketCode ? (
 					<div
 						key={winner.ticketCode}
 						className="flex w-fit items-center justify-center rounded-lg bg-[#F9FFB5] px-2 py-2 text-nowrap"
 					>
 						<span className="text-xs">{winner.ticketCode}</span>
 					</div>
-				)}
+				) : null}
 			</div>
 			<WinnerVerification
 				raffleId={raffleId}

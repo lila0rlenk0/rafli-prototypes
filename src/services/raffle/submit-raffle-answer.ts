@@ -6,8 +6,7 @@ import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
-import { failure, success } from '@/lib/errors';
-import { mapRaffleError } from '@/lib/errors';
+import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import {
@@ -36,8 +35,7 @@ export async function submitRaffleAnswer(
 	raffleId: string,
 	optionId: string,
 ): Promise<SubmitRaffleAnswerResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		const response = await authenticatedClient.post(
@@ -48,13 +46,15 @@ export async function submitRaffleAnswer(
 		const validated = answerResponseSchema.parse(response.data);
 
 		// Fire-and-forget — don't block answer UX
-		void trackServer(
-			RAFFLE_EVENTS.QUESTION_ANSWERED,
-			{
-				raffle_id: raffleId,
-				correct: validated.correct,
-			},
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				RAFFLE_EVENTS.QUESTION_ANSWERED,
+				{
+					raffle_id: raffleId,
+					correct: validated.correct,
+				},
+				{ userId: session?.user?.id },
+			),
 		);
 
 		return success(validated);

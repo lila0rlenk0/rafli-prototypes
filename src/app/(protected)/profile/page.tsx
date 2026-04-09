@@ -1,3 +1,5 @@
+import { PROFILE_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { getSession } from '@/lib/auth/session';
 import { getMe } from '@/services/user/get-me';
 import { getVerificationStatus } from '@/services/kyc-submission/get-verification-status';
@@ -63,6 +65,17 @@ export default async function ProfilePage() {
 		getVerificationStatus(),
 	]);
 	const user = session?.user;
+
+	// Fire-and-forget — profile view tracking for engagement metrics
+	if (user?.id) {
+		void trackServer(
+			PROFILE_EVENTS.VIEWED,
+			{
+				has_verification: verificationResult.success,
+			},
+			{ userId: user.id },
+		);
+	}
 	const userProfile = meResult.success ? meResult.data : null;
 	// Derive aggregate status from per-type breakdown for the profile badge.
 	// Gracefully degrade — badge simply won't render if the endpoint fails.
@@ -80,12 +93,12 @@ export default async function ProfilePage() {
 				<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
 					My Profile
 				</h1>
-				{verificationStatus && (
+				{verificationStatus ? (
 					<VerificationBadge
 						status={verificationStatus.status}
 						rejectionReason={verificationStatus.rejectionReason}
 					/>
-				)}
+				) : null}
 			</div>
 		);
 	}

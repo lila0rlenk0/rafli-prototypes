@@ -38,7 +38,9 @@ export function NotificationItem({
 	 */
 	async function handleClick() {
 		track(NOTIFICATION_EVENTS.TAPPED, {
+			notification_id: notification.id,
 			notification_type: notification.type,
+			was_unread: !notification.read,
 		});
 
 		// Optimistic update
@@ -78,9 +80,9 @@ export function NotificationItem({
 					{formatTimeAgo(notification.createdAt)}
 				</p>
 			</div>
-			{!notification.read && (
+			{!notification.read ? (
 				<div className="bg-primary mt-2 size-2 shrink-0 rounded-full" />
-			)}
+			) : null}
 		</button>
 	);
 }

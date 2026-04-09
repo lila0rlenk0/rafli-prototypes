@@ -44,7 +44,6 @@ export async function exportPromoCodes(
 		// Step 2: Return CSV payload.
 		return success(response.data);
 	} catch (error) {
-		console.error('Export promo codes failed:', error);
 		return failure(mapPromoCodeError(error));
 	}
 }

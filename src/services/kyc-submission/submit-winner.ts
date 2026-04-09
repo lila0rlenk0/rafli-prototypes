@@ -2,13 +2,16 @@
 
 import { ZodError } from 'zod';
 
+import { KYC_EVENTS } from '@/lib/analytics/events';
+import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { API_TIMEOUTS } from '@/lib/api/config';
+import { getSession } from '@/lib/auth/session';
+import { failure, mapKycSubmissionError, success } from '@/lib/errors';
 import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
-import { API_TIMEOUTS } from '@/lib/api/config';
-import { failure, mapKycSubmissionError, success } from '@/lib/errors';
 import {
 	COMMON_ERROR_CODES,
 	KYC_SUBMISSION_ERROR_CODES,
@@ -30,6 +33,8 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function submitWinner(
 	input: unknown,
 ): Promise<ServiceResponse<KycSubmissionResponse, KycSubmissionErrorCode>> {
+	const sessionPromise = Promise.resolve(getSession());
+
 	try {
 		// Validate input shape — server actions are public endpoints,
 		// callers can send arbitrary payloads
@@ -45,6 +50,16 @@ export async function submitWinner(
 		);
 
 		const parsed = kycSubmissionResponseSchema.parse(response.data);
+
+		// Track KYC winner submission — measures prize claim compliance funnel
+		void sessionPromise.then(session =>
+			trackServer(
+				KYC_EVENTS.WINNER_SUBMITTED,
+				{ submission_id: parsed.id },
+				{ userId: session?.user?.id },
+			),
+		);
+
 		return success(parsed);
 	} catch (error) {
 		if (error instanceof ZodError) {
@@ -57,6 +72,15 @@ export async function submitWinner(
 			service: 'kyc-submission',
 			action: 'submit-winner',
 		});
+
+		void sessionPromise.then(session =>
+			trackServer(
+				KYC_EVENTS.SUBMISSION_FAILED,
+				{ type: 'winner', error_code: errorCode },
+				{ userId: session?.user?.id },
+			),
+		);
+
 		return failure(errorCode);
 	}
 }

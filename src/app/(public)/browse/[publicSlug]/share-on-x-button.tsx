@@ -15,31 +15,18 @@ import { type XShareConfig, useXShare } from './use-x-share';
  * Falls back to plain share (no ticket) when xShare is disabled or claim is terminal.
  */
 export function ShareOnXButton(props: XShareConfig) {
-	const {
-		state,
-		alreadyVerified,
-		claimUsed,
-		xShareClaimStatus,
-		retryCountdown,
-		handleShare,
-		handleVerify,
-	} = useXShare(props);
+	const { state, claimUsed, retryCountdown, handleShare, handleVerify } =
+		useXShare(props);
 
-	// Terminal claim — show disabled button so user knows the feature exists but is consumed
+	// Terminal claim — disabled button so user knows the feature exists but is consumed
 	if (claimUsed) {
-		const label = alreadyVerified
-			? 'Free ticket already redeemed'
-			: xShareClaimStatus === 'expired'
-				? 'Free ticket share expired'
-				: 'Free ticket share revoked';
-
 		return (
 			<Button
 				variant="outline"
 				disabled
 				className="mt-2 h-12 w-full rounded-full border-2 border-gray-300 bg-gray-50 text-gray-400"
 			>
-				<p className="font-semibold">{label}</p>
+				<p className="font-semibold">Already claimed free entry</p>
 			</Button>
 		);
 	}

@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError, z } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
@@ -18,9 +19,7 @@ import type { ServiceResponse } from '@/types/service-response';
 
 const verifyXShareResponseSchema = z.object({
 	claimId: z.string(),
-	reason: z
-		.enum(['not_found', 'not_found_or_private', 'x_api_unavailable'])
-		.nullable(),
+	reason: z.enum(['not_found']).nullable(),
 	status: z.enum(['not_found', 'verified']),
 	ticketsGranted: z.number(),
 });
@@ -57,7 +56,9 @@ export async function verifyXShare(
 		// Revalidate raffle cache so server components reflect updated ticket count
 		// and claim status without a full page reload
 		if (validated.status === 'verified') {
-			revalidateRaffleDetail(raffleId);
+			runAfter(() => {
+				revalidateRaffleDetail(raffleId);
+			});
 		}
 
 		return success(validated);

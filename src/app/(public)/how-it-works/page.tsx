@@ -188,7 +188,7 @@ export default function HowItWorksPage() {
 
 				{/* Full-width expansion */}
 				<AnimatePresence>
-					{selectedTech && (
+					{selectedTech ? (
 						<motion.div
 							initial={{ opacity: 0, height: 0 }}
 							animate={{ opacity: 1, height: 'auto' }}
@@ -233,7 +233,7 @@ export default function HowItWorksPage() {
 
 										<CodeSnippet code={tech.code} language="typescript" />
 
-										{tech.links.length > 0 && (
+										{tech.links.length > 0 ? (
 											<div className="mt-4 flex gap-3">
 												{tech.links.map(link => (
 													<a
@@ -247,12 +247,12 @@ export default function HowItWorksPage() {
 													</a>
 												))}
 											</div>
-										)}
+										) : null}
 									</div>
 								);
 							})()}
 						</motion.div>
-					)}
+					) : null}
 				</AnimatePresence>
 			</section>
 
@@ -379,7 +379,9 @@ function ProcessStep({
 				<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-black text-white">
 					{number}
 				</div>
-				{!isLast && <div className="mt-2 h-full w-0.5 flex-1 bg-neutral-200" />}
+				{!isLast ? (
+					<div className="mt-2 h-full w-0.5 flex-1 bg-neutral-200" />
+				) : null}
 			</div>
 			<div className="flex-1 rounded-xl border border-black bg-white p-4">
 				<div className="mb-1 flex items-center gap-2">
@@ -387,11 +389,11 @@ function ProcessStep({
 					<h3 className="font-semibold">{title}</h3>
 				</div>
 				<p className="text-sm text-gray-600">{description}</p>
-				{code && (
+				{code ? (
 					<DeepDive title="See the formula">
 						<CodeSnippet code={code} language="typescript" />
 					</DeepDive>
-				)}
+				) : null}
 			</div>
 		</div>
 	);

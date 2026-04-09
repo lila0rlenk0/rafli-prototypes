@@ -97,14 +97,14 @@ export default async function SubmissionDetailPage({
 				</div>
 
 				{/* Rejection reason — shown when status is rejected */}
-				{detail.rejectionReason && (
+				{detail.rejectionReason ? (
 					<div className="mt-4 rounded-lg bg-red-50 p-4">
 						<p className="text-sm font-medium text-red-700">Rejection Reason</p>
 						<p className="mt-1 text-sm text-red-600">
 							{detail.rejectionReason}
 						</p>
 					</div>
-				)}
+				) : null}
 			</div>
 
 			{/* Form data card — all submitted fields as readonly key-value pairs */}
@@ -137,7 +137,7 @@ export default async function SubmissionDetailPage({
 			</div>
 
 			{/* Review actions — only for pending submissions */}
-			{isPending && (
+			{isPending ? (
 				<div className="rounded-2xl bg-white p-8">
 					<h2 className="font-clash-display text-xl font-semibold">Review</h2>
 					<p className="text-muted-foreground mt-1 mb-4 text-sm">
@@ -146,7 +146,7 @@ export default async function SubmissionDetailPage({
 					</p>
 					<ReviewForm submissionId={detail.id} />
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

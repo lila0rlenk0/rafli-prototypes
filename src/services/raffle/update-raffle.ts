@@ -33,17 +33,12 @@ export async function updateRaffle(
 	raffleId: string,
 	payload: UpdateRafflePayload,
 ): Promise<UpdateRaffleResponse> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		// Validate payload before sending
 		const validationResult = updateRafflePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			console.error(
-				'Update payload validation failed:',
-				validationResult.error,
-			);
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
@@ -62,13 +57,15 @@ export async function updateRaffle(
 		const raffle = raffleSchema.parse(response.data);
 
 		// Fire-and-forget — update is frequent, don't block
-		void trackServer(
-			RAFFLE_EVENTS.UPDATED,
-			{
-				raffle_id: raffle.id,
-				fields_changed: Object.keys(validationResult.data),
-			},
-			{ userId },
+		void sessionPromise.then(session =>
+			trackServer(
+				RAFFLE_EVENTS.UPDATED,
+				{
+					raffle_id: raffle.id,
+					fields_changed: Object.keys(validationResult.data),
+				},
+				{ userId: session?.user?.id },
+			),
 		);
 
 		return success(raffle);

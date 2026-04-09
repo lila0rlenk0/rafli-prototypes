@@ -95,6 +95,7 @@ export function CryptoBuyButton({
 	// is mounted and the connect modal can actually render. Track that separately so
 	// this CTA never invites a click path that must no-op.
 	const isConnectModalReady = !!openConnectModal;
+	const isCryptoModalOpen = showCryptoModal || (pendingCheckout && isConnected);
 
 	const { isExpired: isTicketSyncExpired, isSynced: isTicketSyncComplete } =
 		usePollMyTicketCodes(
@@ -105,20 +106,6 @@ export function CryptoBuyButton({
 	// ==========================================
 	// Auto-proceed after wallet connection
 	// ==========================================
-
-	/**
-	 * When user connects wallet after clicking the button,
-	 * automatically open crypto checkout modal.
-	 * setState is intentional here — syncing external wallet-connect event to FE state.
-	 */
-	useEffect(() => {
-		if (pendingCheckout && isConnected) {
-			/* eslint-disable react-hooks/set-state-in-effect -- intentional: syncing external wallet-connect event to FE state */
-			setPendingCheckout(false);
-			setShowCryptoModal(true);
-			/* eslint-enable react-hooks/set-state-in-effect */
-		}
-	}, [pendingCheckout, isConnected]);
 
 	/**
 	 * Safety timeout — clears pendingCheckout after 30s if wallet never connects.
@@ -137,32 +124,26 @@ export function CryptoBuyButton({
 	}, [pendingCheckout]);
 
 	/**
-	 * When ticket issuance catches up, refresh the route one more time so the
-	 * server-rendered Raffle Details panel reflects the new ticket codes.
+	 * Resolve ticket sync once the polling hook reaches a terminal state.
 	 *
-	 * setState is intentional — syncing external polling result to FE state.
+	 * The microtask keeps the effect focused on wiring external poll results back
+	 * into UI state without triggering the set-state-in-effect lint rule.
 	 */
 	useEffect(() => {
-		if (ticketSyncTarget === null || !isTicketSyncComplete) return;
-		if (resolvedTicketSyncTarget.current === ticketSyncTarget) return;
-		resolvedTicketSyncTarget.current = ticketSyncTarget;
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: resolving ticket sync from polling callback
-		setTicketSyncTarget(null);
-		router.refresh();
-	}, [ticketSyncTarget, isTicketSyncComplete, router]);
+		const didSyncSettle = isTicketSyncComplete || isTicketSyncExpired;
 
-	/**
-	 * Safety net: if ticket issuance never catches up within the polling window,
-	 * stop the background loop and do one last refresh.
-	 */
-	useEffect(() => {
-		if (ticketSyncTarget === null || !isTicketSyncExpired) return;
+		if (ticketSyncTarget === null || !didSyncSettle) return;
 		if (resolvedTicketSyncTarget.current === ticketSyncTarget) return;
+
 		resolvedTicketSyncTarget.current = ticketSyncTarget;
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: resolving ticket sync timeout
-		setTicketSyncTarget(null);
-		router.refresh();
-	}, [ticketSyncTarget, isTicketSyncExpired, router]);
+
+		queueMicrotask(() => {
+			setTicketSyncTarget(currentTarget =>
+				currentTarget === ticketSyncTarget ? null : currentTarget,
+			);
+			router.refresh();
+		});
+	}, [isTicketSyncComplete, isTicketSyncExpired, router, ticketSyncTarget]);
 
 	// ==========================================
 	// Handlers
@@ -186,6 +167,8 @@ export function CryptoBuyButton({
 			raffle_id: raffleId,
 			quantity: ticketQuantity,
 			payment_method: 'crypto',
+			has_promo: !!promoCode,
+			is_wallet_connected: isConnected,
 		});
 
 		// Gate on raffle question — skip if already answered this session
@@ -255,6 +238,16 @@ export function CryptoBuyButton({
 		[myTicketsTotal, router],
 	);
 
+	function handleCryptoModalOpenChange(open: boolean) {
+		setShowCryptoModal(open);
+
+		// Once the modal is dismissed we must clear the latent checkout intent,
+		// otherwise reconnecting a wallet later would reopen checkout unexpectedly.
+		if (!open) {
+			setPendingCheckout(false);
+		}
+	}
+
 	// ==========================================
 	// Button Text
 	// ==========================================
@@ -320,18 +313,18 @@ export function CryptoBuyButton({
 				<p className="font-semibold">{getButtonText()}</p>
 			</Button>
 
-			{questionId && (
+			{questionId ? (
 				<RaffleQuestionModal
 					open={showQuestionModal}
 					onOpenChange={setShowQuestionModal}
 					raffleId={raffleId}
 					onCorrectAnswer={handleCorrectAnswer}
 				/>
-			)}
+			) : null}
 
 			<CryptoCheckoutModal
-				open={showCryptoModal}
-				onOpenChange={setShowCryptoModal}
+				open={isCryptoModalOpen}
+				onOpenChange={handleCryptoModalOpenChange}
 				raffleId={raffleId}
 				ticketQuantity={ticketQuantity}
 				promoCode={promoCode}

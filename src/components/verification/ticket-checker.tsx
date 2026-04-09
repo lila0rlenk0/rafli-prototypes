@@ -209,7 +209,7 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 						</span>
 					}
 				/>
-				{data.isWinner && (
+				{data.isWinner ? (
 					<VerificationRow
 						label="Winner"
 						value={
@@ -218,7 +218,7 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 							</span>
 						}
 					/>
-				)}
+				) : null}
 			</div>
 
 			<button

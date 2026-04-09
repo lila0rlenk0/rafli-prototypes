@@ -5,8 +5,11 @@ import {
 } from '@/types/errors';
 
 /**
- * Maps report error codes to user-friendly messages
+ * Maps report error codes to user-friendly messages.
  * Used in the report mutation's onError handler.
+ *
+ * @param errorCode - Report error code from report service action
+ * @returns Human-readable error string for toast/UI display
  */
 export function getReportErrorMessage(errorCode: ReportErrorCode): string {
 	switch (errorCode) {

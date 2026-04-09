@@ -72,7 +72,7 @@ export const metadata: Metadata = {
  * Application-wide layout providing fonts, analytics, and toast notifications.
  * Wraps all pages with MixpanelProvider for autocapture analytics.
  */
-export default async function RootLayout({
+export default function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;

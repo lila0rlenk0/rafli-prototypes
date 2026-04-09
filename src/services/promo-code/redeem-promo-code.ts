@@ -1,5 +1,6 @@
 'use server';
 
+import { runAfter } from '@/lib/run-after';
 import { ZodError, z } from 'zod';
 
 import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
@@ -66,17 +67,12 @@ export type RedeemPromoCodeResponse = z.infer<
 export async function redeemPromoCode(
 	payload: RedeemPromoCodePayload,
 ): Promise<ServiceResponse<RedeemPromoCodeResponse, PromoCodeErrorCode>> {
-	const session = await getSession();
-	const userId = session?.user?.id;
+	const sessionPromise = Promise.resolve(getSession());
 
 	try {
 		// Step 1: Validate payload.
 		const validationResult = redeemPromoCodePayloadSchema.safeParse(payload);
 		if (!validationResult.success) {
-			console.error(
-				'Redeem payload validation failed:',
-				validationResult.error,
-			);
 			return failure(PROMO_CODE_ERROR_CODES.FETCH_FAILED);
 		}
 
@@ -92,18 +88,21 @@ export async function redeemPromoCode(
 		// Step 3: Validate response and return success.
 		const validated = redeemPromoCodeResponseSchema.parse(response.data);
 
-		// Track promo code redeemed (awaited to ensure completion in serverless)
-		await trackServer(
-			PROMO_CODE_EVENTS.REDEEMED,
-			{
-				code: validationResult.data.code,
-				raffle_id: validationResult.data.raffleId,
-				type: validated.type,
-				tickets_granted: validated.ticketsGranted,
-				discount_amount: validated.discountAmount,
-			},
-			{ userId },
-		);
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PROMO_CODE_EVENTS.REDEEMED,
+				{
+					code: validationResult.data.code,
+					raffle_id: validationResult.data.raffleId,
+					type: validated.type,
+					tickets_granted: validated.ticketsGranted,
+					discount_amount: validated.discountAmount,
+				},
+				{ userId },
+			);
+		});
 
 		return success(validated);
 	} catch (error) {
@@ -111,6 +110,23 @@ export async function redeemPromoCode(
 			captureContractDrift(error, 'promo-code', 'redeem-promo-code');
 			return failure(PROMO_CODE_ERROR_CODES.FETCH_FAILED);
 		}
-		return failure(mapPromoCodeError(error));
+
+		const errorCode = mapPromoCodeError(error);
+
+		runAfter(async () => {
+			const userId = (await sessionPromise)?.user?.id;
+
+			await trackServer(
+				PROMO_CODE_EVENTS.REDEEM_FAILED,
+				{
+					code: payload.code,
+					raffle_id: payload.raffleId,
+					error_code: errorCode,
+				},
+				{ userId },
+			);
+		});
+
+		return failure(errorCode);
 	}
 }

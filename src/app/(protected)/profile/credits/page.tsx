@@ -53,29 +53,29 @@ export default async function CreditsPage({ searchParams }: CreditsPageProps) {
 				<CreditHistoryTable entries={entries} />
 
 				{/* Pagination */}
-				{totalPages > 1 && (
+				{totalPages > 1 ? (
 					<div className="mt-6 flex items-center justify-center gap-2">
-						{currentPage > 1 && (
+						{currentPage > 1 ? (
 							<Link
 								href={getPageUrl(currentPage - 1)}
 								className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
 							>
 								Previous
 							</Link>
-						)}
+						) : null}
 						<span className="text-muted-foreground px-3 text-sm">
 							Page {currentPage} of {totalPages}
 						</span>
-						{currentPage < totalPages && (
+						{currentPage < totalPages ? (
 							<Link
 								href={getPageUrl(currentPage + 1)}
 								className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
 							>
 								Next
 							</Link>
-						)}
+						) : null}
 					</div>
-				)}
+				) : null}
 			</div>
 		</div>
 	);

@@ -45,16 +45,32 @@ export function PromoCodeInput({
 	const [validatedPromo, setValidatedPromo] =
 		useState<ValidatedPromoCode | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const hasAutoValidated = useRef(false);
-
-	// Ref-stabilize onValidCode so the auto-validation effect doesn't depend on
-	// the parent's inline callback reference. Without this, parent re-renders
-	// (e.g. from useRaffleSaleWindow timer) cancel the in-flight validation via
-	// the effect cleanup, but hasAutoValidated prevents a retry — validation is lost.
 	const onValidCodeRef = useRef(onValidCode);
+	const autoValidatedCodeRef = useRef<string | null>(null);
+
+	// Parent callbacks can be recreated by unrelated rerenders.
+	// Sync the ref in an effect so the auto-validation flow always calls
+	// the latest handler without treating callback identity as effect input.
 	useEffect(() => {
 		onValidCodeRef.current = onValidCode;
 	}, [onValidCode]);
+
+	function buildValidatedPromo({
+		code,
+		type,
+		value,
+	}: {
+		code: string;
+		type: ValidatedPromoCode['type'];
+		value: string;
+	}): ValidatedPromoCode {
+		return {
+			valid: true,
+			code,
+			type,
+			value,
+		};
+	}
 
 	/**
 	 * Gets user-friendly error message for validation errors
@@ -133,12 +149,11 @@ export function PromoCodeInput({
 				: (response.discountAmount ?? '0');
 
 		// Step 4: Normalize and store validated promo.
-		const promo: ValidatedPromoCode = {
-			valid: true,
+		const promo = buildValidatedPromo({
 			code: targetCode,
 			type: response.type,
 			value,
-		};
+		});
 
 		setCode(targetCode);
 		setValidatedPromo(promo);
@@ -152,8 +167,13 @@ export function PromoCodeInput({
 	 */
 	useEffect(() => {
 		const normalized = initialCode?.trim().toUpperCase() ?? '';
-		if (!normalized || hasAutoValidated.current || validatedPromo) return;
-		hasAutoValidated.current = true;
+		if (!normalized) {
+			autoValidatedCodeRef.current = null;
+			return;
+		}
+		if (validatedPromo?.code === normalized) return;
+		if (autoValidatedCodeRef.current === normalized) return;
+		autoValidatedCodeRef.current = normalized;
 
 		let cancelled = false;
 
@@ -178,13 +198,14 @@ export function PromoCodeInput({
 					: (result.data.discountAmount ?? '0');
 
 			// Step 3: Apply validated promo to state.
-			const promo: ValidatedPromoCode = {
-				valid: true,
+			const promo = buildValidatedPromo({
 				code: normalized,
 				type: result.data.type,
 				value,
-			};
+			});
 
+			setCode(normalized);
+			setIsExpanded(true);
 			setValidatedPromo(promo);
 			onValidCodeRef.current(promo);
 		}
@@ -193,14 +214,13 @@ export function PromoCodeInput({
 		return () => {
 			cancelled = true;
 		};
-		// onValidCode excluded — accessed via stable ref to prevent parent re-renders
-		// (e.g. countdown timer) from cancelling the in-flight validation request.
 	}, [initialCode, raffleId, validatedPromo]);
 
 	/**
 	 * Handles removing the validated code
 	 */
 	function handleRemove() {
+		autoValidatedCodeRef.current = null;
 		setCode('');
 		setValidatedPromo(null);
 		setError(null);
@@ -212,6 +232,7 @@ export function PromoCodeInput({
 	 * Resets the input to collapsed state
 	 */
 	function handleReset() {
+		autoValidatedCodeRef.current = null;
 		setCode('');
 		setError(null);
 		setIsExpanded(false);
@@ -303,7 +324,7 @@ export function PromoCodeInput({
 				</Button>
 			</div>
 
-			{error && (
+			{error ? (
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-1.5 text-sm text-red-600">
 						<X className="size-3.5" />
@@ -317,7 +338,7 @@ export function PromoCodeInput({
 						Cancel
 					</button>
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

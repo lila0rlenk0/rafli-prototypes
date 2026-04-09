@@ -240,7 +240,7 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 						</span>
 					}
 				/>
-				{ticket.isWinner && (
+				{ticket.isWinner ? (
 					<VerificationRow
 						label="Winner"
 						value={
@@ -249,10 +249,10 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 							</span>
 						}
 					/>
-				)}
+				) : null}
 			</div>
 
-			{proof && <MerkleProofDisplay proof={proof} />}
+			{proof ? <MerkleProofDisplay proof={proof} /> : null}
 
 			<div className="flex flex-col gap-2 sm:flex-row">
 				<button

@@ -187,11 +187,11 @@ export function ReviewStep() {
 			</div>
 
 			<div className="flex flex-wrap gap-2">
-				{getCategoryName() && (
+				{getCategoryName() ? (
 					<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
 						<span className="text-sm capitalize">{getCategoryName()}</span>
 					</div>
-				)}
+				) : null}
 			</div>
 
 			<div
@@ -224,14 +224,14 @@ export function ReviewStep() {
 					</p>
 				</div>
 
-				{hasPromoCodes() && (
+				{hasPromoCodes() ? (
 					<div className="flex min-w-0 flex-col gap-2">
 						<label className="text-sm text-[#B4B4B4]">Promo Codes</label>
 						<p className="truncate text-sm font-medium">
 							{getTotalPromoCodeCount()}
 						</p>
 					</div>
-				)}
+				) : null}
 
 				<div className="flex min-w-0 flex-col gap-2">
 					<label className="text-sm text-[#B4B4B4]">Payment</label>
@@ -245,14 +245,14 @@ export function ReviewStep() {
 				</div>
 			</div>
 
-			{shouldShowStartNowWarning() && (
+			{shouldShowStartNowWarning() ? (
 				<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
 					<div className="flex items-center gap-2">
 						<Clock className="size-4 text-[#2870BD]" />
 						<span className="text-sm">The raffle will start now.</span>
 					</div>
 				</div>
-			)}
+			) : null}
 
 			<div className="flex items-center gap-2">
 				<Button

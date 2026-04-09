@@ -112,12 +112,12 @@ export function WinnerActionMenu({
 				<PopoverContent className="w-56 p-0" align="end">
 					<Command>
 						<CommandList>
-							{waitingForShipping && (
+							{waitingForShipping ? (
 								<div className="px-3 py-2 text-sm text-gray-500">
 									Waiting for winner to provide shipping address
 								</div>
-							)}
-							{canMarkSent && (
+							) : null}
+							{canMarkSent ? (
 								<CommandItem
 									onSelect={handleOpenMarkSent}
 									className="cursor-pointer gap-2"
@@ -125,8 +125,8 @@ export function WinnerActionMenu({
 									<Package className="size-4" />
 									Mark as Sent
 								</CommandItem>
-							)}
-							{canMarkDelivered && (
+							) : null}
+							{canMarkDelivered ? (
 								<CommandItem
 									onSelect={handleMarkDelivered}
 									className="cursor-pointer gap-2"
@@ -134,7 +134,7 @@ export function WinnerActionMenu({
 									<PackageCheck className="size-4" />
 									Mark as Delivered
 								</CommandItem>
-							)}
+							) : null}
 						</CommandList>
 					</Command>
 				</PopoverContent>

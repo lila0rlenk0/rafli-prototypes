@@ -115,12 +115,12 @@ export default async function OrderDetailPage({
 						</span>
 					</div>
 
-					{order.promoCode && (
+					{order.promoCode ? (
 						<div className="flex flex-col gap-1">
 							<span className="text-muted-foreground text-sm">Promo Code</span>
 							<span className="font-medium">{order.promoCode}</span>
 						</div>
-					)}
+					) : null}
 
 					<div className="flex flex-col gap-1">
 						<span className="text-muted-foreground text-sm">Date</span>

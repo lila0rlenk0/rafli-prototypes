@@ -13,10 +13,34 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-// Parse date string (YYYY-MM-DD) to Date object without timezone issues
+/**
+ * Parses a YYYY-MM-DD string into a local Date (no timezone shift).
+ * Uses component parts to avoid UTC midnight being interpreted as previous day.
+ * @returns Date at local midnight
+ */
 function parseDateString(dateString: string): Date {
 	const [year, month, day] = dateString.split('-').map(Number);
 	return new Date(year, month - 1, day);
+}
+
+/**
+ * Formats a Date as YYYY-MM-DD using local date parts.
+ * Avoids `toISOString()` which uses UTC and can shift the date by one day.
+ * @returns Local date string in YYYY-MM-DD format
+ */
+function formatDateString(date: Date): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
+/**
+ * Strips time from a Date for date-only comparisons.
+ * @returns Date normalized to local midnight
+ */
+function normalizeDate(date: Date): Date {
+	return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 interface DatePickerProps {
@@ -34,6 +58,14 @@ interface DatePickerProps {
 	toYear?: number;
 }
 
+/**
+ * Date picker with popover calendar.
+ * Controlled via string value (YYYY-MM-DD) — no internal date state.
+ * Derives the displayed Date directly from the `value` prop,
+ * eliminating the stale-state useEffect sync anti-pattern.
+ *
+ * @returns Date picker component
+ */
 export function DatePicker({
 	value,
 	onValueChange,
@@ -46,55 +78,25 @@ export function DatePicker({
 	toYear,
 }: DatePickerProps) {
 	const [open, setOpen] = React.useState(false);
-	const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
-		value ? parseDateString(value) : undefined,
-	);
 
-	// Sync internal state with external value changes
-	React.useEffect(() => {
-		if (value) {
-			setSelectedDate(parseDateString(value));
-		} else {
-			setSelectedDate(undefined);
-		}
-	}, [value]);
+	// Derive Date from string prop — no useState/useEffect sync needed.
+	// parseDateString is cheap (no iteration), so useMemo is unnecessary.
+	const selectedDate = value ? parseDateString(value) : undefined;
 
-	const handleSelect = (date: Date | undefined) => {
-		setSelectedDate(date);
-		if (date) {
-			// Format date as local date string (YYYY-MM-DD) without timezone conversion
-			const year = date.getFullYear();
-			const month = String(date.getMonth() + 1).padStart(2, '0');
-			const day = String(date.getDate()).padStart(2, '0');
-			const formattedDate = `${year}-${month}-${day}`;
-			onValueChange?.(formattedDate);
-		} else {
-			onValueChange?.('');
-		}
+	/** Handles calendar date selection, formats to YYYY-MM-DD, and closes popover */
+	function handleSelect(date: Date | undefined) {
+		onValueChange?.(date ? formatDateString(date) : '');
 		setOpen(false);
-	};
-
-	/**
-	 * Normalizes a date to local midnight for comparison
-	 * @param date - The date to normalize
-	 * @returns Date object normalized to local midnight
-	 */
-	function normalizeDate(date: Date): Date {
-		return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 	}
 
 	/**
-	 * Checks if a date should be disabled based on minDate
-	 * @param date - The date to check
-	 * @returns true if date should be disabled, false otherwise
+	 * Checks if a date should be disabled based on minDate.
+	 * Normalizes both dates to midnight for date-only comparison.
+	 * @returns true if date is before minDate
 	 */
 	function isDateDisabled(date: Date): boolean {
 		if (!minDate) return false;
-
-		const normalizedDate = normalizeDate(date);
-		const normalizedMinDate = normalizeDate(minDate);
-
-		return normalizedDate < normalizedMinDate;
+		return normalizeDate(date) < normalizeDate(minDate);
 	}
 
 	return (
@@ -109,7 +111,7 @@ export function DatePicker({
 						className,
 					)}
 				>
-					<CalendarIcon className="mr-2 h-4 w-4" />
+					<CalendarIcon className="mr-2 size-4" />
 					{selectedDate ? formatDate(selectedDate) : placeholder}
 				</Button>
 			</PopoverTrigger>

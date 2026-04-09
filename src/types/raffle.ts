@@ -333,10 +333,12 @@ export const createRafflePayloadSchema = z.object({
 	...cryptoPayloadFields,
 });
 
+/** Schema for cover image upload response — returned by POST /raffles/:id/cover */
 export const uploadCoverResponseSchema = z.object({
 	coverMediaUrl: z.string(),
 });
 
+/** Schema for gallery images upload response — returned by POST /raffles/:id/gallery */
 export const uploadGalleryResponseSchema = z.object({
 	galleryMediaUrls: z.array(z.string()),
 });

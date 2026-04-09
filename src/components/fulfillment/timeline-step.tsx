@@ -44,23 +44,23 @@ export function TimelineStep({
 						status === 'pending' && 'border-gray-300 bg-gray-100',
 					)}
 				>
-					{status === 'completed' && (
+					{status === 'completed' ? (
 						<Check className="size-3.5 text-white" strokeWidth={3} />
-					)}
-					{status === 'active' && (
+					) : null}
+					{status === 'active' ? (
 						<div className="size-2 rounded-full bg-black" />
-					)}
+					) : null}
 				</div>
 
 				{/* Connector line */}
-				{!isLast && (
+				{!isLast ? (
 					<div
 						className={cn(
 							'mt-1 h-full min-h-8 w-0.5',
 							status === 'completed' ? 'bg-black' : 'bg-gray-200',
 						)}
 					/>
-				)}
+				) : null}
 			</div>
 
 			{/* Content column */}
@@ -81,7 +81,9 @@ export function TimelineStep({
 				>
 					{description}
 				</p>
-				{action && status === 'active' && <div className="mt-3">{action}</div>}
+				{action && status === 'active' ? (
+					<div className="mt-3">{action}</div>
+				) : null}
 			</div>
 		</div>
 	);

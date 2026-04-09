@@ -42,28 +42,6 @@ export async function VerificationSection() {
 		);
 	}
 
-	/** Label clarifies whether this is the user's first verification */
-	function getButtonLabel(): string {
-		if (submissions.length === 0) return 'Start Verification';
-		return 'New Verification';
-	}
-
-	function renderSubmissionsList() {
-		if (submissions.length === 0) {
-			return (
-				<p className="text-muted-foreground py-4 text-center text-sm">
-					No verifications submitted yet
-				</p>
-			);
-		}
-
-		return (
-			<div className="flex flex-col">
-				{submissions.map(renderSubmissionRow)}
-			</div>
-		);
-	}
-
 	return (
 		<div
 			className="relative flex w-full flex-col gap-6 overflow-hidden rounded-3xl bg-white px-6 py-10 md:px-10 md:py-15"
@@ -79,12 +57,22 @@ export async function VerificationSection() {
 						size="sm"
 						className="border-black text-sm font-semibold text-black/95 hover:bg-black hover:text-white"
 					>
-						{getButtonLabel()}
+						{submissions.length === 0
+							? 'Start Verification'
+							: 'New Verification'}
 					</Button>
 				</Link>
 			</div>
 
-			{renderSubmissionsList()}
+			{submissions.length === 0 ? (
+				<p className="text-muted-foreground py-4 text-center text-sm">
+					No verifications submitted yet
+				</p>
+			) : (
+				<div className="flex flex-col">
+					{submissions.map(renderSubmissionRow)}
+				</div>
+			)}
 		</div>
 	);
 }

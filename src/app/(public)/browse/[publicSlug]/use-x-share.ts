@@ -18,6 +18,8 @@ export interface XShareConfig {
 	publicSlug: string;
 	xShareEnabled: boolean;
 	xShareClaimStatus?: 'expired' | 'pending' | 'revoked' | 'verified' | null;
+	/** When set, user must answer the quiz correctly before sharing (same gate as purchase flow) */
+	questionId?: string | null;
 }
 
 interface UseXShareResult {

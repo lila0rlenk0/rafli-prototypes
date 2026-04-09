@@ -1,5 +1,8 @@
 'use client';
 
+import { useState } from 'react';
+
+import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 
 import { type XShareConfig, useXShare } from './use-x-share';
@@ -8,7 +11,7 @@ import { type XShareConfig, useXShare } from './use-x-share';
  * "Get Free Tickets! Share on X" button for the desktop checkout card.
  *
  * Flow when xShareEnabled:
- * 1. Click → POST /x-share-intent → get tokenized share URL
+ * 1. Click → quiz gate (if questionId set) → POST /x-share-intent → get tokenized share URL
  * 2. Open X intent with that URL
  * 3. Show "I shared it" button → POST /verify-x-share → grant ticket
  *
@@ -17,6 +20,27 @@ import { type XShareConfig, useXShare } from './use-x-share';
 export function ShareOnXButton(props: XShareConfig) {
 	const { state, claimUsed, retryCountdown, handleShare, handleVerify } =
 		useXShare(props);
+
+	// Quiz gate — same pattern as BuyButton/CryptoBuyButton.
+	// Without this, createXShareIntent rejects with core:xshare:question-required
+	// when the raffle has a check-in question and the user hasn't answered correctly.
+	const [showQuestionModal, setShowQuestionModal] = useState(false);
+	const [questionAnswered, setQuestionAnswered] = useState(false);
+
+	function handleShareClick() {
+		// Gate behind quiz if raffle has a question and user hasn't answered yet
+		if (props.questionId && !questionAnswered) {
+			setShowQuestionModal(true);
+			return;
+		}
+		handleShare();
+	}
+
+	function handleCorrectAnswer() {
+		setQuestionAnswered(true);
+		// Proceed with share immediately after answering correctly
+		handleShare();
+	}
 
 	// Terminal claim — disabled button so user knows the feature exists but is consumed
 	if (claimUsed) {
@@ -60,15 +84,28 @@ export function ShareOnXButton(props: XShareConfig) {
 	}
 
 	return (
-		<Button
-			variant="outline"
-			onClick={handleShare}
-			disabled={state === 'loading'}
-			className="mt-2 h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
-		>
-			<p className="font-semibold">
-				{state === 'loading' ? 'Preparing...' : 'Get Free Tickets! Share on X'}
-			</p>
-		</Button>
+		<>
+			<Button
+				variant="outline"
+				onClick={handleShareClick}
+				disabled={state === 'loading'}
+				className="mt-2 h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
+			>
+				<p className="font-semibold">
+					{state === 'loading'
+						? 'Preparing...'
+						: 'Get Free Tickets! Share on X'}
+				</p>
+			</Button>
+
+			{props.questionId ? (
+				<RaffleQuestionModal
+					open={showQuestionModal}
+					onOpenChange={setShowQuestionModal}
+					raffleId={props.raffleId}
+					onCorrectAnswer={handleCorrectAnswer}
+				/>
+			) : null}
+		</>
 	);
 }

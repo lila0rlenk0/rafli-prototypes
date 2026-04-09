@@ -7,8 +7,8 @@ import { useMemo, type ReactNode } from 'react';
 import { cookieToInitialState, WagmiProvider } from 'wagmi';
 
 import {
-	getWagmiConfig,
 	isWeb3Enabled,
+	wagmiConfig,
 	WAGMI_COOKIE_KEY,
 } from '@/lib/web3/config';
 
@@ -61,13 +61,9 @@ export function Web3Provider({
 	children,
 	wagmiCookieValue,
 }: Web3ProviderProps) {
-	// Lazy singleton — only calls getDefaultConfig() on the first client render.
-	// Returns null on the server so children render as a passthrough (no crash).
-	const wagmiConfig = getWagmiConfig();
-
 	// Reconstruct the single cookie string wagmi expects for SSR hydration.
 	// useMemo avoids re-parsing on every render — only recomputes when the
-	// server-forwarded cookie value or config reference changes.
+	// server-forwarded cookie value changes.
 	const initialState = useMemo(
 		() =>
 			wagmiCookieValue && wagmiConfig
@@ -76,11 +72,11 @@ export function Web3Provider({
 						`${WAGMI_COOKIE_KEY}=${wagmiCookieValue}`,
 					)
 				: undefined,
-		[wagmiCookieValue, wagmiConfig],
+		[wagmiCookieValue],
 	);
 
-	// No WalletConnect project ID or server-side → skip Web3 providers entirely.
-	// Keeps the app functional for card-only payments and prevents SSR crashes.
+	// No WalletConnect project ID → skip Web3 providers entirely.
+	// Keeps the app functional for card-only payments.
 	if (!isWeb3Enabled || !wagmiConfig) {
 		return <>{children}</>;
 	}

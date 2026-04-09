@@ -20,7 +20,12 @@ const nextConfig: NextConfig = {
 		// Auto-transform barrel imports into direct subpath imports at build time.
 		// Without this, `import { Icon } from 'lucide-react'` loads every icon (~1MB).
 		// See: https://vercel.com/blog/how-we-optimized-package-imports-in-next-js
-		optimizePackageImports: ['lucide-react', 'react-icons', 'lodash'],
+		optimizePackageImports: [
+				'lucide-react',
+				'react-icons',
+				'lodash',
+				'date-fns',
+			],
 	},
 	images: {
 		unoptimized: isLocal,

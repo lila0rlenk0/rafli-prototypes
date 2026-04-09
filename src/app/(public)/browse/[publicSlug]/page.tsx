@@ -411,6 +411,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		publicSlug: raffle.publicSlugOrCode,
 		xShareEnabled: raffle.xShareTicketsEnabled ?? false,
 		xShareClaimStatus: raffle.xShareClaim?.status ?? null,
+		questionId: raffle.questionId,
 	};
 
 	return (

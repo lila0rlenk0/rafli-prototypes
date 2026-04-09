@@ -86,25 +86,21 @@ export default async function ProfilePage() {
 		? deriveAggregateStatus(verificationResult.data)
 		: null;
 
-	/**
-	 * Renders the "My Profile" heading with the verification badge
-	 * (visible for approved, in_review, rejected — hidden for none/draft).
-	 */
-	function renderProfileTitle() {
-		return (
-			<div className="flex items-center gap-2.5">
-				<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
-					My Profile
-				</h1>
-				{verificationStatus ? (
-					<VerificationBadge
-						status={verificationStatus.status}
-						rejectionReason={verificationStatus.rejectionReason}
-					/>
-				) : null}
-			</div>
-		);
-	}
+	// Reused in mobile header and desktop header — extracted as JSX variable
+	// to avoid a render function while keeping the markup DRY.
+	const profileTitle = (
+		<div className="flex items-center gap-2.5">
+			<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
+				My Profile
+			</h1>
+			{verificationStatus ? (
+				<VerificationBadge
+					status={verificationStatus.status}
+					rejectionReason={verificationStatus.rejectionReason}
+				/>
+			) : null}
+		</div>
+	);
 
 	return (
 		<div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -112,7 +108,7 @@ export default async function ProfilePage() {
 			<div className="flex w-full flex-col gap-6 md:flex-row md:gap-8">
 				{/* Header — mobile only: stacked above content */}
 				<div className="flex flex-col gap-6 md:hidden">
-					{renderProfileTitle()}
+					{profileTitle}
 					<SignOutButton className="w-full sm:w-fit" />
 				</div>
 
@@ -122,7 +118,7 @@ export default async function ProfilePage() {
 				{/* Right Content Sections */}
 				<div className="flex min-w-0 flex-1 flex-col gap-6">
 					<div className="hidden items-center justify-between md:flex">
-						{renderProfileTitle()}
+						{profileTitle}
 
 						<SignOutButton />
 					</div>

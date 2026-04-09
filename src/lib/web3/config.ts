@@ -118,47 +118,26 @@ const wallets: WalletList = [
  * and @metamask/sdk must be installed for their respective wallets to work.
  * getDefaultConfig dynamically imports them at runtime via wagmi's connector factories.
  *
- * **Lazy singleton** — NOT initialized at module scope. @walletconnect/ethereum-provider
- * accesses `indexedDB` during connector instantiation, which crashes Node.js during SSR
- * (indexedDB is a browser-only API). Deferring to a getter ensures the call only happens
- * on the client, while still allowing safe module-level imports of other exports
- * (isWeb3Enabled, SUPPORTED_WEB3_CHAIN_IDS, etc.) from both server and client code.
+ * Initialized at module scope — `ssr: true` + `cookieStorage` tells wagmi to
+ * defer all browser-only operations (indexedDB, connector handshakes) until
+ * client-side hydration. This makes the config safe for both server and client,
+ * and ensures the provider tree renders identically on both sides (fixing
+ * hydration mismatches from RainbowKitProvider's `<div data-rk="">`).
  *
- * Only initialized when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is set —
- * without it, WalletConnect handshake fails and breaks the provider tree.
+ * null when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is unset — without it,
+ * WalletConnect handshake fails and breaks the provider tree.
  * Callers must check `isWeb3Enabled` before using this config.
- *
- * @returns wagmi Config or null when Web3 is disabled or running on the server
  */
-let _wagmiConfig: ReturnType<typeof getDefaultConfig> | null | undefined;
-
-export function getWagmiConfig(): ReturnType<typeof getDefaultConfig> | null {
-	// Step 1: Return cached instance after first initialization.
-	if (typeof _wagmiConfig !== 'undefined') return _wagmiConfig;
-
-	// Step 2: Guard — server-side returns null so the provider falls through
-	// to a children passthrough. WagmiProvider/RainbowKitProvider produce no
-	// DOM nodes, so server/client HTML is identical regardless.
-	if (typeof window === 'undefined') return null;
-
-	// Step 3: Guard — Web3 disabled when no WalletConnect project ID is configured.
-	if (!isWeb3Enabled) {
-		_wagmiConfig = null;
-		return null;
-	}
-
-	// Step 4: Client-side first call — initialize once and cache.
-	_wagmiConfig = getDefaultConfig({
-		appName: 'Rafli',
-		// isWeb3Enabled guard above guarantees this value is non-empty
-		projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? '',
-		chains: configuredChains,
-		storage: wagmiStorage,
-		wallets,
-		// Required for Next.js App Router — delays store hydration to
-		// avoid server/client mismatch on first render
-		ssr: true,
-	});
-
-	return _wagmiConfig;
-}
+export const wagmiConfig = isWeb3Enabled
+	? getDefaultConfig({
+			appName: 'Rafli',
+			// isWeb3Enabled guard guarantees this value is non-empty
+			projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? '',
+			chains: configuredChains,
+			storage: wagmiStorage,
+			wallets,
+			// Required for Next.js App Router — delays store hydration to
+			// avoid server/client mismatch on first render
+			ssr: true,
+		})
+	: null;

@@ -10,6 +10,7 @@
  * provider only owns init + identify/reset lifecycle.
  */
 
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { identify, initMixpanel, reset } from '@/lib/analytics/mixpanel-client';
@@ -48,15 +49,13 @@ function getUserFromCookie(): AuthUser | null {
  */
 export function MixpanelProvider({ children }: { children: ReactNode }) {
 	const [isReady, setIsReady] = useState(false);
+	// App Router provides reactive pathname — effect fires only on actual
+	// route transitions instead of running after every render.
+	const pathname = usePathname();
 
 	// Ref instead of state: identity tracking is fire-and-forget metadata,
 	// changes should NOT trigger re-renders of the entire subtree.
 	const identifiedUserId = useRef<string | null>(null);
-
-	// Tracks last pathname to debounce the identification effect —
-	// prevents redundant identify() calls when React re-renders
-	// without an actual navigation.
-	const lastPathnameRef = useRef<string | null>(null);
 
 	// mount: dynamically import mixpanel-browser so the ~40KB bundle
 	// is deferred until after hydration completes.
@@ -79,17 +78,11 @@ export function MixpanelProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	// Sync Mixpanel identity on every navigation.
-	// No deps array — runs after every render so it catches client-side
-	// route transitions (App Router doesn't remount layout providers).
-	// The lastPathnameRef guard short-circuits when pathname is unchanged.
+	// Deps: [isReady, pathname] — fires once SDK initializes, then on each
+	// App Router route transition. Replaces the previous no-deps effect that
+	// ran after every render and used a ref to debounce.
 	useEffect(() => {
-		if (!isReady || typeof window === 'undefined') return;
-
-		const currentPathname = window.location.pathname;
-
-		// Skip if pathname hasn't changed — prevents redundant identify calls
-		if (lastPathnameRef.current === currentPathname) return;
-		lastPathnameRef.current = currentPathname;
+		if (!isReady) return;
 
 		const user = getUserFromCookie();
 
@@ -109,7 +102,7 @@ export function MixpanelProvider({ children }: { children: ReactNode }) {
 			reset();
 			identifiedUserId.current = null;
 		}
-	});
+	}, [isReady, pathname]);
 
 	return <>{children}</>;
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 
 import { type XShareConfig, useXShare } from './use-x-share';
@@ -34,6 +35,7 @@ export function StickyBuyTicketsCta({
 	publicSlug,
 	xShareEnabled,
 	xShareClaimStatus,
+	questionId,
 	isAuthenticated,
 }: StickyBuyTicketsCtaProps) {
 	const [isCheckoutVisible, setIsCheckoutVisible] = useState(false);
@@ -46,7 +48,26 @@ export function StickyBuyTicketsCta({
 			// Unauthenticated users always get plain share — tokenized flow requires auth
 			xShareEnabled: isAuthenticated && xShareEnabled,
 			xShareClaimStatus,
+			questionId,
 		});
+
+	// Quiz gate — same pattern as desktop ShareOnXButton and buy buttons.
+	// Prevents backend rejection with core:xshare:question-required.
+	const [showQuestionModal, setShowQuestionModal] = useState(false);
+	const [questionAnswered, setQuestionAnswered] = useState(false);
+
+	function handleShareClick() {
+		if (questionId && !questionAnswered) {
+			setShowQuestionModal(true);
+			return;
+		}
+		handleShare();
+	}
+
+	function handleCorrectAnswer() {
+		setQuestionAnswered(true);
+		handleShare();
+	}
 
 	// useEffect: mount-only IntersectionObserver for checkout section visibility.
 	// Deps: [] — target element is static, observer setup runs once.
@@ -85,7 +106,11 @@ export function StickyBuyTicketsCta({
 			?.scrollIntoView({ behavior: 'smooth' });
 	}
 
-	function renderShareButton() {
+	/**
+	 * Resolves share button variant based on claim lifecycle state.
+	 * Guard clauses for terminal/post-share states, default is the share prompt.
+	 */
+	function getShareButton() {
 		// Terminal claim — disabled button so user sees the feature is consumed
 		if (claimUsed) {
 			return (
@@ -99,9 +124,8 @@ export function StickyBuyTicketsCta({
 			);
 		}
 
+		// Post-share — verify CTA with optional auto-check countdown
 		if (state === 'shared' || state === 'verifying') {
-			const isCountingDown = retryCountdown > 0 && state === 'shared';
-
 			return (
 				<div className="flex w-full flex-col gap-1">
 					<Button
@@ -116,7 +140,7 @@ export function StickyBuyTicketsCta({
 								: 'I shared it — Claim my free ticket!'}
 						</p>
 					</Button>
-					{isCountingDown ? (
+					{retryCountdown > 0 && state === 'shared' ? (
 						<p className="text-center text-xs text-gray-400">
 							Auto-checking in {retryCountdown}s...
 						</p>
@@ -125,19 +149,31 @@ export function StickyBuyTicketsCta({
 			);
 		}
 
+		// Default — share prompt with optional quiz gate
 		return (
-			<Button
-				variant="outline"
-				onClick={handleShare}
-				disabled={state === 'loading'}
-				className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
-			>
-				<p className="font-semibold">
-					{state === 'loading'
-						? 'Preparing...'
-						: 'Get Free Tickets! Share on X'}
-				</p>
-			</Button>
+			<>
+				<Button
+					variant="outline"
+					onClick={handleShareClick}
+					disabled={state === 'loading'}
+					className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
+				>
+					<p className="font-semibold">
+						{state === 'loading'
+							? 'Preparing...'
+							: 'Get Free Tickets! Share on X'}
+					</p>
+				</Button>
+
+				{questionId ? (
+					<RaffleQuestionModal
+						open={showQuestionModal}
+						onOpenChange={setShowQuestionModal}
+						raffleId={raffleId}
+						onCorrectAnswer={handleCorrectAnswer}
+					/>
+				) : null}
+			</>
 		);
 	}
 
@@ -149,7 +185,7 @@ export function StickyBuyTicketsCta({
 			>
 				<p className="font-semibold">Enter Now!</p>
 			</Button>
-			{renderShareButton()}
+			{getShareButton()}
 		</div>
 	);
 }

@@ -27,9 +27,12 @@ export function ShareOnXButton(props: XShareConfig) {
 	const [showQuestionModal, setShowQuestionModal] = useState(false);
 	const [questionAnswered, setQuestionAnswered] = useState(false);
 
+	// Quiz gate only applies to the tokenized flow — plain shares don't call
+	// createXShareIntent so the backend never checks quiz state for those.
+	const isTokenizedFlow = props.xShareEnabled && !claimUsed;
+
 	function handleShareClick() {
-		// Gate behind quiz if raffle has a question and user hasn't answered yet
-		if (props.questionId && !questionAnswered) {
+		if (props.questionId && isTokenizedFlow && !questionAnswered) {
 			setShowQuestionModal(true);
 			return;
 		}

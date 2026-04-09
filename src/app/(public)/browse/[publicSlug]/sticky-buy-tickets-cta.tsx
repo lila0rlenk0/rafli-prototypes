@@ -53,11 +53,14 @@ export function StickyBuyTicketsCta({
 
 	// Quiz gate — same pattern as desktop ShareOnXButton and buy buttons.
 	// Prevents backend rejection with core:xshare:question-required.
+	// Only applies to tokenized flow — plain shares (unauth users, xShare disabled,
+	// claim already used) don't call createXShareIntent so never hit the quiz guard.
+	const isTokenizedFlow = isAuthenticated && xShareEnabled && !claimUsed;
 	const [showQuestionModal, setShowQuestionModal] = useState(false);
 	const [questionAnswered, setQuestionAnswered] = useState(false);
 
 	function handleShareClick() {
-		if (questionId && !questionAnswered) {
+		if (questionId && isTokenizedFlow && !questionAnswered) {
 			setShowQuestionModal(true);
 			return;
 		}

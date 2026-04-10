@@ -328,8 +328,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 	/**
 	 * Checks if draw-in-progress card should be shown.
-	 * Active during `ended` (VRF in flight) and `fulfilling` (VRF fulfilled,
-	 * winner persistence in progress). Both states have no winners yet.
+	 * Active during `ended` (VRF in flight), `fulfilling` (VRF fulfilled,
+	 * winner persistence in progress), and `completed` when winners haven't
+	 * been created yet. All three states may have no winners.
 	 *
 	 * Why include `fulfilling`: poll-vrf CAS-transitions ended→fulfilling before
 	 * the vrfFulfilledTopic subscriber runs FulfillVrfCommand. If that subscriber
@@ -337,11 +338,17 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	 * (stuck recovery cron window). Without this guard, no sidebar card renders
 	 * during that window — the RaffleNotWonCard requires hasWinners and the
 	 * previous ENDED-only check missed this state entirely.
+	 *
+	 * Why include `completed`: the backend may transition ended→completed before
+	 * winning records are created (async via raffleCompletedTopic subscriber).
+	 * Without this guard, no card renders during the brief async window —
+	 * NotWonCard and WinnerCard both require hasWinners/didUserWin.
 	 */
 	function shouldShowDrawInProgress(): boolean {
 		return (
 			(raffle.status === RAFFLE_STATUS.ENDED ||
-				raffle.status === RAFFLE_STATUS.FULFILLING) &&
+				raffle.status === RAFFLE_STATUS.FULFILLING ||
+				raffle.status === RAFFLE_STATUS.COMPLETED) &&
 			!hasWinners
 		);
 	}

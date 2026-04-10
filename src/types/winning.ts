@@ -18,7 +18,6 @@ export const WINNING_STATUS = {
 
 export const CLAIM_TYPE = {
 	SHIPPING: 'shipping',
-	WALLET: 'wallet',
 } as const;
 
 export type WinningStatus =
@@ -37,7 +36,10 @@ export const winningStatusSchema = z.enum([
 	WINNING_STATUS.RESOLVED,
 ]);
 
-export const claimTypeSchema = z.enum([CLAIM_TYPE.SHIPPING, CLAIM_TYPE.WALLET]);
+// 'wallet' retained in the schema for backward-compat parsing of historical
+// DB records — the backend DB enum still carries it for migration safety,
+// but new claims are always 'shipping' (enforced by claimWinningPayloadSchema).
+export const claimTypeSchema = z.enum(['shipping', 'wallet']);
 
 export const shippingInfoSchema = z.object({
 	name: z.string(),

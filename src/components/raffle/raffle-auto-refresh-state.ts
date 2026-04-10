@@ -78,6 +78,12 @@ export function resolveRaffleAutoRefreshPhase({
 		return RAFFLE_AUTO_REFRESH_PHASE.AWAITING_COMPLETION;
 	}
 
+	// Backend may transition ended→completed before winning records are created
+	// (async via raffleCompletedTopic subscriber). Poll until winners appear.
+	if (status === RAFFLE_STATUS.COMPLETED && !hasWinners) {
+		return RAFFLE_AUTO_REFRESH_PHASE.AWAITING_COMPLETION;
+	}
+
 	return null;
 }
 

@@ -7,6 +7,7 @@ import { ScreenLoader } from '@/components/ui/screen-loader';
 import { env } from '@/env/server';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
+import { NotificationStoreProvider } from '@/providers/notification-store-provider';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
 export const metadata: Metadata = {
@@ -80,9 +81,11 @@ interface VerifyLayoutProps {
  *
  * Internal async component isolated behind Suspense — reads cookies via getSession.
  * Same auth-aware pattern as browse/host/how-it-works layouts.
- * Note: no NotificationStoreProvider here — verify pages don't show notification UI.
  *
- * Data flow: session cookie → auth state → conditional UserStoreProvider wrapping.
+ * Data flow: session cookie → auth state → conditional UserStore + NotificationStore
+ * wrapping. NotificationStoreProvider is required whenever the navbar is rendered for
+ * an authenticated user because PublicNavbar mounts the NotificationBell, which calls
+ * useNotificationStore and throws if the context is missing.
  */
 async function VerifyLayoutContent({ children }: VerifyLayoutProps) {
 	// Step 1: Read session from cookie.
@@ -94,14 +97,19 @@ async function VerifyLayoutContent({ children }: VerifyLayoutProps) {
 		? parsePermissions(session?.user?.permissions)
 		: [];
 
-	// Step 3: Build navbar + conditional provider wrapping.
+	// Step 3: Build navbar shell — identical for both auth states, only providers differ.
 	const content = (
 		<PublicNavbar isAuthenticated={isAuthenticated}>{children}</PublicNavbar>
 	);
 
+	// Step 4: Wrap with auth stores only for authenticated users.
+	// Guests skip providers — the navbar renders a Sign In button instead of the
+	// NotificationBell, so no notification context is needed.
 	if (isAuthenticated) {
 		return (
-			<UserStoreProvider permissions={permissions}>{content}</UserStoreProvider>
+			<UserStoreProvider permissions={permissions}>
+				<NotificationStoreProvider>{content}</NotificationStoreProvider>
+			</UserStoreProvider>
 		);
 	}
 

@@ -1,43 +1,40 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
 
 import { PROFILE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
 import { cn } from '@/lib/utils';
-import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
 
+import { useModeSwitcher } from './use-mode-switcher';
+
+// Shared geometry for both halves of the toggle — kept at module scope so
+// the className string is not re-created per render.
+const TOGGLE_BUTTON_BASE =
+	'flex flex-1 items-center justify-center text-sm font-semibold transition-colors';
+
+// Layout-specific "Become a Host" tracking — `source` identifies this as the
+// mobile menu entry point, which is why it can't live in the shared hook.
+function handleBecomeHostClick() {
+	track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, {
+		source: 'mobile_menu',
+	});
+}
+
+/**
+ * Full-width segmented toggle for switching between host and participant
+ * modes. Used inside the mobile menu drawer. All behavior lives in
+ * `useModeSwitcher`; this component only owns layout.
+ *
+ * @returns Full-width mode switcher, loading skeleton, or "Become a Host" CTA
+ */
 export function ModeSwitchToggle() {
-	const mode = useUserStore(state => state.mode);
-	const hasPermissions = useUserStore(state => state.permissions.length > 0);
-	const canSwitchMode = useUserStore(state => state.canSwitchMode);
-	const switchMode = useUserStore(state => state.switchMode);
-	const router = useRouter();
-	const [isSwitching, startTransition] = useTransition();
+	const state = useModeSwitcher();
 
-	function handleSwitch(
-		target: typeof USER_MODE.HOST | typeof USER_MODE.PARTICIPANT,
-	) {
-		if (target === mode || isSwitching) return;
-		track(PROFILE_EVENTS.MODE_SWITCHED, {
-			from_mode: mode,
-			to_mode: target,
-		});
-		startTransition(async () => {
-			await switchMode();
-			router.refresh();
-		});
-	}
+	if (state.phase === 'hidden') return null;
 
-	// mode is null during two distinct phases:
-	// 1. Initial hydration — permissions exist but Zustand hasn't resolved mode yet → show loading skeleton
-	// 2. Sign-out reset — permissions were cleared → render nothing to avoid a flash of the disabled pill
-	if (mode === null) {
-		if (!hasPermissions) return null;
-
+	if (state.phase === 'loading') {
 		return (
 			<div
 				className="flex h-[38px] w-full items-center overflow-hidden rounded-full border border-black opacity-50"
@@ -54,13 +51,7 @@ export function ModeSwitchToggle() {
 		);
 	}
 
-	function handleBecomeHostClick() {
-		track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, {
-			source: 'mobile_menu',
-		});
-	}
-
-	if (!canSwitchMode()) {
+	if (state.phase === 'promote') {
 		return (
 			<Link
 				href="/verification"
@@ -73,7 +64,16 @@ export function ModeSwitchToggle() {
 		);
 	}
 
-	const isHost = mode === USER_MODE.HOST;
+	const { isHost, isSwitching, handleSwitch } = state;
+
+	// Extracted to avoid inline arrow functions inside JSX (per code-style rules).
+	function onHostClick() {
+		handleSwitch(USER_MODE.HOST);
+	}
+
+	function onParticipantClick() {
+		handleSwitch(USER_MODE.PARTICIPANT);
+	}
 
 	return (
 		<div
@@ -81,10 +81,10 @@ export function ModeSwitchToggle() {
 			data-testid="mode-switch-toggle"
 		>
 			<button
-				onClick={() => handleSwitch(USER_MODE.HOST)}
+				onClick={onHostClick}
 				disabled={isSwitching}
 				className={cn(
-					'flex flex-1 items-center justify-center text-sm font-semibold transition-colors',
+					TOGGLE_BUTTON_BASE,
 					isHost ? 'bg-black text-white' : 'bg-transparent text-black',
 					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
 				)}
@@ -93,10 +93,10 @@ export function ModeSwitchToggle() {
 			</button>
 			<div className="h-full w-px bg-black" />
 			<button
-				onClick={() => handleSwitch(USER_MODE.PARTICIPANT)}
+				onClick={onParticipantClick}
 				disabled={isSwitching}
 				className={cn(
-					'flex flex-1 items-center justify-center text-sm font-semibold transition-colors',
+					TOGGLE_BUTTON_BASE,
 					!isHost ? 'bg-black text-white' : 'bg-transparent text-black',
 					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
 				)}

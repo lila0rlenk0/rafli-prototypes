@@ -1,43 +1,37 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
 
 import { PROFILE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
 import { cn } from '@/lib/utils';
-import { useUserStore } from '@/providers/user-store-provider';
 import { USER_MODE } from '@/types/user-mode';
 
+import { useModeSwitcher } from './use-mode-switcher';
+
+// Shared pill/button geometry — extracted so both active buttons stay in lockstep.
+const PILL_BUTTON_BASE =
+	'relative z-10 flex h-full flex-1 items-center justify-center rounded-full text-sm font-semibold transition-colors';
+
+// "Become a Host" is a layout-local concern: the click tracking includes a
+// `source` that differs between the navbar pill and the mobile toggle, so it
+// lives in the component rather than the shared hook.
+function handleBecomeHostClick() {
+	track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, { source: 'navbar' });
+}
+
+/**
+ * Navbar-sized pill toggle for switching between host and participant modes.
+ * All behavior lives in `useModeSwitcher`; this component only owns layout.
+ *
+ * @returns Pill-shaped mode switcher, loading skeleton, or "Become a Host" CTA
+ */
 export function ModeSwitchButton() {
-	const mode = useUserStore(state => state.mode);
-	const hasPermissions = useUserStore(state => state.permissions.length > 0);
-	const canSwitchMode = useUserStore(state => state.canSwitchMode);
-	const switchMode = useUserStore(state => state.switchMode);
-	const router = useRouter();
-	const [isSwitching, startTransition] = useTransition();
+	const state = useModeSwitcher();
 
-	function handleSwitch(
-		target: typeof USER_MODE.HOST | typeof USER_MODE.PARTICIPANT,
-	) {
-		if (target === mode || isSwitching) return;
-		track(PROFILE_EVENTS.MODE_SWITCHED, {
-			from_mode: mode,
-			to_mode: target,
-		});
-		startTransition(async () => {
-			await switchMode();
-			router.refresh();
-		});
-	}
+	if (state.phase === 'hidden') return null;
 
-	// mode is null during two distinct phases:
-	// 1. Initial hydration — permissions exist but Zustand hasn't resolved mode yet → show loading skeleton
-	// 2. Sign-out reset — permissions were cleared → render nothing to avoid a flash of the disabled pill
-	if (mode === null) {
-		if (!hasPermissions) return null;
-
+	if (state.phase === 'loading') {
 		return (
 			<div
 				className="flex h-9 w-[267px] items-center overflow-hidden rounded-full border border-black/95 opacity-50"
@@ -53,11 +47,7 @@ export function ModeSwitchButton() {
 		);
 	}
 
-	function handleBecomeHostClick() {
-		track(PROFILE_EVENTS.HOST_APPLICATION_STARTED, { source: 'navbar' });
-	}
-
-	if (!canSwitchMode()) {
+	if (state.phase === 'promote') {
 		return (
 			<Link
 				href="/verification"
@@ -70,7 +60,16 @@ export function ModeSwitchButton() {
 		);
 	}
 
-	const isHost = mode === USER_MODE.HOST;
+	const { isHost, isSwitching, handleSwitch } = state;
+
+	// Extracted to avoid inline arrow functions inside JSX (per code-style rules).
+	function onHostClick() {
+		handleSwitch(USER_MODE.HOST);
+	}
+
+	function onParticipantClick() {
+		handleSwitch(USER_MODE.PARTICIPANT);
+	}
 
 	return (
 		<div
@@ -78,10 +77,10 @@ export function ModeSwitchButton() {
 			data-testid="mode-switch-button"
 		>
 			<button
-				onClick={() => handleSwitch(USER_MODE.HOST)}
+				onClick={onHostClick}
 				disabled={isSwitching}
 				className={cn(
-					'relative z-10 flex h-full flex-1 items-center justify-center rounded-full text-sm font-semibold transition-colors',
+					PILL_BUTTON_BASE,
 					isHost ? 'bg-black/95 text-white' : 'bg-transparent text-black/95',
 					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
 				)}
@@ -89,10 +88,10 @@ export function ModeSwitchButton() {
 				Host
 			</button>
 			<button
-				onClick={() => handleSwitch(USER_MODE.PARTICIPANT)}
+				onClick={onParticipantClick}
 				disabled={isSwitching}
 				className={cn(
-					'relative z-10 flex h-full flex-1 items-center justify-center rounded-full text-sm font-semibold transition-colors',
+					PILL_BUTTON_BASE,
 					!isHost ? 'bg-black/95 text-white' : 'bg-transparent text-black/95',
 					isSwitching ? 'cursor-not-allowed' : 'cursor-pointer',
 				)}

@@ -1,23 +1,18 @@
 'use server';
 
-import { ZodError } from 'zod';
-
-import { COMMENT_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
-import { authenticatedClient } from '@/lib/api/client';
-import { getSession } from '@/lib/auth/session';
-import { failure, mapCommentError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
-import {
-	commentSchema,
-	type Comment,
-	type CreateCommentPayload,
-} from '@/types/comment';
-import { COMMENT_ERROR_CODES, type CommentErrorCode } from '@/types/errors';
+import type { Comment, CreateCommentPayload } from '@/types/comment';
+import type { CommentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
+import { createCommentBase } from './create-comment-base';
+
 /**
- * Creates a top-level comment on a raffle
+ * Creates a top-level comment on a raffle.
+ *
+ * Thin wrapper over `createCommentBase` — resolves the comments endpoint
+ * and the `create-comment` telemetry tag, then delegates the shared
+ * POST → Zod parse → analytics pipeline. Public signature is preserved so
+ * React Query hooks (`use-create-comment`) import unchanged.
  *
  * @param raffleId - The raffle ID
  * @param payload - Comment body text
@@ -27,38 +22,10 @@ export async function createComment(
 	raffleId: string,
 	payload: CreateCommentPayload,
 ): Promise<ServiceResponse<Comment, CommentErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
-
-	try {
-		// Step 1: Submit comment to backend
-		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/comments`,
-			payload,
-		);
-
-		// Step 2: Validate response shape against schema
-		const validated = commentSchema.parse(response.data);
-
-		// Step 3: Fire-and-forget analytics — don't block comment UX
-		void sessionPromise.then(session =>
-			trackServer(
-				COMMENT_EVENTS.CREATED,
-				{
-					raffle_id: raffleId,
-					comment_id: validated.id,
-					is_reply: false,
-					body_length: payload.body.length,
-				},
-				{ userId: session?.user?.id },
-			),
-		);
-
-		return success(validated);
-	} catch (error) {
-		if (error instanceof ZodError) {
-			captureContractDrift(error, 'comment', 'create-comment');
-			return failure(COMMENT_ERROR_CODES.FETCH_FAILED);
-		}
-		return failure(mapCommentError(error));
-	}
+	return createCommentBase({
+		raffleId,
+		endpoint: `/raffles/${raffleId}/comments`,
+		payload,
+		action: 'create-comment',
+	});
 }

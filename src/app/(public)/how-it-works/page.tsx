@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Dice5, Lock, Search, ShieldCheck, Sigma } from 'lucide-react';
 import Link from 'next/link';
 
 import { CodeSnippet } from '@/components/ui/code-snippet';
@@ -19,6 +20,15 @@ export const metadata: Metadata = {
  * Designed for clarity across tech and non-tech audiences, with ADHD-friendly
  * structure: short paragraphs, numbered steps, generous whitespace.
  *
+ * Layout:
+ * 1. Hero — one sentence
+ * 2. Sealed envelope analogy — intuitive mental model before any jargon
+ * 3. Three numbered steps — the actual process
+ * 4. Privacy — why we can't show PII and how we prove eligibility instead
+ * 5. Verify your ticket — interactive form with explanation of what users will see
+ * 6. Tech-savvy details — collapsible
+ * 7. CTA
+ *
  * Server Component — the only interactive part is <TicketVerificationStory />.
  */
 export default function HowItWorksPage() {
@@ -34,13 +44,56 @@ export default function HowItWorksPage() {
 				</p>
 			</header>
 
-			{/* Process — 3 numbered steps, max 2 sentences each */}
+			{/*
+			 * Sealed envelope analogy — builds an intuitive mental model before
+			 * introducing any technical terms. The three-step numbered list maps
+			 * directly to the process section below so the reader already "gets it"
+			 * before seeing IPFS, VRF, or modulo.
+			 */}
+			<section className="mb-16">
+				<h2 className="font-clash-display mb-4 text-2xl font-semibold">
+					The short version
+				</h2>
+				<div className="text-muted-foreground space-y-3">
+					<p>
+						Think of a{' '}
+						<strong className="text-foreground">sealed envelope</strong>.
+					</p>
+					<ol className="list-inside list-decimal space-y-2">
+						<li>
+							Before the draw, we seal every ticket inside the envelope and have
+							it <strong className="text-foreground">notarized</strong> —
+							recorded on a public ledger that nobody can edit.
+						</li>
+						<li>
+							An independent{' '}
+							<strong className="text-foreground">third party</strong> generates
+							a random number. We can&apos;t predict it, and we can&apos;t ask
+							for a different one.
+						</li>
+						<li>
+							Only then do we open the envelope and apply the random number to
+							pick the winner.
+						</li>
+					</ol>
+					<p>
+						Because the envelope was sealed <em>before</em> the random number
+						existed, nobody — including us — could have rigged the outcome.
+					</p>
+				</div>
+			</section>
+
+			{/* Process — 3 numbered steps, each maps to the envelope analogy above */}
 			<section className="mb-16">
 				<h2 className="font-clash-display mb-6 text-2xl font-semibold">
 					How a winner is selected
 				</h2>
 				<ol className="space-y-6">
-					<ProcessStep number={1} title="Tickets are locked">
+					<ProcessStep
+						number={1}
+						icon={<Lock className="size-4" />}
+						title="Tickets are locked"
+					>
 						When a raffle ends, every ticket is uploaded to{' '}
 						<a
 							href="https://docs.ipfs.tech/"
@@ -55,7 +108,11 @@ export default function HowItWorksPage() {
 						add, remove, or change tickets.
 					</ProcessStep>
 
-					<ProcessStep number={2} title="A random number is generated">
+					<ProcessStep
+						number={2}
+						icon={<Dice5 className="size-4" />}
+						title="A random number is generated"
+					>
 						We request a random number from{' '}
 						<a
 							href="https://docs.chain.link/vrf"
@@ -69,47 +126,90 @@ export default function HowItWorksPage() {
 						Nobody — including us — can predict or influence the result.
 					</ProcessStep>
 
-					<ProcessStep number={3} title="The winner is selected">
-						The formula is simple and public:{' '}
+					<ProcessStep
+						number={3}
+						icon={<Sigma className="size-4" />}
+						title="The winner is picked by math"
+					>
+						The formula is public:{' '}
 						<code className="bg-muted rounded px-1.5 py-0.5 font-mono text-sm">
 							(random % totalTickets) + 1
 						</code>
-						. Anyone can run this with the same inputs and get the same winner.
+						. The random number is divided by the total ticket count, and the
+						remainder points to the winning ticket. Anyone can run this and get
+						the same answer.
 					</ProcessStep>
 				</ol>
 			</section>
 
-			{/* Privacy — addresses PII concerns in 3 short paragraphs */}
+			{/*
+			 * Privacy section — addresses the core PII tension:
+			 * users want proof their ticket was in the pool, but we can't expose
+			 * personal data on a public ledger. This section explains *why* we use
+			 * hashes and *what* users can still verify despite the privacy wall.
+			 */}
 			<section className="mb-16">
-				<h2 className="font-clash-display mb-6 text-2xl font-semibold">
-					Your privacy
+				<h2 className="font-clash-display mb-4 flex items-center gap-2 text-2xl font-semibold">
+					<ShieldCheck className="size-6" />
+					Your privacy matters
 				</h2>
 				<div className="text-muted-foreground space-y-3">
 					<p>
-						Your name, email, and user ID never appear on IPFS or the
-						blockchain.
+						Raffles involve real people — names, emails, payment info. We
+						can&apos;t publish that on a public ledger, and you wouldn&apos;t
+						want us to.
 					</p>
 					<p>
-						Each ticket uses a{' '}
+						Instead, each ticket is stored as a{' '}
 						<strong className="text-foreground">cryptographic hash</strong> — a
-						one-way fingerprint of your identity that can&apos;t be reversed.
-						Nobody browsing the public data can see who owns which ticket.
+						one-way fingerprint. It proves the ticket existed without revealing
+						who owns it. Think of it like a sealed ballot: the ballot is in the
+						box, but nobody can see whose name is on it.
 					</p>
 					<p>
-						You can still prove your ticket was in the pool. Enter your ticket
-						code below and we&apos;ll verify it against the committed data.
+						So how do you know <em>your</em> ticket was actually in the pool?
+						That&apos;s what the verification tool below does. You enter your
+						private ticket code, and we prove — using the same public data on
+						IPFS — that your ticket was locked in before the draw.
 					</p>
 				</div>
 			</section>
 
 			{/* Interactive verification — the core of the page */}
 			<section className="mb-16">
-				<h2 className="font-clash-display mb-6 text-2xl font-semibold">
+				<h2 className="font-clash-display mb-4 flex items-center gap-2 text-2xl font-semibold">
+					<Search className="size-6" />
 					Verify your ticket
 				</h2>
-				<p className="text-muted-foreground mb-4">
-					Enter your ticket code to see exactly what happened during the draw.
-				</p>
+
+				{/*
+				 * Preamble — sets expectations for what the verification tool will show.
+				 * Users who don't understand the output are less likely to trust it, so
+				 * we preview the three things they'll see before they type anything.
+				 */}
+				<div className="text-muted-foreground mb-6 space-y-2 text-sm">
+					<p>
+						Enter your raffle and ticket code. You&apos;ll see three things:
+					</p>
+					<ol className="list-inside list-decimal space-y-1">
+						<li>
+							<strong className="text-foreground">Your ticket was found</strong>{' '}
+							— it exists in the locked dataset on IPFS.
+						</li>
+						<li>
+							<strong className="text-foreground">Cryptographic proof</strong> —
+							a Merkle proof confirming your ticket was committed before any
+							randomness existed.
+						</li>
+						<li>
+							<strong className="text-foreground">The draw math</strong> — the
+							exact random number, the formula, and which ticket it landed on.
+							If your ticket wasn&apos;t the winner, you&apos;ll see exactly
+							why: the math simply pointed to a different number.
+						</li>
+					</ol>
+				</div>
+
 				<div className="bg-card rounded-xl border p-6">
 					<TicketVerificationStory />
 				</div>
@@ -215,22 +315,26 @@ export default function HowItWorksPage() {
 
 interface ProcessStepProps {
 	number: number;
+	icon: React.ReactNode;
 	title: string;
 	children: React.ReactNode;
 }
 
 /**
  * Numbered step in the "How a winner is selected" section.
- * Minimal UI — number badge + title + body text.
+ * Number badge + icon + title + body text.
  */
-function ProcessStep({ number, title, children }: ProcessStepProps) {
+function ProcessStep({ number, icon, title, children }: ProcessStepProps) {
 	return (
 		<li className="flex gap-4">
 			<span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold">
 				{number}
 			</span>
 			<div>
-				<h3 className="mb-1 font-semibold">{title}</h3>
+				<h3 className="mb-1 flex items-center gap-1.5 font-semibold">
+					{icon}
+					{title}
+				</h3>
 				<p className="text-muted-foreground">{children}</p>
 			</div>
 		</li>

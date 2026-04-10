@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { useCreateReview } from '@/services/review/use-create-review';
 
-import { InteractiveStarRating } from './interactive-star-rating';
+import { StarRating } from './star-rating';
 
 interface ReviewHostModalProps {
 	/** Whether the modal is open */
@@ -124,7 +124,8 @@ export function ReviewHostModal({
 							</p>
 
 							<div className="flex justify-center py-4">
-								<InteractiveStarRating
+								<StarRating
+									mode="interactive"
 									rating={rating}
 									onChange={setRating}
 									disabled={reviewMutation.isPending}

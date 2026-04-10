@@ -1,21 +1,9 @@
 'use client';
 
-import {
-	$convertFromMarkdownString,
-	$convertToMarkdownString,
-	CHECK_LIST,
-	ELEMENT_TRANSFORMERS,
-	MULTILINE_ELEMENT_TRANSFORMERS,
-	TEXT_FORMAT_TRANSFORMERS,
-	TEXT_MATCH_TRANSFORMERS,
-} from '@lexical/markdown';
-import { CodeNode } from '@lexical/code';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { $getRoot } from 'lexical';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef } from 'react';
 import { useController, type Control } from 'react-hook-form';
+
+import { MarkdownSyncPlugin } from '../lib/markdown-sync-plugin';
 
 import type { RaffleFormData } from './schema';
 
@@ -24,77 +12,6 @@ type DescriptionEditorProps = {
 	name?: 'description';
 	trigger?: (name: 'description') => Promise<boolean>;
 };
-
-// Helper function to check if transformer depends on CodeNode
-function hasCodeNodeDependency(transformer: {
-	dependencies?: unknown[];
-	regExp?: RegExp;
-}): boolean {
-	// Check dependencies array
-	if (transformer.dependencies && transformer.dependencies.length > 0) {
-		const hasCodeNode = transformer.dependencies.some(
-			dep => dep === CodeNode || dep === 'CodeNode',
-		);
-		if (hasCodeNode) {
-			return true;
-		}
-		// Also check by name as fallback
-		const depNames = transformer.dependencies.map(dep => {
-			if (typeof dep === 'function') {
-				return dep.name || dep.constructor?.name;
-			}
-			return String(dep);
-		});
-		if (
-			depNames.some(
-				name =>
-					name &&
-					(name.includes('CodeNode') ||
-						(name.includes('Code') && !name.includes('CodeHighlight'))),
-			)
-		) {
-			return true;
-		}
-	}
-	// Check regex pattern for code blocks
-	if ('regExp' in transformer && transformer.regExp) {
-		const regexStr = transformer.regExp.toString();
-		if (
-			regexStr.includes('```') ||
-			(regexStr.includes('`') && regexStr.includes('code'))
-		) {
-			return true;
-		}
-	}
-	return false;
-}
-
-// Same transformers used in the editor plugins
-const MARKDOWN_TRANSFORMERS = [
-	CHECK_LIST,
-	...ELEMENT_TRANSFORMERS.filter(
-		transformer => !hasCodeNodeDependency(transformer),
-	),
-	...MULTILINE_ELEMENT_TRANSFORMERS.filter(
-		transformer => !hasCodeNodeDependency(transformer),
-	),
-	...TEXT_FORMAT_TRANSFORMERS,
-	...TEXT_MATCH_TRANSFORMERS.filter(transformer => {
-		// Remove link transformer: [text](url)
-		if (transformer.type === 'text-match' && transformer.regExp) {
-			const regexStr = transformer.regExp.toString();
-			if (
-				regexStr.includes('\\[') &&
-				regexStr.includes('\\]') &&
-				regexStr.includes('\\(') &&
-				regexStr.includes('\\)')
-			) {
-				return false;
-			}
-		}
-		return true;
-	}),
-];
 
 // next/dynamic: lazy-load the Lexical editor — it's a heavy client-only bundle
 // (~50kB gzipped). SSR disabled because Lexical requires browser APIs on init.
@@ -117,90 +34,6 @@ function EditorSkeleton() {
 			</label>
 			<div className="h-[185px] w-full animate-pulse rounded-lg bg-gray-50" />
 		</div>
-	);
-}
-
-/**
- * Plugin to sync markdown between react-hook-form and the Lexical editor.
- * Uses refs to prevent update loops: isUpdatingRef guards against the
- * OnChangePlugin firing during programmatic editor updates.
- */
-function MarkdownSyncPlugin({
-	markdownValue,
-	onMarkdownChange,
-}: {
-	markdownValue: string;
-	onMarkdownChange: (markdown: string) => void;
-}) {
-	const [editor] = useLexicalComposerContext();
-	// Ref: tracks the last markdown value written to the editor to deduplicate
-	const lastMarkdownRef = useRef<string>(markdownValue || '');
-	// Ref: true during programmatic editor updates — suppresses OnChangePlugin
-	const isUpdatingRef = useRef(false);
-	// Ref: true after first mount initialization — prevents double-init
-	const isInitializedRef = useRef(false);
-
-	// mount: seed the editor with the initial markdown value from form state
-	useEffect(() => {
-		if (!isInitializedRef.current) {
-			isUpdatingRef.current = true;
-			editor.update(() => {
-				const root = $getRoot();
-				root.clear();
-				if (markdownValue) {
-					$convertFromMarkdownString(markdownValue, MARKDOWN_TRANSFORMERS);
-				}
-			});
-			lastMarkdownRef.current = markdownValue || '';
-			isInitializedRef.current = true;
-			setTimeout(() => {
-				isUpdatingRef.current = false;
-			}, 0);
-		}
-	}, [editor, markdownValue]);
-
-	// Sync: update editor when form value changes externally (e.g. draft restore).
-	// Compares against lastMarkdownRef to avoid loops from our own onChange writes.
-	useEffect(() => {
-		if (!isInitializedRef.current || isUpdatingRef.current) return;
-
-		editor.getEditorState().read(() => {
-			const currentMarkdown = $convertToMarkdownString(MARKDOWN_TRANSFORMERS);
-			if (
-				currentMarkdown !== markdownValue &&
-				markdownValue !== lastMarkdownRef.current
-			) {
-				isUpdatingRef.current = true;
-				editor.update(() => {
-					const root = $getRoot();
-					root.clear();
-					if (markdownValue) {
-						$convertFromMarkdownString(markdownValue, MARKDOWN_TRANSFORMERS);
-					}
-				});
-				lastMarkdownRef.current = markdownValue || '';
-				setTimeout(() => {
-					isUpdatingRef.current = false;
-				}, 0);
-			}
-		});
-	}, [editor, markdownValue]);
-
-	return (
-		<OnChangePlugin
-			ignoreSelectionChange={true}
-			onChange={editorState => {
-				if (isUpdatingRef.current || !isInitializedRef.current) return;
-
-				editorState.read(() => {
-					const markdown = $convertToMarkdownString(MARKDOWN_TRANSFORMERS);
-					if (markdown !== lastMarkdownRef.current) {
-						lastMarkdownRef.current = markdown;
-						onMarkdownChange(markdown);
-					}
-				});
-			}}
-		/>
 	);
 }
 

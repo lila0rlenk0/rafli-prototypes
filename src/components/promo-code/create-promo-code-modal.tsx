@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, Copy, Download, Loader2 } from 'lucide-react';
-import { ComponentProps, useEffect, useState } from 'react';
+import { ComponentProps, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -154,13 +154,31 @@ export function CreatePromoCodeModal({
 	const watchUnlimitedUses = form.watch('unlimitedUses');
 	const watchUnlimitedPerUser = form.watch('unlimitedPerUser');
 
-	// Sync effect — forces type to DISCOUNT_FIXED when Free Tickets is disallowed
-	// (raffle has no question set). Fires when allowFreeTickets prop or watchType changes.
-	useEffect(() => {
+	// Adjust-state-during-render pattern (replaces a useEffect sync).
+	//
+	// Why: the Free Tickets radio is already `disabled` when the host disallows
+	// them, so the user can never pick this type via the UI. The only path into
+	// a stale `type === FREE_TICKETS` state is the `allowFreeTickets` prop
+	// flipping from true to false while the modal is open (e.g. the host edits
+	// their raffle in another tab and the parent re-renders with the new prop).
+	//
+	// React's recommended fix for "reset some state when a prop changes" is to
+	// compare the prop to a previous value stored in state and call the setter
+	// during render — React discards the first render and re-runs with the new
+	// value, which is cheaper and more correct than a post-render useEffect.
+	// See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+	const [prevAllowFreeTickets, setPrevAllowFreeTickets] =
+		useState(allowFreeTickets);
+	if (prevAllowFreeTickets !== allowFreeTickets) {
+		// Track the new prop value for the next render's comparison.
+		setPrevAllowFreeTickets(allowFreeTickets);
+		// If the host just revoked free-ticket support and the form is currently
+		// sitting on that type, snap it back to a still-valid option. Guarded so
+		// unrelated prop flips don't clobber the user's selection.
 		if (!allowFreeTickets && watchType === PROMO_CODE_TYPE.FREE_TICKETS) {
 			form.setValue('type', PROMO_CODE_TYPE.DISCOUNT_FIXED);
 		}
-	}, [allowFreeTickets, watchType, form]);
+	}
 
 	function handleTypeChange(type: PromoCodeType) {
 		form.setValue('type', type);

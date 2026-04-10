@@ -2,6 +2,7 @@
 
 import { authenticatedClient } from '@/lib/api/client';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
+import { captureServiceError } from '@/lib/sentry/capture';
 import type { PromoCodeErrorCode } from '@/types/errors';
 import type { ExportPromoCodesQuery } from '@/types/promo-code';
 import type { ServiceResponse } from '@/types/service-response';
@@ -32,8 +33,16 @@ export async function exportPromoCodes(
 				responseType: 'text',
 			},
 		);
+		// Response is a raw CSV blob (responseType: 'text') — no Zod schema
+		// applies. Hosts export promo codes for fulfillment/accounting, so
+		// failures must surface in Sentry alongside other promo-code mutations.
 		return success(response.data);
 	} catch (error) {
-		return failure(mapPromoCodeError(error));
+		const errorCode = mapPromoCodeError(error);
+		captureServiceError(error, errorCode, {
+			service: 'promo-code',
+			action: 'export-promo-codes',
+		});
+		return failure(errorCode);
 	}
 }

@@ -477,15 +477,27 @@ function DrawResultStep({ ticket, drawFormula, raffle }: DrawResultStepProps) {
 		);
 	}
 
-	// Not a winner — show the math that selected a different ticket
+	// Not a winner — explain the modulo math clearly so the user understands
+	// *why* their ticket wasn't picked: the random number simply landed elsewhere.
 	return (
 		<StoryStep number={3} title="The draw" status="neutral">
 			<div className="space-y-3">
-				<FormulaDisplay formula={drawFormula} variant="default" />
 				<p>
 					Your ticket <strong>#{ticket.ticketId.toLocaleString()}</strong> was
-					eligible. The random number selected ticket{' '}
-					<strong>#{drawFormula.actualTicketId.toLocaleString()}</strong>.
+					in the pool and fully eligible. Here&apos;s the math that picked the
+					winner:
+				</p>
+				<FormulaDisplay formula={drawFormula} variant="default" />
+				{/*
+				 * Plain-language explanation of the modulo operation for non-tech users.
+				 * "Why not my ticket?" is the #1 question — answer it directly.
+				 */}
+				<p>
+					The random number, divided by the total number of tickets, left a
+					remainder that pointed to ticket{' '}
+					<strong>#{drawFormula.actualTicketId.toLocaleString()}</strong> — not
+					yours. Every ticket had an equal chance; the math simply landed on a
+					different number.
 				</p>
 				<BlockchainLinks raffle={raffle} />
 			</div>
@@ -503,6 +515,10 @@ interface FormulaDisplayProps {
 /**
  * Shows the VRF random number and modulo formula in a compact, readable format.
  * Highlights the result differently for winners vs non-winners.
+ *
+ * Layout: three rows (random → formula → result) read top-to-bottom like a
+ * simple arithmetic problem. Non-tech users can follow the flow without
+ * understanding modular arithmetic — the labels do the heavy lifting.
  */
 function FormulaDisplay({ formula, variant }: FormulaDisplayProps) {
 	const bgClass = variant === 'winner' ? 'bg-green-50' : 'bg-muted';
@@ -510,11 +526,11 @@ function FormulaDisplay({ formula, variant }: FormulaDisplayProps) {
 	return (
 		<div className={cn('rounded-lg p-3', bgClass)}>
 			<div className="space-y-1.5 text-sm">
-				{/* Random number — the raw VRF output */}
+				{/* Random number — the raw VRF output from the blockchain */}
 				<div className="flex items-center justify-between gap-2">
-					<span className="text-muted-foreground">Random number</span>
+					<span className="text-muted-foreground shrink-0">Random number</span>
 					<div className="flex items-center gap-1">
-						<code className="font-mono text-xs">
+						<code className="truncate font-mono text-xs">
 							{truncateHash(formula.randomNumber)}
 						</code>
 						<CopyButton value={formula.randomNumber} />
@@ -523,13 +539,13 @@ function FormulaDisplay({ formula, variant }: FormulaDisplayProps) {
 
 				{/* Formula — shows the full modulo expression */}
 				<div className="flex items-center justify-between gap-2">
-					<span className="text-muted-foreground">Formula</span>
-					<code className="font-mono text-xs">{formula.formula}</code>
+					<span className="text-muted-foreground shrink-0">Formula</span>
+					<code className="truncate font-mono text-xs">{formula.formula}</code>
 				</div>
 
 				{/* Result — the winning ticket ID */}
 				<div className="border-border flex items-center justify-between gap-2 border-t pt-1.5">
-					<span className="text-muted-foreground">Result</span>
+					<span className="text-muted-foreground">Winning ticket</span>
 					<span
 						className={cn(
 							'font-semibold',

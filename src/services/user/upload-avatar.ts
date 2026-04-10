@@ -8,7 +8,7 @@ import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	CLIENT_ERROR_CODES,
-	RAFFLE_ERROR_CODES,
+	COMMON_ERROR_CODES,
 	type RaffleErrorCode,
 } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -58,8 +58,10 @@ export async function uploadAvatar(
 		return success(undefined);
 	} catch (error) {
 		if (error instanceof ZodError) {
+			// Contract drift on user-domain response — use the cross-domain
+			// VALIDATION_ERROR convention shared by all services (see sign-in-user.ts)
 			captureContractDrift(error, 'user', 'upload-avatar');
-			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
 		return failure(mapRaffleError(error));

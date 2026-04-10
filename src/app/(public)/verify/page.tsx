@@ -59,7 +59,16 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
 
 			<div className="grid gap-6 md:grid-cols-2">
 				<ScrollReveal delay={0.1}>
+					{/*
+					 * `key` forces a remount whenever the query params change so the
+					 * client component re-seeds `useState` from the new props. Without
+					 * this, navigating from /verify?raffle=A&code=X to /verify?raffle=B
+					 * &code=Y keeps the previous form state and verification result
+					 * (same route, no natural unmount). `'empty'` sentinel when both
+					 * are absent so the bare /verify page shares a single mount.
+					 */}
 					<EnhancedTicketChecker
+						key={raffle || code ? `${raffle ?? ''}:${code ?? ''}` : 'empty'}
 						initialRaffleSlug={raffle}
 						initialTicketCode={code}
 					/>

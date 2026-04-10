@@ -15,7 +15,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useTimeout } from '@/lib/hooks/use-timeout';
 import { DIALOG_EXIT_ANIMATION_MS } from '@/lib/ui-constants';
-import { getReportErrorMessage } from '@/lib/errors/report-error-messages';
+import { getReportErrorMessage } from '@/lib/errors/error-messages';
 import { useCreateReport } from '@/services/report/use-create-report';
 import type { ReportContentType } from '@/types/report';
 

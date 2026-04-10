@@ -8,7 +8,7 @@ import {
 
 import { toast } from 'sonner';
 
-import { getVoteErrorMessage } from '@/lib/comment/error-messages';
+import { getVoteErrorMessage } from '@/lib/errors/error-messages';
 import { serviceError, type ServiceError } from '@/lib/query/errors';
 import type {
 	ListCommentsResponse,

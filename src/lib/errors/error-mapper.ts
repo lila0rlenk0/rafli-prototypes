@@ -149,483 +149,234 @@ function mapCommonError(
 }
 
 /**
- * Maps authentication errors to AuthErrorCode
+ * Factory producing a domain error mapper.
  *
- * Flow:
- * 1. Extract backend code from RFC 7807 response
- * 2. If code starts with `auth:` or `global:` → use as-is (backend code)
- * 3. If simple code → map to full code
- * 4. If no code found → fallback to frontend-only error (network/HTTP status)
+ * Every domain mapper below follows the identical flow:
  *
- * @param error - Caught error (usually AxiosError)
- * @returns AuthErrorCode (either backend code or frontend fallback)
+ *   1. Call `extractErrorCode(error)` to read the RFC 7807 `type`/`message`/`code`.
+ *   2. If the extracted code starts with one of the domain's accepted prefixes,
+ *      return it as-is (it's already a canonical backend code).
+ *   3. Otherwise normalize shorthand codes via `mapSimpleCode` (e.g. the backend
+ *      sometimes returns bare "unauthenticated" instead of the full
+ *      "global:auth:unauthenticated") and re-check prefixes.
+ *   4. If nothing matched, fall through to `mapCommonError` for network /
+ *      HTTP-status based frontend error codes.
+ *
+ * The only per-domain variation is the list of accepted prefixes — so we
+ * parameterize just that. The return type is the union of `CommonErrorCode`
+ * (the fallback) and the domain-specific code type supplied by the caller;
+ * the factory itself only handles strings at runtime and relies on the caller
+ * to supply the correct `E` generic.
+ *
+ * Note on style: the factory returns a function value, so each domain mapper
+ * is declared as `export const mapXError = createDomainErrorMapper(...)` —
+ * one of the few places in the codebase where a top-level `export const`
+ * function is the only sensible shape. Downstream call sites are unaffected
+ * because they import mappers by name.
+ *
+ * @param prefixes - Prefix list the domain accepts from backend codes. Order
+ *   doesn't matter; `startsWith` is O(prefix count) per check which is trivial.
+ * @returns A mapper function that preserves identical behavior to the
+ *   hand-rolled per-domain mappers it replaces.
  */
-export function mapAuthError(error: unknown): AuthErrorCode {
-	const extractedCode = extractErrorCode(error);
+function createDomainErrorMapper<E extends string>(
+	prefixes: readonly string[],
+): (error: unknown) => E | CommonErrorCode {
+	return function mapDomainError(error: unknown): E | CommonErrorCode {
+		// Step 1: Pull the backend's RFC 7807 error code (or null if absent).
+		const extractedCode = extractErrorCode(error);
 
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('auth:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as AuthErrorCode;
+		if (extractedCode) {
+			// Step 2: Direct prefix match — backend returned a fully-qualified code.
+			if (hasAcceptedPrefix(extractedCode, prefixes)) {
+				return extractedCode as E;
+			}
+
+			// Step 3: Normalize shorthand ("unauthenticated" → "global:auth:unauthenticated")
+			// and retry the prefix check. Only accept if the mapping actually changed
+			// the string into something matching — otherwise we'd double-check the same
+			// value.
+			const mappedCode = mapSimpleCode(extractedCode);
+			if (hasAcceptedPrefix(mappedCode, prefixes)) {
+				return mappedCode as E;
+			}
 		}
 
-		// Handles shorthand codes e.g. "unauthenticated" → "global:auth:unauthenticated"
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('auth:') || mappedCode.startsWith('global:')) {
-			return mappedCode as AuthErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
+		// Step 4: No backend code matched — fall through to network/HTTP fallbacks.
+		return mapCommonError(error);
+	};
 }
 
 /**
- * Maps raffle/core errors to RaffleErrorCode
- *
- * Same flow as mapAuthError but accepts `core:*` prefix for raffle operations.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns RaffleErrorCode (either backend code or frontend fallback)
+ * Returns true when `code` starts with any of the accepted prefixes. Extracted
+ * so the two prefix checks in `createDomainErrorMapper` stay identical.
  */
-export function mapRaffleError(error: unknown): RaffleErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as RaffleErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as RaffleErrorCode;
-		}
+function hasAcceptedPrefix(code: string, prefixes: readonly string[]): boolean {
+	for (const prefix of prefixes) {
+		if (code.startsWith(prefix)) return true;
 	}
-
-	return mapCommonError(error);
+	return false;
 }
+
+// CommonErrorCode alias — the frontend-only fallback union returned by
+// `mapCommonError`. Kept local so `createDomainErrorMapper`'s generic return
+// type stays self-contained and we don't leak a new name into the errors barrel.
+type CommonErrorCode = ReturnType<typeof mapCommonError>;
 
 /**
- * Maps order errors to OrderErrorCode
- *
- * Accepts `core:order:*`, `core:raffle:*`, and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns OrderErrorCode (either backend code or frontend fallback)
+ * Maps authentication errors to AuthErrorCode.
+ * Accepts backend `auth:*` and `global:*` prefixes; falls back to CommonErrorCode.
  */
-export function mapOrderError(error: unknown): OrderErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:order:') ||
-			extractedCode.startsWith('core:raffle:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as OrderErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (
-			mappedCode.startsWith('core:order:') ||
-			mappedCode.startsWith('core:raffle:') ||
-			mappedCode.startsWith('global:')
-		) {
-			return mappedCode as OrderErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapAuthError = createDomainErrorMapper<AuthErrorCode>([
+	'auth:',
+	'global:',
+]);
 
 /**
- * Maps wallet errors to WalletErrorCode
- *
- * Accepts `auth:wallet:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns WalletErrorCode (either backend code or frontend fallback)
+ * Maps raffle/core errors to RaffleErrorCode.
+ * Accepts backend `core:*` and `global:*` prefixes; falls back to CommonErrorCode.
  */
-export function mapWalletError(error: unknown): WalletErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('auth:wallet:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as WalletErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (
-			mappedCode.startsWith('auth:wallet:') ||
-			mappedCode.startsWith('global:')
-		) {
-			return mappedCode as WalletErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapRaffleError = createDomainErrorMapper<RaffleErrorCode>([
+	'core:',
+	'global:',
+]);
 
 /**
- * Maps payment errors to PaymentErrorCode
- *
- * Accepts `payments:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns PaymentErrorCode (either backend code or frontend fallback)
+ * Maps order errors to OrderErrorCode.
+ * Accepts `core:order:*`, `core:raffle:*`, and `global:*` prefixes — orders
+ * can surface raffle-level failures like sold-out, so both core namespaces
+ * are included deliberately (do NOT collapse to plain `core:`).
  */
-export function mapPaymentError(error: unknown): PaymentErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		// Accepts core:* because crypto checkout can return core:order:* errors
-		if (
-			extractedCode.startsWith('payments:') ||
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as PaymentErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (
-			mappedCode.startsWith('payments:') ||
-			mappedCode.startsWith('core:') ||
-			mappedCode.startsWith('global:')
-		) {
-			return mappedCode as PaymentErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapOrderError = createDomainErrorMapper<OrderErrorCode>([
+	'core:order:',
+	'core:raffle:',
+	'global:',
+]);
 
 /**
- * Maps ticket errors to TicketErrorCode
- *
- * Accepts `core:ticket:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns TicketErrorCode (either backend code or frontend fallback)
+ * Maps wallet errors to WalletErrorCode.
+ * Accepts `auth:wallet:*` and `global:*` — wallets live under the auth backend
+ * module, so only the wallet sub-namespace is honored (do NOT expand to `auth:`).
  */
-export function mapTicketError(error: unknown): TicketErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as TicketErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as TicketErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapWalletError = createDomainErrorMapper<WalletErrorCode>([
+	'auth:wallet:',
+	'global:',
+]);
 
 /**
- * Maps host errors to HostErrorCode
- *
- * Accepts `core:user:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns HostErrorCode (either backend code or frontend fallback)
+ * Maps payment errors to PaymentErrorCode.
+ * Accepts `payments:*`, `core:*`, and `global:*` — crypto checkout can surface
+ * `core:order:*` errors through the payments flow, so the broad `core:` prefix
+ * is intentional.
  */
-export function mapHostError(error: unknown): HostErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as HostErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as HostErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapPaymentError = createDomainErrorMapper<PaymentErrorCode>([
+	'payments:',
+	'core:',
+	'global:',
+]);
 
 /**
- * Maps winning errors to WinningErrorCode
- *
- * Accepts `core:winning:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns WinningErrorCode (either backend code or frontend fallback)
+ * Maps ticket errors to TicketErrorCode.
+ * Accepts `core:*` and `global:*` prefixes.
  */
-export function mapWinningError(error: unknown): WinningErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as WinningErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as WinningErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapTicketError = createDomainErrorMapper<TicketErrorCode>([
+	'core:',
+	'global:',
+]);
 
 /**
- * Maps update errors to UpdateErrorCode
- *
- * Accepts `core:update:*`, `core:raffle:*`, and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns UpdateErrorCode (either backend code or frontend fallback)
+ * Maps host errors to HostErrorCode.
+ * Accepts `core:*` and `global:*` prefixes.
  */
-export function mapUpdateError(error: unknown): UpdateErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as UpdateErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as UpdateErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapHostError = createDomainErrorMapper<HostErrorCode>([
+	'core:',
+	'global:',
+]);
 
 /**
- * Maps verification errors to VerificationErrorCode
- *
- * Accepts `core:verification:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns VerificationErrorCode (either backend code or frontend fallback)
+ * Maps winning errors to WinningErrorCode.
+ * Accepts `core:*` and `global:*` prefixes.
  */
-export function mapVerificationError(error: unknown): VerificationErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as VerificationErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as VerificationErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapWinningError = createDomainErrorMapper<WinningErrorCode>([
+	'core:',
+	'global:',
+]);
 
 /**
- * Maps notification errors to NotificationErrorCode
- *
- * Accepts `core:notification:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns NotificationErrorCode (either backend code or frontend fallback)
+ * Maps update errors to UpdateErrorCode.
+ * Accepts `core:*` and `global:*` prefixes.
  */
-export function mapNotificationError(error: unknown): NotificationErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as NotificationErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as NotificationErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapUpdateError = createDomainErrorMapper<UpdateErrorCode>([
+	'core:',
+	'global:',
+]);
 
 /**
- * Maps review errors to ReviewErrorCode
- *
- * Accepts `core:review:*`, `core:raffle:*`, and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns ReviewErrorCode (either backend code or frontend fallback)
+ * Maps verification errors to VerificationErrorCode.
+ * Accepts `core:*` and `global:*` prefixes.
  */
-export function mapReviewError(error: unknown): ReviewErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as ReviewErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as ReviewErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapVerificationError =
+	createDomainErrorMapper<VerificationErrorCode>(['core:', 'global:']);
 
 /**
- * Maps comment errors to CommentErrorCode
- *
- * Accepts `core:comment:*`, `core:raffle:*`, and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns CommentErrorCode (either backend code or frontend fallback)
+ * Maps notification errors to NotificationErrorCode.
+ * Accepts `core:*` and `global:*` prefixes.
  */
-export function mapCommentError(error: unknown): CommentErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as CommentErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as CommentErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapNotificationError =
+	createDomainErrorMapper<NotificationErrorCode>(['core:', 'global:']);
 
 /**
- * Maps report errors to ReportErrorCode
- *
- * Accepts `moderation:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns ReportErrorCode (either backend code or frontend fallback)
+ * Maps review errors to ReviewErrorCode.
+ * Accepts `core:*` and `global:*` prefixes.
  */
-export function mapReportError(error: unknown): ReportErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('moderation:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as ReportErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (
-			mappedCode.startsWith('moderation:') ||
-			mappedCode.startsWith('global:')
-		) {
-			return mappedCode as ReportErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapReviewError = createDomainErrorMapper<ReviewErrorCode>([
+	'core:',
+	'global:',
+]);
 
 /**
- * Maps promo code errors to PromoCodeErrorCode
- *
- * Accepts `core:promo:*`, `core:raffle:*`, and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns PromoCodeErrorCode (either backend code or frontend fallback)
+ * Maps comment errors to CommentErrorCode.
+ * Accepts `core:*` and `global:*` prefixes.
  */
-export function mapPromoCodeError(error: unknown): PromoCodeErrorCode {
-	const extractedCode = extractErrorCode(error);
-
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as PromoCodeErrorCode;
-		}
-
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as PromoCodeErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+export const mapCommentError = createDomainErrorMapper<CommentErrorCode>([
+	'core:',
+	'global:',
+]);
 
 /**
- * Maps KYC submission errors to KycSubmissionErrorCode
- *
- * Accepts `core:verification:*` and `global:*` prefixes.
- *
- * @param error - Caught error (usually AxiosError)
- * @returns KycSubmissionErrorCode (either backend code or frontend fallback)
+ * Maps report errors to ReportErrorCode.
+ * Accepts `moderation:*` and `global:*` — reports live in a separate moderation
+ * module on the backend, so `core:` is deliberately NOT accepted.
  */
-export function mapKycSubmissionError(error: unknown): KycSubmissionErrorCode {
-	const extractedCode = extractErrorCode(error);
+export const mapReportError = createDomainErrorMapper<ReportErrorCode>([
+	'moderation:',
+	'global:',
+]);
 
-	if (extractedCode) {
-		if (
-			extractedCode.startsWith('core:') ||
-			extractedCode.startsWith('global:')
-		) {
-			return extractedCode as KycSubmissionErrorCode;
-		}
+/**
+ * Maps promo code errors to PromoCodeErrorCode.
+ * Accepts `core:*` and `global:*` prefixes.
+ */
+export const mapPromoCodeError = createDomainErrorMapper<PromoCodeErrorCode>([
+	'core:',
+	'global:',
+]);
 
-		const mappedCode = mapSimpleCode(extractedCode);
-		if (mappedCode.startsWith('core:') || mappedCode.startsWith('global:')) {
-			return mappedCode as KycSubmissionErrorCode;
-		}
-	}
-
-	return mapCommonError(error);
-}
+/**
+ * Maps KYC submission errors to KycSubmissionErrorCode.
+ * Accepts `core:*` and `global:*` prefixes (KYC codes live under `core:verification:*`).
+ */
+export const mapKycSubmissionError =
+	createDomainErrorMapper<KycSubmissionErrorCode>(['core:', 'global:']);
 
 /**
  * Maps admin KYC review errors to AdminKycErrorCode.
  *
- * Both AdminKycErrorCode and KycSubmissionErrorCode share the same backend
- * module (`core:verification:*`) and CommonErrorCode union — the extraction
- * logic is identical. The cast is sound because:
- * 1. CommonErrorCode (the mapCommonError fallback) is in both unions
- * 2. Backend `core:verification:*` strings are trusted at runtime
+ * Delegates to `mapKycSubmissionError` because AdminKycErrorCode and
+ * KycSubmissionErrorCode share the same backend module (`core:verification:*`)
+ * and the same CommonErrorCode fallback union — the extraction logic is
+ * literally identical. A direct cast is sound because every string the
+ * delegated mapper can return already exists in AdminKycErrorCode.
  *
  * @param error - Caught error (usually AxiosError)
  * @returns AdminKycErrorCode (either backend code or frontend fallback)

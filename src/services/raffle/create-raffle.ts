@@ -9,7 +9,10 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { CreateRaffleInput, Raffle } from '@/types/raffle';
 import { createRafflePayloadSchema, raffleSchema } from '@/types/raffle';
@@ -91,7 +94,14 @@ export async function createRaffle(
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
+		// Map and capture — host raffle creation is a critical mutation (gates
+		// all downstream ticket sales and prize flows), match payment-level
+		// instrumentation so drafts lost to backend errors surface in Sentry.
 		const errorCode = mapRaffleError(error);
+		captureServiceError(error, errorCode, {
+			service: 'raffle',
+			action: 'create-raffle',
+		});
 
 		runAfter(async () => {
 			const userId = (await sessionPromise)?.user?.id;

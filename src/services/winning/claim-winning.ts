@@ -9,7 +9,10 @@ import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { revalidateWinningPaths } from '@/lib/cache/revalidation';
 import { failure, mapWinningError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -68,7 +71,13 @@ export async function claimWinning(
 			return failure(WINNING_ERROR_CODES.CLAIM_FAILED);
 		}
 
+		// Step 4: Map and capture — prize-fulfillment failures must reach Sentry
+		// with the same criticality as auth/payment (winner cannot claim prize)
 		const errorCode = mapWinningError(error);
+		captureServiceError(error, errorCode, {
+			service: 'winning',
+			action: 'claim-winning',
+		});
 		return failure(errorCode);
 	}
 }

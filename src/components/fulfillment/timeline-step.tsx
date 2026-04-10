@@ -7,7 +7,8 @@ type StepStatus = 'completed' | 'active' | 'pending';
 
 interface TimelineStepProps {
 	title: string;
-	description: string;
+	/** Step description — supports ReactNode for rich content (links, badges) */
+	description: ReactNode;
 	status: StepStatus;
 	/** Omits the connector line below this step */
 	isLast?: boolean;

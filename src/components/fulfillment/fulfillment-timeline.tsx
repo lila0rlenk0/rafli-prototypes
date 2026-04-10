@@ -1,15 +1,28 @@
 'use client';
 
-import { Users } from 'lucide-react';
+import {
+	AlertTriangle,
+	CheckCircle2,
+	Clock,
+	ExternalLink,
+	ShieldCheck,
+	Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { ReviewHostModal } from '@/components/host/review-host-modal';
+import {
+	type ActionableKycStatus,
+	getKycNudgeCopy,
+	resolveKycNudgeStatus,
+} from '@/lib/utils/kyc-nudge';
 import { checkReview } from '@/services/review/check-review';
 import { confirmReceived } from '@/services/winning/confirm-received';
 import { markDelivered } from '@/services/winning/mark-delivered';
+import type { VerificationStatus } from '@/types/verification-status';
 import type { ShippingInfo, Winning, WinningStatus } from '@/types/winning';
 
 import { MarkSentModal } from './mark-sent-modal';
@@ -27,6 +40,12 @@ interface FulfillmentTimelineProps {
 	hostId: string;
 	/** Public slug for sharing */
 	publicSlug: string;
+	/**
+	 * Winner's kyc_winner verification status. Null when host view or when the
+	 * status fetch failed. The nudge is only rendered when the winner hasn't
+	 * completed KYC ('approved') — all other states get a tailored message.
+	 */
+	kycStatus?: VerificationStatus | null;
 }
 
 type StepStatus = 'completed' | 'active' | 'pending';
@@ -37,6 +56,7 @@ export function FulfillmentTimeline({
 	raffleId,
 	hostId,
 	publicSlug,
+	kycStatus,
 }: FulfillmentTimelineProps) {
 	const router = useRouter();
 	const [currentStatus, setCurrentStatus] = useState<WinningStatus>(
@@ -199,10 +219,30 @@ export function FulfillmentTimeline({
 
 		return {
 			title: 'Shipped',
-			description:
-				status === 'active'
-					? 'Your prize has been shipped and is on its way'
-					: 'Your prize is on the way',
+			description: (
+				<>
+					{status === 'active'
+						? 'Your prize has been shipped and is on its way'
+						: 'Your prize is on the way'}
+					{/* Tracking link + host notes — only shown when host has provided them */}
+					{winning.proofUrl ? (
+						<a
+							href={winning.proofUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+						>
+							Track shipment
+							<ExternalLink className="size-3" />
+						</a>
+					) : null}
+					{winning.hostNotes ? (
+						<span className="mt-1 block text-sm text-gray-500 italic">
+							{winning.hostNotes}
+						</span>
+					) : null}
+				</>
+			),
 			action: null,
 		};
 	}
@@ -365,6 +405,14 @@ export function FulfillmentTimeline({
 	}
 	const step4 = getStep4();
 
+	// Resolve KYC nudge visibility via the pure helper (tested separately).
+	// Returns null to hide, or a narrowed status to render.
+	const actionableKycStatus = resolveKycNudgeStatus({
+		isHost,
+		kycStatus: kycStatus ?? null,
+		winningStatus: currentStatus,
+	});
+
 	return (
 		<div className="rounded-2xl border border-black bg-white p-6">
 			<div className="mb-6 flex items-center justify-between">
@@ -379,6 +427,8 @@ export function FulfillmentTimeline({
 					</Link>
 				) : null}
 			</div>
+
+			{actionableKycStatus ? <KycNudge status={actionableKycStatus} /> : null}
 
 			<div className="space-y-0">
 				<TimelineStep
@@ -432,6 +482,65 @@ export function FulfillmentTimeline({
 				hostId={hostId}
 				publicSlug={publicSlug}
 			/>
+		</div>
+	);
+}
+
+/**
+ * KYC verification nudge shown to winners who haven't completed kyc_winner verification.
+ *
+ * The parent (`FulfillmentTimeline`) filters 'approved' before rendering — this
+ * component only receives statuses that need user attention or are informational.
+ *
+ * Copy, icon, and CTA vary by status:
+ * - 'none': never started — primary call to action
+ * - 'draft': started but didn't finalize — resume
+ * - 'in_review': finalized, admin review pending — informational only
+ * - 'rejected': admin rejected — re-submit with reason hint
+ *
+ * This is a UX nudge only — it does NOT block the shipping form since the
+ * backend is the authoritative enforcement boundary for claim eligibility.
+ */
+function KycNudge({ status }: { status: ActionableKycStatus }) {
+	// in_review is purely informational — no CTA, no action needed from the winner.
+	if (status === 'in_review') {
+		return (
+			<div className="mb-6 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+				<Clock className="mt-0.5 size-5 shrink-0 text-blue-600" />
+				<div className="flex-1">
+					<p className="text-sm font-semibold text-blue-900">
+						Identity verification under review
+					</p>
+					<p className="mt-1 text-sm text-blue-800">
+						We&apos;ll notify you once your submission has been reviewed. You
+						can still submit your shipping info in the meantime.
+					</p>
+				</div>
+			</div>
+		);
+	}
+
+	// TS narrows status to 'none' | 'draft' | 'rejected' after the in_review guard.
+	const copy = getKycNudgeCopy(status);
+
+	return (
+		<div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+			{status === 'rejected' ? (
+				<AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
+			) : (
+				<ShieldCheck className="mt-0.5 size-5 shrink-0 text-amber-600" />
+			)}
+			<div className="flex-1">
+				<p className="text-sm font-semibold text-amber-900">{copy.title}</p>
+				<p className="mt-1 text-sm text-amber-800">{copy.body}</p>
+				<Link
+					href="/verification"
+					className="mt-3 inline-flex items-center gap-1 rounded-full border-2 border-amber-900 bg-amber-900 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-50 hover:text-amber-900"
+				>
+					<CheckCircle2 className="size-3" />
+					{copy.cta}
+				</Link>
+			</div>
 		</div>
 	);
 }

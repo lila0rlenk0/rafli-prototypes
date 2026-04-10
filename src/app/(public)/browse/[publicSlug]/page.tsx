@@ -6,10 +6,10 @@ import { HostFulfillmentCard } from '@/components/fulfillment/host-fulfillment-c
 import { MobileCountdownBanner } from '@/components/raffle/mobile-countdown-banner';
 import { RaffleUpdatesCard } from '@/components/raffle/raffle-updates-card';
 import { RaffleAutoRefresh } from '@/components/raffle/raffle-auto-refresh';
+import { RaffleDrawWithRefresh } from '@/components/raffle/raffle-draw-with-refresh';
 import { RaffleCancelledCard } from '@/components/raffle/raffle-cancelled-card';
 import { RaffleCountdown } from '@/components/raffle/raffle-countdown';
 import { RaffleExpiredGate } from '@/components/raffle/raffle-expired-gate';
-import { RaffleDrawCard } from '@/components/raffle/raffle-draw-card';
 import { PrizeBreakdownCard } from '@/components/raffle/prize-breakdown-card';
 import { RaffleInfoCard } from '@/components/raffle/raffle-info-card';
 import { RevenueBreakdownCard } from '@/components/raffle/revenue-breakdown-card';
@@ -29,6 +29,7 @@ import { RaffleImageGallery } from '@/components/raffle/raffle-image-gallery';
 import { getSession } from '@/lib/auth/session';
 import { getCancellationReason } from '@/lib/utils/cancellation-reason';
 import { getCreditBalance } from '@/services/payment/get-credit-balance';
+import { getVerificationStatus } from '@/services/kyc-submission/get-verification-status';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
@@ -48,6 +49,7 @@ import {
 	type UpdateManageableStatus,
 } from '@/types/raffle';
 import type { TicketCode } from '@/types/ticket';
+import type { VerificationStatus } from '@/types/verification-status';
 import type { Winning } from '@/types/winning';
 import { InfoIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -183,18 +185,29 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	let myUserName: string | null = null;
 	let myUserAvatarUrl: string | null = null;
 	let availableCredits: string | null = null;
+	// KYC status for the winner flow — only fetched when the raffle is concluded
+	// since only concluded raffles can have winners who need to claim prizes.
+	let kycWinnerStatus: VerificationStatus | null = null;
 
 	if (isAuthenticated) {
+		// Only concluded raffles can produce winners — skip the verification status
+		// fetch entirely for live/draft/queued raffles to avoid unnecessary API calls.
+		const shouldFetchKycStatus = CONCLUDED_STATUSES.includes(
+			raffle.status as ConcludedStatus,
+		);
+
 		const [
 			ticketCodesResponse,
 			winningsResponse,
 			meResponse,
 			creditBalanceResponse,
+			verificationStatusResponse,
 		] = await Promise.all([
 			getMyTicketCodes({ raffleId: raffle.id }),
 			getMyWinnings(),
 			getMe(),
 			getCreditBalance(),
+			shouldFetchKycStatus ? getVerificationStatus() : Promise.resolve(null),
 		]);
 
 		if (ticketCodesResponse.success) {
@@ -216,6 +229,12 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 
 		if (creditBalanceResponse.success) {
 			availableCredits = creditBalanceResponse.data.availableAmount;
+		}
+
+		// Only the kyc_winner type matters for the prize claim flow.
+		// kyb_individual and kyb_company are host-only verifications.
+		if (verificationStatusResponse?.success) {
+			kycWinnerStatus = verificationStatusResponse.data.kycWinner.status;
 		}
 	}
 
@@ -677,6 +696,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								raffleId={raffle.id}
 								hostId={raffle.hostId}
 								publicSlug={publicSlug}
+								kycStatus={kycWinnerStatus}
 							/>
 						</>
 					) : null}
@@ -698,7 +718,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</>
 					) : null}
 
-					{shouldShowDrawInProgress() ? <RaffleDrawCard /> : null}
+					{/* Draw in progress: combined card + polling with timeout feedback */}
+					{shouldShowDrawInProgress() ? (
+						<RaffleDrawWithRefresh
+							status={raffle.status}
+							endAt={raffle.endAt}
+							hasWinners={hasWinners}
+						/>
+					) : null}
 
 					{shouldShowCancelledCard() ? (
 						<RaffleCancelledCard
@@ -804,12 +831,17 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 						</div>
 					) : null}
 
-					{/* Auto-refresh during transitional states */}
-					<RaffleAutoRefresh
-						status={raffle.status}
-						endAt={raffle.endAt}
-						hasWinners={hasWinners}
-					/>
+					{/* Auto-refresh during transitional states.
+					    Skipped when draw-in-progress card is shown — that branch uses
+					    RaffleDrawWithRefresh which owns its own polling to wire the
+					    timeout signal into the card. */}
+					{!shouldShowDrawInProgress() ? (
+						<RaffleAutoRefresh
+							status={raffle.status}
+							endAt={raffle.endAt}
+							hasWinners={hasWinners}
+						/>
+					) : null}
 				</div>
 			</div>
 			<PaymentModalWrapper

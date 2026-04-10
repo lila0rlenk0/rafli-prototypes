@@ -20,6 +20,8 @@ interface RaffleAutoRefreshProps {
 	endAt: string;
 	/** Whether the raffle has selected winners */
 	hasWinners: boolean;
+	/** Fires when the active polling phase exhausts its timeout budget */
+	onTimeout?: () => void;
 }
 
 /**
@@ -30,6 +32,7 @@ export function RaffleAutoRefresh({
 	status,
 	endAt,
 	hasWinners,
+	onTimeout,
 }: RaffleAutoRefreshProps) {
 	const router = useRouter();
 	const phase = resolveRaffleAutoRefreshPhase({ status, endAt, hasWinners });
@@ -40,7 +43,10 @@ export function RaffleAutoRefresh({
 	const phaseTimedOut = timedOutPhase === phase;
 
 	// Timeout effect — caps how long each phase polls before giving up.
-	// Deps: phase (restart when phase changes), timedOutPhase (skip if already expired).
+	// Deps: phase (restart when phase changes), timedOutPhase (skip if already expired),
+	// onTimeout (must be stable — parent MUST wrap in useCallback, otherwise each
+	// re-render re-arms the setTimeout with the full budget and the timer never
+	// fires if renders happen faster than the budget window).
 	// Cleanup: clears timer if phase changes before budget exhausted.
 	useEffect(() => {
 		if (!phase) return;
@@ -48,10 +54,11 @@ export function RaffleAutoRefresh({
 
 		const timeout = setTimeout(() => {
 			setTimedOutPhase(phase);
+			onTimeout?.();
 		}, getAutoRefreshTimeoutMs(phase));
 
 		return () => clearTimeout(timeout);
-	}, [phase, timedOutPhase]);
+	}, [phase, timedOutPhase, onTimeout]);
 
 	// Polling effect — refreshes the route on POLL_INTERVAL_MS while a transitional phase is active.
 	// Fires an immediate refresh on phase activation so the user doesn't wait a full interval

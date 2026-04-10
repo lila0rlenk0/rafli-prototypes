@@ -85,6 +85,13 @@ export function WinnerVerification({
 								<p className="font-mono font-medium">
 									{formatTicketContext(verification.actualTicketId)}
 								</p>
+								{/* Ticket code — the user-facing alphanumeric identifier
+								    for the winning ticket, distinct from the numeric index */}
+								{verification.ticketCode ? (
+									<p className="font-mono text-gray-500">
+										Code: {verification.ticketCode}
+									</p>
+								) : null}
 							</div>
 
 							<div className="space-y-1">

@@ -746,7 +746,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					) : null}
 
 					{shouldShowNotWonCard() ? (
-						<RaffleNotWonCard status={raffle.status} />
+						<RaffleNotWonCard
+							status={raffle.status}
+							publicSlug={publicSlug}
+							myTicketsTotal={myTicketsTotal}
+						/>
 					) : null}
 
 					{/* Desktop: active raffle card with countdown + purchase */}

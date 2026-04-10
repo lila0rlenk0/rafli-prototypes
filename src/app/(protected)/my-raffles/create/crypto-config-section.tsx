@@ -7,7 +7,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
-import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
+import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/constants';
 import { useCryptoConfig } from '@/services/payment/use-crypto-config';
 import type {
 	CryptoChainConfig,

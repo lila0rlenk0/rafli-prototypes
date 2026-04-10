@@ -9,7 +9,7 @@ import { CryptoBuyButton } from '@/app/(public)/browse/[publicSlug]/crypto-buy-b
 import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
 import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
-import { isWeb3Enabled, SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
+import { isWeb3Enabled, SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/constants';
 import { hasSelectableCryptoChains } from '@/lib/web3/raffle-crypto-options';
 import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 import type { RaffleCryptoOptions } from '@/types/raffle';

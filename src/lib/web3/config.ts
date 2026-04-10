@@ -1,3 +1,17 @@
+/**
+ * Wagmi + RainbowKit runtime configuration.
+ *
+ * ⚠️  SSR-UNSAFE — this module calls getDefaultConfig() at module scope,
+ * which creates WalletConnect connectors. The connector creation chain
+ * reaches @walletconnect/keyvaluestorage whose constructor calls
+ * indexedDB.open() inside an async flow that escapes try/catch.
+ * Since Node.js has no indexedDB global, evaluating this module during
+ * SSR pre-render throws a ReferenceError.
+ *
+ * Only import this module via dynamic import() on the client side.
+ * For SSR-safe constants (isWeb3Enabled, chain IDs, storage), import
+ * from '@/lib/web3/constants' instead.
+ */
 import { getDefaultConfig, type WalletList } from '@rainbow-me/rainbowkit';
 import {
 	baseAccount,
@@ -8,83 +22,14 @@ import {
 	trustWallet,
 	walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets';
-import { cookieStorage, createStorage } from 'wagmi';
-import {
-	arbitrum,
-	arbitrumSepolia,
-	base,
-	baseSepolia,
-	mainnet,
-	polygon,
-	polygonAmoy,
-	sepolia,
-} from 'wagmi/chains';
 
 import { clientEnv } from '@/env/client';
 
-// ==========================================
-// Chain Configuration
-// ==========================================
-
-/**
- * Production chains — mainnet EVM networks supporting USDC/USDT
- */
-const prodChains = [mainnet, arbitrum, base, polygon] as const;
-
-/**
- * Development/staging chains — testnets only, no mainnets
- */
-const devChains = [sepolia, arbitrumSepolia, baseSepolia, polygonAmoy] as const;
-
-/**
- * Select chain set based on environment.
- * Production only gets mainnets; dev/staging gets testnets too.
- */
-const isProd = clientEnv.NEXT_PUBLIC_APP_ENV === 'production';
-const configuredChains = isProd ? prodChains : devChains;
+import { configuredChains, isWeb3Enabled, wagmiStorage } from './constants';
 
 // ==========================================
-// Wagmi + RainbowKit Config
+// Wallet List
 // ==========================================
-
-/**
- * Whether Web3/crypto features are available.
- * Requires WalletConnect project ID to be configured in environment.
- *
- * @returns true when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is set
- */
-export const isWeb3Enabled = !!clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
-
-/**
- * wagmi persists its SSR hydration snapshot under `wagmi.store`.
- *
- * Explicit prefix instead of wagmi's default so the server-side provider
- * wrapper can extract only this cookie without serializing the full request
- * cookie header into the client bundle.
- */
-export const WAGMI_STORAGE_KEY = 'wagmi';
-export const WAGMI_COOKIE_KEY = `${WAGMI_STORAGE_KEY}.store`;
-
-/**
- * Chain IDs the FE is configured to support in the current environment.
- *
- * UI/runtime source of truth for "selectable" chains.
- * Intentionally differs between prod and non-prod so testnets never
- * surface in production even if backend allowlists are empty.
- *
- * @returns array of supported chain IDs
- */
-export const SUPPORTED_WEB3_CHAIN_IDS = configuredChains.map(chain => chain.id);
-
-/**
- * Cookie-based wagmi storage for SSR hydration.
- * Persists connected wallet state so App Router server renders can hydrate
- * without a disconnect → reconnect flash.
- */
-const wagmiStorage = createStorage({
-	key: WAGMI_STORAGE_KEY,
-	storage: cookieStorage,
-});
 
 /**
  * Explicit wallet list for the RainbowKit connect modal.
@@ -109,6 +54,10 @@ const wallets: WalletList = [
 	},
 ];
 
+// ==========================================
+// Wagmi Config
+// ==========================================
+
 /**
  * Combined wagmi + RainbowKit configuration.
  *
@@ -119,10 +68,9 @@ const wallets: WalletList = [
  * getDefaultConfig dynamically imports them at runtime via wagmi's connector factories.
  *
  * Initialized at module scope — `ssr: true` + `cookieStorage` tells wagmi to
- * defer all browser-only operations (indexedDB, connector handshakes) until
- * client-side hydration. This makes the config safe for both server and client,
- * and ensures the provider tree renders identically on both sides (fixing
- * hydration mismatches from RainbowKitProvider's `<div data-rk="">`).
+ * defer all browser-only operations (connector handshakes) until client-side
+ * hydration. However, WalletConnect's keyvaluestorage still accesses indexedDB
+ * during connector construction, so this module must NOT be evaluated on the server.
  *
  * null when NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is unset — without it,
  * WalletConnect handshake fails and breaks the provider tree.

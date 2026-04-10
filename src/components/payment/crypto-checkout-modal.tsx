@@ -56,7 +56,7 @@ import {
 	getCryptoTxSubmitOutcome,
 	normalizeTxHash,
 } from '@/lib/web3/crypto-payment-flow';
-import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/config';
+import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/constants';
 import { getSelectableCryptoChains } from '@/lib/web3/raffle-crypto-options';
 import { isValidTxHash } from '@/lib/web3/block-explorers';
 import { isTransactionNotFound, isUserRejection } from '@/lib/web3/errors';

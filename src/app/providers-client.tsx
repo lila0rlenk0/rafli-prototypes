@@ -1,17 +1,8 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-
 import { MixpanelProvider } from '@/providers/mixpanel-provider';
 import { QueryProvider } from '@/providers/query-provider';
-
-// @walletconnect/ethereum-provider accesses indexedDB at module-evaluation
-// time. ssr: false prevents the entire WalletConnect module graph from being
-// walked during SSR pre-render, avoiding the "indexedDB is not defined" error.
-const Web3Provider = dynamic(
-	() => import('@/providers/web3-provider').then(mod => mod.Web3Provider),
-	{ ssr: false },
-);
+import { Web3Provider } from '@/providers/web3-provider';
 
 interface ProvidersClientProps {
 	children: React.ReactNode;

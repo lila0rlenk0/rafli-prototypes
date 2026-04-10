@@ -6,7 +6,7 @@ mock.module('next/headers', () => ({
 	cookies: mockCookies,
 }));
 
-mock.module('@/lib/web3/config', () => ({
+mock.module('@/lib/web3/constants', () => ({
 	WAGMI_COOKIE_KEY: 'wagmi.store',
 }));
 

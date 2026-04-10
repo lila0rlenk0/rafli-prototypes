@@ -1,7 +1,20 @@
 /**
- * Code snippets for the How It Works page
+ * Code snippets rendered in the "For the tech-savvy" section of the
+ * How It Works page. Kept in a dedicated module so page.tsx stays focused
+ * on layout, and so the strings can be reused (e.g., from docs or tests)
+ * without pulling in JSX.
+ *
+ * Only the snippets actively rendered in page.tsx live here — historical
+ * variants (MERKLE/VRF/IPFS/ARBITRUM) were removed when the tech-card
+ * grid was replaced by the simplified numbered-step explanation.
  */
 
+/**
+ * Three-phase commit-reveal protocol: lock ticket data before any
+ * randomness exists, generate the random number from an external source,
+ * then apply it to the locked data. Shipped as a literal string so it
+ * renders inside <pre><code> without JSX interpretation.
+ */
 export const COMMIT_REVEAL_CODE = `// Commit-Reveal Protocol
 // Step 1: Before random number exists
 const ticketManifest = buildManifest(allTickets);
@@ -15,6 +28,12 @@ const randomNumber = await chainlinkVRF.getRandomNumber();
 const winner = selectWinner(ticketManifest, randomNumber);
 // Manipulation impossible: data locked before randomness`;
 
+/**
+ * The exact modulo formula used by the draw. Uses BigInt to match the
+ * on-chain math (VRF random words are 256-bit). Anyone running this with
+ * the same inputs produces the same winning ticket — that reproducibility
+ * is the whole point of the verification section.
+ */
 export const WINNER_FORMULA_CODE = `// Winner Selection Formula
 const randomNumber = BigInt("0x7a3b9c2d...4f2c1e8a");
 const totalTickets = 12_847n;
@@ -25,55 +44,3 @@ const winningTicket = winningIndex + 1;
 
 // Result: Ticket #8432 wins
 // Anyone can verify: (random % 12847) + 1 = 8432`;
-
-export const MERKLE_CODE = `// Merkle Tree Verification
-const ticketHash = sha256(\`\${ticketId}|\${ticketCode}|\${participantId}\`);
-
-// Verify ticket was committed before draw
-const isValid = verifyMerkleProof(
-  ticketHash,    // Your ticket's hash
-  proof,         // Path from ticket to root
-  merkleRoot     // Root stored on blockchain
-);
-
-// true = ticket existed in committed set`;
-
-export const VRF_CODE = `// Chainlink VRF (Verifiable Random Function)
-// Random number from blockchain, not Raffly servers
-
-const vrfResponse = await chainlink.requestRandomWords({
-  keyHash: "0x...",      // Public verification key
-  subscriptionId: 123,
-  requestConfirmations: 3,
-  numWords: 1
-});
-
-// Output is cryptographically tied to block data
-// Raffly cannot predict or influence the result`;
-
-export const IPFS_CODE = `// IPFS Content Addressing
-const manifest = JSON.stringify({
-  raffleId: "raffle_abc123",
-  totalTickets: 12847,
-  tickets: [...],
-  createdAt: "2024-01-15T10:30:00Z"
-});
-
-const ipfsHash = await ipfs.add(manifest);
-// Returns: "QmX4z...8Yk" (content-addressed hash)
-
-// Same data = same hash, always
-// Change 1 byte = completely different hash`;
-
-export const ARBITRUM_CODE = `// Arbitrum One - L2 Blockchain
-// Fast, cheap transactions with Ethereum security
-
-const tx = await arbitrumContract.commit({
-  raffleId: "raffle_abc123",
-  merkleRoot: "0x123...789",
-  ipfsHash: "QmX4z...8Yk",
-  timestamp: Date.now()
-});
-
-// Transaction hash becomes permanent proof
-// Viewable on Arbiscan by anyone`;

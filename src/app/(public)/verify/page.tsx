@@ -15,11 +15,31 @@ const ScrollReveal = dynamic(() =>
 );
 
 /**
+ * Query params accepted by the verify page.
+ * Used to pre-fill the ticket checker form when linking here from the
+ * ticket-codes table on a concluded raffle.
+ */
+interface VerifyPageProps {
+	searchParams: Promise<{
+		raffle?: string;
+		code?: string;
+	}>;
+}
+
+/**
  * Verify Page
  *
  * Universal verification hub for tickets and winners.
+ *
+ * Server Component — reads searchParams on the server and passes them as
+ * props to the client `EnhancedTicketChecker`. This avoids pulling in the
+ * `useSearchParams()` client hook, which would require a Suspense boundary
+ * and opt the page out of static rendering.
  */
-export default function VerifyPage() {
+export default async function VerifyPage({ searchParams }: VerifyPageProps) {
+	// Resolve Next.js 15 async searchParams before passing to the client form.
+	const { raffle, code } = await searchParams;
+
 	return (
 		<div className="container mx-auto max-w-4xl px-4 py-12">
 			<ScrollReveal>
@@ -39,7 +59,10 @@ export default function VerifyPage() {
 
 			<div className="grid gap-6 md:grid-cols-2">
 				<ScrollReveal delay={0.1}>
-					<EnhancedTicketChecker />
+					<EnhancedTicketChecker
+						initialRaffleSlug={raffle}
+						initialTicketCode={code}
+					/>
 				</ScrollReveal>
 
 				<ScrollReveal delay={0.2}>

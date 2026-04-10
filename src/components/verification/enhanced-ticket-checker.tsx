@@ -27,6 +27,13 @@ type ResultState =
 	| { type: 'success'; data: VerificationResult }
 	| { type: 'error'; message: string };
 
+interface EnhancedTicketCheckerProps {
+	/** Pre-fill the raffle field — comes from `?raffle=` query param on /verify */
+	initialRaffleSlug?: string;
+	/** Pre-fill the ticket code field — comes from `?code=` query param on /verify */
+	initialTicketCode?: string;
+}
+
 function getErrorMessage(code: VerificationErrorCode): string {
 	switch (code) {
 		case VERIFICATION_ERROR_CODES.TICKET_NOT_FOUND:
@@ -44,9 +51,15 @@ function getErrorMessage(code: VerificationErrorCode): string {
 	}
 }
 
-export function EnhancedTicketChecker() {
-	const [raffleSlug, setRaffleSlug] = useState('');
-	const [ticketCode, setTicketCode] = useState('');
+export function EnhancedTicketChecker({
+	initialRaffleSlug = '',
+	initialTicketCode = '',
+}: EnhancedTicketCheckerProps = {}) {
+	// Seed state directly from props — server component reads searchParams and
+	// passes them down, so the form is pre-filled on first render (no effect).
+	// Empty-string fallback preserves the uncontrolled-input free-typing UX.
+	const [raffleSlug, setRaffleSlug] = useState(initialRaffleSlug);
+	const [ticketCode, setTicketCode] = useState(initialTicketCode);
 	const [result, setResult] = useState<ResultState | null>(null);
 	const [loading, setLoading] = useState(false);
 

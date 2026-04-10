@@ -1,4 +1,5 @@
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
 
 import type { TicketCode } from '@/types/ticket';
 
@@ -8,11 +9,29 @@ import type { TicketCode } from '@/types/ticket';
 
 interface TicketCodesTableProps {
 	ticketCodes: TicketCode[];
+	/**
+	 * Raffle public slug — used to build verify links for each row.
+	 * Route params already expose this on the parent page, so we pass it
+	 * down rather than re-deriving from the TicketCode (which only has UUID).
+	 */
+	raffleSlug: string;
+	/**
+	 * Whether the "Verify" column is shown. Gated on raffle status — only
+	 * `fulfilling` and `completed` have a published merkle manifest that the
+	 * verify endpoint can actually check. `ended` is excluded because VRF is
+	 * still in flight and the backend would reject the request.
+	 */
+	canVerify: boolean;
 }
 
 interface SourceCellProps {
 	source: string;
 	receiptUrl: null | string;
+}
+
+interface VerifyCellProps {
+	raffleSlug: string;
+	ticketCode: string;
 }
 
 // =============================================================================
@@ -41,8 +60,14 @@ function getSourceLabel(source: string): string {
 /**
  * Renders ticket codes in a table with ticket code, source, and date columns.
  * Source column shows friendly labels with optional receipt links (Stripe, block explorer).
+ * When `canVerify` is true, adds a trailing "Verify" column linking each ticket
+ * to `/verify` with the raffle slug and ticket code pre-filled as query params.
  */
-export function TicketCodesTable({ ticketCodes }: TicketCodesTableProps) {
+export function TicketCodesTable({
+	ticketCodes,
+	raffleSlug,
+	canVerify,
+}: TicketCodesTableProps) {
 	function formatDate(date: string): string {
 		return new Date(date).toLocaleDateString('en-US', {
 			month: 'short',
@@ -68,6 +93,7 @@ export function TicketCodesTable({ ticketCodes }: TicketCodesTableProps) {
 						<th className="pb-3 font-medium">Ticket Code</th>
 						<th className="pb-3 font-medium">Source</th>
 						<th className="pb-3 font-medium">Date</th>
+						{canVerify ? <th className="pb-3 font-medium">Verify</th> : null}
 					</tr>
 				</thead>
 				<tbody>
@@ -87,6 +113,14 @@ export function TicketCodesTable({ ticketCodes }: TicketCodesTableProps) {
 							<td className="py-4 text-black">
 								{formatDate(ticket.createdAt)}
 							</td>
+							{canVerify ? (
+								<td className="py-4">
+									<VerifyCell
+										raffleSlug={raffleSlug}
+										ticketCode={ticket.ticketCode}
+									/>
+								</td>
+							) : null}
 						</tr>
 					))}
 				</tbody>
@@ -120,5 +154,33 @@ function SourceCell({ source, receiptUrl }: SourceCellProps) {
 			{label}
 			<ExternalLink className="size-3" />
 		</a>
+	);
+}
+
+// =============================================================================
+// VERIFY CELL
+// =============================================================================
+
+/**
+ * Renders a "Verify" link that navigates to /verify with the raffle slug and
+ * ticket code pre-filled as query params. The verify page reads these on the
+ * server and seeds the EnhancedTicketChecker form, so the user can submit
+ * immediately without retyping.
+ *
+ * `encodeURIComponent` is belt-and-suspenders — current slug and ticket code
+ * formats are URL-safe, but the encoding protects against any future format
+ * that introduces special characters.
+ */
+function VerifyCell({ raffleSlug, ticketCode }: VerifyCellProps) {
+	const href = `/verify?raffle=${encodeURIComponent(raffleSlug)}&code=${encodeURIComponent(ticketCode)}`;
+
+	return (
+		<Link
+			href={href}
+			className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+		>
+			<ShieldCheck className="size-3.5" />
+			Verify
+		</Link>
 	);
 }

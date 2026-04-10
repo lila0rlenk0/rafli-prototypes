@@ -5,6 +5,7 @@ import { BackLink } from '@/components/ui/back-link';
 import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
+import { RAFFLE_STATUS } from '@/types/raffle';
 
 import { TicketCodesTable } from './ticket-codes-table';
 
@@ -74,6 +75,14 @@ export default async function TicketIdsPage({
 		? ticketCodesResponse.data.page
 		: 1;
 
+	// Step 6: Decide whether to show the "Verify" column.
+	// Only `fulfilling` and `completed` expose a published merkle manifest that
+	// the backend verify-ticket endpoint can actually check. `ended` is excluded
+	// because VRF is still in flight — the backend returns raffle-not-completed.
+	const canVerify =
+		raffle.status === RAFFLE_STATUS.FULFILLING ||
+		raffle.status === RAFFLE_STATUS.COMPLETED;
+
 	/**
 	 * Generates page URL with page parameter
 	 */
@@ -90,7 +99,11 @@ export default async function TicketIdsPage({
 					My Tickets — {raffle.title}
 				</h1>
 
-				<TicketCodesTable ticketCodes={ticketCodes} />
+				<TicketCodesTable
+					ticketCodes={ticketCodes}
+					raffleSlug={publicSlug}
+					canVerify={canVerify}
+				/>
 
 				{totalPages > 1 ? (
 					<div className="mt-6 flex items-center justify-center gap-2">

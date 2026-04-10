@@ -1,15 +1,21 @@
-'use client';
-
-// Marked 'use client' because the `interactive` mode uses `useState` for
-// hover tracking and `onClick` handlers. The `display` mode renders without
-// any client-only APIs, but React is fine with a client component being
-// rendered inside a Server Component, so co-locating both modes in one file
-// is the simplest path and avoids a second module just for the display case.
+// Shared module — NO `'use client'` directive on purpose.
+//
+// `HostProfileCard` and the public host profile page (`/host/[username]`) are
+// Server Components that render the display variant. Marking this file client
+// would collapse the RSC boundary and ship React hook runtime + the unused
+// interactive code to every host-facing page for pure read-only star icons.
+//
+// The interactive variant (`<StarRating mode="interactive" />`) is a
+// `useState`-backed component that legitimately needs the client. It lives
+// in `./star-rating-interactive` with its own `'use client'` directive and
+// is referenced below — Next.js crosses the boundary on demand, so server
+// callers that only render display mode never pay for it.
 
 import { Star } from 'lucide-react';
-import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
+
+import { InteractiveStars } from './star-rating-interactive';
 
 /** Rendering state for a single star slot. */
 type StarFillState = 'full' | 'half' | 'empty';
@@ -47,16 +53,17 @@ type StarRatingProps =
  * Unified star rating component.
  *
  * - `mode="display"` (default): renders non-interactive stars with support
- *   for decimal ratings (full / half / empty fill states).
- * - `mode="interactive"`: renders clickable buttons with hover feedback,
- *   intended for collecting a review rating. Half-star display is not
- *   supported in interactive mode — the input is whole-star only.
+ *   for decimal ratings (full / half / empty fill states). Runs server-side
+ *   for Server Component callers — no client JS.
+ * - `mode="interactive"`: delegates to `InteractiveStars` from the sibling
+ *   `'use client'` module. React hydrates the boundary on the client; hover
+ *   state and click handlers live there, not here.
  *
  * Sizing differs intentionally between modes to preserve prior behavior:
  * display uses `size-8`, interactive uses `size-10` (larger hit target).
  *
  * @returns Star rating element — a `div` of `Star` icons in display mode,
- * or a `div` of `button` elements wrapping `Star` icons in interactive mode.
+ * or an `InteractiveStars` client component in interactive mode.
  */
 export function StarRating(props: StarRatingProps) {
 	// Narrow on the discriminant once at the top so each branch renders
@@ -92,7 +99,8 @@ type DisplayStarsProps = {
 
 /**
  * Static star row. Supports decimal ratings — e.g. `rating={3.5}` renders
- * three full stars, one half, one empty.
+ * three full stars, one half, one empty. Pure function, no hooks — safe to
+ * render inside Server Components.
  */
 function DisplayStars({ rating, maxStars = 5, className }: DisplayStarsProps) {
 	// Determines which of the three visual states applies to the Nth star.
@@ -113,89 +121,6 @@ function DisplayStars({ rating, maxStars = 5, className }: DisplayStarsProps) {
 						key={index}
 						className={cn('size-8', getStarClasses(fillState))}
 					/>
-				);
-			})}
-		</div>
-	);
-}
-
-type InteractiveStarsProps = {
-	rating: number;
-	onChange: (rating: number) => void;
-	maxStars?: number;
-	disabled?: boolean;
-	className?: string;
-};
-
-/**
- * Clickable star input with hover preview. Only whole-star selection is
- * supported; hover on the Nth star previews a rating of N.
- */
-function InteractiveStars({
-	rating,
-	onChange,
-	maxStars = 5,
-	disabled = false,
-	className = '',
-}: InteractiveStarsProps) {
-	// Hover preview — `0` means "no active hover, show the committed rating".
-	// Kept local because it's pure UI feedback, not app state.
-	const [hoverRating, setHoverRating] = useState(0);
-
-	function handleClick(starIndex: number) {
-		if (disabled) return;
-		onChange(starIndex);
-	}
-
-	function handleMouseEnter(starIndex: number) {
-		if (disabled) return;
-		setHoverRating(starIndex);
-	}
-
-	function handleMouseLeave() {
-		setHoverRating(0);
-	}
-
-	// Hover takes precedence over the committed rating so the user sees
-	// exactly what they'll pick on click. Falls back to `rating` when idle.
-	function isFilled(starIndex: number): boolean {
-		const activeRating = hoverRating === 0 ? rating : hoverRating;
-		return starIndex <= activeRating;
-	}
-
-	return (
-		<div
-			className={cn('flex items-center gap-2', className)}
-			onMouseLeave={handleMouseLeave}
-		>
-			{Array.from({ length: maxStars }).map((_, index) => {
-				const starIndex = index + 1;
-				const filled = isFilled(starIndex);
-
-				return (
-					<button
-						key={starIndex}
-						type="button"
-						onClick={() => handleClick(starIndex)}
-						onMouseEnter={() => handleMouseEnter(starIndex)}
-						disabled={disabled}
-						className={cn(
-							'transition-transform focus:outline-none',
-							disabled
-								? 'cursor-not-allowed opacity-50'
-								: 'cursor-pointer hover:scale-110',
-						)}
-						aria-label={`Rate ${starIndex} out of ${maxStars} stars`}
-					>
-						<Star
-							className={cn(
-								'size-10',
-								filled
-									? 'fill-yellow-400 text-yellow-400'
-									: 'fill-transparent text-gray-300',
-							)}
-						/>
-					</button>
 				);
 			})}
 		</div>

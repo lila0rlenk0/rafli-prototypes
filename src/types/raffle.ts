@@ -147,7 +147,8 @@ export const raffleSchema = z.object({
 	ticketsSoldCount: z.number(),
 	revenueAmount: z.string(),
 	hostId: z.string(),
-	drawId: z.number().optional(),
+	/** On-chain draw identifier — backend maps from DB `draw_id` column */
+	onChainId: z.number().optional(),
 	raffleNumber: z.number().optional(),
 	questionId: z.string().nullable(),
 	createdAt: z.string(),
@@ -160,6 +161,22 @@ export const raffleSchema = z.object({
 	commitTxHash: z.string().nullable().optional(),
 	vrfRequestId: z.string().nullable().optional(),
 	vrfFulfillTxHash: z.string().nullable().optional(),
+	/**
+	 * Backend-supplied cancellation reason — null for non-cancelled raffles.
+	 * Replaces client-side heuristic inference. `.catch(null)` for backward compat
+	 * with cached responses that may not have the field yet.
+	 */
+	cancellationReason: z
+		.enum([
+			'admin_rejected',
+			'host_cancelled',
+			'insufficient_participants',
+			'no_tickets',
+			'partial_participation',
+		])
+		.nullable()
+		.optional()
+		.catch(null),
 	/** Backend flag — true while draw process is running. Blocks cancellation even when status is still `live`. */
 	isProcessingCompletion: z.boolean().optional(),
 	disputeWindowEndsAt: z.string().nullable().optional(),
@@ -172,7 +189,8 @@ export const raffleSchema = z.object({
 	xShareClaim: z
 		.object({
 			claimId: z.string(),
-			status: z.enum(['pending', 'verified', 'revoked', 'expired']),
+			// Backend statuses: pending (awaiting verification), completed (share confirmed), expired (timed out)
+			status: z.enum(['pending', 'completed', 'expired']),
 			token: z.string().nullable(),
 			expiresAt: z.string().nullable(),
 		})

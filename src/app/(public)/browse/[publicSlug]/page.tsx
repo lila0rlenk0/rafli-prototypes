@@ -180,7 +180,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
 	let myWinning: Winning | null = null;
-	const myWinningTicketCode: string | null = null;
 	let myUserName: string | null = null;
 	let myUserAvatarUrl: string | null = null;
 	let availableCredits: string | null = null;
@@ -221,6 +220,14 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	const didUserWin = !!myWinning;
+
+	// Derive winning ticket code by matching the user's position against the winners array.
+	// Currently null — public API strips ticketCode from winners. Ready for backend enrichment.
+	const myWinningTicketCode =
+		myWinning?.position != null
+			? (raffle.winners?.find(w => w.position === myWinning.position)
+					?.ticketCode ?? null)
+			: null;
 
 	/**
 	 * Check if raffle is concluded (ended, completed, or fulfilling)
@@ -301,12 +308,23 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	/**
-	 * Checks if draw-in-progress card should be shown
-	 * Only during `ended` status — VRF in flight, winners not yet assigned
-	 * Intentionally excludes `fulfilling`/`completed` to avoid masking data inconsistencies
+	 * Checks if draw-in-progress card should be shown.
+	 * Active during `ended` (VRF in flight) and `fulfilling` (VRF fulfilled,
+	 * winner persistence in progress). Both states have no winners yet.
+	 *
+	 * Why include `fulfilling`: poll-vrf CAS-transitions ended→fulfilling before
+	 * the vrfFulfilledTopic subscriber runs FulfillVrfCommand. If that subscriber
+	 * fails, the raffle sits in fulfilling with no winners for up to 5 minutes
+	 * (stuck recovery cron window). Without this guard, no sidebar card renders
+	 * during that window — the RaffleNotWonCard requires hasWinners and the
+	 * previous ENDED-only check missed this state entirely.
 	 */
 	function shouldShowDrawInProgress(): boolean {
-		return raffle.status === RAFFLE_STATUS.ENDED && !hasWinners;
+		return (
+			(raffle.status === RAFFLE_STATUS.ENDED ||
+				raffle.status === RAFFLE_STATUS.FULFILLING) &&
+			!hasWinners
+		);
 	}
 
 	/**

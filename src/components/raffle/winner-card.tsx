@@ -25,6 +25,7 @@ export function WinnerCard({
 	commitTxHash,
 	isCurrentUser,
 }: WinnerCardProps) {
+	// Backend positions are 0-indexed; +1 for human display (0 → 1st place)
 	const displayName = isCurrentUser
 		? 'You'
 		: winner.name || `Winner #${winner.position + 1}`;

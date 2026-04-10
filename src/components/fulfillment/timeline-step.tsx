@@ -71,10 +71,10 @@ export function TimelineStep({
 				>
 					{description}
 				</p>
-				{action ? (
-					status === 'active' ? (
-						<div className="mt-3">{action}</div>
-					) : null
+				{/* Render actions for active steps (primary CTA) and completed steps
+				   (post-completion actions like "Leave review" on received winnings) */}
+				{action && (status === 'active' || status === 'completed') ? (
+					<div className="mt-3">{action}</div>
 				) : null}
 			</div>
 		</div>

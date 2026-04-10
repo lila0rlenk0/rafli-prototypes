@@ -54,11 +54,16 @@ export function RaffleAutoRefresh({
 	}, [phase, timedOutPhase]);
 
 	// Polling effect — refreshes the route on POLL_INTERVAL_MS while a transitional phase is active.
+	// Fires an immediate refresh on phase activation so the user doesn't wait a full interval
+	// for stale data to update (e.g., page loaded while raffle is live but past endAt).
 	// Deps: phase (active phase controls start/stop), phaseTimedOut (stops when budget exhausted),
 	// router (stable Next.js router instance — included for exhaustive-deps).
 	// Cleanup: clears interval on phase change, timeout, or unmount.
 	useEffect(() => {
 		if (!phase || phaseTimedOut) return;
+
+		// Immediate refresh so stale server data updates without waiting a full interval
+		router.refresh();
 
 		const interval = setInterval(() => {
 			router.refresh();

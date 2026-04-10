@@ -42,7 +42,11 @@ interface ResolveAutoRefreshPhaseInput {
  */
 export const AUTO_REFRESH_TIMEOUT_MS: Record<RaffleAutoRefreshPhase, number> = {
 	[RAFFLE_AUTO_REFRESH_PHASE.AWAITING_STATUS_FLIP]: 10 * 60 * 1_000,
-	[RAFFLE_AUTO_REFRESH_PHASE.AWAITING_WINNERS]: 15 * 60 * 1_000,
+	// 30 min — backend VRF hard cutoff is 60 min (poll-vrf-fulfillment.command.ts).
+	// Previous 15 min budget caused the page to stop polling while Chainlink VRF
+	// was still in flight (gas spikes, subscription funding delays). 30 min covers
+	// the 99th percentile VRF latency while still expiring for truly broken draws.
+	[RAFFLE_AUTO_REFRESH_PHASE.AWAITING_WINNERS]: 30 * 60 * 1_000,
 	[RAFFLE_AUTO_REFRESH_PHASE.AWAITING_COMPLETION]: 2 * 60 * 1_000,
 };
 

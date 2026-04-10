@@ -61,8 +61,11 @@ export function FulfillmentTimeline({
 		: 'I received the prize';
 
 	function getStepStatus(step: number): StepStatus {
-		// pending: winner hasn't claimed yet
-		if (currentStatus === 'pending') {
+		// pending / legacy pending_partial_fulfillment: winner hasn't claimed yet
+		if (
+			currentStatus === 'pending' ||
+			currentStatus === 'pending_partial_fulfillment'
+		) {
 			if (step === 1) return 'active';
 			return 'pending';
 		}
@@ -113,7 +116,10 @@ export function FulfillmentTimeline({
 
 	function getClaimStep() {
 		const status = getStepStatus(1);
-		const hasClaimed = currentStatus !== 'pending';
+		// Legacy pending_partial_fulfillment is semantically equivalent to pending
+		const hasClaimed =
+			currentStatus !== 'pending' &&
+			currentStatus !== 'pending_partial_fulfillment';
 
 		if (isHost) {
 			return {

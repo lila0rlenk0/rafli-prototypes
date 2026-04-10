@@ -6,6 +6,8 @@ import { z } from 'zod';
 
 export const WINNING_STATUS = {
 	PENDING: 'pending',
+	/** Legacy status — no longer written by backend, but may exist in historical DB records */
+	PENDING_PARTIAL_FULFILLMENT: 'pending_partial_fulfillment',
 	AWAITING_HOST: 'awaiting_host',
 	SENT: 'sent',
 	DELIVERED: 'delivered',
@@ -26,6 +28,7 @@ export type ClaimType = (typeof CLAIM_TYPE)[keyof typeof CLAIM_TYPE];
 
 export const winningStatusSchema = z.enum([
 	WINNING_STATUS.PENDING,
+	WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT,
 	WINNING_STATUS.AWAITING_HOST,
 	WINNING_STATUS.SENT,
 	WINNING_STATUS.DELIVERED,

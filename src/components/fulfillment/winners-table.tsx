@@ -30,7 +30,7 @@ export function WinnersTable({
 	// Caps at 2 name parts and 20 chars to keep the table column narrow
 	function formatDisplayName(name: string | null, position: number): string {
 		if (!name || name.trim().toLowerCase() === 'unknown') {
-			// Backend positions are 0-based; display as 1-based for users
+			// Backend positions are 0-indexed; +1 for human display (0 → 1st place)
 			return `Winner #${position + 1}`;
 		}
 		const names = name.trim().split(/\s+/);

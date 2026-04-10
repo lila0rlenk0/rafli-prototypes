@@ -5,6 +5,7 @@ import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
 // ==========================================
 
 export const CANCELLATION_REASON = {
+	ADMIN_REJECTED: 'admin_rejected',
 	HOST_CANCELLED: 'host_cancelled',
 	NO_TICKETS: 'no_tickets',
 	INSUFFICIENT_PARTICIPANTS: 'insufficient_participants',
@@ -20,15 +21,10 @@ export type CancellationReason =
 // ==========================================
 
 /**
- * Infers why a raffle was cancelled from existing fields.
+ * Resolves why a raffle was cancelled.
  *
- * Detection heuristic (no backend changes needed):
- * - `no_tickets`: ended with zero tickets sold, no VRF draw attempted
- * - `insufficient_participants`: ended with some tickets but fewer unique
- *   participants than winners needed, no VRF draw attempted
- * - `partial_participation`: enough participants for a draw but below
- *   minParticipants — cancelled instead of partial revenue share
- * - `host_cancelled`: all other cancellations (manual action by host)
+ * Prefers the backend-supplied `cancellationReason` field (authoritative).
+ * Falls back to a heuristic for cached responses that predate the field.
  *
  * @param raffle - The raffle to inspect
  * @returns The cancellation reason, or null if not cancelled
@@ -43,16 +39,22 @@ export function getCancellationReason(
 		| 'numberOfWinners'
 		| 'minParticipants'
 		| 'vrfRequestId'
+		| 'cancellationReason'
 	>,
 ): CancellationReason | null {
 	// Step 1: Guard — only cancelled raffles have a cancellation reason.
 	if (raffle.status !== RAFFLE_STATUS.CANCELLED) return null;
 
-	// Step 2: Derive heuristic signals from existing fields.
+	// Step 2: Prefer authoritative backend field when available.
+	// Covers admin_rejected and all other reasons the heuristic can't detect.
+	if (raffle.cancellationReason) {
+		return raffle.cancellationReason;
+	}
+
+	// Step 3: Heuristic fallback for cached responses without the field.
 	const isPastEnd = new Date(raffle.endAt) <= new Date();
 	const hadNoVrfDraw = !raffle.vrfRequestId;
 
-	// Step 3: Match against known auto-cancel scenarios (most specific first).
 	// Auto-cancel: raffle expired with zero tickets sold
 	if (isPastEnd && raffle.ticketsSoldCount === 0 && hadNoVrfDraw) {
 		return CANCELLATION_REASON.NO_TICKETS;
@@ -68,7 +70,6 @@ export function getCancellationReason(
 	}
 
 	// Auto-cancel: enough participants for a draw but below minParticipants threshold.
-	// Backend now cancels instead of proceeding with partial revenue share.
 	if (
 		isPastEnd &&
 		raffle.participantsCount >= raffle.numberOfWinners &&

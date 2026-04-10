@@ -26,6 +26,7 @@ function buildCancelledRaffle(
 		numberOfWinners: number;
 		minParticipants: number;
 		vrfRequestId: string | null;
+		cancellationReason: string | null;
 	}> = {},
 ) {
 	return {
@@ -36,6 +37,7 @@ function buildCancelledRaffle(
 		numberOfWinners: 1,
 		minParticipants: 10,
 		vrfRequestId: null,
+		cancellationReason: null as string | null,
 		...overrides,
 	};
 }
@@ -114,6 +116,40 @@ describe('getCancellationReason', () => {
 			CANCELLATION_REASON.HOST_CANCELLED,
 		);
 	});
+
+	test('prefers backend cancellationReason over heuristic', () => {
+		// Backend returns the authoritative reason — heuristic should not override it.
+		const raffle = buildCancelledRaffle({
+			cancellationReason: 'host_cancelled',
+			// Heuristic signals that would infer partial_participation, but backend says host
+			participantsCount: 5,
+			numberOfWinners: 3,
+			minParticipants: 10,
+		});
+		expect(getCancellationReason(raffle)).toBe(
+			CANCELLATION_REASON.HOST_CANCELLED,
+		);
+	});
+
+	test('returns admin_rejected from backend field', () => {
+		// admin_rejected can only come from the backend field — heuristic can't detect it
+		const raffle = buildCancelledRaffle({
+			cancellationReason: 'admin_rejected',
+		});
+		expect(getCancellationReason(raffle)).toBe(
+			CANCELLATION_REASON.ADMIN_REJECTED,
+		);
+	});
+
+	test('falls back to heuristic when backend field is null', () => {
+		// Cached responses or old data may not have the field
+		const raffle = buildCancelledRaffle({
+			cancellationReason: null,
+			ticketsSoldCount: 0,
+			participantsCount: 0,
+		});
+		expect(getCancellationReason(raffle)).toBe(CANCELLATION_REASON.NO_TICKETS);
+	});
 });
 
 describe('isAutoReason', () => {
@@ -133,6 +169,10 @@ describe('isAutoReason', () => {
 
 	test('host_cancelled is not auto', () => {
 		expect(isAutoReason(CANCELLATION_REASON.HOST_CANCELLED)).toBe(false);
+	});
+
+	test('admin_rejected is not auto', () => {
+		expect(isAutoReason(CANCELLATION_REASON.ADMIN_REJECTED)).toBe(false);
 	});
 });
 

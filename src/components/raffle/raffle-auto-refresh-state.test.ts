@@ -59,13 +59,27 @@ describe('resolveRaffleAutoRefreshPhase', () => {
 			}),
 		).toBe(RAFFLE_AUTO_REFRESH_PHASE.AWAITING_COMPLETION);
 	});
+
+	test('polls fulfilling raffles without winners (subscriber failure window)', () => {
+		// poll-vrf CAS-transitions ended→fulfilling before FulfillVrfCommand runs.
+		// If the subscriber fails, the raffle sits in fulfilling with no winners
+		// for up to 5 minutes (stuck recovery cron). Frontend must keep polling.
+		expect(
+			resolveRaffleAutoRefreshPhase({
+				status: RAFFLE_STATUS.FULFILLING,
+				endAt: '2030-01-01T00:00:00.000Z',
+				hasWinners: false,
+			}),
+		).toBe(RAFFLE_AUTO_REFRESH_PHASE.AWAITING_COMPLETION);
+	});
 });
 
 describe('AUTO_REFRESH_TIMEOUT_MS', () => {
 	test('keeps explicit timeout budgets per phase', () => {
 		expect(AUTO_REFRESH_TIMEOUT_MS).toEqual({
 			[RAFFLE_AUTO_REFRESH_PHASE.AWAITING_STATUS_FLIP]: 600_000,
-			[RAFFLE_AUTO_REFRESH_PHASE.AWAITING_WINNERS]: 900_000,
+			// 30 min — aligned with backend VRF hard cutoff (60 min)
+			[RAFFLE_AUTO_REFRESH_PHASE.AWAITING_WINNERS]: 1_800_000,
 			[RAFFLE_AUTO_REFRESH_PHASE.AWAITING_COMPLETION]: 120_000,
 		});
 	});

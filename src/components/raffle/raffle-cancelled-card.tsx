@@ -62,6 +62,9 @@ export function RaffleCancelledCard({
 					? `This raffle didn't reach the minimum participant threshold and was automatically cancelled.`
 					: `This raffle was cancelled because it didn't reach the minimum number of participants.`;
 
+			case CANCELLATION_REASON.ADMIN_REJECTED:
+				return 'This raffle was reviewed and rejected by the platform.';
+
 			case CANCELLATION_REASON.HOST_CANCELLED:
 				return isOwner
 					? 'You cancelled this raffle.'

@@ -53,7 +53,8 @@ export function WinnerLookup() {
 		setLoading(true);
 		setResult(null);
 
-		// User enters 1-based position; API expects 0-based
+		// User enters 1-indexed position (1 = first place);
+		// verifyWinner expects 0-indexed (matching backend convention).
 		const response = await verifyWinner(raffleId.trim(), posNum - 1);
 
 		if (response.success) {
@@ -170,6 +171,7 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 			<div className="flex items-center gap-2 text-amber-600">
 				<Trophy className="size-5" />
 				<span className="font-semibold">
+					{/* Backend positions are 0-indexed; +1 for human display */}
 					{`Winner #${data.position + 1} Verified`}
 				</span>
 			</div>

@@ -36,7 +36,10 @@ export function WinnerActionMenu({
 	const [markSentModalOpen, setMarkSentModalOpen] = useState(false);
 	const [isMarkingDelivered, startTransition] = useTransition();
 
-	const isPending = winner.status === 'pending';
+	// Legacy pending_partial_fulfillment is semantically equivalent to pending
+	const isPending =
+		winner.status === 'pending' ||
+		winner.status === 'pending_partial_fulfillment';
 	const isAwaitingHost = winner.status === 'awaiting_host';
 	const isSent = winner.status === 'sent';
 	const isCompleted =

@@ -325,6 +325,7 @@ function WinnerCard({
 			>
 				<div className="flex items-center gap-3">
 					<div className="flex size-8 items-center justify-center rounded-full bg-amber-100 text-sm font-semibold text-amber-700">
+						{/* Backend 0-indexed; +1 for human display */}
 						{winner.position + 1}
 					</div>
 					<div className="text-left">

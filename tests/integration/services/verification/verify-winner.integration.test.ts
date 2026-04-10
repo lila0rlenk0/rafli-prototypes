@@ -6,8 +6,9 @@ import type { WinnerVerification } from '@/types/verification';
 
 import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
 
+// Backend returns 0-indexed positions (0 = first place, 1 = second place)
 const VALID_RESPONSE: WinnerVerification = {
-	position: 1,
+	position: 0,
 	actualTicketId: 42,
 	computedTicketId: 42,
 	ticketCode: 'TC-042',
@@ -35,11 +36,12 @@ describe('verifyWinner', () => {
 	test('returns validated winner verification on success', async () => {
 		mockGet.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
 
-		const result = await verifyWinner('raffle-1', 1);
+		// Service accepts 0-indexed positions (matching backend convention)
+		const result = await verifyWinner('raffle-1', 0);
 
 		expect(result.success).toBe(true);
 		if (result.success) {
-			expect(result.data.position).toBe(1);
+			expect(result.data.position).toBe(0);
 			expect(result.data.merkleVerified).toBe(true);
 			expect(result.data.actualTicketId).toBe(result.data.computedTicketId);
 		}
@@ -94,5 +96,25 @@ describe('verifyWinner', () => {
 		if (!result.success) {
 			expect(result.error).toBe(COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR);
 		}
+	});
+
+	test('passes 0-indexed position directly to backend API', async () => {
+		// Service accepts 0-indexed positions — same convention as backend.
+		// Callers with human 1-indexed input (e.g., winner-lookup form)
+		// must convert to 0-indexed before calling.
+		mockGet.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
+
+		await verifyWinner('raffle-1', 0);
+
+		// Position 0 (first place) should hit /verify-winner/0
+		expect(mockGet).toHaveBeenCalledWith('/raffles/raffle-1/verify-winner/0');
+	});
+
+	test('passes position 2 directly as index 2 for backend API', async () => {
+		mockGet.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
+
+		await verifyWinner('raffle-1', 2);
+
+		expect(mockGet).toHaveBeenCalledWith('/raffles/raffle-1/verify-winner/2');
 	});
 });

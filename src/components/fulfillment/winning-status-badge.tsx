@@ -24,6 +24,7 @@ export function WinningStatusBadge({
 	function getStatusClasses(): string {
 		switch (status) {
 			case WINNING_STATUS.PENDING:
+			case WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT:
 				return 'bg-gray-100 text-gray-700';
 			case WINNING_STATUS.AWAITING_HOST:
 				return 'bg-yellow-100 text-yellow-700';
@@ -44,6 +45,7 @@ export function WinningStatusBadge({
 	function getStatusLabel(): string {
 		switch (status) {
 			case WINNING_STATUS.PENDING:
+			case WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT:
 				return 'Pending';
 			case WINNING_STATUS.AWAITING_HOST:
 				return 'Awaiting';

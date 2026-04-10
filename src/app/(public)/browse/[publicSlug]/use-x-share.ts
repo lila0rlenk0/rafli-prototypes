@@ -17,7 +17,7 @@ export interface XShareConfig {
 	title: string;
 	publicSlug: string;
 	xShareEnabled: boolean;
-	xShareClaimStatus?: 'expired' | 'pending' | 'revoked' | 'verified' | null;
+	xShareClaimStatus?: 'completed' | 'expired' | 'pending' | null;
 	/** When set, user must answer the quiz correctly before sharing (same gate as purchase flow) */
 	questionId?: string | null;
 }
@@ -26,10 +26,10 @@ interface UseXShareResult {
 	state: XShareState;
 	/** True when the user already earned their ticket for this raffle */
 	alreadyVerified: boolean;
-	/** True when the claim is in any terminal state (verified/expired/revoked) — no re-share allowed */
+	/** True when the claim is in any terminal state (completed/expired) — no re-share allowed */
 	claimUsed: boolean;
 	/** Raw claim status for per-status UI messaging */
-	xShareClaimStatus?: 'expired' | 'pending' | 'revoked' | 'verified' | null;
+	xShareClaimStatus?: 'completed' | 'expired' | 'pending' | null;
 	/** Seconds until auto-retry fires (0 = no countdown active) */
 	retryCountdown: number;
 	handleShare: () => void | Promise<void>;
@@ -152,12 +152,9 @@ export function useXShare({
 }: XShareConfig): UseXShareResult {
 	const router = useRouter();
 	// Any terminal status means the user's one chance is consumed — no resets.
-	// verified = ticket earned, expired/revoked = opportunity used without earning.
-	const alreadyVerified = xShareClaimStatus === 'verified';
-	const claimUsed =
-		alreadyVerified ||
-		xShareClaimStatus === 'expired' ||
-		xShareClaimStatus === 'revoked';
+	// completed = ticket earned, expired = opportunity used without earning.
+	const alreadyVerified = xShareClaimStatus === 'completed';
+	const claimUsed = alreadyVerified || xShareClaimStatus === 'expired';
 
 	// Resume verify state if the user has a pending claim from a prior session
 	// (they shared but navigated away before verifying)

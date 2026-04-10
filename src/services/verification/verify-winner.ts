@@ -13,10 +13,10 @@ import {
 import { ZodError } from 'zod';
 
 /**
- * Verifies a winner's selection for a concluded raffle
+ * Verifies a winner's selection for a concluded raffle.
  *
  * @param raffleId - The raffle ID
- * @param position - The winner position (1-indexed)
+ * @param position - The winner position (0-indexed, matching backend convention)
  * @returns ServiceResponse with verification data or error code
  */
 export async function verifyWinner(
@@ -24,6 +24,8 @@ export async function verifyWinner(
 	position: number,
 ): Promise<ServiceResponse<WinnerVerification, VerificationErrorCode>> {
 	try {
+		// Backend uses 0-indexed positions throughout (DB, API, responses).
+		// Callers with human 1-indexed input must convert before calling.
 		const response = await baseClient.get(
 			`/raffles/${raffleId}/verify-winner/${position}`,
 		);

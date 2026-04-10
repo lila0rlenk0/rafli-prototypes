@@ -46,6 +46,32 @@ describe('verifyTicket', () => {
 		}
 	});
 
+	test('accepts winnerPosition: null for losing tickets', async () => {
+		// Regression: backend DTO sends `winnerPosition: null` for non-winning
+		// tickets (see raffles.public.api.ts:verifyTicket). Schema was previously
+		// `.optional()` which only accepts undefined, so every losing ticket
+		// surfaced as "Invalid response from server" on the verify page.
+		const losingResponse: TicketVerification = {
+			ticketId: 7,
+			ticketCode: 'TC-007',
+			raffleId: 'raffle-1',
+			merkleVerified: true,
+			chunkIndex: 0,
+			isVoided: false,
+			isWinner: false,
+			winnerPosition: null,
+		};
+		mockGet.mockResolvedValueOnce(mockAxiosResponse(losingResponse));
+
+		const result = await verifyTicket('raffle-1', 'TC-007');
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.isWinner).toBe(false);
+			expect(result.data.winnerPosition).toBeNull();
+		}
+	});
+
 	test('returns VALIDATION_ERROR on invalid response shape', async () => {
 		mockGet.mockResolvedValueOnce(mockAxiosResponse({ bad: true }));
 

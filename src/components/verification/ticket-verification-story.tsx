@@ -142,8 +142,10 @@ export function TicketVerificationStory() {
 		// All three calls are best-effort — the story degrades gracefully if any fail.
 		// Winner position: own position if winner, otherwise position 0 (1st place)
 		// to show the formula that selected the actual winner.
+		// Backend sends `winnerPosition: null` for losing tickets, so narrow on null
+		// rather than undefined — the `isWinner` guard already ensures the number branch.
 		const winnerPosition =
-			ticket.isWinner && ticket.winnerPosition !== undefined
+			ticket.isWinner && ticket.winnerPosition !== null
 				? ticket.winnerPosition
 				: 0;
 

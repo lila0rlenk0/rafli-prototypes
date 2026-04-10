@@ -13,7 +13,10 @@ export const ticketVerificationSchema = z.object({
 	chunkIndex: z.number(),
 	isVoided: z.boolean(),
 	isWinner: z.boolean(),
-	winnerPosition: z.number().optional(),
+	// Backend always emits this field; `null` when the ticket did not win.
+	// Must be `.nullable()` — `.optional()` only accepts undefined and would
+	// trip Zod validation on every losing ticket ("Invalid response from server").
+	winnerPosition: z.number().nullable(),
 });
 
 /** Schema for verifying a winner selection — proves VRF → ticket mapping. */

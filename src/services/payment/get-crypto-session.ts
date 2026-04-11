@@ -76,6 +76,7 @@ export async function getCryptoSession(
 		captureServiceError(error, errorCode, {
 			service: 'payment',
 			action: 'get-crypto-session',
+			sessionId,
 		});
 		return failure(errorCode);
 	}

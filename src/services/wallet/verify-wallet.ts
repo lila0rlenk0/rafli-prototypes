@@ -64,6 +64,7 @@ export async function verifyWallet(
 		captureServiceError(error, errorCode, {
 			service: 'wallet',
 			action: 'verify-wallet',
+			walletAddress: payload.address,
 		});
 
 		// Track wallet verification failure — measures Web3 onboarding friction

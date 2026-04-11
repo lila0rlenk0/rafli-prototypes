@@ -49,6 +49,7 @@ export async function getCheckoutStatus(
 		captureServiceError(error, errorCode, {
 			service: 'payment',
 			action: 'get-checkout-status',
+			orderId,
 		});
 		return failure(errorCode);
 	}

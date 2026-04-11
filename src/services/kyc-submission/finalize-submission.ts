@@ -43,6 +43,7 @@ export async function finalizeSubmission(
 		captureServiceError(error, errorCode, {
 			service: 'kyc-submission',
 			action: 'finalize-submission',
+			submissionId,
 		});
 
 		void sessionPromise.then(session =>

@@ -72,6 +72,7 @@ export async function uploadDocument(
 		captureServiceError(error, errorCode, {
 			service: 'kyc-submission',
 			action: 'upload-document',
+			submissionId,
 		});
 		return failure(errorCode);
 	}

@@ -70,6 +70,8 @@ export async function submitCryptoTx(
 		captureServiceError(error, errorCode, {
 			service: 'payment',
 			action: 'submit-crypto-tx',
+			sessionId: payload.sessionId,
+			txHash: payload.txHash,
 		});
 		return failure(errorCode);
 	}

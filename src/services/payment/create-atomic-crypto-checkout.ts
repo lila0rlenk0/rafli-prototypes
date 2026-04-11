@@ -78,6 +78,10 @@ export async function createAtomicCryptoCheckout(
 		captureServiceError(error, errorCode, {
 			service: 'payment',
 			action: 'create-atomic-crypto-checkout',
+			raffleId: payload.raffleId,
+			chainId: payload.chainId,
+			quantity: payload.ticketQuantity,
+			walletAddress: payload.walletAddress,
 		});
 		return failure(errorCode);
 	}

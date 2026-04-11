@@ -89,6 +89,9 @@ export async function confirmCryptoTx(
 		captureServiceError(error, errorCode, {
 			service: 'payment',
 			action: 'confirm-crypto-tx',
+			sessionId: payload.sessionId,
+			txHash: payload.txHash,
+			chainId: payload.chainId,
 		});
 
 		runAfter(async () => {

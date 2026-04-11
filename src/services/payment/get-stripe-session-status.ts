@@ -94,6 +94,7 @@ export async function getStripeSessionStatus(
 		captureServiceError(error, errorCode, {
 			service: 'payment',
 			action: 'get-stripe-session-status',
+			sessionId,
 		});
 		return failure(errorCode);
 	}

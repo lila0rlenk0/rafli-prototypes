@@ -45,6 +45,7 @@ export async function getSubmissionDetail(
 		captureServiceError(error, errorCode, {
 			service: 'kyc-submission',
 			action: 'get-submission-detail',
+			submissionId: id,
 		});
 		return failure(errorCode);
 	}

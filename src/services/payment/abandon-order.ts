@@ -75,6 +75,7 @@ export async function abandonOrder(
 		captureServiceError(error, errorCode, {
 			service: 'payment',
 			action: 'abandon-order',
+			orderId,
 		});
 		return failure(errorCode);
 	}

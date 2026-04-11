@@ -13,8 +13,10 @@ import z from 'zod';
  */
 export const env = createEnv({
 	server: {
-		BACKEND_URL: z.url().default('http://localhost:4000'),
-		APP_URL: z.url().default('http://localhost:3000'),
+		// No defaults — production/staging MUST provide these explicitly.
+		// Local dev sets them in .env.local (http://localhost:4000 / :3000).
+		BACKEND_URL: z.url(),
+		APP_URL: z.url(),
 		// Minimum 32 chars — short secrets are brute-forceable
 		S2S_SECRET: z.string().min(32),
 		MIXPANEL_TOKEN: z.string(),

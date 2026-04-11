@@ -1,6 +1,7 @@
 'use server';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { requireAuth } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
 import type { PromoCodeErrorCode } from '@/types/errors';
@@ -20,6 +21,9 @@ export async function exportPromoCodes(
 	raffleId: string,
 	query?: Partial<ExportPromoCodesQuery>,
 ): Promise<ServiceResponse<string, PromoCodeErrorCode>> {
+	// Defense-in-depth — backend also enforces host ownership
+	await requireAuth();
+
 	try {
 		const response = await authenticatedClient.get(
 			`/raffles/${raffleId}/promo-codes/export`,

@@ -5,7 +5,7 @@ import { ZodError } from 'zod';
 import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
-import { getSession } from '@/lib/auth/session';
+import { getSession, requireAuth } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
@@ -42,6 +42,8 @@ export async function bulkCreatePromoCodes(
 	raffleId: string,
 	payload: BulkCreatePromoCodesPayload,
 ): Promise<ServiceResponse<BulkCreatePromoCodesResponse, PromoCodeErrorCode>> {
+	// Defense-in-depth — backend also enforces host ownership
+	await requireAuth();
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {

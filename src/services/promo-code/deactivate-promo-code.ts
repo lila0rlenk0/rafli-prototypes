@@ -3,6 +3,7 @@
 import { z, ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { requireAuth } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
@@ -24,6 +25,9 @@ const deactivatePromoCodeResponseSchema = z.object({
 export async function deactivatePromoCode(
 	promoCodeId: string,
 ): Promise<ServiceResponse<void, PromoCodeErrorCode>> {
+	// Defense-in-depth — backend also enforces host ownership
+	await requireAuth();
+
 	try {
 		const response = await authenticatedClient.delete(
 			`/promo-codes/${promoCodeId}`,

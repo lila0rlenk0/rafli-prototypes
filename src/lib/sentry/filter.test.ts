@@ -48,6 +48,14 @@ describe('filterEvent', () => {
 			'core:option:not-found',
 			'core:option:invalid',
 
+			// X-share free-ticket claim
+			'core:xshare:already-claimed',
+			'core:xshare:question-required',
+			'core:xshare:disabled',
+			'core:xshare:expired',
+			'core:xshare:rate-limited',
+			'core:xshare:not-found',
+
 			// Order
 			'core:order:already-completed',
 			'core:order:not-pending',

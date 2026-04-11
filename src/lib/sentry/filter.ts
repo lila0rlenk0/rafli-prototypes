@@ -93,6 +93,18 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 	'core:option:not-found',
 	'core:option:invalid',
 
+	// X-share free-ticket claim — two-step intent → verify flow. Every code
+	// is a backend-enforced business rule with a mapped toast in
+	// `use-x-share.ts`; none indicate a defect. Note `already-claimed`
+	// collapses the verified/expired/revoked states (see use-x-share.ts:50),
+	// which is how a second-tab race surfaces here.
+	'core:xshare:already-claimed',
+	'core:xshare:question-required',
+	'core:xshare:disabled',
+	'core:xshare:expired',
+	'core:xshare:rate-limited',
+	'core:xshare:not-found',
+
 	// Order — expected states
 	'core:order:not-found',
 	'core:order:permission-denied',

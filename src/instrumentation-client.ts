@@ -24,3 +24,8 @@ Sentry.init({
 	// Drops expected business errors, samples network errors, filters browser noise
 	beforeSend: filterEvent,
 });
+
+// Required by @sentry/nextjs to instrument App Router client-side navigations.
+// Without this export, the SDK logs an ACTION REQUIRED warning on every page load.
+// https://docs.sentry.io/platforms/javascript/guides/nextjs/#react-router-instrumentation
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

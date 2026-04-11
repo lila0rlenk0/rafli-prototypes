@@ -7,7 +7,7 @@ import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS, pathParam } from '@/lib/api/config';
 import { failure, mapKycSubmissionError, success } from '@/lib/errors';
 import {
 	KYC_SUBMISSION_ERROR_CODES,
@@ -50,7 +50,7 @@ export async function uploadDocument(
 		formData.append('file', file);
 
 		const response = await authenticatedClient.post(
-			`/verification/${submissionId}/documents/${purpose}`,
+			`/verification/${pathParam(submissionId)}/documents/${pathParam(purpose)}`,
 			formData,
 			{
 				timeout: API_TIMEOUTS.UPLOAD,

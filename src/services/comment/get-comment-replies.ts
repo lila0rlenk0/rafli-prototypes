@@ -2,6 +2,7 @@
 
 import { ZodError } from 'zod';
 
+import { pathParam } from '@/lib/api/config';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapCommentError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -33,7 +34,7 @@ export async function getCommentReplies(
 ): Promise<ServiceResponse<ListCommentsResponse, CommentErrorCode>> {
 	try {
 		const response = await baseClient.get(
-			`/raffles/${raffleId}/comments/${commentId}/replies`,
+			`/raffles/${pathParam(raffleId)}/comments/${pathParam(commentId)}/replies`,
 			{ params },
 		);
 		return success(listCommentsResponseSchema.parse(response.data));

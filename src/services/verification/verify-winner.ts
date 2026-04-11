@@ -1,5 +1,6 @@
 'use server';
 
+import { pathParam } from '@/lib/api/config';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapVerificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -27,7 +28,7 @@ export async function verifyWinner(
 		// Backend uses 0-indexed positions throughout (DB, API, responses).
 		// Callers with human 1-indexed input must convert before calling.
 		const response = await baseClient.get(
-			`/raffles/${raffleId}/verify-winner/${position}`,
+			`/raffles/${pathParam(raffleId)}/verify-winner/${pathParam(String(position))}`,
 		);
 		return success(winnerVerificationSchema.parse(response.data));
 	} catch (error) {

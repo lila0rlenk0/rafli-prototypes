@@ -36,3 +36,15 @@ export const CACHE_REVALIDATE = {
 	RAFFLE_DETAIL: 300, // 5 minutes - raffle details change less often
 	CATEGORIES: 3_600, // 1 hour - almost static data
 } as const;
+
+/**
+ * Encodes a value for safe interpolation into a URL path segment.
+ * Prevents path traversal (../) and slash injection by percent-encoding
+ * all characters that are not unreserved (RFC 3986 §2.3).
+ *
+ * @param value - Raw string to encode (e.g., raffleId, userId, slug)
+ * @returns Percent-encoded string safe for URL path interpolation
+ */
+export function pathParam(value: string): string {
+	return encodeURIComponent(value);
+}

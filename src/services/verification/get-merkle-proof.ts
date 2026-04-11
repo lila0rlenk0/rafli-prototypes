@@ -1,5 +1,6 @@
 'use server';
 
+import { pathParam } from '@/lib/api/config';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapVerificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -22,7 +23,7 @@ export async function getMerkleProof(
 ): Promise<ServiceResponse<MerkleProof, VerificationErrorCode>> {
 	try {
 		const response = await baseClient.get(
-			`/raffles/${raffleId}/merkle-proof/${ticketId}`,
+			`/raffles/${pathParam(raffleId)}/merkle-proof/${pathParam(String(ticketId))}`,
 		);
 		return success(merkleProofSchema.parse(response.data));
 	} catch (error) {

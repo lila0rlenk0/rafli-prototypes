@@ -4,6 +4,7 @@ import type { Comment, CreateCommentPayload } from '@/types/comment';
 import type { CommentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
+import { pathParam } from '@/lib/api/config';
 import { createCommentBase } from './create-comment-base';
 
 /**
@@ -27,7 +28,7 @@ export async function createReply(
 ): Promise<ServiceResponse<Comment, CommentErrorCode>> {
 	return createCommentBase({
 		raffleId,
-		endpoint: `/raffles/${raffleId}/comments/${commentId}/replies`,
+		endpoint: `/raffles/${pathParam(raffleId)}/comments/${pathParam(commentId)}/replies`,
 		payload,
 		action: 'create-reply',
 		parentCommentId: commentId,

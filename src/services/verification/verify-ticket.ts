@@ -1,5 +1,6 @@
 'use server';
 
+import { pathParam } from '@/lib/api/config';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapVerificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -25,7 +26,7 @@ export async function verifyTicket(
 ): Promise<ServiceResponse<TicketVerification, VerificationErrorCode>> {
 	try {
 		const response = await baseClient.get(
-			`/raffles/${raffleId}/verify-ticket/${ticketCode}`,
+			`/raffles/${pathParam(raffleId)}/verify-ticket/${pathParam(ticketCode)}`,
 		);
 		return success(ticketVerificationSchema.parse(response.data));
 	} catch (error) {

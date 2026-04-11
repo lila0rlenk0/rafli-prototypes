@@ -86,12 +86,31 @@ export function captureServiceError(
 ): void {
 	// Skip expected business/user errors — avoids building Sentry scope entirely,
 	// saving CPU and guaranteeing zero quota usage for known error codes.
-	if (EXPECTED_ERROR_CODES.has(errorCode)) return;
+	if (!shouldCaptureServiceError(errorCode)) return;
 
 	Sentry.withScope(scope => {
 		applyServiceErrorScope(scope, errorCode, context);
 		Sentry.captureException(error);
 	});
+}
+
+/**
+ * Pure predicate deciding whether a service error should reach Sentry.
+ *
+ * Extracted from `captureServiceError` so the short-circuit behavior is
+ * unit-testable without mocking `@sentry/nextjs`. Returns `false` for
+ * codes inside `EXPECTED_ERROR_CODES` — known user-path errors that
+ * would otherwise burn quota (invalid credentials, sold out, etc.) —
+ * and `true` for everything else.
+ *
+ * `beforeSend` applies the same rule as a second-line defense in case
+ * a new expected code is added without updating this set.
+ *
+ * @param errorCode - Typed error code from the domain error mapper
+ * @returns `true` when the error should be reported to Sentry
+ */
+export function shouldCaptureServiceError(errorCode: string): boolean {
+	return !EXPECTED_ERROR_CODES.has(errorCode);
 }
 
 /**

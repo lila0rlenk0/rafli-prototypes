@@ -2,7 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import type { Scope } from '@sentry/nextjs';
 import { ZodError, z } from 'zod';
 
-import { applyContractDriftScope, applyServiceErrorScope } from './capture';
+import {
+	applyContractDriftScope,
+	applyServiceErrorScope,
+	shouldCaptureServiceError,
+} from './capture';
+import { EXPECTED_ERROR_CODES } from './filter';
 
 /**
  * Unit tests for the pure scope-builder helpers extracted from
@@ -211,5 +216,29 @@ describe('applyContractDriftScope', () => {
 		expect(zodIssues.issues[0].path).toBe('items.0.body');
 		// We don't assert the `message` string — it varies across Zod releases.
 		expect(typeof zodIssues.issues[0].code).toBe('string');
+	});
+});
+
+// ==========================================
+// shouldCaptureServiceError
+// ==========================================
+
+describe('shouldCaptureServiceError', () => {
+	test('returns false for every code in EXPECTED_ERROR_CODES', () => {
+		// Every code on the expected list must short-circuit — this is the
+		// predicate guaranteeing zero Sentry quota burn for known user-path
+		// failures (invalid credentials, sold out, etc). Iterating the set
+		// pins the contract so adding a new code without updating the set
+		// would be caught here.
+		for (const code of EXPECTED_ERROR_CODES) {
+			expect(shouldCaptureServiceError(code)).toBe(false);
+		}
+	});
+
+	test('returns true for unknown codes so genuine failures still reach Sentry', () => {
+		expect(shouldCaptureServiceError('payments:crypto:submit-failed')).toBe(
+			true,
+		);
+		expect(shouldCaptureServiceError('internal_server_error')).toBe(true);
 	});
 });

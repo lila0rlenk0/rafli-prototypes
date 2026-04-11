@@ -1,6 +1,31 @@
 import * as Sentry from '@sentry/nextjs';
 
 /**
+ * Valid values for the `userMode` Sentry tag. Kept as a local union so
+ * this file doesn't import `@/types/user-mode` — the tag is a telemetry
+ * label, not part of the domain model, and keeping the dependency tree
+ * shallow matters because `@/lib/auth/session` imports this file at the
+ * very start of every request.
+ */
+export type SentryUserMode = 'participant' | 'host';
+
+/**
+ * Writes the `userMode` tag to the current Sentry scope. Callers pass a
+ * pre-resolved string so this helper stays synchronous and free of
+ * cookie/server dependencies.
+ *
+ * The tag is indexed in Sentry so the issue list can be filtered by
+ * `userMode:host` to distinguish host-only failure modes from
+ * participant-only ones — the two flows share most service actions but
+ * hit different backend permissions, so separating them is valuable.
+ *
+ * @param mode - Resolved user mode from the `raffly-user-mode` cookie
+ */
+export function setSentryUserMode(mode: SentryUserMode): void {
+	Sentry.setTag('userMode', mode);
+}
+
+/**
  * Sets user context on all subsequent Sentry events.
  *
  * Only sends user ID — no PII (email, name) to minimize data exposure.

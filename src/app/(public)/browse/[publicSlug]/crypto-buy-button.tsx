@@ -11,6 +11,7 @@ import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
+import { useIsWeb3Ready } from '@/providers/web3-provider';
 import { usePollMyTicketCodes } from '@/services/ticket/use-poll-my-ticket-codes';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
@@ -50,14 +51,63 @@ interface CryptoBuyButtonProps {
 /**
  * CryptoBuyButton Component
  *
- * Secondary purchase button for crypto payments via Web3 wallet.
+ * Secondary purchase button for crypto payments via Web3 wallet. Gates on
+ * `useIsWeb3Ready` because `Web3Provider` defers mounting `WagmiProvider`
+ * until a client-side dynamic import resolves (see web3-provider.tsx for
+ * why). Calling wagmi hooks before that point throws
+ * `WagmiProviderNotFoundError`, which was seen in production during SSR of
+ * `POST /browse/[publicSlug]` server actions.
+ *
+ * The inner component is split out so React fully unmounts the placeholder
+ * and mounts a fresh tree once wagmi becomes ready — this preserves Rules of
+ * Hooks (the inner component's hook count is stable) and avoids the
+ * conditional-hook trap.
+ *
  * Flow (with atomic checkout):
  * 1. Click → opens RainbowKit wallet connect modal if not connected
  * 2. Once connected → opens crypto checkout modal with raffle params
  * 3. Modal handles chain/token/wallet selection, then calls atomic checkout
  *    endpoint which creates order + session in one call
  */
-export function CryptoBuyButton({
+export function CryptoBuyButton(props: CryptoBuyButtonProps) {
+	// `false` during SSR and the pre-hydration paint, flips to `true` once
+	// Web3Provider's lazy wagmi config import resolves and `WagmiProvider`
+	// mounts. Rendering the inner component before then throws.
+	const isWeb3Ready = useIsWeb3Ready();
+
+	if (!isWeb3Ready) {
+		return <CryptoBuyButtonPlaceholder />;
+	}
+
+	return <CryptoBuyButtonInner {...props} />;
+}
+
+/**
+ * Disabled placeholder that matches `CryptoBuyButtonInner`'s "Preparing
+ * wallet..." state visually. Rendered while `WagmiProvider` is not yet in
+ * the tree so we never call wagmi hooks outside their required context.
+ *
+ * @returns Disabled button with spinner and "Preparing wallet..." label
+ */
+function CryptoBuyButtonPlaceholder() {
+	return (
+		<Button
+			disabled
+			variant="outline"
+			className="h-12 w-full cursor-not-allowed border-2 border-[#D4D4D4] bg-[#F5F5F5] text-[#7B7B7B] hover:bg-[#F5F5F5] hover:text-[#7B7B7B]"
+		>
+			<Loader2Icon className="mr-2 size-4 animate-spin" />
+			<p className="font-semibold">Preparing wallet...</p>
+		</Button>
+	);
+}
+
+/**
+ * Inner component — called only after `WagmiProvider` is mounted so every
+ * wagmi hook invocation below is safe. Parent `CryptoBuyButton` handles the
+ * ready gate.
+ */
+function CryptoBuyButtonInner({
 	raffleId,
 	endAt,
 	ticketQuantity,

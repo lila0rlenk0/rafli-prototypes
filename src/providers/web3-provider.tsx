@@ -2,11 +2,47 @@
 
 import '@rainbow-me/rainbowkit/styles.css';
 
+import {
+	createContext,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+	type ReactNode,
+} from 'react';
 import { lightTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi';
 
 import { isWeb3Enabled, WAGMI_COOKIE_KEY } from '@/lib/web3/constants';
+
+/**
+ * Signals whether `WagmiProvider` is actually mounted in the tree above.
+ *
+ * Needed because `Web3Provider` intentionally defers mounting `WagmiProvider`
+ * until a client-side `useEffect` dynamically imports the SSR-unsafe wagmi
+ * config. During SSR and the pre-hydration paint, `WagmiProvider` is not in
+ * the tree, so any descendant calling a wagmi hook (`useConfig`, `useAccount`,
+ * `useConnection`, etc.) throws `WagmiProviderNotFoundError`. Consumers must
+ * read this flag and skip wagmi hook calls until it becomes `true`.
+ *
+ * Default `false` — when the provider is not in the tree at all (Web3
+ * disabled, or module not yet evaluated), consumers should behave as if wagmi
+ * is unavailable rather than optimistically calling hooks.
+ */
+const Web3ReadyContext = createContext(false);
+
+/**
+ * Returns `true` once `WagmiProvider` is mounted and wagmi hooks are safe to
+ * call in this subtree. Gate any component that uses wagmi hooks on this
+ * signal — render a placeholder while `false` and swap to the wagmi-using
+ * subcomponent once `true` (the subcomponent must be a child component so
+ * React re-mounts it fresh, preserving Rules of Hooks ordering).
+ *
+ * @returns whether wagmi is ready for use in the current subtree
+ */
+export function useIsWeb3Ready(): boolean {
+	return useContext(Web3ReadyContext);
+}
 
 /** Near-black accent — matches the app's border/button color token */
 const ACCENT_COLOR = '#0F0F0F';
@@ -96,13 +132,21 @@ export function Web3Provider({
 	// No config loaded yet (SSR / pre-hydration) or Web3 disabled →
 	// pass children through. This guarantees the server-rendered tree
 	// matches the initial client tree, preventing hydration mismatch.
+	// `Web3ReadyContext` is `false` in this branch so descendants gate
+	// their wagmi-hook usage and avoid `WagmiProviderNotFoundError`.
 	if (!wagmiConfig) {
-		return <>{children}</>;
+		return (
+			<Web3ReadyContext.Provider value={false}>
+				{children}
+			</Web3ReadyContext.Provider>
+		);
 	}
 
 	return (
-		<WagmiProvider config={wagmiConfig} initialState={initialState}>
-			<RainbowKitProvider theme={appTheme}>{children}</RainbowKitProvider>
-		</WagmiProvider>
+		<Web3ReadyContext.Provider value={true}>
+			<WagmiProvider config={wagmiConfig} initialState={initialState}>
+				<RainbowKitProvider theme={appTheme}>{children}</RainbowKitProvider>
+			</WagmiProvider>
+		</Web3ReadyContext.Provider>
 	);
 }

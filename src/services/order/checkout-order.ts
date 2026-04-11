@@ -12,6 +12,7 @@ import { failure, mapOrderError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import {
+	createOrderPayloadSchema,
 	orderSchema,
 	type CreateOrderPayload,
 	type Order,
@@ -47,14 +48,20 @@ export async function checkoutOrder(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Step 1: Create or reuse checkout order atomically — backend handles promo & reuse
+		// Step 1: Validate input — defense-in-depth before forwarding to backend
+		const parsed = createOrderPayloadSchema.safeParse(payload);
+		if (!parsed.success) {
+			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
+		}
+
+		// Step 2: Create or reuse checkout order atomically — backend handles promo & reuse
 		const response = await authenticatedClient.post(
 			'/orders/checkout',
-			payload,
+			parsed.data,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Step 2: Validate response shape
+		// Step 3: Validate response shape
 		const order = orderSchema.parse(response.data);
 
 		runAfter(async () => {

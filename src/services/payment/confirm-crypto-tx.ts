@@ -20,7 +20,10 @@ import {
 	type CryptoTxMutationResponse,
 } from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
-import type { ConfirmCryptoTxPayload } from '@/types/wallet';
+import {
+	confirmCryptoTxPayloadSchema,
+	type ConfirmCryptoTxPayload,
+} from '@/types/wallet';
 
 /**
  * Requests backend to finalize a crypto payment immediately.
@@ -41,14 +44,20 @@ export async function confirmCryptoTx(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Step 1: Request backend to finalize crypto payment — idempotent if already completed
+		// Step 1: Validate input — defense-in-depth before forwarding to backend
+		const parsed = confirmCryptoTxPayloadSchema.safeParse(payload);
+		if (!parsed.success) {
+			return failure(PAYMENT_ERROR_CODES.CRYPTO_CONFIRM_FAILED);
+		}
+
+		// Step 2: Request backend to finalize crypto payment — idempotent if already completed
 		const response = await authenticatedClient.post(
 			'/payments/crypto/confirm',
-			payload,
+			parsed.data,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Step 2: Validate response shape
+		// Step 3: Validate response shape
 		const data = cryptoTxMutationResponseSchema.parse(response.data);
 
 		runAfter(async () => {

@@ -19,7 +19,10 @@ import {
 	type CryptoTxMutationResponse,
 } from '@/types/payment';
 import type { ServiceResponse } from '@/types/service-response';
-import type { SubmitCryptoTxPayload } from '@/types/wallet';
+import {
+	submitCryptoTxPayloadSchema,
+	type SubmitCryptoTxPayload,
+} from '@/types/wallet';
 
 /**
  * Submits a crypto transaction hash for verification
@@ -36,14 +39,20 @@ export async function submitCryptoTx(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Step 1: Submit tx hash to backend for verification against session parameters
+		// Step 1: Validate input — defense-in-depth before forwarding to backend
+		const parsed = submitCryptoTxPayloadSchema.safeParse(payload);
+		if (!parsed.success) {
+			return failure(PAYMENT_ERROR_CODES.CRYPTO_SUBMIT_FAILED);
+		}
+
+		// Step 2: Submit tx hash to backend for verification against session parameters
 		const response = await authenticatedClient.post(
 			'/payments/crypto/submit',
-			payload,
+			parsed.data,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Step 2: Validate response shape
+		// Step 3: Validate response shape
 		const data = cryptoTxMutationResponseSchema.parse(response.data);
 
 		runAfter(async () => {

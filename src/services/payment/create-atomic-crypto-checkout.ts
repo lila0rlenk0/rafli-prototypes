@@ -16,6 +16,7 @@ import {
 import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
+	atomicCryptoCheckoutPayloadSchema,
 	atomicCryptoCheckoutResponseSchema,
 	type AtomicCryptoCheckoutPayload,
 	type AtomicCryptoCheckoutResponse,
@@ -40,14 +41,20 @@ export async function createAtomicCryptoCheckout(
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
-		// Step 1: Create order + crypto session atomically — backend handles reuse & promo
+		// Step 1: Validate input — defense-in-depth before forwarding to backend
+		const parsed = atomicCryptoCheckoutPayloadSchema.safeParse(payload);
+		if (!parsed.success) {
+			return failure(PAYMENT_ERROR_CODES.FETCH_FAILED);
+		}
+
+		// Step 2: Create order + crypto session atomically — backend handles reuse & promo
 		const response = await authenticatedClient.post(
 			'/payments/crypto/atomic-checkout',
-			payload,
+			parsed.data,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Step 2: Validate response — `session` is null when order is $0 (fully discounted)
+		// Step 3: Validate response — `session` is null when order is $0 (fully discounted)
 		const data = atomicCryptoCheckoutResponseSchema.parse(response.data);
 
 		runAfter(async () => {

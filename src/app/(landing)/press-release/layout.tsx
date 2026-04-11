@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { env } from '@/env/server';
 
 export const metadata: Metadata = {
-	title: 'Press Release — Introducing Rafli | Raffly',
+	title: 'Press Release — Introducing Rafli | Rafli',
 	description:
 		'Rafli is a blockchain-backed raffle platform redefining transparency, trust, and excitement for hosts and participants alike.',
 	keywords: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 		description:
 			'A blockchain-backed platform redefining transparency, trust, and excitement in the world of online raffles.',
 		url: `${env.APP_URL}/press-release`,
-		siteName: 'Raffly',
+		siteName: 'Rafli',
 		type: 'article',
 		locale: 'en_US',
 	},

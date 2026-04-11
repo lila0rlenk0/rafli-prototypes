@@ -18,13 +18,13 @@ export async function generateMetadata({
 	const { raffleId } = await params;
 
 	return {
-		title: `Verify Raffle ${raffleId} | Raffly`,
+		title: `Verify Raffle ${raffleId} | Rafli`,
 		description: `Technical verification details for raffle ${raffleId}. View blockchain proofs, Merkle tree data, and winner selection formulas.`,
 		alternates: {
 			canonical: `${env.APP_URL}/verify/${raffleId}`,
 		},
 		openGraph: {
-			title: `Verify Raffle ${raffleId} | Raffly`,
+			title: `Verify Raffle ${raffleId} | Rafli`,
 			description:
 				'Technical verification details with blockchain proofs and cryptographic data.',
 			url: `${env.APP_URL}/verify/${raffleId}`,

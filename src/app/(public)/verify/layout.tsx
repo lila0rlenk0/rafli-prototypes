@@ -11,7 +11,7 @@ import { NotificationStoreProvider } from '@/providers/notification-store-provid
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
 export const metadata: Metadata = {
-	title: 'Verify Raffle Results | Raffly',
+	title: 'Verify Raffle Results | Rafli',
 	description:
 		'Independently verify any raffle result using cryptographic proofs. Check ticket existence, winner selection, and blockchain records.',
 	keywords: [
@@ -27,11 +27,11 @@ export const metadata: Metadata = {
 		canonical: `${env.APP_URL}/verify`,
 	},
 	openGraph: {
-		title: 'Verify Raffle Results | Raffly',
+		title: 'Verify Raffle Results | Rafli',
 		description:
 			'Independently verify any raffle result using cryptographic proofs and blockchain records.',
 		url: `${env.APP_URL}/verify`,
-		siteName: 'Raffly',
+		siteName: 'Rafli',
 		type: 'website',
 		locale: 'en_US',
 	},
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
 const jsonLd = {
 	'@context': 'https://schema.org',
 	'@type': 'WebApplication',
-	name: 'Raffly Verification Tool',
+	name: 'Rafli Verification Tool',
 	description:
 		'Independently verify raffle results using cryptographic proofs and blockchain records.',
 	applicationCategory: 'UtilitiesApplication',

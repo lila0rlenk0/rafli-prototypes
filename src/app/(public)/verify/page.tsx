@@ -83,7 +83,7 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
 				<div className="mt-12 rounded-2xl border border-black bg-white p-6 text-center">
 					<h2 className="mb-2 text-lg font-semibold">How Verification Works</h2>
 					<p className="mb-4 text-sm text-neutral-600">
-						Every raffle on Raffly uses blockchain technology and cryptographic
+						Every raffle on Rafli uses blockchain technology and cryptographic
 						proofs to ensure results cannot be manipulated. Ticket data is
 						locked before the draw, and random numbers come from an external,
 						verifiable source.

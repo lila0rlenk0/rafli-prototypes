@@ -11,9 +11,9 @@ import { NotificationStoreProvider } from '@/providers/notification-store-provid
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
 export const metadata: Metadata = {
-	title: 'How Provably Fair Raffles Work | Raffly',
+	title: 'How Provably Fair Raffles Work | Rafli',
 	description:
-		'Learn how Raffly uses blockchain technology, Chainlink VRF, and Merkle trees to ensure cryptographically verifiable raffle results. No trust required.',
+		'Learn how Rafli uses blockchain technology, Chainlink VRF, and Merkle trees to ensure cryptographically verifiable raffle results. No trust required.',
 	keywords: [
 		'provably fair raffle',
 		'blockchain raffle',
@@ -28,11 +28,11 @@ export const metadata: Metadata = {
 		canonical: `${env.APP_URL}/how-it-works`,
 	},
 	openGraph: {
-		title: 'How Provably Fair Raffles Work | Raffly',
+		title: 'How Provably Fair Raffles Work | Rafli',
 		description:
-			'Learn how Raffly uses blockchain technology and cryptographic proofs to ensure fair, verifiable raffle results that anyone can audit.',
+			'Learn how Rafli uses blockchain technology and cryptographic proofs to ensure fair, verifiable raffle results that anyone can audit.',
 		url: `${env.APP_URL}/how-it-works`,
-		siteName: 'Raffly',
+		siteName: 'Rafli',
 		type: 'article',
 		locale: 'en_US',
 	},
@@ -57,7 +57,7 @@ const jsonLd = {
 	'@type': 'HowTo',
 	name: 'How Provably Fair Raffles Work',
 	description:
-		'Learn how Raffly uses blockchain technology and cryptographic proofs to ensure fair, verifiable raffle results.',
+		'Learn how Rafli uses blockchain technology and cryptographic proofs to ensure fair, verifiable raffle results.',
 	step: [
 		{
 			'@type': 'HowToStep',
@@ -115,7 +115,7 @@ const faqJsonLd = {
 			name: 'How does Chainlink VRF work?',
 			acceptedAnswer: {
 				'@type': 'Answer',
-				text: 'Chainlink VRF (Verifiable Random Function) generates random numbers on the blockchain that are cryptographically provable. Neither Raffly nor any third party can predict or influence the random number.',
+				text: 'Chainlink VRF (Verifiable Random Function) generates random numbers on the blockchain that are cryptographically provable. Neither Rafli nor any third party can predict or influence the random number.',
 			},
 		},
 		{
@@ -123,7 +123,7 @@ const faqJsonLd = {
 			name: 'Can I verify raffle results myself?',
 			acceptedAnswer: {
 				'@type': 'Answer',
-				text: 'Yes. Every raffle on Raffly includes blockchain transaction links, IPFS manifest links, and the exact formula used for winner selection. Anyone can independently verify the results.',
+				text: 'Yes. Every raffle on Rafli includes blockchain transaction links, IPFS manifest links, and the exact formula used for winner selection. Anyone can independently verify the results.',
 			},
 		},
 	],

@@ -62,6 +62,25 @@ export function calculateOrderTotal(
 	}
 
 	const promoValue = parseFloat(appliedPromo.value);
+
+	// Defensive NaN guard — backend contract says `value` is numeric, but the
+	// Zod schema only enforces `z.string()` with no numeric refinement. A bad
+	// backend payload ("abc", "", undefined-stringified) would otherwise leak
+	// NaN through `subtotal - discount` and surface as "$NaN" in the sticky
+	// CTA label and the card price breakdown. Fallback: treat a malformed
+	// promo as "no discount applied" so the user at worst pays full price
+	// instead of seeing broken totals. The free-tickets flag is suppressed
+	// for the same reason — we can't honor a grant whose count we can't read.
+	if (Number.isNaN(promoValue)) {
+		return {
+			subtotal,
+			discount: 0,
+			total: subtotal,
+			isFreeTicketsPromo: false,
+			freeTicketCount: 0,
+		};
+	}
+
 	const discount = computeDiscount(
 		appliedPromo.type,
 		promoValue,

@@ -115,6 +115,69 @@ describe('calculateOrderTotal', () => {
 		});
 	});
 
+	describe('malformed promo value — defensive', () => {
+		// Backend contract says `value` is a numeric string, but the Zod schema
+		// only validates `z.string()` — there's no numeric refinement. A bug in
+		// the backend mapping (or a breaking contract change) could send
+		// "abc"/""/undefined. Current behavior leaks NaN through to the UI
+		// total, rendering "$NaN". Defensive path: treat malformed values as
+		// zero discount so the total stays a real number and the user at worst
+		// pays full price instead of seeing broken UI.
+		test('discount_percent with non-numeric value falls back to zero discount', () => {
+			const malformed: ValidatedPromoCode = {
+				...DISCOUNT_PERCENT_PROMO,
+				value: 'abc',
+			};
+			const result = calculateOrderTotal({
+				price: 25,
+				quantity: 4,
+				appliedPromo: malformed,
+			});
+
+			expect(Number.isNaN(result.total)).toBe(false);
+			expect(result.discount).toBe(0);
+			expect(result.total).toBe(100);
+		});
+
+		test('discount_fixed with empty string falls back to zero discount', () => {
+			const malformed: ValidatedPromoCode = {
+				...DISCOUNT_FIXED_PROMO,
+				value: '',
+			};
+			const result = calculateOrderTotal({
+				price: 25,
+				quantity: 2,
+				appliedPromo: malformed,
+			});
+
+			expect(Number.isNaN(result.total)).toBe(false);
+			expect(result.discount).toBe(0);
+			expect(result.total).toBe(50);
+		});
+
+		test('free_tickets with non-numeric value falls back to paid flow', () => {
+			// Free-tickets granted count must round-trip through parseFloat → floor.
+			// NaN would leak into freeTicketCount and the sticky CTA label copy.
+			// Defensive: suppress the free-tickets flag entirely so the UI never
+			// shows a "FREE" branding we can't honor. User falls back to the
+			// normal paid flow, which is safer than showing broken free state.
+			const malformed: ValidatedPromoCode = {
+				...FREE_TICKETS_PROMO,
+				value: 'xx',
+			};
+			const result = calculateOrderTotal({
+				price: 25,
+				quantity: 1,
+				appliedPromo: malformed,
+			});
+
+			expect(Number.isNaN(result.freeTicketCount)).toBe(false);
+			expect(result.freeTicketCount).toBe(0);
+			expect(result.isFreeTicketsPromo).toBe(false);
+			expect(result.total).toBe(25);
+		});
+	});
+
 	describe('free_tickets promo', () => {
 		test('full subtotal discount, total is zero, isFreeTicketsPromo true', () => {
 			// Store has already clamped quantity to grantedCount (3)

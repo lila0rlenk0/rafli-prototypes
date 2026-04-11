@@ -10,20 +10,23 @@ test.describe('Raffle Question Modal — Mobile', () => {
 	}) => {
 		await page.goto(`/browse/${RAFFLE_SLUG}`);
 
-		// Wait for the checkout section to load
-		const checkoutSection = page.locator('#checkout-section');
-		const hasCheckout = await checkoutSection
+		// Gate on the mobile sticky CTA's primary button — `#checkout-section`
+		// is wrapped in `hidden lg:block` and therefore never visible on the
+		// Pixel 7 project, so reading its visibility always returned false and
+		// this test silently skipped on every mobile run. `#checkout-action`
+		// is owned by the sticky's primary CTA on mobile (see
+		// StickyBuyTicketsCta) so that's the correct mobile anchor.
+		const buyButton = page.locator('#checkout-action');
+		const hasBuyButton = await buyButton
 			.isVisible({ timeout: 10_000 })
 			.catch(() => false);
 
-		if (!hasCheckout) {
+		if (!hasBuyButton) {
 			test.skip(true, 'Raffle is not in an active/live state');
 			return;
 		}
 
 		// Click the buy button to trigger the question modal
-		const buyButton = page.locator('#checkout-action');
-		await expect(buyButton).toBeVisible({ timeout: 5_000 });
 		await buyButton.click();
 
 		// Check if the question modal appeared (raffle may not have a question)

@@ -1,7 +1,7 @@
 'use client';
 
 import { Minus, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { cn } from '@/lib/utils';
@@ -33,17 +33,24 @@ export function TicketSelector({ maxTickets }: TicketSelectorProps) {
 	// (e.g. empty string mid-edit) that we don't want committed to the store.
 	const [inputValue, setInputValue] = useState(() => quantity.toString());
 
+	// External sync via the "set state during render" pattern (React docs
+	// recommended). When the store quantity changes from outside this
+	// component (mobile bundle quick-picks in StickyBuyTicketsCta, promo code
+	// free-tickets sync via applyPromo), we mirror the change into the input
+	// draft *during render* — not via a useEffect pass after commit. Doing
+	// this during render avoids the derived-state useEffect smell called out
+	// in `.claude/rules/react-effects.md` and also skips the extra re-render
+	// the effect would trigger, so the user sees the synced value in the
+	// same frame as the store update.
+	const [prevStoreQuantity, setPrevStoreQuantity] = useState(quantity);
+	if (quantity !== prevStoreQuantity) {
+		setPrevStoreQuantity(quantity);
+		setInputValue(quantity.toString());
+	}
+
 	// 0 means unlimited participants — use MAX_SAFE_INTEGER so bound checks always pass
 	const isUnlimited = maxTickets === 0;
 	const effectiveMax = isUnlimited ? Number.MAX_SAFE_INTEGER : maxTickets;
-
-	// External sync: when the store quantity changes from outside this
-	// component (mobile bundle quick-picks in StickyBuyTicketsCta, promo
-	// code free-tickets sync), reflect that change into the input draft.
-	// Deps: [quantity] — the only external trigger we care about.
-	useEffect(() => {
-		setInputValue(quantity.toString());
-	}, [quantity]);
 
 	function validateQuantity(value: number): number {
 		if (isNaN(value) || value < 1) return 1;

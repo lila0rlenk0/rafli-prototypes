@@ -4,11 +4,21 @@ import type { ErrorEvent, EventHint } from '@sentry/nextjs';
 import { filterEvent } from './filter';
 
 /**
- * Creates a minimal Sentry ErrorEvent with optional tags.
- * Only includes fields that filterEvent actually reads.
+ * Creates a minimal Sentry ErrorEvent with optional tags and a Sentry-style
+ * synthesized exception title. The title goes into `exception.values[0].value`
+ * which is how `filterEvent` reads non-Error promise rejections (plain
+ * objects, scalars) — the only surface where those rejections are matchable
+ * as a string inside `beforeSend`.
  */
-function createEvent(tags?: Record<string, string>): ErrorEvent {
-	return { tags } as ErrorEvent;
+function createEvent(
+	tags?: Record<string, string>,
+	exceptionValue?: string,
+): ErrorEvent {
+	const event: ErrorEvent = { tags } as ErrorEvent;
+	if (exceptionValue !== undefined) {
+		event.exception = { values: [{ value: exceptionValue }] };
+	}
+	return event;
 }
 
 /**
@@ -205,6 +215,90 @@ describe('filterEvent', () => {
 		test('passes non-noisy error messages', () => {
 			const event = createEvent();
 			const hint = createHint(new Error('Unexpected token in JSON'));
+			const result = filterEvent(event, hint);
+			expect(result).toBe(event);
+		});
+	});
+
+	// Regression coverage for Sentry issues RAFLI-6/7/8/9/A. Every test in
+	// this block mirrors the exact exception shape Sentry captured in
+	// production so a future filter refactor that drops any of these
+	// patterns fails loudly here.
+	describe('third-party Web3 / extension noise is dropped', () => {
+		// RAFLI-6 — MetaMask inpage.js content script throws when the wallet
+		// extension isn't installed. The error is re-wrapped as "Failed to
+		// connect to MetaMask" via the linked-errors chain.
+		test('drops "MetaMask extension not found" (Sentry RAFLI-6 root)', () => {
+			const event = createEvent();
+			const hint = createHint(new Error('MetaMask extension not found'));
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		test('drops "Failed to connect to MetaMask" (Sentry RAFLI-6 linked)', () => {
+			const event = createEvent();
+			const hint = createHint(new Error('Failed to connect to MetaMask'));
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-7 / RAFLI-8 — Safari and Firefox private-mode throw a
+		// `SecurityError` (DOMException, instanceof Error) when wallet SDKs
+		// touch `localStorage` / `window.localStorage` eagerly.
+		test('drops Safari private-mode SecurityError from RainbowKit (Sentry RAFLI-7)', () => {
+			const event = createEvent();
+			// The production event is a DOMException named 'SecurityError' with
+			// this exact message. Regular Error faithfully reproduces the
+			// matchable surface for filter purposes.
+			const hint = createHint(new Error('The operation is insecure.'));
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		test('drops Safari private-mode SecurityError from @metamask/sdk (Sentry RAFLI-8)', () => {
+			const event = createEvent();
+			const hint = createHint(new Error('The operation is insecure.'));
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-9 — MS Office / Outlook browser extension raises this message
+		// via a content-script global handler. Sentry captures it as a
+		// non-Error scalar promise rejection.
+		test('drops MS Office extension noise (Sentry RAFLI-9)', () => {
+			const event = createEvent();
+			const hint = createHint(
+				'Object Not Found Matching Id:2, MethodName:update, ParamCount:4',
+			);
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-A — wallet RPC errors (EIP-1193) throw plain `{code, message}`
+		// objects that escape wagmi's async handlers during pre-hydration
+		// wallet probing. Sentry synthesizes this exact title in
+		// `event.exception.values[0].value` for non-Error rejections.
+		test('drops plain-object wallet RPC rejection via synthesized title (Sentry RAFLI-A)', () => {
+			const event = createEvent(
+				undefined,
+				'Object captured as promise rejection with keys: code, message',
+			);
+			// `String({code, message})` coerces to "[object Object]" — the filter
+			// must fall back to `event.exception.values[0].value` to match.
+			const hint = createHint({ code: 4001, message: 'User rejected' });
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// Negative case — a genuine app error with a `{code, message}`-shaped
+		// title from our own ServiceResponse must NOT be swept up. The
+		// pattern is narrowly anchored to Sentry's synthesized title, so a
+		// regular Error with different wording passes through.
+		test('passes real Error with unrelated code/message wording', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new Error('Backend returned { code: 500, message: "fail" }'),
+			);
 			const result = filterEvent(event, hint);
 			expect(result).toBe(event);
 		});

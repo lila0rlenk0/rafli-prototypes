@@ -252,14 +252,50 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 // Browser Noise Patterns
 // ==========================================
 
-/** Error messages from browser extensions and irrelevant browser APIs */
+/**
+ * Error messages and synthesized titles from browser extensions, third-party
+ * SDKs, and irrelevant browser APIs. Each pattern is a substring check against
+ * `getExceptionText()`, which unifies the raw Error message with Sentry's
+ * synthesized title for non-Error promise rejections.
+ */
 const BROWSER_NOISE_PATTERNS: readonly string[] = [
+	// Framework/browser API false-positives — benign, papered over upstream
 	'ResizeObserver loop',
 	'ChunkLoadError',
 	'Loading chunk',
+
+	// Browser extensions — user-installed code we don't ship or control
 	'extension://',
 	'moz-extension://',
 	'chrome-extension://',
+
+	// MS Office / Outlook browser extension — injects a global handler that
+	// raises "Object Not Found Matching Id:N, MethodName:update, ParamCount:4"
+	// from content scripts unrelated to the app. Known Stack Overflow noise:
+	// https://stackoverflow.com/questions/72141502
+	'Object Not Found Matching Id',
+
+	// Safari/Firefox private mode: `localStorage.getItem`/`window.localStorage`
+	// throw a `SecurityError` with this exact message. RainbowKit's
+	// `getRecentWalletIds` and `@metamask/sdk`'s `terminate.ts` both access
+	// storage eagerly and don't catch — the throws surface here even though
+	// the surrounding flow continues normally once the user grants permission
+	// or exits private mode. Not actionable in our code.
+	'The operation is insecure',
+
+	// Injected MetaMask provider (`scripts/inpage.js`) throws when the user
+	// doesn't have the extension installed — wagmi's connector probing
+	// catches internally, but the unhandled rejection still escapes to
+	// Sentry's global handler. Users without a wallet aren't a real bug.
+	'MetaMask extension not found',
+	'Failed to connect to MetaMask',
+
+	// Sentry's synthesized title for plain-object promise rejections whose
+	// shape matches EIP-1193 provider errors (`{ code, message }`). Wagmi and
+	// RainbowKit surface wallet errors as these plain objects during early
+	// Web3 probing on the browse page; without an Error stack there's no
+	// actionable context, so we drop the whole group. See Sentry RAFLI-A.
+	'Object captured as promise rejection with keys: code, message',
 ];
 
 /** Keep 10% of network/timeout errors — enough to detect trends without quota spam */
@@ -303,11 +339,11 @@ export function filterEvent(
 		return event;
 	}
 
-	// Step 3: Drop browser noise (extensions, known browser API false-positives).
-	const exceptionMessage =
-		hint.originalException instanceof Error
-			? hint.originalException.message
-			: String(hint.originalException ?? '');
+	// Step 3: Drop browser noise (extensions, known third-party SDKs, plain
+	// object promise rejections). `getExceptionText` checks both real Error
+	// messages and Sentry's synthesized title for non-Error rejections, so
+	// this single pattern list covers both code paths.
+	const exceptionMessage = getExceptionText(event, hint);
 
 	if (
 		BROWSER_NOISE_PATTERNS.some(pattern => exceptionMessage.includes(pattern))
@@ -316,4 +352,34 @@ export function filterEvent(
 	}
 
 	return event;
+}
+
+/**
+ * Extracts a matchable message from a Sentry event for noise-pattern checks.
+ *
+ * Three sources, in priority order:
+ * 1. `hint.originalException.message` when the rejection was a real Error —
+ *    the common case, direct access to the raw message.
+ * 2. `event.exception.values[0].value` — Sentry's synthesized title for
+ *    non-Error rejections. This is the ONLY place where plain-object
+ *    rejections (e.g. EIP-1193 wallet errors throwing `{code, message}`)
+ *    surface as a matchable string inside `beforeSend`. Without this
+ *    fallback, RAFLI-A-style noise would bypass the filter because
+ *    `String({code, message})` yields `[object Object]`.
+ * 3. Last-resort string coercion — catches scalar rejections like
+ *    `Promise.reject('bad')`.
+ *
+ * @param event - The Sentry error event
+ * @param hint - Event hint with the raw `originalException`
+ * @returns Best-effort string representation of the underlying error
+ */
+function getExceptionText(event: ErrorEvent, hint: EventHint): string {
+	if (hint.originalException instanceof Error) {
+		return hint.originalException.message;
+	}
+
+	const sentryTitle = event.exception?.values?.[0]?.value;
+	if (sentryTitle) return sentryTitle;
+
+	return String(hint.originalException ?? '');
 }

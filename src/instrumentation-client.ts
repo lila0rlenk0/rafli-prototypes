@@ -1,9 +1,14 @@
+// Client-side Sentry initialization — runs when a user loads any page.
+// Uses process.env directly because this file executes before t3-env bootstraps.
+// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+
 import * as Sentry from '@sentry/nextjs';
 
 import { filterEvent } from '@/lib/sentry/filter';
 
 Sentry.init({
 	dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+	// Disabled when DSN is unset (local dev)
 	enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
 
 	// Maps to NEXT_PUBLIC_APP_ENV — allows filtering staging vs production in Sentry dashboard
@@ -16,5 +21,9 @@ Sentry.init({
 	// Errors only — no performance tracing
 	tracesSampleRate: 0,
 
+	// Enable structured logs sent to Sentry
+	enableLogs: true,
+
+	// Drops expected business errors, samples network errors, filters browser noise
 	beforeSend: filterEvent,
 });

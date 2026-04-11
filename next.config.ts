@@ -21,11 +21,11 @@ const nextConfig: NextConfig = {
 		// Without this, `import { Icon } from 'lucide-react'` loads every icon (~1MB).
 		// See: https://vercel.com/blog/how-we-optimized-package-imports-in-next-js
 		optimizePackageImports: [
-				'lucide-react',
-				'react-icons',
-				'lodash',
-				'date-fns',
-			],
+			'lucide-react',
+			'react-icons',
+			'lodash',
+			'date-fns',
+		],
 	},
 	images: {
 		unoptimized: isLocal,
@@ -171,6 +171,16 @@ export default withSentryConfig(nextConfig, {
 	// Prevents exposing original source code via browser devtools.
 	sourcemaps: {
 		deleteSourcemapsAfterUpload: true,
+	},
+
+	webpack: {
+		// Auto-instrument Vercel Cron Monitors (does not yet work with App Router route handlers)
+		automaticVercelMonitors: true,
+
+		// Tree-shake Sentry logger statements to reduce bundle size
+		treeshake: {
+			removeDebugLogging: true,
+		},
 	},
 
 	// Silence source map upload warnings when auth token is not set (local dev)

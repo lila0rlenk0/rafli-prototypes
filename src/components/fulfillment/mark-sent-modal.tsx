@@ -28,7 +28,14 @@ import { markSent } from '@/services/winning/mark-sent';
 import type { Winning } from '@/types/winning';
 
 const formSchema = z.object({
-	proofUrl: z.string().url('Please enter a valid URL').max(512),
+	proofUrl: z
+		.string()
+		.url('Please enter a valid URL')
+		.max(512)
+		.refine(
+			url => /^https?:\/\//i.test(url),
+			'Only HTTP and HTTPS URLs are allowed',
+		),
 	hostNotes: z.string().max(2_000).optional(),
 });
 

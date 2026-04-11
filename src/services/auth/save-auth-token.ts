@@ -1,6 +1,10 @@
 'use server';
 
-import { decodeJwt, jwtPayloadToUser } from '@/lib/auth/jwt';
+import {
+	decodeJwt,
+	jwtPayloadToUser,
+	validateJwtStructure,
+} from '@/lib/auth/jwt';
 import { setAuthCookies } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -28,17 +32,20 @@ export async function saveAuthToken(
 			return failure(AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED);
 		}
 
-		// Step 2: Decode JWT payload to extract user data (throws on malformed tokens)
+		// Step 2: Structural validation — rejects unsigned, expired, or absurdly long-lived tokens.
+		validateJwtStructure(token);
+
+		// Step 3: Decode JWT payload to extract user data (throws on malformed tokens)
 		const payload = decodeJwt(token);
 		const user = jwtPayloadToUser(payload);
 
-		// Step 3: Persist token + user into httpOnly/client-readable cookies
+		// Step 4: Persist token + user into httpOnly/client-readable cookies
 		// Side-effects: sets raffly-token (httpOnly) and raffly-session cookies
 		await setAuthCookies(token, user);
 
 		return success(undefined);
 	} catch (error) {
-		// Step 4: JWT decode or cookie-setting failure — critical auth path
+		// Step 5: JWT decode or cookie-setting failure — critical auth path
 		captureServiceError(error, AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED, {
 			service: 'auth',
 			action: 'save-auth-token',

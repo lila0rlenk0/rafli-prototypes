@@ -153,3 +153,62 @@ export function jwtPayloadToUser(payload: JwtPayload): AuthUser {
 		permissions: payload.permissions,
 	};
 }
+
+/**
+ * Maximum allowed JWT expiration window in seconds (31 days).
+ * Rejects tokens with exp claims absurdly far in the future,
+ * which would indicate a forged token rather than a legitimate backend-issued one.
+ */
+const MAX_JWT_LIFETIME_SECONDS = 31 * 24 * 60 * 60;
+
+/**
+ * Validates JWT structural integrity before trusting it for cookie storage.
+ *
+ * This is NOT signature verification (the backend handles that via EdDSA/JWKS).
+ * This guards against trivially forged tokens by checking:
+ * 1. Three-segment structure (header.payload.signature)
+ * 2. Non-empty signature segment (rejects unsigned tokens)
+ * 3. Expiration is not in the past
+ * 4. Expiration is not absurdly far in the future (>31 days)
+ * 5. Required claims (sub/id, email) are present and non-empty
+ *
+ * @param token - Raw JWT string to validate
+ * @throws Error if structural validation fails
+ */
+export function validateJwtStructure(token: string): void {
+	// Step 1: Verify three-segment JWT format (header.payload.signature).
+	const segments = token.split('.');
+	if (segments.length !== 3) {
+		throw new Error('Invalid JWT: expected 3 segments');
+	}
+
+	// Step 2: Reject unsigned tokens — signature segment must be non-empty.
+	if (!segments[2]) {
+		throw new Error('Invalid JWT: missing signature segment');
+	}
+
+	// Step 3: Decode and validate payload claims.
+	const payload = decodeJwt(token);
+
+	const nowSeconds = Math.floor(Date.now() / 1_000);
+
+	// Step 4: Reject expired tokens — no reason to store a dead token in cookies.
+	if (payload.exp < nowSeconds - CLOCK_SKEW_TOLERANCE_SECONDS) {
+		throw new Error('Invalid JWT: token is expired');
+	}
+
+	// Step 5: Reject tokens with exp too far in the future — indicates forgery.
+	// Backend issues 30-day tokens; anything beyond 31 days is suspicious.
+	if (payload.exp > nowSeconds + MAX_JWT_LIFETIME_SECONDS) {
+		throw new Error('Invalid JWT: expiration too far in the future');
+	}
+
+	// Step 6: Verify essential identity claims are present and non-empty.
+	const userId = payload.sub ?? payload.id;
+	if (!userId || userId.trim().length === 0) {
+		throw new Error('Invalid JWT: missing user identifier');
+	}
+	if (!payload.email || payload.email.trim().length === 0) {
+		throw new Error('Invalid JWT: missing email claim');
+	}
+}

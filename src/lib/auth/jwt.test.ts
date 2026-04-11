@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 
 import type { JwtPayload } from './jwt';
-import { decodeJwt, isJwtExpired, jwtPayloadToUser } from './jwt';
+import {
+	decodeJwt,
+	isJwtExpired,
+	jwtPayloadToUser,
+	validateJwtStructure,
+} from './jwt';
 
 /** Removes keys from an object — avoids unused-var lint errors from destructuring. */
 function omit<T extends Record<string, unknown>, K extends keyof T>(
@@ -189,5 +194,82 @@ describe('jwtPayloadToUser', () => {
 		const payload = omit(BASE_PAYLOAD, 'permissions') as JwtPayload;
 		const user = jwtPayloadToUser(payload);
 		expect(user.permissions).toBeUndefined();
+	});
+});
+
+describe('validateJwtStructure', () => {
+	describe('valid tokens', () => {
+		test('accepts well-formed token with valid exp', () => {
+			const token = encodeFakeJwt(BASE_PAYLOAD);
+			expect(() => validateJwtStructure(token)).not.toThrow();
+		});
+
+		test('accepts token expiring at the 31-day boundary', () => {
+			const payload = {
+				...BASE_PAYLOAD,
+				exp: Math.floor(Date.now() / 1_000) + 31 * 24 * 60 * 60 - 120,
+			};
+			const token = encodeFakeJwt(payload);
+			expect(() => validateJwtStructure(token)).not.toThrow();
+		});
+	});
+
+	describe('structural validation', () => {
+		test('rejects token with fewer than 3 segments', () => {
+			expect(() => validateJwtStructure('header.payload')).toThrow(
+				'expected 3 segments',
+			);
+		});
+
+		test('rejects token with more than 3 segments', () => {
+			expect(() => validateJwtStructure('a.b.c.d')).toThrow(
+				'expected 3 segments',
+			);
+		});
+
+		test('rejects token with empty signature segment', () => {
+			const header = btoa(JSON.stringify({ alg: 'none' }));
+			const body = btoa(JSON.stringify(BASE_PAYLOAD));
+			expect(() => validateJwtStructure(`${header}.${body}.`)).toThrow(
+				'missing signature segment',
+			);
+		});
+	});
+
+	describe('expiration bounds', () => {
+		test('rejects expired token (past clock-skew tolerance)', () => {
+			const payload = {
+				...BASE_PAYLOAD,
+				exp: Math.floor(Date.now() / 1_000) - 120,
+			};
+			const token = encodeFakeJwt(payload);
+			expect(() => validateJwtStructure(token)).toThrow('token is expired');
+		});
+
+		test('rejects token with exp >31 days in the future', () => {
+			const payload = {
+				...BASE_PAYLOAD,
+				exp: Math.floor(Date.now() / 1_000) + 32 * 24 * 60 * 60,
+			};
+			const token = encodeFakeJwt(payload);
+			expect(() => validateJwtStructure(token)).toThrow(
+				'expiration too far in the future',
+			);
+		});
+	});
+
+	describe('claim validation', () => {
+		test('rejects token with empty sub and no id', () => {
+			const payload = { ...BASE_PAYLOAD, sub: '' };
+			const token = encodeFakeJwt(omit(payload, 'sub'));
+			// decodeJwt throws because neither sub nor id is present
+			expect(() => validateJwtStructure(token)).toThrow();
+		});
+
+		test('rejects token with whitespace-only email', () => {
+			const payload = { ...BASE_PAYLOAD, email: '   ' };
+			const token = encodeFakeJwt(payload);
+			expect(() => validateJwtStructure(token)).toThrow('missing email claim');
+		});
 	});
 });

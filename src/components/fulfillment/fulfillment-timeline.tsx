@@ -225,7 +225,8 @@ export function FulfillmentTimeline({
 						? 'Your prize has been shipped and is on its way'
 						: 'Your prize is on the way'}
 					{/* Tracking link + host notes — only shown when host has provided them */}
-					{winning.proofUrl ? (
+					{/* Render tracking link only for http(s) URLs — rejects javascript:/data: schemes */}
+					{winning.proofUrl?.match(/^https?:\/\//i) ? (
 						<a
 							href={winning.proofUrl}
 							target="_blank"

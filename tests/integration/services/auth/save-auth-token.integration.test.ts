@@ -7,11 +7,13 @@ import { AUTH_ERROR_CODES } from '@/types/errors/auth-errors';
 const mockSetAuthCookies = mock();
 const mockDecodeJwt = mock();
 const mockJwtPayloadToUser = mock();
+const mockValidateJwtStructure = mock();
 const mockCaptureServiceError = mock();
 
 mock.module('@/lib/auth/jwt', () => ({
 	decodeJwt: mockDecodeJwt,
 	jwtPayloadToUser: mockJwtPayloadToUser,
+	validateJwtStructure: mockValidateJwtStructure,
 }));
 // All session exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
 mock.module('@/lib/auth/session', () => ({
@@ -61,9 +63,9 @@ describe('saveAuthToken', () => {
 	});
 
 	test('returns SOCIAL_TOKEN_EXCHANGE_FAILED on malformed JWT', async () => {
-		// decodeJwt throws on malformed tokens
-		mockDecodeJwt.mockImplementationOnce(() => {
-			throw new Error('Invalid JWT');
+		// validateJwtStructure throws on structurally invalid tokens
+		mockValidateJwtStructure.mockImplementationOnce(() => {
+			throw new Error('Invalid JWT: expected 3 segments');
 		});
 
 		const result = await saveAuthToken('malformed-token');
@@ -77,15 +79,15 @@ describe('saveAuthToken', () => {
 	});
 
 	test('calls captureServiceError on decode failure', async () => {
-		const decodeError = new Error('Invalid JWT');
-		mockDecodeJwt.mockImplementationOnce(() => {
-			throw decodeError;
+		const structureError = new Error('Invalid JWT: expected 3 segments');
+		mockValidateJwtStructure.mockImplementationOnce(() => {
+			throw structureError;
 		});
 
 		await saveAuthToken('bad-token');
 
 		expect(mockCaptureServiceError).toHaveBeenCalledWith(
-			decodeError,
+			structureError,
 			AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED,
 			{ service: 'auth', action: 'save-auth-token' },
 		);

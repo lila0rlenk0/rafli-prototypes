@@ -16,7 +16,9 @@ export const AUTH_COOKIES = {
 // Cookie options
 export const COOKIE_OPTIONS = {
 	httpOnly: true,
-	secure: clientEnv.NODE_ENV === 'production',
+	// Secure flag for all non-development environments — staging, preview, and production
+	// all transmit cookies over HTTPS. Only local dev (http://localhost) skips TLS.
+	secure: clientEnv.NEXT_PUBLIC_APP_ENV !== 'development',
 	sameSite: 'lax' as const,
 	// Aligned with BE JWT expirationTime (30d in better-auth.config.ts:279).
 	// Previously 7d — browser deleted cookie 23 days before JWT expired,
@@ -28,7 +30,9 @@ export const COOKIE_OPTIONS = {
 // Mode cookie options (httpOnly: client syncs via server action, never reads)
 export const MODE_COOKIE_OPTIONS = {
 	httpOnly: true,
-	secure: clientEnv.NODE_ENV === 'production',
+	// Secure flag for all non-development environments — staging, preview, and production
+	// all transmit cookies over HTTPS. Only local dev (http://localhost) skips TLS.
+	secure: clientEnv.NEXT_PUBLIC_APP_ENV !== 'development',
 	sameSite: 'lax' as const,
 	maxAge: 60 * 60 * 24 * 365, // 1 year (preference)
 	path: '/',

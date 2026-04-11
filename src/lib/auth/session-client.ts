@@ -2,10 +2,8 @@
 
 import { cookies } from 'next/headers';
 
-import { setSentryUser } from '@/lib/sentry/user';
-
 import { AUTH_COOKIES, COOKIE_OPTIONS } from './config';
-import { decodeJwt, jwtPayloadToUser } from './jwt';
+import { decodeJwt, jwtPayloadToUser, validateJwtStructure } from './jwt';
 
 /**
  * Server action to set auth cookies from JWT token
@@ -20,21 +18,35 @@ export async function setAuthCookiesClient(
 	token: string,
 ): Promise<{ success: boolean }> {
 	try {
-		// Step 1: Decode JWT to extract user data (no signature verification — backend handles that).
+		// Step 1: Structural validation — rejects unsigned, expired, or absurdly long-lived
+		// tokens. Not signature verification (backend handles EdDSA/JWKS), but catches
+		// trivially forged tokens before they reach httpOnly cookie storage.
+		validateJwtStructure(token);
+
+		// Step 2: Decode JWT to extract user data for session cookie hydration.
 		const payload = decodeJwt(token);
 		const user = jwtPayloadToUser(payload);
 
-		// Step 2: Set auth cookies — token (httpOnly) + session (readable for client hydration).
+		// Step 3: Set auth cookies — token (httpOnly) + session (readable for client hydration).
 		const cookieStore = await cookies();
 		cookieStore.set(AUTH_COOKIES.TOKEN, token, COOKIE_OPTIONS);
-		// httpOnly: false so client can hydrate user state without a server round-trip
-		cookieStore.set(AUTH_COOKIES.SESSION, JSON.stringify(user), {
+		// httpOnly: false so client can hydrate user state without a server round-trip.
+		// Exclude emailVerified and permissions — security-sensitive fields that
+		// must only be read server-side. Minimizes PII exposure surface on XSS.
+		const sessionUser = {
+			id: user.id,
+			email: user.email,
+			name: user.name,
+			image: user.image,
+		};
+		cookieStore.set(AUTH_COOKIES.SESSION, JSON.stringify(sessionUser), {
 			...COOKIE_OPTIONS,
 			httpOnly: false,
 		});
 
-		// Step 3: Tag all subsequent Sentry errors with this user ID.
-		setSentryUser(user.id);
+		// Sentry user attribution is handled on the next request via
+		// getSession() (server) and on the next client mount via
+		// SentryUserSync (browser) — no manual tagging needed here.
 
 		return { success: true };
 	} catch (error) {

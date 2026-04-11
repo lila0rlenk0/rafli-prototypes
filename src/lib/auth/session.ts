@@ -19,11 +19,15 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import 'server-only';
 
-import { clearSentryUser, setSentryUser } from '@/lib/sentry/user';
+import {
+	clearSentryUser,
+	setSentryUser,
+	setSentryUserMode,
+} from '@/lib/sentry/user';
 
 import { AUTH_COOKIES, COOKIE_OPTIONS } from './config';
 import { decodeJwt, isJwtExpired, jwtPayloadToUser } from './jwt';
-import { clearUserModeCookie } from '@/lib/mode/cookies';
+import { clearUserModeCookie, getUserModeCookie } from '@/lib/mode/cookies';
 
 /**
  * Sets authentication cookies after successful login
@@ -44,7 +48,16 @@ export async function setAuthCookies(
 	cookieStore.set(AUTH_COOKIES.TOKEN, token, COOKIE_OPTIONS);
 	// Session cookie: httpOnly: false so client can hydrate user state (name, avatar)
 	// without a server round-trip. Contains no secrets — only display-safe user fields.
-	cookieStore.set(AUTH_COOKIES.SESSION, JSON.stringify(user), {
+	// Deliberately excludes `emailVerified` and `permissions` — these are security-sensitive
+	// (permissions reveals admin/host status, emailVerified gates features) and must only
+	// be read server-side via getSession(). Minimizes PII exposure surface on XSS.
+	const sessionUser = {
+		id: user.id,
+		email: user.email,
+		name: user.name,
+		image: user.image,
+	};
+	cookieStore.set(AUTH_COOKIES.SESSION, JSON.stringify(sessionUser), {
 		...COOKIE_OPTIONS,
 		httpOnly: false,
 	});
@@ -61,8 +74,13 @@ export async function getAuthToken(): Promise<string | null> {
 }
 
 /**
- * Get current session from JWT token
- * Validates token expiration and decodes user data
+ * Get current session from JWT token.
+ *
+ * Validates token expiration and decodes user data. Also populates
+ * Sentry's request-scoped isolation scope with the user ID and the
+ * `userMode` tag so every downstream error captured in this request
+ * carries correct attribution without touching ~90 service action
+ * call sites. Anonymous requests clear the scope defensively.
  *
  * @returns AuthSession with user data and token, or null if invalid/expired
  */
@@ -103,12 +121,15 @@ export async function getSession(): Promise<AuthSession | null> {
 		// Step 4: Validate session shape with Zod to catch contract drift.
 		const validated = authSessionSchema.parse(session);
 
-		// Step 5: Attach the user ID to Sentry's isolation scope. Every
-		// page, layout, and server action on a request path reads session
-		// here — this is the single point that guarantees errors captured
-		// anywhere downstream carry a user ID without touching ~90 service
-		// action call sites. No PII is sent (see `setSentryUser`).
+		// Step 5: Attach the user ID and userMode tag to Sentry's
+		// isolation scope. Every page, layout, and server action on a
+		// request path reads session here — this is the single point
+		// that guarantees errors captured anywhere downstream carry
+		// correct attribution without touching ~90 service action call
+		// sites. No PII is sent (see `setSentryUser`); the `userMode`
+		// tag enables slicing the issue list by participant vs host.
 		setSentryUser(validated.user.id);
+		setSentryUserMode(await getUserModeCookie());
 
 		return validated;
 	} catch {

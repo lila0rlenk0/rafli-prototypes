@@ -21,6 +21,12 @@ export function validateReturnTo(
 		return defaultPath;
 	}
 
+	// Step 2b: Reject backslash — some URL parsers treat `\/` as `//` (protocol-relative).
+	// Modern browsers don't, but defense-in-depth against parser inconsistencies.
+	if (returnTo.includes('\\')) {
+		return defaultPath;
+	}
+
 	// Step 3: Reject any obvious protocol-based or scriptable URLs.
 	const lowercased = returnTo.toLowerCase();
 	if (

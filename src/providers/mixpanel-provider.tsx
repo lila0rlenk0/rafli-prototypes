@@ -12,19 +12,34 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { z } from 'zod';
 
 import { identify, initMixpanel, reset } from '@/lib/analytics/mixpanel-client';
 import { AUTH_COOKIES } from '@/lib/auth/config';
-import { authUserSchema, type AuthUser } from '@/types/auth';
+
+/**
+ * Minimal schema for session cookie — excludes server-only fields
+ * (emailVerified, permissions) that are stripped before serialization
+ * to reduce XSS exposure surface. Only includes fields needed for
+ * Mixpanel identification: id, email, name, avatar.
+ */
+const sessionCookieSchema = z.object({
+	id: z.string(),
+	email: z.string(),
+	name: z.string(),
+	image: z.string().nullable().optional(),
+});
+
+type SessionCookieUser = z.infer<typeof sessionCookieSchema>;
 
 /**
  * Parse user from session cookie with Zod validation.
  * Reads document.cookie directly — avoids a server round-trip for
  * analytics-only data that is already available client-side.
  *
- * @returns Parsed AuthUser if valid session cookie exists, null otherwise
+ * @returns Parsed session user if valid session cookie exists, null otherwise
  */
-function getUserFromCookie(): AuthUser | null {
+function getUserFromCookie(): SessionCookieUser | null {
 	if (typeof document === 'undefined') return null;
 
 	const cookie = document.cookie
@@ -36,7 +51,7 @@ function getUserFromCookie(): AuthUser | null {
 	try {
 		const value = decodeURIComponent(cookie.split('=')[1]);
 		const parsed: unknown = JSON.parse(value);
-		return authUserSchema.parse(parsed);
+		return sessionCookieSchema.parse(parsed);
 	} catch {
 		return null;
 	}

@@ -104,7 +104,14 @@ export const claimWinningPayloadSchema = z.object({
 });
 
 export const markSentPayloadSchema = z.object({
-	proofUrl: z.string().url().max(512),
+	proofUrl: z
+		.string()
+		.url()
+		.max(512)
+		.refine(
+			url => /^https?:\/\//i.test(url),
+			'Only HTTP and HTTPS URLs are allowed',
+		),
 	hostNotes: z.string().max(2_000).optional(),
 });
 

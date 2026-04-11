@@ -19,6 +19,8 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 import 'server-only';
 
+import { clearSentryUser, setSentryUser } from '@/lib/sentry/user';
+
 import { AUTH_COOKIES, COOKIE_OPTIONS } from './config';
 import { decodeJwt, isJwtExpired, jwtPayloadToUser } from './jwt';
 import { clearUserModeCookie } from '@/lib/mode/cookies';
@@ -67,7 +69,15 @@ export async function getAuthToken(): Promise<string | null> {
 export async function getSession(): Promise<AuthSession | null> {
 	// Step 1: Retrieve JWT from httpOnly cookie.
 	const token = await getAuthToken();
-	if (!token) return null;
+	if (!token) {
+		// Anonymous request — clear any residual Sentry user on the current
+		// isolation scope so an error captured later in this request isn't
+		// attributed to a previous authenticated user by accident. Scopes are
+		// request-isolated in Next.js via AsyncLocalStorage, but defending
+		// against the edge case is cheaper than debugging it later.
+		clearSentryUser();
+		return null;
+	}
 
 	try {
 		// Step 2: Check expiration — clear stale cookies to prevent repeated
@@ -77,6 +87,7 @@ export async function getSession(): Promise<AuthSession | null> {
 			cookieStore.delete(AUTH_COOKIES.TOKEN);
 			cookieStore.delete(AUTH_COOKIES.SESSION);
 			await clearUserModeCookie();
+			clearSentryUser();
 			return null;
 		}
 
@@ -90,10 +101,20 @@ export async function getSession(): Promise<AuthSession | null> {
 		};
 
 		// Step 4: Validate session shape with Zod to catch contract drift.
-		return authSessionSchema.parse(session);
+		const validated = authSessionSchema.parse(session);
+
+		// Step 5: Attach the user ID to Sentry's isolation scope. Every
+		// page, layout, and server action on a request path reads session
+		// here — this is the single point that guarantees errors captured
+		// anywhere downstream carry a user ID without touching ~90 service
+		// action call sites. No PII is sent (see `setSentryUser`).
+		setSentryUser(validated.user.id);
+
+		return validated;
 	} catch {
 		// Malformed JWT or Zod validation failure — treat as unauthenticated
 		// rather than crashing the page. User will be redirected to sign-in.
+		clearSentryUser();
 		return null;
 	}
 }

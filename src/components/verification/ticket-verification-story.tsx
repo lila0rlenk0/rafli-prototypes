@@ -6,6 +6,7 @@ import {
 	ExternalLink,
 	Loader2,
 	Search,
+	ShieldCheck,
 	XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -381,6 +382,21 @@ function FoundStep({ ticket, raffle }: FoundStepProps) {
 							<ExternalLink className="size-3" />
 						</a>
 					) : null}
+					{/*
+					 * Privacy reinforcement — the lookup we just performed works off
+					 * a one-way SHA-256 identity commitment, not raw PII. Reinforcing
+					 * this at the moment the user sees their ticket was "found" closes
+					 * the loop with the Privacy section on /how-it-works and answers
+					 * the "but how did you find me without knowing who I am?" question
+					 * before it's asked.
+					 */}
+					<div className="mt-3 flex items-start gap-1.5 text-xs">
+						<ShieldCheck className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
+						<span className="text-muted-foreground">
+							Your name, email, and account never touch IPFS — only a one-way
+							identity commitment does.
+						</span>
+					</div>
 				</>
 			)}
 		</StoryStep>

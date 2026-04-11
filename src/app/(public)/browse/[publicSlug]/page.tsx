@@ -16,6 +16,7 @@ import { RevenueBreakdownCard } from '@/components/raffle/revenue-breakdown-card
 import { RaffleNotWonCard } from '@/components/raffle/raffle-not-won-card';
 import { RaffleWonCard } from '@/components/raffle/raffle-won-card';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase-card';
+import { TicketQuantityStoreProvider } from '@/providers/ticket-quantity-store-provider';
 import { WinnersList } from '@/components/raffle/winners-list';
 import {
 	Accordion,
@@ -459,97 +460,327 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	};
 
 	return (
-		<div className="container mx-auto flex max-w-6xl flex-col gap-4 px-0 lg:gap-8 lg:px-4">
-			{/* Mobile: fixed back button in nav area */}
-			<MobileBackButton />
+		// TicketQuantityStoreProvider scopes the shared purchase quantity to a
+		// single raffle page mount. The mobile sticky CTA bundle quick-picks and
+		// the inline TicketSelector inside the card both subscribe to it, so
+		// quantity stays in sync across the two distant subtrees without
+		// prop-drilling. A fresh raffle navigation re-creates the store.
+		<TicketQuantityStoreProvider>
+			<div className="container mx-auto flex max-w-6xl flex-col gap-4 px-0 lg:gap-8 lg:px-4">
+				{/* Mobile: fixed back button in nav area */}
+				<MobileBackButton />
 
-			{/* Desktop back link */}
-			<div className="hidden lg:block">
-				<BackLink fallbackHref="/browse" label="Back to Raffle Browse" />
-			</div>
+				{/* Desktop back link */}
+				<div className="hidden lg:block">
+					<BackLink fallbackHref="/browse" label="Back to Raffle Browse" />
+				</div>
 
-			{/* Mobile: fixed countdown banner — shown for active raffles */}
-			{shouldShowActiveCard() ? (
-				<>
-					<MobileCountdownBanner endAt={raffle.endAt} />
-					{/* Spacer for fixed banner height on mobile */}
-					<div className="h-12 lg:hidden" />
-				</>
-			) : null}
+				{/* Mobile: fixed countdown banner — shown for active raffles */}
+				{shouldShowActiveCard() ? (
+					<>
+						<MobileCountdownBanner endAt={raffle.endAt} />
+						{/* Spacer for fixed banner height on mobile */}
+						<div className="h-12 lg:hidden" />
+					</>
+				) : null}
 
-			<div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_24rem] lg:gap-8">
-				{/* Left column */}
-				<div className="contents lg:col-start-1 lg:flex lg:flex-col lg:gap-8">
-					{/* Main card with image + title + description + purchase (mobile) */}
-					<div className="order-1 flex w-full flex-col gap-4 rounded-3xl bg-white px-4 py-6 lg:gap-5 lg:overflow-hidden lg:p-8">
-						{/* Raffle image — inside card on both mobile and desktop */}
-						<RaffleImageGallery
-							coverImage={raffle.coverMediaUrl}
-							galleryImages={raffle.galleryMediaUrls}
-							alt={raffle.title}
-						/>
+				<div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_24rem] lg:gap-8">
+					{/* Left column */}
+					<div className="contents lg:col-start-1 lg:flex lg:flex-col lg:gap-8">
+						{/* Main card with image + title + description + purchase (mobile) */}
+						<div className="order-1 flex w-full flex-col gap-4 rounded-3xl bg-white px-4 py-6 lg:gap-5 lg:overflow-hidden lg:p-8">
+							{/* Raffle image — inside card on both mobile and desktop */}
+							<RaffleImageGallery
+								coverImage={raffle.coverMediaUrl}
+								galleryImages={raffle.galleryMediaUrls}
+								alt={raffle.title}
+							/>
 
-						{/* Title with badges */}
-						<div className="flex flex-wrap items-center gap-3">
-							<h2 className="font-clash-display text-[22px] leading-tight font-semibold tracking-tight text-[#182135] lg:text-4xl">
-								{raffle.title}
-							</h2>
-							{isAuthenticated && !isOwner && myTicketsTotal > 0 ? (
-								<span className="rounded-lg bg-[#BEFFDB] px-6 py-1 text-[13px] font-semibold tracking-wide text-[#44B476]">
-									Participant
-								</span>
-							) : null}
-							<CopyRaffleLinkButton publicSlug={publicSlug} />
-							{isAuthenticated && !isOwner ? (
-								<ReportRaffleButton raffleId={raffle.id} />
+							{/* Title with badges */}
+							<div className="flex flex-wrap items-center gap-3">
+								<h2 className="font-clash-display text-[22px] leading-tight font-semibold tracking-tight text-[#182135] lg:text-4xl">
+									{raffle.title}
+								</h2>
+								{isAuthenticated && !isOwner && myTicketsTotal > 0 ? (
+									<span className="rounded-lg bg-[#BEFFDB] px-6 py-1 text-[13px] font-semibold tracking-wide text-[#44B476]">
+										Participant
+									</span>
+								) : null}
+								<CopyRaffleLinkButton publicSlug={publicSlug} />
+								{isAuthenticated && !isOwner ? (
+									<ReportRaffleButton raffleId={raffle.id} />
+								) : null}
+							</div>
+
+							{/* Host info */}
+							<Link
+								href={getHostProfileUrl()}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="group flex w-fit items-center gap-3"
+							>
+								<div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 font-semibold">
+									{hostAvatarUrl ? (
+										<Image
+											src={hostAvatarUrl}
+											alt={getHostName()}
+											fill
+											sizes="40px"
+											className="object-cover"
+										/>
+									) : (
+										getHostInitial()
+									)}
+								</div>
+								<div className="flex min-w-0 flex-col text-sm">
+									<span className="truncate group-hover:underline">
+										by {getHostName()}
+									</span>
+									<span className="text-[#7B7B7B]">
+										{getHostRafflesCount()}
+									</span>
+								</div>
+							</Link>
+
+							{/* Description — categories shown inside when expanded */}
+							<CollapsibleDescription
+								content={raffle.description || ''}
+								expandedSlot={
+									<div className="flex flex-wrap gap-4 pt-2">
+										<div className="rounded-2xl bg-[#DFFFED] px-3 py-1">
+											<span className="text-sm capitalize">
+												{getCategoryName(categories, raffle.categoryId)}
+											</span>
+										</div>
+									</div>
+								}
+							/>
+
+							{/* Mobile: inline purchase section */}
+							{shouldShowActiveCard() ? (
+								<div className="lg:hidden">
+									<RaffleExpiredGate endAt={raffle.endAt}>
+										<Suspense
+											fallback={
+												<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
+											}
+										>
+											<TicketPurchaseCard
+												raffleId={raffle.id}
+												publicSlug={publicSlug}
+												endAt={raffle.endAt}
+												price={ticketPrice}
+												currency={raffle.ticketPriceCurrency}
+												availableTickets={availableTickets}
+												disabled={showEditButton || disablePurchase}
+												questionId={raffle.questionId}
+												isAuthenticated={isAuthenticated}
+												cryptoOptions={raffle.cryptoOptions}
+												myTicketsTotal={myTicketsTotal}
+												userId={currentUserId}
+												availableCredits={availableCredits}
+											/>
+										</Suspense>
+
+										{disablePurchase && !showEditButton ? (
+											<p className="mt-2 text-center text-sm text-gray-500">
+												You cannot purchase tickets for your own raffle
+											</p>
+										) : null}
+									</RaffleExpiredGate>
+
+									{/* KYC notice — mobile */}
+									{!isConcluded && !isCancelled ? (
+										<div className="mt-4 flex items-center gap-2">
+											<InfoIcon className="size-4 shrink-0 text-[#7B7B7B]" />
+											<p className="text-sm text-[#7B7B7B]">
+												You&apos;ll only need KYC if you win
+											</p>
+										</div>
+									) : null}
+								</div>
 							) : null}
 						</div>
 
-						{/* Host info */}
-						<Link
-							href={getHostProfileUrl()}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="group flex w-fit items-center gap-3"
-						>
-							<div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 font-semibold">
-								{hostAvatarUrl ? (
-									<Image
-										src={hostAvatarUrl}
-										alt={getHostName()}
-										fill
-										sizes="40px"
-										className="object-cover"
+						{/* Updates from host */}
+						<div className="order-3">
+							<RaffleUpdatesCard
+								raffleId={raffle.id}
+								hostName={raffle.host?.name ?? 'Host'}
+								actionSlot={
+									<PostUpdateButton
+										publicSlug={publicSlug}
+										isOwner={isOwner}
+										canManageUpdates={canManageUpdates}
 									/>
-								) : (
-									getHostInitial()
-								)}
-							</div>
-							<div className="flex min-w-0 flex-col text-sm">
-								<span className="truncate group-hover:underline">
-									by {getHostName()}
-								</span>
-								<span className="text-[#7B7B7B]">{getHostRafflesCount()}</span>
-							</div>
-						</Link>
+								}
+							/>
+						</div>
 
-						{/* Description — categories shown inside when expanded */}
-						<CollapsibleDescription
-							content={raffle.description || ''}
-							expandedSlot={
-								<div className="flex flex-wrap gap-4 pt-2">
-									<div className="rounded-2xl bg-[#DFFFED] px-3 py-1">
-										<span className="text-sm capitalize">
-											{getCategoryName(categories, raffle.categoryId)}
-										</span>
-									</div>
-								</div>
-							}
-						/>
+						{/* Comment section */}
+						{isCommentable ? (
+							<div className="order-4">
+								<CommentSection
+									raffleId={raffle.id}
+									isAuthenticated={isAuthenticated}
+									isOwner={isOwner}
+									currentUserId={currentUserId}
+								/>
+							</div>
+						) : null}
 
-						{/* Mobile: inline purchase section */}
+						{/* FAQ */}
+						<div className="order-5 flex w-full flex-col gap-5 rounded-3xl bg-white px-4 py-6 lg:overflow-hidden lg:p-8">
+							<h3 className="font-clash-display text-2xl font-semibold text-[#182135]">
+								Have a question?
+							</h3>
+							<Accordion type="single" collapsible className="w-full space-y-4">
+								<AccordionItem value="how-it-works" className="border-none">
+									<AccordionTrigger className="rounded-2xl bg-[#E1F8FF] px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
+										How it works?
+									</AccordionTrigger>
+									<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
+										The raffle is a simple and fair way to win prizes. You can
+										purchase tickets to increase your chances of winning. The
+										winner will be randomly selected when the raffle ends.
+									</AccordionContent>
+								</AccordionItem>
+
+								<AccordionItem
+									value="rules-eligibility"
+									className="border-none"
+								>
+									<AccordionTrigger className="rounded-2xl bg-[#E1F8FF] px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
+										Rules and eligibility
+									</AccordionTrigger>
+									<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
+										Participants must be 18 years or older to enter. You can
+										purchase multiple tickets to increase your chances of
+										winning. Winners will be notified via email and must provide
+										additional details to claim their prize. All sales are final
+										and non-refundable.
+									</AccordionContent>
+								</AccordionItem>
+
+								<AccordionItem
+									value="partial-fulfillment"
+									className="border-none"
+								>
+									<AccordionTrigger className="rounded-2xl bg-[#E1F8FF] px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
+										What if minimum participants aren&apos;t reached?
+									</AccordionTrigger>
+									<AccordionContent className="text-muted-foreground space-y-3 px-4 pt-4 text-sm">
+										<p>
+											Every raffle sets a minimum number of participants. If the
+											raffle ends before reaching that minimum, it concludes
+											under <strong>Partial Participation</strong>.
+										</p>
+										<p>
+											When this happens, winners are still selected using the
+											same provably fair process (VRF). However, instead of
+											receiving the declared physical prize, winners receive a{' '}
+											<strong>cash distribution</strong> from the revenue.
+										</p>
+										<p>
+											The revenue is automatically split: the platform takes a
+											small fee and the remainder is distributed equally among
+											all winners. No host involvement is needed — the
+											distribution happens automatically.
+										</p>
+										<p>
+											You can always check the raffle details to see the current
+											number of participants versus the minimum required before
+											purchasing a ticket.
+										</p>
+									</AccordionContent>
+								</AccordionItem>
+							</Accordion>
+						</div>
+					</div>
+					{/* End left column wrapper */}
+
+					{/* Right sidebar — hidden on mobile for active raffles (purchase is inline), shown on desktop */}
+					<div className="order-2 space-y-2 lg:col-start-2">
+						{shouldShowWinnerCard() && myWinning ? (
+							<>
+								<RaffleWonCard
+									userName={myUserName ?? 'Winner'}
+									userAvatar={myUserAvatarUrl}
+									ticketCode={myWinningTicketCode}
+								/>
+								<PrizeBreakdownCard raffle={raffle} />
+								<FulfillmentTimeline
+									winning={myWinning}
+									isHost={isOwner}
+									raffleId={raffle.id}
+									hostId={raffle.hostId}
+									publicSlug={publicSlug}
+									kycStatus={kycWinnerStatus}
+								/>
+							</>
+						) : null}
+
+						{shouldShowHostFulfillment() ? (
+							<>
+								<HostFulfillmentCard
+									publicSlug={publicSlug}
+									winnersCount={raffle.winners?.length ?? 0}
+								/>
+								<RevenueBreakdownCard raffle={raffle} />
+								<RaffleInfoCard
+									raffle={raffle}
+									myTicketCodes={myTicketCodes}
+									myTicketsTotal={myTicketsTotal}
+									isAuthenticated={isAuthenticated}
+									publicSlug={publicSlug}
+								/>
+							</>
+						) : null}
+
+						{/* Draw in progress: combined card + polling with timeout feedback */}
+						{shouldShowDrawInProgress() ? (
+							<RaffleDrawWithRefresh
+								status={raffle.status}
+								endAt={raffle.endAt}
+								hasWinners={hasWinners}
+							/>
+						) : null}
+
+						{shouldShowCancelledCard() ? (
+							<RaffleCancelledCard
+								reason={cancellationReason!}
+								isOwner={isOwner}
+								participantsCount={raffle.participantsCount}
+								numberOfWinners={raffle.numberOfWinners}
+								ticketsSoldCount={raffle.ticketsSoldCount}
+								myTicketCount={myTicketsTotal}
+							/>
+						) : null}
+
+						{shouldShowNotWonCard() ? (
+							<RaffleNotWonCard
+								status={raffle.status}
+								publicSlug={publicSlug}
+								myTicketsTotal={myTicketsTotal}
+							/>
+						) : null}
+
+						{/* Desktop: active raffle card with countdown + purchase */}
 						{shouldShowActiveCard() ? (
-							<div className="lg:hidden">
+							<div
+								id="checkout-section"
+								className="hidden h-fit rounded-2xl border border-black bg-white/95 p-8 lg:block"
+							>
+								<RaffleFireIcon className="mx-auto size-16" />
+
+								<h2 className="font-clash-display my-4 text-center text-2xl font-semibold">
+									The raffle is active!
+								</h2>
+
+								<div className="mb-4">
+									<RaffleCountdown endAt={raffle.endAt} />
+								</div>
+
 								<RaffleExpiredGate endAt={raffle.endAt}>
 									<Suspense
 										fallback={
@@ -580,141 +811,32 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									) : null}
 								</RaffleExpiredGate>
 
-								{/* KYC notice — mobile */}
-								{!isConcluded && !isCancelled ? (
-									<div className="mt-4 flex items-center gap-2">
-										<InfoIcon className="size-4 shrink-0 text-[#7B7B7B]" />
-										<p className="text-sm text-[#7B7B7B]">
-											You&apos;ll only need KYC if you win
-										</p>
-									</div>
+								{/* Share-on-X visibility rules:
+							    - Guests: hidden — sharing without an account can't be
+							      attributed to anyone, so the free-ticket reward is meaningless.
+							    - Hosts of this raffle (own draft or own live): hidden — same
+							      rationale as the disabled BuyButton/CryptoBuyButton above
+							      this block. The host can't enter their own raffle, so claiming
+							      a free ticket via share would also be impossible. Matches the
+							      "You cannot purchase tickets for your own raffle" gate. */}
+								{isAuthenticated && !showEditButton && !disablePurchase ? (
+									<ShareOnXButton {...xShareConfig} />
 								) : null}
 							</div>
 						) : null}
-					</div>
 
-					{/* Updates from host */}
-					<div className="order-3">
-						<RaffleUpdatesCard
-							raffleId={raffle.id}
-							hostName={raffle.host?.name ?? 'Host'}
-							actionSlot={
-								<PostUpdateButton
-									publicSlug={publicSlug}
-									isOwner={isOwner}
-									canManageUpdates={canManageUpdates}
-								/>
-							}
-						/>
-					</div>
-
-					{/* Comment section */}
-					{isCommentable ? (
-						<div className="order-4">
-							<CommentSection
+						{isConcluded && hasWinners && raffle.winners ? (
+							<WinnersList
+								winners={raffle.winners}
 								raffleId={raffle.id}
-								isAuthenticated={isAuthenticated}
-								isOwner={isOwner}
-								currentUserId={currentUserId}
+								totalTickets={raffle.totalTicketsAtDraw}
+								manifestHash={raffle.manifestHash}
+								commitTxHash={raffle.commitTxHash}
+								currentUserWinnerPosition={myWinning?.position ?? null}
 							/>
-						</div>
-					) : null}
+						) : null}
 
-					{/* FAQ */}
-					<div className="order-5 flex w-full flex-col gap-5 rounded-3xl bg-white px-4 py-6 lg:overflow-hidden lg:p-8">
-						<h3 className="font-clash-display text-2xl font-semibold text-[#182135]">
-							Have a question?
-						</h3>
-						<Accordion type="single" collapsible className="w-full space-y-4">
-							<AccordionItem value="how-it-works" className="border-none">
-								<AccordionTrigger className="rounded-2xl bg-[#E1F8FF] px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
-									How it works?
-								</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
-									The raffle is a simple and fair way to win prizes. You can
-									purchase tickets to increase your chances of winning. The
-									winner will be randomly selected when the raffle ends.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem value="rules-eligibility" className="border-none">
-								<AccordionTrigger className="rounded-2xl bg-[#E1F8FF] px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
-									Rules and eligibility
-								</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
-									Participants must be 18 years or older to enter. You can
-									purchase multiple tickets to increase your chances of winning.
-									Winners will be notified via email and must provide additional
-									details to claim their prize. All sales are final and
-									non-refundable.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem
-								value="partial-fulfillment"
-								className="border-none"
-							>
-								<AccordionTrigger className="rounded-2xl bg-[#E1F8FF] px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
-									What if minimum participants aren&apos;t reached?
-								</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground space-y-3 px-4 pt-4 text-sm">
-									<p>
-										Every raffle sets a minimum number of participants. If the
-										raffle ends before reaching that minimum, it concludes under{' '}
-										<strong>Partial Participation</strong>.
-									</p>
-									<p>
-										When this happens, winners are still selected using the same
-										provably fair process (VRF). However, instead of receiving
-										the declared physical prize, winners receive a{' '}
-										<strong>cash distribution</strong> from the revenue.
-									</p>
-									<p>
-										The revenue is automatically split: the platform takes a
-										small fee and the remainder is distributed equally among all
-										winners. No host involvement is needed — the distribution
-										happens automatically.
-									</p>
-									<p>
-										You can always check the raffle details to see the current
-										number of participants versus the minimum required before
-										purchasing a ticket.
-									</p>
-								</AccordionContent>
-							</AccordionItem>
-						</Accordion>
-					</div>
-				</div>
-				{/* End left column wrapper */}
-
-				{/* Right sidebar — hidden on mobile for active raffles (purchase is inline), shown on desktop */}
-				<div className="order-2 space-y-2 lg:col-start-2">
-					{shouldShowWinnerCard() && myWinning ? (
-						<>
-							<RaffleWonCard
-								userName={myUserName ?? 'Winner'}
-								userAvatar={myUserAvatarUrl}
-								ticketCode={myWinningTicketCode}
-							/>
-							<PrizeBreakdownCard raffle={raffle} />
-							<FulfillmentTimeline
-								winning={myWinning}
-								isHost={isOwner}
-								raffleId={raffle.id}
-								hostId={raffle.hostId}
-								publicSlug={publicSlug}
-								kycStatus={kycWinnerStatus}
-							/>
-						</>
-					) : null}
-
-					{shouldShowHostFulfillment() ? (
-						<>
-							<HostFulfillmentCard
-								publicSlug={publicSlug}
-								winnersCount={raffle.winners?.length ?? 0}
-							/>
-							<RevenueBreakdownCard raffle={raffle} />
+						{!isConcluded ? (
 							<RaffleInfoCard
 								raffle={raffle}
 								myTicketCodes={myTicketCodes}
@@ -722,151 +844,54 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								isAuthenticated={isAuthenticated}
 								publicSlug={publicSlug}
 							/>
-						</>
-					) : null}
+						) : null}
 
-					{/* Draw in progress: combined card + polling with timeout feedback */}
-					{shouldShowDrawInProgress() ? (
-						<RaffleDrawWithRefresh
-							status={raffle.status}
-							endAt={raffle.endAt}
-							hasWinners={hasWinners}
-						/>
-					) : null}
-
-					{shouldShowCancelledCard() ? (
-						<RaffleCancelledCard
-							reason={cancellationReason!}
+						<PromoCodesCard
+							publicSlug={publicSlug}
 							isOwner={isOwner}
-							participantsCount={raffle.participantsCount}
-							numberOfWinners={raffle.numberOfWinners}
-							ticketsSoldCount={raffle.ticketsSoldCount}
-							myTicketCount={myTicketsTotal}
+							isManageable={isManageable}
 						/>
-					) : null}
 
-					{shouldShowNotWonCard() ? (
-						<RaffleNotWonCard
-							status={raffle.status}
-							publicSlug={publicSlug}
-							myTicketsTotal={myTicketsTotal}
-						/>
-					) : null}
-
-					{/* Desktop: active raffle card with countdown + purchase */}
-					{shouldShowActiveCard() ? (
-						<div
-							id="checkout-section"
-							className="hidden h-fit rounded-2xl border border-black bg-white/95 p-8 lg:block"
-						>
-							<RaffleFireIcon className="mx-auto size-16" />
-
-							<h2 className="font-clash-display my-4 text-center text-2xl font-semibold">
-								The raffle is active!
-							</h2>
-
-							<div className="mb-4">
-								<RaffleCountdown endAt={raffle.endAt} />
+						{/* Desktop: KYC notice */}
+						{!isConcluded && !isCancelled ? (
+							<div className="hidden items-center justify-center gap-2 lg:flex">
+								<InfoIcon className="size-4 text-[#7B7B7B]" />
+								<p className="text-sm text-[#7B7B7B]">
+									You&apos;ll only need KYC if you win
+								</p>
 							</div>
+						) : null}
 
-							<RaffleExpiredGate endAt={raffle.endAt}>
-								<Suspense
-									fallback={
-										<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
-									}
-								>
-									<TicketPurchaseCard
-										raffleId={raffle.id}
-										publicSlug={publicSlug}
-										endAt={raffle.endAt}
-										price={ticketPrice}
-										currency={raffle.ticketPriceCurrency}
-										availableTickets={availableTickets}
-										disabled={showEditButton || disablePurchase}
-										questionId={raffle.questionId}
-										isAuthenticated={isAuthenticated}
-										cryptoOptions={raffle.cryptoOptions}
-										myTicketsTotal={myTicketsTotal}
-										userId={currentUserId}
-										availableCredits={availableCredits}
-									/>
-								</Suspense>
-
-								{disablePurchase && !showEditButton ? (
-									<p className="mt-2 text-center text-sm text-gray-500">
-										You cannot purchase tickets for your own raffle
-									</p>
-								) : null}
-							</RaffleExpiredGate>
-
-							{/* Only authenticated users can earn free tickets — sharing without an account
-							    can't be attributed to anyone, so the button is meaningless for guests. */}
-							{isAuthenticated ? <ShareOnXButton {...xShareConfig} /> : null}
-						</div>
-					) : null}
-
-					{isConcluded && hasWinners && raffle.winners ? (
-						<WinnersList
-							winners={raffle.winners}
-							raffleId={raffle.id}
-							totalTickets={raffle.totalTicketsAtDraw}
-							manifestHash={raffle.manifestHash}
-							commitTxHash={raffle.commitTxHash}
-							currentUserWinnerPosition={myWinning?.position ?? null}
-						/>
-					) : null}
-
-					{!isConcluded ? (
-						<RaffleInfoCard
-							raffle={raffle}
-							myTicketCodes={myTicketCodes}
-							myTicketsTotal={myTicketsTotal}
-							isAuthenticated={isAuthenticated}
-							publicSlug={publicSlug}
-						/>
-					) : null}
-
-					<PromoCodesCard
-						publicSlug={publicSlug}
-						isOwner={isOwner}
-						isManageable={isManageable}
-					/>
-
-					{/* Desktop: KYC notice */}
-					{!isConcluded && !isCancelled ? (
-						<div className="hidden items-center justify-center gap-2 lg:flex">
-							<InfoIcon className="size-4 text-[#7B7B7B]" />
-							<p className="text-sm text-[#7B7B7B]">
-								You&apos;ll only need KYC if you win
-							</p>
-						</div>
-					) : null}
-
-					{/* Auto-refresh during transitional states.
+						{/* Auto-refresh during transitional states.
 					    Skipped when draw-in-progress card is shown — that branch uses
 					    RaffleDrawWithRefresh which owns its own polling to wire the
 					    timeout signal into the card. */}
-					{!shouldShowDrawInProgress() ? (
-						<RaffleAutoRefresh
-							status={raffle.status}
-							endAt={raffle.endAt}
-							hasWinners={hasWinners}
-						/>
-					) : null}
+						{!shouldShowDrawInProgress() ? (
+							<RaffleAutoRefresh
+								status={raffle.status}
+								endAt={raffle.endAt}
+								hasWinners={hasWinners}
+							/>
+						) : null}
+					</div>
 				</div>
-			</div>
-			<PaymentModalWrapper
-				publicSlug={publicSlug}
-				searchParams={searchParams}
-			/>
-
-			{shouldShowActiveCard() ? (
-				<StickyBuyTicketsCta
-					{...xShareConfig}
-					isAuthenticated={isAuthenticated}
+				<PaymentModalWrapper
+					publicSlug={publicSlug}
+					searchParams={searchParams}
 				/>
-			) : null}
-		</div>
+
+				{shouldShowActiveCard() ? (
+					<StickyBuyTicketsCta
+						{...xShareConfig}
+						isAuthenticated={isAuthenticated}
+						availableTickets={availableTickets}
+						disabled={showEditButton || disablePurchase}
+						price={ticketPrice}
+						currency={raffle.ticketPriceCurrency}
+					/>
+				) : null}
+			</div>
+		</TicketQuantityStoreProvider>
 	);
 }
 

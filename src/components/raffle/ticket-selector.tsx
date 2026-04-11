@@ -1,32 +1,49 @@
 'use client';
 
 import { Minus, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { cn } from '@/lib/utils';
 
-const BUNDLE_SIZES_DESKTOP = [3, 6, 9];
-const BUNDLE_SIZES_MOBILE = [6, 12, 20];
+// Desktop quick-pick "set-to" values. Mobile quick-picks live in
+// `StickyBuyTicketsCta` so they sit on top of the keyboard area, not
+// scrolled away inside the inline card.
+const BUNDLE_SIZES_DESKTOP = [10, 25, 50];
 
 interface TicketSelectorProps {
 	maxTickets: number;
-	onQuantityChange: (quantity: number) => void;
 }
 
 /**
- * Ticket quantity selector with +/- controls, direct input, and bundle shortcuts.
+ * Ticket quantity selector with +/- controls, direct input, and desktop
+ * bundle shortcuts. Quantity is owned by the `TicketQuantityStore` so the
+ * mobile sticky CTA can mutate it from outside the inline card.
+ *
  * `maxTickets === 0` means unlimited — no upper bound enforced.
  */
-export function TicketSelector({
-	maxTickets,
-	onQuantityChange,
-}: TicketSelectorProps) {
-	const [quantity, setQuantity] = useState(1);
-	const [inputValue, setInputValue] = useState('1');
+export function TicketSelector({ maxTickets }: TicketSelectorProps) {
+	// Quantity is the single source of truth — store-backed so the mobile
+	// sticky CTA bundle buttons can update it from outside this subtree.
+	const quantity = useTicketQuantityStore(state => state.quantity);
+	const setStoreQuantity = useTicketQuantityStore(state => state.setQuantity);
+
+	// Local draft string for the text input. Cannot use `quantity.toString()`
+	// directly: while typing, the input may temporarily hold an invalid value
+	// (e.g. empty string mid-edit) that we don't want committed to the store.
+	const [inputValue, setInputValue] = useState(() => quantity.toString());
 
 	// 0 means unlimited participants — use MAX_SAFE_INTEGER so bound checks always pass
 	const isUnlimited = maxTickets === 0;
 	const effectiveMax = isUnlimited ? Number.MAX_SAFE_INTEGER : maxTickets;
+
+	// External sync: when the store quantity changes from outside this
+	// component (mobile bundle quick-picks in StickyBuyTicketsCta, promo
+	// code free-tickets sync), reflect that change into the input draft.
+	// Deps: [quantity] — the only external trigger we care about.
+	useEffect(() => {
+		setInputValue(quantity.toString());
+	}, [quantity]);
 
 	function validateQuantity(value: number): number {
 		if (isNaN(value) || value < 1) return 1;
@@ -34,23 +51,21 @@ export function TicketSelector({
 		return Math.floor(value);
 	}
 
-	// Centralizes state + parent sync — avoids useEffect for parent notification.
 	function updateQuantity(newQuantity: number) {
 		const validated = validateQuantity(newQuantity);
-		setQuantity(validated);
+		setStoreQuantity(validated);
 		setInputValue(validated.toString());
-		onQuantityChange(validated);
 	}
 
 	function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
 		const value = event.target.value;
 		setInputValue(value);
 
-		// Only update quantity and notify parent if value is a valid number
+		// Only commit to the store if the value is a valid number in range —
+		// invalid intermediates (empty, "0", non-numeric) stay as draft until blur.
 		const numValue = parseInt(value, 10);
 		if (!isNaN(numValue) && numValue >= 1 && numValue <= effectiveMax) {
-			setQuantity(numValue);
-			onQuantityChange(numValue);
+			setStoreQuantity(numValue);
 		}
 	}
 
@@ -79,21 +94,7 @@ export function TicketSelector({
 
 	return (
 		<div className="space-y-4">
-			{/* Mobile: additive bundle buttons (+6, +12, +20) */}
-			<div className="flex items-center justify-between gap-2 lg:hidden">
-				{BUNDLE_SIZES_MOBILE.map(size => (
-					<button
-						key={size}
-						onClick={() => updateQuantity(quantity + size)}
-						disabled={bundleDisabled}
-						className="flex w-full cursor-pointer items-center justify-center rounded-full border border-black py-3 text-sm transition-colors duration-150 hover:bg-[#C4EDFF] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
-					>
-						+{size}
-					</button>
-				))}
-			</div>
-
-			{/* Quantity counter — full-width on mobile, inline on desktop */}
+			{/* Mobile: full-width counter only — quick-pick bundles live in the sticky CTA */}
 			<div className="flex items-center justify-center rounded-full border border-black px-4 py-2 lg:hidden">
 				<button
 					onClick={() => updateQuantity(quantity - 1)}

@@ -1,17 +1,20 @@
 'use client';
 
-import { usePathname, useSearchParams } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
 import { CreditsBuyButton } from '@/app/(public)/browse/[publicSlug]/credits-buy-button';
 import { CryptoBuyButton } from '@/app/(public)/browse/[publicSlug]/crypto-buy-button';
 import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
+import {
+	calculateOrderTotal,
+	formatPrice,
+} from '@/lib/checkout/calculate-order-total';
 import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
 import { isWeb3Enabled, SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/constants';
 import { hasSelectableCryptoChains } from '@/lib/web3/raffle-crypto-options';
-import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
+import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
 import { SignInToBuyButton } from './sign-in-button';
@@ -55,130 +58,38 @@ export function TicketPurchaseCard({
 	availableCredits,
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
-	const pathname = usePathname();
 	// isExpired not needed — isClosingSoon is only true when secondsRemaining > 0
 	const { isClosingSoon, isHydrated } = useRaffleSaleWindow(endAt);
 	// Only use code if non-empty (handles ?code= edge case)
 	const codeParam = searchParams.get('code');
 	const initialCode = codeParam?.trim() || undefined;
 
-	const [ticketQuantity, setTicketQuantity] = useState(1);
-	const [appliedPromo, setAppliedPromo] = useState<ValidatedPromoCode | null>(
-		null,
+	// All checkout state lives in the page-scoped TicketQuantityStore so the
+	// mobile StickyBuyTicketsCta and the inline card share a single source of
+	// truth for quantity *and* applied promo. Promo handlers reduce to thin
+	// wrappers around store actions.
+	const ticketQuantity = useTicketQuantityStore(state => state.quantity);
+	const resetTicketQuantity = useTicketQuantityStore(state => state.reset);
+	const appliedPromo = useTicketQuantityStore(state => state.appliedPromo);
+	const promoResetVersion = useTicketQuantityStore(
+		state => state.promoResetVersion,
 	);
-	const [promoResetSignal, setPromoResetSignal] = useState(0);
-
-	function formatPrice(amount: number, currencyCode: string): string {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: currencyCode,
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 2,
-		}).format(amount);
-	}
-
-	function calculateSubtotal(): number {
-		return ticketQuantity * price;
-	}
-
-	/**
-	 * Calculates discount amount based on promo type.
-	 *
-	 * Backend returns:
-	 * - discount_percent: per-ticket discount amount (NOT the percentage)
-	 * - discount_fixed: total fixed discount
-	 * - free_tickets: number of tickets (full price discount)
-	 */
-	function calculateDiscount(): number {
-		if (!appliedPromo) return 0;
-
-		const promoValue = parseFloat(appliedPromo.value);
-		const subtotal = calculateSubtotal();
-
-		switch (appliedPromo.type) {
-			case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
-				// value is per-ticket discount, multiply by quantity
-				return Math.min(promoValue * ticketQuantity, subtotal);
-			case PROMO_CODE_TYPE.DISCOUNT_FIXED:
-				// value is total fixed discount, cap at subtotal
-				return Math.min(promoValue, subtotal);
-			case PROMO_CODE_TYPE.FREE_TICKETS:
-				return subtotal; // Full discount for free tickets
-			default:
-				return 0;
-		}
-	}
-
-	function calculateTotal(): number {
-		return Math.max(0, calculateSubtotal() - calculateDiscount());
-	}
-
-	function isFreeTicketsPromo(): boolean {
-		return appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
-	}
-
-	/**
-	 * Accepts optional promo override for pre-setState contexts where appliedPromo hasn't settled.
-	 */
-	function getFreeTicketCount(promo?: ValidatedPromoCode): number {
-		const source = promo ?? appliedPromo;
-		if (!source || source.type !== PROMO_CODE_TYPE.FREE_TICKETS) return 0;
-		return Math.floor(parseFloat(source.value));
-	}
-
-	// useCallback: stable identity prevents PromoCodeInput's auto-validation effect from
-	// being cancelled by parent re-renders (countdown timer, hydration, etc.).
-	// No deps — setAppliedPromo and setTicketQuantity are stable dispatch functions.
-	const handleValidPromo = useCallback((promo: ValidatedPromoCode) => {
-		setAppliedPromo(promo);
-
-		// Sync quantity when promo grants free tickets (quantity is locked to the promo value)
-		if (promo.type === PROMO_CODE_TYPE.FREE_TICKETS) {
-			const count = Math.floor(parseFloat(promo.value));
-			setTicketQuantity(count);
-		}
-	}, []);
+	const applyPromo = useTicketQuantityStore(state => state.applyPromo);
+	const clearPromo = useTicketQuantityStore(state => state.clearPromo);
 
 	function handleClearPromo() {
-		setAppliedPromo(null);
-		setTicketQuantity(1);
-	}
-
-	// Keeps quantity for discount promos; resets for free-ticket promos.
-	function handlePromoInvalid() {
-		const wasFreeTickets = appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
-		setAppliedPromo(null);
-		setPromoResetSignal(prev => prev + 1);
-
-		if (wasFreeTickets) {
-			setTicketQuantity(1);
-		}
-	}
-
-	function clearPromoCodeFromUrl() {
-		const params = new URLSearchParams(searchParams.toString());
-		params.delete('code');
-
-		const nextUrl = params.toString()
-			? `${pathname}?${params.toString()}`
-			: pathname;
-
-		window.history.replaceState(null, '', nextUrl);
-	}
-
-	// Reuses handlePromoInvalid — post-redemption cleanup is identical to invalidation cleanup.
-	function handlePromoRedeemed() {
-		clearPromoCodeFromUrl();
-		handlePromoInvalid();
+		// Explicit user clear (PromoCodeInput's clear button) drops the promo
+		// AND always resets quantity to 1 — preserves prior behavior where the
+		// user starting over from the input also reset the manual selection.
+		clearPromo();
+		resetTicketQuantity();
 	}
 
 	const maxTickets = availableTickets;
-	const subtotal = calculateSubtotal();
-	const discount = calculateDiscount();
-	const total = calculateTotal();
+	const { subtotal, discount, total, isFreeTicketsPromo, freeTicketCount } =
+		calculateOrderTotal({ price, quantity: ticketQuantity, appliedPromo });
 	const hasDiscount = discount > 0;
-	const isFree = isFreeTicketsPromo();
-	const freeTicketCount = isFree ? getFreeTicketCount() : 0;
+	const isFree = isFreeTicketsPromo;
 	const shouldShowClosingSoonWarning = isHydrated && isClosingSoon;
 	// Gate both warning copy and the CTA on the same resolved chain set the modal uses.
 	// Otherwise unsupported backend chains can still surface a crypto button that opens
@@ -215,20 +126,16 @@ export function TicketPurchaseCard({
 				</div>
 			) : null}
 
-			{/* Ticket selector - hide for free tickets */}
-			{!isFree ? (
-				<TicketSelector
-					maxTickets={maxTickets}
-					onQuantityChange={setTicketQuantity}
-				/>
-			) : null}
+			{/* Ticket selector - hide for free tickets. Quantity comes from the
+			    shared store, so no callback wiring needed. */}
+			{!isFree ? <TicketSelector maxTickets={maxTickets} /> : null}
 
 			{/* Promo code input */}
 			{isAuthenticated ? (
 				<PromoCodeInput
-					key={`${initialCode ?? ''}:${promoResetSignal}`}
+					key={`${initialCode ?? ''}:${promoResetVersion}`}
 					raffleId={raffleId}
-					onValidCode={handleValidPromo}
+					onValidCode={applyPromo}
 					onClear={handleClearPromo}
 					disabled={disabled}
 					initialCode={initialCode}
@@ -288,19 +195,29 @@ export function TicketPurchaseCard({
 			{/* Buy button or Sign In button */}
 			{isAuthenticated ? (
 				<>
-					<BuyButton
-						raffleId={raffleId}
-						publicSlug={publicSlug}
-						ticketQuantity={isFree ? freeTicketCount : ticketQuantity}
-						disabled={disabled}
-						questionId={questionId}
-						promoCode={appliedPromo?.code}
-						isFreeTickets={isFree}
-						onPromoInvalid={handlePromoInvalid}
-						onPromoRedeemed={handlePromoRedeemed}
-					/>
+					{/* Stripe primary CTA — desktop only. On mobile the sticky
+					    `StickyBuyTicketsCta` at the bottom of the viewport renders
+					    the equivalent "Enter Now!" button via the same
+					    `useStripeCheckout` hook, so duplicating the in-card button
+					    on mobile would create two visible primary CTAs. Wrapping
+					    in `hidden lg:block` keeps the desktop layout unchanged
+					    while removing the mobile duplicate. The wrapper also
+					    keeps the React subtree mounted on mobile so the hook's
+					    state lifecycle is consistent across breakpoints — the
+					    DOM element is just `display:none`. */}
+					<div className="hidden lg:block">
+						<BuyButton
+							raffleId={raffleId}
+							publicSlug={publicSlug}
+							disabled={disabled}
+							questionId={questionId}
+						/>
+					</div>
 
-					{/* Credits buy button — shown when user has credits and order costs money */}
+					{/* Credits buy button — secondary payment, stays in the card
+					    on both breakpoints. Sticky CTA only owns the *primary*
+					    Stripe path; alternative payments stay near the price
+					    breakdown so users see the choice at decision time. */}
 					{showCreditsOption ? (
 						availableCredits ? (
 							<CreditsBuyButton
@@ -309,7 +226,7 @@ export function TicketPurchaseCard({
 								disabled={disabled}
 								questionId={questionId}
 								promoCode={appliedPromo?.code}
-								onPromoInvalid={handlePromoInvalid}
+								onPromoInvalid={clearPromo}
 								availableCredits={availableCredits}
 								orderTotal={total}
 								currency={currency}
@@ -317,7 +234,9 @@ export function TicketPurchaseCard({
 						) : null
 					) : null}
 
-					{/* Crypto buy button — only when raffle has crypto options AND Web3 is configured */}
+					{/* Crypto buy button — secondary payment, same rationale as
+					    credits above. Only when raffle has crypto options AND
+					    Web3 is configured. */}
 					{cryptoOptions ? (
 						hasSelectableCryptoPaymentOption ? (
 							<CryptoBuyButton
@@ -327,7 +246,7 @@ export function TicketPurchaseCard({
 								disabled={disabled}
 								questionId={questionId}
 								promoCode={appliedPromo?.code}
-								onPromoInvalid={handlePromoInvalid}
+								onPromoInvalid={clearPromo}
 								cryptoOptions={cryptoOptions}
 								myTicketsTotal={myTicketsTotal}
 								userId={userId}
@@ -336,7 +255,13 @@ export function TicketPurchaseCard({
 					) : null}
 				</>
 			) : (
-				<SignInToBuyButton />
+				// Desktop-only sign-in CTA. On mobile, the StickyBuyTicketsCta
+				// at the bottom of the viewport already renders a sign-in button,
+				// so duplicating it inside the inline card stacks two identical
+				// buttons on top of each other.
+				<div className="hidden lg:block">
+					<SignInToBuyButton />
+				</div>
 			)}
 		</div>
 	);

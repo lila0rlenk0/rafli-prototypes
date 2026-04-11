@@ -19,8 +19,11 @@ export function SignInToBuyButton() {
 	}
 
 	return (
+		// No id="checkout-action" — that id is reserved for the mobile sticky
+		// CTA's primary button. This component renders only on desktop (and is
+		// hidden on mobile by `TicketPurchaseCard`'s wrapper), so e2e tests
+		// that target mobile checkout never look for this element.
 		<Button
-			id="checkout-action"
 			asChild
 			className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
 		>

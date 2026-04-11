@@ -4,7 +4,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 
-import { filterEvent } from '@/lib/sentry/filter';
+import { BROWSER_NOISE_PATTERNS, filterEvent } from '@/lib/sentry/filter';
 
 Sentry.init({
 	dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -17,8 +17,12 @@ Sentry.init({
 	// Vercel injects VERCEL_GIT_COMMIT_SHA at build time — ties errors to exact deploy.
 	release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
 
-	// Errors only — no performance tracing
+	// Errors only — no performance tracing on the edge runtime
 	tracesSampleRate: 0,
+
+	// Prefilter known third-party noise — see filter.ts and
+	// sentry.server.config.ts for the rationale behind the shared list.
+	ignoreErrors: [...BROWSER_NOISE_PATTERNS],
 
 	// Drops expected business errors, samples network errors, filters browser noise
 	beforeSend: filterEvent,

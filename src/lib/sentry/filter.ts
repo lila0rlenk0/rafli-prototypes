@@ -257,8 +257,15 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
  * SDKs, and irrelevant browser APIs. Each pattern is a substring check against
  * `getExceptionText()`, which unifies the raw Error message with Sentry's
  * synthesized title for non-Error promise rejections.
+ *
+ * Exported so `Sentry.init({ ignoreErrors })` can use the same list as a
+ * defence-in-depth prefilter — `InboundFilters` drops matching events before
+ * event assembly, which is strictly cheaper than the `beforeSend` fallback
+ * below. We keep both layers: `ignoreErrors` catches the common case, and
+ * `beforeSend` still matches via `event.exception.values[0].value` in case
+ * the filter integration ever misses the synthesized-title code path.
  */
-const BROWSER_NOISE_PATTERNS: readonly string[] = [
+export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	// Framework/browser API false-positives — benign, papered over upstream
 	'ResizeObserver loop',
 	'ChunkLoadError',

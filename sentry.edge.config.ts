@@ -4,6 +4,8 @@
 
 import * as Sentry from '@sentry/nextjs';
 
+import { filterEvent } from '@/lib/sentry/filter';
+
 Sentry.init({
 	dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 	// Disabled when DSN is unset (local dev)
@@ -18,6 +20,6 @@ Sentry.init({
 	// Errors only — no performance tracing
 	tracesSampleRate: 0,
 
-	// Enable structured logs sent to Sentry
-	enableLogs: true,
+	// Drops expected business errors, samples network errors, filters browser noise
+	beforeSend: filterEvent,
 });

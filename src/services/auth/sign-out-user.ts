@@ -7,6 +7,7 @@ import { AUTH_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
+import { captureServiceError } from '@/lib/sentry/capture';
 import { clearSentryUser } from '@/lib/sentry/user';
 
 import { clearAuthCookies } from './clear-auth';
@@ -27,9 +28,13 @@ export async function signOutUser(): Promise<never> {
 	try {
 		// Step 2: Invalidate backend session (best-effort — cookie clearing below ensures clean FE state)
 		await authenticatedClient.post('/auth/sign-out');
-	} catch {
-		// Swallowed intentionally — backend session cleanup is best-effort.
-		// If the backend is down, we still need to clear FE cookies and redirect.
+	} catch (error) {
+		// Best-effort — backend session cleanup can fail without blocking sign-out.
+		// Still report to Sentry so persistent backend failures are visible.
+		captureServiceError(error, 'auth:sign-out:failed', {
+			service: 'auth',
+			action: 'sign-out-user',
+		});
 	} finally {
 		// Step 3: Non-blocking sign-out analytics
 		runAfter(async () => {

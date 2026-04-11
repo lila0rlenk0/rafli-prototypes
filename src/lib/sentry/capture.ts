@@ -1,6 +1,8 @@
 import * as Sentry from '@sentry/nextjs';
 import type { ZodError } from 'zod';
 
+import { EXPECTED_ERROR_CODES } from '@/lib/sentry/filter';
+
 /**
  * Captures client-originated errors from React error boundaries.
  * Server errors carry a `digest` and are already captured by `onRequestError`
@@ -27,6 +29,10 @@ export function captureServiceError(
 	errorCode: string,
 	context?: Record<string, string>,
 ): void {
+	// Skip expected business/user errors — avoids building Sentry scope entirely,
+	// saving CPU and guaranteeing zero quota usage for known error codes.
+	if (EXPECTED_ERROR_CODES.has(errorCode)) return;
+
 	Sentry.withScope(scope => {
 		scope.setTag('errorCode', errorCode);
 		scope.setLevel('error');

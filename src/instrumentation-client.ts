@@ -21,9 +21,6 @@ Sentry.init({
 	// Errors only — no performance tracing
 	tracesSampleRate: 0,
 
-	// Enable structured logs sent to Sentry
-	enableLogs: true,
-
 	// Drops expected business errors, samples network errors, filters browser noise
 	beforeSend: filterEvent,
 });

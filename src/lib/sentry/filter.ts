@@ -10,7 +10,7 @@ import type { ErrorEvent, EventHint } from '@sentry/nextjs';
  *
  * Any error code NOT in this set passes through to Sentry.
  */
-const EXPECTED_ERROR_CODES = new Set<string>([
+export const EXPECTED_ERROR_CODES = new Set<string>([
 	// Auth — user mistakes (credentials, validation, expected states)
 	'auth:user:invalid-credentials',
 	'auth:user:already-exists',

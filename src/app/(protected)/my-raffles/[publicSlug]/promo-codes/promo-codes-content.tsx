@@ -109,12 +109,16 @@ export function PromoCodesContent({
 	function downloadCsv(content: string, filename: string) {
 		const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
 		const url = URL.createObjectURL(blob);
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = filename;
-		document.body.appendChild(link);
+		// Anchor.click() works without appending to the DOM in all modern
+		// browsers. Avoiding appendChild/removeChild prevents the
+		// "removeChild: node is not a child" error when browser extensions
+		// (ad blockers, translation tools) mutate the DOM between append
+		// and remove.
+		const link = Object.assign(document.createElement('a'), {
+			href: url,
+			download: filename,
+		});
 		link.click();
-		document.body.removeChild(link);
 		URL.revokeObjectURL(url);
 	}
 

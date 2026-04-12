@@ -89,7 +89,12 @@ export function useRaffleDraft() {
 	const clearDraft = useCallback(() => {
 		if (typeof window === 'undefined') return;
 
-		localStorage.removeItem(DRAFT_STORAGE_KEY);
+		try {
+			localStorage.removeItem(DRAFT_STORAGE_KEY);
+		} catch {
+			// SecurityError in private browsing / embedded WebViews — draft
+			// was never persisted in this context, so removal is a no-op.
+		}
 		setDraft(null);
 	}, []);
 

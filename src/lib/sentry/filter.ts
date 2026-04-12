@@ -71,6 +71,7 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 	'global:upload:missing-boundary',
 	'global:upload:no-file',
 	'global:validation:invalid-argument',
+	'global:validation:invalid-payload',
 
 	// Raffle — business rules
 	'core:raffle:not-found',
@@ -283,6 +284,13 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	'ChunkLoadError',
 	'Loading chunk',
 
+	// Browser fetch API — network-level failure before the server responds.
+	// Fires as an unhandled rejection from Next.js server action internals
+	// even when app code catches the error (see RAFLI-F). The user sees a
+	// toast; this event is not actionable. Server-side network errors are
+	// already sampled at 10% via NETWORK_ERROR_CODES above.
+	'Failed to fetch',
+
 	// Browser extensions — user-installed code we don't ship or control
 	'extension://',
 	'moz-extension://',
@@ -302,6 +310,13 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	// or exits private mode. Not actionable in our code.
 	'The operation is insecure',
 
+	// Chrome/Android equivalent of the above — same `SecurityError`, different
+	// message. Fires in embedded WebViews (Telegram, Instagram, Twitter in-app
+	// browsers) where localStorage is sandboxed. Wagmi's MetaMask connector
+	// (`metaMask.ts:238`) and RainbowKit's session restore (`appName` /
+	// `getRecentWalletIds`) both trigger it. See Sentry RAFLI-B, RAFLI-C.
+	'Access is denied for this document',
+
 	// Injected MetaMask provider (`scripts/inpage.js`) throws when the user
 	// doesn't have the extension installed — wagmi's connector probing
 	// catches internally, but the unhandled rejection still escapes to
@@ -315,6 +330,16 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	// Web3 probing on the browse page; without an Error stack there's no
 	// actionable context, so we drop the whole group. See Sentry RAFLI-A.
 	'Object captured as promise rejection with keys: code, message',
+
+	// wagmi's useConfig/useConnection hooks throw when called outside
+	// WagmiProvider. Web3Provider defers config loading via dynamic import
+	// and gates children via useIsWeb3Ready(), but during SSR/hydration
+	// race conditions or when browser extensions (WalletConnect injected
+	// providers) probe hooks before the provider mounts, the error briefly
+	// surfaces as an unhandled rejection. Not actionable — the gating logic
+	// already handles it, and the component tree recovers on the next render.
+	// See Sentry RAFLI-5.
+	'WagmiProvider',
 ];
 
 /** Keep 10% of network/timeout errors — enough to detect trends without quota spam */

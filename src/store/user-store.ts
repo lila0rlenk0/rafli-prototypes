@@ -125,15 +125,24 @@ export function createUserStore(initState: UserStoreState = defaultInitState) {
 			{
 				name: PERSIST_STORAGE_KEY,
 				storage: createJSONStorage(() => {
-					// Return a no-op storage during SSR
-					if (typeof window === 'undefined') {
-						return {
-							getItem: () => null,
-							setItem: () => {},
-							removeItem: () => {},
-						};
+					// No-op storage for SSR and restricted browsing contexts
+					// (private mode, iframes, embedded WebViews) where
+					// localStorage access throws SecurityError.
+					const noopStorage = {
+						getItem: () => null,
+						setItem: () => {},
+						removeItem: () => {},
+					};
+					if (typeof window === 'undefined') return noopStorage;
+					try {
+						// Probe write+delete — typeof check passes even when access throws
+						const probe = '__zustand_storage_probe__';
+						localStorage.setItem(probe, '1');
+						localStorage.removeItem(probe);
+						return localStorage;
+					} catch {
+						return noopStorage;
 					}
-					return localStorage;
 				}),
 				partialize: (state): Pick<UserStoreState, 'mode'> => ({
 					mode: state.mode, // Only persist mode preference

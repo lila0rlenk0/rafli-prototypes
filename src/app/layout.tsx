@@ -78,7 +78,12 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" translate="no">
+			{/* suppressHydrationWarning: browser extensions (ad blockers, Grammarly,
+			    translation tools) inject attributes/elements into <body> between
+			    server render and hydration — without this flag React throws a
+			    hydration mismatch error for mutations we don't control. */}
 			<body
+				suppressHydrationWarning
 				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} font-sans antialiased`}
 			>
 				<Suspense fallback={null}>

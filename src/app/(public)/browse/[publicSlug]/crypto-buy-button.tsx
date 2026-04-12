@@ -11,7 +11,10 @@ import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
-import { useIsWeb3Ready } from '@/providers/web3-provider';
+import {
+	useIsWeb3Ready,
+	useIsWeb3Unavailable,
+} from '@/providers/web3-provider';
 import { usePollMyTicketCodes } from '@/services/ticket/use-poll-my-ticket-codes';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
@@ -74,30 +77,52 @@ export function CryptoBuyButton(props: CryptoBuyButtonProps) {
 	// Web3Provider's lazy wagmi config import resolves and `WagmiProvider`
 	// mounts. Rendering the inner component before then throws.
 	const isWeb3Ready = useIsWeb3Ready();
+	// `true` when the environment permanently blocks Web3 (no env var, or
+	// localStorage inaccessible in embedded WebViews). Shows a "use browser"
+	// message instead of a perpetual spinner.
+	const isWeb3Unavailable = useIsWeb3Unavailable();
 
 	if (!isWeb3Ready) {
-		return <CryptoBuyButtonPlaceholder />;
+		return <CryptoBuyButtonPlaceholder unavailable={isWeb3Unavailable} />;
 	}
 
 	return <CryptoBuyButtonInner {...props} />;
 }
 
 /**
- * Disabled placeholder that matches `CryptoBuyButtonInner`'s "Preparing
- * wallet..." state visually. Rendered while `WagmiProvider` is not yet in
- * the tree so we never call wagmi hooks outside their required context.
+ * Disabled placeholder rendered while `WagmiProvider` is not yet in the tree
+ * so we never call wagmi hooks outside their required context.
  *
- * @returns Disabled button with spinner and "Preparing wallet..." label
+ * Two modes:
+ * - `unavailable=false` (transient): spinner + "Preparing wallet..." while
+ *   the wagmi config is still loading. Normal on every page load.
+ * - `unavailable=true` (permanent): wallet icon + "Open in browser to pay
+ *   with crypto". Shown in embedded WebViews (Telegram, Instagram, Twitter)
+ *   where localStorage is blocked and Web3 will never initialize.
+ *
+ * @returns Disabled button with contextual label
  */
-function CryptoBuyButtonPlaceholder() {
+function CryptoBuyButtonPlaceholder({
+	unavailable,
+}: {
+	readonly unavailable: boolean;
+}) {
 	return (
 		<Button
 			disabled
 			variant="outline"
 			className="h-12 w-full cursor-not-allowed border-2 border-[#D4D4D4] bg-[#F5F5F5] text-[#7B7B7B] hover:bg-[#F5F5F5] hover:text-[#7B7B7B]"
 		>
-			<Loader2Icon className="mr-2 size-4 animate-spin" />
-			<p className="font-semibold">Preparing wallet...</p>
+			{unavailable ? (
+				<WalletIcon className="mr-2 size-4" />
+			) : (
+				<Loader2Icon className="mr-2 size-4 animate-spin" />
+			)}
+			<p className="font-semibold">
+				{unavailable
+					? 'Open in browser to pay with crypto'
+					: 'Preparing wallet...'}
+			</p>
 		</Button>
 	);
 }

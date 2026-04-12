@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -1781,7 +1782,30 @@ export function CryptoCheckoutModal({
 				return;
 			}
 
+			// Log for local dev (Sentry is disabled without DSN) and for
+			// users who screenshot their browser console when reporting bugs.
 			console.error('Crypto payment error:', error);
+
+			// Capture non-user-rejection wallet/RPC errors to Sentry.
+			// These are infra-level failures (CORS on RPC endpoint, provider
+			// internal errors, network drops) that need monitoring but aren't
+			// captured by server-side service actions.
+			Sentry.captureException(error, {
+				tags: {
+					service: 'payment',
+					action: 'crypto-wallet-transfer',
+					chainId: selectedChainId,
+				},
+				contexts: {
+					crypto: {
+						tokenAddress: session.tokenAddress,
+						amountRaw: session.amountRaw,
+						sessionId: session.id,
+						walletAddress: checksummedAddress,
+					},
+				},
+			});
+
 			setRetryBlocked(false);
 			setErrorMessage('Transaction failed. Please try again.');
 			goToStep('failure');

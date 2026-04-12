@@ -106,6 +106,7 @@ describe('filterEvent', () => {
 			'global:auth:unauthenticated',
 			'global:upload:invalid-file-type',
 			'global:upload:no-file',
+			'global:validation:invalid-payload',
 			'validation_error',
 			'unauthorized',
 			'forbidden',
@@ -270,6 +271,32 @@ describe('filterEvent', () => {
 			expect(result).toBeNull();
 		});
 
+		// RAFLI-B / RAFLI-C — Chrome/Android equivalent of the above. Fires in
+		// embedded WebViews (Telegram, Instagram in-app browsers) where
+		// localStorage is sandboxed. Wagmi's MetaMask connector and RainbowKit's
+		// session restore both trigger it.
+		test('drops Chrome localStorage SecurityError from @wagmi/connectors (Sentry RAFLI-B)', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new Error(
+					"Failed to read the 'localStorage' property from 'Window': Access is denied for this document.",
+				),
+			);
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		test('drops Chrome localStorage SecurityError from RainbowKit (Sentry RAFLI-C)', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new Error(
+					"Failed to read the 'localStorage' property from 'Window': Access is denied for this document.",
+				),
+			);
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
 		// RAFLI-9 — MS Office / Outlook browser extension raises this message
 		// via a content-script global handler. Sentry captures it as a
 		// non-Error scalar promise rejection.
@@ -294,6 +321,28 @@ describe('filterEvent', () => {
 			// `String({code, message})` coerces to "[object Object]" — the filter
 			// must fall back to `event.exception.values[0].value` to match.
 			const hint = createHint({ code: 4001, message: 'User rejected' });
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-5 — wagmi hooks called outside WagmiProvider during
+		// SSR/hydration race. Web3Provider gates via useIsWeb3Ready(), but
+		// browser extensions can probe before the provider mounts.
+		test('drops WagmiProviderNotFoundError (Sentry RAFLI-5)', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new Error('`useConfig` must be used within `WagmiProvider`.'),
+			);
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-F — Browser fetch API network failure during Next.js server
+		// action call. The app catches this and shows a toast, but Next.js
+		// internals fire a separate unhandled rejection.
+		test('drops "Failed to fetch" TypeError from server action (Sentry RAFLI-F)', () => {
+			const event = createEvent();
+			const hint = createHint(new TypeError('Failed to fetch'));
 			const result = filterEvent(event, hint);
 			expect(result).toBeNull();
 		});

@@ -32,6 +32,20 @@ import { isWeb3Enabled, WAGMI_COOKIE_KEY } from '@/lib/web3/constants';
 const Web3ReadyContext = createContext(false);
 
 /**
+ * Signals that Web3 will never become ready in this session.
+ *
+ * `true` when the environment permanently blocks Web3 initialization —
+ * either `isWeb3Enabled` is false (no WalletConnect project ID) or
+ * `localStorage` is inaccessible (embedded WebViews like Telegram,
+ * Instagram, Twitter in-app browsers where storage is sandboxed).
+ *
+ * Consumers use this to swap the perpetual spinner for a "use a real
+ * browser" message so the user isn't stuck waiting on something that
+ * will never resolve.
+ */
+const Web3UnavailableContext = createContext(false);
+
+/**
  * Returns `true` once `WagmiProvider` is mounted and wagmi hooks are safe to
  * call in this subtree. Gate any component that uses wagmi hooks on this
  * signal — render a placeholder while `false` and swap to the wagmi-using
@@ -42,6 +56,42 @@ const Web3ReadyContext = createContext(false);
  */
 export function useIsWeb3Ready(): boolean {
 	return useContext(Web3ReadyContext);
+}
+
+/**
+ * Returns `true` when Web3 is permanently unavailable in this session.
+ * Use to show a "open in browser" message instead of a perpetual spinner.
+ *
+ * @returns whether Web3 will never become ready
+ */
+export function useIsWeb3Unavailable(): boolean {
+	return useContext(Web3UnavailableContext);
+}
+
+/**
+ * Probes whether `localStorage` is accessible in this browser context.
+ *
+ * RainbowKit (`getRecentWalletIds`) and `@wagmi/connectors` (`metaMask.ts`)
+ * access localStorage eagerly on init without try/catch. In embedded
+ * WebViews (Telegram, Instagram, Twitter in-app browsers) and some
+ * Chrome incognito modes, the browser throws `SecurityError`:
+ * - Safari/Firefox: "The operation is insecure."
+ * - Chrome/Android: "Access is denied for this document."
+ *
+ * A write+delete probe is the only reliable cross-browser test — checking
+ * `typeof localStorage !== 'undefined'` passes even when get/set throws.
+ *
+ * @returns true when localStorage read/write succeeds
+ */
+function isLocalStorageAvailable(): boolean {
+	try {
+		const probe = '__web3_storage_probe__';
+		localStorage.setItem(probe, '1');
+		localStorage.removeItem(probe);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 /** Near-black accent — matches the app's border/button color token */
@@ -103,12 +153,30 @@ export function Web3Provider({
 }: Web3ProviderProps) {
 	const [wagmiConfig, setWagmiConfig] = useState<Config | null>(null);
 
-	// mount: lazy-load wagmi config to keep WalletConnect's indexedDB access
-	// out of the SSR pre-render. The dynamic import() ensures config.ts
-	// (which calls getDefaultConfig → WalletConnect connector chain) is
-	// only evaluated in the browser where indexedDB exists.
+	// Starts `false` to match the server render — prevents a hydration
+	// mismatch when the client detects an unavailable environment. The
+	// mount effect below flips it to `true` synchronously on the first
+	// paint, so the UI flash from spinner → "open in browser" is a
+	// single frame in restricted contexts.
+	const [web3Unavailable, setWeb3Unavailable] = useState(false);
+
+	// mount: detect restricted environments then lazy-load wagmi config.
+	//
+	// Step 1 — probe localStorage. RainbowKit and @wagmi/connectors access
+	// it eagerly without try/catch. In embedded WebViews (Telegram,
+	// Instagram, Twitter in-app browsers) and some Chrome incognito modes,
+	// the browser throws SecurityError. Detecting it upfront avoids the
+	// unhandled error from the dynamic import below (Sentry RAFLI-B/C).
+	//
+	// Step 2 — dynamic import() wagmi config to keep WalletConnect's
+	// indexedDB access out of the SSR pre-render. config.ts calls
+	// getDefaultConfig → WalletConnect connector chain, which requires a
+	// browser with indexedDB. Only runs when storage is available.
 	useEffect(() => {
-		if (!isWeb3Enabled) return;
+		if (!isWeb3Enabled || !isLocalStorageAvailable()) {
+			setWeb3Unavailable(true);
+			return;
+		}
 
 		void import('@/lib/web3/config').then(mod => {
 			if (mod.wagmiConfig) setWagmiConfig(mod.wagmiConfig);
@@ -134,19 +202,25 @@ export function Web3Provider({
 	// matches the initial client tree, preventing hydration mismatch.
 	// `Web3ReadyContext` is `false` in this branch so descendants gate
 	// their wagmi-hook usage and avoid `WagmiProviderNotFoundError`.
+	// `Web3UnavailableContext` tells descendants whether to show a
+	// permanent "use a real browser" message vs a transient spinner.
 	if (!wagmiConfig) {
 		return (
-			<Web3ReadyContext.Provider value={false}>
-				{children}
-			</Web3ReadyContext.Provider>
+			<Web3UnavailableContext.Provider value={web3Unavailable}>
+				<Web3ReadyContext.Provider value={false}>
+					{children}
+				</Web3ReadyContext.Provider>
+			</Web3UnavailableContext.Provider>
 		);
 	}
 
 	return (
-		<Web3ReadyContext.Provider value={true}>
-			<WagmiProvider config={wagmiConfig} initialState={initialState}>
-				<RainbowKitProvider theme={appTheme}>{children}</RainbowKitProvider>
-			</WagmiProvider>
-		</Web3ReadyContext.Provider>
+		<Web3UnavailableContext.Provider value={false}>
+			<Web3ReadyContext.Provider value={true}>
+				<WagmiProvider config={wagmiConfig} initialState={initialState}>
+					<RainbowKitProvider theme={appTheme}>{children}</RainbowKitProvider>
+				</WagmiProvider>
+			</Web3ReadyContext.Provider>
+		</Web3UnavailableContext.Provider>
 	);
 }

@@ -41,6 +41,12 @@ type TypeFilter =
 	| 'discount_fixed'
 	| 'discount_percent';
 
+// Hoisted to module scope: `z.uuidv7()` allocates a new ZodUUID instance on
+// every call, and parsing happens inside the render body below. Creating the
+// schema once amortizes the allocation across re-renders (input typing, focus
+// changes, sibling state updates) which keeps validation work trivial.
+const bulkIdSchema = z.uuidv7();
+
 /**
  * Modal for exporting promo codes with filters
  */
@@ -57,7 +63,7 @@ export function ExportPromoCodesModal({
 
 	const trimmedBulkId = bulkId.trim();
 	const hasInvalidBulkId =
-		trimmedBulkId !== '' && !z.string().uuid().safeParse(trimmedBulkId).success;
+		trimmedBulkId !== '' && !bulkIdSchema.safeParse(trimmedBulkId).success;
 
 	/**
 	 * Handles export action

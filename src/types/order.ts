@@ -36,8 +36,8 @@ export const orderStatusSchema = z.enum([
  * Monetary values are decimal strings (e.g., "10.0000") to avoid floating-point drift.
  */
 export const orderSchema = z.object({
-	id: z.uuid(),
-	raffleId: z.uuid(),
+	id: z.uuidv7(),
+	raffleId: z.uuidv7(),
 	userId: z.string(),
 	ticketQuantity: z.number().int().positive(),
 	unitPrice: z.string(), // Decimal as string (e.g., "10.0000")
@@ -67,7 +67,7 @@ export const orderSchema = z.object({
 });
 
 export const createOrderPayloadSchema = z.object({
-	raffleId: z.uuid(),
+	raffleId: z.uuidv7(),
 	ticketQuantity: z.number().int().positive(),
 	promoCode: z.string().optional(),
 });

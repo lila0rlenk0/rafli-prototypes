@@ -35,8 +35,8 @@ export const paymentStatusSchema = z.enum([
  * Validation boundary: server-side — parsed in payment-related server actions.
  */
 export const paymentSessionSchema = z.object({
-	id: z.uuid(),
-	orderId: z.uuid(),
+	id: z.uuidv7(),
+	orderId: z.uuidv7(),
 	userId: z.string(),
 	stripeSessionId: z.string(),
 	amount: z.string(), // Decimal as string
@@ -53,9 +53,9 @@ export const paymentSessionSchema = z.object({
  * `expiresAt` is the Stripe session expiration timestamp.
  */
 export const checkoutSessionResponseSchema = z.object({
-	id: z.uuid(), // Payment session ID
+	id: z.uuidv7(), // Payment session ID
 	checkoutUrl: z.url(),
-	orderId: z.uuid(),
+	orderId: z.uuidv7(),
 	expiresAt: z.string(),
 	previousSessionCancelled: z.boolean(),
 });
@@ -69,7 +69,7 @@ export const checkoutSessionResponseSchema = z.object({
  * transforms this into the actual BE payload shape.
  */
 export const createCheckoutPayloadSchema = z.object({
-	orderId: z.uuid(),
+	orderId: z.uuidv7(),
 	publicSlug: z.string().min(1),
 });
 

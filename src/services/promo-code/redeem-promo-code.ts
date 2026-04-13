@@ -22,8 +22,8 @@ import type { ServiceResponse } from '@/types/service-response';
  */
 const redeemPromoCodePayloadSchema = z.object({
 	code: promoCodeStringSchema,
-	raffleId: z.string().uuid(),
-	orderId: z.string().uuid().optional(),
+	raffleId: z.uuidv7(),
+	orderId: z.uuidv7().optional(),
 });
 
 /** Schema for redeem response from backend */

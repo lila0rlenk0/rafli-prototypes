@@ -39,7 +39,7 @@ export const promoCodeSchema = z.object({
 	code: z.string(),
 	raffleId: z.string(),
 	// Backend may omit bulkId for older payloads; normalize to null for UI.
-	bulkId: z.string().uuid().nullable().optional().default(null),
+	bulkId: z.uuidv7().nullable().optional().default(null),
 	type: promoCodeTypeSchema,
 	value: z.string(),
 	maxUses: z.number(),
@@ -67,7 +67,7 @@ export const promoCodeStringSchema = z
 	.refine(v => PROMO_CODE_REGEX.test(v), 'Invalid promo code format');
 
 export const exportPromoCodesQuerySchema = z.object({
-	bulkId: z.string().uuid().optional(),
+	bulkId: z.uuidv7().optional(),
 	include: z.enum(['all', 'redeemed', 'unredeemed']).default('all'),
 	status: z.enum(['all', 'active', 'inactive']).default('all'),
 	type: z
@@ -119,7 +119,7 @@ export const bulkCreatePromoCodesInputSchema = z
 	);
 
 export const bulkCreatePromoCodesResponseSchema = z.object({
-	bulkId: z.string().uuid(),
+	bulkId: z.uuidv7(),
 	created: z.number(),
 	codes: z.array(z.string()),
 });

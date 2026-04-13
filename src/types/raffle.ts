@@ -96,7 +96,7 @@ export const raffleSortOptionSchema = z.enum([
 ]);
 
 const hostSchema = z.object({
-	id: z.uuid(),
+	id: z.uuidv7(),
 	name: z.string().nullable(),
 	username: z.string().nullable(),
 	avatar: z.string().nullable(),
@@ -304,8 +304,8 @@ const cryptoPayloadFields = {
  * Mirrors BE schema constraints to catch errors early on the client.
  */
 export const createRafflePayloadSchema = z.object({
-	categoryId: z.uuid(),
-	questionId: z.uuid(),
+	categoryId: z.uuidv7(),
+	questionId: z.uuidv7(),
 	coverMediaUrl: z.string().max(500),
 	/** Optional hero image for featured card placement — omit to default to null */
 	featuredCoverUrl: z.string().max(500).optional(),
@@ -315,7 +315,7 @@ export const createRafflePayloadSchema = z.object({
 	description: z.string().min(10).max(5_000),
 	endAt: z.iso.datetime(),
 	galleryMediaUrls: z.array(z.string().max(500)).max(10),
-	hostId: z.uuid().optional(),
+	hostId: z.uuidv7().optional(),
 	maxParticipants: z.number().int().min(0).max(1_000_000),
 	minParticipants: z.number().int().min(0),
 	numberOfWinners: z.number().int().min(1).max(100),
@@ -347,8 +347,8 @@ export const updateRafflePayloadSchema = z.object({
 		.string()
 		.regex(/^\d+(\.\d{1,4})?$/)
 		.optional(),
-	categoryId: z.uuid().optional(),
-	questionId: z.uuid().optional(),
+	categoryId: z.uuidv7().optional(),
+	questionId: z.uuidv7().optional(),
 	startAt: z.iso.datetime().optional(),
 	endAt: z.iso.datetime().optional(),
 	ticketPriceAmount: z

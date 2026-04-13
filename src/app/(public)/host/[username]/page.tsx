@@ -50,7 +50,11 @@ export default async function HostProfilePage({
 	const { status: statusParam } = await searchParams;
 
 	// UUID vs username — backend accepts both, but the query param key differs.
-	// Old raffle links use hostId (UUID), new links use username.
+	// Old raffle links use hostId (UUID), new links use username. Accept any UUID
+	// version here (not just v7) since this is a routing heuristic, not a contract
+	// boundary — legacy emailed/bookmarked links may still carry v4 IDs, and the
+	// backend resolves any valid UUID. Body-schema payloads that reach the BE
+	// still validate against v7 via the typed schemas in `@/types/*`.
 	const isUUID = z.uuid().safeParse(identifier).success;
 
 	// Step 2: Build raffle query with status filter from URL.

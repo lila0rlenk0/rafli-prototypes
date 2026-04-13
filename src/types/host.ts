@@ -8,7 +8,7 @@ import { paginationQuerySchema } from './pagination';
  * Validation boundary: server-side — parsed in host profile server actions.
  */
 export const hostProfileSchema = z.object({
-	id: z.uuid(),
+	id: z.uuidv7(),
 	name: z.string().nullable(),
 	username: z.string().nullable(),
 	bio: z.string().nullable(),
@@ -26,7 +26,7 @@ export type HostProfile = z.infer<typeof hostProfileSchema>;
  * Validation boundary: client-side — validated before fetching host raffles.
  */
 export const hostRafflesQuerySchema = paginationQuerySchema.extend({
-	hostId: z.uuid().optional(),
+	hostId: z.uuidv7().optional(),
 	username: z.string().optional(),
 	status: z.string().optional(),
 });

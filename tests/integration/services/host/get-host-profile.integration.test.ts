@@ -8,7 +8,7 @@ import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
 
 /** Minimal valid host profile */
 const VALID_PROFILE: HostProfile = {
-	id: '550e8400-e29b-41d4-a716-446655440000',
+	id: '550e8400-e29b-71d4-a716-446655440000',
 	name: 'Test Host',
 	username: 'testhost',
 	bio: 'A test host bio',

@@ -121,7 +121,7 @@ export const walletsListResponseSchema = z.object({
  * (chain, wallet, token) — backend creates both atomically.
  */
 export const atomicCryptoCheckoutPayloadSchema = z.object({
-	raffleId: z.string().uuid(),
+	raffleId: z.uuidv7(),
 	ticketQuantity: z.number().int().positive(),
 	promoCode: z.string().optional(),
 	chainId: z.number(),

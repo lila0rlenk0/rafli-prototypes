@@ -9,14 +9,14 @@ import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
 // --- Fixtures ---
 
 const VALID_PAYLOAD: CreateOrderPayload = {
-	raffleId: '11111111-1111-4111-8111-111111111111',
+	raffleId: '11111111-1111-7111-8111-111111111111',
 	ticketQuantity: 2,
 	promoCode: undefined,
 };
 
 const VALID_ORDER: Order = {
-	id: '22222222-2222-4222-8222-222222222222',
-	raffleId: '11111111-1111-4111-8111-111111111111',
+	id: '22222222-2222-7222-8222-222222222222',
+	raffleId: '11111111-1111-7111-8111-111111111111',
 	userId: 'user-1',
 	ticketQuantity: 2,
 	unitPrice: '5.0000',
@@ -69,7 +69,7 @@ describe('createOrder', () => {
 
 			expect(result.success).toBe(true);
 			if (result.success) {
-				expect(result.data.id).toBe('22222222-2222-4222-8222-222222222222');
+				expect(result.data.id).toBe('22222222-2222-7222-8222-222222222222');
 				expect(result.data.ticketQuantity).toBe(2);
 				expect(result.data.status).toBe('pending');
 			}

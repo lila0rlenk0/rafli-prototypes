@@ -44,7 +44,7 @@ const { createAtomicCryptoCheckout } = await import(
 
 /** Valid payload matching AtomicCryptoCheckoutPayload */
 const VALID_PAYLOAD = {
-	raffleId: '550e8400-e29b-41d4-a716-446655440000',
+	raffleId: '550e8400-e29b-71d4-a716-446655440000',
 	ticketQuantity: 2,
 	chainId: 42161,
 	walletAddress: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as `0x${string}`,

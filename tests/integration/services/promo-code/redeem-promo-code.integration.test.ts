@@ -50,7 +50,7 @@ describe('redeemPromoCode', () => {
 
 		const result = await redeemPromoCode({
 			code: 'AB23-CD45',
-			raffleId: '550e8400-e29b-41d4-a716-446655440000',
+			raffleId: '550e8400-e29b-71d4-a716-446655440000',
 		});
 
 		expect(result.success).toBe(true);
@@ -78,7 +78,7 @@ describe('redeemPromoCode', () => {
 
 		const result = await redeemPromoCode({
 			code: 'AB23-CD45',
-			raffleId: '550e8400-e29b-41d4-a716-446655440000',
+			raffleId: '550e8400-e29b-71d4-a716-446655440000',
 		});
 
 		expect(result.success).toBe(false);
@@ -97,7 +97,7 @@ describe('redeemPromoCode', () => {
 
 		const result = await redeemPromoCode({
 			code: 'AB23-CD45',
-			raffleId: '550e8400-e29b-41d4-a716-446655440000',
+			raffleId: '550e8400-e29b-71d4-a716-446655440000',
 		});
 
 		expect(result.success).toBe(false);
@@ -111,7 +111,7 @@ describe('redeemPromoCode', () => {
 
 		const result = await redeemPromoCode({
 			code: 'AB23-CD45',
-			raffleId: '550e8400-e29b-41d4-a716-446655440000',
+			raffleId: '550e8400-e29b-71d4-a716-446655440000',
 		});
 
 		expect(result.success).toBe(false);

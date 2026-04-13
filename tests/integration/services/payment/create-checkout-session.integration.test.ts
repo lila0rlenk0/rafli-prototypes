@@ -47,14 +47,14 @@ const { createCheckoutSession } = await import(
 );
 
 const VALID_PAYLOAD = {
-	orderId: '550e8400-e29b-41d4-a716-446655440000',
+	orderId: '550e8400-e29b-71d4-a716-446655440000',
 	publicSlug: 'cool-raffle-abc123',
 };
 
 const VALID_RESPONSE = {
-	id: '550e8400-e29b-41d4-a716-446655440001',
+	id: '550e8400-e29b-71d4-a716-446655440001',
 	checkoutUrl: 'https://checkout.stripe.com/pay/cs_test_abc',
-	orderId: '550e8400-e29b-41d4-a716-446655440000',
+	orderId: '550e8400-e29b-71d4-a716-446655440000',
 	expiresAt: '2026-04-09T12:30:00.000Z',
 	previousSessionCancelled: false,
 };
@@ -91,7 +91,7 @@ describe('createCheckoutSession', () => {
 	test('returns FETCH_FAILED on invalid response shape', async () => {
 		// Missing checkoutUrl — Zod parse fails
 		mockPost.mockResolvedValueOnce(
-			mockAxiosResponse({ id: '550e8400-e29b-41d4-a716-446655440001' }),
+			mockAxiosResponse({ id: '550e8400-e29b-71d4-a716-446655440001' }),
 		);
 
 		const result = await createCheckoutSession(VALID_PAYLOAD);

@@ -8,7 +8,7 @@ import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
 import { MOCK_ANALYTICS_EVENTS } from '../../../helpers/mock-events';
 
 const VALID_RESPONSE: BulkCreatePromoCodesResponse = {
-	bulkId: '550e8400-e29b-41d4-a716-446655440000',
+	bulkId: '550e8400-e29b-71d4-a716-446655440000',
 	created: 5,
 	codes: ['AB23-CD45', 'EF67-GH89', 'IJ23-KL45', 'MN67-OP89', 'QR23-ST45'],
 };

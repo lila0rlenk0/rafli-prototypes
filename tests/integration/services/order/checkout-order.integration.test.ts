@@ -10,13 +10,13 @@ import { MOCK_ANALYTICS_EVENTS } from '../../../helpers/mock-events';
 // --- Fixtures ---
 
 const VALID_PAYLOAD = {
-	raffleId: '11111111-1111-4111-8111-111111111111' as const,
+	raffleId: '11111111-1111-7111-8111-111111111111' as const,
 	ticketQuantity: 2,
 };
 
 const VALID_ORDER: Order = {
-	id: '22222222-2222-4222-8222-222222222222',
-	raffleId: '11111111-1111-4111-8111-111111111111',
+	id: '22222222-2222-7222-8222-222222222222',
+	raffleId: '11111111-1111-7111-8111-111111111111',
 	userId: 'user-1',
 	ticketQuantity: 2,
 	unitPrice: '5.0000',
@@ -80,7 +80,7 @@ describe('checkoutOrder', () => {
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.order.id).toBe(
-					'22222222-2222-4222-8222-222222222222',
+					'22222222-2222-7222-8222-222222222222',
 				);
 				expect(result.data.isFullyDiscounted).toBe(false);
 			}

@@ -23,6 +23,13 @@ export function BrowseTabs({
 
 	return (
 		<>
+			{/* Desktop: featured lands ABOVE the section title so admin-curated
+			    hero cards are the first thing users see in the catalog band, before
+			    they start scanning the generic grid. Mobile keeps featured nested
+			    inside the tab switcher below — on small screens the two-up featured
+			    row would crowd the fold, so the tab affords progressive disclosure. */}
+			<div className="hidden sm:block">{featuredContent}</div>
+
 			{/* Section Title */}
 			<h2 className="font-clash-display mb-8 text-[32px] leading-none font-semibold tracking-[0.16px] sm:mb-10 sm:text-4xl sm:tracking-[0.36px]">
 				See what&apos;s up for grabs right now!
@@ -73,11 +80,8 @@ export function BrowseTabs({
 				)}
 			</div>
 
-			{/* Desktop: show both sections */}
-			<div className="hidden sm:block">
-				{featuredContent}
-				{gridContent}
-			</div>
+			{/* Desktop: grid only — featured was already rendered above the title. */}
+			<div className="hidden sm:block">{gridContent}</div>
 		</>
 	);
 }

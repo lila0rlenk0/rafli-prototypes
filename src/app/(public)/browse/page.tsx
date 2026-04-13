@@ -6,6 +6,8 @@ import { BugIcon } from '@/assets/icons/bug-icon';
 import { BrowseTabs } from '@/components/browse/browse-tabs';
 import { FeaturedRaffleCard } from '@/components/browse/featured-raffle-card';
 import { HeroSection } from '@/components/browse/hero-section';
+import { PastDrawsSection } from '@/components/browse/past-draws-section';
+import { RecentWinnersSection } from '@/components/browse/recent-winners-section';
 import { FilterBar, StickyFilterSection } from '@/components/filters';
 import {
 	PublicRaffleCard,
@@ -16,7 +18,8 @@ import { getCategories } from '@/services/raffle/get-categories';
 import { getEnrolledRaffles } from '@/services/raffle/get-enrolled-raffles';
 import { getFeaturedRaffles } from '@/services/raffle/get-featured-raffles';
 import { getRaffles } from '@/services/raffle/get-raffles';
-import type { Raffle } from '@/types/raffle';
+import { getRecentWinners } from '@/services/winning/get-recent-winners';
+import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
@@ -49,19 +52,35 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 
 	// Step 2: Fetch primary data in parallel — no dependencies between these calls.
 	// 12 items per page — matches the 4-column grid (3 rows visible above fold).
-	const [response, featuredResponse, categoriesResponse, session] =
-		await Promise.all([
-			getRaffles({
-				status: 'live',
-				page,
-				category,
-				sort,
-				limit: 12,
-			}),
-			getFeaturedRaffles(),
-			getCategories(),
-			getSession(),
-		]);
+	// `getRecentWinners()` omits `limit` on purpose: backend default (currently 6,
+	// 5-min Redis cache) is the editorial source of truth — never hardcode here.
+	// `getRaffles({ status: completed })` mirrors the live grid's limit/sort so
+	// the past section reads as a continuation of the same surface.
+	const [
+		response,
+		featuredResponse,
+		categoriesResponse,
+		session,
+		recentWinnersResponse,
+		pastDrawsResponse,
+	] = await Promise.all([
+		getRaffles({
+			status: RAFFLE_STATUS.LIVE,
+			page,
+			category,
+			sort,
+			limit: 12,
+		}),
+		getFeaturedRaffles(),
+		getCategories(),
+		getSession(),
+		getRecentWinners(),
+		getRaffles({
+			status: RAFFLE_STATUS.COMPLETED,
+			limit: 12,
+			sort: 'newest',
+		}),
+	]);
 
 	// Step 3: Fetch enrolled raffles only for authenticated users.
 	// Sequential — depends on session result. Used to show "Participant" badge on cards.
@@ -69,7 +88,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const enrolledIds = new Set<string>();
 	if (session) {
 		const enrolledResponse = await getEnrolledRaffles({
-			status: 'live',
+			status: RAFFLE_STATUS.LIVE,
 			limit: 100,
 		});
 		if (enrolledResponse.success) {
@@ -136,12 +155,33 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 		0,
 	);
 
+	// Optional sections — fail-silent. Recent winners and past draws are
+	// editorial enrichment, not core to /browse's purpose, so a backend hiccup
+	// here must NOT break the live raffles grid above. Empty arrays are also
+	// treated as "no section" — we don't render an empty-state placeholder.
+	const recentWinners = recentWinnersResponse.success
+		? recentWinnersResponse.data.winners
+		: [];
+	const pastDraws = pastDrawsResponse.success
+		? pastDrawsResponse.data.raffles
+		: [];
+
 	return (
 		<div className="z-10 pt-0 pb-8 sm:py-8">
 			{/* Hero Section */}
 			<div className="mb-10 sm:mb-16">
 				<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
 			</div>
+
+			{/* Recent Winners — placed above the live grid as social proof:
+			    visitors see "real people are winning" before scrolling the catalog.
+			    Hidden entirely when the backend returns no winners (early-stage app,
+			    cache miss + transient failure, etc.) — no empty placeholder needed. */}
+			{recentWinners.length > 0 ? (
+				<div className="mb-10 sm:mb-16">
+					<RecentWinnersSection winners={recentWinners} />
+				</div>
+			) : null}
 
 			<BrowseTabs
 				featuredContent={
@@ -187,6 +227,15 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 					)
 				}
 			/>
+
+			{/* Past Draws — placed below the live grid so users only encounter
+			    historical results after they've seen current opportunities.
+			    Same fail-silent pattern as recent winners above. */}
+			{pastDraws.length > 0 ? (
+				<div className="mt-10 sm:mt-16">
+					<PastDrawsSection raffles={pastDraws} />
+				</div>
+			) : null}
 		</div>
 	);
 }

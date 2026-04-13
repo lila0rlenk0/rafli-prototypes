@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { paginationMetadataSchema, paginationQuerySchema } from './pagination';
+
 // ==========================================
 // Constants
 // ==========================================
@@ -144,3 +146,89 @@ export type HostWinnerEntry = z.infer<typeof hostWinnerEntrySchema>;
 export type HostRaffleWinningsResponse = z.infer<
 	typeof hostRaffleWinningsResponseSchema
 >;
+
+// ==========================================
+// Recent Winners (Public — homepage / browse strip + dedicated archive)
+// ==========================================
+
+/**
+ * Public-facing winner entry for the "Most recent winners!" surface.
+ *
+ * Privacy boundary: the backend strips userId entirely and pre-masks the
+ * display name to "First L." (e.g. "Anna T.", or "Deleted User" for purged
+ * accounts). The schema therefore only carries publicly-safe fields — never
+ * add userId here even if the API accidentally starts returning it.
+ *
+ * `prizeLabel` falls back to the raffle title when the raffle has no
+ * `prizeTiers` configured; the backend resolves that fallback so the client
+ * can render it verbatim.
+ *
+ * `ticketCode` is the winning ticket code — already public via
+ * `/verify` deep-linking, included here as social proof.
+ *
+ * Backend also returns `winnerAvatar` on this DTO; we don't parse it because
+ * no surface renders it (winners are identified by masked name only) and
+ * Zod's default strip-mode silently drops unknown keys — keeping the schema
+ * surface small also shrinks the RSC payload serialized into initial HTML.
+ */
+export const recentWinnerSchema = z.object({
+	position: z.number(),
+	prizeAmount: z.string(),
+	prizeCurrency: z.string(),
+	prizeLabel: z.string(),
+	raffleId: z.string(),
+	raffleSlug: z.string(),
+	raffleTitle: z.string(),
+	ticketCode: z.string(),
+	winnerDisplayName: z.string(),
+	wonAt: z.string(),
+});
+
+export const listRecentWinnersResponseSchema = z.object({
+	winners: z.array(recentWinnerSchema),
+});
+
+/**
+ * Query for GET /winnings/recent.
+ * `limit` defaults server-side (currently 6, capped at 20) — omit to use
+ * the backend default rather than hardcoding a value on the client.
+ */
+export const recentWinnersQuerySchema = z.object({
+	limit: z.number().int().min(1).max(20).optional(),
+});
+
+export type RecentWinner = z.infer<typeof recentWinnerSchema>;
+export type ListRecentWinnersResponse = z.infer<
+	typeof listRecentWinnersResponseSchema
+>;
+export type RecentWinnersQuery = z.infer<typeof recentWinnersQuerySchema>;
+
+// ==========================================
+// Past Winners (Public — paginated archive for /past-winners page)
+// ==========================================
+
+/**
+ * Paginated archive response — entry shape reused from `recentWinnerSchema`
+ * so the /past-winners page can render the same winner row component as the
+ * /browse homepage strip. Backend returns `RecentWinnerDto` verbatim inside
+ * the pagination envelope (see `ListPastWinnersResponseDto` in
+ * `winning.dto.ts` on the backend).
+ *
+ * Pagination envelope fields (`limit`, `page`, `total`, `totalPages`) match
+ * the codebase-wide convention from `@/types/pagination`.
+ */
+export const listPastWinnersResponseSchema = paginationMetadataSchema.extend({
+	winners: z.array(recentWinnerSchema),
+});
+
+/**
+ * Query for GET /winnings/past. Backend cap is `PAST_WINNERS_MAX_LIMIT = 50`
+ * (winning.dto.ts); default is 20. No additional filter params — archive
+ * ordering is always `createdAt DESC`.
+ */
+export const pastWinnersQuerySchema = paginationQuerySchema;
+
+export type ListPastWinnersResponse = z.infer<
+	typeof listPastWinnersResponseSchema
+>;
+export type PastWinnersQuery = z.infer<typeof pastWinnersQuerySchema>;

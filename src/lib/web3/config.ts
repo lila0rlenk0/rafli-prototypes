@@ -15,7 +15,7 @@
 import { getDefaultConfig, type WalletList } from '@rainbow-me/rainbowkit';
 import {
 	baseAccount,
-	metaMaskWallet,
+	injectedWallet,
 	phantomWallet,
 	rainbowWallet,
 	safeWallet,
@@ -43,11 +43,24 @@ import { configuredChains, isWeb3Enabled, wagmiStorage } from './constants';
  * Format: WalletList — array of { groupName, wallets } groups.
  * walletConnectWallet is last in "Other" — it acts as a catch-all for any
  * WC-compatible wallet not explicitly listed.
+ *
+ * MetaMask: NOT listed as metaMaskWallet. RainbowKit 2.2.10 is the latest
+ * published version and its metaMaskWallet factory hardcodes the deprecated
+ * @metamask/sdk import with a wagmi v2-shaped connector descriptor. Under
+ * the wagmi v3 runtime we ship, the handshake fails silently — user clicks,
+ * popup never appears (or appears without wiring account/chain events).
+ * Upstream fix tracked at rainbow-me/rainbowkit discussion #2575, not shipped.
+ *
+ * injectedWallet picks MetaMask up via EIP-6963 on desktop (extension present)
+ * and inside MM Mobile's in-app browser. Mobile browsers without the extension
+ * fall through to walletConnectWallet → MM Mobile deeplink, which works
+ * end-to-end because MM Mobile implements WalletConnect v2 natively.
+ * Trade-off: no dedicated "MetaMask" branded button in the modal.
  */
 const wallets: WalletList = [
 	{
 		groupName: 'Popular',
-		wallets: [metaMaskWallet, baseAccount, phantomWallet, rainbowWallet],
+		wallets: [injectedWallet, baseAccount, phantomWallet, rainbowWallet],
 	},
 	{
 		groupName: 'Other',

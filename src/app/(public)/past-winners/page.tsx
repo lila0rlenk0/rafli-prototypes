@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { PastWinnersList } from '@/components/browse/past-winners-list';
 import { getPastWinners } from '@/services/winning/get-past-winners';
-import { PAST_WINNERS_PAGE_SIZE } from '@/services/winning/use-past-winners';
+import { PAST_WINNERS_PAGE_SIZE } from '@/services/winning/past-winners-config';
 
 /**
  * Past Winners Archive

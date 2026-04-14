@@ -6,14 +6,7 @@ import { serviceError } from '@/lib/query/errors';
 import type { ListPastWinnersResponse } from '@/types/winning';
 
 import { getPastWinners } from './get-past-winners';
-
-/**
- * Page size for the /past-winners archive. Matches the backend's default
- * (`PAST_WINNERS_DEFAULT_LIMIT = 20` in winning.dto.ts) — keep in sync;
- * overriding here without coordination would confuse the server-fetched
- * first page vs client-fetched subsequent pages in `initialData`.
- */
-export const PAST_WINNERS_PAGE_SIZE = 20;
+import { PAST_WINNERS_PAGE_SIZE } from './past-winners-config';
 
 /** React Query key for the past winners archive — single global list. */
 export function pastWinnersKey() {

@@ -5,7 +5,10 @@ import { ZodError } from 'zod';
 import { baseClient } from '@/lib/api/client';
 import { buildQueryParams } from '@/lib/api/utils';
 import { failure, mapWinningError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
@@ -42,6 +45,16 @@ export async function getPastWinners(
 			return failure(WINNING_ERROR_CODES.FETCH_FAILED);
 		}
 
-		return failure(mapWinningError(error));
+		// Report to Sentry before returning — the page renders the archive from
+		// a prerendered snapshot, so a silent mapping here (as before) would bake
+		// the error UI into the PPR cache with zero visibility. `captureServiceError`
+		// internally drops codes listed in `EXPECTED_ERROR_CODES`, so legitimate
+		// user-path failures (e.g. rate limits) still don't burn quota.
+		const errorCode = mapWinningError(error);
+		captureServiceError(error, errorCode, {
+			service: 'winning',
+			action: 'get-past-winners',
+		});
+		return failure(errorCode);
 	}
 }

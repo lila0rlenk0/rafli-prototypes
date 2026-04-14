@@ -225,8 +225,13 @@ export const listPastWinnersResponseSchema = paginationMetadataSchema.extend({
  * Query for GET /winnings/past. Backend cap is `PAST_WINNERS_MAX_LIMIT = 50`
  * (winning.dto.ts); default is 20. No additional filter params — archive
  * ordering is always `createdAt DESC`.
+ *
+ * `limit` bound to `max(50)` client-side so a caller passing `limit: 100`
+ * fails fast here instead of round-tripping to the BE just to be rejected.
  */
-export const pastWinnersQuerySchema = paginationQuerySchema;
+export const pastWinnersQuerySchema = paginationQuerySchema.extend({
+	limit: z.number().int().min(1).max(50).optional(),
+});
 
 export type ListPastWinnersResponse = z.infer<
 	typeof listPastWinnersResponseSchema

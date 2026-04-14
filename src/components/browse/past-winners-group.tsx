@@ -119,8 +119,11 @@ export function PastWinnersGroup({
 							   Ticket codes are already public via /verify, so this is not
 							   a new surface — it's the same flow /browse's ticket-codes
 							   table uses. Query params match VerifyPageProps in
-							   app/(public)/verify/page.tsx. */
-							href={`/verify?raffle=${winner.raffleSlug}&code=${winner.ticketCode}`}
+							   app/(public)/verify/page.tsx. `encodeURIComponent` future-proofs
+							   against slugs or codes that ever gain non-alphanumeric chars. */
+							href={`/verify?raffle=${encodeURIComponent(
+								winner.raffleSlug,
+							)}&code=${encodeURIComponent(winner.ticketCode)}`}
 							className="group/row flex items-center gap-5 border-t border-[#eee] px-6 py-5 transition-colors first:border-t-0 hover:bg-[#f9f8f4] sm:gap-6 sm:px-8"
 						>
 							{/* Display-type position number — zero-padded to 2 digits so

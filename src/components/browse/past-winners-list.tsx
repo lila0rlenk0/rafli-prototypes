@@ -74,8 +74,10 @@ function groupWinnersByRaffle(
 
 	return Array.from(groups.values()).map(group => ({
 		...group,
-		// `.toSorted()` returns a new array per the data rule — don't mutate
-		// the Map's internal winners array since React Query may snapshot it.
+		// `.toSorted()` returns a new array — project data rule prefers it over
+		// `.sort()`. Safe either way here (the Map's backing arrays are local
+		// to this function), but the non-mutating idiom keeps the helper
+		// trivially obvious to future readers.
 		winners: group.winners.toSorted((a, b) => a.position - b.position),
 	}));
 }
@@ -121,20 +123,45 @@ export function PastWinnersList({ initialData }: PastWinnersListProps) {
 	 */
 	const sentinelRef = useRef<HTMLDivElement>(null);
 
+	// Ref-mirrored fetch state so the IntersectionObserver effect below can
+	// stay stable across fetch cycles while still reading the latest flag.
+	// Keeping `isFetchingNextPage` out of the observer effect's deps avoids a
+	// rebind-race: if the sentinel happened to already be in view during the
+	// rebind window, the freshly-installed observer would fire
+	// `fetchNextPage()` again before the guard flipped, stacking concurrent
+	// fetches on rapid scrolls.
+	//
+	// React 19's `react-hooks/refs` rule forbids mutating refs during render,
+	// so the mirror happens in a commit-phase effect. Scroll events that drive
+	// the observer callback run strictly after paint, so the ref is already
+	// up-to-date by the time we read it.
+	const isFetchingNextPageRef = useRef(isFetchingNextPage);
 	useEffect(() => {
-		// mount: bind IntersectionObserver to the sentinel. Legit useEffect —
-		// browser API subscription, cleanup on unmount or dep change.
-		if (!hasNextPage) return;
+		isFetchingNextPageRef.current = isFetchingNextPage;
+	}, [isFetchingNextPage]);
+
+	useEffect(() => {
+		// Bind IntersectionObserver to the sentinel. Only `hasNextPage` and
+		// `fetchNextPage` are legitimate deps: React Query v5 memoizes
+		// `fetchNextPage` so it's referentially stable, and `hasNextPage`
+		// flips at most once (when the last page loads). `isFetchingNextPage`
+		// intentionally NOT in deps — reading it via `isFetchingNextPageRef`
+		// avoids the observer-churn race documented at the ref declaration.
 		const sentinel = sentinelRef.current;
 		if (!sentinel) return;
 
 		const observer = new IntersectionObserver(
 			function onIntersect(entries) {
 				const [entry] = entries;
-				// Skip if sentinel scrolled out of view OR a fetch is already in
-				// flight — prevents stacking multiple concurrent page fetches
+				// Skip if sentinel scrolled out of view, no more pages, OR a fetch
+				// is already in flight — prevents stacking concurrent page fetches
 				// when the user scrolls rapidly past the threshold.
-				if (!entry?.isIntersecting || isFetchingNextPage) return;
+				if (
+					!entry?.isIntersecting ||
+					!hasNextPage ||
+					isFetchingNextPageRef.current
+				)
+					return;
 				void fetchNextPage();
 			},
 			{
@@ -147,7 +174,7 @@ export function PastWinnersList({ initialData }: PastWinnersListProps) {
 
 		observer.observe(sentinel);
 		return () => observer.disconnect();
-	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+	}, [hasNextPage, fetchNextPage]);
 
 	if (groups.length === 0) {
 		return (

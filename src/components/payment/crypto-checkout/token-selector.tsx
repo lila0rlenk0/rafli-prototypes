@@ -3,6 +3,7 @@
 import { Coins } from 'lucide-react';
 
 import { EarnMCoin } from '@/assets/icons/earnm-coin';
+import { SelectorOptionButton } from '@/components/payment/crypto-checkout/selector-option-button';
 import { TokenIcon } from '@web3icons/react/dynamic';
 
 import type { RaffleCryptoToken } from '@/types/raffle';
@@ -31,15 +32,12 @@ export function TokenSelector({ tokens, onSelectToken }: TokenSelectorProps) {
 				const priceLabel = getPriceLabel(token);
 
 				return (
-					<button
+					<SelectorOptionButton
 						key={token.tokenId}
-						type="button"
-						className="group flex h-14 items-center justify-between rounded-2xl border border-[#E5E5E5] bg-white px-5 text-left transition-all hover:border-black hover:shadow-sm"
-						onClick={() => onSelectToken(token)}
-					>
-						<span className="flex items-center gap-3">
-							{/* EARNM uses a custom SVG — @web3icons doesn't recognize it */}
-							{token.symbol === 'EARNM' ? (
+						label={token.symbol}
+						leadingVisual={
+							// EARNM uses a custom SVG — @web3icons doesn't recognize it.
+							token.symbol === 'EARNM' ? (
 								<EarnMCoin className="size-6 shrink-0" />
 							) : (
 								<TokenIcon
@@ -53,13 +51,11 @@ export function TokenSelector({ tokens, onSelectToken }: TokenSelectorProps) {
 										</span>
 									}
 								/>
-							)}
-							<span className="text-sm font-medium">{token.symbol}</span>
-						</span>
-						<span className="text-xs text-[#7B7B7B] transition-colors group-hover:text-black">
-							{priceLabel}
-						</span>
-					</button>
+							)
+						}
+						meta={priceLabel}
+						onClick={() => onSelectToken(token)}
+					/>
 				);
 			})}
 		</div>

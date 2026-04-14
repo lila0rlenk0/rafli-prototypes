@@ -1,5 +1,6 @@
 'use client';
 
+import { SelectorOptionButton } from '@/components/payment/crypto-checkout/selector-option-button';
 import { CHAIN_ICONS } from '@/lib/web3/chain-icons';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
@@ -43,22 +44,17 @@ export function ChainSelector({
 				const chainName = getChainName(chainId);
 
 				return (
-					<button
+					<SelectorOptionButton
 						key={chainId}
-						type="button"
-						className="group flex h-14 items-center justify-between rounded-2xl border border-[#E5E5E5] bg-white px-5 text-left transition-all hover:border-black hover:shadow-sm"
-						onClick={() => onSelectChain(chainId)}
-					>
-						<span className="flex items-center gap-3">
-							{ChainIcon ? (
+						label={chainName}
+						leadingVisual={
+							ChainIcon ? (
 								<ChainIcon variant="branded" size={24} className="shrink-0" />
-							) : null}
-							<span className="text-sm font-medium">{chainName}</span>
-						</span>
-						<span className="text-xs text-[#7B7B7B] transition-colors group-hover:text-black">
-							{getTokenLabels(chainId)}
-						</span>
-					</button>
+							) : undefined
+						}
+						meta={getTokenLabels(chainId)}
+						onClick={() => onSelectChain(chainId)}
+					/>
 				);
 			})}
 		</div>

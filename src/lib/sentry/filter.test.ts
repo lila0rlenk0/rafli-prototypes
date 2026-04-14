@@ -195,6 +195,58 @@ describe('filterEvent', () => {
 		});
 	});
 
+	// Coverage for the "suspected noise" sample bucket — patterns that
+	// look environmental but retain a 10% trickle so a real regression
+	// still surfaces. See Sentry RAFLI-S (iOS Chrome call-stack
+	// overflow) for the canonical case.
+	describe('suspected-noise patterns are sampled', () => {
+		test('RangeError: Maximum call stack size exceeded gets fingerprinted when kept (Sentry RAFLI-S)', () => {
+			let passed = false;
+			// Run many times — at 10% sample rate, at least one should pass
+			for (let i = 0; i < 300; i++) {
+				const event = createEvent();
+				const hint = createHint(
+					new RangeError('Maximum call stack size exceeded.'),
+				);
+				const result = filterEvent(event, hint);
+				if (result !== null) {
+					expect(result.fingerprint).toEqual([
+						'suspected-noise',
+						'Maximum call stack size exceeded',
+					]);
+					passed = true;
+					break;
+				}
+			}
+			expect(passed).toBe(true);
+		});
+
+		test('Maximum call stack size exceeded is dropped the majority of the time', () => {
+			let dropped = 0;
+			const runs = 200;
+			for (let i = 0; i < runs; i++) {
+				const event = createEvent();
+				const hint = createHint(
+					new RangeError('Maximum call stack size exceeded.'),
+				);
+				const result = filterEvent(event, hint);
+				if (result === null) dropped++;
+			}
+			// At 10% pass rate, ~180 should be dropped. Allow wide margin.
+			expect(dropped).toBeGreaterThan(120);
+		});
+
+		test('non-noise errors are never sampled as noise', () => {
+			const event = createEvent();
+			const hint = createHint(new Error('Unexpected token in JSON'));
+			const result = filterEvent(event, hint);
+			// Non-noise error should always pass through unmodified — no
+			// fingerprint attached by the suspected-noise bucket.
+			expect(result).toBe(event);
+			expect(result?.fingerprint).toBeUndefined();
+		});
+	});
+
 	describe('browser noise is dropped', () => {
 		const noisyMessages = [
 			'ResizeObserver loop completed with undelivered notifications.',
@@ -343,6 +395,77 @@ describe('filterEvent', () => {
 		test('drops "Failed to fetch" TypeError from server action (Sentry RAFLI-F)', () => {
 			const event = createEvent();
 			const hint = createHint(new TypeError('Failed to fetch'));
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-M — Wallet extension `inpage.js` calls
+		// chrome.runtime.sendMessage() without an extensionId and Chrome
+		// throws this exact TypeError into the page scope. Environmental
+		// noise, no fix possible from our code.
+		test('drops chrome.runtime.sendMessage extension TypeError (Sentry RAFLI-M)', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new TypeError(
+					'Error in invocation of runtime.sendMessage(optional string extensionId, any message, optional object options, optional function callback): chrome.runtime.sendMessage() called from a webpage must specify an Extension ID (string) for its first argument.',
+				),
+			);
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-N — Wallet extension content script (inpage.js) calls
+		// `.removeListener()` on an undefined provider during navigation
+		// teardown. The stack frame filename is the literal string
+		// `inpage.js` which we match as a substring in the synthesized
+		// title. Environmental.
+		test('drops removeListener noise from inpage.js (Sentry RAFLI-N)', () => {
+			const event = createEvent();
+			// Real production events serialize the stack into the value when
+			// the message is minimal — we mirror that shape here so the
+			// substring match is exercised.
+			const hint = createHint(
+				new TypeError(
+					"Cannot read properties of undefined (reading 'removeListener') at inpage.js:1",
+				),
+			);
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-Q — Safari iOS fires "Load failed" TypeError as an unhandled
+		// rejection when a fetch is aborted before headers arrive. Happens
+		// on user navigation away, tab backgrounding, or flaky cellular
+		// networks. Not actionable — Safari surfaces no richer reason.
+		test('drops Safari iOS "Load failed" fetch abort (Sentry RAFLI-Q)', () => {
+			const event = createEvent();
+			const hint = createHint(new TypeError('Load failed'));
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-R — Reown AppKit / WalletConnect probes Telegram's postEvent
+		// bridge to detect Mini App context. Outside Telegram the bridge
+		// responds "Method not found" which surfaces as an unhandled
+		// rejection. We don't ship Telegram integration — environmental.
+		test('drops Telegram postEvent "Method not found" (Sentry RAFLI-R)', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new Error('Error invoking postEvent: Method not found'),
+			);
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
+		// RAFLI-T — `@walletconnect/ethereum-provider` throws this when the
+		// user closes the wallet-selection modal without selecting an account
+		// or when a provider returns an empty accounts array. User-
+		// cancellation path, not a defect in our code.
+		test('drops WalletConnect "empty accounts for namespace" (Sentry RAFLI-T)', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new Error('Unsupported or empty accounts for namespace'),
+			);
 			const result = filterEvent(event, hint);
 			expect(result).toBeNull();
 		});

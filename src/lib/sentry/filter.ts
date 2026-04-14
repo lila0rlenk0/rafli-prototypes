@@ -340,6 +340,42 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	// already handles it, and the component tree recovers on the next render.
 	// See Sentry RAFLI-5.
 	'WagmiProvider',
+
+	// Injected wallet extension (`app:///inpage.js`) calls
+	// `chrome.runtime.sendMessage()` without an extensionId when probing
+	// from a webpage context. Chrome throws this exact TypeError into the
+	// page's global scope. The message comes from the extension runtime, not
+	// from our code — we have no control over which wallet is installed or
+	// how it probes. See Sentry RAFLI-M.
+	'chrome.runtime.sendMessage() called from a webpage must specify an Extension ID',
+
+	// `inpage.js` is the canonical filename for wallet-extension content
+	// scripts (MetaMask, Phantom, Rabby, Coinbase Wallet). Any error whose
+	// stack resolves there is extension-origin — e.g. `removeListener`
+	// called on `undefined` during provider teardown when the user
+	// navigates away. Matches Sentry's title format `at inpage.js:…`.
+	// See Sentry RAFLI-N.
+	'inpage.js',
+
+	// Safari's generic message for a fetch that aborted before the response
+	// headers arrived — user navigated away, backgrounded the tab, or
+	// dropped the network. Safari does not surface a richer reason, so
+	// there is no actionable context. See Sentry RAFLI-Q.
+	'Load failed',
+
+	// Reown AppKit / WalletConnect call Telegram's `postEvent` bridge to
+	// detect whether the page is running inside a Telegram Mini App. Outside
+	// of Telegram the bridge responds with `Method not found`, which the
+	// SDK surfaces as an unhandled rejection. Environmental, not a bug in
+	// our code — we don't ship Telegram integration. See Sentry RAFLI-R.
+	'Error invoking postEvent: Method not found',
+
+	// `@walletconnect/ethereum-provider` throws this when the user closes
+	// the wallet-selection modal without picking an account, or when a
+	// provider returns an empty `accounts` array during the
+	// `wallet_requestPermissions` exchange. User-cancellation path, not a
+	// defect. See Sentry RAFLI-T.
+	'Unsupported or empty accounts for namespace',
 ];
 
 /** Keep 10% of network/timeout errors — enough to detect trends without quota spam */
@@ -351,6 +387,30 @@ const NETWORK_ERROR_CODES = new Set([
 	'timeout_error',
 	'connection_aborted',
 ]);
+
+/**
+ * Message substrings that we sample rather than drop outright.
+ *
+ * Use this bucket for errors that are almost certainly noise but where a
+ * small constant stream of samples is worth keeping so a genuine
+ * regression doesn't hide behind the filter. A matched event is kept
+ * with probability `SUSPECTED_NOISE_SAMPLE_RATE` and fingerprinted into
+ * a single Sentry issue so the quota cost stays flat.
+ *
+ * `Maximum call stack size exceeded` — iOS Chrome surfaces this from
+ * deep-stacked async work with a useless synthesized frame
+ * (`undefined:28`), seen once on `/sign-in` after magic-link submit
+ * (Sentry RAFLI-S). Likely Mixpanel autocapture recursion or a Next.js
+ * Router internal on an exotic iOS WebKit build — no actionable
+ * context. Keeping 10% preserves a signal path if it ever stops being
+ * environmental.
+ */
+const SUSPECTED_NOISE_PATTERNS: readonly string[] = [
+	'Maximum call stack size exceeded',
+];
+
+/** Keep 10% of suspected-noise events — matches NETWORK_SAMPLE_RATE for consistency */
+const SUSPECTED_NOISE_SAMPLE_RATE = 0.1;
 
 // ==========================================
 // Filter
@@ -393,6 +453,19 @@ export function filterEvent(
 		BROWSER_NOISE_PATTERNS.some(pattern => exceptionMessage.includes(pattern))
 	) {
 		return null;
+	}
+
+	// Step 4: Sample suspected-noise patterns — errors that look
+	// environmental but where a trickle of samples is worth keeping so a
+	// hidden regression can still surface. Fingerprint collapses the
+	// samples into a single Sentry issue so quota stays flat.
+	const suspectedNoiseMatch = SUSPECTED_NOISE_PATTERNS.find(pattern =>
+		exceptionMessage.includes(pattern),
+	);
+	if (suspectedNoiseMatch) {
+		if (Math.random() > SUSPECTED_NOISE_SAMPLE_RATE) return null;
+		event.fingerprint = ['suspected-noise', suspectedNoiseMatch];
+		return event;
 	}
 
 	return event;

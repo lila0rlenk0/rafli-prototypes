@@ -10,10 +10,12 @@ import {
 	useState,
 	type ReactNode,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import { lightTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi';
 
 import { isWeb3Enabled, WAGMI_COOKIE_KEY } from '@/lib/web3/constants';
+import { shouldSkipWeb3 } from '@/providers/web3-skip-routes';
 
 /**
  * Signals whether `WagmiProvider` is actually mounted in the tree above.
@@ -160,19 +162,44 @@ export function Web3Provider({
 	// single frame in restricted contexts.
 	const [web3Unavailable, setWeb3Unavailable] = useState(false);
 
+	// App Router reactive pathname — drives the wallet-free route gate so
+	// navigating between `/browse` and `/admin` doesn't remount the whole
+	// subtree (usePathname is stable across navigations, and the effect
+	// below only triggers the skip branch when the prefix matches).
+	const pathname = usePathname();
+	const skipWeb3 = shouldSkipWeb3(pathname);
+
 	// mount: detect restricted environments then lazy-load wagmi config.
 	//
-	// Step 1 — probe localStorage. RainbowKit and @wagmi/connectors access
+	// Step 1 — skip entirely on wallet-free routes (currently `/admin`).
+	// Mounting `WagmiProvider` there changes the subtree shape when the
+	// lazy config resolves, which is a suspected root cause of the rare
+	// "Rendered more hooks" crash on /admin/verification (Sentry RAFLI-P).
+	// Admin routes never render wallet UI, so the load is pure overhead
+	// anyway — skipping it also silences the walletconnect/web3modal API
+	// fetches that show up in admin breadcrumbs.
+	//
+	// Step 2 — probe localStorage. RainbowKit and @wagmi/connectors access
 	// it eagerly without try/catch. In embedded WebViews (Telegram,
 	// Instagram, Twitter in-app browsers) and some Chrome incognito modes,
 	// the browser throws SecurityError. Detecting it upfront avoids the
 	// unhandled error from the dynamic import below (Sentry RAFLI-B/C).
 	//
-	// Step 2 — dynamic import() wagmi config to keep WalletConnect's
+	// Step 3 — dynamic import() wagmi config to keep WalletConnect's
 	// indexedDB access out of the SSR pre-render. config.ts calls
 	// getDefaultConfig → WalletConnect connector chain, which requires a
 	// browser with indexedDB. Only runs when storage is available.
+	//
+	// Deps: `skipWeb3` so that if the user navigates from an admin route
+	// into the public app in the same client session the effect re-runs
+	// and loads the wagmi config. The shape swap concern from RAFLI-P
+	// doesn't apply in reverse — the hook-order crash requires an already-
+	// mounted provider subtree to gain additional wrappers, not to lose
+	// them. Going from skip → load wraps children in WagmiProvider only
+	// once per session at the first non-admin pageview.
 	useEffect(() => {
+		if (skipWeb3) return;
+
 		if (!isWeb3Enabled || !isLocalStorageAvailable()) {
 			setWeb3Unavailable(true);
 			return;
@@ -181,7 +208,7 @@ export function Web3Provider({
 		void import('@/lib/web3/config').then(mod => {
 			if (mod.wagmiConfig) setWagmiConfig(mod.wagmiConfig);
 		});
-	}, []);
+	}, [skipWeb3]);
 
 	// Reconstruct the single cookie string wagmi expects for SSR hydration.
 	// useMemo avoids re-parsing on every render — only recomputes when the

@@ -32,8 +32,8 @@ export function PageHeader() {
 			<div
 				className={`mb-6 inline-block rounded-lg px-4 py-2 text-sm font-medium ${
 					isHostMode
-						? 'bg-[#FAFFC4] text-[#998B53]'
-						: 'bg-[#BEFFDB] text-[#44B476]'
+						? 'bg-accent-cream text-accent-cream-foreground'
+						: 'bg-accent-green text-accent-green-foreground'
 				}`}
 			>
 				{modeLabel}

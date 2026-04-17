@@ -102,6 +102,13 @@ export const shipmentUpdateMetadataSchema = z.object({
 });
 
 export const conversationMemberSchema = z.object({
+	/**
+	 * Server-enriched display name — same denormalization model as
+	 * `winnerDisplayName` on the conversation row. Null when the user was
+	 * hard-deleted or predates the backfill. Treat as PII client-side: never
+	 * log to Sentry breadcrumbs, never echo to analytics.
+	 */
+	displayName: z.string().nullable(),
 	joinedAt: z.string(),
 	role: conversationMemberRoleSchema,
 	userId: z.string(),
@@ -120,7 +127,13 @@ export const conversationSchema = z.object({
 	id: z.string(),
 	lastMessage: conversationLastMessageSchema.nullable(),
 	maxMembers: z.number(),
-	members: z.array(conversationMemberSchema),
+	/**
+	 * Total active members. Authoritative for participant counts — the header
+	 * "X participants" label reads this, NOT `rosterMembers.length`. Raffle-
+	 * room conversations may have thousands of participants while the roster
+	 * carries only the prioritized slice (see `rosterMembers` below).
+	 */
+	memberCount: z.number().int().nonnegative(),
 	name: z.string().nullable(),
 	/** Non-null for `raffle_room` and `winner_chat` conversations. */
 	raffleId: z.string().nullable(),
@@ -129,6 +142,18 @@ export const conversationSchema = z.object({
 	 * was deleted — UI falls back to the generic type label.
 	 */
 	raffleTitle: z.string().nullable(),
+	/**
+	 * Prioritized roster slice — host, winner, admins first, capped server-
+	 * side at 50 entries. For direct/group/winner_chat this is effectively the
+	 * full membership (those types cap at `maxMembers: 50`). For raffle_room
+	 * rooms — which can carry 10k+ participants — this is the top slice the
+	 * chat header actually renders; callers that need the full list go
+	 * through a separate paginated members endpoint (not shipped yet).
+	 *
+	 * Do NOT derive participant counts from `rosterMembers.length` — use the
+	 * sibling `memberCount` field instead.
+	 */
+	rosterMembers: z.array(conversationMemberSchema),
 	type: conversationTypeSchema,
 	updatedAt: z.string(),
 	/**

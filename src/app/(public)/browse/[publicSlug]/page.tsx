@@ -309,7 +309,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										{raffle.title}
 									</h2>
 									{isAuthenticated && !isOwner && myTicketsTotal > 0 ? (
-										<span className="rounded-lg bg-[#BEFFDB] px-6 py-1 text-[13px] font-semibold tracking-wide text-[#44B476]">
+										<span className="bg-accent-green text-accent-green-foreground rounded-lg px-6 py-1 text-[13px] font-semibold tracking-wide">
 											Participant
 										</span>
 									) : null}

@@ -20,7 +20,15 @@
 		],
 		"paths": {
 			"@/*": ["./src/*"]
-		}
+		},
+		// `bun` types carry the `bun:test` module declarations used by every
+		// co-located `*.test.ts` and the integration tests under `tests/`.
+		// We include them globally rather than via a separate test tsconfig
+		// because tsserver picks the nearest tsconfig per file and splitting
+		// configs made co-located unit tests resolve against root (no bun
+		// types) while integration tests resolved against the test config.
+		// The `bun` types are additive — they don't conflict with DOM types.
+		"types": ["bun"]
 	},
 	"include": [
 		"next-env.d.ts",
@@ -30,11 +38,5 @@
 		".next/dev/types/**/*.ts",
 		"**/*.mts"
 	],
-	"exclude": [
-		"node_modules",
-		"playwright.config.ts",
-		"e2e",
-		"**/*.test.ts",
-		"**/*.test.tsx"
-	]
+	"exclude": ["node_modules", "playwright.config.ts", "e2e"]
 }

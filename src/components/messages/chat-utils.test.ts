@@ -10,24 +10,39 @@ import {
 	formatConversationTitle,
 	formatRelativeTime,
 	linkifyMessage,
-	otherMembers,
+	memberDisplayName,
+	resolveMemberRole,
 	resolveViewerRole,
 	roleLabel,
+	rosterEntries,
 	shouldAutoScrollToBottom,
 	VIEWER_ROLE,
 } from './chat-utils';
 
-/** Minimal conversation factory — fills the required fields a test scenario omits. */
+/**
+ * Minimal conversation factory — fills the required fields a test scenario omits.
+ *
+ * `memberCount` defaults to `rosterMembers.length` after overrides are merged,
+ * so unit tests that only care about roster semantics don't need to maintain
+ * a parallel count. Tests that exercise the "raffle_room slice ≠ full count"
+ * contract override `memberCount` explicitly.
+ */
 function makeConversation(overrides: Partial<Conversation> = {}): Conversation {
-	const base: Conversation = {
+	const base: Omit<Conversation, 'memberCount'> = {
 		createdAt: '2026-04-01T00:00:00Z',
 		createdBy: 'host-user',
 		id: 'convo-1',
 		lastMessage: null,
 		maxMembers: 10,
-		members: [
-			{ joinedAt: '2026-04-01T00:00:00Z', role: 'admin', userId: 'host-user' },
+		rosterMembers: [
 			{
+				displayName: 'Host Person',
+				joinedAt: '2026-04-01T00:00:00Z',
+				role: 'admin',
+				userId: 'host-user',
+			},
+			{
+				displayName: 'Ada Lovelace',
 				joinedAt: '2026-04-01T00:00:00Z',
 				role: 'member',
 				userId: 'winner-user',
@@ -42,7 +57,11 @@ function makeConversation(overrides: Partial<Conversation> = {}): Conversation {
 		winnerEmail: 'ada@example.com',
 		winnerUserId: 'winner-user',
 	};
-	return { ...base, ...overrides };
+	const merged = { ...base, ...overrides };
+	return {
+		...merged,
+		memberCount: overrides.memberCount ?? merged.rosterMembers.length,
+	};
 }
 
 describe('linkifyMessage', () => {
@@ -144,10 +163,20 @@ describe('resolveViewerRole', () => {
 		// Regression: we must only apply STAFF after host/winner checks so
 		// the raffle host (who is always role:admin) isn't misidentified.
 		const convo = makeConversation({
-			members: [
-				{ joinedAt: 't', role: 'admin', userId: 'host-user' },
-				{ joinedAt: 't', role: 'member', userId: 'winner-user' },
-				{ joinedAt: 't', role: 'admin', userId: 'staff-user' },
+			rosterMembers: [
+				{ displayName: 'H', joinedAt: 't', role: 'admin', userId: 'host-user' },
+				{
+					displayName: 'W',
+					joinedAt: 't',
+					role: 'member',
+					userId: 'winner-user',
+				},
+				{
+					displayName: 'S',
+					joinedAt: 't',
+					role: 'admin',
+					userId: 'staff-user',
+				},
 			],
 		});
 		expect(resolveViewerRole(convo, 'staff-user')).toBe(VIEWER_ROLE.STAFF);
@@ -155,10 +184,15 @@ describe('resolveViewerRole', () => {
 
 	test('returns MEMBER for plain participants', () => {
 		const convo = makeConversation({
-			members: [
-				{ joinedAt: 't', role: 'admin', userId: 'host-user' },
-				{ joinedAt: 't', role: 'member', userId: 'winner-user' },
-				{ joinedAt: 't', role: 'member', userId: 'lurker' },
+			rosterMembers: [
+				{ displayName: 'H', joinedAt: 't', role: 'admin', userId: 'host-user' },
+				{
+					displayName: 'W',
+					joinedAt: 't',
+					role: 'member',
+					userId: 'winner-user',
+				},
+				{ displayName: 'L', joinedAt: 't', role: 'member', userId: 'lurker' },
 			],
 			winnerUserId: 'winner-user',
 		});
@@ -167,6 +201,30 @@ describe('resolveViewerRole', () => {
 
 	test('returns null when the user is not a member', () => {
 		const convo = makeConversation();
+		expect(resolveViewerRole(convo, 'stranger')).toBeNull();
+	});
+
+	test('returns null for roster-missing raffle_room viewers', () => {
+		// Contract hardening: role inference must come from explicit roster
+		// membership only. Inferring MEMBER from conversation type leaks a
+		// role badge to any viewer of a roster-stripped payload.
+		const convo = makeConversation({
+			createdBy: 'host-user',
+			rosterMembers: [
+				{ displayName: 'H', joinedAt: 't', role: 'admin', userId: 'host-user' },
+			],
+			memberCount: 9_876,
+			type: 'raffle_room',
+			winnerUserId: null,
+		});
+		expect(resolveViewerRole(convo, 'bottom-ranked-user')).toBeNull();
+	});
+
+	test('still returns null for non-raffle_room conversations when the user is absent', () => {
+		// Regression guard: the raffle_room fallback MUST NOT leak into
+		// winner_chat / group / direct lookups, where an absent user is
+		// genuinely a non-member and a null role is the correct answer.
+		const convo = makeConversation({ type: 'winner_chat' });
 		expect(resolveViewerRole(convo, 'stranger')).toBeNull();
 	});
 });
@@ -311,12 +369,207 @@ describe('formatRelativeTime', () => {
 	});
 });
 
-describe('otherMembers', () => {
-	test('excludes the viewer from the members list', () => {
+describe('resolveMemberRole', () => {
+	// Twin of `resolveViewerRole` but takes the member row directly — avoids
+	// a redundant `find` when the caller already iterates members (roster).
+	test('winner short-circuits host and staff precedence', () => {
+		const convo = makeConversation({
+			createdBy: 'winner-user',
+			winnerUserId: 'winner-user',
+		});
+		const winner = convo.rosterMembers.find(m => m.userId === 'winner-user')!;
+		expect(resolveMemberRole(convo, winner)).toBe(VIEWER_ROLE.WINNER);
+	});
+
+	test('host precedence over staff when an admin is also createdBy', () => {
 		const convo = makeConversation();
-		const result = otherMembers(convo, 'host-user');
-		expect(result).toHaveLength(1);
-		expect(result[0].userId).toBe('winner-user');
+		const host = convo.rosterMembers.find(m => m.userId === 'host-user')!;
+		expect(resolveMemberRole(convo, host)).toBe(VIEWER_ROLE.HOST);
+	});
+
+	test('admin-role non-host non-winner is staff', () => {
+		const convo = makeConversation({
+			rosterMembers: [
+				{ displayName: 'H', joinedAt: 't', role: 'admin', userId: 'host-user' },
+				{
+					displayName: 'S',
+					joinedAt: 't',
+					role: 'admin',
+					userId: 'staff-user',
+				},
+			],
+			winnerUserId: null,
+		});
+		const staff = convo.rosterMembers.find(m => m.userId === 'staff-user')!;
+		expect(resolveMemberRole(convo, staff)).toBe(VIEWER_ROLE.STAFF);
+	});
+
+	test('member-role non-host non-winner is plain member', () => {
+		const convo = makeConversation({
+			rosterMembers: [
+				{ displayName: 'H', joinedAt: 't', role: 'admin', userId: 'host-user' },
+				{ displayName: 'L', joinedAt: 't', role: 'member', userId: 'lurker' },
+			],
+			winnerUserId: null,
+		});
+		const lurker = convo.rosterMembers.find(m => m.userId === 'lurker')!;
+		expect(resolveMemberRole(convo, lurker)).toBe(VIEWER_ROLE.MEMBER);
+	});
+});
+
+describe('memberDisplayName', () => {
+	test('returns the trimmed display name when populated', () => {
+		expect(
+			memberDisplayName({
+				displayName: '  Kate  ',
+				joinedAt: 't',
+				role: 'admin',
+				userId: 'u',
+			}),
+		).toBe('Kate');
+	});
+
+	test('returns null when displayName is null (hard-deleted user)', () => {
+		// Null signals "no name to render" — the roster renders a muted
+		// "Deleted user" fallback rather than swallowing the row.
+		expect(
+			memberDisplayName({
+				displayName: null,
+				joinedAt: 't',
+				role: 'member',
+				userId: 'u',
+			}),
+		).toBeNull();
+	});
+
+	test('returns null when displayName is whitespace-only', () => {
+		// Guards against backfill rows that persisted an accidental blank —
+		// the UI treats them like the deleted case rather than rendering a
+		// zero-width chip.
+		expect(
+			memberDisplayName({
+				displayName: '   ',
+				joinedAt: 't',
+				role: 'member',
+				userId: 'u',
+			}),
+		).toBeNull();
+	});
+});
+
+describe('rosterEntries', () => {
+	// Sorted, viewer-excluded list consumed by ParticipantRoster.
+	// Display order is Host → Winner → Staff → Member, tie-broken by joinedAt
+	// ascending so the roster order is stable across renders.
+	test('excludes the viewer from the list', () => {
+		const convo = makeConversation();
+		const entries = rosterEntries(convo, 'host-user');
+		expect(entries.every(e => e.member.userId !== 'host-user')).toBe(true);
+	});
+
+	test('orders Host → Winner → Staff → Member', () => {
+		const convo = makeConversation({
+			createdBy: 'host-user',
+			rosterMembers: [
+				{
+					displayName: 'Maya',
+					joinedAt: '2026-04-01T00:00:00Z',
+					role: 'member',
+					userId: 'member-user',
+				},
+				{
+					displayName: 'Sam',
+					joinedAt: '2026-04-01T00:00:00Z',
+					role: 'admin',
+					userId: 'staff-user',
+				},
+				{
+					displayName: 'Ada',
+					joinedAt: '2026-04-01T00:00:00Z',
+					role: 'member',
+					userId: 'winner-user',
+				},
+				{
+					displayName: 'Kate',
+					joinedAt: '2026-04-01T00:00:00Z',
+					role: 'admin',
+					userId: 'host-user',
+				},
+			],
+			winnerUserId: 'winner-user',
+		});
+		const entries = rosterEntries(convo, 'viewer-id');
+		expect(entries.map(e => e.role)).toEqual([
+			VIEWER_ROLE.HOST,
+			VIEWER_ROLE.WINNER,
+			VIEWER_ROLE.STAFF,
+			VIEWER_ROLE.MEMBER,
+		]);
+	});
+
+	test('tie-breaks within a role by joinedAt ascending', () => {
+		// Two staff joined at different times — earlier joiner renders first
+		// so the roster order is stable across refreshes.
+		const convo = makeConversation({
+			createdBy: 'somebody-else',
+			rosterMembers: [
+				{
+					displayName: 'Late',
+					joinedAt: '2026-04-03T00:00:00Z',
+					role: 'admin',
+					userId: 'staff-late',
+				},
+				{
+					displayName: 'Early',
+					joinedAt: '2026-04-01T00:00:00Z',
+					role: 'admin',
+					userId: 'staff-early',
+				},
+			],
+			winnerUserId: null,
+		});
+		const entries = rosterEntries(convo, 'viewer-id');
+		expect(entries.map(e => e.member.userId)).toEqual([
+			'staff-early',
+			'staff-late',
+		]);
+	});
+
+	test('exposes displayName as null for deleted users instead of a fallback string', () => {
+		// Keeping the null semantics at the boundary lets the component
+		// distinguish "real name" from "fallback label" for styling (italic
+		// muted) without string-matching on "Deleted user".
+		const convo = makeConversation({
+			createdBy: 'somebody-else',
+			rosterMembers: [
+				{
+					displayName: null,
+					joinedAt: 't',
+					role: 'member',
+					userId: 'ghost',
+				},
+			],
+			winnerUserId: null,
+		});
+		const entries = rosterEntries(convo, 'viewer-id');
+		expect(entries).toHaveLength(1);
+		expect(entries[0]?.displayName).toBeNull();
+	});
+
+	test('returns an empty list when the viewer is the only member', () => {
+		const convo = makeConversation({
+			createdBy: 'viewer-id',
+			rosterMembers: [
+				{
+					displayName: 'Me',
+					joinedAt: 't',
+					role: 'admin',
+					userId: 'viewer-id',
+				},
+			],
+			winnerUserId: null,
+		});
+		expect(rosterEntries(convo, 'viewer-id')).toEqual([]);
 	});
 });
 

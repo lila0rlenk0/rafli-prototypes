@@ -35,13 +35,16 @@ const VALID_CONVERSATION = {
 	id: CONVERSATION_ID,
 	lastMessage: null,
 	maxMembers: 10,
-	members: [
+	memberCount: 2,
+	rosterMembers: [
 		{
+			displayName: 'Host User',
 			joinedAt: '2026-04-01T00:00:00Z',
 			role: 'admin',
 			userId: '01929e55-9b1a-7c32-8ae0-0000000000aa',
 		},
 		{
+			displayName: 'Ada Lovelace',
 			joinedAt: '2026-04-01T00:00:00Z',
 			role: 'member',
 			userId: '01929e55-9b1a-7c32-8ae0-0000000000cc',
@@ -67,7 +70,8 @@ describe('getConversation', () => {
 		if (result.success) {
 			expect(result.data.id).toBe(CONVERSATION_ID);
 			expect(result.data.type).toBe('winner_chat');
-			expect(result.data.members).toHaveLength(2);
+			expect(result.data.rosterMembers).toHaveLength(2);
+			expect(result.data.memberCount).toBe(2);
 		}
 	});
 

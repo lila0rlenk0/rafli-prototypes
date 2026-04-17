@@ -52,7 +52,19 @@
 	--color-accent-blue: #c4edff;
 	--color-accent-green: #beffdb;
 	--color-accent-yellow: #f6ff8b;
+	/* Soft cream — distinct from accent-yellow (#f6ff8b, a brighter lemon
+	   used by the landing/marketing surfaces). Dedicated to the "Host"
+	   role tag on raffle cards + my-raffles page header so the marketing
+	   yellow stays free of role-semantic overloading. */
+	--color-accent-cream: #faffc4;
 	--color-dark: #141416;
+
+	/* Foreground pairings for role-tag surfaces. The browse-card design
+	   uses muted same-hue foregrounds (softer than text-black on the chat
+	   RoleBadge) for a quieter in-card treatment — the card already carries
+	   strong hierarchy from the hero image and price. */
+	--color-accent-green-foreground: #44b476;
+	--color-accent-cream-foreground: #998b53;
 
 	/* ------------------------------------------------------------------ */
 	/* Typography scale — named semantic tokens                            */

@@ -20,13 +20,13 @@ import { AvatarCircle } from './avatar-circle';
 import {
 	formatConversationSubtitle,
 	formatConversationTitle,
-	otherMembers,
 	resolveViewerRole,
 	shouldAutoScrollToBottom,
 	VIEWER_ROLE,
 } from './chat-utils';
 import { MessageBubble } from './message-bubble';
 import { MessageComposer } from './message-composer';
+import { ParticipantRoster } from './participant-roster';
 import { RoleBadge } from './role-badge';
 import { StatusPill } from './status-pill';
 import { TypingIndicator } from './typing-indicator';
@@ -170,11 +170,6 @@ export function ConversationView({
 	);
 
 	const viewerRole = resolveViewerRole(conversation, viewerId);
-	const remaining = useMemo(
-		() => otherMembers(conversation, viewerId),
-		[conversation, viewerId],
-	);
-	const headerSubtitle = formatConversationSubtitle(conversation);
 
 	async function handleSend(body: string) {
 		// Step 1: Optimistic — generate tempId, register pending bubble.
@@ -228,31 +223,31 @@ export function ConversationView({
 
 	return (
 		<section className="flex h-full min-h-0 flex-col">
-			{/* Header — title + participant role chips */}
-			<header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+			{/* Header — title + participant roster chips */}
+			<header className="flex items-start justify-between gap-2 border-b px-4 py-3">
 				{/* `flex-1 min-w-0` on the title column — without `flex-1` the
 				    column sizes to its content and `truncate` on the h2 never
 				    triggers, so long raffle titles push the role/status pills
 				    off-screen on narrow viewports. */}
-				<div className="flex min-w-0 flex-1 flex-col">
+				<div className="flex min-w-0 flex-1 flex-col gap-1">
 					<h2 className="truncate text-sm font-semibold">
 						{formatConversationTitle(conversation)}
 					</h2>
-					{/* Subtitle surfaces the winner for winner_chat rooms so the host
-					    can tell overlapping raffles apart at a glance — the title
-					    already carries the raffle name. */}
-					{headerSubtitle ? (
-						<p className="text-muted-foreground truncate text-xs">
-							{headerSubtitle}
-						</p>
-					) : null}
-					<p className="text-muted-foreground truncate text-[11px]">
-						{remaining.length === 0
-							? 'Just you here for now'
-							: `${remaining.length + 1} participants`}
-					</p>
+					{/* Winner pin: every chat in this product is a winner_chat of
+					    (winner + host + platform admins), so surfacing the winner
+					    as a dedicated subtitle above the roster anchors the
+					    "whose prize is this?" question without scanning chips.
+					    `formatConversationSubtitle` returns null for non-winner
+					    types, so this line self-hides if the contract ever
+					    broadens to other chat kinds. */}
+					<WinnerSubtitle conversation={conversation} />
+					{/* Roster names each other participant with a role chip —
+					    replaces the prior "X participants" count. Winner is
+					    pinned as the subtitle above; the roster fills in host +
+					    platform admins so the viewer can see who's in-room. */}
+					<ParticipantRoster conversation={conversation} viewerId={viewerId} />
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex shrink-0 items-center gap-2">
 					{viewerRole ? <RoleBadge role={viewerRole} /> : null}
 					<StatusPill online={connected} />
 				</div>
@@ -395,4 +390,21 @@ function ConversationLoading() {
 			Loading messages…
 		</div>
 	);
+}
+
+interface WinnerSubtitleProps {
+	readonly conversation: Conversation;
+}
+
+/**
+ * Header subtitle that pins the winner above the participant roster. Keeps
+ * the conversation-view JSX shallow by isolating the "no subtitle for non-
+ * winner types" branch here — `formatConversationSubtitle` already returns
+ * null outside `winner_chat`, so this component just renders nothing in
+ * that case and the parent stays oblivious to the conversation kind.
+ */
+function WinnerSubtitle({ conversation }: WinnerSubtitleProps) {
+	const subtitle = formatConversationSubtitle(conversation);
+	if (!subtitle) return null;
+	return <p className="text-muted-foreground truncate text-xs">{subtitle}</p>;
 }

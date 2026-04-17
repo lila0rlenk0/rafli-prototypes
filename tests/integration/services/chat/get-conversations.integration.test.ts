@@ -39,13 +39,16 @@ const VALID_CONVERSATION = {
 	id: '01929e55-9b1a-7c32-8ae0-0000000000bb',
 	lastMessage: null,
 	maxMembers: 10,
-	members: [
+	memberCount: 2,
+	rosterMembers: [
 		{
+			displayName: 'Host User',
 			joinedAt: '2026-04-01T00:00:00Z',
 			role: 'admin',
 			userId: '01929e55-9b1a-7c32-8ae0-0000000000aa',
 		},
 		{
+			displayName: 'Ada Lovelace',
 			joinedAt: '2026-04-01T00:00:00Z',
 			role: 'member',
 			userId: '01929e55-9b1a-7c32-8ae0-0000000000cc',

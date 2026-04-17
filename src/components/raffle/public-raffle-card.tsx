@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import type { Raffle } from '@/types/raffle';
 
 /** User's relationship to a raffle */
@@ -31,9 +32,15 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	function getRoleTag(): { label: string; className: string } | null {
 		if (!role) return null;
 		if (role === 'host') {
-			return { label: 'Host', className: 'bg-[#FAFFC4] text-[#998B53]' };
+			return {
+				label: 'Host',
+				className: 'bg-accent-cream text-accent-cream-foreground',
+			};
 		}
-		return { label: 'Participant', className: 'bg-[#BEFFDB] text-[#44B476]' };
+		return {
+			label: 'Participant',
+			className: 'bg-accent-green text-accent-green-foreground',
+		};
 	}
 
 	function getTicketPrice(): string {
@@ -78,37 +85,55 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 						<span className="text-sm text-gray-400">No image</span>
 					</div>
 				)}
+				{/* Role tag — absolute overlay pinned to the image top-right. Lifted
+				    out of the title row so the Details button aligns across cards
+				    regardless of whether the title wraps to one or two lines.
+				    `z-10` clears it above the image fill; it sits below the Link's
+				    after:inset-0 overlay (z-auto) so clicks still route to details. */}
+				{roleTag ? (
+					<span
+						className={cn(
+							// absolute overlay pinned to image top-right; sizing tokens
+							// (h/px/py/text/tracking) match the pre-move inline badge
+							// so visual weight is preserved after lifting the tag out
+							// of the title row. `z-10` clears the image fill; sits
+							// below Link's after:inset-0 overlay (z-auto) so the whole
+							// card remains clickable through the badge.
+							'absolute top-2 right-2 z-10 inline-flex h-[19px] shrink-0 items-center justify-center rounded-lg px-6 py-1.5 text-[13px] font-semibold tracking-[0.26px] shadow-sm',
+							roleTag.className,
+						)}
+					>
+						{roleTag.label}
+					</span>
+				) : null}
 			</div>
 
 			{/* Card Body — tightened to 16px padding so card density matches the
 			    reduced type scale; previous 24px left too much interior air after
 			    the card title/price tokens dropped from 18/24 to 16/20. */}
 			<div className="flex flex-1 flex-col gap-4 rounded-b-3xl bg-white p-4">
-				{/* Title + Role Tag */}
+				{/* Title + Host */}
 				<div className="flex flex-col gap-2">
 					<div className="flex flex-col gap-2">
-						<div className="flex items-center gap-2">
-							<h3 className="text-card-title font-semibold text-[rgba(15,15,15,0.95)]">
-								<Link
-									href={`/browse/${raffle.publicSlugOrCode}`}
-									className="line-clamp-1 after:absolute after:inset-0"
-								>
-									{raffle.title}
-								</Link>
-							</h3>
-							{roleTag ? (
-								<span
-									className={`inline-flex h-[19px] items-center justify-center rounded-lg px-6 py-1.5 text-[13px] font-semibold tracking-[0.26px] ${roleTag.className}`}
-								>
-									{roleTag.label}
-								</span>
-							) : null}
-						</div>
+						{/* Title reserves two lines of vertical space via `min-h-[2lh]`
+						    so single-line titles leave the same gap below as wrapped
+						    two-line titles. Without this reservation the Details
+						    button floats up on short titles and breaks row alignment
+						    across the grid. `line-clamp-2` still truncates overflow;
+						    `text-balance` keeps two-line wraps visually even. */}
+						<h3 className="text-card-title min-h-[2lh] font-semibold text-balance text-[rgba(15,15,15,0.95)]">
+							<Link
+								href={`/browse/${raffle.publicSlugOrCode}`}
+								className="line-clamp-2 after:absolute after:inset-0"
+							>
+								{raffle.title}
+							</Link>
+						</h3>
 
 						{/* Host + Verified Badge */}
 						<div className="flex items-center gap-2 sm:justify-between">
 							<span className="text-sm text-[#121211]">by {hostName}</span>
-							<span className="inline-flex items-center gap-1 rounded-[10px] border border-black px-1 py-0.5 text-xs text-[#121211]">
+							<span className="inline-flex items-center gap-1 rounded-lg border border-black px-1 py-0.5 text-xs text-[#121211]">
 								<CheckCircle className="size-3.5" />
 								Verified host
 							</span>
@@ -129,7 +154,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 
 						{/* Progress Bar */}
 						{!isUnlimited ? (
-							<div className="h-[11px] w-full overflow-hidden rounded-lg bg-[#eee]">
+							<div className="h-3 w-full overflow-hidden rounded-lg bg-[#eee]">
 								<div
 									className="h-full rounded-lg bg-[#84dcff] transition-all duration-300 ease-out"
 									style={{ width: `${progress}%` }}

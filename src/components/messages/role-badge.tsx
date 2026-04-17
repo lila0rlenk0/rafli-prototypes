@@ -4,8 +4,26 @@ import { roleLabel, type ViewerRole } from './chat-utils';
 
 interface RoleBadgeProps {
 	readonly role: ViewerRole;
+	/**
+	 * `sm` (default) matches the density of the header and message-bubble
+	 * role pills. `xs` is used inside the participant roster where chips
+	 * sit beside each name and need to stay visually secondary to the
+	 * name itself.
+	 */
+	readonly size?: 'xs' | 'sm';
 	readonly className?: string;
 }
+
+// Shared across both sizes — font weight, shape, typography rhythm.
+const BADGE_BASE_CLASSES =
+	'inline-flex items-center rounded-full font-semibold tracking-wide uppercase';
+
+const BADGE_SIZE_CLASSES: Readonly<
+	Record<NonNullable<RoleBadgeProps['size']>, string>
+> = {
+	sm: 'h-5 px-2 text-[11px]',
+	xs: 'h-4 px-1.5 text-[10px]',
+};
 
 /**
  * Small pill indicating a member's role in a conversation.
@@ -14,11 +32,12 @@ interface RoleBadgeProps {
  * `subscription-tier-badge.tsx`, and `muted` carries the neutral member
  * tone. Never raw Tailwind color utilities, per `.claude/rules/shadcn.md`.
  */
-export function RoleBadge({ role, className }: RoleBadgeProps) {
+export function RoleBadge({ role, size = 'sm', className }: RoleBadgeProps) {
 	return (
 		<span
 			className={cn(
-				'inline-flex h-5 items-center rounded-full px-2 text-[11px] font-semibold tracking-wide uppercase',
+				BADGE_BASE_CLASSES,
+				BADGE_SIZE_CLASSES[size],
 				getRoleClasses(role),
 				className,
 			)}

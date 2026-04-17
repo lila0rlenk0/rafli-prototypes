@@ -36,10 +36,12 @@ export function ChatListItem({
 
 	// Derive the "other party" tint by role so the list reads at a glance
 	// even without loaded profile metadata. Host chats show the host tint,
-	// winner chats show the winner tint, etc.
+	// winner chats show the winner tint, etc. `rosterMembers` is the
+	// prioritized slice (host + winner + admins first) so for raffle rooms
+	// we pivot on a top-ranked member rather than an arbitrary one.
 	const pivotMember =
-		conversation.members.find(m => m.userId !== viewerId) ??
-		conversation.members[0];
+		conversation.rosterMembers.find(m => m.userId !== viewerId) ??
+		conversation.rosterMembers[0];
 	const pivotRole = pivotMember
 		? resolveViewerRole(conversation, pivotMember.userId)
 		: null;

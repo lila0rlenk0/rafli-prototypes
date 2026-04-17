@@ -11,7 +11,7 @@ import {
 	CONVERSATION_TYPE,
 	type Conversation,
 	type ConversationFilter,
-	type ConversationMemberRole,
+	type ConversationMember,
 	type ConversationSort,
 } from '@/types/chat';
 
@@ -124,12 +124,31 @@ export function linkifyMessage(body: string | null): readonly LinkifySegment[] {
 }
 
 /**
- * Derives the effective role a user plays in a conversation.
+ * Derives the effective role for a member row.
  *
- * Priority order matters — a raffle host who happens to be a conversation
- * admin is still surfaced as HOST, not STAFF. A winner who lurks in a
- * second conversation still surfaces as MEMBER in that other conversation
- * because `winnerUserId` is scoped to the conversation passed in.
+ * Priority: WINNER > HOST > STAFF > MEMBER. Winner wins even in non-
+ * winner_chat rooms because it reflects a persistent platform state; host
+ * wins over staff because the raffle host is always also a conversation
+ * admin and we want the more specific label.
+ *
+ * Takes the member row directly so callers iterating `conversation.rosterMembers`
+ * (e.g. the roster builder) don't redo an O(n) lookup per entry.
+ *
+ * @param conversation - Conversation the member belongs to.
+ * @param member - Member row to classify.
+ * @returns Role label.
+ */
+export function resolveMemberRole(
+	conversation: Conversation,
+	member: ConversationMember,
+): ViewerRole {
+	if (conversation.winnerUserId === member.userId) return VIEWER_ROLE.WINNER;
+	if (conversation.createdBy === member.userId) return VIEWER_ROLE.HOST;
+	return member.role === 'admin' ? VIEWER_ROLE.STAFF : VIEWER_ROLE.MEMBER;
+}
+
+/**
+ * Derives the effective role a user plays in a conversation.
  *
  * @param conversation - Conversation to resolve against.
  * @param userId - Target user.
@@ -139,21 +158,12 @@ export function resolveViewerRole(
 	conversation: Conversation,
 	userId: string,
 ): ViewerRole | null {
-	const member = conversation.members.find(m => m.userId === userId);
-	if (!member) return null;
-
-	// Winner short-circuits even for non-winner_chat rooms — a winner badge
-	// reflects a persistent platform state, not the conversation's purpose.
-	if (conversation.winnerUserId === userId) return VIEWER_ROLE.WINNER;
-
-	// Host precedence over STAFF: the raffle host is the `createdBy` user
-	// for winner_chat rooms, and we want HOST shown even if they also hold
-	// the conversation `admin` role (which they always do).
-	if (conversation.createdBy === userId) return VIEWER_ROLE.HOST;
-
-	// Remaining admin-role members are platform staff who were added as
-	// moderators after the fact (e.g. during a dispute escalation).
-	return member.role === 'admin' ? VIEWER_ROLE.STAFF : VIEWER_ROLE.MEMBER;
+	// Role inference is roster-driven only. This avoids inferring membership
+	// from conversation type when the server intentionally strips roster
+	// rows from non-member payloads.
+	const member = conversation.rosterMembers.find(m => m.userId === userId);
+	if (member) return resolveMemberRole(conversation, member);
+	return null;
 }
 
 /** Short human label used in role-badge rendering. */
@@ -249,15 +259,68 @@ export function formatRelativeTime(
 	return `${diffWk}w`;
 }
 
-/** Members list excluding the viewer — used to render the participants panel. */
-export function otherMembers(
+/**
+ * Trimmed display name for a conversation member, or null when the user
+ * was hard-deleted, predates the backfill, or persisted as whitespace.
+ *
+ * Null-at-the-boundary keeps the "deleted" signal intact so the renderer
+ * can style the fallback label (muted italic) without string-matching.
+ *
+ * @param member - Conversation member row.
+ * @returns Trimmed name or null.
+ */
+export function memberDisplayName(member: ConversationMember): string | null {
+	const trimmed = member.displayName?.trim();
+	return trimmed ? trimmed : null;
+}
+
+/** Sorted, viewer-excluded entry rendered by the participant roster. */
+export interface RosterEntry {
+	readonly member: ConversationMember;
+	readonly role: ViewerRole;
+	/** Null when the source display name was absent / blank — see `memberDisplayName`. */
+	readonly displayName: string | null;
+}
+
+// Display order for the header roster. Host first because they're the
+// organizer; winner second because the chat exists to coordinate their
+// prize; staff and plain members trail. Co-located with `rosterEntries`
+// so a reviewer reading the sort sees the rationale inline.
+const ROSTER_ROLE_ORDER: Readonly<Record<ViewerRole, number>> = {
+	[VIEWER_ROLE.HOST]: 0,
+	[VIEWER_ROLE.WINNER]: 1,
+	[VIEWER_ROLE.STAFF]: 2,
+	[VIEWER_ROLE.MEMBER]: 3,
+};
+
+/**
+ * Ordered roster entries for the chat header — viewer excluded, sorted
+ * Host → Winner → Staff → Member, tie-broken by `joinedAt` ascending so
+ * the rendered order is stable across refreshes.
+ *
+ * Pure: consumers memoize on the `conversation` reference alone.
+ *
+ * @param conversation - Conversation to enumerate.
+ * @param viewerId - Current viewer — dropped from the output (their role
+ *   is already surfaced by the header's viewer pill).
+ * @returns Stable-ordered roster entries.
+ */
+export function rosterEntries(
 	conversation: Conversation,
 	viewerId: string,
-): ReadonlyArray<{
-	readonly userId: string;
-	readonly role: ConversationMemberRole;
-}> {
-	return conversation.members.filter(m => m.userId !== viewerId);
+): readonly RosterEntry[] {
+	return conversation.rosterMembers
+		.filter(m => m.userId !== viewerId)
+		.map(member => ({
+			member,
+			role: resolveMemberRole(conversation, member),
+			displayName: memberDisplayName(member),
+		}))
+		.toSorted((a, b) => {
+			const byRole = ROSTER_ROLE_ORDER[a.role] - ROSTER_ROLE_ORDER[b.role];
+			if (byRole !== 0) return byRole;
+			return a.member.joinedAt.localeCompare(b.member.joinedAt);
+		});
 }
 
 /**

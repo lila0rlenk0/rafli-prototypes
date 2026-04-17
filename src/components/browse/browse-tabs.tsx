@@ -79,9 +79,13 @@ export function BrowseTabs({
 			{/* Grid — rendered once, unconditionally. Both mobile tabs
 			    ("Featured" and "All Raffles") show the grid, and desktop shows
 			    it below the featured cards, so there is no layout branch that
-			    hides it. Single render site also prevents the same element
-			    reference from appearing in multiple tree positions. */}
-			{gridContent}
+			    hides it. Wrapped in a stable `<div>` (matching the filters and
+			    mobile-featured wrappers above) so React 19 sees every prop-slot
+			    child at a deterministic tree position — a bare `{gridContent}`
+			    next to the conditional `featuredMobile` sibling made the pair
+			    look like a dynamic list and warned about missing keys on the
+			    incoming `<div>` at page.tsx:295. */}
+			<div>{gridContent}</div>
 		</div>
 	);
 }

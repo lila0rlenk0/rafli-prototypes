@@ -11,9 +11,9 @@ import {
 } from '@/lib/sentry/capture';
 import { CHAT_ERROR_CODES, type ChatErrorCode } from '@/types/errors';
 import {
-	type ChatPaginationQuery,
 	type ConversationListResponse,
 	conversationListResponseSchema,
+	type ConversationsListQuery,
 } from '@/types/chat';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -25,11 +25,15 @@ import type { ServiceResponse } from '@/types/service-response';
  * it shouldn't see. `hasMore` + opaque `cursor` drive React Query's
  * `useInfiniteQuery`; we never reconstruct cursor shape client-side.
  *
- * @param query - Optional pagination (cursor from previous page, limit)
+ * Server-side filter/search/sort: `q`, `filter`, `sort` are forwarded as-is.
+ * The client never slices the page after the fact — doing so would produce
+ * inconsistent page sizes and break keyset pagination.
+ *
+ * @param query - Optional pagination + filter/search/sort.
  * @returns ServiceResponse with the conversation page on success.
  */
 export async function getConversations(
-	query?: ChatPaginationQuery,
+	query?: ConversationsListQuery,
 ): Promise<ServiceResponse<ConversationListResponse, ChatErrorCode>> {
 	try {
 		const response = await authenticatedClient.get('/chat/conversations', {

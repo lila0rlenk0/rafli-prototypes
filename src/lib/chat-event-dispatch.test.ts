@@ -335,7 +335,12 @@ describe('dispatchChatEvent', () => {
 			expect(Object.keys(store.getState().presenceByUserId)).toHaveLength(0);
 		});
 
-		test('read_receipt is a benign no-op', () => {
+		test('read_receipt invalidates the conversations prefix so the Unread chip stays fresh', () => {
+			// Regression: self-reads used to leave the filter-chip "Unread"
+			// badge stale until the next reconnect because the dispatcher
+			// treated read_receipt as a pure store concern. The counts query
+			// is keyed under the same `conversationsKey()` prefix, so a
+			// single prefix invalidation refreshes both list rows and badges.
 			const store = createChatStore();
 			const { client, invalidateQueries } = makeFakeQueryClient();
 			const typingTimers = new Map();
@@ -347,7 +352,9 @@ describe('dispatchChatEvent', () => {
 				typingTimers,
 			);
 
-			expect(invalidateQueries).not.toHaveBeenCalled();
+			expect(invalidateQueries).toHaveBeenCalledWith({
+				queryKey: conversationsKey(),
+			});
 		});
 	});
 

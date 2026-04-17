@@ -124,8 +124,26 @@ export const conversationSchema = z.object({
 	name: z.string().nullable(),
 	/** Non-null for `raffle_room` and `winner_chat` conversations. */
 	raffleId: z.string().nullable(),
+	/**
+	 * Server-enriched raffle title. Null when `raffleId` is null OR the raffle
+	 * was deleted — UI falls back to the generic type label.
+	 */
+	raffleTitle: z.string().nullable(),
 	type: conversationTypeSchema,
 	updatedAt: z.string(),
+	/**
+	 * Server-enriched winner display name — non-null only for `winner_chat`
+	 * conversations where the user still exists.
+	 */
+	winnerDisplayName: z.string().nullable(),
+	/**
+	 * Server-enriched winner email. Exposed only to conversation members (host
+	 * / staff / winner) for prize-coordination outreach. Treat as PII client-
+	 * side: never log to Sentry breadcrumbs, never echo to analytics. Not
+	 * rendered in any component today — kept in the contract so future
+	 * mailto: / admin surfaces can consume it without a second round-trip.
+	 */
+	winnerEmail: z.string().nullable(),
 	/** Non-null for `winner_chat` conversations. */
 	winnerUserId: z.string().nullable(),
 });
@@ -211,6 +229,46 @@ export const chatPaginationQuerySchema = z.object({
 	limit: z.number().int().min(1).max(50).optional(),
 });
 
+/** Inbox filter chip — backend values in `CONVERSATION_FILTER_VALUES`. */
+export const CONVERSATION_FILTER_VALUES = [
+	'all',
+	'unread',
+	'winners',
+	'raffles',
+] as const;
+export type ConversationFilter = (typeof CONVERSATION_FILTER_VALUES)[number];
+
+/** Inbox sort mode — backend values in `CONVERSATION_SORT_VALUES`. */
+export const CONVERSATION_SORT_VALUES = [
+	'recent',
+	'oldest',
+	'unread_first',
+] as const;
+export type ConversationSort = (typeof CONVERSATION_SORT_VALUES)[number];
+
+/**
+ * Query shape for `GET /chat/conversations`. Adds server-side filter/search/
+ * sort on top of the cursor+limit base — the client passes these through the
+ * server action untouched (backend is authoritative).
+ */
+export const conversationsListQuerySchema = chatPaginationQuerySchema.extend({
+	q: z.string().max(120).optional(),
+	filter: z.enum(CONVERSATION_FILTER_VALUES).optional(),
+	sort: z.enum(CONVERSATION_SORT_VALUES).optional(),
+});
+
+/** Response shape for `GET /chat/conversations/counts` — filter-chip badges. */
+export const conversationCountsResponseSchema = z.object({
+	all: z.number().int().nonnegative(),
+	unread: z.number().int().nonnegative(),
+	winners: z.number().int().nonnegative(),
+	raffles: z.number().int().nonnegative(),
+});
+
+export const conversationCountsQuerySchema = z.object({
+	q: z.string().max(120).optional(),
+});
+
 // =============================================================================
 // Zod Schemas — WebSocket frames
 // =============================================================================
@@ -285,6 +343,15 @@ export type SendMessageInput = z.infer<typeof sendMessageInputSchema>;
 export type EditMessageInput = z.infer<typeof editMessageInputSchema>;
 export type MarkReadInput = z.infer<typeof markReadInputSchema>;
 export type ChatPaginationQuery = z.infer<typeof chatPaginationQuerySchema>;
+export type ConversationsListQuery = z.infer<
+	typeof conversationsListQuerySchema
+>;
+export type ConversationCountsQuery = z.infer<
+	typeof conversationCountsQuerySchema
+>;
+export type ConversationCountsResponse = z.infer<
+	typeof conversationCountsResponseSchema
+>;
 
 export type WsMessagePayload = z.infer<typeof wsMessagePayloadSchema>;
 export type ChatServerEvent = z.infer<typeof chatServerEventSchema>;

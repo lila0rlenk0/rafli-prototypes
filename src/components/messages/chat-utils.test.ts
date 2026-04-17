@@ -4,6 +4,9 @@ import type { Conversation } from '@/types/chat';
 
 import {
 	avatarInitialFromName,
+	chatListFilterLabel,
+	chatListSortLabel,
+	formatConversationSubtitle,
 	formatConversationTitle,
 	formatRelativeTime,
 	linkifyMessage,
@@ -32,8 +35,11 @@ function makeConversation(overrides: Partial<Conversation> = {}): Conversation {
 		],
 		name: null,
 		raffleId: 'raffle-1',
+		raffleTitle: 'Vintage Watch Giveaway',
 		type: 'winner_chat',
 		updatedAt: '2026-04-01T00:00:00Z',
+		winnerDisplayName: 'Ada Lovelace',
+		winnerEmail: 'ada@example.com',
 		winnerUserId: 'winner-user',
 	};
 	return { ...base, ...overrides };
@@ -183,19 +189,95 @@ describe('formatConversationTitle', () => {
 		).toBe('Cool raffle winners');
 	});
 
-	test('falls back by type when name is null', () => {
+	test('prefers the server-enriched raffleTitle over the generic type label', () => {
+		// Raffle title disambiguates overlapping winner_chat rows — that's the
+		// whole reason the enrichment exists, so it must win over the
+		// type-based fallback.
 		expect(
-			formatConversationTitle(makeConversation({ type: 'winner_chat' })),
+			formatConversationTitle(
+				makeConversation({
+					type: 'winner_chat',
+					raffleTitle: 'Limited Sneakers Drop',
+				}),
+			),
+		).toBe('Limited Sneakers Drop');
+	});
+
+	test('falls back by type when name and raffleTitle are null', () => {
+		expect(
+			formatConversationTitle(
+				makeConversation({ type: 'winner_chat', raffleTitle: null }),
+			),
 		).toBe('Winner chat');
-		expect(formatConversationTitle(makeConversation({ type: 'group' }))).toBe(
-			'Group',
-		);
-		expect(formatConversationTitle(makeConversation({ type: 'direct' }))).toBe(
-			'Direct message',
-		);
 		expect(
-			formatConversationTitle(makeConversation({ type: 'raffle_room' })),
+			formatConversationTitle(
+				makeConversation({ type: 'group', raffleTitle: null }),
+			),
+		).toBe('Group');
+		expect(
+			formatConversationTitle(
+				makeConversation({ type: 'direct', raffleTitle: null }),
+			),
+		).toBe('Direct message');
+		expect(
+			formatConversationTitle(
+				makeConversation({ type: 'raffle_room', raffleTitle: null }),
+			),
 		).toBe('Raffle room');
+	});
+});
+
+describe('formatConversationSubtitle', () => {
+	test('returns null for non-winner_chat conversations', () => {
+		// Direct / group / raffle_room rows keep the two-line layout; a
+		// subtitle would push the last-message preview out of view.
+		expect(
+			formatConversationSubtitle(makeConversation({ type: 'direct' })),
+		).toBeNull();
+		expect(
+			formatConversationSubtitle(makeConversation({ type: 'group' })),
+		).toBeNull();
+		expect(
+			formatConversationSubtitle(makeConversation({ type: 'raffle_room' })),
+		).toBeNull();
+	});
+
+	test('winner_chat with a display name renders "Winner: <name>"', () => {
+		expect(
+			formatConversationSubtitle(
+				makeConversation({
+					type: 'winner_chat',
+					winnerDisplayName: 'Ada Lovelace',
+				}),
+			),
+		).toBe('Winner: Ada Lovelace');
+	});
+
+	test('winner_chat with only whitespace in winnerDisplayName falls back to generic label', () => {
+		// Guards against backend rows where the enrichment column holds an
+		// accidental whitespace string — the UI would otherwise render
+		// "Winner:   " which looks broken.
+		expect(
+			formatConversationSubtitle(
+				makeConversation({
+					type: 'winner_chat',
+					winnerDisplayName: '   ',
+				}),
+			),
+		).toBe('Winner');
+	});
+
+	test('winner_chat without a display name falls back to generic "Winner"', () => {
+		// Backfill gap / deleted winner user — keep the subtitle as a
+		// role hint so the row layout stays stable.
+		expect(
+			formatConversationSubtitle(
+				makeConversation({
+					type: 'winner_chat',
+					winnerDisplayName: null,
+				}),
+			),
+		).toBe('Winner');
 	});
 });
 
@@ -335,5 +417,25 @@ describe('avatarInitialFromName', () => {
 
 	test('empty input yields empty string (no letter to display)', () => {
 		expect(avatarInitialFromName('')).toBe('');
+	});
+});
+
+describe('chatListFilterLabel', () => {
+	test('renders the expected chip labels', () => {
+		// Locked in so a rename has to touch the test too — the labels are
+		// part of the public sidebar contract and translated strings live
+		// next to them in the i18n file when that gets wired.
+		expect(chatListFilterLabel('all')).toBe('All');
+		expect(chatListFilterLabel('unread')).toBe('Unread');
+		expect(chatListFilterLabel('winners')).toBe('Winners');
+		expect(chatListFilterLabel('raffles')).toBe('Raffles');
+	});
+});
+
+describe('chatListSortLabel', () => {
+	test('renders the expected sort labels', () => {
+		expect(chatListSortLabel('recent')).toBe('Most recent');
+		expect(chatListSortLabel('oldest')).toBe('Oldest first');
+		expect(chatListSortLabel('unread_first')).toBe('Unread first');
 	});
 });

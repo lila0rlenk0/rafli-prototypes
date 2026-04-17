@@ -4,36 +4,51 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { serviceError, type ServiceError } from '@/lib/query/errors';
 import type { ChatErrorCode } from '@/types/errors';
-import type { ConversationListResponse } from '@/types/chat';
+import type {
+	ConversationFilter,
+	ConversationListResponse,
+	ConversationSort,
+} from '@/types/chat';
 
 import { getConversations } from './get-conversations';
-import { conversationsKey } from './query-keys';
+import { conversationsListKey } from './query-keys';
+
+export interface UseConversationsOptions {
+	readonly limit?: number;
+	/** Free-text search forwarded to the backend — scoped by `q` param. */
+	readonly q?: string;
+	/** Filter chip — forwarded to the backend as the `filter` param. */
+	readonly filter?: ConversationFilter;
+	/** Sort mode — forwarded to the backend as the `sort` param. */
+	readonly sort?: ConversationSort;
+}
 
 /**
- * Cursor-paginated list of the caller's conversations. Uses UUIDv7 tails as
- * cursors per backend convention — we derive the next cursor from the last
- * item's id rather than trusting a dedicated field, because the backend
- * response only carries `hasMore`.
+ * Cursor-paginated list of the caller's conversations. Filter, search and
+ * sort are server-driven (the client never slices the page after fetch — see
+ * `services.md`) so the hook forwards the params through to the server action
+ * and includes them in the query key.
  *
  * Default `staleTime: Infinity` matches project-wide React Query config;
- * WS message/presence events invalidate this key to refresh.
- *
- * @param options - Page size (default 20, max 50 per backend).
- * @returns React Query infinite result with pages of conversations.
+ * WS message/presence events invalidate the `chat/conversations/list` prefix
+ * to refresh every cached permutation.
  */
-export function useConversations(options?: { limit?: number }) {
-	const limit = options?.limit ?? 20;
+export function useConversations(options: UseConversationsOptions = {}) {
+	const { limit = 20, q, filter, sort } = options;
 
 	return useInfiniteQuery<
 		ConversationListResponse,
 		ServiceError<ChatErrorCode>
 	>({
-		queryKey: conversationsKey(),
+		queryKey: conversationsListKey({ q, filter, sort }),
 		initialPageParam: undefined,
 		queryFn: async function fetchConversationsPage({ pageParam }) {
 			const result = await getConversations({
 				cursor: pageParam as string | undefined,
 				limit,
+				q,
+				filter,
+				sort,
 			});
 			if (!result.success) throw serviceError(result.error);
 			return result.data;

@@ -10,7 +10,9 @@
 import {
 	CONVERSATION_TYPE,
 	type Conversation,
+	type ConversationFilter,
 	type ConversationMemberRole,
+	type ConversationSort,
 } from '@/types/chat';
 
 /** Roles surfaced in the UI — derived from conversation metadata + member row. */
@@ -176,6 +178,11 @@ export function roleLabel(role: ViewerRole): string {
 /** Derives a one-line title for the conversation list and header. */
 export function formatConversationTitle(conversation: Conversation): string {
 	if (conversation.name) return conversation.name;
+	// Prefer the server-enriched raffle title for raffle-scoped conversations
+	// so the inbox distinguishes "Winner Chat · Vintage Watch" from
+	// "Winner Chat · Gaming Console" at a glance instead of showing a
+	// bank of identical "Winner Chat" rows.
+	if (conversation.raffleTitle) return conversation.raffleTitle;
 	switch (conversation.type) {
 		case CONVERSATION_TYPE.WINNER_CHAT:
 			return 'Winner chat';
@@ -190,6 +197,27 @@ export function formatConversationTitle(conversation: Conversation): string {
 			return _never;
 		}
 	}
+}
+
+/**
+ * One-line secondary label: who the conversation is with. For winner_chat
+ * surfaces the winner — that's the handle both the host and the winner care
+ * about when the inbox stacks multiple raffles. Returns null for all other
+ * conversation types so the row keeps a compact two-line layout.
+ *
+ * We only render the denormalized `winnerDisplayName` — public username isn't
+ * denormalized on the conversation row, and fetching it per-row would
+ * reintroduce the N+1 the enrichment columns were designed to eliminate.
+ */
+export function formatConversationSubtitle(
+	conversation: Conversation,
+): string | null {
+	if (conversation.type !== CONVERSATION_TYPE.WINNER_CHAT) return null;
+	const name = conversation.winnerDisplayName?.trim();
+	if (name) return `Winner: ${name}`;
+	// winner_chat with no denormalized name — either the winner user was hard-
+	// deleted or the conversation predates the denormalization backfill.
+	return 'Winner';
 }
 
 /**
@@ -289,4 +317,46 @@ export function avatarInitialFromName(name: string): string {
 		.join('')
 		.slice(0, 2)
 		.toUpperCase();
+}
+
+// =============================================================================
+// Sidebar filter + sort — label helpers (server-driven, client only renders)
+// =============================================================================
+//
+// Filter / search / sort happen server-side; the backend keyset paginates per
+// sort mode (see `get-conversations.query.ts`) so slicing client-side would
+// corrupt cursor boundaries. The helpers below translate the backend enum
+// values into display labels and nothing else.
+
+/** Display label per filter — used by the sidebar header chips. */
+export function chatListFilterLabel(filter: ConversationFilter): string {
+	switch (filter) {
+		case 'all':
+			return 'All';
+		case 'unread':
+			return 'Unread';
+		case 'winners':
+			return 'Winners';
+		case 'raffles':
+			return 'Raffles';
+		default: {
+			const _never: never = filter;
+			return _never;
+		}
+	}
+}
+
+export function chatListSortLabel(sort: ConversationSort): string {
+	switch (sort) {
+		case 'recent':
+			return 'Most recent';
+		case 'oldest':
+			return 'Oldest first';
+		case 'unread_first':
+			return 'Unread first';
+		default: {
+			const _never: never = sort;
+			return _never;
+		}
+	}
 }

@@ -8,6 +8,7 @@ import type { Conversation } from '@/types/chat';
 
 import { AvatarCircle } from './avatar-circle';
 import {
+	formatConversationSubtitle,
 	formatConversationTitle,
 	formatRelativeTime,
 	resolveViewerRole,
@@ -42,10 +43,14 @@ export function ChatListItem({
 	const pivotRole = pivotMember
 		? resolveViewerRole(conversation, pivotMember.userId)
 		: null;
-	// Member display names aren't in the chat DTOs today, so the list
-	// monogram is derived from the conversation title itself. Matches
-	// what the row header renders, so the avatar and title share a glyph.
+	// Title prefers the server-enriched raffle title so the inbox
+	// distinguishes winner chats across raffles instead of stacking identical
+	// "Winner Chat" rows. Subtitle surfaces the winner's display name so host
+	// and winner can find the right row at a glance.
 	const conversationTitle = formatConversationTitle(conversation);
+	const conversationSubtitle = formatConversationSubtitle(conversation);
+	const lastMessagePreview =
+		conversation.lastMessage?.body ?? 'No messages yet';
 
 	return (
 		<Link
@@ -71,9 +76,14 @@ export function ChatListItem({
 						)}
 					</span>
 				</div>
+				{conversationSubtitle ? (
+					<span className="text-muted-foreground truncate text-[11px]">
+						{conversationSubtitle}
+					</span>
+				) : null}
 				<div className="flex items-center justify-between gap-2">
 					<span className="text-muted-foreground truncate text-xs">
-						{conversation.lastMessage?.body ?? 'No messages yet'}
+						{lastMessagePreview}
 					</span>
 					{unread > 0 ? (
 						<span

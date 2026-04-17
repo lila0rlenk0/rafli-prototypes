@@ -146,8 +146,14 @@ export function dispatchChatEvent(
 			return;
 		}
 		case 'read_receipt': {
-			// Read receipts are backend-broadcast but not rendered in v1 —
-			// intentionally no-op so the switch stays exhaustive.
+			// Not rendered as a UI bubble in v1, but a self-read advances the
+			// read cursor and the sidebar's "Unread" chip badge has to track
+			// it — otherwise the chip stays stale until the next reconnect
+			// (`staleTime: Infinity` everywhere else). We invalidate on every
+			// read_receipt (including other members') because the dispatcher
+			// doesn't hold viewer context; in the 2–5-member rooms this domain
+			// produces the extra refetches are negligible.
+			void queryClient.invalidateQueries({ queryKey: conversationsKey() });
 			return;
 		}
 		default: {

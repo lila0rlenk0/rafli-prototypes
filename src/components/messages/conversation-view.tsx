@@ -18,6 +18,7 @@ import type { Conversation, Message } from '@/types/chat';
 
 import { AvatarCircle } from './avatar-circle';
 import {
+	formatConversationSubtitle,
 	formatConversationTitle,
 	otherMembers,
 	resolveViewerRole,
@@ -173,6 +174,7 @@ export function ConversationView({
 		() => otherMembers(conversation, viewerId),
 		[conversation, viewerId],
 	);
+	const headerSubtitle = formatConversationSubtitle(conversation);
 
 	async function handleSend(body: string) {
 		// Step 1: Optimistic — generate tempId, register pending bubble.
@@ -232,7 +234,15 @@ export function ConversationView({
 					<h2 className="truncate text-sm font-semibold">
 						{formatConversationTitle(conversation)}
 					</h2>
-					<p className="text-muted-foreground truncate text-xs">
+					{/* Subtitle surfaces the winner for winner_chat rooms so the host
+					    can tell overlapping raffles apart at a glance — the title
+					    already carries the raffle name. */}
+					{headerSubtitle ? (
+						<p className="text-muted-foreground truncate text-xs">
+							{headerSubtitle}
+						</p>
+					) : null}
+					<p className="text-muted-foreground truncate text-[11px]">
 						{remaining.length === 0
 							? 'Just you here for now'
 							: `${remaining.length + 1} participants`}

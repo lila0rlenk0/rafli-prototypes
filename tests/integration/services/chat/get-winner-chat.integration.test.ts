@@ -49,8 +49,11 @@ const VALID_CONVERSATION = {
 	],
 	name: null,
 	raffleId: RAFFLE_ID,
+	raffleTitle: 'Vintage Watch Giveaway',
 	type: 'winner_chat',
 	updatedAt: '2026-04-01T00:00:00Z',
+	winnerDisplayName: 'Ada Lovelace',
+	winnerEmail: 'ada@example.com',
 	winnerUserId: '01929e55-9b1a-7c32-8ae0-0000000000cc',
 };
 

@@ -94,8 +94,12 @@ export function ChatSidebarHeader({
 					spellCheck={false}
 					value={search}
 					onChange={event => onSearchChange(event.target.value)}
-					placeholder="Search by raffle, winner, email, or id"
-					aria-label="Search by raffle, winner, email, or id"
+					// Terse placeholder so it doesn't clip in narrow sidebars
+					// (mobile drawer, desktop 20rem column). The descriptive
+					// copy moves to `aria-label` so screen readers still hear
+					// what the field accepts.
+					placeholder="Search chats"
+					aria-label="Search chats by raffle, winner, email, or id"
 					className="h-9 min-w-0 ps-8 pe-8 text-sm"
 				/>
 				{search ? (

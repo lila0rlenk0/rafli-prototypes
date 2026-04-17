@@ -230,7 +230,11 @@ export function ConversationView({
 		<section className="flex h-full min-h-0 flex-col">
 			{/* Header — title + participant role chips */}
 			<header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-				<div className="flex min-w-0 flex-col">
+				{/* `flex-1 min-w-0` on the title column — without `flex-1` the
+				    column sizes to its content and `truncate` on the h2 never
+				    triggers, so long raffle titles push the role/status pills
+				    off-screen on narrow viewports. */}
+				<div className="flex min-w-0 flex-1 flex-col">
 					<h2 className="truncate text-sm font-semibold">
 						{formatConversationTitle(conversation)}
 					</h2>

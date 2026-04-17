@@ -67,7 +67,11 @@ export function ChatListItem({
 			/>
 			<div className="flex min-w-0 flex-1 flex-col">
 				<div className="flex items-center justify-between gap-2">
-					<span className="truncate text-sm font-semibold">
+					{/* `min-w-0 flex-1` is load-bearing: flex children default to
+					    `min-width: auto` (content-sized) which blocks `truncate`
+					    from clipping long raffle titles — they'd push the timestamp
+					    out of the row instead of ellipsising. */}
+					<span className="min-w-0 flex-1 truncate text-sm font-semibold">
 						{conversationTitle}
 					</span>
 					<span className="text-muted-foreground shrink-0 text-[11px]">
@@ -82,7 +86,9 @@ export function ChatListItem({
 					</span>
 				) : null}
 				<div className="flex items-center justify-between gap-2">
-					<span className="text-muted-foreground truncate text-xs">
+					{/* Same `min-w-0 flex-1` rationale as the title row — prevents
+					    a long last-message body from shoving the unread badge out. */}
+					<span className="text-muted-foreground min-w-0 flex-1 truncate text-xs">
 						{lastMessagePreview}
 					</span>
 					{unread > 0 ? (

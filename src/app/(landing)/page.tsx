@@ -1,10 +1,10 @@
-import { HeroSection } from './hero-section';
-import { Navbar } from './navbar';
-import { TrustSection } from './trust-section';
-import { ParticipantSection } from './participant-section';
-import { HostSection } from './host-section';
-import { CTASection } from './cta-section';
-import { Footer } from './footer';
+import { Footer } from '@/components/landing/footer';
+import { CTASection } from '@/components/landing/cta-section';
+import { HeroSection } from '@/components/landing/hero-section';
+import { HostSection } from '@/components/landing/host-section';
+import { Navbar } from '@/components/landing/navbar';
+import { ParticipantSection } from '@/components/landing/participant-section';
+import { TrustSection } from '@/components/landing/trust-section';
 
 /**
  * Landing page for Rafli - the raffle platform

@@ -3,40 +3,30 @@
 import { MixpanelProvider } from '@/providers/mixpanel-provider';
 import { QueryProvider } from '@/providers/query-provider';
 import { SentryUserSync } from '@/providers/sentry-user-sync';
-import { Web3Provider } from '@/providers/web3-provider';
 
 interface ProvidersClientProps {
-	children: React.ReactNode;
-	wagmiCookieValue?: string | null;
+	readonly children: React.ReactNode;
 }
 
 /**
- * Root client provider tree.
+ * Root client provider tree — app-wide concerns only.
  *
- * QueryProvider is outermost — single QueryClient for both app queries and wagmi.
- * Web3Provider reuses the app's QueryClient instead of creating its own.
- * This avoids the nested-QueryClientProvider problem where the innermost
- * provider overrides the app's configured defaults (staleTime, refetch policies).
+ * `QueryProvider` is outermost so the raffle-detail-scoped `Web3Provider`
+ * (at `app/(public)/browse/[publicSlug]/layout.tsx`) can share the app's
+ * configured `QueryClient` (staleTime: Infinity, refetch disabled). A
+ * nested `QueryClientProvider` would override those defaults.
  *
  * `SentryUserSync` is a zero-render side-effect component mounted once here
- * so every client-side error captured during this page session is tagged
- * with the authenticated user ID. It has no DOM output and lives at the
- * root so it runs regardless of which route the user loads first.
- *
- * @returns provider tree wrapping children
+ * so every client-side error captured during the session is tagged with the
+ * authenticated user ID, regardless of which route the user lands on first.
  */
-export function ProvidersClient({
-	children,
-	wagmiCookieValue,
-}: ProvidersClientProps) {
+export function ProvidersClient({ children }: ProvidersClientProps) {
 	return (
 		<QueryProvider>
-			<Web3Provider wagmiCookieValue={wagmiCookieValue}>
-				<MixpanelProvider>
-					<SentryUserSync />
-					{children}
-				</MixpanelProvider>
-			</Web3Provider>
+			<MixpanelProvider>
+				<SentryUserSync />
+				{children}
+			</MixpanelProvider>
 		</QueryProvider>
 	);
 }

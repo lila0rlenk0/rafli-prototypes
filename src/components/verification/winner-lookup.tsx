@@ -13,7 +13,10 @@ import { useState } from 'react';
 
 import { CopyButton } from '@/components/ui/copy-button';
 import { cn } from '@/lib/utils';
-import { getVrfContractUrl } from '@/lib/verification-links';
+import {
+	getVrfCoordinatorUrl,
+	getVrfHandlerUrl,
+} from '@/lib/verification-links';
 import { verifyWinner } from '@/services/verification/verify-winner';
 import { VERIFICATION_ERROR_CODES } from '@/types/errors/verification-errors';
 import type { VerificationErrorCode } from '@/types/errors/verification-errors';
@@ -53,17 +56,27 @@ export function WinnerLookup() {
 		setLoading(true);
 		setResult(null);
 
-		// User enters 1-indexed position (1 = first place);
-		// verifyWinner expects 0-indexed (matching backend convention).
-		const response = await verifyWinner(raffleId.trim(), posNum - 1);
+		try {
+			// User enters 1-indexed position (1 = first place);
+			// verifyWinner expects 0-indexed (matching backend convention).
+			const response = await verifyWinner(raffleId.trim(), posNum - 1);
 
-		if (response.success) {
-			setResult({ type: 'success', data: response.data });
-		} else {
-			setResult({ type: 'error', message: getErrorMessage(response.error) });
+			if (response.success) {
+				setResult({ type: 'success', data: response.data });
+			} else {
+				setResult({ type: 'error', message: getErrorMessage(response.error) });
+			}
+		} catch {
+			// Defensive: service actions normally return ServiceResponse<_,_>, but a
+			// raw throw (network-level rejection, JSON parse bypass) must not strand
+			// the spinner in the "Looking up..." state with no recovery.
+			setResult({
+				type: 'error',
+				message: getErrorMessage('network_error'),
+			});
+		} finally {
+			setLoading(false);
 		}
-
-		setLoading(false);
 	}
 
 	function handleReset() {
@@ -245,15 +258,27 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 				</div>
 			</div>
 
-			<a
-				href={getVrfContractUrl()}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="inline-flex items-center gap-1 rounded bg-blue-50 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-100"
-			>
-				VRF Contract
-				<ExternalLink className="size-3" />
-			</a>
+			{/* Chainlink-owned oracle (source of randomness) and Rafli-owned consumer (winner selection) */}
+			<div className="flex flex-wrap gap-2">
+				<a
+					href={getVrfCoordinatorUrl()}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="inline-flex items-center gap-1 rounded bg-blue-50 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-100"
+				>
+					Chainlink VRF Coordinator
+					<ExternalLink className="size-3" />
+				</a>
+				<a
+					href={getVrfHandlerUrl()}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="inline-flex items-center gap-1 rounded bg-neutral-100 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-200"
+				>
+					Rafli VRF Handler
+					<ExternalLink className="size-3" />
+				</a>
+			</div>
 
 			<div className="flex flex-col gap-2 sm:flex-row">
 				<button

@@ -106,26 +106,79 @@ describe('buildCheckoutOrder', () => {
 		expect(mockToastError).toHaveBeenCalledTimes(1);
 	});
 
-	test('toasts error for promo-related backend errors', async () => {
+	test('clears promo UI and surfaces promo-specific message when backend returns core:promo:expired', async () => {
 		resetAllMocks();
-		// Promo errors (core:promo:*) aren't in OrderErrorCode — mapOrderError falls
-		// through to mapCommonError, so buildCheckoutOrder sees a generic error.
-		// This test verifies the toast still fires for promo-adjacent failures.
+		// Atomic /orders/checkout surfaces core:promo:* errors — frontend must
+		// preserve them so shouldClearPromo() can trigger the clear-and-retry UX
 		mockPost.mockRejectedValueOnce(
 			mockAxiosError({
 				status: 400,
 				data: { type: 'urn:raffles:problem:core:promo:expired' },
 			}),
 		);
+		const onPromoInvalid = mock();
 
 		const result = await buildCheckoutOrder({
 			raffleId: RAFFLE_ID,
 			ticketQuantity: 2,
 			promoCode: 'EXPIRED',
+			onPromoInvalid,
 		});
 
 		expect(result).toBeNull();
+		// onPromoInvalid fires because the code is deterministically bad — caller
+		// clears the input so the user isn't stuck resubmitting the same code
+		expect(onPromoInvalid).toHaveBeenCalledTimes(1);
 		expect(mockToastError).toHaveBeenCalledTimes(1);
+		expect(mockToastError).toHaveBeenCalledWith('This promo code has expired');
+	});
+
+	test('clears promo UI and surfaces promo-specific message when backend returns core:promo:not-found', async () => {
+		resetAllMocks();
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 404,
+				data: { type: 'urn:raffles:problem:core:promo:not-found' },
+			}),
+		);
+		const onPromoInvalid = mock();
+
+		const result = await buildCheckoutOrder({
+			raffleId: RAFFLE_ID,
+			ticketQuantity: 2,
+			promoCode: 'MISSING',
+			onPromoInvalid,
+		});
+
+		expect(result).toBeNull();
+		expect(onPromoInvalid).toHaveBeenCalledTimes(1);
+		expect(mockToastError).toHaveBeenCalledWith('Promo code not found');
+	});
+
+	test('does not clear promo for retryable core:promo:question-required', async () => {
+		resetAllMocks();
+		// question-required is surfaceable but recoverable — user answers the
+		// question, keeps the code, retries. Clearing would discard a valid code.
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 400,
+				data: { type: 'urn:raffles:problem:core:promo:question-required' },
+			}),
+		);
+		const onPromoInvalid = mock();
+
+		const result = await buildCheckoutOrder({
+			raffleId: RAFFLE_ID,
+			ticketQuantity: 2,
+			promoCode: 'FREETIX',
+			onPromoInvalid,
+		});
+
+		expect(result).toBeNull();
+		expect(onPromoInvalid).not.toHaveBeenCalled();
+		expect(mockToastError).toHaveBeenCalledWith(
+			'Please answer the question first',
+		);
 	});
 
 	test('returns fully discounted result and toasts success', async () => {

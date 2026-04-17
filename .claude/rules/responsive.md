@@ -1,0 +1,39 @@
+---
+paths:
+  - 'src/**/*.tsx'
+---
+
+# Responsive
+
+## Breakpoints
+
+- prefix comes before the utility: `md:flex`, never `flex md:flex`
+- `sm:` (640px) optional polish, `md:` (768px) layout direction flips, `lg:` (1024px) column expansion
+- stick to named breakpoints — never arbitrary `min-[750px]:`
+
+## Typography
+
+- scale only headings: `text-2xl md:text-4xl lg:text-5xl` — body copy stays fixed
+- line height on the size: `text-2xl/tight`, `text-base/7` — never pair with `leading-*`
+
+## Sizing
+
+- page shell height: `min-h-dvh` — never `min-h-screen` (mobile Safari chrome)
+- `size-*` over `w-* h-*` when equal
+- max widths from the container scale: `max-w-2xl`, `max-w-4xl` — never `max-w-[672px]`
+
+## Layout patterns
+
+- page shell: `container mx-auto px-4`
+- collapsing flex: `flex flex-col md:flex-row`
+- responsive grid: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`
+- fluid image: `aspect-video` or `aspect-square` + `object-cover` — prevents CLS
+
+## Container queries
+
+`@container` + `@md:` when a component reacts to parent width, not viewport — required for sidebar / modal / full-width reuse.
+
+## Touch
+
+- touch targets minimum 44×44px on mobile
+- avoid hover-only affordances — pair with focus/active states

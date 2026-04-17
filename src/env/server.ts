@@ -12,6 +12,11 @@ import z from 'zod';
  * @returns Validated server environment variables
  */
 export const env = createEnv({
+	shared: {
+		NODE_ENV: z
+			.enum(['development', 'production', 'test'])
+			.default('development'),
+	},
 	server: {
 		// No defaults — production/staging MUST provide these explicitly.
 		// Local dev sets them in .env.local (http://localhost:4000 / :3000).
@@ -25,6 +30,7 @@ export const env = createEnv({
 	},
 	// Required by @t3-oss/env-nextjs — literal process.env references for static analysis
 	runtimeEnv: {
+		NODE_ENV: process.env.NODE_ENV,
 		BACKEND_URL: process.env.BACKEND_URL,
 		APP_URL: process.env.APP_URL,
 		S2S_SECRET: process.env.S2S_SECRET,

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { getWinningStatusLabel } from '@/lib/utils/winning-status-label';
 import { WINNING_STATUS, type WinningStatus } from '@/types/winning';
 
 interface WinningStatusBadgeProps {
@@ -42,28 +43,6 @@ export function WinningStatusBadge({
 		}
 	}
 
-	function getStatusLabel(): string {
-		switch (status) {
-			case WINNING_STATUS.PENDING:
-			case WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT:
-				return 'Pending';
-			case WINNING_STATUS.AWAITING_HOST:
-				return 'Awaiting';
-			case WINNING_STATUS.SENT:
-				return 'Sent';
-			case WINNING_STATUS.DELIVERED:
-				return 'Delivered';
-			case WINNING_STATUS.RECEIVED:
-				return 'Received';
-			case WINNING_STATUS.DISPUTED:
-				return 'Disputed';
-			case WINNING_STATUS.RESOLVED:
-				return 'Resolved';
-			default:
-				return status;
-		}
-	}
-
 	return (
 		<span
 			className={cn(
@@ -72,7 +51,7 @@ export function WinningStatusBadge({
 				className,
 			)}
 		>
-			{getStatusLabel()}
+			{getWinningStatusLabel(status)}
 		</span>
 	);
 }

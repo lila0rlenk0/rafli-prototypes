@@ -1,24 +1,33 @@
+---
+paths:
+  - 'eslint.config.mjs'
+  - 'src/**/*.{ts,tsx}'
+---
+
 # ESLint
+
+Config: `eslint.config.mjs` — flat config, extends `next/core-web-vitals`, `next/typescript`, `prettier`. Custom overrides: `no-unused-vars` and `no-explicit-any` both `error`.
+
+## Rules
 
 - zero `eslint-disable` directives — no exceptions
 - zero `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`
-- fix the code, never suppress. if rule is wrong, refactor to avoid triggering
-- config: `eslint.config.mjs` — flat config, extends `next/core-web-vitals`, `next/typescript`, `prettier`
-- custom overrides: `no-unused-vars` and `no-explicit-any` both `error`
+- fix the code, never suppress. If the rule is wrong, refactor to avoid triggering it
 
-## Config Gaps
+## Config gaps
 
-fix when touching `eslint.config.mjs`:
+Fix when touching `eslint.config.mjs`:
+
 - `ban-ts-comment` allows `@ts-expect-error` with description — override to ban all three
 - `no-unused-expressions` downgraded to `warn` — override to `error`
 - `reportUnusedDisableDirectives` is `warn` — set to `error`
 - no `no-restricted-syntax` to ban direct `useEffect` calls
 
-## exhaustive-deps with Optional Chaining
+## exhaustive-deps with optional chaining
 
-extract chained values to local variables — linter accepts simple identifiers:
+Extract chained values to local variables — the linter accepts simple identifiers:
 
 ```tsx
 const submitDeadline = session?.submitDeadline;
-// use submitDeadline in deps, not session?.submitDeadline
+useEffect(() => { ... }, [submitDeadline]); // not session?.submitDeadline
 ```

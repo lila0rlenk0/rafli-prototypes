@@ -58,15 +58,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense, type ComponentProps } from 'react';
 import { BugIcon } from '@/assets/icons/bug-icon';
-import { MobileBackButton } from './mobile-back-button';
-import { PaymentModalWrapper } from './payment-modal-wrapper';
-import { PostUpdateButton } from './post-update-button';
-import { PromoCodesCard } from './promo-codes-card';
-import { ReportRaffleButton } from './report-raffle-button';
-import { CopyRaffleLinkButton } from './copy-raffle-link-button';
-import { ShareOnXButton } from './share-on-x-button';
-import { StickyBuyTicketsCta } from './sticky-buy-tickets-cta';
-import type { XShareConfig } from './use-x-share';
+import { CopyRaffleLinkButton } from '@/components/browse/public-slug/copy-raffle-link-button';
+import { MobileBackButton } from '@/components/browse/public-slug/mobile-back-button';
+import { PaymentModalWrapper } from '@/components/browse/public-slug/payment-modal-wrapper';
+import { PostUpdateButton } from '@/components/browse/public-slug/post-update-button';
+import { PromoCodesCard } from '@/components/browse/public-slug/promo-codes-card';
+import { ReportRaffleButton } from '@/components/browse/public-slug/report-raffle-button';
+import { ShareOnXButton } from '@/components/browse/public-slug/share-on-x-button';
+import { StickyBuyTicketsCta } from '@/components/browse/public-slug/sticky-buy-tickets-cta';
+import type { XShareConfig } from '@/components/browse/public-slug/use-x-share';
 
 interface PageProps {
 	params: Promise<{
@@ -77,57 +77,34 @@ interface PageProps {
 	}>;
 }
 
-/**
- * Raffle Detail Page
- *
- * Server Component — displays full details of a specific raffle.
- * Data-fetching strategy:
- *   1. Parallel fetch: raffle + categories (no auth dependency)
- *   2. Sequential: session check (cookie read)
- *   3. Conditional parallel: user-specific data (tickets, winnings, profile, credits)
- *      only when authenticated — avoids 401s for guests.
- *
- * Caching: getRaffle uses RAFFLE_DETAIL tag (300s TTL), getCategories uses CATEGORIES tag (3600s).
- * searchParams.session_id drives the Stripe payment status modal after redirect.
- */
+function resolveCategoryName(
+	categories: Category[],
+	categoryId: string | undefined,
+): string {
+	if (!categoryId) return 'Other';
+	const category = categories.find(c => c.id === categoryId);
+	return category?.name || 'Other';
+}
+
+const TICKET_PURCHASE_CARD_FALLBACK = (
+	<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
+);
+
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;
-
-	/**
-	 * Resolves a category ID to its display name.
-	 * Falls back to 'Other' when category is missing or not found in the active list.
-	 *
-	 * @param categories - Active categories fetched from getCategories
-	 * @param categoryId - The raffle's categoryId (nullable — drafts may omit it)
-	 * @returns Human-readable category name
-	 */
-	function getCategoryName(
-		categories: Category[],
-		categoryId: string | undefined,
-	): string {
-		if (!categoryId) return 'Other';
-		const category = categories.find(c => c.id === categoryId);
-		return category?.name || 'Other';
-	}
-
-	// Step 1: Fetch raffle + categories in parallel — neither depends on auth.
-	// Categories cached 3600s, raffle cached 300s (RAFFLE_DETAIL tag).
 	const [response, categoriesResponse] = await Promise.all([
 		getRaffle(publicSlug),
 		getCategories(),
 	]);
 
-	// Filter to active categories only — inactive ones are admin-disabled
 	const categories = categoriesResponse.success
 		? categoriesResponse.data.categories.filter(c => c.isActive)
 		: [];
 
-	// Backend returns core:raffle:not-found for invalid slugs — surface Next.js 404 page
 	if (!response.success && response.error === RAFFLE_ERROR_CODES.NOT_FOUND) {
 		notFound();
 	}
 
-	// Guard: early return on non-404 raffle fetch failure
 	if (!response.success) {
 		return (
 			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 text-center">
@@ -152,21 +129,16 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	}
 
 	const raffle = response.data;
-
-	// Step 2: Load session — sequential because it reads cookies (runtime data).
-	// Cannot be parallelized with Step 1 safely in all deployment modes.
 	const session = await getSession();
 	const isAuthenticated = !!session;
 	const currentUserId = session?.user?.id ?? null;
 
-	// Fire-and-forget analytics — raffle view is high-volume, must not block render.
-	// Tracks category, price, status, and host for funnel analysis + host attribution.
 	void trackServer(
 		RAFFLE_EVENTS.VIEWED,
 		{
 			raffle_id: raffle.id,
 			raffle_slug: raffle.publicSlugOrCode,
-			category: getCategoryName(categories, raffle.categoryId),
+			category: resolveCategoryName(categories, raffle.categoryId),
 			status: raffle.status,
 			ticket_price: raffle.ticketPriceAmount,
 			host_id: raffle.hostId,
@@ -177,22 +149,15 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		{ userId: currentUserId ?? undefined },
 	);
 
-	// Step 3: Fetch user-specific data only when authenticated.
-	// Parallel Promise.all avoids waterfall — all four calls are independent.
-	// Guests skip entirely to avoid 401 responses.
 	let myTicketCodes: TicketCode[] = [];
 	let myTicketsTotal = 0;
 	let myWinning: Winning | null = null;
 	let myUserName: string | null = null;
 	let myUserAvatarUrl: string | null = null;
 	let availableCredits: string | null = null;
-	// KYC status for the winner flow — only fetched when the raffle is concluded
-	// since only concluded raffles can have winners who need to claim prizes.
 	let kycWinnerStatus: VerificationStatus | null = null;
 
 	if (isAuthenticated) {
-		// Only concluded raffles can produce winners — skip the verification status
-		// fetch entirely for live/draft/queued raffles to avoid unnecessary API calls.
 		const shouldFetchKycStatus = CONCLUDED_STATUSES.includes(
 			raffle.status as ConcludedStatus,
 		);
@@ -232,61 +197,37 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			availableCredits = creditBalanceResponse.data.availableAmount;
 		}
 
-		// Only the kyc_winner type matters for the prize claim flow.
-		// kyb_individual and kyb_company are host-only verifications.
 		if (verificationStatusResponse?.success) {
 			kycWinnerStatus = verificationStatusResponse.data.kycWinner.status;
 		}
 	}
 
 	const didUserWin = !!myWinning;
-
-	// Derive winning ticket code by matching the user's position against the winners array.
-	// Currently null — public API strips ticketCode from winners. Ready for backend enrichment.
 	const myWinningTicketCode =
 		myWinning?.position != null
 			? (raffle.winners?.find(w => w.position === myWinning.position)
 					?.ticketCode ?? null)
 			: null;
-
-	/**
-	 * Check if raffle is concluded (ended, completed, or fulfilling)
-	 */
-	function isRaffleConcluded(): boolean {
-		return CONCLUDED_STATUSES.includes(raffle.status as ConcludedStatus);
-	}
-
-	/**
-	 * Check if current user owns this raffle
-	 */
-	function isOwnRaffle(): boolean {
-		return currentUserId === raffle.hostId;
-	}
-
-	/**
-	 * Check if edit button should be shown.
-	 * Only for own draft raffles — backend restricts updates to draft status.
-	 */
-	function shouldShowEditButton(): boolean {
-		return isOwnRaffle() && raffle.status === RAFFLE_STATUS.DRAFT;
-	}
-
-	/**
-	 * Check if purchase should be disabled
-	 * Disabled for own live raffles
-	 */
-	function isPurchaseDisabled(): boolean {
-		const isOwner = isOwnRaffle();
-		const isLive = raffle.status === RAFFLE_STATUS.LIVE;
-
-		return isOwner && isLive;
-	}
-
-	const showEditButton = shouldShowEditButton();
-	const disablePurchase = isPurchaseDisabled();
-	const isConcluded = isRaffleConcluded();
-	const isOwner = isOwnRaffle();
+	const isConcluded = CONCLUDED_STATUSES.includes(
+		raffle.status as ConcludedStatus,
+	);
+	const isOwner = currentUserId === raffle.hostId;
+	const isCancelled = raffle.status === RAFFLE_STATUS.CANCELLED;
+	const cancellationReason = getCancellationReason(raffle);
 	const hasWinners = (raffle.winners?.length ?? 0) > 0;
+	const showEditButton = isOwner && raffle.status === RAFFLE_STATUS.DRAFT;
+	const disablePurchase = isOwner && raffle.status === RAFFLE_STATUS.LIVE;
+	const showWinnerCard = isConcluded && didUserWin && myWinning !== null;
+	const showHostFulfillment =
+		isOwner && isConcluded && hasWinners && !didUserWin;
+	const showDrawInProgress =
+		(raffle.status === RAFFLE_STATUS.ENDED ||
+			raffle.status === RAFFLE_STATUS.FULFILLING ||
+			raffle.status === RAFFLE_STATUS.COMPLETED) &&
+		!hasWinners;
+	const showNotWonCard = isConcluded && !didUserWin && !isOwner && hasWinners;
+	const showCancelledCard = isCancelled && cancellationReason !== null;
+	const showActiveCard = !isConcluded && !isCancelled;
 	const canManageUpdates = UPDATE_MANAGEABLE_STATUSES.includes(
 		raffle.status as UpdateManageableStatus,
 	);
@@ -297,159 +238,22 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	// Image URLs are now plain strings — no expiry checks needed
 	const hostAvatarUrl = raffle.host?.avatar ?? null;
 
-	/**
-	 * Check if raffle status allows promo code management
-	 */
-	function isManageableStatus(): boolean {
-		return PROMO_MANAGEABLE_STATUSES.includes(
-			raffle.status as PromoManageableStatus,
-		);
-	}
-
-	const isManageable = isManageableStatus();
-	const isCancelled = raffle.status === RAFFLE_STATUS.CANCELLED;
-	const cancellationReason = getCancellationReason(raffle);
-
-	// Step 4: Derive visibility flags for conditional card rendering.
-	// Each function encapsulates a business rule for which sidebar card to show.
-
-	/**
-	 * Checks if winner card should be shown — user participated and won
-	 */
-	function shouldShowWinnerCard(): boolean {
-		return isConcluded && didUserWin && !!myWinning;
-	}
-
-	/**
-	 * Checks if host fulfillment card should be shown
-	 */
-	function shouldShowHostFulfillment(): boolean {
-		return isOwner && isConcluded && hasWinners && !didUserWin;
-	}
-
-	/**
-	 * Checks if draw-in-progress card should be shown.
-	 * Active during `ended` (VRF in flight), `fulfilling` (VRF fulfilled,
-	 * winner persistence in progress), and `completed` when winners haven't
-	 * been created yet. All three states may have no winners.
-	 *
-	 * Why include `fulfilling`: poll-vrf CAS-transitions ended→fulfilling before
-	 * the vrfFulfilledTopic subscriber runs FulfillVrfCommand. If that subscriber
-	 * fails, the raffle sits in fulfilling with no winners for up to 5 minutes
-	 * (stuck recovery cron window). Without this guard, no sidebar card renders
-	 * during that window — the RaffleNotWonCard requires hasWinners and the
-	 * previous ENDED-only check missed this state entirely.
-	 *
-	 * Why include `completed`: the backend may transition ended→completed before
-	 * winning records are created (async via raffleCompletedTopic subscriber).
-	 * Without this guard, no card renders during the brief async window —
-	 * NotWonCard and WinnerCard both require hasWinners/didUserWin.
-	 */
-	function shouldShowDrawInProgress(): boolean {
-		return (
-			(raffle.status === RAFFLE_STATUS.ENDED ||
-				raffle.status === RAFFLE_STATUS.FULFILLING ||
-				raffle.status === RAFFLE_STATUS.COMPLETED) &&
-			!hasWinners
-		);
-	}
-
-	/**
-	 * Checks if "not won" card should be shown
-	 * Requires hasWinners so we don't show "not won" during VRF draw
-	 */
-	function shouldShowNotWonCard(): boolean {
-		return isConcluded && !didUserWin && !isOwner && hasWinners;
-	}
-
-	/**
-	 * Checks if cancelled card should be shown
-	 */
-	function shouldShowCancelledCard(): boolean {
-		return isCancelled && !!cancellationReason;
-	}
-
-	/**
-	 * Checks if active raffle card should be shown
-	 * Excludes both concluded and cancelled raffles
-	 */
-	function shouldShowActiveCard(): boolean {
-		return !isConcluded && !isCancelled;
-	}
-
-	/**
-	 * Gets the host display name from closure
-	 * Handles missing host data seamlessly
-	 * @returns The host's name or default
-	 */
-	function getHostName(): string {
-		if (!raffle.host || !raffle.host.name) return 'Raffle Host';
-
-		return raffle.host.name;
-	}
-
-	/**
-	 * Gets the first initial of the host's name from closure
-	 * @returns The first character of the name or empty string
-	 */
-	function getHostInitial(): string {
-		const name = getHostName();
-		if (!name) return '';
-
-		return name.charAt(0);
-	}
-
-	// TODO: The backend GET /raffles/{slug} endpoint intentionally excludes totalRaffles
-	// from the host object for performance reasons. To display the correct count, either:
-	// 1. Fetch host profile separately via getHostProfile(hostId)
-	// 2. Request backend team to add totalRaffles to the HostInfo interface
-	// See: raffles-core-backend/src/core/raffles/dto/raffle.dto.ts (HostInfo interface)
-	/**
-	 * Gets the formatted raffle count for the host from closure
-	 * @returns Formatted string with label
-	 */
-	function getHostRafflesCount(): string {
-		const count = raffle.host?.totalRaffles ?? 0;
-		return `${count} Raffles`;
-	}
-
-	/** Builds the host profile URL from username, falls back to hostId */
-	function getHostProfileUrl(): string {
-		if (raffle.host?.username) return `/host/${raffle.host.username}`;
-		return `/host/${raffle.host?.id ?? raffle.hostId}`;
-	}
-
-	/**
-	 * Parses the ticket price from string to number
-	 * @param priceString - Price as string from API
-	 * @returns Parsed price as number
-	 */
-	function parseTicketPrice(priceString: string): number {
-		return parseFloat(priceString);
-	}
-
-	/**
-	 * Calculates the available tickets for purchase
-	 * @param maxParticipants - Maximum number of participants
-	 * @param participantsCount - Current number of participants
-	 * @returns Number of available tickets
-	 */
-	function calculateAvailableTickets(
-		maxParticipants: number,
-		participantsCount: number,
-	): number {
-		return Math.max(0, maxParticipants - participantsCount);
-	}
-
-	// Step 5: Calculate derived values for render.
-	const ticketPrice = parseTicketPrice(raffle.ticketPriceAmount);
-	const availableTickets = calculateAvailableTickets(
-		raffle.maxParticipants,
-		raffle.participantsCount,
+	const isManageable = PROMO_MANAGEABLE_STATUSES.includes(
+		raffle.status as PromoManageableStatus,
+	);
+	const showKycNotice = !isConcluded && !isCancelled;
+	const hostName = raffle.host?.name ?? 'Raffle Host';
+	const hostInitial = hostName.charAt(0);
+	const hostRafflesCount = `${raffle.host?.totalRaffles ?? 0} Raffles`;
+	const hostProfileUrl = raffle.host?.username
+		? `/host/${raffle.host.username}`
+		: `/host/${raffle.host?.id ?? raffle.hostId}`;
+	const ticketPrice = Number.parseFloat(raffle.ticketPriceAmount);
+	const availableTickets = Math.max(
+		0,
+		raffle.maxParticipants - raffle.participantsCount,
 	);
 
-	// Shared config for X share components — built once, passed to both
-	// desktop (ShareOnXButton) and mobile (StickyBuyTicketsCta) buttons
 	const xShareConfig: XShareConfig = {
 		raffleId: raffle.id,
 		title: raffle.title,
@@ -460,45 +264,32 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	};
 
 	return (
-		// TicketQuantityStoreProvider scopes the shared purchase quantity to a
-		// single raffle page mount. The mobile sticky CTA bundle quick-picks and
-		// the inline TicketSelector inside the card both subscribe to it, so
-		// quantity stays in sync across the two distant subtrees without
-		// prop-drilling. A fresh raffle navigation re-creates the store.
 		<TicketQuantityStoreProvider>
-			<div className="container mx-auto flex max-w-6xl flex-col gap-4 px-0 lg:gap-8 lg:px-4">
-				{/* Mobile: fixed back button in nav area */}
+			<div className="container mx-auto flex max-w-6xl flex-col gap-4 px-0 pt-0 pb-8 sm:py-8 lg:gap-8 lg:px-4">
 				<MobileBackButton />
 
-				{/* Desktop back link */}
 				<div className="hidden lg:block">
 					<BackLink fallbackHref="/browse" label="Back to Raffle Browse" />
 				</div>
 
-				{/* Mobile: fixed countdown banner — shown for active raffles */}
-				{shouldShowActiveCard() ? (
+				{showActiveCard ? (
 					<>
 						<MobileCountdownBanner endAt={raffle.endAt} />
-						{/* Spacer for fixed banner height on mobile */}
 						<div className="h-12 lg:hidden" />
 					</>
 				) : null}
 
 				<div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_24rem] lg:gap-8">
-					{/* Left column */}
 					<div className="contents lg:col-start-1 lg:flex lg:flex-col lg:gap-8">
-						{/* Main card with image + title + description + purchase (mobile) */}
 						<div className="order-1 flex w-full flex-col gap-4 rounded-3xl bg-white px-4 py-6 lg:gap-5 lg:overflow-hidden lg:p-8">
-							{/* Raffle image — inside card on both mobile and desktop */}
 							<RaffleImageGallery
 								coverImage={raffle.coverMediaUrl}
 								galleryImages={raffle.galleryMediaUrls}
 								alt={raffle.title}
 							/>
 
-							{/* Title with badges */}
 							<div className="flex flex-wrap items-center gap-3">
-								<h2 className="font-clash-display text-[22px] leading-tight font-semibold tracking-tight text-[#182135] lg:text-4xl">
+								<h2 className="font-clash-display lg:text-h2 text-h4 leading-tight font-semibold tracking-tight text-[#182135]">
 									{raffle.title}
 								</h2>
 								{isAuthenticated && !isOwner && myTicketsTotal > 0 ? (
@@ -512,9 +303,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								) : null}
 							</div>
 
-							{/* Host info */}
 							<Link
-								href={getHostProfileUrl()}
+								href={hostProfileUrl}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="group flex w-fit items-center gap-3"
@@ -523,48 +313,40 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									{hostAvatarUrl ? (
 										<Image
 											src={hostAvatarUrl}
-											alt={getHostName()}
+											alt={hostName}
 											fill
 											sizes="40px"
 											className="object-cover"
 										/>
 									) : (
-										getHostInitial()
+										hostInitial
 									)}
 								</div>
 								<div className="flex min-w-0 flex-col text-sm">
 									<span className="truncate group-hover:underline">
-										by {getHostName()}
+										by {hostName}
 									</span>
-									<span className="text-[#7B7B7B]">
-										{getHostRafflesCount()}
-									</span>
+									<span className="text-[#7B7B7B]">{hostRafflesCount}</span>
 								</div>
 							</Link>
 
-							{/* Description — categories shown inside when expanded */}
 							<CollapsibleDescription
 								content={raffle.description || ''}
 								expandedSlot={
 									<div className="flex flex-wrap gap-4 pt-2">
 										<div className="rounded-2xl bg-[#DFFFED] px-3 py-1">
 											<span className="text-sm capitalize">
-												{getCategoryName(categories, raffle.categoryId)}
+												{resolveCategoryName(categories, raffle.categoryId)}
 											</span>
 										</div>
 									</div>
 								}
 							/>
 
-							{/* Mobile: inline purchase section */}
-							{shouldShowActiveCard() ? (
+							{showActiveCard ? (
 								<div className="lg:hidden">
 									<RaffleExpiredGate endAt={raffle.endAt}>
-										<Suspense
-											fallback={
-												<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
-											}
-										>
+										<Suspense fallback={TICKET_PURCHASE_CARD_FALLBACK}>
 											<TicketPurchaseCard
 												raffleId={raffle.id}
 												publicSlug={publicSlug}
@@ -589,8 +371,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										) : null}
 									</RaffleExpiredGate>
 
-									{/* KYC notice — mobile */}
-									{!isConcluded && !isCancelled ? (
+									{showKycNotice ? (
 										<div className="mt-4 flex items-center gap-2">
 											<InfoIcon className="size-4 shrink-0 text-[#7B7B7B]" />
 											<p className="text-sm text-[#7B7B7B]">
@@ -602,7 +383,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							) : null}
 						</div>
 
-						{/* Updates from host */}
 						<div className="order-3">
 							<RaffleUpdatesCard
 								raffleId={raffle.id}
@@ -617,7 +397,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							/>
 						</div>
 
-						{/* Comment section */}
 						{isCommentable ? (
 							<div className="order-4">
 								<CommentSection
@@ -629,7 +408,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</div>
 						) : null}
 
-						{/* FAQ */}
 						<div className="order-5 flex w-full flex-col gap-5 rounded-3xl bg-white px-4 py-6 lg:overflow-hidden lg:p-8">
 							<h3 className="font-clash-display text-2xl font-semibold text-[#182135]">
 								Have a question?
@@ -697,11 +475,8 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</Accordion>
 						</div>
 					</div>
-					{/* End left column wrapper */}
-
-					{/* Right sidebar — hidden on mobile for active raffles (purchase is inline), shown on desktop */}
 					<div className="order-2 space-y-2 lg:col-start-2">
-						{shouldShowWinnerCard() && myWinning ? (
+						{showWinnerCard && myWinning ? (
 							<>
 								<RaffleWonCard
 									userName={myUserName ?? 'Winner'}
@@ -720,7 +495,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</>
 						) : null}
 
-						{shouldShowHostFulfillment() ? (
+						{showHostFulfillment ? (
 							<>
 								<HostFulfillmentCard
 									publicSlug={publicSlug}
@@ -737,8 +512,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</>
 						) : null}
 
-						{/* Draw in progress: combined card + polling with timeout feedback */}
-						{shouldShowDrawInProgress() ? (
+						{showDrawInProgress ? (
 							<RaffleDrawWithRefresh
 								status={raffle.status}
 								endAt={raffle.endAt}
@@ -746,9 +520,9 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							/>
 						) : null}
 
-						{shouldShowCancelledCard() ? (
+						{showCancelledCard && cancellationReason ? (
 							<RaffleCancelledCard
-								reason={cancellationReason!}
+								reason={cancellationReason}
 								isOwner={isOwner}
 								participantsCount={raffle.participantsCount}
 								numberOfWinners={raffle.numberOfWinners}
@@ -757,7 +531,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							/>
 						) : null}
 
-						{shouldShowNotWonCard() ? (
+						{showNotWonCard ? (
 							<RaffleNotWonCard
 								status={raffle.status}
 								publicSlug={publicSlug}
@@ -765,8 +539,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							/>
 						) : null}
 
-						{/* Desktop: active raffle card with countdown + purchase */}
-						{shouldShowActiveCard() ? (
+						{showActiveCard ? (
 							<div
 								id="checkout-section"
 								className="hidden h-fit rounded-2xl border border-black bg-white/95 p-8 lg:block"
@@ -782,11 +555,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 								</div>
 
 								<RaffleExpiredGate endAt={raffle.endAt}>
-									<Suspense
-										fallback={
-											<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
-										}
-									>
+									<Suspense fallback={TICKET_PURCHASE_CARD_FALLBACK}>
 										<TicketPurchaseCard
 											raffleId={raffle.id}
 											publicSlug={publicSlug}
@@ -811,14 +580,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									) : null}
 								</RaffleExpiredGate>
 
-								{/* Share-on-X visibility rules:
-							    - Guests: hidden — sharing without an account can't be
-							      attributed to anyone, so the free-ticket reward is meaningless.
-							    - Hosts of this raffle (own draft or own live): hidden — same
-							      rationale as the disabled BuyButton/CryptoBuyButton above
-							      this block. The host can't enter their own raffle, so claiming
-							      a free ticket via share would also be impossible. Matches the
-							      "You cannot purchase tickets for your own raffle" gate. */}
 								{isAuthenticated && !showEditButton && !disablePurchase ? (
 									<ShareOnXButton {...xShareConfig} />
 								) : null}
@@ -852,8 +613,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							isManageable={isManageable}
 						/>
 
-						{/* Desktop: KYC notice */}
-						{!isConcluded && !isCancelled ? (
+						{showKycNotice ? (
 							<div className="hidden items-center justify-center gap-2 lg:flex">
 								<InfoIcon className="size-4 text-[#7B7B7B]" />
 								<p className="text-sm text-[#7B7B7B]">
@@ -862,11 +622,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							</div>
 						) : null}
 
-						{/* Auto-refresh during transitional states.
-					    Skipped when draw-in-progress card is shown — that branch uses
-					    RaffleDrawWithRefresh which owns its own polling to wire the
-					    timeout signal into the card. */}
-						{!shouldShowDrawInProgress() ? (
+						{!showDrawInProgress ? (
 							<RaffleAutoRefresh
 								status={raffle.status}
 								endAt={raffle.endAt}
@@ -880,7 +636,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					searchParams={searchParams}
 				/>
 
-				{shouldShowActiveCard() ? (
+				{showActiveCard ? (
 					<StickyBuyTicketsCta
 						{...xShareConfig}
 						isAuthenticated={isAuthenticated}
@@ -895,11 +651,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 	);
 }
 
-/**
- * RaffleFireIcon Component
- *
- * Decorative fire icon for the raffle active state.
- */
 function RaffleFireIcon(props: ComponentProps<'svg'>) {
 	return (
 		<svg

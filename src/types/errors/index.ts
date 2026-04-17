@@ -17,3 +17,5 @@ export * from './comment-errors';
 export * from './report-errors';
 export * from './kyc-submission-errors';
 export * from './admin-kyc-errors';
+export * from './subscription-errors';
+export * from './chat-errors';

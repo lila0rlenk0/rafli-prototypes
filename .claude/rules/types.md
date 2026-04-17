@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'src/types/**'
+  - 'src/types/**/*.ts'
 ---
 
 # Types
@@ -9,18 +9,24 @@ Zod schema-first. Single source of truth for data contracts.
 
 ## Directory
 
-- `errors/` — error codes by domain
-- `service-response.ts` — `ServiceResponse<T, E>`
+- `errors/` — error codes by domain (`as const` maps)
+- `service-response.ts` — `ServiceResponse<T, E>` discriminated union
 - `pagination.ts` — reusable pagination schema
-- `[domain].ts` — entity schemas
+- `<domain>.ts` — entity schemas + inferred types
 
-## File Order
+## File order
 
-constants (`as const`) → types from constants → Zod schemas → inferred types (`z.infer<>`) → query schemas
+1. constants (`as const`)
+2. types derived from constants
+3. Zod schemas
+4. inferred types (`z.infer<>`)
+5. query / params schemas
 
 ## Rules
 
-- schema first, then `z.infer<>` — never manual interfaces without backing schema
+- schema first, then `z.infer<>` — never manual interfaces without a backing schema
 - `as const` for constant objects
 - `.extend()` for schema composition
-- error code format: `<domain>:<scope>:<specific>` (matches backend RFC 7807)
+- error code format: `<domain>:<scope>:<specific>` — matches backend RFC 7807
+- shared client/server schemas go in `@/types`, never in a service file
+- `readonly` on fields that must never be mutated post-construction

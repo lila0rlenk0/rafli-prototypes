@@ -5,6 +5,7 @@ import { Navbar } from '@/components/ui/navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
+import { ChatStoreProvider } from '@/providers/chat-store-provider';
 import { NotificationStoreProvider } from '@/providers/notification-store-provider';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
@@ -28,7 +29,16 @@ async function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
 		<AuthGuard>
 			<UserStoreProvider permissions={permissions}>
 				<NotificationStoreProvider>
-					<Navbar>{children}</Navbar>
+					{/*
+					 * ChatStoreProvider lives here so the navbar chat icon can
+					 * display a real-time unread badge on every protected page
+					 * without each route re-establishing the WebSocket.
+					 * Feature-flag gating is handled inside the provider — when
+					 * CHAT_ENABLED is false it skips the WS entirely.
+					 */}
+					<ChatStoreProvider>
+						<Navbar>{children}</Navbar>
+					</ChatStoreProvider>
 				</NotificationStoreProvider>
 			</UserStoreProvider>
 		</AuthGuard>

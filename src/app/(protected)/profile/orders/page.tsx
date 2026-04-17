@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
+import { OrdersTable } from '@/components/profile/orders-table';
+import { parsePositivePageParam } from '@/lib/pagination/parse-positive-page-param';
 import { getMyOrders } from '@/services/order/get-my-orders';
-
-import { OrdersTable } from './orders-table';
 import { ArrowLeft } from 'lucide-react';
 
 /**
@@ -21,7 +21,7 @@ interface OrdersPageProps {
  */
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 	const params = await searchParams;
-	const page = params.page ? parseInt(params.page, 10) : 1;
+	const page = parsePositivePageParam(params.page);
 	const limit = 10;
 
 	const result = await getMyOrders({ page, limit });

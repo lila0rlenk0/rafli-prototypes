@@ -7,7 +7,7 @@ import { Suspense } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 
 import './globals.css';
-import { Providers } from './providers';
+import { ProvidersClient } from './providers-client';
 
 const clashDisplay = localFont({
 	src: '../../public/fonts/ClashDisplay-Variable.ttf',
@@ -68,8 +68,17 @@ export const metadata: Metadata = {
 
 /**
  * Application-wide layout. Fonts, analytics, toast.
- * Suspense here is required for wagmi SSR hydration — ProvidersClient reads
- * the wagmi cookie in an async server component.
+ *
+ * Web3 (wagmi + Reown AppKit) is route-scoped at
+ * `src/app/(public)/browse/[publicSlug]/layout.tsx` — mounting it here would
+ * ship the Reown + wagmi + viem chunk to every route.
+ *
+ * The Suspense boundary below is REQUIRED by `cacheComponents: true` in
+ * `next.config.ts`: it separates the static HTML shell from the client
+ * provider tree, which reads request-time data (`usePathname` in
+ * `MixpanelProvider`). Without it, Next.js 16 fails prerender with
+ * "Uncached data was accessed outside of <Suspense>" on any route whose
+ * layout doesn't already supply its own boundary.
  */
 export default function RootLayout({
 	children,
@@ -87,10 +96,10 @@ export default function RootLayout({
 				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} font-sans antialiased`}
 			>
 				<Suspense fallback={null}>
-					<Providers>
+					<ProvidersClient>
 						{children}
 						<Toaster />
-					</Providers>
+					</ProvidersClient>
 				</Suspense>
 			</body>
 		</html>

@@ -20,7 +20,7 @@ Infrastructure utilities. API clients, error handling, auth, caching, analytics,
 - `hooks/` — custom React hooks
 - `permissions.ts` — permission constants (`raffle:create`, `raffle:manage`, `raffle:participate`)
 - `notification-stream.ts` — WebSocket client for real-time notifications
-- `web3/` — Wagmi/RainbowKit config (feature-gated by `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`)
+- `web3/` — Reown AppKit + wagmi (300+ wallets), route-gated to `/browse/[slug]`
 - `utils/` — general utilities (date formatting, etc.)
 - `utils.ts` — Tailwind `cn()` helper
 

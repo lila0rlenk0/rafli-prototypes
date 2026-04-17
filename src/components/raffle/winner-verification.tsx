@@ -18,7 +18,8 @@ import {
 import {
 	getArbiscanTxUrl,
 	getIpfsUrl,
-	getVrfContractUrl,
+	getVrfCoordinatorUrl,
+	getVrfHandlerUrl,
 } from '@/lib/verification-links';
 import { useWinnerVerification } from '@/services/verification/use-winner-verification';
 
@@ -119,21 +120,41 @@ export function WinnerVerification({
 							</div>
 
 							<div className="flex flex-wrap gap-2 pt-1">
+								{/* Chainlink-owned oracle — the cryptographic source of randomness */}
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<a
-											href={getVrfContractUrl()}
+											href={getVrfCoordinatorUrl()}
 											target="_blank"
 											rel="noopener noreferrer"
 											className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-blue-600 hover:bg-blue-100"
 										>
-											VRF Contract
+											Chainlink VRF
 											<ExternalLink className="size-3" />
 										</a>
 									</TooltipTrigger>
 									<TooltipContent>
 										Chainlink&apos;s random number generator on Arbitrum
 										blockchain
+									</TooltipContent>
+								</Tooltip>
+
+								{/* Rafli-owned consumer — receives randomness and applies winner selection formula */}
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<a
+											href={getVrfHandlerUrl()}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="inline-flex items-center gap-1 rounded bg-neutral-100 px-2 py-1 text-neutral-700 hover:bg-neutral-200"
+										>
+											Rafli Handler
+											<ExternalLink className="size-3" />
+										</a>
+									</TooltipTrigger>
+									<TooltipContent>
+										Rafli&apos;s contract that receives randomness and selects
+										winners
 									</TooltipContent>
 								</Tooltip>
 

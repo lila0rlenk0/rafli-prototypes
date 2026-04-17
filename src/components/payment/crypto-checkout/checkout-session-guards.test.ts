@@ -8,6 +8,8 @@ import {
 	getPaySessionRevalidationDecision,
 	getPolledTxHashSyncDecision,
 	getReviewSessionGuard,
+	isTerminalConfirmError,
+	shouldScheduleConfirmRetry,
 } from './checkout-session-guards';
 
 /** Backend-provided submit deadline — 10 minutes after some base time */
@@ -235,5 +237,41 @@ describe('getPolledTxHashSyncDecision', () => {
 					'abc1230000000000000000000000000000000000000000000000000000000001',
 			}),
 		).toEqual({ kind: 'noop' });
+	});
+});
+
+describe('confirm retry classification', () => {
+	test('treats expired/missing/unrecoverable sessions as terminal', () => {
+		expect(isTerminalConfirmError('payments:crypto:session-expired')).toBe(
+			true,
+		);
+		expect(isTerminalConfirmError('payments:crypto:session-not-found')).toBe(
+			true,
+		);
+		expect(
+			isTerminalConfirmError('payments:crypto:order-not-recoverable'),
+		).toBe(true);
+	});
+
+	test('does not schedule retries for convergence/terminal codes', () => {
+		expect(
+			shouldScheduleConfirmRetry('payments:crypto:already-confirming'),
+		).toBe(false);
+		expect(
+			shouldScheduleConfirmRetry('payments:crypto:already-completed'),
+		).toBe(false);
+		expect(
+			shouldScheduleConfirmRetry('payments:crypto:concurrent-update'),
+		).toBe(false);
+		expect(shouldScheduleConfirmRetry('payments:crypto:session-expired')).toBe(
+			false,
+		);
+	});
+
+	test('keeps retry enabled for transient confirm failures', () => {
+		expect(shouldScheduleConfirmRetry('payments:crypto:confirm-failed')).toBe(
+			true,
+		);
+		expect(shouldScheduleConfirmRetry('network_error')).toBe(true);
 	});
 });

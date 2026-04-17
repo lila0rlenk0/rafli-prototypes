@@ -7,12 +7,12 @@ import {
 	KYC_SUBMISSION_STATUS,
 	VERIFICATION_TYPE,
 } from '@/types/kyc-submission';
-import { FormHeader } from './form-header';
-import { FormStepComponent } from './form-step-component';
-import { getCurrentRejectedSubmissionNotice } from './page-helpers';
-import { RejectedSubmissionNotice } from './rejected-submission-notice';
-import { SubmissionsList } from './submissions-list';
-import { VerificationFormProvider } from './verification-form-provider';
+import { getCurrentRejectedSubmissionNotice } from '@/lib/verification/rejected-submission-notice';
+import { FormHeader } from '@/components/verification/form-header';
+import { FormStepComponent } from '@/components/verification/form-step-component';
+import { RejectedSubmissionNotice } from '@/components/verification/rejected-submission-notice';
+import { SubmissionsList } from '@/components/verification/submissions-list';
+import { VerificationFormProvider } from '@/components/verification/verification-form-provider';
 
 /**
  * Checks if a submission is currently active (pending review or approved).

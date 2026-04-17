@@ -7,7 +7,7 @@ import { deriveAggregateStatus } from '@/types/verification-status';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { VerificationBadge } from '@/components/verification/verification-badge';
-import { ProfileSidebar } from './profile-sidebar';
+import { ProfileSidebar } from '@/components/profile/profile-sidebar';
 import {
 	CreditsSection,
 	EmailPreferencesSection,
@@ -15,7 +15,7 @@ import {
 	PersonalInformationSection,
 	SecuritySection,
 	VerificationSection,
-} from './sections';
+} from '@/components/profile/sections';
 
 /**
  * Sidebar items configuration
@@ -90,7 +90,7 @@ export default async function ProfilePage() {
 	// to avoid a render function while keeping the markup DRY.
 	const profileTitle = (
 		<div className="flex items-center gap-2.5">
-			<h1 className="font-clash-display text-[35px] leading-none font-semibold tracking-[0.35px] text-black">
+			<h1 className="font-clash-display text-h2 font-semibold text-black">
 				My Profile
 			</h1>
 			{verificationStatus ? (
@@ -105,7 +105,7 @@ export default async function ProfilePage() {
 	return (
 		<div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
 			{/* Main Content Layout */}
-			<div className="flex w-full flex-col gap-6 md:flex-row md:gap-8">
+			<div className="flex w-full flex-col gap-6 md:flex-row md:gap-[32px]">
 				{/* Header — mobile only: stacked above content */}
 				<div className="flex flex-col gap-6 md:hidden">
 					{profileTitle}

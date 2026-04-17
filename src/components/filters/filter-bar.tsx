@@ -8,6 +8,7 @@ import { track } from '@/lib/analytics/mixpanel-client';
 import type { Category } from '@/types/category';
 import { RAFFLE_SORT_OPTION } from '@/types/raffle';
 import { FilterSelect, type FilterOption } from './filter-select';
+import { normalizeSortOption } from './filter-bar-state';
 
 const SORT_OPTIONS: readonly FilterOption[] = [
 	{ value: RAFFLE_SORT_OPTION.NEWEST, label: 'Newest' },
@@ -33,7 +34,7 @@ export function FilterBar({ categories }: FilterBarProps) {
 	const searchParams = useSearchParams();
 
 	const category = searchParams.get('category') ?? '';
-	const sort = searchParams.get('sort') ?? RAFFLE_SORT_OPTION.NEWEST;
+	const sort = normalizeSortOption(searchParams.get('sort'));
 
 	// useMemo: avoids rebuilding category option list on every render.
 	// Only recalculates when the categories array reference changes (prop from server).

@@ -18,7 +18,8 @@ import { cn } from '@/lib/utils';
 import {
 	getArbiscanTxUrl,
 	getIpfsUrl,
-	getVrfContractUrl,
+	getVrfCoordinatorUrl,
+	getVrfHandlerUrl,
 } from '@/lib/verification-links';
 import { getMerkleProof } from '@/services/verification/get-merkle-proof';
 import { getRaffleVerification } from '@/services/verification/get-raffle-verification';
@@ -613,13 +614,23 @@ function BlockchainLinks({ raffle }: BlockchainLinksProps) {
 					<ExternalLink className="size-3" />
 				</a>
 			) : null}
+			{/* Two contracts: Chainlink Coordinator (oracle) + Rafli Handler (our consumer) */}
 			<a
-				href={getVrfContractUrl()}
+				href={getVrfCoordinatorUrl()}
 				target="_blank"
 				rel="noopener noreferrer"
 				className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
 			>
-				VRF contract
+				Chainlink VRF Coordinator
+				<ExternalLink className="size-3" />
+			</a>
+			<a
+				href={getVrfHandlerUrl()}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+			>
+				Rafli VRF Handler
 				<ExternalLink className="size-3" />
 			</a>
 		</div>

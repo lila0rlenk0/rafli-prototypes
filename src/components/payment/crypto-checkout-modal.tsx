@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
+	encodeFunctionData,
 	erc20Abi,
 	getAddress,
 	isAddressEqual,
@@ -15,12 +16,12 @@ import {
 	useBalance,
 	useConnection,
 	useReadContract,
+	useSendTransaction,
 	useSignMessage,
 	useSwitchChain,
 	useTransaction,
 	useTransactionConfirmations,
 	useWaitForTransactionReceipt,
-	useWriteContract,
 } from 'wagmi';
 
 import { ChainSelector } from '@/components/payment/crypto-checkout/chain-selector';
@@ -29,6 +30,8 @@ import {
 	getPolledTxHashSyncDecision,
 	getPaySessionRevalidationDecision,
 	getReviewSessionGuard,
+	isTerminalConfirmError,
+	shouldScheduleConfirmRetry,
 } from '@/components/payment/crypto-checkout/checkout-session-guards';
 import { ConfirmingStep } from '@/components/payment/crypto-checkout/confirming-step';
 import { ReviewStep } from '@/components/payment/crypto-checkout/review-step';
@@ -60,7 +63,12 @@ import {
 import { SUPPORTED_WEB3_CHAIN_IDS } from '@/lib/web3/constants';
 import { getSelectableCryptoChains } from '@/lib/web3/raffle-crypto-options';
 import { isValidTxHash } from '@/lib/web3/block-explorers';
-import { isTransactionNotFound, isUserRejection } from '@/lib/web3/errors';
+import {
+	getWalletTransferErrorMessage,
+	isWalletFeeCapTooLow,
+	isTransactionNotFound,
+	isUserRejection,
+} from '@/lib/web3/errors';
 import { abandonOrder } from '@/services/payment/abandon-order';
 import { confirmCryptoTx } from '@/services/payment/confirm-crypto-tx';
 import { createAtomicCryptoCheckout } from '@/services/payment/create-atomic-crypto-checkout';
@@ -85,6 +93,8 @@ const TOTAL_STEPS_WITHOUT_TOKEN = 3;
 /** Default failure message when backend provides no actionable reason */
 const FALLBACK_FAILURE_MESSAGE =
 	'Payment verification failed. Please try again.';
+/** Prevent noisy infinite FE-driven confirm retries on persistent backend errors. */
+const MAX_FE_CONFIRM_RETRIES = 3;
 
 interface CryptoCheckoutModalProps {
 	open: boolean;
@@ -199,28 +209,32 @@ export function CryptoCheckoutModal({
 	const [fundsAtRisk, setFundsAtRisk] = useState(false);
 	// useCallback: stable identity prevents all downstream useCallbacks and useEffects
 	// that depend on goToStep from recreating on every render.
-	const goToStep = useCallback(
-		(nextStep: CheckoutStep) => {
-			setStep(currentStep => {
-				if (currentStep === nextStep) return currentStep;
+	//
+	// Pure updater: NEVER call `onConfirmingChange` inside `setStep`. React's
+	// updater function must be side-effect-free — triggering a setState on the
+	// parent here raises "Cannot update a component while rendering a different
+	// component" (React invariant). Confirming notification is handled by the
+	// derived-state effect below.
+	const goToStep = useCallback((nextStep: CheckoutStep) => {
+		setStep(currentStep => (currentStep === nextStep ? currentStep : nextStep));
+	}, []);
 
-				const currentIsConfirming = currentStep === 'confirming';
-				const nextIsConfirming = nextStep === 'confirming';
-				if (currentIsConfirming !== nextIsConfirming) {
-					onConfirmingChange?.(nextIsConfirming);
-				}
-
-				return nextStep;
-			});
-		},
-		[onConfirmingChange],
-	);
+	// Derive confirming status from step and forward to parent in an effect.
+	// useEffect: sync target = parent's `isConfirming` flag.
+	// Deps: [isConfirmingStep, onConfirmingChange] — fires on every transition
+	// into or out of the 'confirming' step. No cleanup needed (pure notification).
+	// Why effect: crossing a React render boundary to notify a parent of derived
+	// state — cannot live in the state setter per the Rules of React.
+	const isConfirmingStep = step === 'confirming';
+	useEffect(() => {
+		onConfirmingChange?.(isConfirmingStep);
+	}, [isConfirmingStep, onConfirmingChange]);
 
 	// Crypto config — chain metadata (names, explorers, confirmation targets)
 	const { data: cryptoConfig } = useCryptoConfig();
 	const chains = cryptoConfig?.chains ?? [];
 
-	// Wagmi hooks
+	// Wagmi hooks — `useConnection` replaced the deprecated `useAccount` in wagmi v3.
 	const { address, chainId: connectedChainId } = useConnection();
 	// Canonical connected wallet address used across verification and session guards.
 	// wagmi can expose lowercase addresses depending on connector state; normalizing
@@ -237,18 +251,27 @@ export function CryptoCheckoutModal({
 	liveAddressRef.current = checksummedAddress;
 	// Same pattern for chain ID — switchChainAsync can resolve on some connectors
 	// without actually switching (e.g. user dismisses prompt). Reading the live ref
-	// after await catches this edge case before writeContractAsync fires on the wrong chain.
+	// after await catches this edge case before sendTransactionAsync fires on the wrong chain.
 	const liveChainIdRef = useRef(connectedChainId);
 	liveChainIdRef.current = connectedChainId;
 	const { signMessageAsync } = useSignMessage();
 	const { switchChainAsync } = useSwitchChain();
-	const { writeContractAsync, reset: resetWriteContract } = useWriteContract();
+	// Using useSendTransaction + pre-encoded ERC-20 calldata instead of
+	// useWriteContract as a targeted workaround for reown/appkit#5586:
+	// WalletConnectConnector.getChainId() returns a CAIP-2 string ("eip155:N")
+	// that wagmi's writeContract pipes into viem expecting a numeric chain id,
+	// which dies with `Cannot convert eip155:N to a BigInt`. viem then wraps
+	// that as `ContractFunctionExecutionError: reverted: Failed to fetch` —
+	// exactly what surfaced from the Pay flow. sendTransaction bypasses the
+	// CAIP-2 → BigInt path and just needs `to`, `data`, `chainId`.
+	const { sendTransactionAsync, reset: resetSendTransaction } =
+		useSendTransaction();
 	// Canonical tx hash the FE should follow right now.
-	// Stored locally instead of reading from useWriteContract's data so we can pivot
+	// Stored locally instead of reading from useSendTransaction's data so we can pivot
 	// to replacement hashes when the wallet speeds up or replaces a transaction.
 	const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
 
-	// Guards against double-payment — set true immediately after writeContractAsync resolves,
+	// Guards against double-payment — set true immediately after sendTransactionAsync resolves,
 	// before React re-renders. Cleared only in handleReset.
 	const [txSubmitted, setTxSubmitted] = useState(false);
 	// Distinguishes "retry same-hash once" from "poll only".
@@ -317,6 +340,10 @@ export function CryptoCheckoutModal({
 	// permanently stall — the effect deps plateau and never re-fire, leaving the
 	// user waiting for the 1-min cron fallback instead of retrying within seconds.
 	const [confirmRetryTick, setConfirmRetryTick] = useState(0);
+	// Counts FE-driven confirm retries for the active confirming session.
+	// Capped to avoid endless retry spam when backend keeps returning a stable
+	// non-success code (e.g. expired/non-recoverable sessions).
+	const confirmRetryAttemptsRef = useRef(0);
 	// Guards the success transition — prevents double onSuccess() when both
 	// FE-driven confirm and polling detect COMPLETED in the same render cycle.
 	// Set synchronously before async state update to close the race window.
@@ -490,15 +517,16 @@ export function CryptoCheckoutModal({
 			lastReplacementReason.current = null;
 			txConfirmRequested.current = false;
 			txConfirmInFlight.current = false;
+			confirmRetryAttemptsRef.current = 0;
 			reorgHandled.current = false;
 			successTransitioned.current = false;
 			backendTrackedTxHash.current = backendTrackedHash
 				? normalizeTxHash(backendTrackedHash)
 				: null;
 			txSubmittedToBackend.current = backendOwnsTx;
-			resetWriteContract();
+			resetSendTransaction();
 		},
-		[resetWriteContract],
+		[resetSendTransaction],
 	);
 
 	/**
@@ -522,6 +550,17 @@ export function CryptoCheckoutModal({
 			setSession(checkoutSession);
 			setSessionTokenId(token.tokenId);
 			setSessionWalletAddress(checksummedAddress);
+			// Sync the checkout-time quantity from the backend session when
+			// available. Without this, a page-refresh-resume re-initializes
+			// the ref from the parent slider prop (which may have drifted
+			// during the 30-120s confirming window) and `onSuccess` then
+			// reports the wrong quantity to the ticket-sync target. Guard
+			// on `undefined` so older backend deploys that haven't started
+			// surfacing `ticketQuantity` yet fall back to the existing
+			// handleWalletReady snapshot. Bug class: stale state on resume.
+			if (checkoutSession.ticketQuantity !== undefined) {
+				confirmedTicketQuantity.current = checkoutSession.ticketQuantity;
+			}
 		},
 		[],
 	);
@@ -1034,11 +1073,11 @@ export function CryptoCheckoutModal({
 
 	// useMemo: avoids re-running the O(n) address comparison on every render —
 	// only recalculates when the connected address or wallet list changes.
+	// `w.address` arrives EIP-55 checksummed via `evmAddressSchema`'s transform,
+	// so we pass it directly to `isAddressEqual` (which is case-insensitive anyway).
 	const isWalletVerified = useMemo(() => {
 		if (!address || !walletsData?.wallets) return false;
-		return walletsData.wallets.some(w =>
-			isAddressEqual(getAddress(w.address), address),
-		);
+		return walletsData.wallets.some(w => isAddressEqual(w.address, address));
 	}, [address, walletsData]);
 
 	const isCorrectChain = selectedChainId === connectedChainId;
@@ -1075,6 +1114,29 @@ export function CryptoCheckoutModal({
 		if (!open) return;
 		clearCloseResetTimeout();
 	}, [clearCloseResetTimeout, open]);
+
+	/**
+	 * Unmount safety net — clears both long-lived timers even when the parent
+	 * yanks this component without routing through `handleClose`/`handleReset`
+	 * (navigation, error-boundary unmount, parent conditional render flip).
+	 * Without this, a pending `confirmRetryTimerRef` or `closeResetTimeout`
+	 * can fire after unmount and setState on a dead instance — React 18
+	 * swallows the warning, but the orphan tick still races a freshly
+	 * remounted modal in the background. Bug class: timer leak / stale
+	 * setState on unmounted component.
+	 */
+	useEffect(() => {
+		return () => {
+			if (closeResetTimeout.current) {
+				clearTimeout(closeResetTimeout.current);
+				closeResetTimeout.current = null;
+			}
+			if (confirmRetryTimerRef.current) {
+				clearTimeout(confirmRetryTimerRef.current);
+				confirmRetryTimerRef.current = null;
+			}
+		};
+	}, []);
 
 	/**
 	 * Order polling is authoritative for whether backend has accepted a hash.
@@ -1137,9 +1199,17 @@ export function CryptoCheckoutModal({
 		if (submitRetriedHashes.current.has(normalizedHash)) return;
 
 		const timer = setTimeout(async () => {
-			submitRetriedHashes.current.add(normalizedHash);
-
 			const outcome = await registerTxHashWithBackend(txHash);
+
+			// Only consume the one-shot retry slot when the request actually
+			// dispatched. A short-circuit POLL outcome means
+			// `registerTxHashWithBackend` found an overlapping in-flight submit
+			// and never touched the network; burning the slot here would leave
+			// us with zero retries available for any subsequent transient
+			// failure. Bug class: idempotency guard placed too early.
+			if (outcome.kind !== CRYPTO_TX_SUBMIT_OUTCOME.POLL) {
+				submitRetriedHashes.current.add(normalizedHash);
+			}
 
 			if (outcome.kind === CRYPTO_TX_SUBMIT_OUTCOME.TERMINAL) {
 				failSubmittedTxRegistration();
@@ -1230,6 +1300,29 @@ export function CryptoCheckoutModal({
 				});
 
 				if (!result.success) {
+					if (isTerminalConfirmError(result.error)) {
+						setErrorMessage(getPaymentErrorMessage(result.error));
+						goToStep('failure');
+						return;
+					}
+
+					if (!shouldScheduleConfirmRetry(result.error)) {
+						console.warn(
+							'FE-driven confirm deferred to polling:',
+							result.error,
+						);
+						return;
+					}
+
+					if (confirmRetryAttemptsRef.current >= MAX_FE_CONFIRM_RETRIES) {
+						console.warn(
+							'FE-driven confirm retry cap reached, deferring to polling:',
+							result.error,
+						);
+						return;
+					}
+
+					confirmRetryAttemptsRef.current += 1;
 					// Non-fatal — polling/cron will finalize eventually.
 					// Schedule a retry via confirmRetryTick so this effect re-fires even when
 					// observedConfirmationCount hasn't changed (common on L2 chains where
@@ -1245,6 +1338,7 @@ export function CryptoCheckoutModal({
 					}, 5_000);
 					return;
 				}
+				confirmRetryAttemptsRef.current = 0;
 
 				// Backend confirmed — session status 'completed' means tickets created.
 				// successTransitioned ref prevents double onSuccess() when polling
@@ -1275,6 +1369,7 @@ export function CryptoCheckoutModal({
 		// confirmRetryTick bumps on transient failure to re-trigger this effect
 		// when observedConfirmationCount has already plateaued at the target.
 		confirmRetryTick,
+		goToStep,
 		transitionToSuccess,
 	]);
 
@@ -1318,6 +1413,7 @@ export function CryptoCheckoutModal({
 	 */
 	useEffect(() => {
 		if (step === 'confirming') return;
+		confirmRetryAttemptsRef.current = 0;
 		if (confirmRetryTimerRef.current) {
 			clearTimeout(confirmRetryTimerRef.current);
 			confirmRetryTimerRef.current = null;
@@ -1494,6 +1590,13 @@ export function CryptoCheckoutModal({
 
 				const signature = await signMessageAsync({ message });
 
+				// Bail before the verify POST lands if the user has already
+				// closed the modal or started a newer attempt. Without this
+				// guard, a dismissed signature still persists the wallet link
+				// server-side — a silent side-effect the user never consented
+				// to. Bug class: async ordering past invalidation boundary.
+				if (!isPreConfirmingFlowCurrent(flowVersion)) return;
+
 				const result = await verifyWallet({
 					address: checksummedAddress,
 					message,
@@ -1622,6 +1725,15 @@ export function CryptoCheckoutModal({
 		setIsProcessing(true);
 		setErrorMessage(null);
 
+		// Hoisted into the outer scope so the catch handler can see whether we
+		// successfully broadcast a transaction before the throw. Without this,
+		// a throw from `registerTxHashWithBackend` (or any future code between
+		// `sendTransactionAsync` resolving and the normal return) would drop the
+		// user back to `review` with `txSubmitted=false`, re-enabling the Pay
+		// button while real funds are already in flight on-chain — a
+		// double-payment hazard. Bug class: async ordering + stale catch.
+		let broadcastTxHash: `0x${string}` | undefined;
+
 		try {
 			// Step 1: Reject obviously stale local review state before any wallet prompt.
 			//         This prevents a new account from funding a session bound to the old one.
@@ -1703,7 +1815,7 @@ export function CryptoCheckoutModal({
 
 			// Re-validate chain after async switch — some connectors resolve the switch
 			// promise even when the user dismisses the prompt without changing chains.
-			// Without this, writeContractAsync would fire on the wrong network.
+			// Without this, sendTransactionAsync would fire on the wrong network.
 			if (liveChainIdRef.current !== selectedChainId) {
 				toast.error('Please switch to the correct network and try again.');
 				payInFlight.current = false;
@@ -1739,10 +1851,15 @@ export function CryptoCheckoutModal({
 			setTxSubmitted(true);
 			goToStep('confirming');
 
-			// Execute ERC20 transfer
-			// amountRaw is already in token's smallest unit (6 decimals for USDC, 18 for EARNM)
-			const submittedTxHash = await writeContractAsync({
-				address: session.tokenAddress as `0x${string}`,
+			// Execute ERC20 transfer.
+			// amountRaw is already in token's smallest unit (6 decimals for USDC, 18 for EARNM).
+			// Pre-encode `transfer(recipient, amount)` calldata here instead of
+			// going through writeContract — see the hook-site comment above for
+			// the reown/appkit#5586 CAIP-2 → BigInt background. `to` is the
+			// token contract, `data` is the ABI-encoded call, `chainId` is
+			// passed explicitly so wagmi reads it from the number we own
+			// (selectedChainId), not from the connector's CAIP-2 string.
+			const transferData = encodeFunctionData({
 				abi: erc20Abi,
 				functionName: 'transfer',
 				args: [
@@ -1750,6 +1867,16 @@ export function CryptoCheckoutModal({
 					BigInt(session.amountRaw),
 				],
 			});
+			const submittedTxHash = await sendTransactionAsync({
+				to: session.tokenAddress as `0x${string}`,
+				data: transferData,
+				chainId: selectedChainId,
+			});
+			// Record the broadcast hash into the outer-scope variable BEFORE any
+			// further awaits — the catch handler keys off its presence to decide
+			// between "safe to bounce back to review" and "funds in flight, must
+			// stay in confirming and reconcile via recovery path".
+			broadcastTxHash = submittedTxHash;
 			setTxHash(submittedTxHash);
 
 			// Register the tx with backend immediately from the returned hash.
@@ -1771,13 +1898,75 @@ export function CryptoCheckoutModal({
 			// double-transfer if React re-renders before confirming step takes over.
 			// handleReset clears everything when user retries or closes.
 			payInFlight.current = false;
-			setTxSubmitted(false);
 			setIsProcessing(false);
+
+			// Hard stop: a tx hash was broadcast before the throw. Funds are in
+			// flight on-chain, so we MUST NOT drop back to `review` with
+			// `txSubmitted=false` (which would re-enable the Pay button and let
+			// the user double-spend). Stay on `confirming`, keep the hash, and
+			// let the RETRY recovery path + polling reconcile with backend.
+			// The wallet's own rejection path doesn't apply once we have a
+			// broadcast hash — `sendTransactionAsync` has already resolved by
+			// then. Bug class: error path vs funds-at-risk invariant.
+			if (broadcastTxHash) {
+				setSubmitRecoveryMode(CRYPTO_TX_SUBMIT_OUTCOME.RETRY);
+				Sentry.captureException(error, {
+					level: 'warning',
+					tags: {
+						service: 'payment',
+						action: 'crypto-wallet-transfer',
+						recovery: 'post-broadcast-throw',
+						chainId: selectedChainId,
+					},
+					contexts: {
+						crypto: {
+							tokenAddress: session.tokenAddress,
+							amountRaw: session.amountRaw,
+							sessionId: session.id,
+							walletAddress: checksummedAddress,
+							txHash: broadcastTxHash,
+						},
+					},
+				});
+				return;
+			}
+
+			setTxSubmitted(false);
 
 			// User rejected the tx in their wallet — not an error, just stay on review
 			if (isUserRejection(error)) {
 				toast.info('Transaction cancelled.');
 				// Return to review since we optimistically moved to confirming
+				goToStep('review');
+				return;
+			}
+
+			const feeCapTooLow = isWalletFeeCapTooLow(error);
+			const walletTransferErrorMessage = getWalletTransferErrorMessage(error);
+
+			// Fee-cap mismatch is usually transient base-fee movement, not a checkout
+			// invariant break. Keep the user on a retryable review state instead of
+			// dropping into terminal failure messaging.
+			if (feeCapTooLow) {
+				console.warn('Crypto payment fee-cap mismatch:', error);
+				Sentry.captureException(error, {
+					level: 'warning',
+					tags: {
+						service: 'payment',
+						action: 'crypto-wallet-transfer',
+						chainId: selectedChainId,
+						recovery: 'retryable-fee-cap-too-low',
+					},
+					contexts: {
+						crypto: {
+							tokenAddress: session.tokenAddress,
+							amountRaw: session.amountRaw,
+							sessionId: session.id,
+							walletAddress: checksummedAddress,
+						},
+					},
+				});
+				toast.error(walletTransferErrorMessage);
 				goToStep('review');
 				return;
 			}
@@ -1805,9 +1994,8 @@ export function CryptoCheckoutModal({
 					},
 				},
 			});
-
 			setRetryBlocked(false);
-			setErrorMessage('Transaction failed. Please try again.');
+			setErrorMessage(walletTransferErrorMessage);
 			goToStep('failure');
 		}
 	}
@@ -1822,6 +2010,7 @@ export function CryptoCheckoutModal({
 			clearTimeout(confirmRetryTimerRef.current);
 			confirmRetryTimerRef.current = null;
 		}
+		confirmRetryAttemptsRef.current = 0;
 		invalidatePreConfirmingFlow();
 		goToStep('select-chain');
 		setSelectedChainId(null);
@@ -1851,7 +2040,7 @@ export function CryptoCheckoutModal({
 		successTransitioned.current = false;
 		reorgHandled.current = false;
 		// Reset wagmi write state so stale txHash doesn't persist across retries
-		resetWriteContract();
+		resetSendTransaction();
 	}
 
 	/**
@@ -1885,6 +2074,11 @@ export function CryptoCheckoutModal({
 			closeResetTimeout.current = null;
 			handleReset();
 		}, 300);
+	}
+
+	function handleDialogOpenChange(nextOpen: boolean) {
+		if (nextOpen) return;
+		handleClose();
 	}
 
 	/**
@@ -2027,7 +2221,7 @@ export function CryptoCheckoutModal({
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={handleClose}>
+		<Dialog open={open} onOpenChange={handleDialogOpenChange}>
 			<DialogContent className="max-w-md overflow-hidden border border-[#0F0F0FF2] bg-white px-8 py-10">
 				{/* Header with back button and step indicator */}
 				<DialogHeader className="relative">

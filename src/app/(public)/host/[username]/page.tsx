@@ -1,5 +1,7 @@
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { PublicPageHeader } from '@/components/host/public-page-header';
 import { HostProfileCard } from '@/components/host/host-profile-card';
+import { PublicStatusTabs } from '@/components/host/public-status-tabs';
 import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
 import { getHostProfile } from '@/services/host/get-host-profile';
 import { getHostRaffles } from '@/services/host/get-host-raffles';
@@ -9,8 +11,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { z } from 'zod';
-import { PageHeader } from './page-header';
-import { StatusTabs } from './status-tabs';
 
 interface PageProps {
 	params: Promise<{
@@ -103,11 +103,11 @@ export default async function HostProfilePage({
 		return (
 			<div className="container mx-auto w-full max-w-7xl px-4 py-8 lg:min-w-5xl">
 				{/* Header Section */}
-				<PageHeader />
+				<PublicPageHeader />
 
 				<div className="relative mb-8 flex w-full items-center justify-center">
 					<Suspense>
-						<StatusTabs />
+						<PublicStatusTabs />
 					</Suspense>
 				</div>
 
@@ -144,11 +144,11 @@ export default async function HostProfilePage({
 
 	return (
 		<div className="container mx-auto w-full max-w-7xl px-4 py-8 lg:min-w-5xl">
-			<PageHeader />
+			<PublicPageHeader />
 
 			<div className="relative mb-8 flex w-full items-center justify-center">
 				<Suspense fallback={null}>
-					<StatusTabs />
+					<PublicStatusTabs />
 				</Suspense>
 			</div>
 

@@ -11,11 +11,11 @@ import { getQuestions } from '@/services/raffle/get-questions';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleCover } from '@/services/raffle/get-raffle-cover';
 import { getRaffleGallery } from '@/services/raffle/get-raffle-gallery';
+import type { EditFormData } from '@/lib/validation/raffle/edit-form-schema';
 import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
-import { EditFormProvider } from './edit-form-provider';
-import { FormHeader } from './form-header';
-import { FormStepComponent } from './form-step-component';
-import type { EditFormData } from './schema';
+import { EditFormProvider } from '@/components/my-raffles/edit/edit-form-provider';
+import { FormHeader } from '@/components/my-raffles/edit/form-header';
+import { FormStepComponent } from '@/components/my-raffles/edit/form-step-component';
 
 const LEFT_PANEL_LINKS = [
 	{

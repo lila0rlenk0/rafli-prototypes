@@ -88,6 +88,15 @@ export const cryptoCheckoutSessionSchema = z.object({
 	confirmDeadline: z.string(),
 	/** Number of on-chain confirmations required — from backend session, not FE config */
 	confirmationTarget: z.number(),
+	/**
+	 * Canonical ticket quantity bound to this checkout session. Optional to
+	 * stay forward-compatible with older backend deploys that don't surface
+	 * it yet; when present, the FE syncs its `confirmedTicketQuantity` ref
+	 * from this value on any session-hydration path so a page refresh during
+	 * the confirming window no longer risks reporting a parent-prop-drifted
+	 * quantity to `onSuccess`. Bug class fix: stale state on resume.
+	 */
+	ticketQuantity: z.number().int().positive().optional(),
 });
 
 /**

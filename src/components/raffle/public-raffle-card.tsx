@@ -80,13 +80,15 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 				)}
 			</div>
 
-			{/* Card Body */}
-			<div className="flex flex-1 flex-col gap-4 rounded-b-3xl bg-white p-6">
+			{/* Card Body — tightened to 16px padding so card density matches the
+			    reduced type scale; previous 24px left too much interior air after
+			    the card title/price tokens dropped from 18/24 to 16/20. */}
+			<div className="flex flex-1 flex-col gap-4 rounded-b-3xl bg-white p-4">
 				{/* Title + Role Tag */}
 				<div className="flex flex-col gap-2">
 					<div className="flex flex-col gap-2">
 						<div className="flex items-center gap-2">
-							<h3 className="text-lg leading-none font-semibold text-[rgba(15,15,15,0.95)]">
+							<h3 className="text-card-title font-semibold text-[rgba(15,15,15,0.95)]">
 								<Link
 									href={`/browse/${raffle.publicSlugOrCode}`}
 									className="line-clamp-1 after:absolute after:inset-0"
@@ -116,7 +118,7 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 					{/* Price + Time Remaining */}
 					<div className="flex flex-col gap-2">
 						<div className="flex items-center justify-between">
-							<span className="font-clash-display text-2xl leading-tight font-semibold tracking-[0.12px] text-[#182135]">
+							<span className="font-clash-display text-card-price font-semibold text-[#182135]">
 								${getTicketPrice()}
 							</span>
 							<div className="flex items-center gap-1 text-[#7b7b7b]">

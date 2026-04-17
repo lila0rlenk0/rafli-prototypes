@@ -5,33 +5,32 @@ import { useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface BrowseTabsProps {
-	featuredContent: ReactNode;
+	// Single featured slot — mobile-tab-aware only. Desktop's featured band
+	// is rendered by the Server Component parent (sibling before <BrowseTabs>)
+	// to avoid passing the same ReactNode reference into two props, which
+	// React 19 flags as a keyless list in the RSC payload. Functions can't
+	// cross the Server→Client boundary either, so a render-prop is out.
+	featuredMobile: ReactNode;
 	filtersContent: ReactNode;
 	gridContent: ReactNode;
 }
 
 /**
  * Mobile-only tabs for "Featured" vs "All Raffles". Filters always visible.
- * On desktop (sm+) both sections show without tabs.
+ * On desktop (sm+) the Featured band is rendered by the parent above this
+ * component, so this tree only handles the mobile tab-switcher path.
  */
 export function BrowseTabs({
-	featuredContent,
+	featuredMobile,
 	filtersContent,
 	gridContent,
 }: BrowseTabsProps) {
 	const [activeTab, setActiveTab] = useState<'featured' | 'all'>('featured');
 
 	return (
-		<>
-			{/* Desktop: featured lands ABOVE the section title so admin-curated
-			    hero cards are the first thing users see in the catalog band, before
-			    they start scanning the generic grid. Mobile keeps featured nested
-			    inside the tab switcher below — on small screens the two-up featured
-			    row would crowd the fold, so the tab affords progressive disclosure. */}
-			<div className="hidden sm:block">{featuredContent}</div>
-
+		<div>
 			{/* Section Title */}
-			<h2 className="font-clash-display mb-8 text-[32px] leading-none font-semibold tracking-[0.16px] sm:mb-10 sm:text-4xl sm:tracking-[0.36px]">
+			<h2 className="font-clash-display text-h2 mb-8 font-semibold sm:mb-10">
 				See what&apos;s up for grabs right now!
 			</h2>
 
@@ -68,20 +67,21 @@ export function BrowseTabs({
 				{filtersContent}
 			</div>
 
-			{/* Mobile: Featured tab shows featured + grid below; All tab shows grid only */}
-			<div className="sm:hidden">
-				{activeTab === 'featured' ? (
-					<>
-						{featuredContent}
-						{gridContent}
-					</>
-				) : (
-					gridContent
-				)}
-			</div>
+			{/* Mobile-only featured pane: shown above the grid when the Featured
+			    tab is active. Kept as its own sibling (not grouped with the grid
+			    in a shared wrapper) to avoid two keyless prop-slot expressions
+			    sitting as siblings — React 19 flags that shape as a dynamic list
+			    and warns about missing keys on the incoming nodes. */}
+			{activeTab === 'featured' ? (
+				<div className="sm:hidden">{featuredMobile}</div>
+			) : null}
 
-			{/* Desktop: grid only — featured was already rendered above the title. */}
-			<div className="hidden sm:block">{gridContent}</div>
-		</>
+			{/* Grid — rendered once, unconditionally. Both mobile tabs
+			    ("Featured" and "All Raffles") show the grid, and desktop shows
+			    it below the featured cards, so there is no layout branch that
+			    hides it. Single render site also prevents the same element
+			    reference from appearing in multiple tree positions. */}
+			{gridContent}
+		</div>
 	);
 }

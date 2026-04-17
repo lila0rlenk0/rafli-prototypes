@@ -1,5 +1,5 @@
 import type {
-	OrderErrorCode,
+	CheckoutOrderErrorCode,
 	PaymentErrorCode,
 	WalletErrorCode,
 } from '@/types/errors';
@@ -12,10 +12,12 @@ import type {
  * Maps order error codes to user-friendly messages.
  * Shared between card and crypto checkout flows.
  *
- * @param errorCode - Order error code from checkoutOrder service action
+ * @param errorCode - Order or checkout error code from checkoutOrder service action
  * @returns Human-readable error string for toast/UI display
  */
-export function getOrderErrorMessage(errorCode: OrderErrorCode): string {
+export function getOrderErrorMessage(
+	errorCode: CheckoutOrderErrorCode,
+): string {
 	switch (errorCode) {
 		case 'core:raffle:not-active':
 			return 'This raffle is not currently active';

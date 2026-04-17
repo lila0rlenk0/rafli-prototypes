@@ -1,9 +1,11 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
+import { NotificationsTable } from '@/components/profile/notifications-table';
+import { FEATURE_FLAGS } from '@/lib/feature-flags';
+import { parsePositivePageParam } from '@/lib/pagination/parse-positive-page-param';
 import { getNotifications } from '@/services/notification/get-notifications';
-
-import { NotificationsTable } from './notifications-table';
+import { NOTIFICATION_TYPE } from '@/types/notification';
 
 /**
  * Props for NotificationsPage
@@ -21,13 +23,21 @@ export default async function NotificationsPage({
 	searchParams,
 }: NotificationsPageProps) {
 	const params = await searchParams;
-	const page = params.page ? parseInt(params.page, 10) : 1;
+	const page = parsePositivePageParam(params.page);
 	const limit = 10;
 	const offset = (page - 1) * limit;
 
 	const result = await getNotifications({ limit, offset });
 
-	const notifications = result.success ? result.data.notifications : [];
+	// Chat-message notifications move to the dedicated /messages inbox when
+	// the chat feature ships; filter them from the bell list so the user
+	// doesn't see the same item in two places. Flag-off path keeps them
+	// visible on this page so the notifications list stays complete during
+	// rollout.
+	const rawNotifications = result.success ? result.data.notifications : [];
+	const notifications = FEATURE_FLAGS.CHAT_ENABLED
+		? rawNotifications.filter(n => n.type !== NOTIFICATION_TYPE.CHAT_MESSAGE)
+		: rawNotifications;
 	const total = result.success ? result.data.total : 0;
 	const totalPages = Math.ceil(total / limit);
 

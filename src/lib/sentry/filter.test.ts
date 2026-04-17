@@ -4,19 +4,36 @@ import type { ErrorEvent, EventHint } from '@sentry/nextjs';
 import { filterEvent } from './filter';
 
 /**
- * Creates a minimal Sentry ErrorEvent with optional tags and a Sentry-style
- * synthesized exception title. The title goes into `exception.values[0].value`
- * which is how `filterEvent` reads non-Error promise rejections (plain
- * objects, scalars) — the only surface where those rejections are matchable
- * as a string inside `beforeSend`.
+ * Creates a minimal Sentry ErrorEvent with optional tags, synthesized
+ * exception title, and stack frames. The title goes into
+ * `exception.values[0].value` which is how `filterEvent` reads non-Error
+ * promise rejections (plain objects, scalars) — the only surface where
+ * those rejections are matchable as a string inside `beforeSend`. The
+ * `frames` argument attaches a `stacktrace.frames` array on the first
+ * exception value so the stack-frame noise filter (RAFLI-N regression)
+ * can be exercised without reaching for real Sentry internals.
  */
+interface FrameInput {
+	readonly filename?: string;
+	readonly abs_path?: string;
+	readonly function?: string;
+}
+
 function createEvent(
 	tags?: Record<string, string>,
 	exceptionValue?: string,
+	frames?: readonly FrameInput[],
 ): ErrorEvent {
 	const event: ErrorEvent = { tags } as ErrorEvent;
-	if (exceptionValue !== undefined) {
-		event.exception = { values: [{ value: exceptionValue }] };
+	if (exceptionValue !== undefined || frames !== undefined) {
+		event.exception = {
+			values: [
+				{
+					value: exceptionValue,
+					...(frames ? { stacktrace: { frames: [...frames] } } : {}),
+				},
+			],
+		};
 	}
 	return event;
 }
@@ -306,7 +323,7 @@ describe('filterEvent', () => {
 		// RAFLI-7 / RAFLI-8 — Safari and Firefox private-mode throw a
 		// `SecurityError` (DOMException, instanceof Error) when wallet SDKs
 		// touch `localStorage` / `window.localStorage` eagerly.
-		test('drops Safari private-mode SecurityError from RainbowKit (Sentry RAFLI-7)', () => {
+		test('drops Safari private-mode SecurityError from wallet connectors (Sentry RAFLI-7)', () => {
 			const event = createEvent();
 			// The production event is a DOMException named 'SecurityError' with
 			// this exact message. Regular Error faithfully reproduces the
@@ -325,8 +342,8 @@ describe('filterEvent', () => {
 
 		// RAFLI-B / RAFLI-C — Chrome/Android equivalent of the above. Fires in
 		// embedded WebViews (Telegram, Instagram in-app browsers) where
-		// localStorage is sandboxed. Wagmi's MetaMask connector and RainbowKit's
-		// session restore both trigger it.
+		// localStorage is sandboxed. Wagmi's wallet connectors trigger it
+		// during session restore.
 		test('drops Chrome localStorage SecurityError from @wagmi/connectors (Sentry RAFLI-B)', () => {
 			const event = createEvent();
 			const hint = createHint(
@@ -338,7 +355,7 @@ describe('filterEvent', () => {
 			expect(result).toBeNull();
 		});
 
-		test('drops Chrome localStorage SecurityError from RainbowKit (Sentry RAFLI-C)', () => {
+		test('drops Chrome localStorage SecurityError from wallet connectors (Sentry RAFLI-C)', () => {
 			const event = createEvent();
 			const hint = createHint(
 				new Error(
@@ -378,8 +395,7 @@ describe('filterEvent', () => {
 		});
 
 		// RAFLI-5 — wagmi hooks called outside WagmiProvider during
-		// SSR/hydration race. Web3Provider gates via useIsWeb3Ready(), but
-		// browser extensions can probe before the provider mounts.
+		// provider initialization or extension probing.
 		test('drops WagmiProviderNotFoundError (Sentry RAFLI-5)', () => {
 			const event = createEvent();
 			const hint = createHint(
@@ -416,17 +432,39 @@ describe('filterEvent', () => {
 
 		// RAFLI-N — Wallet extension content script (inpage.js) calls
 		// `.removeListener()` on an undefined provider during navigation
-		// teardown. The stack frame filename is the literal string
-		// `inpage.js` which we match as a substring in the synthesized
-		// title. Environmental.
+		// teardown. The exception *message* in production is the bare
+		// "Cannot read properties of undefined (reading 'removeListener')"
+		// — identical to a genuine app bug. The only signal that this is
+		// extension-origin is the stack frame filename `app:///inpage.js`,
+		// so the filter must inspect `exception.values[].stacktrace.frames[]`,
+		// not just the message. This test reproduces the exact production
+		// event shape captured in Sentry and guards against regressions
+		// that drop the stack-frame check.
 		test('drops removeListener noise from inpage.js (Sentry RAFLI-N)', () => {
-			const event = createEvent();
-			// Real production events serialize the stack into the value when
-			// the message is minimal — we mirror that shape here so the
-			// substring match is exercised.
+			const event = createEvent(undefined, undefined, [
+				{
+					filename: 'app:///inpage.js',
+					abs_path: 'app:///inpage.js',
+					function: 'n',
+				},
+				{
+					filename: 'app:///inpage.js',
+					abs_path: 'app:///inpage.js',
+					function: 'Object.stopListeners',
+				},
+				{
+					filename: '<anonymous>',
+					abs_path: '<anonymous>',
+					function: 'Array.forEach',
+				},
+				{
+					filename: 'app:///inpage.js',
+					abs_path: 'app:///inpage.js',
+				},
+			]);
 			const hint = createHint(
 				new TypeError(
-					"Cannot read properties of undefined (reading 'removeListener') at inpage.js:1",
+					"Cannot read properties of undefined (reading 'removeListener')",
 				),
 			);
 			const result = filterEvent(event, hint);
@@ -481,6 +519,91 @@ describe('filterEvent', () => {
 			);
 			const result = filterEvent(event, hint);
 			expect(result).toBe(event);
+		});
+	});
+
+	// Stack-frame noise bucket — errors whose message is indistinguishable
+	// from a real app bug but whose stack originates entirely in third-party
+	// code we don't ship. See `NOISY_STACK_FRAME_PATTERNS` in filter.ts.
+	describe('third-party stack-frame noise is dropped (RAFLI-N class)', () => {
+		test('drops event whose frames resolve to app:///inpage.js', () => {
+			// Generic message — matches neither BROWSER_NOISE_PATTERNS nor
+			// SUSPECTED_NOISE_PATTERNS. Only the frame filename tells us it
+			// is extension-origin.
+			const event = createEvent(undefined, 'some generic error', [
+				{ filename: 'app:///inpage.js', abs_path: 'app:///inpage.js' },
+			]);
+			const hint = createHint(new Error('some generic error'));
+			expect(filterEvent(event, hint)).toBeNull();
+		});
+
+		test('drops frames that only populate abs_path (chrome-extension://)', () => {
+			// Browser-extension content scripts typically omit `filename`
+			// post-symbolication — only the `abs_path` retains the
+			// `chrome-extension://` URL. The filter must check both.
+			const event = createEvent(undefined, 'generic TypeError', [
+				{
+					abs_path: 'chrome-extension://abcdef123/content.js',
+					function: 'handle',
+				},
+			]);
+			const hint = createHint(new TypeError('generic TypeError'));
+			expect(filterEvent(event, hint)).toBeNull();
+		});
+
+		test('drops moz-extension:// origin', () => {
+			const event = createEvent(undefined, 'x is not defined', [
+				{ abs_path: 'moz-extension://uuid/background.js' },
+			]);
+			const hint = createHint(new ReferenceError('x is not defined'));
+			expect(filterEvent(event, hint)).toBeNull();
+		});
+
+		test('drops safari-web-extension:// origin', () => {
+			const event = createEvent(undefined, 'Load failed 2', [
+				{ abs_path: 'safari-web-extension://uuid/inject.js' },
+			]);
+			const hint = createHint(new Error('Load failed 2'));
+			expect(filterEvent(event, hint)).toBeNull();
+		});
+
+		test('drops when only one frame deep in the stack is noisy', () => {
+			// Real RAFLI-N events interleave `<anonymous>` frames with
+			// `inpage.js` frames — the filter must scan every frame, not
+			// just the top.
+			const event = createEvent(undefined, 'generic', [
+				{ filename: '<anonymous>', function: 'Array.forEach' },
+				{ filename: '<anonymous>', function: 'Promise.then' },
+				{ filename: 'app:///inpage.js', function: 'teardown' },
+			]);
+			const hint = createHint(new Error('generic'));
+			expect(filterEvent(event, hint)).toBeNull();
+		});
+
+		test('passes event with only app frames and no noise', () => {
+			// Negative case — a genuine app-origin error must not be
+			// accidentally swept up by the stack-frame filter.
+			const event = createEvent(undefined, 'app bug', [
+				{
+					filename: 'app:///_next/static/chunks/app-page.js',
+					function: 'handleSubmit',
+				},
+				{
+					filename: 'app:///_next/static/chunks/main.js',
+					function: 'Form.onSubmit',
+				},
+			]);
+			const hint = createHint(new Error('app bug'));
+			expect(filterEvent(event, hint)).toBe(event);
+		});
+
+		test('passes event with no exception.values', () => {
+			// Message-only events (e.g. `Sentry.captureMessage`) have no
+			// stack — the filter must treat the missing frames array as
+			// "no match" and pass the event through.
+			const event = createEvent();
+			const hint = createHint(new Error('app bug'));
+			expect(filterEvent(event, hint)).toBe(event);
 		});
 	});
 

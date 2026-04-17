@@ -2,9 +2,9 @@
 
 import { useSearchParams } from 'next/navigation';
 
-import { BuyButton } from '@/app/(public)/browse/[publicSlug]/buy-button';
-import { CreditsBuyButton } from '@/app/(public)/browse/[publicSlug]/credits-buy-button';
-import { CryptoBuyButton } from '@/app/(public)/browse/[publicSlug]/crypto-buy-button';
+import { BuyButton } from '@/components/payment/buy-button';
+import { CreditsBuyButton } from '@/components/payment/credits-buy-button';
+import { CryptoBuyButton } from '@/components/payment/crypto-buy-button';
 import { PromoCodeInput } from '@/components/promo-code/promo-code-input';
 import { Separator } from '@/components/ui/separator';
 import {

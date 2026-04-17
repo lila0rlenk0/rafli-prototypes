@@ -5,7 +5,13 @@ import {
 	UserRejectedRequestError,
 } from 'viem';
 
-import { isTransactionNotFound, isUserRejection } from './errors';
+import {
+	getWalletTransferErrorMessage,
+	isWalletFeeCapTooLow,
+	isTransactionNotFound,
+	isUserRejection,
+	isWalletRpcFetchFailure,
+} from './errors';
 
 describe('isUserRejection', () => {
 	test('detects viem UserRejectedRequestError by name', () => {
@@ -60,5 +66,96 @@ describe('isTransactionNotFound', () => {
 		});
 
 		expect(isTransactionNotFound(error)).toBe(true);
+	});
+});
+
+describe('isWalletRpcFetchFailure', () => {
+	test('returns true for direct failed fetch message', () => {
+		expect(isWalletRpcFetchFailure(new Error('Failed to fetch'))).toBe(true);
+	});
+
+	test('returns true when failed fetch is nested in a BaseError cause chain', () => {
+		const error = new BaseError('ContractFunctionExecutionError', {
+			cause: new Error('InternalRpcError: Failed to fetch'),
+		});
+
+		expect(isWalletRpcFetchFailure(error)).toBe(true);
+	});
+
+	test('returns true when failed fetch appears in serialized stack payload', () => {
+		const error = {
+			code: -32603,
+			message: 'Internal error',
+			stack: '{"code":-32603,"message":"Failed to fetch"}',
+		};
+
+		expect(isWalletRpcFetchFailure(error)).toBe(true);
+	});
+
+	test('returns false for non-transport failures', () => {
+		expect(isWalletRpcFetchFailure(new Error('insufficient funds'))).toBe(
+			false,
+		);
+		expect(isWalletRpcFetchFailure(null)).toBe(false);
+	});
+});
+
+describe('isWalletFeeCapTooLow', () => {
+	test('returns true for direct FeeCapTooLowError by name', () => {
+		const error = {
+			name: 'FeeCapTooLowError',
+			message:
+				'The fee cap (`maxFeePerGas` gwei) cannot be lower than the block base fee.',
+		};
+
+		expect(isWalletFeeCapTooLow(error)).toBe(true);
+	});
+
+	test('returns true when fee-cap mismatch is nested in BaseError cause chain', () => {
+		const error = new BaseError('ContractFunctionExecutionError', {
+			cause: new Error(
+				'max fee per gas less than block base fee: maxFeePerGas: 20020000 baseFee: 20082000',
+			),
+		});
+
+		expect(isWalletFeeCapTooLow(error)).toBe(true);
+	});
+
+	test('returns false for unrelated transfer errors', () => {
+		expect(
+			isWalletFeeCapTooLow(
+				new Error('execution reverted: transfer amount exceeds balance'),
+			),
+		).toBe(false);
+		expect(isWalletFeeCapTooLow(null)).toBe(false);
+	});
+});
+
+describe('getWalletTransferErrorMessage', () => {
+	test('returns fee-cap guidance for maxFeePerGas lower than base fee', () => {
+		const message = getWalletTransferErrorMessage({
+			name: 'FeeCapTooLowError',
+			message: 'fee cap lower than base fee',
+		});
+
+		expect(message).toBe(
+			'Network fees changed while sending. Please retry the transaction so your wallet can refresh gas fees.',
+		);
+	});
+
+	test('returns RPC guidance for failed fetch transport errors', () => {
+		const message = getWalletTransferErrorMessage(new Error('Failed to fetch'));
+
+		expect(message).toBe(
+			'Wallet RPC request failed. Check your wallet network/RPC connection and try again.',
+		);
+	});
+
+	test('returns generic fallback for non-transport wallet failures', () => {
+		const message = getWalletTransferErrorMessage(
+			new Error('execution reverted'),
+		);
+
+		expect(message).toBe('Transaction failed. Please try again.');
 	});
 });

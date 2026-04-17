@@ -28,10 +28,12 @@ let mp: MixpanelLib | null = null;
  */
 export async function initMixpanel(): Promise<void> {
 	if (!TOKEN || initialized || typeof window === 'undefined') return;
+	// Skip analytics in local dev — avoids polluting prod Mixpanel projects with
+	// developer clicks and keeps the network panel clean while debugging.
+	if (clientEnv.NODE_ENV !== 'production') return;
 
 	const { default: mixpanel } = await import('mixpanel-browser');
 	mixpanel.init(TOKEN, {
-		debug: clientEnv.NODE_ENV === 'development',
 		persistence: 'localStorage',
 	});
 

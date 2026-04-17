@@ -4,6 +4,7 @@ import { PublicNavbar } from '@/components/ui/public-navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
+import { ChatStoreProvider } from '@/providers/chat-store-provider';
 import { NotificationStoreProvider } from '@/providers/notification-store-provider';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
@@ -41,7 +42,9 @@ async function PublicHostLayoutContent({ children }: PublicHostLayoutProps) {
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
-				<NotificationStoreProvider>{content}</NotificationStoreProvider>
+				<NotificationStoreProvider>
+					<ChatStoreProvider>{content}</ChatStoreProvider>
+				</NotificationStoreProvider>
 			</UserStoreProvider>
 		);
 	}

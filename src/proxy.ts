@@ -1,34 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AUTH_COOKIES } from './lib/auth/config';
 import { isJwtExpired } from './lib/auth/jwt';
-
-/** Redirect target when unauthenticated user hits a protected route */
-const SIGN_IN_PATH = '/sign-in';
-
-/** Redirect target when authenticated user hits an auth route */
-const DEFAULT_AUTHENTICATED_PATH = '/browse';
-
-/**
- * Protected routes that require authentication.
- * /browse is intentionally NOT protected — it's publicly accessible.
- */
-const protectedRoutes: readonly string[] = [
-	'/my-raffles',
-	'/profile',
-	'/admin',
-	'/verification',
-];
-
-/**
- * Auth routes that should redirect to /browse if user is already authenticated.
- * Prevents authenticated users from seeing sign-in/sign-up pages.
- */
-const authRoutes: readonly string[] = [
-	SIGN_IN_PATH,
-	'/sign-up',
-	'/forgot-password',
-	'/reset-password',
-];
+import { getProxyRedirectPath } from './lib/auth/proxy-routing';
 
 /**
  * Next.js 16 proxy function for route protection and authentication flows.
@@ -49,24 +22,9 @@ export default function proxy(request: NextRequest) {
 
 	// Step 1: Determine auth state — token exists and is not expired
 	const hasValidToken = token !== undefined && !isJwtExpired(token);
-
-	// Step 2: Classify the route
-	const isProtectedRoute = protectedRoutes.some(route =>
-		pathname.startsWith(route),
-	);
-	const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
-
-	// Step 3: Redirect unauthenticated users away from protected routes
-	if (isProtectedRoute && !hasValidToken) {
-		return NextResponse.redirect(new URL(SIGN_IN_PATH, request.url));
-	}
-
-	// Step 4: Redirect authenticated users away from auth pages
-	// (prevents seeing sign-in after already being signed in)
-	if (isAuthRoute && hasValidToken) {
-		return NextResponse.redirect(
-			new URL(DEFAULT_AUTHENTICATED_PATH, request.url),
-		);
+	const redirectPath = getProxyRedirectPath({ pathname, hasValidToken });
+	if (redirectPath !== null) {
+		return NextResponse.redirect(new URL(redirectPath, request.url));
 	}
 
 	return NextResponse.next();

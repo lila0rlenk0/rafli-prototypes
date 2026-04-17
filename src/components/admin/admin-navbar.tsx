@@ -46,7 +46,7 @@ export function AdminNavbar({ children }: AdminNavbarProps) {
 		<>
 			{/* Sticky nav — same structure as user-facing Navbar */}
 			<nav className="bg-background sticky top-0 z-20 border-b border-[#e6e8ec]">
-				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between px-4 sm:h-16 sm:px-6 2xl:px-20">
+				<div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between px-4 sm:h-16 sm:px-[100px]">
 					{/* Left: logo + admin nav links */}
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/admin">
@@ -136,7 +136,7 @@ export function AdminNavbar({ children }: AdminNavbarProps) {
 			</nav>
 
 			{/* Content wrapper — same spacing as user Navbar */}
-			<div className="mx-auto mt-6 max-w-[1920px] overflow-auto px-4 pb-10 sm:mt-10 sm:px-6 2xl:px-20">
+			<div className="mx-auto mt-6 max-w-[1440px] overflow-auto px-4 pb-10 sm:mt-10 sm:px-[100px]">
 				{children}
 			</div>
 		</>

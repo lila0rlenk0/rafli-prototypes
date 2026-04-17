@@ -22,21 +22,15 @@ import {
 } from '@lexical/table';
 import { $isParagraphNode, $isTextNode, LexicalNode } from 'lexical';
 
-// import { EMOJI } from "@/registry/new-york-v4/editor/transformers/markdown-emoji-transformer"
 import { HR } from '@/components/ui/editor/transformers/markdown-hr-transformer';
 import { IMAGE } from '@/components/ui/editor/transformers/markdown-image-transformer';
 
-// import { TWEET } from "@/registry/new-york-v4/editor/transformers/markdown-tweet-transformer"
-
-// Very primitive table setup
 const TABLE_ROW_REG_EXP = /^(?:\|)(.+)(?:\|)\s?$/;
 const TABLE_ROW_DIVIDER_REG_EXP = /^(\| ?:?-*:? ?)+\|\s?$/;
 
 const OTHER_MARKDOWN_TRANSFORMERS = [
 	HR,
 	IMAGE,
-	// EMOJI,
-	// TWEET,
 	CHECK_LIST,
 	...ELEMENT_TRANSFORMERS,
 	...MULTILINE_ELEMENT_TRANSFORMERS,
@@ -114,7 +108,7 @@ export const TABLE: ElementTransformer = {
 			return;
 		}
 
-		const matchCells = mapToTableCells(match[0]);
+		const matchCells = parseTableCells(match[0]);
 
 		if (matchCells == null) {
 			return;
@@ -139,7 +133,7 @@ export const TABLE: ElementTransformer = {
 				break;
 			}
 
-			const cells = mapToTableCells(firstChild.getTextContent());
+			const cells = parseTableCells(firstChild.getTextContent());
 
 			if (cells == null) {
 				break;
@@ -159,7 +153,7 @@ export const TABLE: ElementTransformer = {
 			table.append(tableRow);
 
 			for (let i = 0; i < maxCells; i++) {
-				tableRow.append(i < cells.length ? cells[i] : $createTableCell(''));
+				tableRow.append(i < cells.length ? cells[i] : createTableCell(''));
 			}
 		}
 
@@ -184,17 +178,17 @@ function getTableColumnsSize(table: TableNode) {
 	return $isTableRowNode(row) ? row.getChildrenSize() : 0;
 }
 
-const $createTableCell = (textContent: string): TableCellNode => {
+function createTableCell(textContent: string): TableCellNode {
 	textContent = textContent.replace(/\\n/g, '\n');
 	const cell = $createTableCellNode(TableCellHeaderStates.NO_STATUS);
 	$convertFromMarkdownString(textContent, OTHER_MARKDOWN_TRANSFORMERS, cell);
 	return cell;
-};
+}
 
-const mapToTableCells = (textContent: string): Array<TableCellNode> | null => {
+function parseTableCells(textContent: string): Array<TableCellNode> | null {
 	const match = textContent.match(TABLE_ROW_REG_EXP);
 	if (!match || !match[1]) {
 		return null;
 	}
-	return match[1].split('|').map(text => $createTableCell(text));
-};
+	return match[1].split('|').map(text => createTableCell(text));
+}

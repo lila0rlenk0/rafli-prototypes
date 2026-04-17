@@ -1,23 +1,30 @@
 ---
 paths:
-  - 'src/env/**'
+  - 'src/env/**/*.ts'
 ---
 
 # Environment Variables
 
-Parsed with `@t3-oss/env-nextjs` + Zod.
+Parsed with `@t3-oss/env-nextjs` + Zod. Never access `process.env` directly in app code.
 
-- `server.ts` — server-only (secrets, backend URLs). `import { env } from '@/env/server'`
-- `client.ts` — client-side (`NEXT_PUBLIC_` prefix). `import { clientEnv } from '@/env/client'`
+## Files
 
-## Adding Variables
+- `server.ts` — server-only (secrets, backend URLs, S2S). Import: `import { env } from '@/env/server'`
+- `client.ts` — client-side (`NEXT_PUBLIC_` prefix only). Import: `import { clientEnv } from '@/env/client'`
+
+## Adding a variable
 
 1. add Zod schema to `server.ts` or `client.ts`
-2. add to `runtimeEnv` mapping
+2. add to the `runtimeEnv` mapping
 3. add to `.env.example` and `.env.local`
 
 ## Security
 
-- server vars never exposed to browser
-- client vars bundled into JS — no secrets
-- `S2S_SECRET` for server-to-server auth
+- server vars never exposed to the browser
+- client vars are bundled into JS — never put secrets there
+- `S2S_SECRET` for server-to-server auth — server-only
+
+## Forbidden
+
+- `process.env.X` outside `src/env/` — use the typed import instead
+- `NEXT_PUBLIC_` secrets — they ship to the browser

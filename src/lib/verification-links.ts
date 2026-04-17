@@ -7,11 +7,23 @@
 import { clientEnv } from '@/env/client';
 
 /**
- * Gets the Arbiscan URL for the VRF contract
- * @returns Arbiscan contract URL
+ * Gets the Arbiscan URL for the Chainlink VRF Coordinator — the chainlink-owned
+ * oracle contract that generates and delivers verifiable randomness on-chain.
+ * Use this when surfacing the cryptographic source of randomness to end users.
+ * @returns Arbiscan contract URL for the Chainlink VRF Coordinator
  */
-export function getVrfContractUrl(): string {
-	return `${clientEnv.NEXT_PUBLIC_ARBISCAN_BASE_URL}/address/${clientEnv.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS}`;
+export function getVrfCoordinatorUrl(): string {
+	return `${clientEnv.NEXT_PUBLIC_ARBISCAN_BASE_URL}/address/${clientEnv.NEXT_PUBLIC_VRF_COORDINATOR_ADDRESS}`;
+}
+
+/**
+ * Gets the Arbiscan URL for the Rafli VRF Handler — our consumer contract that
+ * receives randomness from the Chainlink Coordinator and drives winner selection.
+ * Distinct from the Coordinator: this is application code, not an oracle.
+ * @returns Arbiscan contract URL for the Rafli VRF handler
+ */
+export function getVrfHandlerUrl(): string {
+	return `${clientEnv.NEXT_PUBLIC_ARBISCAN_BASE_URL}/address/${clientEnv.NEXT_PUBLIC_VRF_HANDLER_ADDRESS}`;
 }
 
 /**

@@ -156,6 +156,17 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 	'payments:crypto:concurrent-update',
 	'payments:crypto:concurrent-completion',
 
+	// Subscription — user/business errors surfaced by /subscriptions/*.
+	// `checkout-failed` and `enrollment-conflict` are included here because
+	// both are raised when Stripe rejects the request (card declined,
+	// duplicate webhook race) — provider/user-side failures, not defects.
+	'payments:subscription:plan-not-found',
+	'payments:subscription:already-subscribed',
+	'payments:subscription:checkout-failed',
+	'payments:subscription:not-found',
+	'payments:subscription:not-active',
+	'payments:subscription:enrollment-conflict',
+
 	// Credits — expected business errors
 	'payments:credits:insufficient-balance',
 	'payments:credits:invalid-amount',
@@ -259,6 +270,36 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 	// Ticket — expected states
 	'core:ticket:no-tickets',
 	'core:ticket:invalid-raffle',
+
+	// Chat — business rules surfaced via backend URNs. Every code here is
+	// user/environmental: membership checks, rate-limits, attachment races,
+	// WS token exhaustion. Real defects (500, contract drift) stay off this
+	// list and still flow to Sentry.
+	'chat:conversation:not-found',
+	'chat:conversation:not-member',
+	'chat:conversation:permission-denied',
+	'chat:conversation:invalid-member-count',
+	'chat:conversation:invalid-member',
+	'chat:conversation:daily-limit-reached',
+	'chat:conversation:max-members',
+	'chat:conversation:already-member',
+	'chat:conversation:max-members-below-current',
+	'chat:message:not-found',
+	'chat:message:deleted',
+	'chat:message:permission-denied',
+	'chat:message:edit-window-expired',
+	'chat:message:invalid-body',
+	'chat:message:invalid-type',
+	'chat:message:invalid-attachment',
+	'chat:room:not-found',
+	'chat:room:read-only',
+	'chat:room:full',
+	'chat:ws:invalid-token',
+	'chat:ws:max-connections',
+	'chat:ws:token-service-unavailable',
+	'chat:attachment:pending-limit-reached',
+	'chat:user:not-found',
+	'chat:validation:failed',
 ]);
 
 // ==========================================
@@ -303,18 +344,16 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	'Object Not Found Matching Id',
 
 	// Safari/Firefox private mode: `localStorage.getItem`/`window.localStorage`
-	// throw a `SecurityError` with this exact message. RainbowKit's
-	// `getRecentWalletIds` and `@metamask/sdk`'s `terminate.ts` both access
-	// storage eagerly and don't catch — the throws surface here even though
-	// the surrounding flow continues normally once the user grants permission
-	// or exits private mode. Not actionable in our code.
+	// throw a `SecurityError` with this exact message. Wallet connectors
+	// (`@metamask/sdk`, Coinbase Wallet SDK) access storage eagerly and don't
+	// catch — the throws surface here even though the surrounding flow continues
+	// normally once the user grants permission or exits private mode.
 	'The operation is insecure',
 
 	// Chrome/Android equivalent of the above — same `SecurityError`, different
 	// message. Fires in embedded WebViews (Telegram, Instagram, Twitter in-app
-	// browsers) where localStorage is sandboxed. Wagmi's MetaMask connector
-	// (`metaMask.ts:238`) and RainbowKit's session restore (`appName` /
-	// `getRecentWalletIds`) both trigger it. See Sentry RAFLI-B, RAFLI-C.
+	// browsers) where localStorage is sandboxed. Wagmi's wallet connectors
+	// trigger it during session restore. See Sentry RAFLI-B, RAFLI-C.
 	'Access is denied for this document',
 
 	// Injected MetaMask provider (`scripts/inpage.js`) throws when the user
@@ -325,19 +364,16 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	'Failed to connect to MetaMask',
 
 	// Sentry's synthesized title for plain-object promise rejections whose
-	// shape matches EIP-1193 provider errors (`{ code, message }`). Wagmi and
-	// RainbowKit surface wallet errors as these plain objects during early
-	// Web3 probing on the browse page; without an Error stack there's no
-	// actionable context, so we drop the whole group. See Sentry RAFLI-A.
+	// shape matches EIP-1193 provider errors (`{ code, message }`). Wagmi's
+	// connector probing surfaces these during early Web3 initialization on
+	// the browse page; without an Error stack there's no actionable context,
+	// so we drop the whole group. See Sentry RAFLI-A.
 	'Object captured as promise rejection with keys: code, message',
 
-	// wagmi's useConfig/useConnection hooks throw when called outside
-	// WagmiProvider. Web3Provider defers config loading via dynamic import
-	// and gates children via useIsWeb3Ready(), but during SSR/hydration
-	// race conditions or when browser extensions (WalletConnect injected
-	// providers) probe hooks before the provider mounts, the error briefly
-	// surfaces as an unhandled rejection. Not actionable — the gating logic
-	// already handles it, and the component tree recovers on the next render.
+	// wagmi hooks throw when a component renders outside WagmiProvider.
+	// We historically saw this during wallet-provider initialization races
+	// and extension probing. It's not actionable on its own, and the UI
+	// recovers on the next render once the provider tree settles.
 	// See Sentry RAFLI-5.
 	'WagmiProvider',
 
@@ -377,6 +413,92 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	// defect. See Sentry RAFLI-T.
 	'Unsupported or empty accounts for namespace',
 ];
+
+// ==========================================
+// Stack-Frame Noise Patterns
+// ==========================================
+
+/**
+ * Filename / abs_path substrings that mark an event as originating entirely
+ * inside third-party code we do not ship and cannot patch.
+ *
+ * Why a separate bucket from `BROWSER_NOISE_PATTERNS`:
+ *
+ * `BROWSER_NOISE_PATTERNS` matches the exception message (via
+ * `getExceptionText`), which covers the common case where the third-party
+ * SDK throws a recognisable string. But some extensions (notably wallet
+ * `inpage.js` content scripts) throw generic messages like
+ * `"Cannot read properties of undefined (reading 'removeListener')"` whose
+ * text is indistinguishable from a genuine app bug — the only tell is the
+ * stack frame's filename. See Sentry RAFLI-N, where the production
+ * exception value was exactly that and the filter let it through because
+ * `inpage.js` lives only in `event.exception.values[].stacktrace.frames[].filename`.
+ *
+ * Sentry's `InboundFilters` integration reads `ignoreErrors` against the
+ * message only, so this layer can't be collapsed into `Sentry.init`'s
+ * options — it must run inside `beforeSend` where the full event is
+ * available.
+ */
+export const NOISY_STACK_FRAME_PATTERNS: readonly string[] = [
+	// Wallet extensions (MetaMask, Phantom, Rabby, Coinbase Wallet, Rainbow,
+	// Brave Wallet) inject `inpage.js` as a content script into every page.
+	// Stack frames resolve to `app:///inpage.js` under our release tag with
+	// zero visibility into the extension's version or config. Users without
+	// a wallet are not a bug, and we cannot patch code we don't ship. See
+	// RAFLI-N (removeListener on undefined) and the broader RAFLI-M/N series.
+	'inpage.js',
+
+	// Generic browser-extension URL schemes — Chromium, Firefox, Safari.
+	// We ship no browser extensions; any frame resolving to these schemes
+	// is extension-origin by definition and cannot be a defect in our code.
+	'chrome-extension://',
+	'moz-extension://',
+	'safari-extension://',
+	'safari-web-extension://',
+];
+
+/**
+ * Returns true when the event's stack contains at least one frame whose
+ * filename or abs_path matches a third-party noise pattern.
+ *
+ * Iterates every `exception.values[].stacktrace.frames[]` because wallet
+ * and extension errors are often wrapped multiple layers deep — the
+ * top-most frame can be an anonymous closure (`<anonymous>` / Array.forEach)
+ * while the true origin `inpage.js` sits further down the stack.
+ *
+ * Performance note: this runs on every non-expected, non-network,
+ * non-message-noise event, so we short-circuit on the first match and
+ * keep the pattern list small. Empty frames array is cheap — a typical
+ * stack has <30 frames.
+ *
+ * @param event - The Sentry error event
+ * @returns `true` if any frame filename/abs_path matches a noise pattern
+ */
+function hasNoisyStackFrame(event: ErrorEvent): boolean {
+	const values = event.exception?.values;
+	if (!values) return false;
+
+	for (const exceptionValue of values) {
+		const frames = exceptionValue.stacktrace?.frames;
+		if (!frames) continue;
+
+		for (const frame of frames) {
+			// Sentry SDK sets `filename` for source-mapped stack frames and
+			// `abs_path` for the pre-symbolication URL. Extension frames
+			// typically only have `abs_path` populated (the `chrome-extension://`
+			// URL), while bundled `inpage.js` frames have both. Check both.
+			const candidates = [frame.filename, frame.abs_path];
+			for (const candidate of candidates) {
+				if (!candidate) continue;
+				for (const pattern of NOISY_STACK_FRAME_PATTERNS) {
+					if (candidate.includes(pattern)) return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
 
 /** Keep 10% of network/timeout errors — enough to detect trends without quota spam */
 const NETWORK_SAMPLE_RATE = 0.1;
@@ -455,7 +577,17 @@ export function filterEvent(
 		return null;
 	}
 
-	// Step 4: Sample suspected-noise patterns — errors that look
+	// Step 4: Drop events whose stack frames originate in known-noisy
+	// third-party code even when the exception message itself is generic.
+	// Wallet extensions (`inpage.js`) and browser-extension schemes throw
+	// messages like "Cannot read properties of undefined (reading
+	// 'removeListener')" — indistinguishable from a real app bug by text,
+	// but the stack frame filename is always the giveaway. See RAFLI-N.
+	if (hasNoisyStackFrame(event)) {
+		return null;
+	}
+
+	// Step 5: Sample suspected-noise patterns — errors that look
 	// environmental but where a trickle of samples is worth keeping so a
 	// hidden regression can still surface. Fingerprint collapses the
 	// samples into a single Sentry issue so quota stays flat.

@@ -53,6 +53,79 @@
 	--color-accent-green: #beffdb;
 	--color-accent-yellow: #f6ff8b;
 	--color-dark: #141416;
+
+	/* ------------------------------------------------------------------ */
+	/* Typography scale — named semantic tokens                            */
+	/*                                                                     */
+	/* Why: every heading and price surface used to carry arbitrary        */
+	/* `text-[Npx]` values scattered across 20+ files, making a global     */
+	/* tightening of the scale a 20-file diff. These tokens collapse the   */
+	/* edit surface to this file — change the value here and every         */
+	/* caller using the utility picks it up on next build.                 */
+	/*                                                                     */
+	/* Sizes target the *desktop* (post-`sm:`) breakpoint. Mobile callers  */
+	/* keep the existing `text-3xl`/`text-4xl` baseline so this pass is    */
+	/* a pure reduction, never an upscale at narrow viewports.             */
+	/*                                                                     */
+	/* Tailwind v4 CSS-first syntax: `--text-{name}` emits `text-{name}`;  */
+	/* `--text-{name}--line-height` and `--text-{name}--letter-spacing`    */
+	/* attach to that same utility.                                        */
+	/* ------------------------------------------------------------------ */
+
+	/* Hero H1 — browse + past-winners hero. Previously 64px, tightened
+	   so the display type feels decisive rather than oversized. */
+	--text-display: 52px;
+	--text-display--line-height: 1;
+
+	/* Section H2 — the dominant section break across all pages.
+	   Replaces an inconsistent 32/35/36 px spread with one value. */
+	--text-h2: 28px;
+	--text-h2--line-height: 1;
+	--text-h2--letter-spacing: 0.28px;
+
+	/* Sub-section H3 — profile section titles, editable field headers.
+	   Sits between the card-price (20px) and H2 (28px) to give a clear
+	   three-tier hierarchy inside the content column. */
+	--text-h3: 20px;
+	--text-h3--line-height: 1.1;
+	--text-h3--letter-spacing: 0.1px;
+
+	/* Featured H3 — oversized call-out used on the pricing hero.
+	   Kept separate from `h2` because the featured surface needs
+	   visual weight that would overpower normal section headers. */
+	--text-h3-featured: 36px;
+	--text-h3-featured--line-height: 1;
+
+	/* H4 — form section labels, long-form document subheads, the
+	   in-card editable name. Matches body size (16px) but is used
+	   with semibold weight for hierarchy without size escalation. */
+	--text-h4: 16px;
+	--text-h4--line-height: 1;
+
+	/* Card price — Clash Display, the headline number on browse cards.
+	   Shares line-height/letter-spacing with `h3` so prices and
+	   sub-section titles optically align on the same baseline grid. */
+	--text-card-price: 20px;
+	--text-card-price--line-height: 1.1;
+	--text-card-price--letter-spacing: 0.1px;
+
+	/* Card title — Geist, the raffle name. Same size as `h4` so card
+	   title and price share the body-size rhythm of the card body. */
+	--text-card-title: 16px;
+	--text-card-title--line-height: 1;
+
+	/* Body/L — primary body copy. Weight 400 (Regular) avoids the
+	   optical heaviness Geist carries at Medium (500). Line-height
+	   1.4 tightens from the browser default 1.5 so cards and
+	   descriptions feel lighter without changing the font size. */
+	--text-body-l: 16px;
+	--text-body-l--line-height: 1.4;
+
+	/* Body/M — secondary body copy, same metrics as body-l today.
+	   Exists as a separate token so the scale can diverge later
+	   (e.g. 14px for denser UI) without a codebase-wide rename. */
+	--text-body-m: 16px;
+	--text-body-m--line-height: 1.4;
 }
 
 :root {

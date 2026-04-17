@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
+import { CreditHistoryTable } from '@/components/profile/credits-table';
+import { parsePositivePageParam } from '@/lib/pagination/parse-positive-page-param';
 import { getCreditHistory } from '@/services/payment/get-credit-history';
-
-import { CreditHistoryTable } from './credits-table';
 
 /**
  * Props for CreditsPage
@@ -22,7 +22,7 @@ interface CreditsPageProps {
  */
 export default async function CreditsPage({ searchParams }: CreditsPageProps) {
 	const params = await searchParams;
-	const page = params.page ? parseInt(params.page, 10) : 1;
+	const page = parsePositivePageParam(params.page);
 	const limit = 10;
 
 	const result = await getCreditHistory({ page, limit });

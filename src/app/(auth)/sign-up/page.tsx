@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 
-import { AuthPageShell } from '../auth-page-shell';
-import { SignUpForm } from './sign-up-form';
+import { AuthPageShell } from '@/components/auth/auth-page-shell';
+import { SignUpForm } from '@/components/auth/sign-up-form';
 
 /**
  * Sign Up Page

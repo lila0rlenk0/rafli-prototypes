@@ -1,7 +1,7 @@
 'use client';
 
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { useAppKit } from '@reown/appkit/react';
+import { Loader2, ShieldCheck, WalletIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { formatNativeBalance, truncateAddress } from '@/lib/web3/format';
@@ -19,15 +19,13 @@ interface WalletStepProps {
 
 /**
  * Wallet connect + verify step for crypto checkout.
- * Uses ConnectButton.Custom for consistent styling within the modal.
- * Shows wallet address, verification status, and gas balance.
  *
- * ConnectButton.Custom render props (from RainbowKit docs):
- * - mounted: boolean — whether the widget has hydrated
- * - authenticationStatus: 'loading' | 'unauthenticated' | 'authenticated' | undefined
- * - openConnectModal: () => void — opens the wallet selection modal
- * - account: { address, displayName, displayBalance, ... } | undefined
- * - chain: { id, name, unsupported, ... } | undefined
+ * When no wallet is connected, opens Reown AppKit's modal (supports 300+
+ * wallets: MetaMask, Coinbase, Phantom, WalletConnect, social logins, etc.).
+ *
+ * Once connected, shows wallet address, verification status, and gas balance.
+ *
+ * @returns connect button or connected wallet info
  */
 export function WalletStep({
 	address,
@@ -36,12 +34,12 @@ export function WalletStep({
 	nativeBalance,
 	onWalletReady,
 }: WalletStepProps) {
+	const { open } = useAppKit();
 	const statusText = isWalletVerified
 		? 'Wallet connected and verified'
 		: 'Connect your wallet and verify ownership';
 	const buttonText = isWalletVerified ? 'Continue' : 'Verify Wallet';
 
-	// green checkmark if verified, amber nudge if not
 	function renderVerificationBadge(): React.ReactNode {
 		if (isWalletVerified) {
 			return (
@@ -58,45 +56,18 @@ export function WalletStep({
 		<div className="flex flex-col items-center gap-5">
 			<p className="text-center text-sm text-[#7B7B7B]">{statusText}</p>
 
-			{/* Custom connect button — styled to match app.
-			    RainbowKit docs: check mounted + authenticationStatus for readiness,
-			    guard openConnectModal with optional chaining. */}
+			{/* Opens Reown AppKit modal — full wallet selection UI */}
 			{!address ? (
-				<ConnectButton.Custom>
-					{({ openConnectModal, mounted, authenticationStatus }) => {
-						// RainbowKit does not guarantee modal handlers exist before the
-						// widget is mounted/auth state is resolved. Render a disabled CTA
-						// until the modal can actually open instead of a dead button.
-						const isReady = mounted && authenticationStatus !== 'loading';
-						const canOpenModal = isReady && !!openConnectModal;
-
-						return (
-							// Hide from assistive tech until RainbowKit is ready
-							// (recommended pattern from RainbowKit docs)
-							<div
-								{...(!isReady && {
-									'aria-hidden': true,
-									style: {
-										opacity: 0,
-										pointerEvents: 'none' as const,
-										userSelect: 'none' as const,
-										width: '100%',
-									},
-								})}
-								className="w-full"
-							>
-								<Button
-									onClick={() => openConnectModal?.()}
-									disabled={!canOpenModal}
-									variant="outline"
-									className="h-12 w-full border-2 border-black bg-white text-black hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:border-[#D4D4D4] disabled:bg-[#F5F5F5] disabled:text-[#7B7B7B] disabled:hover:bg-[#F5F5F5] disabled:hover:text-[#7B7B7B]"
-								>
-									{canOpenModal ? 'Connect Wallet' : 'Preparing wallet...'}
-								</Button>
-							</div>
-						);
+				<Button
+					onClick={() => {
+						void open({ view: 'Connect' });
 					}}
-				</ConnectButton.Custom>
+					variant="outline"
+					className="h-12 w-full gap-3 border-2 border-black bg-white text-black hover:bg-black hover:text-white"
+				>
+					<WalletIcon className="size-5" />
+					Connect Wallet
+				</Button>
 			) : null}
 
 			{/* Connected wallet info card */}

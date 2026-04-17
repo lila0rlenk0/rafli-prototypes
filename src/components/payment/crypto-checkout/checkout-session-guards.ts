@@ -2,6 +2,7 @@ import { isAddressEqual, type Address } from 'viem';
 
 import { isValidTxHash } from '@/lib/web3/block-explorers';
 import { normalizeTxHash } from '@/lib/web3/crypto-payment-flow';
+import { PAYMENT_ERROR_CODES, type PaymentErrorCode } from '@/types/errors';
 import {
 	CRYPTO_PAYMENT_STATUS,
 	type CryptoPaymentStatus,
@@ -175,4 +176,36 @@ export function getPolledTxHashSyncDecision({
 			? undefined
 			: (normalizeTxHash(polledTxHash) as `0x${string}`),
 	};
+}
+
+/**
+ * Returns true when FE-driven confirm should transition immediately to terminal failure.
+ *
+ * These codes mean the backend checkout session is no longer confirmable in-place.
+ */
+export function isTerminalConfirmError(errorCode: PaymentErrorCode): boolean {
+	return (
+		errorCode === PAYMENT_ERROR_CODES.CRYPTO_SESSION_EXPIRED ||
+		errorCode === PAYMENT_ERROR_CODES.CRYPTO_SESSION_NOT_FOUND ||
+		errorCode === PAYMENT_ERROR_CODES.CRYPTO_ORDER_NOT_RECOVERABLE
+	);
+}
+
+/**
+ * Returns true when FE-driven confirm should schedule another immediate retry tick.
+ *
+ * Some codes are expected during normal convergence (already-confirming/completed,
+ * concurrent update) and should defer to polling/cron instead of active FE retries.
+ */
+export function shouldScheduleConfirmRetry(
+	errorCode: PaymentErrorCode,
+): boolean {
+	if (isTerminalConfirmError(errorCode)) return false;
+
+	return !(
+		errorCode === PAYMENT_ERROR_CODES.CRYPTO_ALREADY_COMPLETED ||
+		errorCode === PAYMENT_ERROR_CODES.CRYPTO_ALREADY_CONFIRMING ||
+		errorCode === PAYMENT_ERROR_CODES.CRYPTO_CONCURRENT_UPDATE ||
+		errorCode === PAYMENT_ERROR_CODES.CRYPTO_CONCURRENT_COMPLETION
+	);
 }

@@ -1,20 +1,22 @@
+---
+paths:
+  - 'src/**/*.{ts,tsx}'
+---
+
 # Code Style
 
-Formatting (tabs, quotes, parens) enforced by Prettier.
-
-## Scan Exclusions
-
-`src/components/ui/` — shadcn stock, skip for eslint/TS audits and complexity scans
+Formatting (tabs, quotes, parens) enforced by Prettier. `src/components/ui/` is shadcn stock — skip for audits and complexity scans.
 
 ## JSX
 
-- extract logic to named functions inside component scope, never inline in JSX
+- extract logic to named functions inside component scope — never inline in JSX
 - ternary for conditionals, never `&&` — prevents rendering `0`/`""`, explicit null branch
 - extract static JSX and RegExp to module scope — avoids re-creation per render
 
 ## Functions
 
-- helpers inside component scope; exceptions: pure utilities in `@/lib/utils`, constants, shared helpers in same file
+- `function` declarations, not arrows — arrows allowed only in hook callbacks and shadcn primitives
+- helpers inside component scope; exceptions: pure utilities in `@/lib/utils`, module constants, shared helpers in the same file
 - decompose complex conditions into named helper functions
 - extract inline callback/object types to named interfaces
 - max ~50 SLOC per function, max 4 nesting levels
@@ -22,37 +24,40 @@ Formatting (tabs, quotes, parens) enforced by Prettier.
 - `switch` exhaustiveness (`default: never`) over `if/else if` for unions
 - replace boolean params with named options objects or separate functions
 
-## Control Flow
+## Control flow
 
-- negate condition and return early, no deep `if/else` pyramids
+- negate condition, return early — no deep `if/else` pyramids
 - guard clauses at function top: validate, return/throw, then happy path
-- no `else` after `return`/`throw`
-- no nested ternaries — use `if/else` or named variable
+- no `else` after `return` / `throw`
+- no nested ternaries — use `if/else` or a named variable
 
 ## Naming
 
 - descriptive hook return values, never shadow built-in globals
-- delete unused imports, variables, functions, types — never comment out
+- booleans prefixed: `isLoading`, `hasPermission`, `canEdit`
+- event handlers: `onSubmit` for props, `handleDelete` for internal
+- delete unused imports/variables/functions/types — never comment out
 
-## Type Safety
+## Type safety
 
-- no `any`, `unknown`, `as unknown as T`, `as never`, unsafe `as Type` casts
+- no `any`, `unknown` leaks, `as unknown as T`, `as never`, unsafe `as Type` casts
 - no `@ts-ignore`, `@ts-expect-error`, `eslint-disable` — fix root cause
 - prefer type guards (`is`, `in`, discriminated unions) over assertions
-- narrow with control flow: `if (!x) throw` or `if ('kind' in x)`
+- narrow via control flow: `if (!x) throw`, `if ('kind' in x)`
 - let TS infer return types internally; annotate public API boundaries
 
 ## Data
 
 - `readonly` arrays/properties for immutable data
-- destructure at call site, not deep inside function body
+- destructure at call site, not deep inside the function body
 - no magic numbers/strings — named `const` with comment
+- underscores in large numbers: `1_000_000`
 - `Map`/`Set` for dynamic keys — O(1) lookups
-- `.toSorted()`/`.toReversed()` not `.sort()`/`.reverse()` — immutability
+- `.toSorted()` / `.toReversed()` — never `.sort()` / `.reverse()`
 
 ## Async
 
-- every `async` must `await` something — remove `async` if synchronous
+- every `async` must `await` something — drop `async` if synchronous
 - no floating promises — `await` or `void`
 - no `Promise` constructor wrapping already-async operations
 - `Promise.all()` for independent concurrent work

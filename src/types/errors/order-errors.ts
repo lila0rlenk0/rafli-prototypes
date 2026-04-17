@@ -1,5 +1,6 @@
 import type { ClientErrorCode } from './client-errors';
 import type { CommonErrorCode } from './common-errors';
+import type { PromoCodeErrorCode } from './promo-code-errors';
 
 export const ORDER_ERROR_CODES = {
 	// Order errors
@@ -30,3 +31,12 @@ export type OrderErrorCode =
 	| (typeof ORDER_ERROR_CODES)[keyof typeof ORDER_ERROR_CODES]
 	| ClientErrorCode
 	| CommonErrorCode;
+
+/**
+ * Error union returned by the atomic `/orders/checkout` endpoint.
+ *
+ * Wider than plain `OrderErrorCode` because the endpoint validates and redeems
+ * a promo code inside the order transaction — backend can surface the full
+ * `core:promo:*` namespace alongside order/raffle errors.
+ */
+export type CheckoutOrderErrorCode = OrderErrorCode | PromoCodeErrorCode;

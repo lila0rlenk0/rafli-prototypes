@@ -9,7 +9,7 @@ import {
 	type PromoManageableStatus,
 } from '@/types/raffle';
 
-import { PromoCodesContent } from './promo-codes-content';
+import { PromoCodesContent } from '@/components/my-raffles/promo-codes/promo-codes-content';
 
 /**
  * Props for PromoCodesPage

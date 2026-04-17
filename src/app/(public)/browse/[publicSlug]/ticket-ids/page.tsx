@@ -3,11 +3,11 @@ import { notFound } from 'next/navigation';
 
 import { BackLink } from '@/components/ui/back-link';
 import { getSession } from '@/lib/auth/session';
+import { parsePositivePageParam } from '@/lib/pagination/parse-positive-page-param';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import { RAFFLE_STATUS } from '@/types/raffle';
-
-import { TicketCodesTable } from './ticket-codes-table';
+import { TicketCodesTable } from '@/components/browse/public-slug/ticket-codes-table';
 
 /**
  * Props for TicketIdsPage
@@ -37,7 +37,7 @@ export default async function TicketIdsPage({
 	// Step 1: Parse route and query params.
 	const { publicSlug } = await params;
 	const queryParams = await searchParams;
-	const page = queryParams.page ? parseInt(queryParams.page, 10) : 1;
+	const page = parsePositivePageParam(queryParams.page);
 	// 20 rows per page — fits typical viewport without excessive scrolling
 	const limit = 20;
 

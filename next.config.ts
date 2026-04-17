@@ -91,10 +91,10 @@ const nextConfig: NextConfig = {
 				: []),
 		],
 	},
-	// WalletConnect's dependency tree (via @walletconnect/ethereum-provider) pulls in
-	// Node.js-only modules: pino logger, LokiJS persistence, and text encoding polyfill.
-	// These are never executed in the browser but webpack tries to bundle them for client
-	// chunks, causing build warnings. Marking them as externals skips them entirely.
+	// Reown AppKit's WalletConnect transitive deps (via @reown/appkit-adapter-wagmi)
+	// pull in Node.js-only modules: pino logger, LokiJS persistence, and text encoding
+	// polyfill. These never execute in the browser but webpack still tries to bundle
+	// them for client chunks, producing build warnings. Externals skip them entirely.
 	webpack: config => {
 		const wcExternals = ['pino-pretty', 'lokijs', 'encoding'];
 		// webpack externals can be an array, string, function, object, or RegExp.
@@ -148,41 +148,49 @@ const nextConfig: NextConfig = {
 	},
 };
 
-export default withSentryConfig(nextConfig, {
-	org: 'mode-mobile-t5',
-	project: 'rafli',
+// Skip Sentry webpack wrapper in local dev — it hooks into every compilation
+// cycle and adds significant HMR latency even when DSN is unset. The Sentry
+// SDK still initializes via sentry.server.config.ts; only source map upload
+// and build-time instrumentation are skipped.
+const isDev = process.env.NODE_ENV === 'development';
 
-	// CI/CD provides this via SENTRY_AUTH_TOKEN env var (org token with org:ci scope).
-	// Locally this is unset — `silent` below suppresses the resulting warnings.
-	authToken: process.env.SENTRY_AUTH_TOKEN,
+export default isDev
+	? nextConfig
+	: withSentryConfig(nextConfig, {
+			org: 'mode-mobile-t5',
+			project: 'rafli',
 
-	// Upload a wider set of client source maps — improves stack trace readability
-	// for chunks that Next.js normally excludes from the default upload set.
-	widenClientFileUpload: true,
+			// CI/CD provides this via SENTRY_AUTH_TOKEN env var (org token with org:ci scope).
+			// Locally this is unset — `silent` below suppresses the resulting warnings.
+			authToken: process.env.SENTRY_AUTH_TOKEN,
 
-	// Route client-side Sentry events through the Next.js server.
-	// Bypasses ad-blockers that block requests to ingest.sentry.io.
-	tunnelRoute: '/monitoring',
+			// Upload a wider set of client source maps — improves stack trace readability
+			// for chunks that Next.js normally excludes from the default upload set.
+			widenClientFileUpload: true,
 
-	// Disable Sentry SDK telemetry
-	telemetry: false,
+			// Route client-side Sentry events through the Next.js server.
+			// Bypasses ad-blockers that block requests to ingest.sentry.io.
+			tunnelRoute: '/monitoring',
 
-	// Remove source maps from the production bundle after uploading to Sentry.
-	// Prevents exposing original source code via browser devtools.
-	sourcemaps: {
-		deleteSourcemapsAfterUpload: true,
-	},
+			// Disable Sentry SDK telemetry
+			telemetry: false,
 
-	webpack: {
-		// Auto-instrument Vercel Cron Monitors (does not yet work with App Router route handlers)
-		automaticVercelMonitors: true,
+			// Remove source maps from the production bundle after uploading to Sentry.
+			// Prevents exposing original source code via browser devtools.
+			sourcemaps: {
+				deleteSourcemapsAfterUpload: true,
+			},
 
-		// Tree-shake Sentry logger statements to reduce bundle size
-		treeshake: {
-			removeDebugLogging: true,
-		},
-	},
+			webpack: {
+				// Auto-instrument Vercel Cron Monitors (does not yet work with App Router route handlers)
+				automaticVercelMonitors: true,
 
-	// Silence source map upload warnings when auth token is not set (local dev)
-	silent: !process.env.SENTRY_AUTH_TOKEN,
-});
+				// Tree-shake Sentry logger statements to reduce bundle size
+				treeshake: {
+					removeDebugLogging: true,
+				},
+			},
+
+			// Silence source map upload warnings when auth token is not set (local dev)
+			silent: !process.env.SENTRY_AUTH_TOKEN,
+		});

@@ -14,7 +14,10 @@ import Link from 'next/link';
 import { CodeSnippet } from '@/components/ui/code-snippet';
 import { TicketVerificationStory } from '@/components/verification/ticket-verification-story';
 
-import { COMMIT_REVEAL_CODE, WINNER_FORMULA_CODE } from './code-snippets';
+import {
+	COMMIT_REVEAL_CODE,
+	WINNER_FORMULA_CODE,
+} from '@/lib/how-it-works/code-snippets';
 
 export const metadata: Metadata = {
 	title: 'How It Works',

@@ -7,10 +7,13 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import { Logo } from '@/assets/logo';
+import { ChatNavLink } from '@/components/messages/chat-nav-link';
 import { ModeSwitchToggle } from '@/components/mode/mode-switch-toggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Button } from '@/components/ui/button';
 import { CreditBalanceBadge } from '@/components/ui/credit-balance-badge';
+import { SubscriptionTierBadge } from '@/components/ui/subscription-tier-badge';
+import { FEATURE_FLAGS } from '@/lib/feature-flags';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 
@@ -64,13 +67,27 @@ export function PublicNavbar({
 		setIsMenuOpen(false);
 	}
 
+	/**
+	 * Returns the top spacing for the content container.
+	 *
+	 * Why: pages with a top banner (e.g. marquee) need content to start
+	 * immediately below that banner. Pages without a banner keep the legacy
+	 * breathing room under the navbar.
+	 */
+	function getContentTopSpacingClassName(): string {
+		if (topBanner) {
+			return 'mt-0';
+		}
+		return 'mt-6 sm:mt-10';
+	}
+
 	return (
 		<>
 			{/* Background strip — solid bg, z-10 so decorative shapes (z-[15]) show above */}
 			<div className="bg-background sticky top-0 z-10 h-14 sm:h-16" />
 
 			<nav className="bg-background sticky top-0 z-20 -mt-14 border-b border-black sm:-mt-16">
-				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center justify-between px-3 sm:h-16 sm:px-8 2xl:px-[90px]">
+				<div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between px-3 sm:h-16 sm:px-[100px]">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">
 							<Logo className="h-5 w-auto sm:h-6" />
@@ -97,7 +114,14 @@ export function PublicNavbar({
 
 					{/* Desktop: Right side */}
 					<div className="hidden items-center gap-4 sm:flex">
-						{/* Badge before feedback link — mirrors navbar.tsx order */}
+						{/* Tier badge first, credit badge second — the tier is a
+						    status-identity marker that frames how the user reads the
+						    credit value (i.e. "I'm on Pro, with $12 credit"). Ordering
+						    them this way keeps the highest-signal pill closest to the
+						    page content on a LTR reading pass. Both hide themselves
+						    for viewers who don't apply (no subscription / no credit),
+						    so non-subscribers see the same nav they do today. */}
+						{isAuthenticated ? <SubscriptionTierBadge /> : null}
 						{isAuthenticated ? <CreditBalanceBadge /> : null}
 						<a
 							href={FEEDBACK_FORM_URL}
@@ -113,6 +137,7 @@ export function PublicNavbar({
 									<ModeSwitchToggle />
 								</div>
 								<div className="flex items-center gap-4">
+									<ChatNavLink />
 									<NotificationBell />
 									<Link href="/profile">
 										<User className="size-5" />
@@ -162,9 +187,17 @@ export function PublicNavbar({
 
 						<div className="flex flex-col gap-8 px-6 pt-8">
 							{isAuthenticated ? <ModeSwitchToggle /> : null}
-							{/* Bubble click closes mobile overlay on badge tap */}
+							{/* Bubble click closes mobile overlay on badge tap. Both
+							    pills share the same wrapper pattern — same reason,
+							    same closeMenu behaviour, no visual divider between
+							    them so they read as a paired identity row. */}
 							{isAuthenticated ? (
-								<div onClick={closeMenu} role="presentation">
+								<div
+									onClick={closeMenu}
+									role="presentation"
+									className="flex flex-wrap items-center gap-3"
+								>
+									<SubscriptionTierBadge />
 									<CreditBalanceBadge />
 								</div>
 							) : null}
@@ -186,6 +219,15 @@ export function PublicNavbar({
 									>
 										My raffles
 									</Link>
+									{FEATURE_FLAGS.CHAT_ENABLED ? (
+										<Link
+											href="/messages"
+											className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
+											onClick={closeMenu}
+										>
+											Messages
+										</Link>
+									) : null}
 									<Link
 										href="/profile/notifications"
 										className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
@@ -228,7 +270,9 @@ export function PublicNavbar({
 
 			{topBanner}
 
-			<div className="relative z-[16] mx-auto mt-6 max-w-[1920px] overflow-auto px-3 pb-10 sm:mt-10 sm:px-8 2xl:px-[90px]">
+			<div
+				className={`relative z-[16] mx-auto ${getContentTopSpacingClassName()} max-w-[1440px] overflow-auto px-3 pb-10 sm:px-[100px]`}
+			>
 				{children}
 			</div>
 		</>

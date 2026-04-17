@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 
+import { AuthPageShell } from '@/components/auth/auth-page-shell';
+import { SignInForm } from '@/components/auth/sign-in-form';
 import { Spinner } from '@/components/ui/spinner';
-import { AuthPageShell } from '../auth-page-shell';
-import { SignInForm } from './sign-in-form';
 
 /**
  * Sign In Page

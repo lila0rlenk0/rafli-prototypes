@@ -29,7 +29,8 @@ import { cn } from '@/lib/utils';
 import {
 	getArbiscanTxUrl,
 	getIpfsUrl,
-	getVrfContractUrl,
+	getVrfCoordinatorUrl,
+	getVrfHandlerUrl,
 } from '@/lib/verification-links';
 import { useRaffleVerification } from '@/services/verification/use-raffle-verification';
 import type {
@@ -184,15 +185,27 @@ function BlockchainProofs({ data }: BlockchainProofsProps) {
 					)}
 				</div>
 
-				<a
-					href={getVrfContractUrl()}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-600 hover:bg-blue-100"
-				>
-					View VRF Contract on Arbiscan
-					<ExternalLink className="size-3" />
-				</a>
+				{/* Two distinct contracts: Chainlink's oracle (source of randomness) and Rafli's consumer (winner selection logic) */}
+				<div className="flex flex-wrap gap-2 pt-1">
+					<a
+						href={getVrfCoordinatorUrl()}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-600 hover:bg-blue-100"
+					>
+						Chainlink VRF Coordinator
+						<ExternalLink className="size-3" />
+					</a>
+					<a
+						href={getVrfHandlerUrl()}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-100 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-200"
+					>
+						Rafli VRF Handler
+						<ExternalLink className="size-3" />
+					</a>
+				</div>
 			</div>
 		</div>
 	);

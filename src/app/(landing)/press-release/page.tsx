@@ -9,9 +9,8 @@ import {
 	ScrollReveal,
 	ScrollRevealStagger,
 } from '@/components/ui/scroll-reveal';
-
-import { Footer } from '../footer';
-import { Navbar } from '../navbar';
+import { Footer } from '@/components/landing/footer';
+import { Navbar } from '@/components/landing/navbar';
 
 /**
  * Section label — green uppercase badge above section headings.
@@ -103,10 +102,10 @@ interface StepItemProps {
 function StepItem({ number, children }: StepItemProps) {
 	return (
 		<div className="flex items-start gap-4.5 rounded-xl bg-neutral-100 px-5 py-4.5">
-			<div className="bg-dark text-accent-green font-clash-display grid size-[34px] shrink-0 place-items-center rounded-xl text-[15px] font-extrabold">
+			<div className="bg-dark text-accent-green font-clash-display grid size-[34px] shrink-0 place-items-center rounded-xl text-[14px] font-extrabold">
 				{number}
 			</div>
-			<p className="text-foreground/80 text-[15px]">{children}</p>
+			<p className="text-foreground/80 text-[14px]">{children}</p>
 		</div>
 	);
 }
@@ -457,7 +456,7 @@ export default function PressReleasePage() {
 					<ScrollReveal>
 						<section className="rounded-2xl bg-neutral-100 px-6 py-9 sm:px-10">
 							<SectionLabel>Press Contact</SectionLabel>
-							<h3 className="font-clash-display text-foreground mb-3.5 text-[22px] font-bold tracking-[-0.5px]">
+							<h3 className="font-clash-display text-h4 text-foreground mb-3.5 font-bold tracking-[-0.5px]">
 								Media Inquiries
 							</h3>
 							<p className="text-foreground/80 mb-4.5 font-light">

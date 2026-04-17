@@ -96,4 +96,8 @@ export const MOCK_ANALYTICS_EVENTS = {
 		FINALIZED: 'KYC Submission Finalized',
 		SUBMISSION_FAILED: 'KYC Submission Failed',
 	},
+	SUBSCRIPTION_EVENTS: {
+		CHECKOUT_REDIRECTED: 'Subscription Checkout Redirected',
+		FAILED: 'Subscription Failed',
+	},
 };

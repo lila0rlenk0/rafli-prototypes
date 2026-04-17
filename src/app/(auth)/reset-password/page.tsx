@@ -1,11 +1,10 @@
 import Link from 'next/link';
 
 import { LogoIcon } from '@/assets/logo-icon';
+import { AuthPageShell } from '@/components/auth/auth-page-shell';
+import { ResetPasswordForm } from '@/components/auth/reset-password-form';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
-
-import { AuthPageShell } from '../auth-page-shell';
-import { ResetPasswordForm } from './reset-password-form';
 
 interface ResetPasswordPageProps {
 	searchParams: Promise<{ token?: string }>;

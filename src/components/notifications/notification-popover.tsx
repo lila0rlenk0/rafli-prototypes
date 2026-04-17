@@ -12,9 +12,24 @@ import {
 	PopoverTrigger,
 } from '@/components/ui/popover';
 import { Spinner } from '@/components/ui/spinner';
+import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { useNotificationStore } from '@/providers/notification-store-provider';
 import { useMarkAllNotificationsRead } from '@/services/notification/use-mark-all-read';
 import { useNotifications } from '@/services/notification/use-notifications';
+import { NOTIFICATION_TYPE } from '@/types/notification';
+
+/**
+ * Hides `chat_message` notifications from the bell when the chat feature
+ * is live — they're surfaced by the chat icon's unread badge instead.
+ * Returns the list untouched when the flag is off so users still see
+ * chat-message entries in the bell during rollout.
+ */
+function filterChatOutWhenChatEnabled<T extends { readonly type: string }>(
+	notifications: readonly T[],
+): T[] {
+	if (!FEATURE_FLAGS.CHAT_ENABLED) return notifications.slice();
+	return notifications.filter(n => n.type !== NOTIFICATION_TYPE.CHAT_MESSAGE);
+}
 
 export function NotificationPopover() {
 	const [open, setOpen] = useState(false);
@@ -88,7 +103,9 @@ export function NotificationPopover() {
 						</div>
 					) : (
 						<NotificationList
-							notifications={data?.notifications ?? []}
+							notifications={filterChatOutWhenChatEnabled(
+								data?.notifications ?? [],
+							)}
 							onClose={handleClose}
 						/>
 					)}

@@ -1,20 +1,17 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import {
-	parsePage,
-	parseRaffleStatus,
-} from '@/app/(protected)/lib/parse-search-params';
-import { RaffleCard } from '@/app/(protected)/my-raffles/raffle-card';
-import { StatusTabs } from '@/app/(protected)/my-raffles/status-tabs';
+import { CreateRaffleButton } from '@/components/my-raffles/create-raffle-button';
+import { PageHeader } from '@/components/my-raffles/page-header';
+import { RaffleCard } from '@/components/my-raffles/raffle-card';
+import { StatusTabs } from '@/components/my-raffles/status-tabs';
+import { parsePage, parseRaffleStatus } from '@/lib/raffle/parse-search-params';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { getUserModeCookie } from '@/lib/mode/cookies';
 import { getEnrolledRaffles } from '@/services/raffle/get-enrolled-raffles';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
-import { CreateRaffleButton } from './create-raffle-button';
-import { PageHeader } from './page-header';
 
 interface PageProps {
 	searchParams: Promise<{

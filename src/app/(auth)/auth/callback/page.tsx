@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
-import { CallbackHandler } from './callback-handler';
+
+import { CallbackHandler } from '@/components/auth/callback-handler';
 
 /**
  * OAuth callback page

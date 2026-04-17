@@ -60,11 +60,12 @@ export function FeaturedRaffleCard({
 			href={`/browse/${raffle.publicSlugOrCode}`}
 			className={cn(
 				config.bg,
-				'flex w-full flex-col gap-6 rounded-3xl border border-transparent p-6 transition-colors sm:flex-row sm:items-start sm:justify-between sm:p-8 sm:hover:border-black',
+				'flex h-full w-full flex-col gap-6 rounded-3xl border border-transparent p-6 transition-colors sm:flex-row sm:justify-between sm:p-8 sm:hover:border-black',
 			)}
 		>
-			{/* Text content */}
-			<div className="flex flex-col gap-6 sm:w-[60%]">
+			{/* Text content — flex-1 + mt-auto on the button keeps "Enter now!"
+			   bottom-aligned across cards with different title lengths. */}
+			<div className="flex flex-1 flex-col gap-6 sm:w-[60%]">
 				<div className="flex flex-col gap-2">
 					<span
 						className={cn(
@@ -91,7 +92,7 @@ export function FeaturedRaffleCard({
 						/ticket &middot; {getTimeRemaining()}
 					</p>
 				</div>
-				<div className="flex w-full items-center justify-center rounded-full bg-[#141416] px-6 py-4">
+				<div className="mt-auto flex w-full items-center justify-center rounded-full bg-[#141416] px-6 py-4">
 					<span className="text-base font-semibold text-[#fcfcfd]">
 						Enter now!
 					</span>
@@ -100,7 +101,7 @@ export function FeaturedRaffleCard({
 
 			{/* Cover image - below text on mobile, right side on desktop */}
 			{heroImage ? (
-				<div className="relative aspect-square w-full flex-shrink-0 overflow-hidden rounded-3xl sm:w-[182px]">
+				<div className="relative aspect-square w-full flex-shrink-0 self-start overflow-hidden rounded-3xl sm:w-[182px]">
 					<Image
 						src={heroImage}
 						alt={raffle.title}

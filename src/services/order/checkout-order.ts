@@ -8,9 +8,9 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/config';
 import { getSession } from '@/lib/auth/session';
-import { failure, mapOrderError, success } from '@/lib/errors';
+import { failure, mapCheckoutOrderError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
-import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
+import { ORDER_ERROR_CODES, type CheckoutOrderErrorCode } from '@/types/errors';
 import {
 	createOrderPayloadSchema,
 	orderSchema,
@@ -39,12 +39,16 @@ export interface CheckoutOrderResponse {
  * Backend returns a flat order object (not nested under `order` key)
  * with an optional `promoRedemption` field stripped by Zod's default behavior.
  *
+ * Error surface spans `core:order:*`, `core:raffle:*`, and `core:promo:*` —
+ * promo errors arise when the attached code fails validation inside the order
+ * transaction. Callers route them through `shouldClearPromo` / `getPromoErrorMessage`.
+ *
  * @param payload - Raffle ID, ticket quantity, optional promo code
  * @returns ServiceResponse with order and discount info, or error code
  */
 export async function checkoutOrder(
 	payload: CheckoutOrderPayload,
-): Promise<ServiceResponse<CheckoutOrderResponse, OrderErrorCode>> {
+): Promise<ServiceResponse<CheckoutOrderResponse, CheckoutOrderErrorCode>> {
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
@@ -92,7 +96,7 @@ export async function checkoutOrder(
 			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
 		}
 
-		const errorCode = mapOrderError(error);
+		const errorCode = mapCheckoutOrderError(error);
 
 		runAfter(async () => {
 			const userId = (await sessionPromise)?.user?.id;

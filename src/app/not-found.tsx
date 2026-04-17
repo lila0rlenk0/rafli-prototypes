@@ -17,7 +17,7 @@ export default function NotFound() {
 			<ColoredShapes className="pointer-events-none fixed top-0 left-0 z-[15] origin-top-left scale-[.65]" />
 
 			<nav className="bg-background sticky top-0 z-20 border-b border-black">
-				<div className="mx-auto flex h-14 w-full max-w-[1920px] items-center px-4 sm:h-16 sm:px-6 2xl:px-20">
+				<div className="mx-auto flex h-14 w-full max-w-[1440px] items-center px-4 sm:h-16 sm:px-[100px]">
 					<Link href="/browse">
 						<Logo className="h-5 w-auto sm:h-6" />
 					</Link>

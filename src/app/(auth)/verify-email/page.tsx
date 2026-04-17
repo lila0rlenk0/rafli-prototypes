@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import { VerifyEmailHandler } from './verify-email-handler';
+import { VerifyEmailHandler } from '@/components/auth/verify-email-handler';
 
 interface VerifyEmailPageProps {
 	searchParams: Promise<{ token?: string }>;

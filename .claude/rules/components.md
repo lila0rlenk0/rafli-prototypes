@@ -1,36 +1,67 @@
 ---
 paths:
-  - 'src/components/**'
+  - 'src/components/**/*.{ts,tsx}'
   - 'src/app/**/*.tsx'
 ---
 
 # Components
 
-Server Components first. UI organized by domain.
+Server Components by default, organized by domain.
 
-## Directory
+## Directories
 
-`ui/` — shadcn primitives. Domain: `auth/`, `raffle/`, `host/`, `payment/`, `filters/`, `promo-code/`, `mode/`, `order/`, `fulfillment/`, `notifications/`, `report/`, `verification/`.
+- `ui/` — shadcn primitives, managed by CLI, never hand-edit
+- domain folders: `auth`, `raffle`, `host`, `payment`, `filters`, `promo-code`, `mode`, `order`, `fulfillment`, `notifications`, `report`, `verification`, `my-raffles`, `browse`, `profile`, `landing`, `pricing`, `messages`, `admin`
 
 ## Server vs Client
 
-- Server — static content, data fetching, SEO, no browser APIs
-- Client — hooks, event handlers, browser APIs. Mark `'use client'`
-- `'use client'` required for: hooks, `onClick`/`onChange`, `window`/`document`, state. Form `action` prop alone does not require it
+- server by default — static content, data fetching, SEO, no browser APIs
+- `'use client'` required for: hooks, `onClick`/`onChange`/state, `window`/`document`, context consumers
+- form `action` prop alone does not require `'use client'`
+- push `'use client'` to the leaf — keep the boundary as low as possible
+- never mark a parent as client just because one child needs interactivity
 
-## Runtime Data in Layouts
+## Composition: server inside client
 
-`cookies()`, `headers()`, `searchParams`, `getSession()` block streaming. Extract to async child, wrap in Suspense.
+- pass Server Components as `children` to Client Components — they stay server-rendered
+- never import a Server Component inside a `'use client'` file — it becomes client code
 
-## Loading States
+```tsx
+// server page passes server content into a client shell
+import { RaffleDrawer } from '@/components/raffle/raffle-drawer'; // 'use client'
+import { RaffleSummary } from './raffle-summary'; // server
+
+export default function Page() {
+	return (
+		<RaffleDrawer>
+			<RaffleSummary />
+		</RaffleDrawer>
+	);
+}
+```
+
+## Props + exports
+
+- named export only: `export function RaffleCard({ raffle }: RaffleCardProps) {}`
+- props typed with `interface`: `interface RaffleCardProps { raffle: Raffle }`
+- co-locate small sub-components in the same file; split once one exceeds ~50 lines
+
+## Runtime data in layouts
+
+`cookies()`, `headers()`, `searchParams`, `getSession()` block streaming. Extract to async child wrapped in `<Suspense>`. Use `getCurrentUser` (React.cache-wrapped) over raw `getSession()` to dedupe JWT decoding across layouts.
+
+## Loading states
 
 - page-level: `loading.tsx` sibling to `page.tsx`
 - component-level: `<Suspense fallback={<Skeleton />}>`
 
-## Per-Request Deduplication
+## Rules
 
-`getCurrentUser` (React.cache-wrapped) over raw `getSession()` — avoids redundant JWT decoding across layouts and pages.
+- max 3 levels of nesting in JSX — extract a sub-component beyond that
+- render logic only — pages fetch, domain components render
+- never `useEffect` for data — see `react-effects.md`
+- cross-domain reuse flows through `ui/` primitives — a `raffle/` component never imports from `host/`
 
 ## Performance
 
-See `vercel-react-best-practices` skill for: parallel fetching, RSC serialization, `useMemo`/`useCallback`, `useTransition`, `next/dynamic`, bundle optimization. See `vercel-composition-patterns` for compound components and composition over boolean props.
+See `vercel-react-best-practices` skill for parallel fetching, RSC serialization, `useMemo`/`useCallback`, `useTransition`, `next/dynamic`, bundle optimization. See `vercel-composition-patterns` for compound components and composition over boolean props.

@@ -3,6 +3,8 @@ import { AxiosError } from 'axios';
 import {
 	type AdminKycErrorCode,
 	type AuthErrorCode,
+	type ChatErrorCode,
+	type CheckoutOrderErrorCode,
 	type CommentErrorCode,
 	COMMON_ERROR_CODES,
 	type HostErrorCode,
@@ -15,6 +17,7 @@ import {
 	type ReportErrorCode,
 	type WalletErrorCode,
 	type ReviewErrorCode,
+	type SubscriptionErrorCode,
 	type TicketErrorCode,
 	type UpdateErrorCode,
 	type VerificationErrorCode,
@@ -254,6 +257,21 @@ export const mapOrderError = createDomainErrorMapper<OrderErrorCode>([
 ]);
 
 /**
+ * Maps errors from the atomic `/orders/checkout` endpoint.
+ * That endpoint validates and redeems a promo code inside the order
+ * transaction, so it can surface the full `core:promo:*` namespace alongside
+ * order / raffle errors. Using `mapOrderError` there silently collapses
+ * promo codes into `validation_error`, breaking the `shouldClearPromo` UX.
+ */
+export const mapCheckoutOrderError =
+	createDomainErrorMapper<CheckoutOrderErrorCode>([
+		'core:order:',
+		'core:raffle:',
+		'core:promo:',
+		'global:',
+	]);
+
+/**
  * Maps wallet errors to WalletErrorCode.
  * Accepts `auth:wallet:*` and `global:*` — wallets live under the auth backend
  * module, so only the wallet sub-namespace is honored (do NOT expand to `auth:`).
@@ -326,6 +344,16 @@ export const mapNotificationError =
 	createDomainErrorMapper<NotificationErrorCode>(['core:', 'global:']);
 
 /**
+ * Maps chat errors to ChatErrorCode.
+ * Accepts `chat:*` (conversation/message/room/ws/attachment URNs) and
+ * `global:*` (rate-limit, upload, auth middleware) prefixes.
+ */
+export const mapChatError = createDomainErrorMapper<ChatErrorCode>([
+	'chat:',
+	'global:',
+]);
+
+/**
  * Maps review errors to ReviewErrorCode.
  * Accepts `core:*` and `global:*` prefixes.
  */
@@ -361,6 +389,19 @@ export const mapPromoCodeError = createDomainErrorMapper<PromoCodeErrorCode>([
 	'core:',
 	'global:',
 ]);
+
+/**
+ * Maps subscription errors to SubscriptionErrorCode.
+ * Accepts `payments:subscription:*` and `global:*` prefixes — the subscription
+ * domain is nested under the payments service on the backend, but the pricing
+ * page never surfaces non-subscription payments errors, so we deliberately do
+ * NOT open this up to the whole `payments:*` namespace.
+ */
+export const mapSubscriptionError =
+	createDomainErrorMapper<SubscriptionErrorCode>([
+		'payments:subscription:',
+		'global:',
+	]);
 
 /**
  * Maps KYC submission errors to KycSubmissionErrorCode.

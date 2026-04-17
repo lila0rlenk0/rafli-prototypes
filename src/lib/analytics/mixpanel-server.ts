@@ -12,7 +12,12 @@ import { getClientIp } from '@/lib/api/client';
  * IP is fetched automatically via cached getClientIp() for accurate geolocation
  */
 
-const mp = env.MIXPANEL_TOKEN ? Mixpanel.init(env.MIXPANEL_TOKEN) : null;
+// Skip analytics in local dev — avoids polluting prod Mixpanel projects with
+// developer activity. Staging/production (NODE_ENV='production') still track.
+const mp =
+	env.MIXPANEL_TOKEN && env.NODE_ENV === 'production'
+		? Mixpanel.init(env.MIXPANEL_TOKEN)
+		: null;
 
 export interface TrackOptions {
 	userId?: string;

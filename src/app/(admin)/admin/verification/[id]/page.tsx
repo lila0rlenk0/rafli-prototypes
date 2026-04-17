@@ -2,6 +2,14 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { DocumentViewer } from '@/components/admin/verification/detail/document-viewer';
+import {
+	PiiContent,
+	PiiHiddenPlaceholder,
+	PiiRevealProvider,
+	PiiRevealToggle,
+} from '@/components/admin/verification/detail/pii-reveal';
+import { ReviewForm } from '@/components/admin/verification/detail/review-form';
 import { KycStatusBadge } from '@/components/verification/kyc-status-badge';
 import { formatDate } from '@/lib/utils/date-format';
 import {
@@ -14,15 +22,6 @@ import {
 	KYC_SUBMISSION_STATUS,
 	getVerificationTypeLabel,
 } from '@/types/kyc-submission';
-
-import { DocumentViewer } from './document-viewer';
-import {
-	PiiContent,
-	PiiHiddenPlaceholder,
-	PiiRevealProvider,
-	PiiRevealToggle,
-} from './pii-reveal';
-import { ReviewForm } from './review-form';
 
 interface SubmissionDetailPageProps {
 	params: Promise<{ id: string }>;

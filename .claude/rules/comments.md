@@ -1,46 +1,67 @@
 ---
 paths:
-  - 'src/**/*.ts'
-  - 'src/**/*.tsx'
+  - 'src/**/*.{ts,tsx}'
 ---
 
-# Step Narration
+# Comments
 
-- Number steps in multi-phase functions: `// Step 1: Validate form input against shared Zod schema.`
+## Philosophy
 
-# Component Boundaries
+Comment the *why*, never the *what*. Well-named identifiers already say what. Stale comments are worse than no comments — update them when logic changes.
 
-- `'use client'` / `'use server'` — inline comment when boundary choice is non-obvious
+Skip when the code is self-evident.
+
+- Bad: `// set title`
+- Good: `// fallback title — metadata API requires a non-empty string`
+
+## Step narration
+
+Number steps in multi-phase functions:
+
+```ts
+// Step 1: Validate input against shared Zod schema.
+// Step 2: Re-verify session (zero trust, never trust page-level guard).
+// Step 3: Forward to backend via authenticatedClient.
+// Step 4: Revalidate affected cache tags.
+// Step 5: Return ServiceResponse.
+```
+
+## Component boundaries
+
+- `'use client'` / `'use server'` — inline comment when the boundary choice is non-obvious
 - Server Components: comment data-fetching strategy and caching intent
 - Server Actions: comment mutation side-effects, revalidation targets, redirect behavior
 
-# Hooks and Memoization
+## Hooks + memoization
 
-- `useMemo`/`useCallback` — comment what re-render/computation is avoided and why
+- `useMemo` / `useCallback` — comment what re-render/computation is avoided and why
 - `useEffect` — comment sync target, why deps chosen, cleanup rationale
-- Custom hooks: JSDoc with purpose, return shape, when to use vs not
-- Refs: comment why ref instead of state
+- custom hooks: JSDoc with purpose, return shape, when to use vs not
+- refs: comment why ref instead of state
 
-# Context Providers
+## Context, route segments, dynamic loading
 
-- Comment scope boundaries and why this tree level was chosen
-
-# Route Segments
-
-- `layout.tsx`/`page.tsx`: comment non-obvious data flow between segments
-- Suspense/`loading.tsx`/`error.tsx`: comment coverage and fallback UX
+- context providers: comment scope boundaries, why this tree level
+- `layout.tsx` / `page.tsx`: comment non-obvious data flow between segments
+- Suspense / `loading.tsx` / `error.tsx`: comment coverage and fallback UX
 - `next/dynamic`: comment why lazy-loaded
 
-# Safety Valves
+## Safety valves
 
-- `dangerouslySetInnerHTML`/`suppressHydrationWarning`: comment why safe, what sanitizes
-- Type assertions (`as`, `!`): comment why the cast is sound
+- `dangerouslySetInnerHTML`, `suppressHydrationWarning`: comment why safe, what sanitizes
+- type assertions (`as`, `!`): comment why the cast is sound
 
-# Conditional Rendering and Keys
+## Conditional rendering + keys
 
-- Comment business rules driving visibility, not the JSX mechanic
-- Comment non-index key choice when key source is non-obvious
+- explain the business rule driving visibility, not the JSX mechanic
+- non-index key choice: comment when the key source is non-obvious
 
-# Zod Schemas
+## Zod schemas
 
-- Shared client/server schemas: comment validation boundary and which side enforces what
+- shared client/server schemas: comment validation boundary and which side is authoritative
+
+## Format
+
+- `//` with one space, lowercase unless starting a sentence or proper noun
+- JSDoc with `@returns` on all exports — English
+- keep comments on the line above the code they describe, not inline (except short flags)

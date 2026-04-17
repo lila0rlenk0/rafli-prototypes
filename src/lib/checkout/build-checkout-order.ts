@@ -61,11 +61,17 @@ export async function buildCheckoutOrder(
 	});
 
 	// Step 2: Handle failure — show appropriate toast and optionally clear promo UI.
+	// The atomic checkout endpoint surfaces `core:promo:*` errors when the attached
+	// code fails validation inside the order transaction. Route them through the
+	// promo message map; everything else gets a generic order-error message.
 	if (!result.success) {
-		// Promo-specific errors clear the code from the UI; order errors show a generic message
-		if (shouldClearPromo(result.error)) {
+		const clearPromo = shouldClearPromo(result.error);
+		const isPromoError =
+			!!promoCode && (result.error.startsWith('core:promo:') || clearPromo);
+
+		if (isPromoError) {
 			toast.error(getPromoErrorMessage(result.error));
-			onPromoInvalid?.();
+			if (clearPromo) onPromoInvalid?.();
 		} else {
 			toast.error(getOrderErrorMessage(result.error));
 		}

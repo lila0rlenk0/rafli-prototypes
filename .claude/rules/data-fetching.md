@@ -1,0 +1,53 @@
+---
+paths:
+  - 'src/app/**/*.{ts,tsx}'
+  - 'src/services/**/*.ts'
+  - 'src/lib/api/**/*.ts'
+---
+
+# Data Fetching
+
+All API calls go through server actions in `@/services/<domain>`. Never fetch directly from client components — wrap a React Query hook around a server action instead.
+
+## Reads
+
+- RSC: `await action()` inside async `page.tsx` / `layout.tsx`, pass data as props
+- Client: `useQuery` hook from `@/services/<domain>/use-<action>.ts` wrapping the action
+- Parallel: `Promise.all([a(), b()])` — never sequential awaits when independent
+
+## Mutations
+
+- form submission + `useTransition`, or `useMutation` hook for loading/error states
+- invalidate React Query cache with domain prefix on success
+- revalidate Next cache via `@/lib/cache/revalidation` helpers — tag-based for `MY_RAFFLES` and `RAFFLE_DETAIL`, path-based otherwise
+- non-blocking side effects: `after()` from `next/server` for analytics / audit
+
+## Caching
+
+TTLs in `@/lib/api/config`:
+
+- `MY_RAFFLES`: 60s (tagged)
+- `RAFFLE_DETAIL`: 300s (tagged)
+- `CATEGORIES`: 3_600s
+
+React Query: `staleTime: Infinity`, auto-refetch disabled, manual invalidation only.
+
+## Server action shape
+
+Every action:
+
+1. `safeParse` input with Zod (early return on failure)
+2. call the right client: `authenticatedClient` (protected) or `baseClient` (public)
+3. `schema.parse` the response — contract drift goes to Sentry via `captureContractDrift`
+4. map errors through the domain mapper, capture critical ones
+5. return `ServiceResponse<T, E>` — never throw to the caller
+
+See `services.md` for the full template.
+
+## Forbidden
+
+- `useEffect` + `fetch` for data that can be fetched in RSC
+- client components importing `@/lib/api/*` directly — always via a server action
+- retrying mutations (only GET/HEAD retry on network errors, max 1)
+- awaiting analytics on the success path — use `after()` or `void`
+- throwing from server actions — return `failure(code)` instead

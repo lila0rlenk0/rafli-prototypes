@@ -8,9 +8,9 @@ import { getCategories } from '@/services/raffle/get-categories';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { getQuestions } from '@/services/raffle/get-questions';
 import type { ComponentProps } from 'react';
-import { FormHeader } from './form-header';
-import { FormStepComponent } from './form-step-component';
-import { MultiStepFormProvider } from './multi-step-form-provider';
+import { FormHeader } from '@/components/my-raffles/create/form-header';
+import { FormStepComponent } from '@/components/my-raffles/create/form-step-component';
+import { MultiStepFormProvider } from '@/components/my-raffles/create/multi-step-form-provider';
 
 const LEFT_PANEL_LINKS = [
 	{
@@ -71,8 +71,8 @@ export default async function RafflesCreatePage() {
 		: [];
 
 	return (
-		<div className="flex w-full gap-4">
-			<div className="flex h-fit min-w-fit flex-col space-y-6 rounded-2xl bg-white px-6 py-12">
+		<div className="flex w-full items-start gap-[32px]">
+			<aside className="flex h-fit w-[285px] shrink-0 flex-col space-y-6 rounded-3xl bg-white px-6 py-12">
 				<InfoBigIcon />
 
 				<span className="mr-12 text-xl font-semibold">
@@ -89,7 +89,7 @@ export default async function RafflesCreatePage() {
 						<span className="text-[#6E6E6E]">{link.label}</span>
 					</Link>
 				))}
-			</div>
+			</aside>
 
 			<MultiStepFormProvider
 				userName={userName}

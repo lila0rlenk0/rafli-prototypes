@@ -110,6 +110,20 @@ export const PURCHASE_EVENTS = {
 } as const;
 
 /**
+ * Subscription events
+ * Tracked server-side — covers the /subscriptions/subscribe mutation lifecycle.
+ * `CHECKOUT_REDIRECTED` fires once Stripe returns a checkout URL (user is
+ * about to leave the app); `FAILED` fires on any failure path and carries
+ * `error_code` + `plan_id` for funnel analysis.
+ */
+export const SUBSCRIPTION_EVENTS = {
+	/** Server returned Stripe Checkout URL — user about to redirect */
+	CHECKOUT_REDIRECTED: 'Subscription Checkout Redirected',
+	/** Subscribe action failed (includes error_code, plan_id) */
+	FAILED: 'Subscription Failed',
+} as const;
+
+/**
  * Promo code events
  * Tracked server-side — measures promo effectiveness and revenue impact
  */

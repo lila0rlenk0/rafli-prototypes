@@ -1,9 +1,8 @@
+import { SubmissionsFilters } from '@/components/admin/verification/submissions-filters';
+import { SubmissionsPagination } from '@/components/admin/verification/submissions-pagination';
+import { SubmissionsTable } from '@/components/admin/verification/submissions-table';
 import { getAdminSubmissions } from '@/services/admin-kyc/get-submissions';
 import { adminKycQuerySchema } from '@/types/admin-kyc';
-
-import { SubmissionsFilters } from './submissions-filters';
-import { SubmissionsPagination } from './submissions-pagination';
-import { SubmissionsTable } from './submissions-table';
 
 interface VerificationListPageProps {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;

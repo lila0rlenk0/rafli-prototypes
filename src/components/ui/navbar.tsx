@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { ReactNode, useEffect, useState } from 'react';
 
 import { Logo } from '@/assets/logo';
+import { ChatNavLink } from '@/components/messages/chat-nav-link';
 import { ModeSwitchToggle } from '@/components/mode/mode-switch-toggle';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { CreditBalanceBadge } from '@/components/ui/credit-balance-badge';
+import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { cn } from '@/lib/utils';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
@@ -55,7 +57,7 @@ export function Navbar({ children }: NavbarProps) {
 					isScrolled ? 'bg-background' : 'bg-transparent',
 				)}
 			>
-				<div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-4 sm:h-16">
+				<div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between px-4 sm:h-16 sm:px-[100px]">
 					<div className="flex items-center gap-3 sm:gap-8">
 						<Link href="/browse">
 							<Logo className="h-5 w-auto sm:h-6" />
@@ -94,6 +96,7 @@ export function Navbar({ children }: NavbarProps) {
 							<ModeSwitchToggle />
 						</div>
 						<div className="flex items-center gap-4">
+							<ChatNavLink />
 							<NotificationBell />
 							<Link href="/profile">
 								<User className="size-5" />
@@ -101,8 +104,9 @@ export function Navbar({ children }: NavbarProps) {
 						</div>
 					</div>
 
-					{/* Mobile: Notification bell + Hamburger menu */}
+					{/* Mobile: Chat + Notification bell + Hamburger menu */}
 					<div className="flex items-center gap-2 sm:hidden">
+						<ChatNavLink />
 						<NotificationBell />
 						<button
 							onClick={toggleMenu}
@@ -156,6 +160,15 @@ export function Navbar({ children }: NavbarProps) {
 							>
 								My raffles
 							</Link>
+							{FEATURE_FLAGS.CHAT_ENABLED ? (
+								<Link
+									href="/messages"
+									className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
+									onClick={closeMenu}
+								>
+									Messages
+								</Link>
+							) : null}
 							<Link
 								href="/profile/notifications"
 								className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
@@ -185,7 +198,7 @@ export function Navbar({ children }: NavbarProps) {
 				) : null}
 			</nav>
 
-			<div className="mx-auto mt-6 max-w-[1440px] overflow-x-hidden px-4 pb-10 sm:mt-10">
+			<div className="mx-auto mt-6 max-w-[1440px] overflow-x-hidden px-4 pb-10 sm:mt-10 sm:px-[100px]">
 				{children}
 			</div>
 		</>

@@ -55,7 +55,7 @@ export default async function PastWinnersPage() {
 
 	return (
 		/* No outer width container — `PublicNavbar` already wraps children in
-		   `mx-auto max-w-[1920px]` with responsive horizontal padding. Vertical
+		   `mx-auto max-w-[1440px]` with responsive horizontal padding. Vertical
 		   rhythm matches /browse (`pt-0 pb-8 sm:py-8`) so navigating between the
 		   two pages feels continuous. */
 		<div className="z-10 pt-0 pb-8 sm:py-8">
@@ -68,7 +68,7 @@ export default async function PastWinnersPage() {
 					<p className="text-sm font-normal text-[rgba(15,15,15,0.95)] sm:text-base sm:font-medium">
 						Every draw verified on-chain. Names masked for privacy.
 					</p>
-					<h1 className="font-clash-display text-[40px] leading-none font-semibold tracking-[0.4px] sm:text-[64px] sm:tracking-normal">
+					<h1 className="font-clash-display sm:text-display text-[40px] leading-none font-semibold tracking-[0.4px] sm:tracking-normal">
 						Past winners
 					</h1>
 				</header>

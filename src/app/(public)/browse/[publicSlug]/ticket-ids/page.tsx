@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { BackLink } from '@/components/ui/back-link';
+import { PublicNavbar } from '@/components/ui/public-navbar';
 import { getSession } from '@/lib/auth/session';
 import { parsePositivePageParam } from '@/lib/pagination/parse-positive-page-param';
 import { getRaffle } from '@/services/raffle/get-raffle';
@@ -91,44 +92,52 @@ export default async function TicketIdsPage({
 	}
 
 	return (
-		<div className="container mx-auto flex max-w-4xl flex-col gap-6 px-4">
-			<BackLink fallbackHref={`/browse/${publicSlug}`} label="Back to Raffle" />
-
-			<div className="rounded-2xl bg-white p-8">
-				<h1 className="mb-6 text-xl font-semibold">
-					My Tickets — {raffle.title}
-				</h1>
-
-				<TicketCodesTable
-					ticketCodes={ticketCodes}
-					raffleSlug={publicSlug}
-					canVerify={canVerify}
+		// No topBanner — ticket-ids is post-purchase. The share-to-earn promise
+		// is moot once the user already holds tickets, so we deliberately skip
+		// the banner instead of inheriting one from a shared layout.
+		<PublicNavbar isAuthenticated={!!session}>
+			<div className="container mx-auto flex max-w-4xl flex-col gap-6 px-4">
+				<BackLink
+					fallbackHref={`/browse/${publicSlug}`}
+					label="Back to Raffle"
 				/>
 
-				{totalPages > 1 ? (
-					<div className="mt-6 flex items-center justify-center gap-2">
-						{currentPage > 1 ? (
-							<Link
-								href={getPageUrl(currentPage - 1)}
-								className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
-							>
-								Previous
-							</Link>
-						) : null}
-						<span className="text-muted-foreground px-3 text-sm">
-							Page {currentPage} of {totalPages}
-						</span>
-						{currentPage < totalPages ? (
-							<Link
-								href={getPageUrl(currentPage + 1)}
-								className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
-							>
-								Next
-							</Link>
-						) : null}
-					</div>
-				) : null}
+				<div className="rounded-2xl bg-white p-8">
+					<h1 className="mb-6 text-xl font-semibold">
+						My Tickets — {raffle.title}
+					</h1>
+
+					<TicketCodesTable
+						ticketCodes={ticketCodes}
+						raffleSlug={publicSlug}
+						canVerify={canVerify}
+					/>
+
+					{totalPages > 1 ? (
+						<div className="mt-6 flex items-center justify-center gap-2">
+							{currentPage > 1 ? (
+								<Link
+									href={getPageUrl(currentPage - 1)}
+									className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
+								>
+									Previous
+								</Link>
+							) : null}
+							<span className="text-muted-foreground px-3 text-sm">
+								Page {currentPage} of {totalPages}
+							</span>
+							{currentPage < totalPages ? (
+								<Link
+									href={getPageUrl(currentPage + 1)}
+									className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50"
+								>
+									Next
+								</Link>
+							) : null}
+						</div>
+					) : null}
+				</div>
 			</div>
-		</div>
+		</PublicNavbar>
 	);
 }

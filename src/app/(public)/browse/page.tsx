@@ -6,6 +6,8 @@ import { BugIcon } from '@/assets/icons/bug-icon';
 import { BrowseTabs } from '@/components/browse/browse-tabs';
 import { FeaturedRaffleCard } from '@/components/browse/featured-raffle-card';
 import { HeroSection } from '@/components/browse/hero-section';
+import { MarqueeBanner } from '@/components/browse/marquee-banner';
+import { PublicNavbar } from '@/components/ui/public-navbar';
 import { PastDrawsSection } from '@/components/browse/past-draws-section';
 import { RecentWinnersSection } from '@/components/browse/recent-winners-section';
 import { SubscribePromoCard } from '@/components/browse/subscribe-promo-card';
@@ -206,25 +208,37 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 		) : null;
 
 	return (
-		<div className="z-10 pt-0 pb-8 sm:py-8">
-			{/* Subscription promo — only rendered when the feature flag is on.
+		<PublicNavbar
+			isAuthenticated={!!session}
+			// Listing-scoped banner — distinct phrasing from the raffle detail
+			// page so users scanning the catalogue see a broader invitation
+			// ("any raffle") while still hearing the free-entry promise that
+			// drives the share-to-earn loop. The detail page uses
+			// "selected raffle" because by then the user has committed to one;
+			// here no raffle is picked yet.
+			topBanner={
+				<MarqueeBanner message="Share any raffle on X and earn free ticket entries!" />
+			}
+		>
+			<div className="z-10 pt-0 pb-8 sm:py-8">
+				{/* Subscription promo — only rendered when the feature flag is on.
 		    When disabled the hero takes the full width with no rail. */}
-			{FEATURE_FLAGS.SUBSCRIPTION_ENABLED ? (
-				<>
-					{/* Mobile-first promo isolation:
+				{FEATURE_FLAGS.SUBSCRIPTION_ENABLED ? (
+					<>
+						{/* Mobile-first promo isolation:
 				    Keep the subscription CTA outside the hero stack on small screens.
 				    Why: when the card lives in the same one-column grid as HeroSection,
 				    mobile flow can feel like "random top whitespace" before the card.
 				    Splitting the blocks makes order explicit and removes layout-coupled
 				    spacing side effects from the shared container. */}
-					<div className="mb-8 lg:hidden">
-						<SubscribePromoCard hasSubscription={hasSubscription} />
-					</div>
+						<div className="mb-8 lg:hidden">
+							<SubscribePromoCard hasSubscription={hasSubscription} />
+						</div>
 
-					{/* Hero + desktop promo rail:
+						{/* Hero + desktop promo rail:
 				    - Mobile/tablet: hero only (promo already rendered above)
 				    - Desktop: two-column layout with the promo in the right rail */}
-					{/* Right rail sized to the WIDEST headline line + minimal padding, so the
+						{/* Right rail sized to the WIDEST headline line + minimal padding, so the
 				    text visually kisses the card borders instead of floating in a sea of
 				    empty space. The card's content is centered, so any card width above
 				    ~text-width renders as centered-empty margin regardless of how tight
@@ -232,78 +246,82 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 				    "Up To 20% OFF on tickets!" at 28px Clash Display semibold is ~420px
 				    wide, which at the rail's 460px upper bound leaves only ~20px total
 				    horizontal slack (~10px per side after `lg:px-3` padding overlaps). */}
-					<div className="mb-10 grid items-start gap-6 sm:mb-16 lg:grid-cols-[minmax(0,1fr)_minmax(420px,460px)] lg:gap-10">
-						<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
-						<div className="hidden lg:block">
-							<SubscribePromoCard hasSubscription={hasSubscription} />
+						<div className="mb-10 grid items-start gap-6 sm:mb-16 lg:grid-cols-[minmax(0,1fr)_minmax(420px,460px)] lg:gap-10">
+							<HeroSection
+								raffles={raffles}
+								totalPrizeValue={totalPrizeValue}
+							/>
+							<div className="hidden lg:block">
+								<SubscribePromoCard hasSubscription={hasSubscription} />
+							</div>
 						</div>
+					</>
+				) : (
+					<div className="mb-10 sm:mb-16">
+						<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
 					</div>
-				</>
-			) : (
-				<div className="mb-10 sm:mb-16">
-					<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
-				</div>
-			)}
+				)}
 
-			{/* Recent Winners — placed above the live grid as social proof:
+				{/* Recent Winners — placed above the live grid as social proof:
 			    visitors see "real people are winning" before scrolling the catalog.
 			    Hidden entirely when the backend returns no winners (early-stage app,
 			    cache miss + transient failure, etc.) — no empty placeholder needed. */}
-			{recentWinners.length > 0 ? (
-				<div className="mb-10 sm:mb-16">
-					<RecentWinnersSection winners={recentWinners} />
-				</div>
-			) : null}
+				{recentWinners.length > 0 ? (
+					<div className="mb-10 sm:mb-16">
+						<RecentWinnersSection winners={recentWinners} />
+					</div>
+				) : null}
 
-			{/* Desktop featured band lives OUTSIDE BrowseTabs on purpose: passing
+				{/* Desktop featured band lives OUTSIDE BrowseTabs on purpose: passing
 			    the same ReactNode reference to two props (featuredDesktop +
 			    featuredMobile) made React treat the pair as a keyless list in
 			    the RSC payload and warn about missing keys. Rendering it here
 			    (and only handing the mobile/tab-aware instance to the Client
 			    Component) keeps a single element identity per tree position. */}
-			<div className="hidden sm:block">{featuredBand}</div>
+				<div className="hidden sm:block">{featuredBand}</div>
 
-			<BrowseTabs
-				featuredMobile={featuredBand}
-				filtersContent={
-					<StickyFilterSection>
-						<Suspense fallback={null}>
-							<FilterBar categories={categories} />
-						</Suspense>
-					</StickyFilterSection>
-				}
-				gridContent={
-					raffles.length > 0 ? (
-						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-							{raffles.map(raffle => (
-								<PublicRaffleCard
-									key={raffle.id}
-									raffle={raffle}
-									role={getRaffleRole(raffle)}
-								/>
-							))}
-						</div>
-					) : (
-						<div className="flex flex-col items-center justify-center py-20 text-center">
-							<h3 className="text-xl font-semibold text-gray-900">
-								No raffles found
-							</h3>
-							<p className="mt-2 text-gray-500">
-								Check back later for new opportunities to win!
-							</p>
-						</div>
-					)
-				}
-			/>
+				<BrowseTabs
+					featuredMobile={featuredBand}
+					filtersContent={
+						<StickyFilterSection>
+							<Suspense fallback={null}>
+								<FilterBar categories={categories} />
+							</Suspense>
+						</StickyFilterSection>
+					}
+					gridContent={
+						raffles.length > 0 ? (
+							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+								{raffles.map(raffle => (
+									<PublicRaffleCard
+										key={raffle.id}
+										raffle={raffle}
+										role={getRaffleRole(raffle)}
+									/>
+								))}
+							</div>
+						) : (
+							<div className="flex flex-col items-center justify-center py-20 text-center">
+								<h3 className="text-xl font-semibold text-gray-900">
+									No raffles found
+								</h3>
+								<p className="mt-2 text-gray-500">
+									Check back later for new opportunities to win!
+								</p>
+							</div>
+						)
+					}
+				/>
 
-			{/* Past Draws — placed below the live grid so users only encounter
+				{/* Past Draws — placed below the live grid so users only encounter
 			    historical results after they've seen current opportunities.
 			    Same fail-silent pattern as recent winners above. */}
-			{pastDraws.length > 0 ? (
-				<div className="mt-10 sm:mt-16">
-					<PastDrawsSection raffles={pastDraws} />
-				</div>
-			) : null}
-		</div>
+				{pastDraws.length > 0 ? (
+					<div className="mt-10 sm:mt-16">
+						<PastDrawsSection raffles={pastDraws} />
+					</div>
+				) : null}
+			</div>
+		</PublicNavbar>
 	);
 }

@@ -1,7 +1,5 @@
 import { Suspense, type ReactNode, type ComponentProps } from 'react';
 
-import { MarqueeBanner } from '@/components/browse/marquee-banner';
-import { PublicNavbar } from '@/components/ui/public-navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
@@ -20,9 +18,14 @@ interface PublicBrowseLayoutProps {
  * Extracted from the layout so it can be wrapped in Suspense — getSession reads
  * cookies which blocks streaming if called directly in a layout.
  *
- * Data flow: reads session cookie → derives auth state + permissions →
- * conditionally wraps children with auth-aware stores (UserStore, NotificationStore).
- * Non-authenticated users get the same navbar but skip the provider tree.
+ * Data flow: reads session cookie → derives permissions → conditionally wraps
+ * children with the auth-aware provider tree. The navbar intentionally lives
+ * at the page level (not here) so each surface can populate the PublicNavbar
+ * `topBanner` slot with its own marquee copy — listing, active raffle detail,
+ * and subroutes like /ticket-ids all need different banners or none at all,
+ * and a shared layout-level navbar would force one banner decision on all of
+ * them (the previous architecture that leaked the share-to-earn banner into
+ * /ticket-ids and concluded raffles).
  *
  * @param children - Child page/layout components from the browse segment
  */
@@ -39,29 +42,20 @@ async function PublicBrowseLayoutContent({
 		? parsePermissions(session?.user?.permissions)
 		: [];
 
-	// Step 3: Build navbar shell — same for both auth states, only providers differ.
-	const content = (
-		<PublicNavbar
-			isAuthenticated={isAuthenticated}
-			topBanner={<MarqueeBanner />}
-		>
-			{children}
-		</PublicNavbar>
-	);
-
-	// Step 4: Wrap with auth stores only for authenticated users.
-	// Guests skip providers — hooks like useUserStore guard against missing context.
+	// Step 3: Wrap with auth stores only for authenticated users. Guests skip
+	// providers — hooks like useUserStore guard against missing context. Pages
+	// render their own PublicNavbar inside this tree.
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
 				<NotificationStoreProvider>
-					<ChatStoreProvider>{content}</ChatStoreProvider>
+					<ChatStoreProvider>{children}</ChatStoreProvider>
 				</NotificationStoreProvider>
 			</UserStoreProvider>
 		);
 	}
 
-	return content;
+	return <>{children}</>;
 }
 
 /**

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Suspense, type ComponentProps, type ReactNode } from 'react';
 
-import { MarqueeBanner } from '@/components/browse/marquee-banner';
 import { PublicNavbar } from '@/components/ui/public-navbar';
 import { ScreenLoader } from '@/components/ui/screen-loader';
 import { env } from '@/env/server';
@@ -67,16 +66,12 @@ async function PricingLayoutContent({ children }: PricingLayoutProps) {
 		? parsePermissions(session?.user?.permissions)
 		: [];
 
-	// Step 3: Shared chrome for both auth states. MarqueeBanner sits between
-	// the navbar and page content — matches the /browse surface so users
-	// transitioning to /pricing feel they're still inside the same site shell.
+	// Step 3: Shared chrome for both auth states. No marquee here — the
+	// share-to-earn promo only makes sense on a selected active raffle (see
+	// `browse/[publicSlug]/page.tsx`); rendering it on /pricing promised a
+	// behaviour this surface can't deliver.
 	const content = (
-		<PublicNavbar
-			isAuthenticated={isAuthenticated}
-			topBanner={<MarqueeBanner />}
-		>
-			{children}
-		</PublicNavbar>
+		<PublicNavbar isAuthenticated={isAuthenticated}>{children}</PublicNavbar>
 	);
 
 	// Step 4: Only wrap in auth stores when logged in — hooks like

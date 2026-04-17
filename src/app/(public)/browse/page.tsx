@@ -184,18 +184,19 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 		? pastDrawsResponse.data.raffles
 		: [];
 
-	// Step 7: Pre-render the featured band on the server so it can be handed
-	// to BrowseTabs (Client Component) as two sibling ReactNode slots. Two
-	// reasons we can't pass a render function here:
-	//   1. Functions aren't serializable across the RSC boundary — Next 16
-	//      throws "Functions cannot be passed directly to Client Components".
-	//   2. Reusing a single ReactNode instance in two mount positions makes
-	//      React 19 treat the pair as an unkeyed dynamic list and warn about
-	//      missing keys; rebuilding a fresh tree per call-site avoids it.
-	// Keeping the JSX in the Server Component also preserves RSC streaming
-	// for FeaturedRaffleCard (itself a Server Component).
-	const featuredBand =
-		featuredRaffles.length > 0 ? (
+	// Step 7: Build the featured band via a helper so each call site gets a
+	// fresh ReactNode tree. Two mount positions share this markup (desktop
+	// sibling above BrowseTabs + mobile slot inside BrowseTabs), and reusing
+	// a single ReactNode reference across both makes React 19 treat the pair
+	// as an unkeyed dynamic list and warn about missing keys in the RSC
+	// payload — calling the helper twice rebuilds the tree with independent
+	// element identity per position. We can't pass a render function across
+	// the Server→Client boundary (Next 16 throws "Functions cannot be passed
+	// directly to Client Components"), so the helper stays server-side and
+	// we invoke it before handing the resulting JSX to the Client Component.
+	function renderFeaturedBand() {
+		if (featuredRaffles.length === 0) return null;
+		return (
 			<div className="mb-10 flex flex-col gap-6 sm:mb-16 lg:grid lg:grid-cols-2 lg:gap-8">
 				{featuredRaffles.map((raffle, i) => (
 					<FeaturedRaffleCard
@@ -205,7 +206,8 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 					/>
 				))}
 			</div>
-		) : null;
+		);
+	}
 
 	return (
 		<PublicNavbar
@@ -272,16 +274,15 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 					</div>
 				) : null}
 
-				{/* Desktop featured band lives OUTSIDE BrowseTabs on purpose: passing
-			    the same ReactNode reference to two props (featuredDesktop +
-			    featuredMobile) made React treat the pair as a keyless list in
-			    the RSC payload and warn about missing keys. Rendering it here
-			    (and only handing the mobile/tab-aware instance to the Client
-			    Component) keeps a single element identity per tree position. */}
-				<div className="hidden sm:block">{featuredBand}</div>
+				{/* Desktop featured band lives OUTSIDE BrowseTabs on purpose, and
+			    each mount position calls `renderFeaturedBand()` independently
+			    so the two trees don't share element identity — reusing a
+			    single ReactNode in two slots would make React 19 warn about
+			    missing keys in the RSC payload. */}
+				<div className="hidden sm:block">{renderFeaturedBand()}</div>
 
 				<BrowseTabs
-					featuredMobile={featuredBand}
+					featuredMobile={renderFeaturedBand()}
 					filtersContent={
 						<StickyFilterSection>
 							<Suspense fallback={null}>

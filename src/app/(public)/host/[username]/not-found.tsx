@@ -1,28 +1,34 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
+import { Button } from '@/components/ui/button';
+
 /**
- * Not Found Page for Host Profile
+ * Host profile 404.
  *
- * Displayed when a host profile cannot be found.
+ * Mirrors `app/not-found.tsx` and `(protected)/not-found.tsx` so every 404
+ * across the platform lands on the same display-scale "404" block. The
+ * page-level RSC in `host/[username]/page.tsx` already folds
+ * invalid-format usernames, backend 404s, and permission denials into
+ * `notFound()` — keeping the copy generic means an external observer
+ * can't distinguish those branches, closing the username-format oracle
+ * flagged by security ops.
  */
 export default function HostNotFound() {
 	return (
-		<div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-			<h1 className="font-clash-display mb-4 text-4xl font-bold">
-				Host Not Found
+		<div className="flex min-h-[60dvh] flex-col items-center justify-center gap-6 px-4 text-center">
+			<h1 className="font-clash-display text-foreground text-7xl font-bold tracking-tight sm:text-8xl md:text-9xl">
+				404
 			</h1>
-			<p className="mb-8 max-w-md text-lg text-gray-600">
-				We couldn&apos;t find the host you&apos;re looking for. They may have
-				changed their username or the profile doesn&apos;t exist.
+			<p className="text-muted-foreground max-w-md text-lg">
+				This page doesn&apos;t exist or has been moved.
 			</p>
-			<Link
-				href="/browse"
-				className="flex items-center gap-2 rounded-full border border-black px-8 py-3 font-semibold transition-colors hover:bg-black hover:text-white"
-			>
-				<ArrowLeft className="size-4" />
-				Back to Browse
-			</Link>
+			<Button asChild variant="outline" size="lg">
+				<Link href="/browse">
+					<ArrowLeft />
+					Back to Browse
+				</Link>
+			</Button>
 		</div>
 	);
 }

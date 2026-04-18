@@ -210,8 +210,8 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 	'core:update:image-limit-exceeded',
 	'core:update:image-not-found',
 
-	// Host — expected lookup failures
-	'core:user:not-found',
+	// Host — expected lookup failures (served by the auth service)
+	'auth:profile:not-found',
 
 	// Comment — expected states
 	'core:comment:not-found',

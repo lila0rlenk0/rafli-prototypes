@@ -101,7 +101,7 @@ describe('filterEvent', () => {
 			'core:update:permission-denied',
 			'core:update:image-limit-exceeded',
 			'core:update:image-not-found',
-			'core:user:not-found',
+			'auth:profile:not-found',
 
 			// Comment + review + notification + ticket
 			'core:comment:self-vote',

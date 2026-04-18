@@ -3,6 +3,7 @@ import { PublicPageHeader } from '@/components/host/public-page-header';
 import { HostProfileCard } from '@/components/host/host-profile-card';
 import { PublicStatusTabs } from '@/components/host/public-status-tabs';
 import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
+import { Button } from '@/components/ui/button';
 import { getHostProfile } from '@/services/host/get-host-profile';
 import { getHostRaffles } from '@/services/host/get-host-raffles';
 import { HOST_ERROR_CODES } from '@/types/errors';
@@ -31,6 +32,26 @@ const STATUS_FILTERS = {
 	ended: `${RAFFLE_STATUS.ENDED},${RAFFLE_STATUS.FULFILLING},${RAFFLE_STATUS.COMPLETED},${RAFFLE_STATUS.CANCELLED}`,
 } as const;
 
+// Mirrors the backend `usernameSchema` in
+// `raffles-core-backend/src/shared/schemas.ts` (min 3, max 30, alphanumeric +
+// underscore). Kept in sync manually — a drift here turns malformed-but-close
+// segments into a 400 at the backend, which the host page used to render as a
+// generic error and which security ops flagged as a username-format oracle.
+const USERNAME_MIN = 3;
+const USERNAME_MAX = 30;
+const usernameSchema = z
+	.string()
+	.min(USERNAME_MIN)
+	.max(USERNAME_MAX)
+	.regex(/^[a-zA-Z0-9_]+$/);
+
+// Union of the two shapes the backend actually accepts on `/users/:id`.
+// `safeParse` against this schema lets the RSC reject impossible segments
+// (e.g. `nonexistent-user` with a hyphen) with the same `notFound()` we
+// emit for valid-format-but-unknown usernames — making the two
+// indistinguishable to an external observer.
+const hostIdentifierSchema = z.union([z.uuid(), usernameSchema]);
+
 /**
  * Public Host Profile Page
  *
@@ -48,6 +69,18 @@ export default async function HostProfilePage({
 	// Step 1: Parse route params and determine identifier type.
 	const { username: identifier } = await params;
 	const { status: statusParam } = await searchParams;
+
+	// Step 1a: Reject segments that can never identify a real host before we
+	// touch the backend. This keeps the response for `/host/nonexistent-user`
+	// (invalid — hyphen) identical to `/host/nonexistentuser` (valid format,
+	// no such user): both 404 via this route's `not-found.tsx`. Without this
+	// guard a malformed segment round-trips to the backend, comes back as a
+	// 400 `global:validation:invalid-payload`, and falls into the inline
+	// error UI — a difference observable as both a distinct screen and a
+	// latency delta, i.e. a username-format enumeration oracle.
+	if (!hostIdentifierSchema.safeParse(identifier).success) {
+		notFound();
+	}
 
 	// UUID vs username — backend accepts both, but the query param key differs.
 	// Old raffle links use hostId (UUID), new links use username. Accept any UUID
@@ -76,23 +109,25 @@ export default async function HostProfilePage({
 			notFound();
 		}
 
+		// Inline error surface — distinct from `not-found.tsx`, which only
+		// triggers on a backend-confirmed NOT_FOUND. Everything else (network,
+		// timeout, 5xx, contract drift) lands here so the user can distinguish
+		// "this host doesn't exist" from "we couldn't reach the service".
 		return (
-			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 text-center">
-				<BugIcon />
-
-				<hgroup className="space-y-4">
-					<h2 className="text-xl font-semibold">Error loading profile</h2>
-					<p className="mt-2 text-lg">
+			<div className="flex min-h-[60dvh] w-full flex-col items-center justify-center gap-6 px-4 text-center">
+				<BugIcon aria-hidden="true" className="size-20" />
+				<hgroup className="flex flex-col gap-2">
+					<h2 className="text-foreground text-2xl font-semibold">
+						Error loading profile
+					</h2>
+					<p className="text-muted-foreground max-w-md text-lg">
 						Something went wrong while trying to load this host&apos;s profile.
+						Please try again in a moment.
 					</p>
 				</hgroup>
-
-				<Link
-					href="/browse"
-					className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
-				>
-					Back to Browse
-				</Link>
+				<Button asChild variant="outline" size="lg">
+					<Link href="/browse">Back to Browse</Link>
+				</Button>
 			</div>
 		);
 	}
@@ -118,11 +153,11 @@ export default async function HostProfilePage({
 					</aside>
 
 					<main className="flex-1">
-						<div className="flex flex-col items-center justify-center py-20 text-center">
-							<h3 className="text-xl font-semibold text-gray-900">
+						<div className="flex flex-col items-center justify-center gap-2 py-20 text-center">
+							<h3 className="text-foreground text-xl font-semibold">
 								Error loading raffles
 							</h3>
-							<p className="mt-2 text-gray-500">Please try again later.</p>
+							<p className="text-muted-foreground">Please try again later.</p>
 						</div>
 					</main>
 				</div>
@@ -165,11 +200,13 @@ export default async function HostProfilePage({
 							))}
 						</div>
 					) : (
-						<div className="flex flex-col items-center justify-center py-20 text-center">
-							<h3 className="text-xl font-semibold text-gray-900">
+						<div className="flex flex-col items-center justify-center gap-2 py-20 text-center">
+							<h3 className="text-foreground text-xl font-semibold">
 								{emptyMessage.title}
 							</h3>
-							<p className="mt-2 text-gray-500">{emptyMessage.description}</p>
+							<p className="text-muted-foreground">
+								{emptyMessage.description}
+							</p>
 						</div>
 					)}
 				</main>

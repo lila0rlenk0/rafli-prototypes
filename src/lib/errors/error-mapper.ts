@@ -304,9 +304,15 @@ export const mapTicketError = createDomainErrorMapper<TicketErrorCode>([
 
 /**
  * Maps host errors to HostErrorCode.
- * Accepts `core:*` and `global:*` prefixes.
+ *
+ * The `/users/:id` public-profile endpoint is served by the authentication
+ * service — its not-found URN is `auth:profile:not-found`, so `auth:` has to
+ * sit in the accepted-prefix list alongside `core:` / `global:`. Dropping it
+ * (as the original revision did) folded every real 404 into the
+ * `mapCommonError` fallback, masking the backend's domain signal.
  */
 export const mapHostError = createDomainErrorMapper<HostErrorCode>([
+	'auth:',
 	'core:',
 	'global:',
 ]);

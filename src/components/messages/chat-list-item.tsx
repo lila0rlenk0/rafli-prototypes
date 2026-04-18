@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { memo } from 'react';
 
 import { cn } from '@/lib/utils';
 import { useChatStore } from '@/providers/chat-store-provider';
@@ -25,8 +26,16 @@ interface ChatListItemProps {
  * One row in the conversation sidebar: avatar, title, last-message preview,
  * relative timestamp, unread badge. Selection state is driven by parent
  * (matches the active route segment).
+ *
+ * Wrapped in `memo()` because the sidebar re-renders whenever any chat
+ * store slice changes (unread total, connection flip, typing events on
+ * ANY conversation) — without memo, every list row would re-scan
+ * `rosterMembers`, recompute the pivot role, and recreate its avatar
+ * on every unrelated WS tick. With memo the rows short-circuit on
+ * prop equality; the only row that actually re-runs is the one whose
+ * unread selector value changed.
  */
-export function ChatListItem({
+function ChatListItemImpl({
 	conversation,
 	viewerId,
 	selected,
@@ -106,3 +115,5 @@ export function ChatListItem({
 		</Link>
 	);
 }
+
+export const ChatListItem = memo(ChatListItemImpl);

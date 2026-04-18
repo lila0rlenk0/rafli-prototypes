@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { deriveWinningStatusFromMessages } from '@/lib/utils/winning-status-from-messages';
 import {
 	useChatStore,
 	useChatTransport,
@@ -14,7 +15,11 @@ import { markRead } from '@/services/chat/mark-read';
 import { useMessages } from '@/services/chat/use-messages';
 import { useSendMessage } from '@/services/chat/use-send-message';
 import type { PendingSend } from '@/store/chat-store';
-import type { Conversation, Message } from '@/types/chat';
+import {
+	CONVERSATION_TYPE,
+	type Conversation,
+	type Message,
+} from '@/types/chat';
 
 import { AvatarCircle } from './avatar-circle';
 import {
@@ -30,6 +35,7 @@ import { ParticipantRoster } from './participant-roster';
 import { RoleBadge } from './role-badge';
 import { StatusPill } from './status-pill';
 import { TypingIndicator } from './typing-indicator';
+import { WinnerChatIntroPanel } from './winner-chat-intro-panel';
 
 interface ConversationViewProps {
 	readonly conversation: Conversation;
@@ -127,6 +133,21 @@ export function ConversationView({
 		],
 	);
 
+	// Winner-chat surface: derive the current winning context (status +
+	// winningId) from the conversation's `shipment_update` messages so
+	// the intro panel can render the stepper AND wire action CTAs
+	// without a second backend round-trip. Gated on conversation type
+	// because only `winner_chat` rooms are tied to a `winnings` row;
+	// other chat kinds never carry shipment updates.
+	const isWinnerChat = conversation.type === CONVERSATION_TYPE.WINNER_CHAT;
+	const winningContext = useMemo(
+		function computeWinningContext() {
+			if (!isWinnerChat) return null;
+			return deriveWinningStatusFromMessages(messages);
+		},
+		[isWinnerChat, messages],
+	);
+
 	// Pending sends for THIS conversation only. We filter the global map so
 	// a retry in one conversation doesn't render a "sending…" bubble in
 	// another. `useMemo` keeps the derived list stable across renders where
@@ -205,8 +226,19 @@ export function ConversationView({
 		if (connected) transport.sendTyping(conversationId);
 	}
 
-	const hasTypingIndicators = Object.keys(typingUserIds).some(
-		userId => userId !== viewerId,
+	// `typingUserIds` is a Record keyed by userId; we only care whether
+	// anyone OTHER than the viewer is typing. Memoized so the
+	// Object.keys allocation + scan only runs when the typing map ref
+	// changes (per-conversation selector, see `typingByConvoId` above),
+	// not on every unrelated store tick.
+	const hasTypingIndicators = useMemo(
+		function computeHasTypingIndicators() {
+			for (const userId in typingUserIds) {
+				if (userId !== viewerId) return true;
+			}
+			return false;
+		},
+		[typingUserIds, viewerId],
 	);
 
 	if (isLoading) {
@@ -277,6 +309,15 @@ export function ConversationView({
 							)}
 						</Button>
 					</div>
+				) : null}
+
+				{isWinnerChat && winningContext && conversation.raffleId !== null ? (
+					<WinnerChatIntroPanel
+						currentStatus={winningContext.status}
+						raffleId={conversation.raffleId}
+						winningId={winningContext.winningId}
+						viewerRole={viewerRole}
+					/>
 				) : null}
 
 				{messages.length === 0 && pendingForConvo.length === 0 ? (

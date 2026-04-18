@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import { cn } from '@/lib/utils';
 
 import { avatarInitialFromName, type ViewerRole } from './chat-utils';
@@ -26,8 +28,14 @@ const SIZE_CLASSES = {
  * name. We intentionally avoid pulling avatar URLs in v1: that would
  * require cross-user profile lookups (leaks membership of unrelated
  * conversations) and a CDN allow-list that we don't yet want to maintain.
+ *
+ * Wrapped in `memo()` because this renders per message bubble and per
+ * sidebar row — both lists churn on unrelated WS events, and the
+ * initial/tint derivations run each time. All four props are primitives,
+ * so default shallow compare skips the re-run whenever the name, role,
+ * size, and className stay identical (the common case).
  */
-export function AvatarCircle({
+function AvatarCircleImpl({
 	displayName,
 	role,
 	size = 'md',
@@ -48,6 +56,8 @@ export function AvatarCircle({
 		</div>
 	);
 }
+
+export const AvatarCircle = memo(AvatarCircleImpl);
 
 /**
  * Tints the avatar background by role so conversations read at a glance

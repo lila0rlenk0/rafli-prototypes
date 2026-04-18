@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import { cn } from '@/lib/utils';
 import { getWinningStatusLabel } from '@/lib/utils/winning-status-label';
 import { MESSAGE_TYPE, type Message } from '@/types/chat';
@@ -33,8 +35,16 @@ interface MessageBubbleProps {
  * and no sender metadata. Optimistic pre-ack bubbles are rendered by
  * `PendingBubble` in the conversation view — this component only handles
  * server-confirmed messages.
+ *
+ * Wrapped in `memo()` because the conversation view re-renders on every
+ * WS event (new message, typing tick, presence flip, read receipt) — and
+ * each render would otherwise re-linkify + re-render every bubble in the
+ * list. With memo, only the single bubble whose `message` ref actually
+ * changed re-renders; the rest short-circuit on prop equality. All four
+ * props are primitives or store-stable refs (`mergeMessage` preserves
+ * identity for untouched rows), so default shallow compare is correct.
  */
-export function MessageBubble({
+function MessageBubbleImpl({
 	message,
 	isOwn,
 	senderRole,
@@ -123,6 +133,8 @@ export function MessageBubble({
 		</div>
 	);
 }
+
+export const MessageBubble = memo(MessageBubbleImpl);
 
 /**
  * Renders the shipment_update metadata as a short summary line.

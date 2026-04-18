@@ -556,6 +556,89 @@ describe('rosterEntries', () => {
 		expect(entries[0]?.displayName).toBeNull();
 	});
 
+	test('keeps only the first name for staff members', () => {
+		// Staff surface in the roster via a first-name-only label — see
+		// `firstNameToken` in chat-utils for the rationale. Host, winner, and
+		// plain members keep their full name so the mask is role-specific.
+		const convo = makeConversation({
+			createdBy: 'host-user',
+			rosterMembers: [
+				{
+					displayName: 'Kate Owens',
+					joinedAt: '2026-04-01T00:00:00Z',
+					role: 'admin',
+					userId: 'host-user',
+				},
+				{
+					displayName: 'Ada Lovelace',
+					joinedAt: '2026-04-01T00:00:00Z',
+					role: 'member',
+					userId: 'winner-user',
+				},
+				{
+					displayName: 'Sam Carter',
+					joinedAt: '2026-04-01T00:00:00Z',
+					role: 'admin',
+					userId: 'staff-user',
+				},
+				{
+					displayName: 'Maya Rodriguez',
+					joinedAt: '2026-04-01T00:00:00Z',
+					role: 'member',
+					userId: 'member-user',
+				},
+			],
+			winnerUserId: 'winner-user',
+		});
+		const entries = rosterEntries(convo, 'viewer-id');
+		const byUserId = new Map(entries.map(e => [e.member.userId, e]));
+		expect(byUserId.get('staff-user')?.displayName).toBe('Sam');
+		// Full name retained for host / winner / member — the mask is scoped
+		// to staff so reviewers reading the test see the boundary explicitly.
+		expect(byUserId.get('host-user')?.displayName).toBe('Kate Owens');
+		expect(byUserId.get('winner-user')?.displayName).toBe('Ada Lovelace');
+		expect(byUserId.get('member-user')?.displayName).toBe('Maya Rodriguez');
+	});
+
+	test('leaves a single-token staff name intact instead of emptying it', () => {
+		// `firstNameToken` falls back to the original string when there's no
+		// whitespace — a mononym handle must not collapse to empty.
+		const convo = makeConversation({
+			createdBy: 'somebody-else',
+			rosterMembers: [
+				{
+					displayName: 'amelia',
+					joinedAt: 't',
+					role: 'admin',
+					userId: 'staff-user',
+				},
+			],
+			winnerUserId: null,
+		});
+		const entries = rosterEntries(convo, 'viewer-id');
+		expect(entries[0]?.displayName).toBe('amelia');
+	});
+
+	test('preserves null for deleted staff so the fallback label still renders', () => {
+		// Null must propagate through the staff mask — otherwise the renderer
+		// would show an empty chip instead of the "Deleted user" placeholder.
+		const convo = makeConversation({
+			createdBy: 'somebody-else',
+			rosterMembers: [
+				{
+					displayName: null,
+					joinedAt: 't',
+					role: 'admin',
+					userId: 'ghost-staff',
+				},
+			],
+			winnerUserId: null,
+		});
+		const entries = rosterEntries(convo, 'viewer-id');
+		expect(entries[0]?.displayName).toBeNull();
+		expect(entries[0]?.role).toBe(VIEWER_ROLE.STAFF);
+	});
+
 	test('returns an empty list when the viewer is the only member', () => {
 		const convo = makeConversation({
 			createdBy: 'viewer-id',

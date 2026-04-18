@@ -274,6 +274,27 @@ export function memberDisplayName(member: ConversationMember): string | null {
 	return trimmed ? trimmed : null;
 }
 
+/**
+ * First whitespace-separated token of a display name.
+ *
+ * Used to mask staff members in the roster — host and winner own the prize-
+ * coordination flow and surface with full names for clear accountability, but
+ * staff are operators acting on behalf of the host so a first name is enough
+ * to address them without leaking the operator's full identity into every
+ * conversation they touch (the full name is still available on their profile
+ * for participants who need it).
+ *
+ * Falls back to the original trimmed value when there's no whitespace — a
+ * single-word handle like "amelia" stays as-is rather than becoming empty.
+ *
+ * @param name - Trimmed display name (caller guarantees non-empty).
+ * @returns First token, or the original string when no whitespace is present.
+ */
+function firstNameToken(name: string): string {
+	const spaceIndex = name.indexOf(' ');
+	return spaceIndex === -1 ? name : name.slice(0, spaceIndex);
+}
+
 /** Sorted, viewer-excluded entry rendered by the participant roster. */
 export interface RosterEntry {
 	readonly member: ConversationMember;
@@ -311,11 +332,18 @@ export function rosterEntries(
 ): readonly RosterEntry[] {
 	return conversation.rosterMembers
 		.filter(m => m.userId !== viewerId)
-		.map(member => ({
-			member,
-			role: resolveMemberRole(conversation, member),
-			displayName: memberDisplayName(member),
-		}))
+		.map(member => {
+			const role = resolveMemberRole(conversation, member);
+			const fullName = memberDisplayName(member);
+			// Staff identities get trimmed to first name only — see `firstNameToken`
+			// for rationale. Null passes through so the "deleted user" fallback
+			// still reaches the renderer.
+			const displayName =
+				role === VIEWER_ROLE.STAFF && fullName !== null
+					? firstNameToken(fullName)
+					: fullName;
+			return { member, role, displayName };
+		})
 		.toSorted((a, b) => {
 			const byRole = ROSTER_ROLE_ORDER[a.role] - ROSTER_ROLE_ORDER[b.role];
 			if (byRole !== 0) return byRole;

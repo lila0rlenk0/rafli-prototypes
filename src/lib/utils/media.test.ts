@@ -59,13 +59,15 @@ describe('getVideoThumbnailUrl', () => {
 	});
 
 	it('preserves query and hash on the thumbnail URL', () => {
-		expect(getVideoThumbnailUrl('https://cdn.raffly.win/g/clip.mp4?v=2#t=0')).toBe(
-			'https://cdn.raffly.win/g/clip-thumbnail.jpg?v=2#t=0',
-		);
+		expect(
+			getVideoThumbnailUrl('https://cdn.raffly.win/g/clip.mp4?v=2#t=0'),
+		).toBe('https://cdn.raffly.win/g/clip-thumbnail.jpg?v=2#t=0');
 	});
 
 	it('returns null for non-video URLs', () => {
-		expect(getVideoThumbnailUrl('https://cdn.raffly.win/g/img.webp')).toBeNull();
+		expect(
+			getVideoThumbnailUrl('https://cdn.raffly.win/g/img.webp'),
+		).toBeNull();
 	});
 });
 

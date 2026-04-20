@@ -45,9 +45,11 @@ export function SubmissionsFilters() {
 	 * Updates a single search param, clears page — prevents landing on empty pages
 	 * when the filtered result count is lower than the current offset.
 	 *
-	 * router.refresh() busts the client Router Cache after push. Under Next 16
-	 * PPR/cacheComponents, same-pathname navigations with only search-param
-	 * changes reuse the cached RSC payload, so the table never re-fetches.
+	 * The server page re-renders via its Suspense-key strategy — see
+	 * `src/app/(admin)/admin/verification/page.tsx`. No `router.refresh()`
+	 * needed here; calling it after push races the in-flight navigation
+	 * and can fire against the outgoing URL's cache entry instead of the
+	 * target one.
 	 */
 	function updateParam(key: string, value: string) {
 		const params = new URLSearchParams(searchParams.toString());
@@ -61,7 +63,6 @@ export function SubmissionsFilters() {
 		params.delete('page');
 
 		router.push(`${pathname}?${params.toString()}`);
-		router.refresh();
 	}
 
 	return (

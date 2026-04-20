@@ -39,9 +39,11 @@ export function SubmissionsPagination({ total }: SubmissionsPaginationProps) {
 	 * Navigates to a specific page by updating the URL search param.
 	 * Preserves existing filter params (status, type).
 	 *
-	 * router.refresh() busts the client Router Cache after push. Under Next 16
-	 * PPR/cacheComponents, same-pathname navigations with only search-param
-	 * changes reuse the cached RSC payload, so the table never re-fetches.
+	 * The server page re-renders via its Suspense-key strategy — see
+	 * `src/app/(admin)/admin/verification/page.tsx`. No `router.refresh()`
+	 * needed here; calling it after push races the in-flight navigation
+	 * and can fire against the outgoing URL's cache entry instead of the
+	 * target one.
 	 */
 	function goToPage(page: number) {
 		const params = new URLSearchParams(searchParams.toString());
@@ -53,7 +55,6 @@ export function SubmissionsPagination({ total }: SubmissionsPaginationProps) {
 		}
 
 		router.push(`${pathname}?${params.toString()}`);
-		router.refresh();
 	}
 
 	function handlePreviousPage() {

@@ -6,7 +6,11 @@ import { useMemo, useState } from 'react';
 
 import { RaffleMediaCarousel } from '@/components/raffle/raffle-media-carousel';
 import type { RaffleMediaItem } from '@/lib/utils/media';
-import { getVideoThumbnailUrl, isVideoUrl, toMediaItem } from '@/lib/utils/media';
+import {
+	getVideoThumbnailUrl,
+	isVideoUrl,
+	toMediaItem,
+} from '@/lib/utils/media';
 import { cn } from '@/lib/utils';
 
 /**

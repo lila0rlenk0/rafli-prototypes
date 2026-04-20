@@ -162,7 +162,7 @@ export function WinnerChatIntroPanel({
 				    Inner `pt-0` keeps the header↔content rhythm aligned with
 				    the original `gap-4` between icon row and stepper. */}
 				<CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down overflow-hidden">
-					<div className="flex flex-col gap-4 px-5 pt-0 pb-5 sm:px-6 sm:pb-6">
+					<div className="flex flex-col gap-4 px-5 pt-2 pb-5 sm:px-6 sm:pb-6">
 						<WinningStatusStepper
 							currentStatus={currentStatus}
 							actionSlot={

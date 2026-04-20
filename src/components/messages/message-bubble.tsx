@@ -96,7 +96,13 @@ function MessageBubbleImpl({
 
 				<div
 					className={cn(
-						'w-fit rounded-2xl px-3 py-2 text-sm',
+						// `whitespace-pre-wrap` preserves author-intended newlines
+						// (Shift+Enter in the composer) so multi-paragraph messages
+						// render the way the sender typed them — matches WhatsApp /
+						// Telegram / iMessage conventions. `break-words` keeps long
+						// URLs and unbroken tokens from overflowing the 85% bubble
+						// clamp on narrow viewports.
+						'w-fit rounded-2xl px-3 py-2 text-sm break-words whitespace-pre-wrap',
 						isOwn
 							? 'bg-primary text-primary-foreground'
 							: 'bg-muted text-foreground',

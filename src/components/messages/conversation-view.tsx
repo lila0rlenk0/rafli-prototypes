@@ -393,7 +393,12 @@ function PendingBubble({
 			<div className="flex max-w-[85%] flex-col items-end gap-1">
 				<div
 					className={cn(
-						'bg-primary text-primary-foreground w-fit rounded-2xl px-3 py-2 text-sm',
+						// Mirror MessageBubble's whitespace handling so an optimistic
+						// bubble doesn't re-flow (collapsed newlines → preserved
+						// newlines) the moment the server ack lands and we swap to
+						// the confirmed MessageBubble — users would see a visible
+						// layout jump on every multi-paragraph send otherwise.
+						'bg-primary text-primary-foreground w-fit rounded-2xl px-3 py-2 text-sm break-words whitespace-pre-wrap',
 						failed && 'opacity-70',
 					)}
 				>

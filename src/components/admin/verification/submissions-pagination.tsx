@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 
@@ -22,6 +22,7 @@ interface SubmissionsPaginationProps {
  */
 export function SubmissionsPagination({ total }: SubmissionsPaginationProps) {
 	const router = useRouter();
+	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
 	const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -37,6 +38,10 @@ export function SubmissionsPagination({ total }: SubmissionsPaginationProps) {
 	/**
 	 * Navigates to a specific page by updating the URL search param.
 	 * Preserves existing filter params (status, type).
+	 *
+	 * router.refresh() busts the client Router Cache after push. Under Next 16
+	 * PPR/cacheComponents, same-pathname navigations with only search-param
+	 * changes reuse the cached RSC payload, so the table never re-fetches.
 	 */
 	function goToPage(page: number) {
 		const params = new URLSearchParams(searchParams.toString());
@@ -47,7 +52,8 @@ export function SubmissionsPagination({ total }: SubmissionsPaginationProps) {
 			params.set('page', String(page));
 		}
 
-		router.push(`/admin/verification?${params.toString()}`);
+		router.push(`${pathname}?${params.toString()}`);
+		router.refresh();
 	}
 
 	function handlePreviousPage() {

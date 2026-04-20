@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import {
 	Select,
@@ -29,6 +29,7 @@ export function normalizeSubmissionsFilterValue(
 
 export function SubmissionsFilters() {
 	const router = useRouter();
+	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
 	const currentStatus = normalizeSubmissionsFilterValue(
@@ -43,6 +44,10 @@ export function SubmissionsFilters() {
 	/**
 	 * Updates a single search param, clears page — prevents landing on empty pages
 	 * when the filtered result count is lower than the current offset.
+	 *
+	 * router.refresh() busts the client Router Cache after push. Under Next 16
+	 * PPR/cacheComponents, same-pathname navigations with only search-param
+	 * changes reuse the cached RSC payload, so the table never re-fetches.
 	 */
 	function updateParam(key: string, value: string) {
 		const params = new URLSearchParams(searchParams.toString());
@@ -55,7 +60,8 @@ export function SubmissionsFilters() {
 
 		params.delete('page');
 
-		router.push(`/admin/verification?${params.toString()}`);
+		router.push(`${pathname}?${params.toString()}`);
+		router.refresh();
 	}
 
 	return (

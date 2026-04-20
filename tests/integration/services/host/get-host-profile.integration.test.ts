@@ -56,10 +56,14 @@ describe('getHostProfile', () => {
 	});
 
 	test('maps not-found from RFC 7807', async () => {
+		// Public profile endpoint lives in the backend auth service — its 404 URN
+		// is `auth:profile:not-found` (see get-user-profile.query.ts), which is
+		// exactly the wire code `HOST_ERROR_CODES.NOT_FOUND` re-exports so the
+		// `/host/[username]` page can branch on it to call Next's `notFound()`.
 		mockGet.mockRejectedValueOnce(
 			mockAxiosError({
 				status: 404,
-				data: { type: 'urn:raffles:problem:core:user:not-found' },
+				data: { type: 'urn:raffles:problem:auth:profile:not-found' },
 			}),
 		);
 

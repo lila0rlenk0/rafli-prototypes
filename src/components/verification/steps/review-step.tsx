@@ -176,11 +176,35 @@ export function ReviewStep() {
 									value={values.bankAccountOrWallet}
 								/>
 							) : null}
-							{values.shippingAddress ? (
-								<ReviewRow
-									label="Shipping Address"
-									value={values.shippingAddress}
-								/>
+							{values.shippingStreet ? (
+								<>
+									<ReviewRow
+										label="Shipping Recipient"
+										value={values.shippingName}
+									/>
+									<ReviewRow
+										label="Shipping Street"
+										value={values.shippingStreet}
+									/>
+									<ReviewRow
+										label="Shipping City"
+										value={values.shippingCity}
+									/>
+									<ReviewRow
+										label="Shipping Postal Code"
+										value={values.shippingZip}
+									/>
+									<ReviewRow
+										label="Shipping Country"
+										value={values.shippingCountry}
+									/>
+									{values.shippingPhone ? (
+										<ReviewRow
+											label="Shipping Phone"
+											value={values.shippingPhone}
+										/>
+									) : null}
+								</>
 							) : null}
 						</div>
 

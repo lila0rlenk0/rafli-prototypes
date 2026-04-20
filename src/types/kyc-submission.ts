@@ -201,9 +201,31 @@ export const kybCompanyInputSchema = z.object({
 });
 
 /**
+ * Structured shipping address — matches the backend `shippingInfoSchema` (min/max
+ * bounds mirror `src/core/winnings/dto/winning.dto.ts`). Backend writes this shape
+ * into `kyc_submissions.data.shippingAddress` which the winnings auto-claim
+ * subscriber reads to advance `pending → awaiting_host` without prompting users
+ * to re-enter shipping on the manual claim flow.
+ */
+export const shippingInfoSchema = z.object({
+	name: z.string().min(1).max(100),
+	address: z.string().min(1).max(500),
+	city: z.string().min(1).max(100),
+	zip: z.string().min(1).max(20),
+	country: z.string().min(1).max(100),
+	phone: z.string().max(30).nullable(),
+});
+
+/**
  * KYC winner form input.
  *
  * Validation boundary: both — client-side in the form, server-side via safeParse.
+ *
+ * `shippingAddress` stays nullable to mirror the backend `kycWinnerSchema`. The
+ * backend reads JSONB via `extractKycWinnerShipping` which degrades null/malformed
+ * shipping to the manual claim path. The UI form enforces shipping as mandatory
+ * (`winnerFormSchema`), so every form-driven submission sends a populated object;
+ * null remains reachable only from hypothetical service-to-service callers.
  */
 export const kycWinnerInputSchema = z.object({
 	fullLegalName: z.string().min(1),
@@ -211,7 +233,7 @@ export const kycWinnerInputSchema = z.object({
 	countryOfResidence: z.string().min(1),
 	identityDocType: identityDocTypeSchema,
 	bankAccountOrWallet: z.string().nullable(),
-	shippingAddress: z.string().nullable(),
+	shippingAddress: shippingInfoSchema.nullable(),
 });
 
 // ─── Inferred Types ─────────────────────────────────────────────────────────
@@ -236,6 +258,8 @@ export type KybIndividualInput = z.infer<typeof kybIndividualInputSchema>;
 export type KybCompanyInput = z.infer<typeof kybCompanyInputSchema>;
 /** KYC winner form input. */
 export type KycWinnerInput = z.infer<typeof kycWinnerInputSchema>;
+/** Structured shipping address payload — see `shippingInfoSchema`. */
+export type ShippingInfo = z.infer<typeof shippingInfoSchema>;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

@@ -37,6 +37,7 @@ import { uploadDocument } from '@/services/kyc-submission/upload-document';
 import {
 	DOCUMENT_PURPOSE,
 	VERIFICATION_TYPE,
+	type ShippingInfo,
 	type VerificationType,
 } from '@/types/kyc-submission';
 
@@ -131,9 +132,48 @@ function getWinnerDefaults(): DefaultValues<WinnerFormData> {
 		countryOfResidence: '',
 		identityDocType: undefined,
 		bankAccountOrWallet: '',
-		shippingAddress: '',
+		// Flat shipping fields — packed into a populated `shippingAddress` object
+		// on submit. Shipping is mandatory for every winner (see `winnerFormSchema`),
+		// so the form never emits null; the backend contract stays nullable only to
+		// stay forward-compatible with future wallet-only service-to-service calls.
+		shippingName: '',
+		shippingStreet: '',
+		shippingCity: '',
+		shippingZip: '',
+		shippingCountry: '',
+		shippingPhone: '',
 		idFront: [],
 		idBack: [],
+	};
+}
+
+// =============================================================================
+// SHIPPING PAYLOAD PACKING
+// Winner form holds each address component flat (React Hook Form ergonomics).
+// Shipping is mandatory, so every winner submission emits a populated
+// ShippingInfo object — the phone stays nullable because couriers can proceed
+// without it and the backend treats it as optional.
+// =============================================================================
+
+interface WinnerShippingFields {
+	shippingCity: string;
+	shippingCountry: string;
+	shippingName: string;
+	shippingPhone?: string;
+	shippingStreet: string;
+	shippingZip: string;
+}
+
+function packShippingAddress(data: WinnerShippingFields): ShippingInfo {
+	const phone = (data.shippingPhone ?? '').trim();
+
+	return {
+		name: data.shippingName.trim(),
+		address: data.shippingStreet.trim(),
+		city: data.shippingCity.trim(),
+		zip: data.shippingZip.trim(),
+		country: data.shippingCountry.trim(),
+		phone: phone.length > 0 ? phone : null,
 	};
 }
 
@@ -318,7 +358,7 @@ export function VerificationFormProvider({
 						countryOfResidence: data.countryOfResidence,
 						identityDocType: data.identityDocType,
 						bankAccountOrWallet: data.bankAccountOrWallet || null,
-						shippingAddress: data.shippingAddress || null,
+						shippingAddress: packShippingAddress(data),
 					});
 				}
 

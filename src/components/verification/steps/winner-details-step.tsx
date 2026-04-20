@@ -28,7 +28,8 @@ import { useVerificationForm } from '../verification-form-provider';
  *
  * Collects personal information for KYC winner verification.
  * Fields: name, DOB, country, ID type, bank/wallet (optional),
- * and shipping address (optional).
+ * and shipping address (required — every winner submits a full address so the
+ * winnings auto-claim path can always rely on structured shipping).
  *
  * @returns Form fields for winner verification
  */
@@ -67,11 +68,20 @@ export function WinnerDetailsStep() {
 	}
 
 	async function handleNext() {
+		// Shipping fields are required now — validate them alongside identity
+		// fields before advancing so the user fixes gaps on this step instead of
+		// hitting schema errors after the documents step.
 		const fieldsToValidate = [
 			'fullLegalName',
 			'dateOfBirth',
 			'countryOfResidence',
 			'identityDocType',
+			'shippingName',
+			'shippingStreet',
+			'shippingCity',
+			'shippingZip',
+			'shippingCountry',
+			'shippingPhone',
 		] as const;
 
 		const isValid = await trigger(
@@ -169,19 +179,89 @@ export function WinnerDetailsStep() {
 					</Field>
 
 					<Field>
-						<FieldLabel htmlFor="shippingAddress">
-							Prize Shipping Address
+						<FieldLabel>Prize Shipping Address</FieldLabel>
+						<FieldDescription>
+							Required for every winner. Provide a complete address even for
+							monetary or digital prizes so we can ship any physical follow-up
+							reward without a second KYC round.
+						</FieldDescription>
+					</Field>
+
+					<Field>
+						<FieldLabel htmlFor="shippingName">Recipient Name</FieldLabel>
+						<Input
+							id="shippingName"
+							placeholder="Name as it should appear on the shipping label"
+							{...register('shippingName' as keyof WinnerFormData)}
+						/>
+						{fieldErrors.shippingName ? (
+							<FieldError>{fieldErrors.shippingName.message}</FieldError>
+						) : null}
+					</Field>
+
+					<Field>
+						<FieldLabel htmlFor="shippingStreet">Street Address</FieldLabel>
+						<Input
+							id="shippingStreet"
+							placeholder="Street, unit/apartment, floor"
+							{...register('shippingStreet' as keyof WinnerFormData)}
+						/>
+						{fieldErrors.shippingStreet ? (
+							<FieldError>{fieldErrors.shippingStreet.message}</FieldError>
+						) : null}
+					</Field>
+
+					<Field>
+						<FieldLabel htmlFor="shippingCity">City</FieldLabel>
+						<Input
+							id="shippingCity"
+							placeholder="City"
+							{...register('shippingCity' as keyof WinnerFormData)}
+						/>
+						{fieldErrors.shippingCity ? (
+							<FieldError>{fieldErrors.shippingCity.message}</FieldError>
+						) : null}
+					</Field>
+
+					<Field>
+						<FieldLabel htmlFor="shippingZip">Postal / ZIP Code</FieldLabel>
+						<Input
+							id="shippingZip"
+							placeholder="Postal or ZIP code"
+							{...register('shippingZip' as keyof WinnerFormData)}
+						/>
+						{fieldErrors.shippingZip ? (
+							<FieldError>{fieldErrors.shippingZip.message}</FieldError>
+						) : null}
+					</Field>
+
+					<Field>
+						<FieldLabel htmlFor="shippingCountry">Country</FieldLabel>
+						<Input
+							id="shippingCountry"
+							placeholder="e.g., United States, Brazil"
+							{...register('shippingCountry' as keyof WinnerFormData)}
+						/>
+						{fieldErrors.shippingCountry ? (
+							<FieldError>{fieldErrors.shippingCountry.message}</FieldError>
+						) : null}
+					</Field>
+
+					<Field>
+						<FieldLabel htmlFor="shippingPhone">
+							Phone Number (optional)
 						</FieldLabel>
 						<FieldDescription>
-							Required if you won a physical prize. Put N/A if not applicable.
+							Couriers often need a contact number at delivery.
 						</FieldDescription>
 						<Input
-							id="shippingAddress"
-							placeholder="Full shipping address"
-							{...register('shippingAddress' as keyof WinnerFormData)}
+							id="shippingPhone"
+							type="tel"
+							placeholder="e.g., +1 555 010 0000"
+							{...register('shippingPhone' as keyof WinnerFormData)}
 						/>
-						{fieldErrors.shippingAddress ? (
-							<FieldError>{fieldErrors.shippingAddress.message}</FieldError>
+						{fieldErrors.shippingPhone ? (
+							<FieldError>{fieldErrors.shippingPhone.message}</FieldError>
 						) : null}
 					</Field>
 				</FieldGroup>

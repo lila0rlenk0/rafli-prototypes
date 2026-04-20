@@ -140,9 +140,33 @@ export const winnerFormSchema = z.object({
 		.string()
 		.max(500, 'Must be less than 500 characters')
 		.default(''),
-	shippingAddress: z
+	// Flat shipping fields — bounds mirror the backend `shippingInfoSchema`.
+	// Shipping is mandatory: every winner — including wallet-only claimants — must
+	// submit a complete address so approved KYC rows always carry structured
+	// shipping the winnings auto-claim path can rely on without branching.
+	shippingName: z
 		.string()
-		.max(500, 'Must be less than 500 characters')
+		.min(1, 'Recipient name is required')
+		.max(100, 'Must be less than 100 characters'),
+	shippingStreet: z
+		.string()
+		.min(1, 'Street address is required')
+		.max(500, 'Must be less than 500 characters'),
+	shippingCity: z
+		.string()
+		.min(1, 'City is required')
+		.max(100, 'Must be less than 100 characters'),
+	shippingZip: z
+		.string()
+		.min(1, 'Postal / ZIP code is required')
+		.max(20, 'Must be less than 20 characters'),
+	shippingCountry: z
+		.string()
+		.min(1, 'Country is required')
+		.max(100, 'Must be less than 100 characters'),
+	shippingPhone: z
+		.string()
+		.max(30, 'Must be less than 30 characters')
 		.default(''),
 	idFront: requiredDocumentSchema,
 	idBack: optionalDocumentSchema,

@@ -7,7 +7,7 @@ paths:
 
 ## Philosophy
 
-Comment the *why*, never the *what*. Well-named identifiers already say what. Stale comments are worse than no comments — update them when logic changes.
+Comment the _why_, never the _what_. Well-named identifiers already say what. Stale comments are worse than no comments — update them when logic changes.
 
 Skip when the code is self-evident.
 

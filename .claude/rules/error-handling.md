@@ -13,7 +13,9 @@ paths:
 Discriminated union in `@/types/service-response`:
 
 ```ts
-type ServiceResponse<T, E> = { success: true; data: T } | { success: false; error: E };
+type ServiceResponse<T, E> =
+	| { success: true; data: T }
+	| { success: false; error: E };
 ```
 
 Helpers: `success(data)`, `success(undefined)` for void ops, `failure(ERROR_CODES.X)`. Never throw raw errors from a server action.

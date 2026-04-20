@@ -35,7 +35,10 @@ export async function getData(): Promise<ServiceResponse<MyType, MyErrorCode>> {
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 		const errorCode = mapDomainError(error);
-		captureServiceError(error, errorCode, { service: 'domain', action: 'getData' });
+		captureServiceError(error, errorCode, {
+			service: 'domain',
+			action: 'getData',
+		});
 		return failure(errorCode);
 	}
 }

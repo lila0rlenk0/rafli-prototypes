@@ -126,6 +126,7 @@ The most powerful endpoint. Runs arbitrary queries across errors and transaction
   - Params: `field` (repeatable), `query` (Sentry search syntax), `sort` (prefix `-` for DESC), `per_page` (max 100), `statsPeriod`, `start`/`end`, `project`, `environment`, `dataset` (errors|transactions), `cursor`
 
 Key fields:
+
 - Event: `id`, `title`, `message`, `event.type`, `timestamp`, `level`, `platform`, `project`, `release`, `environment`
 - Transaction: `transaction`, `transaction.op`, `transaction.status`, `transaction.duration`
 - Error: `error.type`, `error.value`, `error.mechanism`, `error.handled`, `error.unhandled`
@@ -137,6 +138,7 @@ Key fields:
 - Tags: `tag[key]` format
 
 Key functions:
+
 - Count: `count()`, `count_unique(field)`, `count_if(col,op,val)`, `count_miserable(field,threshold)`, `count_web_vitals(vital,threshold)`
 - Aggregation: `avg(field)`, `sum(field)`, `min(field)`, `max(field)`
 - Percentiles: `p50(field)`, `p75(field)`, `p95(field)`, `p99(field)`, `p100(field)`

@@ -2,10 +2,8 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 import { NotificationsTable } from '@/components/profile/notifications-table';
-import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { parsePositivePageParam } from '@/lib/pagination/parse-positive-page-param';
 import { getNotifications } from '@/services/notification/get-notifications';
-import { NOTIFICATION_TYPE } from '@/types/notification';
 
 /**
  * Props for NotificationsPage
@@ -29,15 +27,11 @@ export default async function NotificationsPage({
 
 	const result = await getNotifications({ limit, offset });
 
-	// Chat-message notifications move to the dedicated /messages inbox when
-	// the chat feature ships; filter them from the bell list so the user
-	// doesn't see the same item in two places. Flag-off path keeps them
-	// visible on this page so the notifications list stays complete during
-	// rollout.
-	const rawNotifications = result.success ? result.data.notifications : [];
-	const notifications = FEATURE_FLAGS.CHAT_ENABLED
-		? rawNotifications.filter(n => n.type !== NOTIFICATION_TYPE.CHAT_MESSAGE)
-		: rawNotifications;
+	// `chat_message` rows are filtered server-side — chat owns its own unread
+	// surface at `/messages` and the bell would otherwise double-count them.
+	// `total` here is the already-filtered count, so pagination lines up with
+	// the rows the user can actually see.
+	const notifications = result.success ? result.data.notifications : [];
 	const total = result.success ? result.data.total : 0;
 	const totalPages = Math.ceil(total / limit);
 

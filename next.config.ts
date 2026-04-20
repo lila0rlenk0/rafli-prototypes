@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
 			'react-icons',
 			'lodash',
 			'date-fns',
+			// framer-motion's barrel (`motion`, `AnimatePresence`, `useReducedMotion`
+			// and friends) pulls the full animation engine by default. Turbopack
+			// rewrites to subpath imports so only referenced features ship.
+			'framer-motion',
 		],
 	},
 	images: {

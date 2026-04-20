@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/accordion';
 import { BackLink } from '@/components/ui/back-link';
 import { CollapsibleDescription } from '@/components/raffle/collapsible-description';
-import { RaffleImageGallery } from '@/components/raffle/raffle-image-gallery';
+import { RaffleMediaGallery } from '@/components/raffle/raffle-media-gallery';
 import { getSession } from '@/lib/auth/session';
 import { getCancellationReason } from '@/lib/utils/cancellation-reason';
 import { getCreditBalance } from '@/services/payment/get-credit-balance';
@@ -298,7 +298,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					<div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_24rem] lg:gap-8">
 						<div className="contents lg:col-start-1 lg:flex lg:flex-col lg:gap-8">
 							<div className="order-1 flex w-full flex-col gap-4 rounded-3xl bg-white px-4 py-6 lg:gap-5 lg:overflow-hidden lg:p-8">
-								<RaffleImageGallery
+								<RaffleMediaGallery
 									coverImage={raffle.coverMediaUrl}
 									galleryImages={raffle.galleryMediaUrls}
 									alt={raffle.title}

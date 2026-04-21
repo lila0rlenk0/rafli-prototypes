@@ -276,7 +276,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			isAuthenticated={isAuthenticated}
 			topBanner={
 				showShareMarquee ? (
-					<MarqueeBanner message="Share this raffle on X and get free tickets!" />
+					<MarqueeBanner message="Share this raffle on X and get bonus entries!" />
 				) : undefined
 			}
 		>
@@ -377,12 +377,13 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 													myTicketsTotal={myTicketsTotal}
 													userId={currentUserId}
 													availableCredits={availableCredits}
+													raffleTitle={raffle.title}
 												/>
 											</Suspense>
 
 											{disablePurchase && !showEditButton ? (
 												<p className="mt-2 text-center text-sm text-gray-500">
-													You cannot purchase tickets for your own raffle
+													You cannot enter your own raffle
 												</p>
 											) : null}
 										</RaffleExpiredGate>
@@ -439,8 +440,13 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										</AccordionTrigger>
 										<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
 											The raffle is a simple and fair way to win prizes. You can
-											purchase tickets to increase your chances of winning. The
-											winner will be randomly selected when the raffle ends.
+											buy entries to improve your chances of winning — or enter
+											for free via our{' '}
+											<Link href="/free-entry" className="underline">
+												no-purchase-necessary method
+											</Link>
+											. The winner will be randomly selected when the raffle
+											ends.
 										</AccordionContent>
 									</AccordionItem>
 
@@ -453,10 +459,10 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 										</AccordionTrigger>
 										<AccordionContent className="text-muted-foreground px-4 pt-4 text-sm">
 											Participants must be 18 years or older to enter. You can
-											purchase multiple tickets to increase your chances of
-											winning. Winners will be notified via email and must
-											provide additional details to claim their prize. All sales
-											are final and non-refundable.
+											buy entries to improve your odds, or enter for free via
+											our no-purchase-necessary method. Winners will be notified
+											via email and must provide additional details to claim
+											their prize. All sales are final and non-refundable.
 										</AccordionContent>
 									</AccordionItem>
 
@@ -488,7 +494,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 											<p>
 												You can always check the raffle details to see the
 												current number of participants versus the minimum
-												required before purchasing a ticket.
+												required before entering.
 											</p>
 										</AccordionContent>
 									</AccordionItem>
@@ -590,12 +596,13 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 												myTicketsTotal={myTicketsTotal}
 												userId={currentUserId}
 												availableCredits={availableCredits}
+												raffleTitle={raffle.title}
 											/>
 										</Suspense>
 
 										{disablePurchase && !showEditButton ? (
 											<p className="mt-2 text-center text-sm text-gray-500">
-												You cannot purchase tickets for your own raffle
+												You cannot enter your own raffle
 											</p>
 										) : null}
 									</RaffleExpiredGate>

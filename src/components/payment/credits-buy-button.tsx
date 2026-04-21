@@ -12,6 +12,7 @@ import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
 import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
 import { getPaymentErrorMessage } from '@/lib/checkout/error-messages';
+import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { abandonOrder } from '@/services/payment/abandon-order';
 import { creditBalanceKey } from '@/services/payment/use-credit-balance';
 import { payWithCredits } from '@/services/payment/pay-with-credits';
@@ -64,8 +65,18 @@ export function CreditsBuyButton({
 	// Synchronous single-flight guard — mirrors BuyButton pattern
 	const checkoutInFlight = useRef(false);
 
+	// Access Pass acknowledgment gate — credit-paid checkout still exchanges
+	// consideration for entries, so the same legal gate as the Stripe flow
+	// applies. Only the $0 free-tickets path ignores this flag.
+	const isAcknowledged = useTicketQuantityStore(
+		state => state.isAccessPassAcknowledged,
+	);
+
 	const balance = parseFloat(availableCredits);
 	const hasSufficientBalance = balance >= orderTotal;
+	// Free-tickets promos arrive as $0 orders — they don't consume credits
+	// and carry no consideration, so acknowledgment doesn't apply there.
+	const isGatedByAcknowledgment = orderTotal > 0 && !isAcknowledged;
 
 	/**
 	 * Formats a price value with currency symbol
@@ -119,7 +130,7 @@ export function CreditsBuyButton({
 	/**
 	 * Creates order, abandons any competing payment session, then pays with credits.
 	 *
-	 * The abandon step is critical: if the user previously clicked "Enter Now!" (Stripe),
+	 * The abandon step is critical: if the user previously clicked "Enter now" (Stripe),
 	 * a pending Stripe session blocks credit spend. Calling abandonOrder cancels it
 	 * (Stripe.checkout.sessions.expire on backend), allowing credits to proceed.
 	 *
@@ -169,7 +180,7 @@ export function CreditsBuyButton({
 
 			// Step 4: Success — refresh to show updated tickets and balance.
 			// Balance invalidation happens in finally block for all paths.
-			toast.success('Payment successful! Your tickets are confirmed.');
+			toast.success('Payment successful! Your entries are confirmed.');
 			router.refresh();
 		} catch (error) {
 			console.error('Unexpected error during credit checkout:', error);
@@ -192,18 +203,31 @@ export function CreditsBuyButton({
 	}
 
 	/**
-	 * Gets tooltip text when button is disabled due to insufficient balance
+	 * Gets tooltip text for disabled states — precedence:
+	 * acknowledgment gate > insufficient balance > no tooltip. Precedence
+	 * matters because the acknowledgment is the user-actionable fix the
+	 * user can resolve on this page, while balance requires a top-up flow.
 	 */
 	function getTooltipText(): string | undefined {
-		if (hasSufficientBalance) return undefined;
-		return `Insufficient credits (${formatPrice(balance)} available, ${formatPrice(orderTotal)} needed)`;
+		if (isGatedByAcknowledgment) {
+			return 'Please acknowledge the terms above to continue';
+		}
+		if (!hasSufficientBalance) {
+			return `Insufficient credits (${formatPrice(balance)} available, ${formatPrice(orderTotal)} needed)`;
+		}
+		return undefined;
 	}
 
 	return (
 		<>
 			<Button
 				onClick={handleBuyClick}
-				disabled={isLoading || disabled || !hasSufficientBalance}
+				disabled={
+					isLoading ||
+					disabled ||
+					!hasSufficientBalance ||
+					isGatedByAcknowledgment
+				}
 				title={getTooltipText()}
 				className="h-12 w-full cursor-pointer border-2 border-[#beffdb] bg-[#beffdb] text-black hover:bg-[#a3e8c0] hover:text-black"
 			>

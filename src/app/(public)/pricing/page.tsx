@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { NoPurchaseNecessaryFootnote } from '@/components/compliance/no-purchase-necessary-footnote';
 import { LaunchCountdown } from '@/components/pricing/launch-countdown';
 import { PlanCard } from '@/components/pricing/plan-card';
 import { PricingFaq } from '@/components/pricing/pricing-faq';
@@ -117,7 +118,7 @@ export default async function PricingPage() {
 					href="/browse"
 					className="focus-visible:ring-ring/50 inline-flex items-center justify-center rounded-full border border-black bg-white px-12 py-3 text-sm font-semibold text-black transition-colors hover:bg-black hover:text-white focus-visible:ring-[3px] focus-visible:outline-none"
 				>
-					Back to Raffle Browse
+					Back to Sweepstakes Browse
 				</Link>
 			</div>
 		);
@@ -158,7 +159,7 @@ export default async function PricingPage() {
 					className="focus-visible:ring-ring/50 sm:text-h4 inline-flex items-center gap-2 rounded-sm text-lg font-semibold text-black underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
 				>
 					<ArrowLeft className="size-6" aria-hidden />
-					Back to Raffle Browse
+					Back to Sweepstakes Browse
 				</Link>
 			</div>
 
@@ -168,10 +169,14 @@ export default async function PricingPage() {
 			<section className="flex flex-col items-center gap-6 text-center">
 				{/* Eyebrow tagline — Geist Medium on the foreground color. Figma dropped
 				    the earlier emerald accent so the headline isn't pre-announced in a
-				    loud color; the eyebrow now reads as quiet supporting copy. */}
+				    loud color; the eyebrow now reads as quiet supporting copy. "Enhanced
+				    odds" and "Risk-Free" were removed from the prior revision: both
+				    phrases, in a sweepstakes context, read as claims that paid entrants
+				    are advantaged over AMOE entrants. Compliance requires identical odds
+				    across paid and free paths — see /free-entry. */}
 				<p className="text-foreground text-base leading-[1.4] font-medium">
-					Gain access to the best deals. Risk-Free. Subscribe now to start
-					Winning on Top Raffles.
+					Gain access to member benefits across every sweepstakes. Subscribe now
+					to unlock bigger discounts and bonus entries.
 				</p>
 				{/* No trailing period after "Win" — the design treats the three
 				    words as a staccato triplet; a terminal period would kill the
@@ -180,9 +185,9 @@ export default async function PricingPage() {
 					Subscribe Today. Save. Win
 				</h1>
 				<p className="text-foreground max-w-[854px] text-base leading-[1.4] font-normal text-balance">
-					Rafli is LIVE. Subscribe now and lock in your share of exclusive
-					tickets, better discounts, and enhanced odds for Hundreds of new
-					Raffles every Month. Become a founding member of this community NOW.
+					Rafli is LIVE. Subscribe now to lock in exclusive member discounts and
+					bonus entries across hundreds of new sweepstakes every month. Become a
+					founding member of this community NOW.
 				</p>
 				<ul className="flex flex-wrap items-center justify-center gap-4">
 					{HERO_STATS.map(stat => (
@@ -205,6 +210,13 @@ export default async function PricingPage() {
 					))}
 				</ul>
 			</section>
+
+			{/* Equal-prominence AMOE callout — every paid-entry surface on the
+			    platform renders this footnote adjacent to the price so the free
+			    path is never secondary to the paid path. Required by the UK
+			    Gambling Act 2005 §14 test and the US state sweepstakes statutes
+			    that apply identical-odds + equal-prominence rules. */}
+			<NoPurchaseNecessaryFootnote />
 
 			{/* Plan cards — `id="plans"` anchors the launch-countdown CTA so
 			    clicking "Choose your subscription" scrolls back up to the grid.

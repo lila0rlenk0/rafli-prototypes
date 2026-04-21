@@ -131,7 +131,7 @@ const nextConfig: NextConfig = {
 			},
 			{
 				source: '/policy',
-				destination: 'https://www.earnm.com/earnm-privacy-policy',
+				destination: 'https://www.earnm.com/privacy',
 				permanent: false,
 			},
 		];

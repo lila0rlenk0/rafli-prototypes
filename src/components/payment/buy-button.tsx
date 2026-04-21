@@ -43,6 +43,15 @@ export function BuyButton({
 	const quantity = useTicketQuantityStore(state => state.quantity);
 	const isFreeTickets = appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
 
+	// Access Pass acknowledgment gates the paid path only — free-tickets
+	// promos have no consideration so the legal acknowledgment doesn't apply.
+	// Reading from the same store the mobile sticky CTA uses guarantees both
+	// surfaces gate on the same consent flip in the same frame.
+	const isAcknowledged = useTicketQuantityStore(
+		state => state.isAccessPassAcknowledged,
+	);
+	const isGatedByAcknowledgment = !isFreeTickets && !isAcknowledged;
+
 	const {
 		isLoading,
 		showQuestionModal,
@@ -59,9 +68,9 @@ export function BuyButton({
 	function getButtonText(): string {
 		if (isLoading) return 'Processing...';
 		if (isFreeTickets) {
-			return `Claim free ticket${quantity > 1 ? 's' : ''}`;
+			return `Claim bonus entr${quantity > 1 ? 'ies' : 'y'}`;
 		}
-		return 'Enter Now!';
+		return 'Enter now';
 	}
 
 	return (
@@ -72,7 +81,12 @@ export function BuyButton({
 			    locate it by role/label, not id. */}
 			<Button
 				onClick={initiate}
-				disabled={isLoading || disabled}
+				disabled={isLoading || disabled || isGatedByAcknowledgment}
+				title={
+					isGatedByAcknowledgment
+						? 'Please acknowledge the terms above to continue'
+						: undefined
+				}
 				className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
 			>
 				{isLoading ? (

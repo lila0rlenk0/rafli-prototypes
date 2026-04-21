@@ -44,8 +44,8 @@ export function HeroSection() {
 					<SplitText text="Done right!" {...splitTextProps} />
 				</h1>
 				<p className="mb-10 max-w-[1131px] text-xl font-medium text-black lg:text-2xl">
-					Become verified hosts to run prize draws or join any raffle to win a
-					prize!
+					Become a verified host to run prize draws, or enter exclusive raffles
+					— no purchase necessary, free entry always available.
 				</p>
 				<div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center lg:gap-[34px]">
 					<Button

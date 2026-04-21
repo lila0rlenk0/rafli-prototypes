@@ -8,22 +8,42 @@ import { updateEmailPreferences } from '@/services/notification/update-email-pre
 import type { EmailPreferences } from '@/types/email-preferences';
 
 /**
- * Category configuration for email preference toggles
+ * Category configuration for email preference toggles.
  *
- * Maps Figma design categories to backend preference keys.
- * "Marketing emails" maps to raffleLifecycle (product updates),
- * "Security emails" maps to hostNotifications (account security).
+ * All four backend categories are transactional (performance-of-contract
+ * under GDPR Art. 6(1)(b)), not marketing — there is currently no
+ * standalone marketing channel in the email preferences schema, so no
+ * GDPR/PECR consent gate applies to these toggles. They remain opt-out
+ * defaults for user convenience.
+ *
+ * Labels match the underlying purpose of each backend preference so users
+ * understand exactly what they are toggling rather than guessing from a
+ * generic label like "Marketing emails".
  */
 const PREFERENCE_CATEGORIES = [
 	{
 		key: 'raffleLifecycle' as const,
-		label: 'Marketing emails',
-		description: 'Receive emails about new products, features, and more.',
+		label: 'Raffle Updates',
+		description:
+			"Emails when raffles you're entered in start, end, or are cancelled.",
+	},
+	{
+		key: 'prizeUpdates' as const,
+		label: 'Prize Updates',
+		description:
+			'Emails when you win a prize or when prize fulfillment status changes.',
 	},
 	{
 		key: 'hostNotifications' as const,
-		label: 'Security emails',
-		description: 'Receive emails about your account security.',
+		label: 'Host Notifications',
+		description:
+			'Emails about participants, payments, and admin actions on raffles you host.',
+	},
+	{
+		key: 'reviewNotifications' as const,
+		label: 'Reviews',
+		description:
+			'Emails about new reviews left on your hosted raffles or your profile.',
 	},
 ] as const;
 

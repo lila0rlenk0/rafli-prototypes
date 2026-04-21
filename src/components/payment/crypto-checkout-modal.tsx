@@ -1673,7 +1673,7 @@ export function CryptoCheckoutModal({
 
 			// $0 order — promo covered entire amount, backend auto-completed
 			if (!checkoutResult.data.session) {
-				toast.success('Promo applied. Tickets claimed successfully!');
+				toast.success('Promo applied. Bonus entries claimed successfully!');
 				onSuccess?.(confirmedTicketQuantity.current);
 				onOpenChange(false);
 				return;

@@ -8,14 +8,14 @@ import { Button } from '@/components/ui/button';
 import { type XShareConfig, useXShare } from './use-x-share';
 
 /**
- * "Get Free Tickets! Share on X" button for the desktop checkout card.
+ * "Get Bonus Entries! Share on X" button for the desktop checkout card.
  *
  * Flow when xShareEnabled:
  * 1. Click → quiz gate (if questionId set) → POST /x-share-intent → get tokenized share URL
  * 2. Open X intent with that URL
- * 3. Show "I shared it" button → POST /verify-x-share → grant ticket
+ * 3. Show "I shared it" button → POST /verify-x-share → grant bonus entry
  *
- * Falls back to plain share (no ticket) when xShare is disabled or claim is terminal.
+ * Falls back to plain share (no entry grant) when xShare is disabled or claim is terminal.
  */
 export function ShareOnXButton(props: XShareConfig) {
 	const { state, claimUsed, retryCountdown, handleShare, handleVerify } =
@@ -53,7 +53,7 @@ export function ShareOnXButton(props: XShareConfig) {
 				disabled
 				className="mt-2 h-12 w-full rounded-full border-2 border-gray-300 bg-gray-50 text-gray-400"
 			>
-				<p className="font-semibold">Already claimed free entry</p>
+				<p className="font-semibold">Already claimed bonus entry</p>
 			</Button>
 		);
 	}
@@ -74,7 +74,7 @@ export function ShareOnXButton(props: XShareConfig) {
 					<p className="font-semibold">
 						{state === 'verifying'
 							? 'Verifying...'
-							: 'I shared it — Claim my free ticket!'}
+							: 'I shared it — Claim my bonus entry!'}
 					</p>
 				</Button>
 				{isCountingDown ? (
@@ -97,7 +97,7 @@ export function ShareOnXButton(props: XShareConfig) {
 				<p className="font-semibold">
 					{state === 'loading'
 						? 'Preparing...'
-						: 'Get Free Tickets! Share on X'}
+						: 'Get Bonus Entries! Share on X'}
 				</p>
 			</Button>
 

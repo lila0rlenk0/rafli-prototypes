@@ -244,7 +244,7 @@ export function PaymentStatusModal({
 				<DialogHeader className="z-1 flex items-center justify-center space-y-2">
 					<div className="flex justify-center pb-4">{renderTicketIcon()}</div>
 					<DialogTitle className="font-clash-display text-3xl">
-						Tickets confirmed. <br />
+						Entries confirmed. <br />
 						You&apos;re officially in!
 					</DialogTitle>
 					<DialogDescription className="text-center text-black">
@@ -323,7 +323,7 @@ export function PaymentStatusModal({
 				<DialogDescription className="text-center text-black">
 					Your checkout session has expired. No payment was taken.
 					<br />
-					Please try purchasing tickets again.
+					Please try again to enter.
 				</DialogDescription>
 			</DialogHeader>
 		);

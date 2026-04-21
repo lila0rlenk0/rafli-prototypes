@@ -2,6 +2,9 @@
 
 import { useSearchParams } from 'next/navigation';
 
+import { AccessPassAcknowledgment } from '@/components/compliance/access-pass-acknowledgment';
+import { AccessPassDisclaimer } from '@/components/compliance/access-pass-disclaimer';
+import { NoPurchaseNecessaryFootnote } from '@/components/compliance/no-purchase-necessary-footnote';
 import { BuyButton } from '@/components/payment/buy-button';
 import { CreditsBuyButton } from '@/components/payment/credits-buy-button';
 import { CryptoBuyButton } from '@/components/payment/crypto-buy-button';
@@ -37,6 +40,13 @@ interface TicketPurchaseCardProps {
 	userId?: string | null;
 	/** User's available credit balance as decimal string — null when unauthenticated or fetch failed */
 	availableCredits?: string | null;
+	/**
+	 * Raffle title — forwarded to `AccessPassDisclaimer` so the per-raffle
+	 * Access Pass framing names the specific raffle instead of reading as
+	 * generic boilerplate. Required for the reframe layer of the
+	 * compliance defense to be non-pretextual.
+	 */
+	raffleTitle?: string;
 }
 
 /**
@@ -56,6 +66,7 @@ export function TicketPurchaseCard({
 	myTicketsTotal = 0,
 	userId,
 	availableCredits,
+	raffleTitle,
 }: TicketPurchaseCardProps) {
 	const searchParams = useSearchParams();
 	// isExpired not needed — isClosingSoon is only true when secondsRemaining > 0
@@ -116,18 +127,20 @@ export function TicketPurchaseCard({
 
 	return (
 		<div className="mt-0 space-y-4 lg:space-y-2">
-			{/* Price per ticket - hide for free tickets */}
+			{/* Price per entry — reframed from "per ticket" so the pricing line
+			    reads as platform access that includes an entry, not a ticket
+			    sale. Hidden for free-tickets promos where the price is $0. */}
 			{!isFree ? (
 				<div className="flex items-center justify-between">
-					<p className="text-sm text-[#929292]">Per ticket</p>
+					<p className="text-sm text-[#929292]">Per entry</p>
 					<p className="font-clash-display text-2xl font-semibold lg:text-3xl">
 						{formatPrice(price, currency)}
 					</p>
 				</div>
 			) : null}
 
-			{/* Ticket selector - hide for free tickets. Quantity comes from the
-			    shared store, so no callback wiring needed. */}
+			{/* Entry selector — hide for free-tickets promos. Quantity comes
+			    from the shared store so no callback wiring needed. */}
 			{!isFree ? <TicketSelector maxTickets={maxTickets} /> : null}
 
 			{/* Promo code input */}
@@ -144,10 +157,12 @@ export function TicketPurchaseCard({
 				<p className="text-sm text-[#7B7B7B]">Sign in to apply promo codes</p>
 			)}
 
-			{/* Mobile: Selected Tickets row */}
+			{/* Mobile — entry count summary. Mirrors the desktop quantity
+			    indicator since the counter input isn't visible at this scroll
+			    position on mobile. */}
 			{!isFree ? (
 				<div className="flex items-center justify-between lg:hidden">
-					<p className="text-sm text-[#929292]">Selected Tickets</p>
+					<p className="text-sm text-[#929292]">Entries</p>
 					<p className="font-clash-display text-3xl font-semibold">
 						{ticketQuantity}
 					</p>
@@ -178,11 +193,13 @@ export function TicketPurchaseCard({
 				</p>
 			</div>
 
-			{/* Free tickets info */}
+			{/* Bonus entries info — reframed from "free tickets" so promo
+			    grants read as bonus entries, consistent with the AMOE
+			    terminology elsewhere on the page. */}
 			{isFree ? (
 				<p className="text-center text-sm text-green-600">
-					{freeTicketCount} free ticket
-					{freeTicketCount !== 1 ? 's' : ''} with this code
+					{freeTicketCount} bonus entr
+					{freeTicketCount !== 1 ? 'ies' : 'y'} with this code
 				</p>
 			) : null}
 
@@ -192,12 +209,32 @@ export function TicketPurchaseCard({
 				</div>
 			) : null}
 
+			{/* No-purchase-necessary footnote directly under the price — keeps
+			    the free-entry reference adjacent to every monetary figure, which
+			    is what the "equal prominence" pierce test looks at. Rendered for
+			    paid flows only; free-tickets promos already carry their own
+			    "FREE" label and don't need the footnote. */}
+			{!isFree ? <NoPurchaseNecessaryFootnote /> : null}
+
+			{/* Disclaimer + required acknowledgment — rendered only on the
+			    paid path. Free-ticket promos already satisfy AMOE by design
+			    (no consideration), so the acknowledgment gate would only add
+			    friction without legal benefit there. Authenticated guard
+			    mirrors the CTA visibility below — unauth users see the
+			    sign-in button instead of the buy flow. */}
+			{!isFree && isAuthenticated ? (
+				<>
+					<AccessPassDisclaimer raffleTitle={raffleTitle} />
+					<AccessPassAcknowledgment />
+				</>
+			) : null}
+
 			{/* Buy button or Sign In button */}
 			{isAuthenticated ? (
 				<>
 					{/* Stripe primary CTA — desktop only. On mobile the sticky
 					    `StickyBuyTicketsCta` at the bottom of the viewport renders
-					    the equivalent "Enter Now!" button via the same
+					    the equivalent "Enter now" button via the same
 					    `useStripeCheckout` hook, so duplicating the in-card button
 					    on mobile would create two visible primary CTAs. Wrapping
 					    in `hidden lg:block` keeps the desktop layout unchanged

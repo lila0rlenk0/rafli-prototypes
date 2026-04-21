@@ -86,7 +86,7 @@ export default async function OrderDetailPage({
 
 				<div className="grid gap-6 sm:grid-cols-2">
 					<div className="flex flex-col gap-1">
-						<span className="text-muted-foreground text-sm">Raffle</span>
+						<span className="text-muted-foreground text-sm">Sweepstakes</span>
 						<Link
 							href={`/browse/${order.raffleSlug ?? order.raffleId}`}
 							className="flex items-center gap-2 text-black hover:underline"
@@ -97,12 +97,16 @@ export default async function OrderDetailPage({
 					</div>
 
 					<div className="flex flex-col gap-1">
-						<span className="text-muted-foreground text-sm">Tickets</span>
+						<span className="text-muted-foreground text-sm">
+							Entries included
+						</span>
 						<span className="font-medium">{order.ticketQuantity}</span>
 					</div>
 
 					<div className="flex flex-col gap-1">
-						<span className="text-muted-foreground text-sm">Unit Price</span>
+						<span className="text-muted-foreground text-sm">
+							Per-entry price
+						</span>
 						<span className="font-medium">
 							{formatAmount(order.unitPrice, order.currency)}
 						</span>

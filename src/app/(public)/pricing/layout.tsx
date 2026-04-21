@@ -15,14 +15,14 @@ import { UserStoreProvider } from '@/providers/user-store-provider';
 export const metadata: Metadata = {
 	title: 'Pricing | Rafli',
 	description:
-		'Subscribe to Rafli and unlock exclusive subscriber-only raffles, ticket discounts, and monthly credits. Launch pricing for early adopters.',
+		'Subscribe to Rafli and unlock exclusive subscriber-only sweepstakes, entry discounts, and monthly credits. Launch pricing for early adopters.',
 	alternates: {
 		canonical: `${env.APP_URL}/pricing`,
 	},
 	openGraph: {
 		title: 'Subscribe Today. Save. Win. | Rafli',
 		description:
-			'Get access to subscriber-only raffles, ticket discounts, and monthly credits when you subscribe to Rafli.',
+			'Get access to subscriber-only sweepstakes, entry discounts, and monthly credits when you subscribe to Rafli.',
 		url: `${env.APP_URL}/pricing`,
 		siteName: 'Rafli',
 		type: 'website',
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 		card: 'summary_large_image',
 		title: 'Subscribe Today. Save. Win.',
 		description:
-			'Lock in permanent ticket discounts and free weekly pool entries with a one-time Rafli subscription.',
+			'Lock in permanent entry discounts and free weekly pool entries with a one-time Rafli subscription.',
 	},
 	robots: {
 		index: true,

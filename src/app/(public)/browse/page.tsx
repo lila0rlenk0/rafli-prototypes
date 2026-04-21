@@ -219,7 +219,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			// "selected raffle" because by then the user has committed to one;
 			// here no raffle is picked yet.
 			topBanner={
-				<MarqueeBanner message="Share any raffle on X and earn free ticket entries!" />
+				<MarqueeBanner message="Share any raffle on X and earn bonus entries!" />
 			}
 		>
 			<div className="z-10 pt-0 pb-8 sm:py-8">

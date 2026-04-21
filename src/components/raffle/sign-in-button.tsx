@@ -28,7 +28,7 @@ export function SignInToBuyButton() {
 			className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
 		>
 			<Link href={getSignInUrl()}>
-				<p className="font-semibold">Sign in to buy tickets</p>
+				<p className="font-semibold">Sign in to enter</p>
 			</Link>
 		</Button>
 	);

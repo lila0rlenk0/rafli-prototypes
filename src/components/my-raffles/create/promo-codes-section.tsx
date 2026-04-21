@@ -134,7 +134,7 @@ export function PromoCodesSection() {
 					Invite more people with promo codes
 				</h2>
 				<p className="text-sm text-gray-600">
-					Create promotional codes for discounts or free tickets to boost
+					Create promotional codes for discounts or bonus entries to boost
 					participation in your raffle.
 				</p>
 			</div>

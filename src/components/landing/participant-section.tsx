@@ -64,7 +64,7 @@ export function ParticipantSection() {
 								WANT TO PARTICIPATE?
 							</p>
 							<SplitText
-								text="Join Raffles With Full Confidence"
+								text="Unlock Exclusive Raffle Access"
 								className="font-clash-display text-dark mb-10 text-4xl leading-none font-semibold tracking-[0.8px] lg:text-[72px]"
 								delay={50}
 								duration={1.25}

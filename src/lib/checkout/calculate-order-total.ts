@@ -3,7 +3,7 @@ import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 /**
  * Pure-function order math used by both the inline `TicketPurchaseCard`
  * (price breakdown) and the mobile `StickyBuyTicketsCta` (inline price label
- * on the "Enter Now!" button). Centralizing the calculation guarantees the
+ * on the "Get Access Pass" button). Centralizing the calculation guarantees the
  * sticky and the card never display divergent totals when the user has a
  * promo applied.
  */
@@ -132,7 +132,7 @@ function computeDiscount(
 /**
  * Formats a price in the user's locale with the given currency code.
  * Pulled out of `TicketPurchaseCard` so the sticky CTA can render the
- * inline "Enter Now! · $X.XX" label using the same formatting rules.
+ * inline "Get Access Pass · $X.XX" label using the same formatting rules.
  *
  * @param amount - Amount in major currency units
  * @param currencyCode - ISO 4217 currency code (e.g. "USD")

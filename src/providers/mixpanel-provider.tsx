@@ -16,6 +16,8 @@ import { z } from 'zod';
 
 import { identify, initMixpanel, reset } from '@/lib/analytics/mixpanel-client';
 import { AUTH_COOKIES } from '@/lib/auth/config';
+import { useCookieConsentStore } from '@/providers/cookie-consent-store-provider';
+import { COOKIE_CONSENT_STATUS } from '@/store/cookie-consent-store';
 
 /**
  * Minimal schema for session cookie — excludes server-only fields
@@ -67,14 +69,32 @@ export function MixpanelProvider({ children }: { children: ReactNode }) {
 	// App Router provides reactive pathname — effect fires only on actual
 	// route transitions instead of running after every render.
 	const pathname = usePathname();
+	// GDPR/PECR gate — analytics SDK must not load until the user explicitly
+	// accepts. `status === 'accepted'` is the single source of truth shared
+	// with the visible `CookieConsentBanner`.
+	const cookieConsentStatus = useCookieConsentStore(state => state.status);
+	const hasCookieConsent =
+		cookieConsentStatus === COOKIE_CONSENT_STATUS.ACCEPTED;
 
 	// Ref instead of state: identity tracking is fire-and-forget metadata,
 	// changes should NOT trigger re-renders of the entire subtree.
 	const identifiedUserId = useRef<string | null>(null);
 
-	// mount: dynamically import mixpanel-browser so the ~40KB bundle
-	// is deferred until after hydration completes.
+	// Init fires exactly once — when consent first flips to accepted. The
+	// second dep (`hasCookieConsent`) flipping from false → true is the
+	// load signal; flipping back to false on a later "revoke" flow would
+	// not un-init a live SDK (Mixpanel holds no callable teardown), but
+	// the identification effect below will stop calling `identify()` once
+	// the user is signed out and the ref clears. Accept the one-way nature:
+	// future revoke support should trigger a full page reload, not a
+	// teardown attempt.
+	//
+	// Deps: [hasCookieConsent] — effect is a no-op until consent is granted.
+	// Without this gate the SDK would load unconditionally on mount (old
+	// behavior), violating the cookie-banner contract documented in
+	// /privacy §5.
 	useEffect(() => {
+		if (!hasCookieConsent) return;
 		let cancelled = false;
 
 		void initMixpanel()
@@ -90,7 +110,7 @@ export function MixpanelProvider({ children }: { children: ReactNode }) {
 		return () => {
 			cancelled = true;
 		};
-	}, []);
+	}, [hasCookieConsent]);
 
 	// Sync Mixpanel identity on every navigation.
 	// Deps: [isReady, pathname] — fires once SDK initializes, then on each

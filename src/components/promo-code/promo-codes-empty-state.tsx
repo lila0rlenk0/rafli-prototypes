@@ -30,7 +30,7 @@ export function PromoCodesEmptyState({
 			<p className="mt-1 max-w-sm text-sm text-gray-500">
 				{isReadOnly
 					? 'No promo codes were created for this raffle.'
-					: 'Create one to offer discounts or free tickets to participants.'}
+					: 'Create one to offer discounts or bonus entries to participants.'}
 			</p>
 
 			{!isReadOnly ? (

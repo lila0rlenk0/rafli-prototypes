@@ -161,7 +161,7 @@ export function PlanCard({
 						{plan.metadata.badgeText}
 					</span>
 					<span className="mt-1 text-xs font-semibold text-black sm:text-sm">
-						on every ticket
+						on every entry
 					</span>
 				</div>
 			) : null}

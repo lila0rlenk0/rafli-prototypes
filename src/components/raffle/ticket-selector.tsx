@@ -106,7 +106,7 @@ export function TicketSelector({ maxTickets }: TicketSelectorProps) {
 				<button
 					onClick={() => updateQuantity(quantity - 1)}
 					disabled={decrementDisabled}
-					aria-label="Decrease ticket quantity"
+					aria-label="Decrease entry quantity"
 					className="cursor-pointer px-2 disabled:cursor-not-allowed disabled:opacity-30"
 				>
 					<Minus className="size-5" />
@@ -120,12 +120,12 @@ export function TicketSelector({ maxTickets }: TicketSelectorProps) {
 					onBlur={handleInputBlur}
 					onKeyDown={handleInputKeyDown}
 					className="w-12 flex-1 [appearance:textfield] border-none bg-transparent text-center outline-none focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-					aria-label="Ticket quantity"
+					aria-label="Entry quantity"
 				/>
 				<button
 					onClick={() => updateQuantity(quantity + 1)}
 					disabled={incrementDisabled}
-					aria-label="Increase ticket quantity"
+					aria-label="Increase entry quantity"
 					className="cursor-pointer px-2 disabled:cursor-not-allowed disabled:opacity-30"
 				>
 					<Plus className="size-5" />
@@ -135,12 +135,12 @@ export function TicketSelector({ maxTickets }: TicketSelectorProps) {
 			{/* Desktop: inline counter + set-to bundle buttons */}
 			<div className="hidden lg:block">
 				<div className="flex items-center justify-between">
-					<p className="text-sm text-[#7B7B7B]">Number of tickets</p>
+					<p className="text-sm text-[#7B7B7B]">Number of entries</p>
 					<div className="flex items-center justify-center gap-2 rounded-full border border-black px-4 py-1">
 						<button
 							onClick={() => updateQuantity(quantity - 1)}
 							disabled={decrementDisabled}
-							aria-label="Decrease ticket quantity"
+							aria-label="Decrease entry quantity"
 							aria-disabled={decrementDisabled}
 							className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
 						>
@@ -155,12 +155,12 @@ export function TicketSelector({ maxTickets }: TicketSelectorProps) {
 							onBlur={handleInputBlur}
 							onKeyDown={handleInputKeyDown}
 							className="w-8 [appearance:textfield] border-none bg-transparent text-center outline-none focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-							aria-label="Ticket quantity"
+							aria-label="Entry quantity"
 						/>
 						<button
 							onClick={() => updateQuantity(quantity + 1)}
 							disabled={incrementDisabled}
-							aria-label="Increase ticket quantity"
+							aria-label="Increase entry quantity"
 							aria-disabled={incrementDisabled}
 							className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
 						>
@@ -182,7 +182,7 @@ export function TicketSelector({ maxTickets }: TicketSelectorProps) {
 									: 'border-black hover:bg-[#C4EDFF] disabled:hover:bg-transparent',
 							)}
 						>
-							{size} tickets
+							{size} entries
 						</button>
 					))}
 				</div>

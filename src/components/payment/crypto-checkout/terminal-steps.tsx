@@ -55,7 +55,7 @@ export function SuccessStep({
 					Payment confirmed!
 				</p>
 				<p className="text-center text-sm text-[#7B7B7B]">
-					Your tickets will appear below shortly — it may take 1-2 minutes.
+					Your entries will appear below shortly — it may take 1-2 minutes.
 				</p>
 			</div>
 			<TxLink

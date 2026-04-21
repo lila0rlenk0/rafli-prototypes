@@ -20,7 +20,7 @@ const FAQ_ITEMS: readonly { question: string; answer: string }[] = [
 	{
 		question: 'What is a credit subscription?',
 		answer:
-			'You pay once and receive a permanent ticket discount plus free weekly pool entries. There is no recurring charge unless you choose to top up.',
+			'You pay once and receive a permanent entry discount plus free weekly pool entries. There is no recurring charge unless you choose to top up.',
 	},
 	{
 		question: 'Does my subscription auto-renew?',
@@ -28,14 +28,14 @@ const FAQ_ITEMS: readonly { question: string; answer: string }[] = [
 			'No. Each subscription is a one-time purchase. You top up manually whenever you want.',
 	},
 	{
-		question: 'Can I use my discount on any raffle?',
+		question: 'Can I use my discount on any sweepstakes?',
 		answer:
-			'Yes. Your discount applies to every active raffle on the platform with no restrictions.',
+			'Yes. Your discount applies to every active sweepstakes on the platform with no restrictions.',
 	},
 	{
-		question: 'Do my free pool tickets refresh?',
+		question: 'Do my free pool entries refresh?',
 		answer:
-			'Yes. Your free weekly pool tickets reset every week for as long as your subscription is active.',
+			'Yes. Your free weekly pool entries reset every week for as long as your subscription is active.',
 	},
 ];
 

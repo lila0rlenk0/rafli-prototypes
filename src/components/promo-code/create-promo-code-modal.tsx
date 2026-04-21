@@ -219,7 +219,7 @@ export function CreatePromoCodeModal({
 	function getValueLabel(): string {
 		switch (watchType) {
 			case PROMO_CODE_TYPE.FREE_TICKETS:
-				return 'Number of tickets';
+				return 'Number of bonus entries';
 			case PROMO_CODE_TYPE.DISCOUNT_FIXED:
 				return 'Discount amount ($)';
 			case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
@@ -445,7 +445,7 @@ export function CreatePromoCodeModal({
 						Create Promo Codes
 					</DialogTitle>
 					<DialogDescription>
-						Create promotional codes for discounts or free tickets.
+						Create promotional codes for discounts or bonus entries.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -521,7 +521,7 @@ export function CreatePromoCodeModal({
 						</RadioGroup>
 						{!allowFreeTickets ? (
 							<p className="text-xs text-gray-500">
-								Free tickets require a raffle question.
+								Bonus entries require a raffle question.
 							</p>
 						) : null}
 					</div>

@@ -55,7 +55,7 @@ const MAIN_PATH_STEPS: readonly StepDescriptor[] = [
 		// Actor: winner. Gate: ConfirmReceivedCommand, or the cron-driven
 		// AutoConfirmDeliveredCommand after AUTO_CONFIRM_THRESHOLD_MS (48h)
 		// so silent winners don't stall the flow indefinitely.
-		description: 'Winner confirms receipt. Auto-confirms in 48h.',
+		description: 'Winner confirms receipt.',
 	},
 	{
 		status: WINNING_STATUS.RECEIVED,

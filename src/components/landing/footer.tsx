@@ -30,7 +30,50 @@ export function Footer() {
 					>
 						Terms of Service
 					</Link>
+					<Link
+						href="/privacy"
+						className="text-lg font-medium text-black underline"
+					>
+						Privacy Policy
+					</Link>
+					<Link
+						href="/free-entry"
+						className="text-lg font-medium text-black underline"
+					>
+						Free Entry (No Purchase Necessary)
+					</Link>
 				</div>
+
+				{/* Responsible-play helpline links — required for US/UK
+				    consumer-protection expectations on gambling-adjacent
+				    platforms. External anchors (new tab) because the target
+				    orgs are outside our domain. */}
+				<div className="mb-4 flex flex-col items-center gap-1 text-sm text-[#4a4a4a]">
+					<p className="font-semibold">Play responsibly</p>
+					<p>
+						US:{' '}
+						<a
+							href="https://www.ncpgambling.org/help-treatment/helpline/"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="underline"
+						>
+							NCPG 1-800-GAMBLER
+						</a>
+					</p>
+					<p>
+						UK:{' '}
+						<a
+							href="https://www.gamcare.org.uk/"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="underline"
+						>
+							GamCare
+						</a>
+					</p>
+				</div>
+
 				<p className="text-lg leading-8 font-medium tracking-wide text-[#7b7b7b]">
 					Rafli is a subsidiary of the EARN&apos;M Foundation
 					<br />

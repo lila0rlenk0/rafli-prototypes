@@ -33,7 +33,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 			<table className="w-full min-w-[500px]">
 				<thead>
 					<tr className="border-b border-gray-200 text-left text-sm text-gray-500">
-						<th className="pb-3 font-medium">Raffle</th>
+						<th className="pb-3 font-medium">Sweepstakes</th>
 						<th className="pb-3 font-medium">Amount</th>
 						<th className="pb-3 font-medium">Status</th>
 						<th className="pb-3 font-medium">Date</th>

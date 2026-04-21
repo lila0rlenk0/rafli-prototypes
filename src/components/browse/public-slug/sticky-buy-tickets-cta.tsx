@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
+import { NoPurchaseNecessaryFootnote } from '@/components/compliance/no-purchase-necessary-footnote';
 import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,8 +41,8 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
  *
  * Three rendering branches, in priority order:
  *
- * 1. **Unauthenticated** — collapses to a single "Sign in to buy tickets"
- *    Link. Guests can't purchase and can't earn an attributed X share, so
+ * 1. **Unauthenticated** — collapses to a single "Sign in to enter" Link.
+ *    Guests can't purchase and can't earn an attributed X share, so
  *    bundles, share, and the buy CTA are all hidden — they'd be misleading.
  * 2. **Host viewing own raffle** (`disabled=true`) — returns null entirely.
  *    The inline `TicketPurchaseCard` already renders disabled BuyButton +
@@ -51,8 +52,8 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
  *    "we don't have to show them in both places on mobile" — the card is
  *    the single source of truth for the host case.
  * 3. **Authenticated, non-host** — full bar: bundle quick-picks, primary
- *    "Enter Now! · $X.XX" CTA driven by the same `useStripeCheckout` hook as
- *    the desktop in-card BuyButton, and the "Get Free Tickets! Share on X"
+ *    "Enter now · $X.XX" CTA driven by the same `useStripeCheckout` hook as
+ *    the desktop in-card BuyButton, and the "Get Bonus Entries! Share on X"
  *    secondary CTA (with claim-flow states).
  *
  * Hidden on desktop (`lg:hidden`) where the sidebar checkout is always
@@ -85,6 +86,12 @@ export function StickyBuyTicketsCta({
 	const quantity = useTicketQuantityStore(state => state.quantity);
 	const incrementBy = useTicketQuantityStore(state => state.incrementBy);
 	const appliedPromo = useTicketQuantityStore(state => state.appliedPromo);
+	// Access Pass acknowledgment gates the paid sticky CTA — mirrors the
+	// desktop BuyButton gate so both breakpoints honor the same legal
+	// consent flip. Free-tickets promos bypass the gate (no consideration).
+	const isAccessPassAcknowledged = useTicketQuantityStore(
+		state => state.isAccessPassAcknowledged,
+	);
 
 	// 0 means unlimited participants — bundle clicks then never need clamping.
 	const isUnlimited = availableTickets === 0;
@@ -159,17 +166,34 @@ export function StickyBuyTicketsCta({
 	});
 
 	/**
-	 * Builds the primary CTA label. Free-tickets promos flip to a "Claim free
-	 * ticket(s)" copy with the granted count, mirroring the desktop BuyButton.
-	 * Otherwise we render "Enter Now! · $X.XX" so the user always sees what
-	 * they pay even when scrolled past the inline card breakdown.
+	 * Builds the primary CTA label. Free-tickets promos flip to a "Claim
+	 * bonus entries" copy with the granted count, mirroring the desktop
+	 * BuyButton. Otherwise we render "Enter now · $X.XX" so the user
+	 * always sees what they pay even when scrolled past the inline card
+	 * breakdown. The legal backbone is the "No Purchase Necessary" + AMOE
+	 * pattern exposed via the disclaimer shown above in the card — the
+	 * button label itself is intentionally neutral.
 	 */
 	function getPrimaryCtaLabel(): string {
 		if (isCheckoutLoading) return 'Processing...';
 		if (isFreeTicketsPromo) {
-			return `Claim free ticket${freeTicketCount > 1 ? 's' : ''}`;
+			return `Claim bonus entr${freeTicketCount > 1 ? 'ies' : 'y'}`;
 		}
-		return `Enter Now! · ${formatPrice(total, currency)}`;
+		return `Enter now · ${formatPrice(total, currency)}`;
+	}
+
+	// Sticky primary disabled when the checkout is in-flight OR the user
+	// hasn't ticked the Access Pass acknowledgment in the desktop/mobile
+	// inline card. Free-tickets promos carry no consideration so the gate
+	// doesn't apply there.
+	const isPrimaryCtaDisabled =
+		isCheckoutLoading || (!isFreeTicketsPromo && !isAccessPassAcknowledged);
+
+	function getPrimaryCtaTitle(): string | undefined {
+		if (isPrimaryCtaDisabled && !isCheckoutLoading && !isFreeTicketsPromo) {
+			return 'Please acknowledge the terms above to continue';
+		}
+		return undefined;
 	}
 
 	/**
@@ -185,7 +209,7 @@ export function StickyBuyTicketsCta({
 					disabled
 					className="h-12 w-full rounded-full border-2 border-gray-300 bg-gray-50 text-gray-400"
 				>
-					<p className="font-semibold">Already claimed free entry</p>
+					<p className="font-semibold">Already claimed bonus entry</p>
 				</Button>
 			);
 		}
@@ -203,7 +227,7 @@ export function StickyBuyTicketsCta({
 						<p className="font-semibold">
 							{state === 'verifying'
 								? 'Verifying...'
-								: 'I shared it — Claim my free ticket!'}
+								: 'I shared it — Claim my bonus entry!'}
 						</p>
 					</Button>
 					{retryCountdown > 0 && state === 'shared' ? (
@@ -227,7 +251,7 @@ export function StickyBuyTicketsCta({
 					<p className="font-semibold">
 						{state === 'loading'
 							? 'Preparing...'
-							: 'Get Free Tickets! Share on X'}
+							: 'Get Bonus Entries! Share on X'}
 					</p>
 				</Button>
 
@@ -262,9 +286,13 @@ export function StickyBuyTicketsCta({
 					className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
 				>
 					<Link href={signInUrl}>
-						<p className="font-semibold">Sign in to buy tickets</p>
+						<p className="font-semibold">Sign in to enter</p>
 					</Link>
 				</Button>
+				{/* Footnote preserves the equal-prominence free-entry reference
+				    even in the signed-out state. The user needs to see the AMOE
+				    link regardless of auth — legal exposure is the same. */}
+				<NoPurchaseNecessaryFootnote />
 			</div>
 		);
 	}
@@ -310,7 +338,8 @@ export function StickyBuyTicketsCta({
 			<Button
 				id="checkout-action"
 				onClick={initiateCheckout}
-				disabled={isCheckoutLoading}
+				disabled={isPrimaryCtaDisabled}
+				title={getPrimaryCtaTitle()}
 				className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
 			>
 				{isCheckoutLoading ? (
@@ -318,6 +347,14 @@ export function StickyBuyTicketsCta({
 				) : null}
 				<p className="font-semibold">{getPrimaryCtaLabel()}</p>
 			</Button>
+
+			{/* Compact no-purchase-necessary footnote — mobile viewports lose
+			    the inline card breakdown from view once the user scrolls, so
+			    anchoring the free-entry reference directly below the primary
+			    price-bearing CTA keeps the legal prominence test satisfied.
+			    Hidden for free-tickets promos where the line would add noise
+			    on a $0 flow. */}
+			{!isFreeTicketsPromo ? <NoPurchaseNecessaryFootnote /> : null}
 
 			{/* Question modal — owned by the sticky's `useStripeCheckout`
 			    instance. Only renders when the raffle has a question and the

@@ -79,13 +79,13 @@ function getIntentErrorMessage(errorCode: string): string {
 function getVerifyErrorMessage(errorCode: string): string {
 	switch (errorCode) {
 		case 'core:xshare:expired':
-			return 'Your share link has expired. Each raffle allows one free ticket share attempt.';
+			return 'Your share link has expired. Each raffle allows one bonus-entry share attempt.';
 		case 'core:xshare:rate-limited':
 			return 'Please wait a few seconds before trying again.';
 		case 'core:xshare:not-found':
 			return 'No share claim found. Tap "Share on X" to start.';
 		case 'core:xshare:disabled':
-			return 'Free ticket sharing was turned off for this raffle.';
+			return 'Bonus-entry sharing was turned off for this raffle.';
 		case 'core:raffle:not-live':
 			return 'This raffle is no longer active.';
 		case 'core:raffle:not-found':

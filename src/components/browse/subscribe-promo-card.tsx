@@ -15,7 +15,7 @@ import Link from 'next/link';
 //
 // Size ladder (paired with card padding in the <aside> className below):
 //   - base `text-[26px]` — mobile, card ~px-6, internal ~280–460px. Fits
-//     the longer line "Up To 20% OFF on tickets!" (~25 chars) comfortably.
+//     the longer line "Up To 20% OFF on every entry!" (~29 chars) comfortably.
 //   - `sm:text-[30px]` — tablet onward gains breathing room (sm:px-10),
 //     internal ~420–480px. Both lines fit, headline reads larger.
 //   - `lg:text-[28px]` — card becomes the right rail (440–540px column,
@@ -97,7 +97,7 @@ export function SubscribePromoCard({
 				<h2 id="subscribe-promo-heading" className={HEADLINE_CLASSES}>
 					Subscribe Now. Save. Win.
 				</h2>
-				<p className={HEADLINE_CLASSES}>Up To 20% OFF on tickets!</p>
+				<p className={HEADLINE_CLASSES}>Up To 20% OFF on every entry!</p>
 			</hgroup>
 			{/* Pill CTA is the only interactive surface on the card. Deliberately
 			    NOT wrapping the whole `<aside>` in a Link because:

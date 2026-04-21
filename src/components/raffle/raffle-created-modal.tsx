@@ -91,9 +91,8 @@ export function RaffleCreatedModal({
 					<DialogDescription className="max-w-md text-center text-black">
 						{startsToday ? (
 							<>
-								Everything&apos;s set — participants can now join and start
-								buying tickets. Track entries and engagement from your
-								dashboard.
+								Everything&apos;s set — participants can now join and enter.
+								Track entries and engagement from your dashboard.
 							</>
 						) : (
 							<>

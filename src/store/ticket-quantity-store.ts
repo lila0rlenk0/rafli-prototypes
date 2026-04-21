@@ -10,7 +10,7 @@ import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 //   at the bottom of the viewport, while the counter input lives inside the
 //   inline `TicketPurchaseCard`. Both subtrees need to read and write the same
 //   `quantity` value, and they sit in distant branches of the page tree.
-// - The mobile sticky CTA "Enter Now!" button drives the same Stripe checkout
+// - The mobile sticky CTA "Get Access Pass" button drives the same Stripe checkout
 //   flow as the desktop in-card BuyButton via the shared `useStripeCheckout`
 //   hook. That hook needs to read both `quantity` and `appliedPromo` to build
 //   the order. Promo state can't live in the card alone — the sticky needs to
@@ -32,6 +32,16 @@ export interface TicketQuantityStoreState {
 	 * draft on `onClear` — external invalidation needs a re-mount signal.
 	 */
 	readonly promoResetVersion: number;
+	/**
+	 * Access Pass acknowledgment — required before any paid buy CTA is
+	 * clickable. Legal framing: the user is purchasing platform access that
+	 * includes bonus raffle entries, NOT a raffle ticket. The checkbox
+	 * captures explicit intent before checkout and must be scoped per-raffle
+	 * page mount (store is created fresh each time the provider mounts), so
+	 * every raffle visit surfaces the disclaimer again — a transient consent
+	 * that does not carry across sessions or raffles.
+	 */
+	readonly isAccessPassAcknowledged: boolean;
 }
 
 export interface TicketQuantityStoreActions {
@@ -40,16 +50,18 @@ export interface TicketQuantityStoreActions {
 	readonly reset: () => void;
 	readonly applyPromo: (promo: ValidatedPromoCode) => void;
 	readonly clearPromo: () => void;
+	readonly setAccessPassAcknowledged: (acknowledged: boolean) => void;
 }
 
 export type TicketQuantityStore = TicketQuantityStoreState &
 	TicketQuantityStoreActions;
 
-/** Default state — quantity starts at 1, the minimum purchasable */
+/** Default state — quantity starts at 1, acknowledgment resets per raffle mount */
 export const defaultInitState: Readonly<TicketQuantityStoreState> = {
 	quantity: 1,
 	appliedPromo: null,
 	promoResetVersion: 0,
+	isAccessPassAcknowledged: false,
 };
 
 /**
@@ -115,6 +127,15 @@ export function createTicketQuantityStore(
 				promoResetVersion: state.promoResetVersion + 1,
 				quantity: wasFreeTickets ? 1 : state.quantity,
 			}));
+		},
+
+		// Toggle Access Pass acknowledgment from the checkbox rendered inside
+		// `TicketPurchaseCard`. Both the desktop BuyButton and the mobile
+		// StickyBuyTicketsCta subscribe to `isAccessPassAcknowledged` and
+		// disable themselves until this flips to true — single source of truth
+		// for the legal consent gate across breakpoints, no prop drilling.
+		setAccessPassAcknowledged: acknowledged => {
+			set({ isAccessPassAcknowledged: acknowledged });
 		},
 	}));
 }

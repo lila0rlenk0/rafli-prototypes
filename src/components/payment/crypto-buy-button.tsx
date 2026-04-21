@@ -21,6 +21,7 @@ import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
 import { Button } from '@/components/ui/button';
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
+import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { usePollMyTicketCodes } from '@/services/ticket/use-poll-my-ticket-codes';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
@@ -122,6 +123,14 @@ export function CryptoBuyButton({
 	const isConnected = hasMounted && appKitIsConnected;
 	const canConnect = hasMounted && isAppKitReady;
 	const isConnecting = hasMounted && walletStatus === 'connecting';
+
+	// Access Pass acknowledgment — the state machine maps this into a
+	// distinct 'needs-acknowledgment' variant so the user sees an actionable
+	// label ("Acknowledge terms to continue") instead of a silent disabled
+	// button. Shared across desktop card + mobile sticky CTA via the store.
+	const isAccessPassAcknowledged = useTicketQuantityStore(
+		state => state.isAccessPassAcknowledged,
+	);
 
 	const [showQuestionModal, setShowQuestionModal] = useState(false);
 	const [showCryptoModal, setShowCryptoModal] = useState(false);
@@ -291,7 +300,10 @@ export function CryptoBuyButton({
 
 	/**
 	 * Button class — amber border when confirming to draw attention to
-	 * pending tx.
+	 * pending tx; greyed out for both `preparing` (wallet SDK loading) and
+	 * `needs-acknowledgment` (user hasn't ticked the consent box yet)
+	 * because both represent "not actionable yet" states that deserve the
+	 * same muted treatment.
 	 */
 	function getButtonClass(
 		variant: ReturnType<typeof getCryptoBuyButtonUiState>['variant'],
@@ -300,7 +312,7 @@ export function CryptoBuyButton({
 		if (variant === 'confirming') {
 			return `${base} border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100`;
 		}
-		if (variant === 'preparing') {
+		if (variant === 'preparing' || variant === 'needs-acknowledgment') {
 			return `${base} cursor-not-allowed border-[#D4D4D4] bg-[#F5F5F5] text-[#7B7B7B] hover:bg-[#F5F5F5] hover:text-[#7B7B7B]`;
 		}
 		return `${base} border-black bg-white text-black hover:bg-black hover:text-white`;
@@ -318,6 +330,7 @@ export function CryptoBuyButton({
 			isConnected,
 			canOpenConnectModal: canConnect,
 			disabled,
+			isAccessPassAcknowledged,
 		});
 
 		return (

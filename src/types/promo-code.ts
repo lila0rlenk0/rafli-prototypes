@@ -159,10 +159,10 @@ export function getPromoCodeStatus(code: PromoCode): PromoCodeStatus {
 }
 
 /**
- * Formats promo code value for display.
+ * Formats promo code value for display in the host-side promo table.
  *
  * @param code - Promo code object
- * @returns Formatted value string (e.g., "3 tickets", "$5.00", "10%")
+ * @returns Formatted value string (e.g., "3 entries", "$5.00", "10%")
  */
 export function formatPromoCodeValue(code: PromoCode): string {
 	const value = parseFloat(code.value);
@@ -170,7 +170,7 @@ export function formatPromoCodeValue(code: PromoCode): string {
 	// Step 1: Format by promo type — exhaustive switch ensures all types handled.
 	switch (code.type) {
 		case PROMO_CODE_TYPE.FREE_TICKETS:
-			return `${Math.floor(value)} ticket${value !== 1 ? 's' : ''}`;
+			return `${Math.floor(value)} entr${value !== 1 ? 'ies' : 'y'}`;
 		case PROMO_CODE_TYPE.DISCOUNT_FIXED:
 			return `$${value.toFixed(2)}`;
 		case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
@@ -245,10 +245,15 @@ export type ValidatedPromoCode = z.infer<typeof validatedPromoCodeSchema>;
  * Gets human-readable description for a validated promo code.
  *
  * Note: For discount_percent, backend returns per-ticket discount amount
- * (not the percentage), so we show it as a per-ticket discount.
+ * (not the percentage), so we show it as a per-entry discount.
+ *
+ * Legal framing: "free tickets" is reframed to "bonus entries" so promo
+ * grants read as bundled entries included with the Access Pass, not
+ * standalone ticket purchases. Matches the Access Pass disclaimer
+ * rendered above the buy CTA.
  *
  * @param promo - Validated promo code
- * @returns Description string for display (e.g., "3 free tickets", "$5.00 off your order")
+ * @returns Description string for display (e.g., "3 bonus entries", "$5.00 off your order")
  */
 export function getPromoCodeDescription(promo: ValidatedPromoCode): string {
 	const value = parseFloat(promo.value);
@@ -256,12 +261,12 @@ export function getPromoCodeDescription(promo: ValidatedPromoCode): string {
 	// Step 1: Format description by promo type — exhaustive switch.
 	switch (promo.type) {
 		case PROMO_CODE_TYPE.FREE_TICKETS:
-			return `${Math.floor(value)} free ticket${value !== 1 ? 's' : ''}`;
+			return `${Math.floor(value)} bonus entr${value !== 1 ? 'ies' : 'y'}`;
 		case PROMO_CODE_TYPE.DISCOUNT_FIXED:
 			return `$${value.toFixed(2)} off your order`;
 		case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
 			// Backend returns per-ticket discount amount, not percentage
-			return `$${value.toFixed(2)} off per ticket`;
+			return `$${value.toFixed(2)} off per entry`;
 		default: {
 			// Exhaustiveness guard — TS errors here if a new type is added to PromoCodeType
 			const _exhaustive: never = promo.type;

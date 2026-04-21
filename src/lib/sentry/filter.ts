@@ -412,6 +412,18 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	// `wallet_requestPermissions` exchange. User-cancellation path, not a
 	// defect. See Sentry RAFLI-T.
 	'Unsupported or empty accounts for namespace',
+
+	// TronLink wallet extension throws `"'set' on proxy: trap returned
+	// falsish for property 'tronlinkParams'"` from its injected content
+	// script during window probing. `tronlinkParams` is a TronLink-exclusive
+	// identifier (defined in the TRON Developer Hub as the `window.tronLink`
+	// interface type) — unlike the extension's content-script path
+	// `injected/injected.js`, which is shared with unrelated extensions
+	// (Better Pronote, SAP Build Process Automation). Anchoring on the
+	// property name instead of the path gives precise attribution without
+	// collateral-drop risk. Also runs in Sentry's cheaper `ignoreErrors`
+	// prefilter via `BROWSER_NOISE_PATTERNS` export. See Sentry RAFLI-18.
+	'tronlinkParams',
 ];
 
 // ==========================================

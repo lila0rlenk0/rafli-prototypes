@@ -508,6 +508,25 @@ describe('filterEvent', () => {
 			expect(result).toBeNull();
 		});
 
+		// RAFLI-18 — TronLink wallet extension writes to a Proxy-wrapped
+		// global (`window.tronLink.tronlinkParams`) whose `set` trap returns
+		// `false`, throwing a TypeError into page scope during TronLink's
+		// window probing. Anchored on the `tronlinkParams` property name
+		// (TronLink-exclusive identifier) instead of the extension's
+		// content-script path `injected/injected.js`, which is also shipped
+		// by unrelated extensions (Better Pronote, SAP Build Process
+		// Automation) — a path-only filter would risk dropping real app
+		// errors whose stacks interleave with those extensions.
+		test('drops TronLink tronlinkParams proxy TypeError (Sentry RAFLI-18)', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new TypeError(
+					"'set' on proxy: trap returned falsish for property 'tronlinkParams'",
+				),
+			);
+			expect(filterEvent(event, hint)).toBeNull();
+		});
+
 		// Negative case — a genuine app error with a `{code, message}`-shaped
 		// title from our own ServiceResponse must NOT be swept up. The
 		// pattern is narrowly anchored to Sentry's synthesized title, so a
@@ -594,6 +613,35 @@ describe('filterEvent', () => {
 				},
 			]);
 			const hint = createHint(new Error('app bug'));
+			expect(filterEvent(event, hint)).toBe(event);
+		});
+
+		// `injected/injected.js` is NOT TronLink-exclusive — two unrelated
+		// Chrome extensions declare the same web-accessible resource path
+		// in their manifests (Better Pronote, SAP Build Process Automation).
+		// If a user of one of those extensions hits a GENUINE app bug whose
+		// stack happens to interleave with their content script, a path-only
+		// filter would drop it. The correct attribution for TronLink noise
+		// is the `tronlinkParams` message match (TronLink-exclusive global),
+		// not the shared path. This test guards the negative case.
+		test('passes real app error with injected/injected.js frame but no tronlinkParams (non-TronLink extension collision)', () => {
+			const event = createEvent(
+				undefined,
+				'Cannot read property of undefined',
+				[
+					{
+						filename: 'app:///_next/static/chunks/app-page.js',
+						function: 'handleSubmit',
+					},
+					{
+						filename: 'app:///injected/injected.js',
+						abs_path: 'app:///injected/injected.js',
+					},
+				],
+			);
+			const hint = createHint(
+				new TypeError('Cannot read property of undefined'),
+			);
 			expect(filterEvent(event, hint)).toBe(event);
 		});
 

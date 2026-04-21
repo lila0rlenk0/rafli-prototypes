@@ -224,7 +224,10 @@ export function TicketPurchaseCard({
 			    sign-in button instead of the buy flow. */}
 			{!isFree && isAuthenticated ? (
 				<>
-					<AccessPassDisclaimer raffleTitle={raffleTitle} />
+					<AccessPassDisclaimer
+						raffleTitle={raffleTitle}
+						ticketQuantity={ticketQuantity}
+					/>
 					<AccessPassAcknowledgment />
 				</>
 			) : null}

@@ -17,6 +17,34 @@ interface AccessPassDisclaimerProps {
 	 * title from the raffle detail page.
 	 */
 	raffleTitle?: string;
+	/**
+	 * Selected ticket quantity — drives the tiered content-library access
+	 * duration surfaced in the disclaimer. More entries purchased → longer
+	 * access period, reinforcing the reframe that the paid exchange is for
+	 * platform access (with entries bundled) rather than for chance itself.
+	 *
+	 * Tiers: 1–9 → 1 month, 10–24 → 6 months, 25–99 → 12 months, 100+ →
+	 * 24 months. Falls back to 1 month when absent or below 1.
+	 */
+	ticketQuantity?: number;
+}
+
+// Ticket-tier → content-library access duration. Longer ladders reward
+// larger purchases with more non-entry value, strengthening the Access
+// Pass reframe (platform access bundles entries, not the reverse).
+const ACCESS_PASS_TIERS = [
+	{ minQuantity: 100, months: 24 },
+	{ minQuantity: 25, months: 12 },
+	{ minQuantity: 10, months: 6 },
+	{ minQuantity: 1, months: 1 },
+] as const;
+
+function resolveAccessMonths(quantity: number | undefined): number {
+	const q = quantity ?? 1;
+	// Tiers are sorted high → low so the first match is the widest bracket
+	// the quantity qualifies for. Fallback handles q < 1 (edge case).
+	const tier = ACCESS_PASS_TIERS.find(t => q >= t.minQuantity);
+	return tier?.months ?? 1;
 }
 
 /**
@@ -59,11 +87,13 @@ interface AccessPassDisclaimerProps {
  */
 export function AccessPassDisclaimer({
 	raffleTitle,
+	ticketQuantity,
 }: AccessPassDisclaimerProps = {}) {
 	// Trim because the backend may return whitespace-padded titles — an
 	// empty trimmed string should degrade to scope-agnostic copy, not
 	// render a dangling "for " phrase.
 	const trimmedTitle = raffleTitle?.trim();
+	const accessMonths = resolveAccessMonths(ticketQuantity);
 
 	return (
 		<div className="rounded-xl border border-[#B4B4B4] bg-[#F6F6F6] px-4 py-3 text-xs leading-relaxed text-[#4A4A4A]">
@@ -80,10 +110,13 @@ export function AccessPassDisclaimer({
 				) : (
 					<>this sweepstake</>
 				)}
-				. It unlocks exclusive content and opportunities — 10k+ content library
-				with online tips &amp; tricks, host updates, behind-the-scenes posts,
-				early notifications, entry history, payment receipt, and bonus entries
-				into the draw.
+				. It unlocks exclusive content and opportunities —{' '}
+				<strong className="font-semibold text-black">
+					{accessMonths}-month FREE
+				</strong>{' '}
+				access to a 10k+ content library with online tips &amp; tricks, host
+				updates, behind-the-scenes posts, early notifications, entry history,
+				payment receipt, and bonus entries into the draw.
 			</p>
 			<p>
 				Every entry — paid or free — carries identical odds. Check{' '}

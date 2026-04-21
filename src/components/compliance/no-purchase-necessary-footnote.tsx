@@ -16,7 +16,7 @@ import Link from 'next/link';
  */
 export function NoPurchaseNecessaryFootnote() {
 	return (
-		<p className="text-center text-[10px] leading-tight text-[#7B7B7B]">
+		<p className="text-center text-[10px] leading-tight whitespace-nowrap text-[#7B7B7B]">
 			No purchase necessary.{' '}
 			<Link href="/free-entry" className="underline">
 				Free entry available

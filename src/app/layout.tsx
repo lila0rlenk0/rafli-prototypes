@@ -1,3 +1,5 @@
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata } from 'next';
@@ -102,6 +104,16 @@ export default function RootLayout({
 						<Toaster />
 					</ProvidersClient>
 				</Suspense>
+				{/* Vercel Web Analytics — injects the tracking script; route-aware
+				    via App Router integration, no cookies, privacy-friendly. Sits
+				    outside <Suspense> so it's not gated by the provider tree. */}
+				<Analytics />
+				{/* Vercel Speed Insights — collects Core Web Vitals (LCP, CLS,
+				    INP, FCP, TTFB) per route. Tail-sampled by Vercel; zero
+				    configuration cost. Pairs with Web Analytics for the full
+				    RUM picture (visitors + performance) and complements
+				    Sentry (errors) and Mixpanel (business events). */}
+				<SpeedInsights />
 			</body>
 		</html>
 	);

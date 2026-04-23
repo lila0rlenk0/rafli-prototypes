@@ -33,6 +33,7 @@ export function PromoCodeEntryField({
 }: PromoCodeEntryFieldProps) {
 	return (
 		<div className="flex flex-col gap-2">
+			{/* Match the pill-shaped bundle chips sitting above: rounded-full + border-black + h-9 so the promo row reads as part of the same control group. */}
 			<div className="flex gap-2">
 				<Input
 					value={code}
@@ -43,7 +44,7 @@ export function PromoCodeEntryField({
 					autoFocus
 					maxLength={20}
 					className={cn(
-						'font-mono uppercase',
+						'h-9 rounded-full border-black px-4 font-mono text-sm uppercase',
 						error &&
 							'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100',
 					)}
@@ -52,7 +53,7 @@ export function PromoCodeEntryField({
 					variant="outline"
 					onClick={onApply}
 					disabled={!code.trim() || isValidating}
-					className="shrink-0"
+					className="hover:bg-brand-sky shrink-0 border-black bg-transparent shadow-none hover:text-black"
 				>
 					{isValidating ? <Loader2 className="size-4 animate-spin" /> : 'Apply'}
 				</Button>

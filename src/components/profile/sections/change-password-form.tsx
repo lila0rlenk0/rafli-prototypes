@@ -103,7 +103,7 @@ export function ChangePasswordForm() {
 		>
 			<FieldGroup className="gap-3">
 				<Field>
-					<FieldLabel htmlFor="currentPassword" className="text-[#7B7B7B]">
+					<FieldLabel htmlFor="currentPassword" className="text-ink-500">
 						Current Password
 					</FieldLabel>
 					<Input
@@ -117,7 +117,7 @@ export function ChangePasswordForm() {
 					<FieldError errors={[errors.currentPassword]} />
 				</Field>
 				<Field>
-					<FieldLabel htmlFor="newPassword" className="text-[#7B7B7B]">
+					<FieldLabel htmlFor="newPassword" className="text-ink-500">
 						New Password
 					</FieldLabel>
 					<Input
@@ -131,7 +131,7 @@ export function ChangePasswordForm() {
 					<FieldError errors={[errors.newPassword]} />
 				</Field>
 				<Field>
-					<FieldLabel htmlFor="confirmPassword" className="text-[#7B7B7B]">
+					<FieldLabel htmlFor="confirmPassword" className="text-ink-500">
 						New Password
 					</FieldLabel>
 					<Input

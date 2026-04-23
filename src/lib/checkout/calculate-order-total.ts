@@ -3,9 +3,9 @@ import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 /**
  * Pure-function order math used by both the inline `TicketPurchaseCard`
  * (price breakdown) and the mobile `StickyBuyTicketsCta` (inline price label
- * on the "Get Access Pass" button). Centralizing the calculation guarantees the
- * sticky and the card never display divergent totals when the user has a
- * promo applied.
+ * on the "Enter now" CTA). Centralizing the calculation guarantees the sticky
+ * and the card never display divergent totals when the user has a promo
+ * applied.
  */
 
 export interface CalculateOrderTotalParams {
@@ -81,12 +81,12 @@ export function calculateOrderTotal(
 		};
 	}
 
-	const discount = computeDiscount(
-		appliedPromo.type,
-		promoValue,
+	const discount = computeDiscount({
+		type: appliedPromo.type,
+		value: promoValue,
 		quantity,
 		subtotal,
-	);
+	});
 	const isFreeTicketsPromo = appliedPromo.type === PROMO_CODE_TYPE.FREE_TICKETS;
 
 	return {
@@ -99,16 +99,19 @@ export function calculateOrderTotal(
 	};
 }
 
+interface ComputeDiscountInput {
+	type: ValidatedPromoCode['type'];
+	value: number;
+	quantity: number;
+	subtotal: number;
+}
+
 /**
  * Resolves the discount amount for a given promo type. Extracted so the
  * main `calculateOrderTotal` flow stays linear and the switch is exhaustive.
  */
-function computeDiscount(
-	type: ValidatedPromoCode['type'],
-	value: number,
-	quantity: number,
-	subtotal: number,
-): number {
+function computeDiscount(input: ComputeDiscountInput): number {
+	const { type, value, quantity, subtotal } = input;
 	switch (type) {
 		case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
 			// `value` is per-ticket discount in currency units, multiply by quantity.
@@ -132,7 +135,7 @@ function computeDiscount(
 /**
  * Formats a price in the user's locale with the given currency code.
  * Pulled out of `TicketPurchaseCard` so the sticky CTA can render the
- * inline "Get Access Pass · $X.XX" label using the same formatting rules.
+ * inline "Enter now · $X.XX" label using the same formatting rules.
  *
  * @param amount - Amount in major currency units
  * @param currencyCode - ISO 4217 currency code (e.g. "USD")

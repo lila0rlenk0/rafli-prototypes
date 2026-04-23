@@ -1,88 +1,69 @@
 ---
 description: "Components"
 alwaysApply: false
-globs: "'src/components/**','src/app/**/*.tsx'"
+globs: "'src/components/**/*.{ts,tsx}','src/app/**/*.tsx'"
 ---
 
 # Components
 
-Server Components first architecture. UI organized by domain.
+Server Components by default, organized by domain.
 
-## Directory
+## Directories
 
-- `ui/` — base primitives (Button, Input, Card), some generated via shadcn
-- `auth/`, `raffle/`, `host/`, `payment/`, `filters/`, `promo-code/`, `mode/`, `order/`, `fulfillment/`, `notifications/`, `report/`, `verification/` — domain components
+- `ui/` — shadcn primitives, managed by CLI, never hand-edit
+- `ui-custom/` — non-stock shell pieces (public navbar, loaders, copy/media helpers) that compose `ui/` primitives
+- domain folders: `auth`, `raffle`, `host`, `payment`, `filters`, `promo-code`, `mode`, `order`, `fulfillment`, `notifications`, `report`, `verification`, `my-raffles`, `browse`, `profile`, `landing`, `pricing`, `messages`, `admin`
 
 ## Server vs Client
 
-- Server Components — static content, data fetching, SEO-critical, no browser APIs
-- Client Components — interactive UI, React hooks, browser APIs. Mark with `'use client'`
-- Never add `'use client'` without interactivity requirement
+- server by default — static content, data fetching, SEO, no browser APIs
+- `'use client'` required for: hooks, `onClick`/`onChange`/state, `window`/`document`, context consumers
+- form `action` prop alone does not require `'use client'`
+- push `'use client'` to the leaf — keep the boundary as low as possible
+- never mark a parent as client just because one child needs interactivity
 
-## Runtime Data in Layouts
+## Composition: server inside client
 
-Runtime data (`cookies()`, `headers()`, `searchParams`, `getSession()`) blocks streaming. Extract and wrap in Suspense.
+- pass Server Components as `children` to Client Components — they stay server-rendered
+- never import a Server Component inside a `'use client'` file — it becomes client code
 
 ```tsx
-// bad — blocks entire route tree
-export default async function Layout({ children }) {
-	const session = await getSession();
-	return <Nav user={session.user}>{children}</Nav>;
-}
+// server page passes server content into a client shell
+import { RaffleDrawer } from '@/components/raffle/raffle-drawer'; // 'use client'
+import { RaffleSummary } from './raffle-summary'; // server
 
-// good — enables streaming
-async function LayoutContent({ children }) {
-	const session = await getSession();
-	return <Nav user={session.user}>{children}</Nav>;
-}
-
-export default function Layout({ children }) {
+export default function Page() {
 	return (
-		<Suspense fallback={<Spinner />}>
-			<LayoutContent>{children}</LayoutContent>
-		</Suspense>
+		<RaffleDrawer>
+			<RaffleSummary />
+		</RaffleDrawer>
 	);
 }
 ```
 
-## Loading States
+## Props + exports
 
-- Page-level — create `loading.tsx` sibling to `page.tsx`
-- Component-level — wrap async children in `<Suspense fallback={<Skeleton />}>`
+- named export only: `export function RaffleCard({ raffle }: RaffleCardProps) {}`
+- props typed with `interface`: `interface RaffleCardProps { raffle: Raffle }`
+- co-locate small sub-components in the same file; split once one exceeds ~50 lines
 
-## Data Fetching in Server Components
+## Runtime data in layouts
 
-Parallelize independent fetches — never await sequentially when data is independent.
+`cookies()`, `headers()`, `searchParams`, `getSession()` block streaming. Extract to async child wrapped in `<Suspense>`. Use `getCurrentUser` (React.cache-wrapped) over raw `getSession()` to dedupe JWT decoding across layouts.
 
-```tsx
-// bad — getRaffle waits for getSession to finish
-const session = await getSession();
-const raffleResult = await getRaffle(slug);
+## Loading states
 
-// good — both start immediately
-const [session, raffleResult] = await Promise.all([
-	getSession(),
-	getRaffle(slug),
-]);
-```
+- page-level: `loading.tsx` sibling to `page.tsx`
+- component-level: `<Suspense fallback={<Skeleton />}>`
 
-## RSC Serialization
+## Rules
 
-Only pass fields the client component actually uses — everything crossing the Server/Client boundary is serialized into HTML.
-
-```tsx
-// bad — serializes all 50 user fields
-<Profile user={user} />
-
-// good — serializes only what's needed
-<Profile name={user.name} avatarUrl={user.avatarUrl} />
-```
+- max 3 levels of nesting in JSX — extract a sub-component beyond that
+- render logic only — pages fetch, domain components render
+- never `useEffect` for data — see `react-effects.md`
+- cross-domain reuse flows through `ui/` primitives — a `raffle/` component never imports from `host/`
+- every CTA goes through the shadcn `<Button>` primitive (or `<Button asChild><Link>`) — don't hand-roll `bg-brand-dark` on a raw `<a>`/`<button>`; the variant belongs in one place. Never use `bg-primary` on a button — `--primary` is cyan (links/progress/selection), buttons resolve to `bg-brand-dark` (`#141416`). ESLint flags `bg-primary` on buttons via `local/no-primary-on-button`.
 
 ## Performance
 
-- `useMemo` for expensive calculations, `useCallback` for callback stability
-- Use functional `setState` updates when new state depends on previous state — prevents stale closures and stabilizes callbacks
-- Wrap non-urgent server action calls in `useTransition` / `startTransition`
-- Debounce frequent events (scroll, input)
-- `next/image` for images, `next/dynamic` for heavy client components
-- Prefer composition over prop drilling
+See `vercel-react-best-practices` skill for parallel fetching, RSC serialization, `useMemo`/`useCallback`, `useTransition`, `next/dynamic`, bundle optimization. See `vercel-composition-patterns` for compound components and composition over boolean props.

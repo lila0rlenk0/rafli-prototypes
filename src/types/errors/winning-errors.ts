@@ -2,16 +2,15 @@ import type { ClientErrorCode } from './client-errors';
 import type { CommonErrorCode } from './common-errors';
 
 export const WINNING_ERROR_CODES = {
-	/** User has no winnings */
-	NO_WINNINGS: 'core:winning:no-winnings',
-	/** Invalid raffle ID provided */
-	INVALID_RAFFLE: 'core:winning:invalid-raffle',
+	// Backend never emits `core:winning:no-winnings`, `invalid-raffle`, or
+	// `not-owner` — ownership failures surface as `permission-denied` and
+	// raffle-level failures use `core:raffle:*`. Dropping these three removes
+	// dead switch branches.
+
 	/** Winning not found */
 	NOT_FOUND: 'core:winning:not-found',
 	/** Invalid status transition */
 	INVALID_STATUS: 'core:winning:invalid-status',
-	/** User is not the winner */
-	NOT_OWNER: 'core:winning:not-owner',
 	/** Raffle not in fulfilling status */
 	RAFFLE_NOT_FULFILLING: 'core:raffle:not-fulfilling',
 	/** Winner has not claimed with shipping info */

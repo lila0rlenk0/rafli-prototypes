@@ -1,6 +1,7 @@
 'use server';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { requireAuth } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -26,7 +27,7 @@ export async function exportPromoCodes(
 
 	try {
 		const response = await authenticatedClient.get(
-			`/raffles/${raffleId}/promo-codes/export`,
+			`/raffles/${pathParam(raffleId)}/promo-codes/export`,
 			{
 				params: {
 					...(query?.bulkId && { bulkId: query.bulkId }),

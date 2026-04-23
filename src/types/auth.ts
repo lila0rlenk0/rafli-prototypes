@@ -98,7 +98,10 @@ export const requestPasswordResetInputSchema = z.object({
  * Token comes from the email link, newPassword enforces min(12) policy.
  */
 export const resetPasswordInputSchema = z.object({
-	token: z.string(),
+	// min(1) rejects empty tokens at the BFF — otherwise the backend burns a
+	// round-trip to return the same invalid-token response we can render
+	// locally. Also removes a `''` vs `malformed` timing side-channel.
+	token: z.string().min(1),
 	/** 12-char minimum — same policy as sign-up */
 	newPassword: z.string().min(12),
 });

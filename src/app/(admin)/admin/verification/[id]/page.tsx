@@ -10,18 +10,16 @@ import {
 	PiiRevealToggle,
 } from '@/components/admin/verification/detail/pii-reveal';
 import { ReviewForm } from '@/components/admin/verification/detail/review-form';
-import { KycStatusBadge } from '@/components/verification/kyc-status-badge';
-import { formatDate } from '@/lib/utils/date-format';
+import { KycStatusBadge } from '@/components/verification/badges/kyc-status-badge';
+import { formatDate } from '@/lib/utils/format/date-format';
 import {
 	formatFieldLabel,
 	formatFieldValue,
 	formatNullableDate,
-} from '@/lib/utils/format-field';
+} from '@/lib/utils/format/format-field';
 import { getSubmissionDetail } from '@/services/admin-kyc/get-submission-detail';
-import {
-	KYC_SUBMISSION_STATUS,
-	getVerificationTypeLabel,
-} from '@/types/kyc-submission';
+import { getVerificationTypeLabel } from '@/lib/verification/labels';
+import { KYC_SUBMISSION_STATUS } from '@/types/kyc-submission';
 
 interface SubmissionDetailPageProps {
 	params: Promise<{ id: string }>;

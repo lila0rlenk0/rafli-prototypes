@@ -4,7 +4,7 @@ import { Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
 
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 // Desktop quick-pick "set-to" values. Mobile quick-picks live in
 // `StickyBuyTicketsCta` so they sit on top of the keyboard area, not
@@ -100,7 +100,7 @@ export function TicketSelector({ maxTickets }: TicketSelectorProps) {
 	const bundleDisabled = incrementDisabled;
 
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4">
 			{/* Mobile: full-width counter only — quick-pick bundles live in the sticky CTA */}
 			<div className="flex items-center justify-center rounded-full border border-black px-4 py-2 lg:hidden">
 				<button
@@ -135,7 +135,7 @@ export function TicketSelector({ maxTickets }: TicketSelectorProps) {
 			{/* Desktop: inline counter + set-to bundle buttons */}
 			<div className="hidden lg:block">
 				<div className="flex items-center justify-between">
-					<p className="text-sm text-[#7B7B7B]">Number of entries</p>
+					<p className="text-ink-500 text-sm">Number of entries</p>
 					<div className="flex items-center justify-center gap-2 rounded-full border border-black px-4 py-1">
 						<button
 							onClick={() => updateQuantity(quantity - 1)}
@@ -178,8 +178,8 @@ export function TicketSelector({ maxTickets }: TicketSelectorProps) {
 							className={cn(
 								'flex w-full cursor-pointer items-center justify-center rounded-full border py-2 text-sm transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-30',
 								quantity === size
-									? 'border-black bg-[#C4EDFF]'
-									: 'border-black hover:bg-[#C4EDFF] disabled:hover:bg-transparent',
+									? 'bg-brand-sky border-black'
+									: 'hover:bg-brand-sky border-black disabled:hover:bg-transparent',
 							)}
 						>
 							{size} entries

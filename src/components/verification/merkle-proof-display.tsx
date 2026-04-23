@@ -3,8 +3,8 @@
 import { ChevronDown, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
-import { CopyButton } from '@/components/ui/copy-button';
-import { cn } from '@/lib/utils';
+import { CopyButton } from '@/components/ui-custom/copy-button';
+import { cn } from '@/lib/class-names';
 import type { MerkleProof } from '@/types/verification';
 
 interface MerkleProofDisplayProps {
@@ -57,18 +57,18 @@ export function MerkleProofDisplay({
 			</button>
 
 			{expanded ? (
-				<div className="space-y-3 border-t p-3">
-					<ProofRow label="Ticket ID" value={`#${proof.ticketId}`} />
+				<div className="flex flex-col gap-3 border-t p-3">
+					<ProofRow label="Entry ID" value={`#${proof.ticketId}`} />
 					<ProofRow label="Chunk Index" value={proof.chunkIndex.toString()} />
 
-					<div className="space-y-1">
+					<div className="flex flex-col gap-1">
 						<div className="flex items-center justify-between">
 							<span className="text-xs text-neutral-500">Leaf Hash</span>
 							<CopyButton value={proof.leafHash} />
 						</div>
 						<div className="rounded bg-neutral-100 px-2 py-1.5">
 							<code
-								className="block font-mono text-[11px] break-all"
+								className="text-2xs block font-mono break-all"
 								title={proof.leafHash}
 							>
 								{truncateHex(proof.leafHash)}
@@ -76,14 +76,14 @@ export function MerkleProofDisplay({
 						</div>
 					</div>
 
-					<div className="space-y-1">
+					<div className="flex flex-col gap-1">
 						<div className="flex items-center justify-between">
 							<span className="text-xs text-neutral-500">Merkle Root</span>
 							<CopyButton value={proof.root} />
 						</div>
 						<div className="rounded bg-neutral-100 px-2 py-1.5">
 							<code
-								className="block font-mono text-[11px] break-all"
+								className="text-2xs block font-mono break-all"
 								title={proof.root}
 							>
 								{truncateHex(proof.root)}
@@ -91,19 +91,19 @@ export function MerkleProofDisplay({
 						</div>
 					</div>
 
-					<div className="space-y-2">
+					<div className="flex flex-col gap-2">
 						<span className="text-xs text-neutral-500">Proof Path</span>
-						<div className="space-y-1">
+						<div className="flex flex-col gap-1">
 							{proof.proof.map((hash, index) => (
 								<div
 									key={hash}
 									className="flex items-center gap-2 rounded bg-neutral-50 px-2 py-1"
 								>
-									<span className="w-4 text-[10px] text-neutral-400">
+									<span className="text-3xs w-4 text-neutral-400">
 										{index + 1}
 									</span>
 									<code
-										className="flex-1 truncate font-mono text-[10px]"
+										className="text-3xs flex-1 truncate font-mono"
 										title={hash}
 									>
 										{truncateHex(hash)}

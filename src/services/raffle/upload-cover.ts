@@ -3,7 +3,8 @@
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -20,7 +21,8 @@ import type { ServiceResponse } from '@/types/service-response';
 import { ZodError } from 'zod';
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+// 5 MB
+const MAX_SIZE = 5 * 1024 * 1024;
 
 /**
  * Uploads a cover image for a raffle
@@ -49,7 +51,7 @@ export async function uploadCover(
 		formData.append('file', file);
 
 		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/cover`,
+			`/raffles/${pathParam(raffleId)}/cover`,
 			formData,
 			{
 				timeout: API_TIMEOUTS.UPLOAD,

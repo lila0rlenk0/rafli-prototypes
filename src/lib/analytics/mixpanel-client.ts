@@ -13,9 +13,11 @@
  * when the MixpanelProvider effect fires.
  */
 
+import type mixpanelBrowser from 'mixpanel-browser';
+
 import { clientEnv } from '@/env/client';
 
-type MixpanelLib = typeof import('mixpanel-browser').default;
+type MixpanelLib = typeof mixpanelBrowser;
 
 const TOKEN = clientEnv.NEXT_PUBLIC_MIXPANEL_TOKEN;
 let initialized = false;

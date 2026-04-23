@@ -1,0 +1,394 @@
+import { InfoIcon } from 'lucide-react';
+import { Suspense } from 'react';
+
+import { FulfillmentTimeline } from '@/components/fulfillment/timeline';
+import { HostFulfillmentCard } from '@/components/fulfillment/host-card';
+import { PrizeBreakdownCard } from '@/components/raffle/cards/prize-breakdown-card';
+import { RaffleCancelledCard } from '@/components/raffle/cards/cancelled-card';
+import { RaffleCountdown } from '@/components/raffle/countdown/countdown';
+import { RaffleExpiredGate } from '@/components/raffle/expired-gate';
+import { RaffleInfoCard } from '@/components/raffle/info-card/info-card';
+import { RaffleNotWonCard } from '@/components/raffle/cards/not-won-card';
+import { RaffleWonCard } from '@/components/raffle/cards/won-card';
+import { RevenueBreakdownCard } from '@/components/raffle/cards/revenue-breakdown-card';
+import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase/ticket-purchase-card';
+import { WinnersList } from '@/components/raffle/winners/winners-list';
+import { CommentSection } from '@/components/raffle/comments/section';
+import { ReportRaffleButton } from '@/components/browse/public-slug/report-raffle-button';
+import { ShareOnXButton } from '@/components/browse/public-slug/share-on-x-button';
+import { getCurrentUser } from '@/lib/auth/session';
+import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
+import type { Raffle } from '@/types/raffle';
+import type { XShareConfig } from '@/components/browse/public-slug/x-share/use-share';
+
+import { RaffleFireIcon } from './raffle-fire-icon';
+import type { RaffleViewState } from './raffle-page-derived';
+import {
+	buildUserContext,
+	type RaffleUserContext,
+} from './raffle-user-context';
+
+interface RaffleRightColumnAsyncProps {
+	raffle: Raffle;
+	publicSlug: string;
+	view: RaffleViewState;
+	xShareConfig: XShareConfig;
+}
+
+/** Skeleton shown while the lazy crypto button bundle hydrates client-side. */
+const TICKET_PURCHASE_CARD_FALLBACK = (
+	<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
+);
+
+/**
+ * User-aware right-column content — winner state, host fulfillment, active
+ * card purchase UI, winners list, and the user-aware RaffleInfoCard. Reads
+ * `getCurrentUser` (React.cache-wrapped) so the JWT decode is deduped across
+ * every async sibling in this request (per `.claude/rules/lib.md`).
+ *
+ * @returns The user-aware right-column content
+ */
+export async function RaffleRightColumnAsync({
+	raffle,
+	publicSlug,
+	view,
+	xShareConfig,
+}: RaffleRightColumnAsyncProps) {
+	const user = await getCurrentUser();
+	const ctx = await buildUserContext(raffle, user, {
+		shouldFetchKycStatus: view.shouldFetchKycStatus,
+	});
+
+	return (
+		<>
+			<TerminalCards
+				raffle={raffle}
+				publicSlug={publicSlug}
+				view={view}
+				ctx={ctx}
+			/>
+			{view.showActiveCard ? (
+				<ActiveCard
+					raffle={raffle}
+					publicSlug={publicSlug}
+					view={view}
+					ctx={ctx}
+					xShareConfig={xShareConfig}
+				/>
+			) : null}
+			{view.isConcluded && view.hasWinners && raffle.winners ? (
+				<WinnersList
+					winners={raffle.winners}
+					raffleId={raffle.id}
+					totalTickets={raffle.totalTicketsAtDraw}
+					manifestHash={raffle.manifestHash}
+					commitTxHash={raffle.commitTxHash}
+					currentUserWinnerPosition={ctx.myWinning?.position ?? null}
+				/>
+			) : null}
+			{!view.isConcluded ? (
+				<RaffleInfoCard
+					raffle={raffle}
+					myTicketCodes={ctx.myTicketCodes}
+					myTicketsTotal={ctx.myTicketsTotal}
+					isAuthenticated={ctx.isAuthenticated}
+					publicSlug={publicSlug}
+				/>
+			) : null}
+		</>
+	);
+}
+
+interface CardsProps {
+	raffle: Raffle;
+	publicSlug: string;
+	view: RaffleViewState;
+	ctx: RaffleUserContext;
+}
+
+/**
+ * Mutually-exclusive terminal states: winner / host-fulfillment / cancelled
+ * / not-won. Returns the first match or null — the branches don't overlap
+ * by construction (see `deriveRaffleViewState`).
+ */
+function TerminalCards({ raffle, publicSlug, view, ctx }: CardsProps) {
+	const didUserWin = ctx.myWinning !== null;
+	if (view.isConcluded && didUserWin && ctx.myWinning) {
+		return (
+			<WinnerBlock
+				raffle={raffle}
+				publicSlug={publicSlug}
+				view={view}
+				ctx={ctx}
+			/>
+		);
+	}
+	if (view.showHostFulfillment) {
+		return (
+			<HostFulfillmentBlock
+				raffle={raffle}
+				publicSlug={publicSlug}
+				view={view}
+				ctx={ctx}
+			/>
+		);
+	}
+	if (view.showCancelledCard && view.cancellationReason) {
+		return (
+			<RaffleCancelledCard
+				reason={view.cancellationReason}
+				isOwner={view.isOwner}
+				participantsCount={raffle.participantsCount}
+				numberOfWinners={raffle.numberOfWinners}
+				ticketsSoldCount={raffle.ticketsSoldCount}
+				myTicketCount={ctx.myTicketsTotal}
+			/>
+		);
+	}
+	if (view.isConcluded && !didUserWin && !view.isOwner && view.hasWinners) {
+		return (
+			<RaffleNotWonCard
+				status={raffle.status}
+				publicSlug={publicSlug}
+				myTicketsTotal={ctx.myTicketsTotal}
+			/>
+		);
+	}
+	return null;
+}
+
+/**
+ * Winner-side composition: congrats card + prize breakdown + fulfillment
+ * timeline. `kycWinnerStatus` feeds the timeline's claim gate — no KYC
+ * means the user can't progress past the claim step.
+ */
+function WinnerBlock({ raffle, publicSlug, view, ctx }: CardsProps) {
+	const myWinningTicketCode =
+		ctx.myWinning?.position != null
+			? (raffle.winners?.find(w => w.position === ctx.myWinning?.position)
+					?.ticketCode ?? null)
+			: null;
+	if (!ctx.myWinning) return null;
+	return (
+		<>
+			<RaffleWonCard
+				userName={ctx.myUserName ?? 'Winner'}
+				userAvatar={ctx.myUserAvatarUrl}
+				ticketCode={myWinningTicketCode}
+			/>
+			<PrizeBreakdownCard raffle={raffle} />
+			<FulfillmentTimeline
+				winning={ctx.myWinning}
+				isHost={view.isOwner}
+				raffleId={raffle.id}
+				hostId={raffle.hostId}
+				publicSlug={publicSlug}
+				kycStatus={ctx.kycWinnerStatus}
+			/>
+		</>
+	);
+}
+
+/** Host-side post-draw composition — fulfillment CTA + revenue + ticket list. */
+function HostFulfillmentBlock({ raffle, publicSlug, ctx }: CardsProps) {
+	return (
+		<>
+			<HostFulfillmentCard
+				publicSlug={publicSlug}
+				winnersCount={raffle.winners?.length ?? 0}
+			/>
+			<RevenueBreakdownCard raffle={raffle} />
+			<RaffleInfoCard
+				raffle={raffle}
+				myTicketCodes={ctx.myTicketCodes}
+				myTicketsTotal={ctx.myTicketsTotal}
+				isAuthenticated={ctx.isAuthenticated}
+				publicSlug={publicSlug}
+			/>
+		</>
+	);
+}
+
+interface ActiveCardProps {
+	raffle: Raffle;
+	publicSlug: string;
+	view: RaffleViewState;
+	ctx: RaffleUserContext;
+	xShareConfig: XShareConfig;
+}
+
+/**
+ * Desktop "sweepstakes is active!" panel — fire icon + heading + countdown
+ * + purchase card + share-on-X. User-gated because the purchase card reads
+ * credits/my-tickets and the share button is hidden for the host.
+ */
+function ActiveCard({
+	raffle,
+	publicSlug,
+	view,
+	ctx,
+	xShareConfig,
+}: ActiveCardProps) {
+	const isPurchaseBlocked = view.showEditButton || view.disablePurchase;
+	const showShareOnX = ctx.isAuthenticated && !isPurchaseBlocked;
+	return (
+		<div
+			id="checkout-section"
+			className="hidden h-fit rounded-2xl border border-black bg-white/95 p-8 lg:block"
+		>
+			<RaffleFireIcon className="mx-auto size-16" />
+			<h2 className="font-clash-display my-4 text-center text-2xl font-semibold">
+				The sweepstakes is active!
+			</h2>
+			<div className="mb-4">
+				<RaffleCountdown endAt={raffle.endAt} />
+			</div>
+			<RaffleExpiredGate endAt={raffle.endAt}>
+				<Suspense fallback={TICKET_PURCHASE_CARD_FALLBACK}>
+					<ActivePurchaseCard
+						raffle={raffle}
+						publicSlug={publicSlug}
+						view={view}
+						ctx={ctx}
+					/>
+				</Suspense>
+				{view.disablePurchase && !view.showEditButton ? (
+					<p className="mt-2 text-center text-sm text-gray-500">
+						You cannot enter your own sweepstakes
+					</p>
+				) : null}
+			</RaffleExpiredGate>
+			{showShareOnX ? <ShareOnXButton {...xShareConfig} /> : null}
+		</div>
+	);
+}
+
+/** Shared purchase card render used by both desktop and mobile active surfaces. */
+function ActivePurchaseCard({ raffle, publicSlug, view, ctx }: CardsProps) {
+	const isPurchaseBlocked = view.showEditButton || view.disablePurchase;
+	return (
+		<TicketPurchaseCard
+			raffleId={raffle.id}
+			publicSlug={publicSlug}
+			endAt={raffle.endAt}
+			price={view.ticketPrice}
+			currency={raffle.ticketPriceCurrency}
+			availableTickets={view.availableTickets}
+			disabled={isPurchaseBlocked}
+			questionId={raffle.questionId}
+			isAuthenticated={ctx.isAuthenticated}
+			cryptoOptions={raffle.cryptoOptions}
+			myTicketsTotal={ctx.myTicketsTotal}
+			userId={ctx.currentUserId}
+			availableCredits={ctx.availableCredits}
+			raffleTitle={raffle.title}
+		/>
+	);
+}
+
+// =============================================================================
+// Left-column user slots — small async server components the page composes
+// into `<RaffleLeftColumn>` slot props. Keeping runtime-data readers in this
+// file per `.claude/rules/components.md`; the page wraps each in its own
+// `<Suspense>` so these fetches don't block the left column's first paint.
+// =============================================================================
+
+interface TitleMetaAsyncProps {
+	raffleId: string;
+	hostId: string;
+}
+
+/** Participant badge + Report button — both gated on session identity. */
+export async function RaffleTitleMetaAsync({
+	raffleId,
+	hostId,
+}: TitleMetaAsyncProps) {
+	const user = await getCurrentUser();
+	if (!user) return null;
+	// Host doesn't see the Participant badge or Report button on their own raffle.
+	if (user.id === hostId) return null;
+	const ticketCodesResponse = await getMyTicketCodes({ raffleId });
+	const total = ticketCodesResponse.success
+		? ticketCodesResponse.data.total
+		: 0;
+	return (
+		<>
+			{total > 0 ? (
+				<span className="bg-brand-mint text-role-participant-fg text-mini rounded-lg px-6 py-1 font-semibold tracking-wide">
+					Participant
+				</span>
+			) : null}
+			<ReportRaffleButton raffleId={raffleId} />
+		</>
+	);
+}
+
+interface CommentSectionAsyncProps {
+	raffleId: string;
+	hostId: string;
+}
+
+/** User-aware comment section — hands session identity to the client widget. */
+export async function RaffleCommentSectionAsync({
+	raffleId,
+	hostId,
+}: CommentSectionAsyncProps) {
+	const user = await getCurrentUser();
+	return (
+		<CommentSection
+			raffleId={raffleId}
+			isAuthenticated={user !== null}
+			isOwner={user?.id === hostId}
+			currentUserId={user?.id ?? null}
+		/>
+	);
+}
+
+interface MobilePurchaseAsyncProps {
+	raffle: Raffle;
+	publicSlug: string;
+	view: RaffleViewState;
+}
+
+/**
+ * Mobile-only purchase card inside the left column hero. Mirrors the desktop
+ * active card but stacks the KYC-if-you-win notice below so the CTA stays
+ * in reach on narrow viewports.
+ */
+export async function RaffleMobilePurchaseAsync({
+	raffle,
+	publicSlug,
+	view,
+}: MobilePurchaseAsyncProps) {
+	const user = await getCurrentUser();
+	const ctx = await buildUserContext(raffle, user, {
+		shouldFetchKycStatus: view.shouldFetchKycStatus,
+	});
+	return (
+		<div className="lg:hidden">
+			<RaffleExpiredGate endAt={raffle.endAt}>
+				<Suspense fallback={TICKET_PURCHASE_CARD_FALLBACK}>
+					<ActivePurchaseCard
+						raffle={raffle}
+						publicSlug={publicSlug}
+						view={view}
+						ctx={ctx}
+					/>
+				</Suspense>
+				{view.disablePurchase && !view.showEditButton ? (
+					<p className="mt-2 text-center text-sm text-gray-500">
+						You cannot enter your own sweepstakes
+					</p>
+				) : null}
+			</RaffleExpiredGate>
+			{view.showKycNotice ? (
+				<div className="mt-4 flex items-center gap-2">
+					<InfoIcon className="text-ink-500 size-4 shrink-0" />
+					<p className="text-ink-500 text-sm">
+						You&apos;ll only need KYC if you win
+					</p>
+				</div>
+			) : null}
+		</div>
+	);
+}

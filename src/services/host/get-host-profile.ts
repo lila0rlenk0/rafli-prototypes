@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapHostError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { HOST_ERROR_CODES, type HostErrorCode } from '@/types/errors';
@@ -21,7 +22,7 @@ export async function getHostProfile(
 	usernameOrId: string,
 ): Promise<ServiceResponse<HostProfile, HostErrorCode>> {
 	try {
-		const response = await baseClient.get(`/users/${usernameOrId}`);
+		const response = await baseClient.get(`/users/${pathParam(usernameOrId)}`);
 		return success(hostProfileSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {

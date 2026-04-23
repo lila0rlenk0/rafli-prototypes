@@ -183,39 +183,36 @@ function hasFailedToFetchMessage(error: unknown): boolean {
 }
 
 /**
+ * Scans a single viem message/stack string for the fee-cap-too-low
+ * fingerprint — caller has already lowercased the text.
+ */
+function matchesFeeCapSignal(text: string): boolean {
+	return (
+		(text.includes(FEE_CAP_TOO_LOW_MESSAGE) ||
+			text.includes(MAX_FEE_PER_GAS_MESSAGE)) &&
+		text.includes(BASE_FEE_MESSAGE)
+	);
+}
+
+/**
  * Matches viem fee-cap-too-low errors across Error names and nested message payloads.
  */
 function hasFeeCapTooLowSignal(error: unknown): boolean {
-	if (!error || typeof error !== 'object') {
-		return false;
-	}
+	if (!error || typeof error !== 'object') return false;
 
 	const errorName = 'name' in error ? error.name : undefined;
-	if (errorName === 'FeeCapTooLowError') {
+	if (errorName === 'FeeCapTooLowError') return true;
+
+	const errorMessage = 'message' in error ? error.message : undefined;
+	if (
+		typeof errorMessage === 'string' &&
+		matchesFeeCapSignal(errorMessage.toLowerCase())
+	) {
 		return true;
 	}
 
-	const errorMessage = 'message' in error ? error.message : undefined;
-	if (typeof errorMessage === 'string') {
-		const normalizedMessage = errorMessage.toLowerCase();
-		if (
-			(normalizedMessage.includes(FEE_CAP_TOO_LOW_MESSAGE) ||
-				normalizedMessage.includes(MAX_FEE_PER_GAS_MESSAGE)) &&
-			normalizedMessage.includes(BASE_FEE_MESSAGE)
-		) {
-			return true;
-		}
-	}
-
 	const errorStack = 'stack' in error ? error.stack : undefined;
-	if (typeof errorStack !== 'string') {
-		return false;
-	}
+	if (typeof errorStack !== 'string') return false;
 
-	const normalizedStack = errorStack.toLowerCase();
-	return (
-		(normalizedStack.includes(FEE_CAP_TOO_LOW_MESSAGE) ||
-			normalizedStack.includes(MAX_FEE_PER_GAS_MESSAGE)) &&
-		normalizedStack.includes(BASE_FEE_MESSAGE)
-	);
+	return matchesFeeCapSignal(errorStack.toLowerCase());
 }

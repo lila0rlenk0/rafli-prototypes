@@ -14,12 +14,10 @@ export function SecuritySection() {
 			id="security"
 		>
 			<div className="flex flex-col gap-2">
-				<h3 className="font-clash-display text-h3 font-semibold text-black">
+				<h3 className="font-clash-display text-headline-sm font-semibold text-black">
 					Password
 				</h3>
-				<p className="text-base leading-relaxed text-[#7B7B7B]">
-					Change your password
-				</p>
+				<p className="text-ink-500 text-base/relaxed">Change your password</p>
 			</div>
 			<ChangePasswordForm />
 		</div>

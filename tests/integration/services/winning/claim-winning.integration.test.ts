@@ -4,8 +4,8 @@ import { WINNING_ERROR_CODES } from '@/types/errors/winning-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import type { Winning } from '@/types/winning';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
-import { MOCK_ANALYTICS_EVENTS } from '../../../helpers/mock-events';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
+import { MOCK_ANALYTICS_EVENTS } from '@tests/helpers/mock-events';
 
 /** Minimal valid winning matching winningSchema */
 const VALID_WINNING: Winning = {
@@ -64,7 +64,7 @@ mock.module('@/lib/cache/revalidation', () => ({
 	revalidateRaffleDetail: mock(),
 	revalidateWinningPaths: mock(),
 }));
-mock.module('@/lib/run-after', () => ({
+mock.module('@/lib/utils/run-after', () => ({
 	runAfter: (fn: () => void) => void fn(),
 }));
 

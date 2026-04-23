@@ -1,11 +1,10 @@
 import { Suspense, type ReactNode, type ComponentProps } from 'react';
 
-import { PublicNavbar } from '@/components/ui/public-navbar';
-import { ScreenLoader } from '@/components/ui/screen-loader';
+import { PublicNavbar } from '@/components/ui-custom/public-navbar';
+import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
-import { ChatStoreProvider } from '@/providers/chat-store-provider';
-import { NotificationStoreProvider } from '@/providers/notification-store-provider';
+import { RealtimeProviders } from '@/providers/realtime-providers';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
 interface PublicHostLayoutProps {
@@ -42,9 +41,7 @@ async function PublicHostLayoutContent({ children }: PublicHostLayoutProps) {
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
-				<NotificationStoreProvider>
-					<ChatStoreProvider>{content}</ChatStoreProvider>
-				</NotificationStoreProvider>
+				<RealtimeProviders>{content}</RealtimeProviders>
 			</UserStoreProvider>
 		);
 	}
@@ -61,14 +58,14 @@ async function PublicHostLayoutContent({ children }: PublicHostLayoutProps) {
  */
 export default function PublicHostLayout({ children }: PublicHostLayoutProps) {
 	return (
-		<main className="relative min-h-screen">
+		<main className="relative min-h-dvh">
 			{/* Suspense boundary: covers cookie-dependent auth resolution */}
 			<Suspense fallback={<ScreenLoader />}>
 				<PublicHostLayoutContent>{children}</PublicHostLayoutContent>
 			</Suspense>
 			{/* Decorative background shapes — fixed position, non-interactive */}
-			<LeftColoredShapes className="pointer-events-none fixed bottom-0 left-0 z-[15] origin-bottom-left scale-[.65]" />
-			<RightColoredShapes className="pointer-events-none fixed right-0 bottom-0 z-[15] origin-bottom-right scale-[.65]" />
+			<LeftColoredShapes className="scale-xs pointer-events-none fixed bottom-0 left-0 z-(--z-sticky) origin-bottom-left" />
+			<RightColoredShapes className="scale-xs pointer-events-none fixed right-0 bottom-0 z-(--z-sticky) origin-bottom-right" />
 		</main>
 	);
 }

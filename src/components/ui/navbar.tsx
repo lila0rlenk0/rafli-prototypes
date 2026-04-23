@@ -2,15 +2,15 @@
 
 import { Menu, User, X } from 'lucide-react';
 import Link from 'next/link';
-import { ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { Logo } from '@/assets/logo';
-import { ChatNavLink } from '@/components/messages/chat-nav-link';
-import { ModeSwitchToggle } from '@/components/mode/mode-switch-toggle';
-import { NotificationBell } from '@/components/notifications/notification-bell';
-import { CreditBalanceBadge } from '@/components/ui/credit-balance-badge';
+import { ChatNavLink } from '@/components/messages/chat/nav-link';
+import { ModeSwitchToggle } from '@/components/mode/switch-toggle';
+import { NotificationBell } from '@/components/notifications/bell';
+import { CreditBalanceBadge } from '@/components/ui-custom/credit-balance-badge';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 
@@ -76,7 +76,7 @@ export function Navbar({ children }: NavbarProps) {
 							href="/my-raffles"
 							className="hidden text-sm font-semibold sm:block"
 						>
-							My Raffles
+							My Sweepstakes
 						</Link>
 					</div>
 
@@ -158,7 +158,7 @@ export function Navbar({ children }: NavbarProps) {
 								className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
 								onClick={closeMenu}
 							>
-								My raffles
+								My Sweepstakes
 							</Link>
 							{FEATURE_FLAGS.CHAT_ENABLED ? (
 								<Link

@@ -1,10 +1,9 @@
 import { Suspense, type ReactNode, type ComponentProps } from 'react';
 
-import { ScreenLoader } from '@/components/ui/screen-loader';
+import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
-import { ChatStoreProvider } from '@/providers/chat-store-provider';
-import { NotificationStoreProvider } from '@/providers/notification-store-provider';
+import { RealtimeProviders } from '@/providers/realtime-providers';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
 interface PublicBrowseLayoutProps {
@@ -48,9 +47,7 @@ async function PublicBrowseLayoutContent({
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
-				<NotificationStoreProvider>
-					<ChatStoreProvider>{children}</ChatStoreProvider>
-				</NotificationStoreProvider>
+				<RealtimeProviders>{children}</RealtimeProviders>
 			</UserStoreProvider>
 		);
 	}
@@ -70,9 +67,9 @@ export default function PublicBrowseLayout({
 	children,
 }: PublicBrowseLayoutProps) {
 	return (
-		<main className="relative min-h-screen">
+		<main className="relative min-h-dvh">
 			{/* Decorative background — fixed position, non-interactive */}
-			<ColoredShapes className="pointer-events-none fixed top-0 left-0 z-[15] origin-top-left scale-[.65]" />
+			<ColoredShapes className="scale-xs pointer-events-none fixed top-0 left-0 z-(--z-sticky) origin-top-left" />
 			{/* Suspense boundary: covers cookie-dependent auth resolution in content component */}
 			<Suspense fallback={<ScreenLoader />}>
 				<PublicBrowseLayoutContent>{children}</PublicBrowseLayoutContent>

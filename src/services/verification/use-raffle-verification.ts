@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { serviceError, type ServiceError } from '@/lib/query/errors';
 import type { VerificationErrorCode } from '@/types/errors/verification-errors';
-import type { RaffleVerificationData } from '@/types/verification';
+import type { RaffleVerificationPayload } from '@/types/verification';
 
 import { getRaffleVerification } from './get-raffle-verification';
 
@@ -22,7 +22,10 @@ export function raffleVerificationKey(raffleId: string) {
  * @returns React Query result with raffle verification data
  */
 export function useRaffleVerification(raffleId: string) {
-	return useQuery<RaffleVerificationData, ServiceError<VerificationErrorCode>>({
+	return useQuery<
+		RaffleVerificationPayload,
+		ServiceError<VerificationErrorCode>
+	>({
 		queryKey: raffleVerificationKey(raffleId),
 		queryFn: async function fetchRaffleVerification() {
 			const result = await getRaffleVerification(raffleId);

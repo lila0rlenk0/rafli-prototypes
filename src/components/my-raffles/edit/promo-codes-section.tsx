@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
-import { useEditForm } from './edit-form-provider';
+import { useEditForm } from './form-provider';
 
 /**
  * Promo codes section for the raffle edit tickets step

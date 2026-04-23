@@ -3,7 +3,8 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapAdminKycError, success } from '@/lib/errors';
 import { parsePermissions, PERMISSIONS } from '@/lib/permissions';
@@ -40,7 +41,7 @@ export async function getSubmissionDetail(
 
 		// Step 2: Fetch submission detail with signed document URLs
 		const response = await authenticatedClient.get(
-			`/admin/verification/${id}`,
+			`/admin/verification/${pathParam(id)}`,
 			{
 				timeout: API_TIMEOUTS.QUERY,
 			},

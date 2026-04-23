@@ -22,34 +22,41 @@ const DEFAULT_LIMIT = 20;
  *
  * Dedupes within a single React request tree so both `SubmissionsCount`
  * and `SubmissionsData` can call it without hitting the backend twice.
- * Keyed on primitives to guarantee argument equality across call sites —
- * React.cache uses reference equality for objects, which would defeat
- * deduplication if we passed inline `{ ... }` literals.
+ * Keyed on a single primitive string — React.cache compares arguments
+ * with `Object.is`, so two object literals with matching fields would
+ * miss the cache. Collapsing all filters into one string avoids that
+ * and keeps the signature inside the 3-param limit (code-style.md).
  */
 const getCachedSubmissions = cache(async function fetchAdminSubmissions(
-	page: number,
-	limit: number,
-	status: AdminKycQuery['status'],
-	type: AdminKycQuery['type'],
+	cacheKey: string,
 ) {
-	return getAdminSubmissions({ page, limit, status, type });
+	const query = JSON.parse(cacheKey) as {
+		page: number;
+		limit: number;
+		status: AdminKycQuery['status'];
+		type: AdminKycQuery['type'];
+	};
+	return getAdminSubmissions(query);
 });
 
 /**
- * Serializes the fetch-driving params into a stable Suspense key.
+ * Serializes the fetch-driving params into a stable Suspense + cache key.
  *
  * Under Next 16 `cacheComponents: true`, React `<Activity>` preserves
  * prior route renders across same-pathname navigations. Without a key
  * change, the data subtree would keep its stale render when filters or
  * page change. A fresh key forces React to remount the Suspense child,
- * triggering a new server fetch for the current URL.
+ * triggering a new server fetch for the current URL. The same key is
+ * the cache argument for `getCachedSubmissions`, so Count + Data share
+ * a single backend hit per render.
  */
 function buildDataKey(query: AdminKycQuery): string {
-	const page = query.page ?? DEFAULT_PAGE;
-	const limit = query.limit ?? DEFAULT_LIMIT;
-	const status = query.status ?? 'all';
-	const type = query.type ?? 'all';
-	return `p${page}-l${limit}-s${status}-t${type}`;
+	return JSON.stringify({
+		page: query.page ?? DEFAULT_PAGE,
+		limit: query.limit ?? DEFAULT_LIMIT,
+		status: query.status ?? 'all',
+		type: query.type ?? 'all',
+	});
 }
 
 /**
@@ -91,7 +98,7 @@ export default async function VerificationListPage({
 					key={`count-${dataKey}`}
 					fallback={<Skeleton className="h-5 w-28" />}
 				>
-					<SubmissionsCount query={query} />
+					<SubmissionsCount cacheKey={dataKey} />
 				</Suspense>
 			</div>
 
@@ -100,7 +107,7 @@ export default async function VerificationListPage({
 					key={`data-${dataKey}`}
 					fallback={<SubmissionsSectionSkeleton />}
 				>
-					<SubmissionsData query={query} />
+					<SubmissionsData cacheKey={dataKey} />
 				</Suspense>
 			</div>
 		</div>
@@ -108,20 +115,15 @@ export default async function VerificationListPage({
 }
 
 interface SubmissionsSectionProps {
-	query: AdminKycQuery;
+	cacheKey: string;
 }
 
 /**
  * Async server component that renders the total-count label.
  * Shares fetched data with SubmissionsData via the React.cache wrapper.
  */
-async function SubmissionsCount({ query }: SubmissionsSectionProps) {
-	const result = await getCachedSubmissions(
-		query.page ?? DEFAULT_PAGE,
-		query.limit ?? DEFAULT_LIMIT,
-		query.status,
-		query.type,
-	);
+async function SubmissionsCount({ cacheKey }: SubmissionsSectionProps) {
+	const result = await getCachedSubmissions(cacheKey);
 	const total = result.success ? result.data.total : 0;
 
 	return (
@@ -135,13 +137,8 @@ async function SubmissionsCount({ query }: SubmissionsSectionProps) {
  * Async server component that renders the table and pagination.
  * Shares fetched data with SubmissionsCount via the React.cache wrapper.
  */
-async function SubmissionsData({ query }: SubmissionsSectionProps) {
-	const result = await getCachedSubmissions(
-		query.page ?? DEFAULT_PAGE,
-		query.limit ?? DEFAULT_LIMIT,
-		query.status,
-		query.type,
-	);
+async function SubmissionsData({ cacheKey }: SubmissionsSectionProps) {
+	const result = await getCachedSubmissions(cacheKey);
 	const submissions = result.success ? result.data.submissions : [];
 	const total = result.success ? result.data.total : 0;
 

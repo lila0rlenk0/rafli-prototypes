@@ -1,13 +1,14 @@
 'use server';
 
 import { baseClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapVerificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { COMMON_ERROR_CODES } from '@/types/errors';
 import type { VerificationErrorCode } from '@/types/errors/verification-errors';
 import type { ServiceResponse } from '@/types/service-response';
 import {
-	type RaffleVerificationData,
+	type RaffleVerificationPayload,
 	raffleVerificationDataSchema,
 } from '@/types/verification';
 import { ZodError } from 'zod';
@@ -20,9 +21,11 @@ import { ZodError } from 'zod';
  */
 export async function getRaffleVerification(
 	raffleId: string,
-): Promise<ServiceResponse<RaffleVerificationData, VerificationErrorCode>> {
+): Promise<ServiceResponse<RaffleVerificationPayload, VerificationErrorCode>> {
 	try {
-		const response = await baseClient.get(`/raffles/${raffleId}/verification`);
+		const response = await baseClient.get(
+			`/raffles/${pathParam(raffleId)}/verification`,
+		);
 		return success(raffleVerificationDataSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {

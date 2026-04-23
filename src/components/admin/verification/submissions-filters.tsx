@@ -93,7 +93,7 @@ export function SubmissionsFilters() {
 					<SelectItem value="all">All types</SelectItem>
 					<SelectItem value="kyb_individual">Individual Host</SelectItem>
 					<SelectItem value="kyb_company">Company Host</SelectItem>
-					<SelectItem value="kyc_winner">Raffle Winner</SelectItem>
+					<SelectItem value="kyc_winner">Sweepstakes Winner</SelectItem>
 				</SelectContent>
 			</Select>
 		</div>

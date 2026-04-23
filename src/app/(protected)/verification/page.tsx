@@ -8,11 +8,11 @@ import {
 	VERIFICATION_TYPE,
 } from '@/types/kyc-submission';
 import { getCurrentRejectedSubmissionNotice } from '@/lib/verification/rejected-submission-notice';
-import { FormHeader } from '@/components/verification/form-header';
-import { FormStepComponent } from '@/components/verification/form-step-component';
+import { FormHeader } from '@/components/verification/form/form-header';
+import { FormStepComponent } from '@/components/verification/form/form-step-component';
 import { RejectedSubmissionNotice } from '@/components/verification/rejected-submission-notice';
 import { SubmissionsList } from '@/components/verification/submissions-list';
-import { VerificationFormProvider } from '@/components/verification/verification-form-provider';
+import { VerificationFormProvider } from '@/components/verification/form/form-provider';
 
 /**
  * Checks if a submission is currently active (pending review or approved).

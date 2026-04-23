@@ -8,6 +8,7 @@ import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { CHAT_ERROR_CODES, type ChatErrorCode } from '@/types/errors';
 import { type Message, messageSchema } from '@/types/chat';
 import type { ServiceResponse } from '@/types/service-response';
@@ -30,7 +31,7 @@ export async function deleteMessage(
 ): Promise<ServiceResponse<Message, ChatErrorCode>> {
 	try {
 		const response = await authenticatedClient.delete(
-			`/chat/messages/${messageId}`,
+			`/chat/messages/${pathParam(messageId)}`,
 		);
 		return success(messageSchema.parse(response.data));
 	} catch (error) {

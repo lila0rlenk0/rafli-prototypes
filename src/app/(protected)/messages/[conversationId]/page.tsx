@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
-import { ChatInbox } from '@/components/messages/chat-inbox';
+import { ChatInbox } from '@/components/messages/chat/inbox';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getConversation } from '@/services/chat/get-conversation';
 

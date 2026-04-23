@@ -1,8 +1,8 @@
-import { ScreenLoader } from '@/components/ui/screen-loader';
+import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 
 /**
  * Loading state for edit raffle page
  */
 export default function EditRaffleLoading() {
-	return <ScreenLoader className="h-[60vh]" />;
+	return <ScreenLoader className="h-tall-screen" />;
 }

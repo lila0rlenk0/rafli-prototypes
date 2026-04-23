@@ -12,7 +12,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { revalidateWinningPaths } from '@/lib/cache/revalidation';
 import { failure, mapWinningError, success } from '@/lib/errors';
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 import {
 	captureContractDrift,
 	captureServiceError,

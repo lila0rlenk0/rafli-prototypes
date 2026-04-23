@@ -19,28 +19,29 @@ const clashDisplay = localFont({
 export const metadata: Metadata = {
 	metadataBase: new URL('https://www.rafli.win'),
 	title: {
-		default: 'Rafli – Fair Raffles & Real Prizes',
+		default: 'Rafli – Fair Sweepstakes & Real Prizes',
 		template: '%s | Rafli',
 	},
 	description:
-		'Rafli is a raffle platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now to win real prizes!',
+		'Rafli is a sweepstakes platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now — no purchase necessary — to win real prizes!',
 	keywords: [
-		'raffle',
+		'sweepstakes',
 		'prize draw',
 		'win prizes',
-		'fair raffle',
+		'fair sweepstakes',
 		'verified host',
 		'real prizes',
-		'online raffle',
+		'online sweepstakes',
+		'no purchase necessary',
 	],
 	openGraph: {
 		type: 'website',
 		locale: 'en_US',
 		url: 'https://www.rafli.win',
 		siteName: 'Rafli',
-		title: 'Rafli – Fair Raffles & Real Prizes',
+		title: 'Rafli – Fair Sweepstakes & Real Prizes',
 		description:
-			'Rafli is a raffle platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now to win real prizes!',
+			'Rafli is a sweepstakes platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now — no purchase necessary — to win real prizes!',
 		images: [
 			{
 				url: '/web-app-manifest-512x512.png',
@@ -52,9 +53,9 @@ export const metadata: Metadata = {
 	},
 	twitter: {
 		card: 'summary',
-		title: 'Rafli – Fair Raffles & Real Prizes',
+		title: 'Rafli – Fair Sweepstakes & Real Prizes',
 		description:
-			'Rafli is a raffle platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now to win real prizes!',
+			'Rafli is a sweepstakes platform built on blockchain technology to make every step of the process visible, verifiable, and fair. Enter now — no purchase necessary — to win real prizes!',
 		images: ['/web-app-manifest-512x512.png'],
 	},
 	appleWebApp: {

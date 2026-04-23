@@ -4,8 +4,12 @@ import type { ReactNode } from 'react';
 import { createAppKit } from '@reown/appkit/react';
 import { cookieToInitialState, WagmiProvider } from 'wagmi';
 
-import { configuredNetworks } from '@/lib/web3/constants';
-import { projectId, wagmiAdapter, wagmiConfig } from '@/lib/web3/wagmi-config';
+import { configuredNetworks } from '@/lib/web3/config/constants';
+import {
+	projectId,
+	wagmiAdapter,
+	wagmiConfig,
+} from '@/lib/web3/config/wagmi-config';
 
 interface Web3ProviderProps {
 	readonly children: ReactNode;
@@ -74,7 +78,7 @@ if (wagmiAdapter && projectId) {
 		defaultNetwork: configuredNetworks[0],
 		metadata: {
 			name: 'Rafli',
-			description: 'Win big with crypto-verified raffles',
+			description: 'Win big with crypto-verified sweepstakes',
 			url: DAPP_URL,
 			icons: [`${DAPP_URL}/web-app-manifest-512x512.png`],
 		},

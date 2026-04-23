@@ -15,7 +15,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 
 import { identify, initMixpanel, reset } from '@/lib/analytics/mixpanel-client';
-import { AUTH_COOKIES } from '@/lib/auth/config';
+import { AUTH_COOKIES } from '@/lib/auth/constants';
 import { useCookieConsentStore } from '@/providers/cookie-consent-store-provider';
 import { COOKIE_CONSENT_STATUS } from '@/store/cookie-consent-store';
 

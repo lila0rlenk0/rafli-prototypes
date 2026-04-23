@@ -9,7 +9,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 /** Publish mode: immediate or scheduled */
 export type PublishMode = 'now' | 'schedule';

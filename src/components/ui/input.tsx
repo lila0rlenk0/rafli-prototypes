@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 /** Text input with auto-select on focus for number types */
 function Input({

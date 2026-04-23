@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 import { LogoIcon } from '@/assets/logo-icon';
-import { AuthPageShell } from '@/components/auth/auth-page-shell';
-import { ResetPasswordForm } from '@/components/auth/reset-password-form';
+import { AuthPageShell } from '@/components/auth/page-shell';
+import { ResetPasswordForm } from '@/components/auth/password/reset-form';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 
@@ -32,7 +32,7 @@ export default async function ResetPasswordPage({
 	if (!token) {
 		return (
 			<AuthPageShell>
-				<div className="flex w-full max-w-md flex-col rounded-2xl border border-black bg-white px-8 py-10 lg:px-12 lg:py-12">
+				<div className="flex w-full max-w-md flex-col rounded-2xl border border-black bg-white px-8 py-10 lg:p-12">
 					<FieldGroup className="mx-auto h-fit w-full max-w-80">
 						<LogoIcon className="mx-auto" />
 						<div className="my-6 flex flex-col items-center gap-1 text-center">

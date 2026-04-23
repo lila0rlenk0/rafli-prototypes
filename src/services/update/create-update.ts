@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapUpdateError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -32,7 +33,7 @@ export async function createUpdate(
 	try {
 		// Step 1: Submit update to backend
 		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/updates`,
+			`/raffles/${pathParam(raffleId)}/updates`,
 			payload,
 		);
 

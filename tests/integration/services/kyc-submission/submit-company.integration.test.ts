@@ -2,7 +2,7 @@ import { describe, expect, mock, spyOn, test } from 'bun:test';
 
 import { COMMON_ERROR_CODES, KYC_SUBMISSION_ERROR_CODES } from '@/types/errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // ─── Mock Dependencies ───────────────────────────────────────────────────────
 

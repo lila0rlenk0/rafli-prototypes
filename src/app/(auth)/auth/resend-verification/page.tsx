@@ -1,5 +1,5 @@
-import { AuthPageShell } from '@/components/auth/auth-page-shell';
-import { ResendVerificationForm } from '@/components/auth/resend-verification-form';
+import { AuthPageShell } from '@/components/auth/page-shell';
+import { ResendVerificationForm } from '@/components/auth/email/resend-form';
 
 /**
  * Resend Verification Email Page

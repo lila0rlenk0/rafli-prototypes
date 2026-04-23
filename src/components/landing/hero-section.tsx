@@ -33,31 +33,31 @@ export function HeroSection() {
 	} as const;
 
 	return (
-		<section className="relative mx-auto max-w-[1720px] px-6 pt-16 pb-20 lg:px-[108px] lg:pt-[100px]">
+		<section className="max-w-wide relative mx-auto px-6 pt-16 pb-20 lg:px-27 lg:pt-25">
 			<div className="relative z-10">
 				<p className="mb-4 text-center text-xl font-medium text-black lg:text-left lg:text-2xl">
-					Fair Raffles • Real Prizes • No Funny Business
+					Fair Sweepstakes • Real Prizes • No Funny Business
 				</p>
-				<h1 className="font-clash-display text-dark mb-6 text-6xl leading-none font-semibold lg:text-[160px]">
-					<SplitText text="Raffles!" {...splitTextProps} />
+				<h1 className="font-clash-display text-brand-dark lg:text-160 mb-6 text-6xl/none font-semibold">
+					<SplitText text="Sweepstakes!" {...splitTextProps} />
 					<br />
 					<SplitText text="Done right!" {...splitTextProps} />
 				</h1>
-				<p className="mb-10 max-w-[1131px] text-xl font-medium text-black lg:text-2xl">
-					Become a verified host to run prize draws, or enter exclusive raffles
-					— no purchase necessary, free entry always available.
+				<p className="max-w-pricing mb-10 text-xl font-medium text-black lg:text-2xl">
+					Become a verified host to run prize draws, or enter exclusive
+					sweepstakes — no purchase necessary, free entry always available.
 				</p>
-				<div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center lg:gap-[34px]">
+				<div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center lg:gap-8.5">
 					<Button
 						asChild
-						className="hover:bg-background h-[60px] w-full border-2 border-black bg-black text-lg hover:text-black sm:w-[234px]"
+						className="hover:bg-background h-15 w-full border-2 border-black bg-black text-lg hover:text-black sm:w-58.5"
 					>
-						<Link href="/browse">Explore raffles</Link>
+						<Link href="/browse">Explore sweepstakes</Link>
 					</Button>
 					<Button
 						asChild
 						variant="outline"
-						className="hover:text-background h-[60px] w-full border-2 border-black text-lg text-black/95 hover:bg-black sm:w-[238px]"
+						className="hover:text-background h-15 w-full border-2 border-black text-lg text-black/95 hover:bg-black sm:w-59.5"
 					>
 						<Link href="https://forms.gle/RqihwzjyBcjjwUa97">
 							Become a host

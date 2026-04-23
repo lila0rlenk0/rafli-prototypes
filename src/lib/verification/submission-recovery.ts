@@ -68,44 +68,45 @@ export async function resolveSubmissionId(
 	};
 }
 
+/** Lookup — submission flow error code → user-facing toast copy. */
+const SUBMISSION_ERROR_MESSAGES: Record<string, string> = {
+	'core:verification:already-pending':
+		'You already have a pending verification of this type. Please wait for it to be reviewed.',
+	'core:verification:email-mismatch':
+		'The email address must match the email you signed up with.',
+	'core:verification:already-finalized':
+		'This submission has already been finalized.',
+	'core:verification:incomplete-documents':
+		'Some required documents are missing. Please upload all required files.',
+	'core:verification:not-pending':
+		'This submission is no longer in a draft state and cannot be updated.',
+	'core:verification:permission-denied':
+		'You do not have permission to update this submission.',
+	'core:verification:invalid-purpose':
+		'One of the uploaded documents has an invalid purpose. Please refresh and try again.',
+	'core:verification:document-exists':
+		'A document for this slot was already uploaded. Please try uploading again.',
+	'global:upload:file-too-large':
+		'A document is larger than 10MB. Please upload a smaller file.',
+	'global:upload:invalid-file-type':
+		'Invalid file type. Only PDF, JPEG, PNG, and WebP are allowed.',
+	'global:upload:invalid-content-type':
+		'Invalid file type. Only PDF, JPEG, PNG, and WebP are allowed.',
+	document_upload_failed:
+		'Failed to upload document. Please check the file and try again.',
+	'global:auth:unauthenticated': 'Please sign in to continue.',
+	unauthorized: 'Please sign in to continue.',
+	network_error: 'Network error. Please check your connection and try again.',
+	timeout_error: 'Request timed out. Please try again.',
+};
+
 /**
  * Maps submission flow error codes to user-facing messages.
  *
  * @returns A readable error message for toast notifications
  */
 export function getSubmissionErrorMessage(code: string): string {
-	switch (code) {
-		case 'core:verification:already-pending':
-			return 'You already have a pending verification of this type. Please wait for it to be reviewed.';
-		case 'core:verification:email-mismatch':
-			return 'The email address must match the email you signed up with.';
-		case 'core:verification:already-finalized':
-			return 'This submission has already been finalized.';
-		case 'core:verification:incomplete-documents':
-			return 'Some required documents are missing. Please upload all required files.';
-		case 'core:verification:not-pending':
-			return 'This submission is no longer in a draft state and cannot be updated.';
-		case 'core:verification:permission-denied':
-			return 'You do not have permission to update this submission.';
-		case 'core:verification:invalid-purpose':
-			return 'One of the uploaded documents has an invalid purpose. Please refresh and try again.';
-		case 'core:verification:document-exists':
-			return 'A document for this slot was already uploaded. Please try uploading again.';
-		case 'global:upload:file-too-large':
-			return 'A document is larger than 10MB. Please upload a smaller file.';
-		case 'global:upload:invalid-file-type':
-		case 'global:upload:invalid-content-type':
-			return 'Invalid file type. Only PDF, JPEG, PNG, and WebP are allowed.';
-		case 'document_upload_failed':
-			return 'Failed to upload document. Please check the file and try again.';
-		case 'global:auth:unauthenticated':
-		case 'unauthorized':
-			return 'Please sign in to continue.';
-		case 'network_error':
-			return 'Network error. Please check your connection and try again.';
-		case 'timeout_error':
-			return 'Request timed out. Please try again.';
-		default:
-			return 'Something went wrong. Please try again.';
-	}
+	return (
+		SUBMISSION_ERROR_MESSAGES[code] ?? 'Something went wrong. Please try again.'
+	);
 }

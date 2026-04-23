@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapWinningError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
@@ -35,7 +36,7 @@ export async function getRaffleWinnings(
 ): Promise<ServiceResponse<HostRaffleWinningsResponse, WinningErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/raffles/${raffleId}/winners`,
+			`/raffles/${pathParam(raffleId)}/winners`,
 			{ params },
 		);
 

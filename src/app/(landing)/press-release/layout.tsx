@@ -7,14 +7,14 @@ import { env } from '@/env/server';
 export const metadata: Metadata = {
 	title: 'Press Release — Introducing Rafli | Rafli',
 	description:
-		'Rafli is a blockchain-backed raffle platform redefining transparency, trust, and excitement for hosts and participants alike.',
+		'Rafli is a blockchain-backed sweepstakes platform redefining transparency, trust, and excitement for hosts and participants alike.',
 	keywords: [
 		'rafli',
-		'raffle platform',
-		'blockchain raffle',
+		'sweepstakes platform',
+		'blockchain sweepstakes',
 		'provably fair',
-		'transparent raffle',
-		'online raffle',
+		'transparent sweepstakes',
+		'online sweepstakes',
 		'verified hosts',
 		'on-chain selection',
 	],
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 	openGraph: {
 		title: 'Press Release — Introducing Rafli',
 		description:
-			'A blockchain-backed platform redefining transparency, trust, and excitement in the world of online raffles.',
+			'A blockchain-backed platform redefining transparency, trust, and excitement in the world of online sweepstakes.',
 		url: `${env.APP_URL}/press-release`,
 		siteName: 'Rafli',
 		type: 'article',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 		card: 'summary_large_image',
 		title: 'Press Release — Introducing Rafli',
 		description:
-			'Fair raffles, real prizes, no funny business. Blockchain-backed transparency for every draw.',
+			'Fair sweepstakes, real prizes, no funny business. Blockchain-backed transparency for every draw.',
 	},
 	robots: {
 		index: true,
@@ -50,9 +50,9 @@ export const metadata: Metadata = {
 const jsonLd = {
 	'@context': 'https://schema.org',
 	'@type': 'Article',
-	headline: 'Introducing Rafli — Raffles. Done Right.',
+	headline: 'Introducing Rafli — Sweepstakes. Done Right.',
 	description:
-		'A blockchain-backed platform redefining transparency, trust, and excitement in the world of online raffles.',
+		'A blockchain-backed platform redefining transparency, trust, and excitement in the world of online sweepstakes.',
 	author: {
 		'@type': 'Organization',
 		name: 'Rafli',

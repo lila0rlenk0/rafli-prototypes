@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
-import { getWinningStatusLabel } from '@/lib/utils/winning-status-label';
+import { cn } from '@/lib/class-names';
+import { getWinningStatusLabel } from '@/lib/utils/raffle/winning-status-label';
 import { WINNING_STATUS, type WinningStatus } from '@/types/winning';
 
 interface WinningStatusBadgeProps {

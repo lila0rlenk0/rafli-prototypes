@@ -3,7 +3,7 @@
 import * as React from 'react';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 /**
  * Switch UI primitive wrapping Radix Switch
@@ -25,7 +25,7 @@ function Switch({
 		>
 			<SwitchPrimitive.Thumb
 				data-slot="switch-thumb"
-				className="bg-background pointer-events-none block h-5 w-5 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+				className="bg-background pointer-events-none block size-5 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
 			/>
 		</SwitchPrimitive.Root>
 	);

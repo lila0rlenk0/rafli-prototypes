@@ -5,8 +5,8 @@ import { $findMatchingParent } from '@lexical/utils';
 import {
 	$isElementNode,
 	$isRangeSelection,
-	BaseSelection,
-	ElementFormatType,
+	type BaseSelection,
+	type ElementFormatType,
 	FORMAT_ELEMENT_COMMAND,
 	INDENT_CONTENT_COMMAND,
 	OUTDENT_CONTENT_COMMAND,
@@ -19,6 +19,7 @@ import {
 	IndentDecreaseIcon,
 	IndentIncreaseIcon,
 } from 'lucide-react';
+import type { LexicalNode } from 'lexical';
 import { useState } from 'react';
 
 import { useToolbarContext } from '@/components/ui/editor/context/toolbar-context';
@@ -26,6 +27,31 @@ import { useUpdateToolbarHandler } from '@/components/ui/editor/editor-hooks/use
 import { getSelectedNode } from '@/components/ui/editor/utils/get-selected-node';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
+interface ResolveFormatTypeInput {
+	matchingParent: LexicalNode | null | undefined;
+	node: LexicalNode;
+	parent: LexicalNode | null;
+}
+
+function getFormat(
+	node: LexicalNode | null | undefined,
+): ElementFormatType | null {
+	if (!node || !$isElementNode(node)) return null;
+	return node.getFormatType();
+}
+
+function resolveFormatType({
+	matchingParent,
+	node,
+	parent,
+}: ResolveFormatTypeInput): ElementFormatType {
+	const matchingParentFormat = getFormat(matchingParent);
+	if (matchingParentFormat !== null) return matchingParentFormat;
+	const nodeFormat = getFormat(node);
+	if (nodeFormat !== null) return nodeFormat;
+	return getFormat(parent) ?? 'left';
+}
 
 const ELEMENT_FORMAT_OPTIONS: {
 	[key in Exclude<ElementFormatType, 'start' | 'end' | ''>]: {
@@ -77,13 +103,7 @@ export function ElementFormatToolbarPlugin({
 					parentNode => $isElementNode(parentNode) && !parentNode.isInline(),
 				);
 			}
-			setElementFormat(
-				$isElementNode(matchingParent)
-					? matchingParent.getFormatType()
-					: $isElementNode(node)
-						? node.getFormatType()
-						: parent?.getFormatType() || 'left',
-			);
+			setElementFormat(resolveFormatType({ matchingParent, node, parent }));
 		}
 	};
 

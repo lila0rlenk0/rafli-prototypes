@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
-import type { NotificationStreamConfig } from '@/lib/notification-stream';
+import type { NotificationStreamConfig } from '@/lib/notifications/stream';
 
 // --- Env mock — controls buildWsUrl and isDev ---
 
@@ -133,7 +133,7 @@ const originals = {
 
 // Dynamic import AFTER mock.module — but BEFORE globals replacement,
 // since the module captures nothing at import time.
-const { NotificationStream } = await import('@/lib/notification-stream');
+const { NotificationStream } = await import('@/lib/notifications/stream');
 
 beforeEach(() => {
 	timerId = 0;
@@ -161,23 +161,26 @@ afterEach(() => {
 // ============================================================
 
 /** Standard test config with fresh mocks. */
-function makeConfig(
-	overrides?: Partial<NotificationStreamConfig>,
-): NotificationStreamConfig & {
-	onNewNotification: ReturnType<typeof mock>;
-	getToken: ReturnType<typeof mock>;
-	onReconnected: ReturnType<typeof mock>;
+function makeConfig(overrides?: Partial<NotificationStreamConfig>): {
+	onNewNotification: NotificationStreamConfig['onNewNotification'] &
+		ReturnType<typeof mock>;
+	getToken: NotificationStreamConfig['getToken'] & ReturnType<typeof mock>;
+	onReconnected: NonNullable<NotificationStreamConfig['onReconnected']> &
+		ReturnType<typeof mock>;
 } {
-	const onNewNotification = mock();
-	const getToken = mock(async () => ({ token: 'tok-1', expiresIn: 300 }));
-	const onReconnected = mock();
-
-	return {
-		onNewNotification,
-		getToken,
-		onReconnected,
-		...overrides,
+	const defaults = {
+		onNewNotification: mock() as NotificationStreamConfig['onNewNotification'] &
+			ReturnType<typeof mock>,
+		getToken: mock(async () => ({
+			token: 'tok-1',
+			expiresIn: 300,
+		})) as NotificationStreamConfig['getToken'] & ReturnType<typeof mock>,
+		onReconnected: mock() as NonNullable<
+			NotificationStreamConfig['onReconnected']
+		> &
+			ReturnType<typeof mock>,
 	};
+	return { ...defaults, ...overrides } as typeof defaults;
 }
 
 // ============================================================

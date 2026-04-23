@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
@@ -34,7 +35,7 @@ export async function getPromoCodes(
 ): Promise<ServiceResponse<ListPromoCodesResponse, PromoCodeErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/raffles/${raffleId}/promo-codes`,
+			`/raffles/${pathParam(raffleId)}/promo-codes`,
 			{ params },
 		);
 		return success(listPromoCodesResponseSchema.parse(response.data));

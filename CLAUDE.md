@@ -52,7 +52,7 @@ Cookie-based JWT. Cookies: `raffly-token` (httpOnly), `raffly-session` (client-r
 
 ## Caching
 
-TTLs in `@/lib/api/config`: `MY_RAFFLES: 60s`, `RAFFLE_DETAIL: 300s`, `CATEGORIES: 3_600s`. Tags for `MY_RAFFLES` and `RAFFLE_DETAIL` only. Revalidation in `@/lib/cache/revalidation`. React Query: `staleTime: Infinity`, auto-refetch disabled, manual invalidation.
+TTLs in `@/lib/api/constants`: `MY_RAFFLES: 60s`, `RAFFLE_DETAIL: 300s`, `CATEGORIES: 3_600s`. Tags for `MY_RAFFLES` and `RAFFLE_DETAIL` only. Revalidation in `@/lib/cache/revalidation`. React Query: `staleTime: Infinity`, auto-refetch disabled, manual invalidation.
 
 ## Imports
 

@@ -7,7 +7,7 @@ import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
 import { failure, mapKycSubmissionError, success } from '@/lib/errors';
 import {
 	KYC_SUBMISSION_ERROR_CODES,

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
+import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
 import { Button } from '@/components/ui/button';
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
@@ -229,7 +229,7 @@ export function CreditsBuyButton({
 					isGatedByAcknowledgment
 				}
 				title={getTooltipText()}
-				className="h-12 w-full cursor-pointer border-2 border-[#beffdb] bg-[#beffdb] text-black hover:bg-[#a3e8c0] hover:text-black"
+				className="border-brand-mint bg-brand-mint hover:bg-mint-300 h-12 w-full cursor-pointer border-2 text-black hover:text-black"
 			>
 				{isLoading ? (
 					<Loader2Icon className="mr-2 size-4 animate-spin" />

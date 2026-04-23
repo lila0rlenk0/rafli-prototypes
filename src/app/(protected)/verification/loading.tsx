@@ -1,4 +1,4 @@
-import { ScreenLoader } from '@/components/ui/screen-loader';
+import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 
 /**
  * Loading state for the verification page
@@ -6,5 +6,5 @@ import { ScreenLoader } from '@/components/ui/screen-loader';
  * @returns Centered spinner placeholder while page loads
  */
 export default function VerificationLoading() {
-	return <ScreenLoader className="h-[60vh]" />;
+	return <ScreenLoader className="h-tall-screen" />;
 }

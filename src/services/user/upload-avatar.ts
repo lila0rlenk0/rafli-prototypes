@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
@@ -15,7 +15,8 @@ import type { ServiceResponse } from '@/types/service-response';
 import { uploadAvatarResponseSchema } from '@/types/user';
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+// 5 MB
+const MAX_SIZE = 5 * 1024 * 1024;
 
 /**
  * Uploads a user avatar image.

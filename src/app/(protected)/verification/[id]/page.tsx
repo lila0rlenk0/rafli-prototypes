@@ -3,72 +3,109 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
-import { KycStatusBadge } from '@/components/verification/kyc-status-badge';
+import { KycStatusBadge } from '@/components/verification/badges/kyc-status-badge';
 import { getSession } from '@/lib/auth/session';
-import { formatDate } from '@/lib/utils/date-format';
+import { formatDate } from '@/lib/utils/format/date-format';
 import {
 	formatFieldLabel,
 	formatFieldValue,
 	formatNullableDate,
-} from '@/lib/utils/format-field';
-import { getPdfPreviewUrl, isImageType, isPdfType } from '@/lib/utils/mime';
-import { getSubmissionDetail } from '@/services/kyc-submission/get-submission-detail';
+} from '@/lib/utils/format/format-field';
+import {
+	getPdfPreviewUrl,
+	isImageType,
+	isPdfType,
+} from '@/lib/utils/media/mime';
 import {
 	getDocumentPurposeLabel,
 	getVerificationTypeLabel,
-	type KycDocument,
-} from '@/types/kyc-submission';
+} from '@/lib/verification/labels';
+import { getSubmissionDetail } from '@/services/kyc-submission/get-submission-detail';
+import { type KycDocument } from '@/types/kyc-submission';
 
 interface SubmissionDetailPageProps {
 	params: Promise<{ id: string }>;
 }
 
+interface DocumentPreviewProps {
+	url: string | null;
+	isImage: boolean;
+	isPdf: boolean;
+	filename: string;
+}
+
 /**
- * Renders a single document — image thumbnail or PDF file icon
+ * Renders the image / PDF iframe / fallback icon for a single document.
+ * @returns Preview node for the document card body
+ */
+function DocumentPreview({
+	url,
+	isImage,
+	isPdf,
+	filename,
+}: DocumentPreviewProps) {
+	if (isImage && url !== null) {
+		return (
+			<a
+				href={url}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="bg-muted aspect-card relative w-full overflow-hidden transition-opacity hover:opacity-80"
+			>
+				<Image
+					src={url}
+					alt={filename}
+					fill
+					sizes="(max-width: 640px) 100vw, 50vw"
+					className="object-cover"
+					// signed URLs change on every request — skip Next.js image optimization
+					unoptimized
+				/>
+			</a>
+		);
+	}
+	if (isPdf && url !== null) {
+		return (
+			<a
+				href={url}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="bg-muted aspect-card relative block w-full overflow-hidden transition-opacity hover:opacity-80"
+			>
+				<iframe
+					src={getPdfPreviewUrl(url)}
+					title={`PDF thumbnail: ${filename}`}
+					className="pointer-events-none size-full border-0 bg-white"
+					aria-hidden="true"
+					tabIndex={-1}
+				/>
+			</a>
+		);
+	}
+	return (
+		<div className="bg-muted aspect-card flex w-full items-center justify-center">
+			<FileText className="text-muted-foreground size-12" />
+		</div>
+	);
+}
+
+/**
+ * Renders a single document card — preview + filename + open link.
+ * @returns Card node for one KYC document
  */
 function DocumentCard({ doc }: { doc: KycDocument }) {
-	const isImage = isImageType(doc.contentType) && doc.url;
-	const isPdf = isPdfType(doc.contentType) && doc.url;
+	const url = doc.url;
+	const isImage = url !== null && isImageType(doc.contentType);
+	const isPdf = url !== null && isPdfType(doc.contentType);
 
 	return (
 		<div className="border-border flex flex-col overflow-hidden rounded-lg border">
-			{isImage ? (
-				<a
-					href={doc.url!}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="bg-muted relative aspect-[4/3] w-full overflow-hidden transition-opacity hover:opacity-80"
-				>
-					<Image
-						src={doc.url!}
-						alt={doc.originalFilename}
-						fill
-						sizes="(max-width: 640px) 100vw, 50vw"
-						className="object-cover"
-						// Signed URLs change on every request — skip Next.js image optimization
-						unoptimized
-					/>
-				</a>
-			) : isPdf ? (
-				<a
-					href={doc.url!}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="bg-muted relative block aspect-[4/3] w-full overflow-hidden transition-opacity hover:opacity-80"
-				>
-					<iframe
-						src={getPdfPreviewUrl(doc.url!)}
-						title={`PDF thumbnail: ${doc.originalFilename}`}
-						className="pointer-events-none size-full border-0 bg-white"
-						aria-hidden="true"
-						tabIndex={-1}
-					/>
-				</a>
-			) : (
-				<div className="bg-muted flex aspect-[4/3] w-full items-center justify-center">
-					<FileText className="text-muted-foreground size-12" />
-				</div>
-			)}
+			<DocumentPreview
+				url={url}
+				isImage={isImage}
+				isPdf={isPdf}
+				filename={doc.originalFilename}
+			/>
 
 			<div className="flex flex-col gap-1 p-3">
 				<span className="text-sm font-medium">

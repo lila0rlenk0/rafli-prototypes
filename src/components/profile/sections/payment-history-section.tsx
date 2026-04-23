@@ -67,7 +67,7 @@ export async function PaymentHistorySection() {
 					</span>
 					<OrderStatusBadge
 						status={order.status}
-						className="w-[88px] justify-center"
+						className="w-22 justify-center"
 					/>
 				</div>
 			</div>
@@ -80,7 +80,7 @@ export async function PaymentHistorySection() {
 			id="payment-history"
 		>
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-				<h3 className="font-clash-display text-h3 flex-1 font-semibold text-black">
+				<h3 className="font-clash-display text-headline-sm flex-1 font-semibold text-black">
 					Payment History
 				</h3>
 				<Link href="/profile/orders">

@@ -3,6 +3,8 @@ import { describe, expect, test } from 'bun:test';
 import {
 	formatPromoCodeValue,
 	getPromoCodeDescription,
+} from '@/lib/utils/format/promo-code-format';
+import {
 	PROMO_CODE_TYPE,
 	type PromoCode,
 	type ValidatedPromoCode,

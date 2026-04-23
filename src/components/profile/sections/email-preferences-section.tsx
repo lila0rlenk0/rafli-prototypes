@@ -19,10 +19,10 @@ export async function EmailPreferencesSection() {
 			id="email-preferences"
 		>
 			<div className="flex flex-col gap-2">
-				<h3 className="font-clash-display text-h3 font-semibold text-black">
+				<h3 className="font-clash-display text-headline-sm font-semibold text-black">
 					Email Preferences
 				</h3>
-				<p className="text-base leading-relaxed text-[#7B7B7B]">
+				<p className="text-ink-500 text-base/relaxed">
 					Choose which email notifications you want to receive
 				</p>
 			</div>

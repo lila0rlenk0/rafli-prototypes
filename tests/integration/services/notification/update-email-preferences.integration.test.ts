@@ -4,7 +4,7 @@ import { NOTIFICATION_ERROR_CODES } from '@/types/errors/notification-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import type { EmailPreferences } from '@/types/email-preferences';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const VALID_RESPONSE: EmailPreferences = {
 	hostNotifications: false,

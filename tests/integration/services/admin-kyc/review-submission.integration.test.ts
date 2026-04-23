@@ -2,7 +2,7 @@ import { describe, expect, mock, spyOn, test } from 'bun:test';
 
 import { ADMIN_KYC_ERROR_CODES, COMMON_ERROR_CODES } from '@/types/errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // ─── Mock Dependencies ───────────────────────────────────────────────────────
 
@@ -214,9 +214,13 @@ describe('reviewSubmission', () => {
 
 			await reviewSubmission('sub-1', { decision: 'approved' });
 
-			expect(mockRevalidatePath).toHaveBeenCalledWith('/admin/verification');
+			expect(mockRevalidatePath).toHaveBeenCalledWith(
+				'/admin/verification',
+				'page',
+			);
 			expect(mockRevalidatePath).toHaveBeenCalledWith(
 				'/admin/verification/sub-1',
+				'page',
 			);
 		});
 	});

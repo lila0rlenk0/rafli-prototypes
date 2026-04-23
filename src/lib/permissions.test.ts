@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
+import type { Permission } from '@/types/user-mode';
+
 import {
 	hasHostPermission,
 	parsePermissions,
@@ -39,7 +41,11 @@ describe('parsePermissions', () => {
 	});
 
 	test('preserves order of input permissions', () => {
-		const input = ['raffle:participate', 'raffle:create', 'raffle:manage'];
+		const input: Permission[] = [
+			'raffle:participate',
+			'raffle:create',
+			'raffle:manage',
+		];
 		expect(parsePermissions(input)).toEqual(input);
 	});
 });

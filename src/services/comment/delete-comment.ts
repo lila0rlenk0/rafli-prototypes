@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapCommentError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { deleteCommentResponseSchema } from '@/types/comment';
@@ -23,7 +24,9 @@ export async function deleteComment(
 ): Promise<ServiceResponse<void, CommentErrorCode>> {
 	try {
 		// Step 1: Soft-delete comment — body becomes "[Deleted]", replies preserved
-		const response = await authenticatedClient.delete(`/comments/${commentId}`);
+		const response = await authenticatedClient.delete(
+			`/comments/${pathParam(commentId)}`,
+		);
 
 		// Step 2: Validate response to detect contract drift
 		deleteCommentResponseSchema.parse(response.data);

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { MarkdownRenderer } from '@/components/ui-custom/markdown-renderer';
 
 interface CollapsibleDescriptionProps {
 	content: string;
@@ -23,7 +23,7 @@ export function CollapsibleDescription({
 
 	return (
 		<div className="flex min-w-0 flex-col gap-2">
-			<label className="text-sm text-[#B4B4B4]">Description</label>
+			<label className="text-ink-300 text-sm">Description</label>
 
 			<div className={isExpanded ? undefined : 'line-clamp-3'}>
 				<MarkdownRenderer content={content} className="text-sm" />

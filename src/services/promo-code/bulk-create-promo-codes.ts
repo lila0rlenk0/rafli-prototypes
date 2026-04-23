@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession, requireAuth } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -49,7 +50,7 @@ export async function bulkCreatePromoCodes(
 	try {
 		// Step 1: Bulk create promo codes on backend
 		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/promo-codes/bulk`,
+			`/raffles/${pathParam(raffleId)}/promo-codes/bulk`,
 			payload,
 		);
 

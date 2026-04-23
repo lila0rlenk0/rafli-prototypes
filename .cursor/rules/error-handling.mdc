@@ -1,61 +1,48 @@
 ---
-description: "Error Handling and Observability"
-alwaysApply: true
+description: "Error Handling"
+alwaysApply: false
+globs: "'src/services/**/*.ts','src/lib/errors/**/*.ts','src/lib/sentry/**/*.ts','src/components/**/*.tsx'"
 ---
-# Error Handling and Observability
 
-## ServiceResponse Pattern
+# Error Handling
 
-All services return a discriminated union defined in `@/types/service-response`:
+## ServiceResponse
 
-```typescript
+Discriminated union in `@/types/service-response`:
+
+```ts
 type ServiceResponse<T, E> =
 	| { success: true; data: T }
 	| { success: false; error: E };
 ```
 
-Helpers in `@/lib/errors`:
+Helpers: `success(data)`, `success(undefined)` for void ops, `failure(ERROR_CODES.X)`. Never throw raw errors from a server action.
 
-```typescript
-return success(data); // success with data
-return success(undefined); // success without data (void operations)
-return failure(ERROR_CODES.X); // failure with typed error code
-```
+## Error mappers
 
-Never throw raw errors. Always map through `ServiceResponse`.
+One per domain in `@/lib/errors/error-mapper`: `mapAuthError`, `mapRaffleError`, `mapOrderError`, `mapWalletError`, `mapPaymentError`, `mapTicketError`, `mapHostError`, `mapWinningError`, `mapUpdateError`, `mapVerificationError`, `mapNotificationError`, `mapReviewError`, `mapCommentError`, `mapReportError`, `mapPromoCodeError`.
 
-## Error Mappers
+Auto-mapped by the base mapper:
 
-One mapper per domain in `@/lib/errors/error-mapper`. Available: `mapAuthError`, `mapRaffleError`, `mapOrderError`, `mapWalletError`, `mapPaymentError`, `mapTicketError`, `mapHostError`, `mapWinningError`, `mapUpdateError`, `mapVerificationError`, `mapNotificationError`, `mapReviewError`, `mapCommentError`, `mapReportError`, `mapPromoCodeError`.
+- 401 → `unauthorized`
+- 403 → `forbidden`
+- 500 → `internal_server_error`
+- `ECONNABORTED` → `timeout_error`
+- `ERR_NETWORK` → `network_error`
 
-Auto-mapped codes: 401 `unauthorized`, 403 `forbidden`, 500 `internal_server_error`, `ECONNABORTED` `timeout_error`, `ERR_NETWORK` `network_error`.
+## Contract drift
 
-## Sentry Integration
+Zod `.parse()` on responses surfaces backend drift. Catch `ZodError` and call `captureContractDrift(error, domain, action)` — returns `COMMON_ERROR_CODES.VALIDATION_ERROR`.
 
-`captureServiceError()` from `@/lib/sentry/capture` — required in critical services (auth, payments, crypto). Optional for simple CRUD where error mappers provide enough context.
+## Sentry
 
-```typescript
-const errorCode = mapDomainError(error);
-captureServiceError(error, errorCode, {
-	service: 'domain-name',
-	action: 'action-name',
-});
-return failure(errorCode);
-```
+- `captureServiceError()` from `@/lib/sentry/capture` — required for critical services (auth, payments, crypto, wallet), optional for simple CRUD
+- `beforeSend` in `src/lib/sentry/filter.ts` auto-classifies: expected errors dropped, network/timeout sampled 10%
+- add new expected codes to `EXPECTED_ERROR_CODES` in `src/lib/sentry/expected-error-codes.ts`
 
-`beforeSend` in `src/lib/sentry/filter.ts` classifies automatically — no need to check if the error is expected. Expected errors (wrong password, sold out, validation) are dropped. Network/timeout errors are sampled at 10%.
+## Component error handling
 
-To add a new expected error code, add the string to `EXPECTED_ERROR_CODES` set in `src/lib/sentry/filter.ts`.
-
-## Component Error Handling
-
-Map error codes to user-facing messages with a switch. Use early return pattern.
-
-```typescript
-const result = await signIn(data);
-if (!result.success) {
-	setError('root', { message: getErrorMessage(result.error) });
-	return;
-}
-// TypeScript narrows: result.data exists here
-```
+- map error codes to user messages via a `switch` — exhaustiveness check with `default: never`
+- early return on `result.success === false`; TypeScript narrows `result.data` on the happy path
+- never display raw error codes — always translate to user-facing copy
+- validation errors render inline (field-level), everything else surfaces via toast or error boundary

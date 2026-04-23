@@ -1,6 +1,7 @@
 'use server';
 
 import { WINNING_EVENTS } from '@/lib/analytics/events';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import { type MarkSentPayload, type Winning } from '@/types/winning';
@@ -26,7 +27,7 @@ export async function markSent(
 	publicSlug?: string,
 ): Promise<ServiceResponse<Winning, WinningErrorCode>> {
 	return updateWinningStatusBase({
-		endpoint: `/winnings/${winningId}/mark-sent`,
+		endpoint: `/winnings/${pathParam(winningId)}/mark-sent`,
 		payload,
 		action: 'mark-sent',
 		event: WINNING_EVENTS.MARKED_SENT,

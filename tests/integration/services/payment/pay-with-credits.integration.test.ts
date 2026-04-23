@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { PAYMENT_ERROR_CODES } from '@/types/errors/payment-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const mockPost = mock();
 const mockCaptureServiceError = mock();
@@ -34,7 +34,7 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureServiceError: mockCaptureServiceError,
 }));
 
-mock.module('@/lib/run-after', () => ({
+mock.module('@/lib/utils/run-after', () => ({
 	runAfter: (task: () => void | Promise<void>) => void task(),
 }));
 

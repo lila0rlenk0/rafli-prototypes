@@ -11,6 +11,7 @@ Server Components by default, organized by domain.
 ## Directories
 
 - `ui/` — shadcn primitives, managed by CLI, never hand-edit
+- `ui-custom/` — non-stock shell pieces (public navbar, loaders, copy/media helpers) that compose `ui/` primitives
 - domain folders: `auth`, `raffle`, `host`, `payment`, `filters`, `promo-code`, `mode`, `order`, `fulfillment`, `notifications`, `report`, `verification`, `my-raffles`, `browse`, `profile`, `landing`, `pricing`, `messages`, `admin`
 
 ## Server vs Client
@@ -61,6 +62,7 @@ export default function Page() {
 - render logic only — pages fetch, domain components render
 - never `useEffect` for data — see `react-effects.md`
 - cross-domain reuse flows through `ui/` primitives — a `raffle/` component never imports from `host/`
+- every CTA goes through the shadcn `<Button>` primitive (or `<Button asChild><Link>`) — don't hand-roll `bg-primary`/`bg-brand-dark` on a raw `<a>`/`<button>`; the variant belongs in one place
 
 ## Performance
 

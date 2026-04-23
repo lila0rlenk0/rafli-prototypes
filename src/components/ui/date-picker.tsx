@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDate } from '@/lib/utils/date-format';
+import { formatDate } from '@/lib/utils/format/date-format';
 import { CalendarIcon } from 'lucide-react';
 import * as React from 'react';
 
@@ -11,7 +11,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 /**
  * Parses a YYYY-MM-DD string into a local Date (no timezone shift).

@@ -1,19 +1,43 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
-import { getCryptoSummary } from '@/lib/utils/crypto-form';
-import { formatDateTime } from '@/lib/utils/date-format';
-import { hasRaffleChanges } from '@/lib/utils/raffle-diff';
 import { Clock, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
-import { useEditForm } from '../edit-form-provider';
+
+import { Button } from '@/components/ui/button';
+import { MarkdownRenderer } from '@/components/ui-custom/markdown-renderer';
+import { ReviewRow } from '@/components/ui/data-review/review-row';
+import { ReviewSection } from '@/components/ui/data-review/review-section';
+import {
+	getActivePeriodDisplay,
+	getCategoryDisplay,
+	getDeclaredValueDisplay,
+	getDescriptionDisplay,
+	getParticipantsRangeDisplay,
+	getPaymentSummaryDisplay,
+	getPricePerTicketDisplay,
+	getWinnersDisplay,
+	willStartImmediately,
+} from '@/components/my-raffles/shared/review/field-getters';
+import { hasRaffleChanges } from '@/lib/utils/raffle/raffle-diff';
+
+import { useEditForm } from '../form-provider';
+
+// Wizard step indexes — kept in sync with `./index.ts`.
+const BASIC_INFO_STEP = 0;
+const TICKETS_STEP = 1;
 
 /**
- * ReviewStep for Edit Form
+ * Review step of the raffle edit wizard. Displays a preview of all raffle
+ * data and gates the submit button behind an actual-changes check so a
+ * host cannot accidentally re-submit an unchanged form.
  *
- * Displays a preview of all raffle data before saving changes.
- * Shows existing images or new uploads.
+ * Images show new uploads (via `URL.createObjectURL` on the fly) when
+ * present, falling back to the existing backend-hosted URLs. The `Image`
+ * component is set `unoptimized` only when a blob URL is in use — Next's
+ * image pipeline cannot transform `blob:` sources.
+ *
+ * @returns Review card with image grid, host identity, data sections, and
+ *   the save button.
  */
 export function ReviewStep() {
 	const {
@@ -25,152 +49,54 @@ export function ReviewStep() {
 		categories,
 		userName,
 		totalRaffles,
+		goToStep,
 	} = useEditForm();
 
-	const formValues = form.watch();
-	const {
-		description,
-		price,
-		category,
-		coverImage,
-		startDate,
-		startTime,
-		endDate,
-		endTime,
-		pricePerTicket,
-		minParticipants,
-		maxParticipants,
-	} = formValues;
-
-	// No useMemo needed: form.watch() returns a fresh reference on every field change,
-	// triggering a re-render. A plain derivation avoids the stale-deps bug where new
-	// form fields would silently be excluded from the comparison.
+	// form.watch() gives a fresh reference per field change so the review
+	// always mirrors current inputs; no useMemo needed (would stale-cache).
+	const values = form.watch();
+	const coverImage = values.coverImage;
 	const hasChanges =
 		(coverImage && coverImage.length > 0) ||
-		hasRaffleChanges(
-			originalRaffle,
-			formValues,
-			category,
-			formValues.checkInQuestion,
-		);
+		hasRaffleChanges({
+			original: originalRaffle,
+			current: values,
+			categoryId: values.category,
+			checkInQuestionId: values.checkInQuestion,
+		});
+	const hostLabel = userName || 'Sweepstakes Host';
+	const hostInitial = userName ? userName.charAt(0) : '';
+	const showStartNowBanner = willStartImmediately(values);
 
-	/**
-	 * Gets the main cover image source
-	 * Returns uploaded file URL or existing cover URL
-	 */
-	function getCoverImageSrc(): string | null {
-		if (coverImage?.[0]) {
-			return URL.createObjectURL(coverImage[0]);
-		}
-		return existingCoverUrl;
+	// Blob URLs are rebuilt every render — cheap and keeps the preview
+	// bound to the latest File reference. Cleanup happens via GC when the
+	// revision ticks over; Next flags these `unoptimized`.
+	const coverSrc = coverImage?.[0]
+		? URL.createObjectURL(coverImage[0])
+		: existingCoverUrl;
+
+	function resolveGallerySrc(index: number): string | null {
+		// coverImage[0] is the cover; gallery slots live at [1], [2], [3].
+		const file = coverImage?.[index + 1];
+		if (file) return URL.createObjectURL(file);
+		return existingGalleryUrls[index] ?? null;
 	}
 
-	const coverImageSrc = getCoverImageSrc();
-
-	/**
-	 * Gets a gallery image source at the given index
-	 * Returns uploaded file URL, existing gallery URL, or null
-	 */
-	function getGalleryImageSrc(index: number): string | null {
-		// coverImage[0] is cover, [1], [2], [3] are gallery
-		const galleryFileIndex = index + 1;
-		if (coverImage?.[galleryFileIndex]) {
-			return URL.createObjectURL(coverImage[galleryFileIndex]);
-		}
-		if (existingGalleryUrls[index]) {
-			return existingGalleryUrls[index];
-		}
-		return null;
+	function handleEditBasics() {
+		goToStep(BASIC_INFO_STEP);
 	}
 
-	/**
-	 * Gets the first letter of the user's name
-	 */
-	function getUserInitial(): string {
-		if (!userName) return '';
-		return userName.charAt(0);
+	function handleEditTickets() {
+		goToStep(TICKETS_STEP);
 	}
-
-	/**
-	 * Gets the user's full name
-	 */
-	function getUserName(): string {
-		return userName || 'Raffle Host';
-	}
-
-	/**
-	 * Gets the total number of raffles created by the user
-	 */
-	function getTotalRaffles(): number {
-		return totalRaffles;
-	}
-
-	/**
-	 * Gets the raffle description
-	 */
-	function getDescription() {
-		return description;
-	}
-
-	/**
-	 * Gets the raffle category display name
-	 * Looks up category name from the ID
-	 */
-	function getCategoryName(): string {
-		if (!category) return '';
-		const cat = categories.find(c => c.id === category);
-		return cat?.name || '';
-	}
-
-	/**
-	 * Gets the declared value formatted as currency
-	 */
-	function getDeclaredValue() {
-		return `$${price?.toFixed(2)}`;
-	}
-
-	/**
-	 * Gets the participants range as a formatted string
-	 */
-	function getParticipantsRange() {
-		return `${minParticipants} - ${maxParticipants}`;
-	}
-
-	/**
-	 * Gets the price per ticket formatted as currency
-	 */
-	function getPricePerTicket() {
-		return `$${pricePerTicket?.toFixed(2)}`;
-	}
-
-	/**
-	 * Gets the active time period as a formatted date range
-	 */
-	function getActivePeriod() {
-		return `${formatDateTime(startDate, startTime)} - ${formatDateTime(endDate, endTime)}`;
-	}
-
-	/**
-	 * Checks if the raffle will start now based on start datetime
-	 * Combines date + time for accurate comparison
-	 */
-	function checkWillStartNow() {
-		if (!startDate) return false;
-		const [year, month, day] = startDate.split('-').map(Number);
-		const [h, min] = (startTime || '00:00').split(':').map(Number);
-		const start = new Date(year, month - 1, day, h, min);
-		return start <= new Date();
-	}
-
-	const willStartNow = checkWillStartNow();
 
 	return (
 		<div className="flex w-full flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6">
 			<div className="flex flex-col gap-4">
-				<div className="relative flex aspect-video max-h-64 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
-					{coverImageSrc ? (
+				<div className="border-ink-200 relative flex aspect-video max-h-64 w-full items-center justify-center overflow-hidden rounded-lg border bg-white">
+					{coverSrc ? (
 						<Image
-							src={coverImageSrc}
+							src={coverSrc}
 							alt="Cover"
 							fill
 							sizes="(max-width: 780px) 100vw, 780px"
@@ -181,102 +107,65 @@ export function ReviewStep() {
 						<ImageIcon className="size-12 text-gray-400" />
 					)}
 				</div>
-
 				<div className="grid grid-cols-3 gap-4">
-					{Array.from({ length: 3 }).map((_, index) => {
-						const src = getGalleryImageSrc(index);
-						return (
-							<div
-								key={index}
-								className="relative flex aspect-square max-h-24 w-full items-center justify-center overflow-hidden rounded-lg border border-[#E5E5E5] bg-white"
-							>
-								{src ? (
-									<Image
-										src={src}
-										alt={`Gallery ${index + 1}`}
-										fill
-										sizes="33vw"
-										className="object-cover"
-										unoptimized={coverImage?.[index + 1] !== undefined}
-									/>
-								) : (
-									<ImageIcon className="size-6 text-gray-400" />
-								)}
-							</div>
-						);
-					})}
+					{Array.from({ length: 3 }).map((_, index) => (
+						<GallerySlot
+							key={index}
+							src={resolveGallerySrc(index)}
+							index={index}
+							isBlob={coverImage?.[index + 1] !== undefined}
+						/>
+					))}
 				</div>
 			</div>
 
 			<div className="flex items-center gap-4">
 				<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xl font-semibold">
-					{getUserInitial()}
+					{hostInitial}
 				</div>
 				<div className="flex min-w-0 flex-col font-medium">
-					<span className="truncate text-sm">by {getUserName()}</span>
-					<span className="text-xs">{getTotalRaffles()} Raffles</span>
+					<span className="truncate text-sm">by {hostLabel}</span>
+					<span className="text-xs">{totalRaffles} Sweepstakes</span>
 				</div>
 			</div>
 
-			<div className="flex min-w-0 flex-col gap-2">
-				<label className="text-sm text-[#B4B4B4]">Description</label>
-				<MarkdownRenderer
-					content={getDescription() || ''}
-					className="text-sm"
-				/>
-			</div>
+			<ReviewSection title="Basics" onEdit={handleEditBasics}>
+				<ReviewRow label="Description">
+					<MarkdownRenderer
+						content={getDescriptionDisplay(values)}
+						className="text-sm"
+					/>
+				</ReviewRow>
+				<ReviewRow label="Category">
+					{getCategoryDisplay(values, categories)}
+				</ReviewRow>
+				<ReviewRow label="Declared Value">
+					{getDeclaredValueDisplay(values)}
+				</ReviewRow>
+			</ReviewSection>
 
-			<div className="flex flex-wrap gap-2">
-				{getCategoryName() ? (
-					<div className="rounded-2xl bg-[#DFFFED] px-2 py-1">
-						<span className="text-sm capitalize">{getCategoryName()}</span>
-					</div>
-				) : null}
-			</div>
+			<ReviewSection title="Entries & Schedule" onEdit={handleEditTickets}>
+				<ReviewRow label="Price per entry">
+					{getPricePerTicketDisplay(values)}
+				</ReviewRow>
+				<ReviewRow label="Winners">{getWinnersDisplay(values)}</ReviewRow>
+				<ReviewRow label="Participants">
+					{getParticipantsRangeDisplay(values)}
+				</ReviewRow>
+				<ReviewRow label="Active period">
+					{getActivePeriodDisplay(values)}
+				</ReviewRow>
+				<ReviewRow label="Payment">
+					{getPaymentSummaryDisplay(values)}
+				</ReviewRow>
+			</ReviewSection>
 
-			<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-				<div className="flex min-w-0 flex-col gap-2">
-					<label className="text-sm text-[#B4B4B4]">Declared Value</label>
-					<p className="truncate text-sm font-medium">{getDeclaredValue()}</p>
-				</div>
-
-				<div className="flex min-w-0 flex-col gap-2">
-					<label className="text-sm text-[#B4B4B4]">Participants</label>
-					<p className="truncate text-sm font-medium">
-						{getParticipantsRange()}
-					</p>
-				</div>
-
-				<div className="flex min-w-0 flex-col gap-2">
-					<label className="text-sm text-[#B4B4B4]">Price per ticket</label>
-					<p className="truncate text-sm font-medium">{getPricePerTicket()}</p>
-				</div>
-
-				<div className="flex min-w-0 flex-col gap-2">
-					<label className="text-sm text-[#B4B4B4]">Active time period</label>
-					<p className="wrap-break-words text-sm font-medium">
-						{getActivePeriod()}
-					</p>
-				</div>
-
-				<div className="flex min-w-0 flex-col gap-2">
-					<label className="text-sm text-[#B4B4B4]">Payment</label>
-					<p className="truncate text-sm font-medium">
-						{getCryptoSummary(
-							formValues.acceptsCrypto,
-							formValues.cryptoChainIds,
-							formValues.cryptoTokens,
-						)}
-					</p>
-				</div>
-			</div>
-
-			{willStartNow ? (
-				<div className="flex w-full items-center justify-between rounded-lg bg-[#E1F8FF] p-4">
+			{showStartNowBanner ? (
+				<div className="flex w-full items-center justify-between rounded-lg bg-sky-100 p-4">
 					<div className="flex items-center gap-2">
-						<Clock className="size-6 text-[#2870BD]" />
+						<Clock className="text-brand-blue size-6" />
 						<span className="text-xs">
-							The raffle will start immediately after saving.
+							The sweepstakes will start immediately after saving.
 						</span>
 					</div>
 				</div>
@@ -291,6 +180,41 @@ export function ReviewStep() {
 					{isUpdating ? 'Saving...' : 'Save Changes'}
 				</Button>
 			</div>
+		</div>
+	);
+}
+
+interface GallerySlotProps {
+	/** Resolved source URL for this slot — `null` renders a placeholder icon. */
+	src: string | null;
+	/** Zero-based gallery slot index (0..2) — used for the `alt` attribute. */
+	index: number;
+	/** Whether `src` is a blob URL — Next's image pipeline can't transform blobs. */
+	isBlob: boolean;
+}
+
+/**
+ * Single gallery preview slot. Extracted to keep the parent composer's JSX
+ * flat (three nesting levels) and to let the slot decide between the
+ * fallback icon and the Next `Image` without deeper ternary branching.
+ *
+ * @returns Square preview slot with either the image or the empty-state icon.
+ */
+function GallerySlot({ src, index, isBlob }: GallerySlotProps) {
+	return (
+		<div className="border-ink-200 relative flex aspect-square max-h-24 w-full items-center justify-center overflow-hidden rounded-lg border bg-white">
+			{src ? (
+				<Image
+					src={src}
+					alt={`Gallery ${index + 1}`}
+					fill
+					sizes="33vw"
+					className="object-cover"
+					unoptimized={isBlob}
+				/>
+			) : (
+				<ImageIcon className="size-6 text-gray-400" />
+			)}
 		</div>
 	);
 }

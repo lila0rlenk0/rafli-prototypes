@@ -3,11 +3,11 @@ import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { getSession } from '@/lib/auth/session';
 import { getMe } from '@/services/user/get-me';
 import { getVerificationStatus } from '@/services/kyc-submission/get-verification-status';
-import { deriveAggregateStatus } from '@/types/verification-status';
+import { deriveAggregateStatus } from '@/lib/verification/aggregate-status';
 
-import { SignOutButton } from '@/components/auth/sign-out-button';
-import { VerificationBadge } from '@/components/verification/verification-badge';
-import { ProfileSidebar } from '@/components/profile/profile-sidebar';
+import { SignOutButton } from '@/components/auth/sign-out/button';
+import { VerificationBadge } from '@/components/verification/badges/badge';
+import { ProfileSidebar } from '@/components/profile/sidebar';
 import {
 	CreditsSection,
 	EmailPreferencesSection,
@@ -90,7 +90,7 @@ export default async function ProfilePage() {
 	// to avoid a render function while keeping the markup DRY.
 	const profileTitle = (
 		<div className="flex items-center gap-2.5">
-			<h1 className="font-clash-display text-h2 font-semibold text-black">
+			<h1 className="font-clash-display text-headline-md font-semibold text-black">
 				My Profile
 			</h1>
 			{verificationStatus ? (
@@ -105,7 +105,7 @@ export default async function ProfilePage() {
 	return (
 		<div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
 			{/* Main Content Layout */}
-			<div className="flex w-full flex-col gap-6 md:flex-row md:gap-[32px]">
+			<div className="flex w-full flex-col gap-6 md:flex-row md:gap-8">
 				{/* Header — mobile only: stacked above content */}
 				<div className="flex flex-col gap-6 md:hidden">
 					{profileTitle}

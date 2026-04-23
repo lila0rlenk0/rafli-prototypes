@@ -67,7 +67,7 @@ function base64UrlDecode(str: string): string {
 		return decodeURIComponent(
 			atob(base64)
 				.split('')
-				.map(byte => '%' + ('00' + byte.charCodeAt(0).toString(16)).slice(-2))
+				.map(byte => `%${`00${byte.charCodeAt(0).toString(16)}`.slice(-2)}`)
 				.join(''),
 		);
 	} catch {

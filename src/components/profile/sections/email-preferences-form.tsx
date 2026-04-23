@@ -23,9 +23,9 @@ import type { EmailPreferences } from '@/types/email-preferences';
 const PREFERENCE_CATEGORIES = [
 	{
 		key: 'raffleLifecycle' as const,
-		label: 'Raffle Updates',
+		label: 'Sweepstakes Updates',
 		description:
-			"Emails when raffles you're entered in start, end, or are cancelled.",
+			"Emails when sweepstakes you're entered in start, end, or are cancelled.",
 	},
 	{
 		key: 'prizeUpdates' as const,
@@ -37,13 +37,13 @@ const PREFERENCE_CATEGORIES = [
 		key: 'hostNotifications' as const,
 		label: 'Host Notifications',
 		description:
-			'Emails about participants, payments, and admin actions on raffles you host.',
+			'Emails about participants, payments, and admin actions on sweepstakes you host.',
 	},
 	{
 		key: 'reviewNotifications' as const,
 		label: 'Reviews',
 		description:
-			'Emails about new reviews left on your hosted raffles or your profile.',
+			'Emails about new reviews left on your hosted sweepstakes or your profile.',
 	},
 ] as const;
 

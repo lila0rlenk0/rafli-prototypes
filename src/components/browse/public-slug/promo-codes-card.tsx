@@ -71,7 +71,7 @@ function PromoCodesCardContent({
 						Invite more people with promo codes
 					</h3>
 				</div>
-				<p className="text-center text-base text-[#7B7B7B]">
+				<p className="text-ink-500 text-center text-base">
 					Use promo codes to attract new participants or reward your existing
 					audience.
 				</p>

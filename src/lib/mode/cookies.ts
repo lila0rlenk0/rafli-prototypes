@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 
-import { AUTH_COOKIES, MODE_COOKIE_OPTIONS } from '@/lib/auth/config';
+import { AUTH_COOKIES, MODE_COOKIE_OPTIONS } from '@/lib/auth/constants';
 import { USER_MODE, userModeSchema, type UserMode } from '@/types/user-mode';
 
 /**

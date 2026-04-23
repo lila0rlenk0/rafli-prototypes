@@ -2,14 +2,13 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Suspense, type ComponentProps, type ReactNode } from 'react';
 
-import { PublicNavbar } from '@/components/ui/public-navbar';
-import { ScreenLoader } from '@/components/ui/screen-loader';
+import { PublicNavbar } from '@/components/ui-custom/public-navbar';
+import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 import { env } from '@/env/server';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
-import { ChatStoreProvider } from '@/providers/chat-store-provider';
-import { NotificationStoreProvider } from '@/providers/notification-store-provider';
+import { RealtimeProviders } from '@/providers/realtime-providers';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
 export const metadata: Metadata = {
@@ -79,9 +78,7 @@ async function PricingLayoutContent({ children }: PricingLayoutProps) {
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
-				<NotificationStoreProvider>
-					<ChatStoreProvider>{content}</ChatStoreProvider>
-				</NotificationStoreProvider>
+				<RealtimeProviders>{content}</RealtimeProviders>
 			</UserStoreProvider>
 		);
 	}
@@ -134,8 +131,8 @@ export default function PricingLayout({ children }: PricingLayoutProps) {
 	if (!FEATURE_FLAGS.SUBSCRIPTION_ENABLED) notFound();
 
 	return (
-		<main className="relative min-h-screen">
-			<ColoredShapes className="pointer-events-none fixed top-0 left-0 z-[15] origin-top-left scale-[.65]" />
+		<main className="relative min-h-dvh">
+			<ColoredShapes className="scale-xs pointer-events-none fixed top-0 left-0 z-(--z-sticky) origin-top-left" />
 			<Suspense fallback={<ScreenLoader />}>
 				<PricingLayoutContent>{children}</PricingLayoutContent>
 			</Suspense>

@@ -1,11 +1,12 @@
 'use server';
 
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { WINNING_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { revalidateWinningPaths } from '@/lib/cache/revalidation';
 import { failure, mapWinningError, success } from '@/lib/errors';
@@ -41,7 +42,7 @@ export async function claimWinning(
 	try {
 		// Step 1: Submit claim with shipping info — transitions pending → awaiting_host
 		const response = await authenticatedClient.post(
-			`/winnings/${raffleId}/claim`,
+			`/winnings/${pathParam(raffleId)}/claim`,
 			payload,
 		);
 

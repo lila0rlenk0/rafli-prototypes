@@ -16,7 +16,7 @@
 
 import { AUTH_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
-import { browserClient } from '@/lib/api/client-browser';
+import { browserClient } from '@/lib/api/browser-client';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
 import type { AuthErrorCode } from '@/types/errors';

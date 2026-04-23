@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
-import { KycStatusBadge } from '@/components/verification/kyc-status-badge';
-import { formatDate } from '@/lib/utils/date-format';
+import { KycStatusBadge } from '@/components/verification/badges/kyc-status-badge';
+import { formatDate } from '@/lib/utils/format/date-format';
 import type { AdminKycSubmission } from '@/types/admin-kyc';
 import { VERIFICATION_TYPE } from '@/types/kyc-submission';
 
@@ -48,7 +48,7 @@ export function SubmissionsTable({ submissions }: SubmissionsTableProps) {
 		<>
 			{/* Desktop Table */}
 			<div className="hidden overflow-x-auto md:block">
-				<table className="w-full min-w-[600px]">
+				<table className="w-full min-w-150">
 					<thead>
 						<tr className="text-muted-foreground border-border border-b text-left text-sm">
 							<th className="pb-3 font-medium">Name</th>

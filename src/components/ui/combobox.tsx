@@ -17,7 +17,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 export interface ComboboxOption {
 	value: string;
@@ -66,7 +66,7 @@ export function Combobox({
 					<p className="max-w-md truncate">
 						{selectedOption ? selectedOption.label : placeholder}
 					</p>
-					<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+					<ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="w-full p-0" align="start">
@@ -87,7 +87,7 @@ export function Combobox({
 								>
 									<Check
 										className={cn(
-											'mr-2 h-4 w-4',
+											'mr-2 size-4',
 											value === option.value ? 'opacity-100' : 'opacity-0',
 										)}
 									/>

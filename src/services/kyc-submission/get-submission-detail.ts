@@ -3,11 +3,12 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
 import { failure, mapKycSubmissionError, success } from '@/lib/errors';
 import {
 	KYC_SUBMISSION_ERROR_CODES,
@@ -30,9 +31,12 @@ export async function getSubmissionDetail(
 	id: string,
 ): Promise<ServiceResponse<KycSubmissionDetail, KycSubmissionErrorCode>> {
 	try {
-		const response = await authenticatedClient.get(`/verification/${id}`, {
-			timeout: API_TIMEOUTS.QUERY,
-		});
+		const response = await authenticatedClient.get(
+			`/verification/${pathParam(id)}`,
+			{
+				timeout: API_TIMEOUTS.QUERY,
+			},
+		);
 
 		return success(kycSubmissionDetailSchema.parse(response.data));
 	} catch (error) {

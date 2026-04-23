@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { WALLET_ERROR_CODES } from '@/types/errors/wallet-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const mockPost = mock();
 

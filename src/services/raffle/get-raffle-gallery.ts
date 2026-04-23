@@ -4,6 +4,7 @@ import { cacheLife } from 'next/cache';
 import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
@@ -34,12 +35,15 @@ export async function getRaffleGallery(
 
 	try {
 		// Step 1: Fetch gallery images — pagination supported, current UI shows first 3
-		const response = await baseClient.get(`/raffles/${raffleId}/gallery`, {
-			params: {
-				...(limit ? { limit } : undefined),
-				...(page ? { page } : undefined),
+		const response = await baseClient.get(
+			`/raffles/${pathParam(raffleId)}/gallery`,
+			{
+				params: {
+					...(limit ? { limit } : undefined),
+					...(page ? { page } : undefined),
+				},
 			},
-		});
+		);
 
 		// Step 2: Validate response shape
 		const validatedData = raffleGalleryResponseSchema.parse(response.data);

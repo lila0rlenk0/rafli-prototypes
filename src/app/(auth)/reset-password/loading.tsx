@@ -17,7 +17,7 @@ export default function Loading() {
 	return (
 		<div className="grid min-h-svh lg:grid-cols-2">
 			<div className="bg-muted relative hidden lg:block">
-				<div className="absolute inset-0 size-[500px] h-full w-full bg-[#B9AF86] object-cover dark:brightness-[0.2] dark:grayscale" />
+				<div className="bg-sand dark:brightness-soft absolute inset-0 size-125 h-full w-full object-cover dark:grayscale" />
 			</div>
 			<div className="flex flex-col gap-4 p-6 md:p-10">
 				<div className="flex flex-1 items-center justify-center">

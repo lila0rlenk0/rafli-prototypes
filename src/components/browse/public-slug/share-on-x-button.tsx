@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 
-import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
+import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
 import { Button } from '@/components/ui/button';
 
-import { type XShareConfig, useXShare } from './use-x-share';
+import { type XShareConfig, useXShare } from './x-share/use-share';
 
 /**
  * "Get Bonus Entries! Share on X" button for the desktop checkout card.

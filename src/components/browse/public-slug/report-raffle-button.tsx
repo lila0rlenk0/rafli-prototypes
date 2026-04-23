@@ -3,7 +3,7 @@
 import { FlagIcon } from 'lucide-react';
 import { useState } from 'react';
 
-import { ReportContentModal } from '@/components/report/report-content-modal';
+import { ReportContentModal } from '@/components/report/content-modal';
 import { Button } from '@/components/ui/button';
 import {
 	Tooltip,
@@ -39,12 +39,12 @@ export function ReportRaffleButton({ raffleId }: ReportRaffleButtonProps) {
 						size="icon"
 						onClick={handleOpen}
 						className="size-8 shrink-0 text-gray-400 hover:text-gray-600"
-						aria-label="Report raffle"
+						aria-label="Report sweepstakes"
 					>
 						<FlagIcon className="size-4" />
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent>Report raffle</TooltipContent>
+				<TooltipContent>Report sweepstakes</TooltipContent>
 			</Tooltip>
 
 			<ReportContentModal

@@ -1,5 +1,6 @@
 import {
 	ADDRESS_DOC_TYPE,
+	DOCUMENT_PURPOSE,
 	IDENTITY_DOC_TYPE,
 	PLANNED_CATEGORY,
 	VERIFICATION_TYPE,
@@ -20,7 +21,7 @@ import {
 export const VERIFICATION_TYPE_LABELS: Record<VerificationType, string> = {
 	[VERIFICATION_TYPE.KYB_INDIVIDUAL]: 'Individual Host',
 	[VERIFICATION_TYPE.KYB_COMPANY]: 'Company Host',
-	[VERIFICATION_TYPE.KYC_WINNER]: 'Raffle Winner',
+	[VERIFICATION_TYPE.KYC_WINNER]: 'Sweepstakes Winner',
 };
 
 export const ID_TYPE_LABELS: Record<IdentityDocType, string> = {
@@ -46,3 +47,34 @@ export const CATEGORY_LABELS: Record<PlannedCategory, string> = {
 	[PLANNED_CATEGORY.ART]: 'Art',
 	[PLANNED_CATEGORY.OTHER]: 'Other',
 };
+
+const DOCUMENT_PURPOSE_LABELS: Record<
+	(typeof DOCUMENT_PURPOSE)[keyof typeof DOCUMENT_PURPOSE],
+	string
+> = {
+	[DOCUMENT_PURPOSE.ID_FRONT]: 'ID Front',
+	[DOCUMENT_PURPOSE.ID_BACK]: 'ID Back',
+	[DOCUMENT_PURPOSE.PROOF_OF_ADDRESS]: 'Proof of Address',
+	[DOCUMENT_PURPOSE.COMPANY_DOCS]: 'Company Documents',
+	[DOCUMENT_PURPOSE.PROOF_OF_BUSINESS_ADDRESS]: 'Business Address Proof',
+};
+
+/**
+ * Maps API `type` string to a short table/cell label — exhaustive for known
+ * enum values; unknown types fall back so new backend values don't white-screen.
+ */
+export function getVerificationTypeLabel(type: string): string {
+	if (type in VERIFICATION_TYPE_LABELS) {
+		return VERIFICATION_TYPE_LABELS[type as VerificationType];
+	}
+	return 'Verification';
+}
+
+export function getDocumentPurposeLabel(purpose: string): string {
+	if (purpose in DOCUMENT_PURPOSE_LABELS) {
+		return DOCUMENT_PURPOSE_LABELS[
+			purpose as keyof typeof DOCUMENT_PURPOSE_LABELS
+		];
+	}
+	return purpose;
+}

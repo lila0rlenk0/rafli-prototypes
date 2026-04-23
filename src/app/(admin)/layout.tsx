@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import { ScreenLoader } from '@/components/ui/screen-loader';
+import { AdminNavbar } from '@/components/admin/navbar';
+import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions, PERMISSIONS } from '@/lib/permissions';
 import { UserStoreProvider } from '@/providers/user-store-provider';
@@ -50,7 +50,7 @@ async function AdminLayoutContent({ children }: AdminLayoutProps) {
  */
 export default function AdminLayout({ children }: AdminLayoutProps) {
 	return (
-		<div className="relative min-h-screen">
+		<div className="relative min-h-dvh">
 			<Suspense fallback={<ScreenLoader />}>
 				<AdminLayoutContent>{children}</AdminLayoutContent>
 			</Suspense>

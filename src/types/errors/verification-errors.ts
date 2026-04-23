@@ -1,15 +1,30 @@
 import type { CommonErrorCode } from './common-errors';
 
-/** Error codes for raffle draw verification — merkle proofs, winner selection auditing. */
+/**
+ * Error codes for raffle draw verification — merkle proofs, winner selection auditing.
+ *
+ * Values are the exact RFC 7807 URN codes emitted by the backend public verify
+ * endpoints (`GET /raffles/:id/verify-ticket/:code`, `verify-winner/:pos`,
+ * `merkle-proof/:ticketId`). Do NOT invent a synthetic `core:verification:*`
+ * namespace — the backend never emits those, so switch cases built on them
+ * silently default. See `raffles.public.api.ts` + `get-merkle-proof.query.ts`.
+ */
 export const VERIFICATION_ERROR_CODES = {
-	/** Ticket code not found in the draw manifest */
-	TICKET_NOT_FOUND: 'core:verification:ticket-not-found',
-	/** Winner position not found in draw results */
-	WINNER_NOT_FOUND: 'core:verification:winner-not-found',
-	/** Merkle proof not found for the given ticket */
-	PROOF_NOT_FOUND: 'core:verification:proof-not-found',
-	/** Raffle has not completed — verification only available post-draw */
-	RAFFLE_NOT_COMPLETED: 'core:verification:raffle-not-completed',
+	/** Ticket code not found in the ticket-ledger (raffles.public.api.ts:381). */
+	TICKET_NOT_FOUND: 'ledger:ticket:not-found',
+	/** Winner position out of range (raffles.public.api.ts:89). */
+	WINNER_NOT_FOUND: 'core:winner:invalid-position',
+	/** No published manifest — proof generation impossible (get-merkle-proof.query.ts:161). */
+	PROOF_NOT_FOUND: 'core:raffle:no-manifest',
+	/**
+	 * Raffle has not reached a state where verification is meaningful. Backend
+	 * surfaces this as either `core:raffle:not-completed` (status guard on
+	 * upload) or `core:raffle:no-vrf-data` (VRF not yet received on the draw).
+	 * The UI collapses both into the same "not completed" branch.
+	 */
+	RAFFLE_NOT_COMPLETED: 'core:raffle:no-vrf-data',
+	/** Alias for the other "not completed" URN — lets switch cases match both. */
+	RAFFLE_NOT_COMPLETED_ALT: 'core:raffle:not-completed',
 } as const;
 
 /** Union of verification error codes and common transport errors. */

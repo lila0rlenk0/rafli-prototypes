@@ -8,6 +8,7 @@ import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { CHAT_ERROR_CODES, type ChatErrorCode } from '@/types/errors';
 import { type MarkReadResponse, markReadResponseSchema } from '@/types/chat';
 import type { ServiceResponse } from '@/types/service-response';
@@ -30,7 +31,7 @@ export async function markRead(
 ): Promise<ServiceResponse<MarkReadResponse, ChatErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
-			`/chat/conversations/${conversationId}/read`,
+			`/chat/conversations/${pathParam(conversationId)}/read`,
 			{ messageId },
 		);
 		return success(markReadResponseSchema.parse(response.data));

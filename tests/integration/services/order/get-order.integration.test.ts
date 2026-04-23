@@ -4,7 +4,7 @@ import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { ORDER_ERROR_CODES } from '@/types/errors/order-errors';
 import type { Order } from '@/types/order';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Fixtures ---
 

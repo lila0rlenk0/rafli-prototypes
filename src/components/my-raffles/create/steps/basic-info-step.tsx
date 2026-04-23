@@ -1,28 +1,30 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
-import {
-	Dropzone,
-	DropzoneContent,
-	DropzoneEmptyState,
-} from '@/components/ui/dropzone';
-import { ImageLightbox } from '@/components/ui/image-lightbox';
-import { ImagePreviewCard } from '@/components/ui/image-preview-card';
-import { Input } from '@/components/ui/input';
-import { generateSlugPreview } from '@/lib/utils/slug-preview';
 import { DollarSign, X } from 'lucide-react';
-import { useRef, useMemo, useState } from 'react';
-import { STEPS } from '.';
-import { DescriptionEditor } from '../description-editor';
-import { useMultiStepForm } from '../multi-step-form-provider';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { MAX_FILE_SIZE } from '@/lib/validation/raffle/create-form-schema';
+
+import { DescriptionEditor } from '@/components/my-raffles/create/sections/description-editor';
+import { useMultiStepForm } from '@/components/my-raffles/create/multi-step-form-provider';
+import { STEPS } from '.';
+import { CategoryComboboxField } from '@/components/my-raffles/shared/basic-info/category-combobox-field';
+import { ImageUploadGrid } from '@/components/my-raffles/shared/basic-info/image-upload-grid';
+import { TitleSlugField } from '@/components/my-raffles/shared/basic-info/title-slug-field';
+import { useBasicInfoImages } from '@/components/my-raffles/shared/basic-info/use-basic-info-images';
+
+/** Fields on this step that block `nextStep()` when invalid. */
+const STEP_FIELDS = ['title', 'description', 'price', 'category'] as const;
+
+/** Minimum declared value — matches the Zod schema. */
+const MIN_DECLARED_VALUE = 0.5;
 
 /**
  * Step 1 of the raffle creation wizard — collects title, description,
  * declared value, category, and cover/gallery images.
  *
- * @returns Form fields for the basic info step with continue/clear actions
+ * @returns Form fields for the basic info step with continue/clear actions.
  */
 export function BasicInfoStep() {
 	const {
@@ -42,104 +44,57 @@ export function BasicInfoStep() {
 
 	const currentStep = STEPS[stepIndex];
 
-	// Watch fields from this step only
+	// watch the exact fields this step owns — narrower subscriptions keep
+	// re-renders scoped to this step and avoid firing on every keystroke of
+	// step 2 or 3.
 	const title = watch('title');
 	const description = watch('description');
 	const price = watch('price');
 	const category = watch('category');
 	const coverImage = watch('coverImage');
 
-	// Lightbox preview state — null when closed, index when viewing an image
-	const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+	const { dropzoneRef, handleDrop, handleRemove, handleUploadClick } =
+		useBasicInfoImages({
+			current: coverImage,
+			max: 4,
+			onChange: files => setValue('coverImage', files),
+		});
 
-	// Ref instead of state — direct DOM access to the Dropzone hidden input.
-	// Triggering the file picker is imperative, not declarative.
-	const dropzoneRef = useRef<HTMLDivElement>(null);
-
-	// useMemo: generate slug preview from title — avoids slugify computation on every keystroke
-	// when other fields change. Only recomputes when title changes.
-	const previewSlugPath = useMemo(() => {
-		if (!title || title.trim().length === 0) {
-			return null;
-		}
-
-		const slugPreview = generateSlugPreview(title);
-
-		return `/browse/${slugPreview}`;
-	}, [title]);
-
-	// useMemo: transform categories into combobox options format.
-	// Categories come from server props and don't change — memoize to avoid
-	// creating new arrays on every render (Combobox would re-filter needlessly).
-	const categoryOptions = useMemo(
-		() =>
-			categories.map(cat => ({
-				value: cat.id,
-				label: cat.name,
-			})),
-		[categories],
-	);
-
-	// Check if any field in this step is filled
+	// enables the "Clear all" button only when at least one step field has
+	// meaningful content — avoids a useless click on a fresh step.
 	const hasFilledFields = Boolean(
 		title ||
 		description ||
-		(price && price >= 0.5) ||
+		(price && price >= MIN_DECLARED_VALUE) ||
 		category ||
 		(coverImage && coverImage.length > 0),
 	);
 
-	// Clear only this step's fields
 	function handleClearAll() {
 		setValue('title', '');
 		setValue('description', '');
+		// NaN — the Zod schema transforms NaN into 0 then fails the min check,
+		// so leaving NaN here is the canonical "empty" state for a numeric field.
 		setValue('price', NaN);
 		setValue('category', '');
 		setValue('coverImage', []);
 	}
 
-	/**
-	 * Removes an image from the coverImage array at the given index
-	 * @param index - Position of the image to remove
-	 */
-	function handleRemoveImage(index: number) {
-		if (!coverImage) return;
-		const newImages = coverImage.filter((_, i) => i !== index);
-		setValue('coverImage', newImages);
-	}
-
-	/**
-	 * Opens the lightbox preview for the image at the given index
-	 * @param index - Position of the image to preview
-	 */
-	function handlePreviewImage(index: number) {
-		setPreviewIndex(index);
-	}
-
-	/**
-	 * Triggers the Dropzone file picker by clicking its hidden input
-	 */
-	function handleUploadClick() {
-		const input = dropzoneRef.current?.querySelector('input[type="file"]');
-		if (input) (input as HTMLInputElement).click();
-	}
-
-	/** Validates current step fields before advancing */
 	async function handleContinue() {
-		const fields = ['title', 'description', 'price', 'category'] as const;
-		const isValid = await trigger([...fields]);
-
+		const isValid = await trigger([...STEP_FIELDS]);
 		if (!isValid) {
-			for (const field of fields) {
+			// touch each field so inline errors render — otherwise the user sees
+			// no feedback on a freshly-blurred-but-never-touched field.
+			for (const field of STEP_FIELDS) {
 				setValue(field, getValues(field), { shouldTouch: true });
 			}
+			// rAF — wait for the error DOM nodes to mount before scrolling.
 			requestAnimationFrame(() => {
 				const firstError = document.querySelector('.text-red-500');
 				firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			});
 			return;
 		}
-
 		nextStep();
 	}
 
@@ -147,79 +102,24 @@ export function BasicInfoStep() {
 		<div className="flex w-full flex-col gap-8 rounded-2xl bg-white p-8">
 			<h2 className="text-xl font-semibold">{currentStep.title}</h2>
 
-			<div className="flex flex-col gap-2" ref={dropzoneRef}>
-				<label htmlFor="coverImage" className="font-medium">
-					Images
-				</label>
-				<p className="text-sm text-neutral-500">
-					The first image will be used as the cover of your raffle card and
-					details page. Images will be displayed in the carousel in the same
-					order they appear here.
-				</p>
-				<Dropzone
-					src={coverImage}
-					accept={{
-						'image/png': ['.png'],
-						'image/jpeg': ['.jpg', '.jpeg'],
-						'image/webp': ['.webp'],
-					}}
-					maxSize={MAX_FILE_SIZE}
-					maxFiles={4}
-					hint="Recommended: 1200×675px (16:9). Keep the subject centered."
-					onDrop={acceptedFiles => {
-						setValue('coverImage', [...(coverImage || []), ...acceptedFiles]);
-					}}
-					className="w-full rounded-lg border-[#E5E5E5] bg-white hover:bg-white"
-				>
-					<DropzoneEmptyState />
-					<DropzoneContent />
-				</Dropzone>
-				{touchedFields.coverImage && errors.coverImage ? (
-					<span className="text-sm text-red-500">
-						{errors.coverImage.message}
-					</span>
-				) : null}
+			<ImageUploadGrid
+				dropzoneRef={dropzoneRef}
+				coverImage={coverImage}
+				maxFileSize={MAX_FILE_SIZE}
+				onDrop={handleDrop}
+				onRemove={handleRemove}
+				onUploadClick={handleUploadClick}
+				error={errors.coverImage?.message}
+				touched={Boolean(touchedFields.coverImage)}
+			/>
 
-				<div className="grid grid-cols-4 gap-4">
-					{Array.from({ length: 4 }).map((_, index) => {
-						const file = coverImage?.[index] ?? null;
-						return (
-							<ImagePreviewCard
-								key={index}
-								src={file}
-								alt={`Preview ${index + 1}`}
-								index={index}
-								onRemove={file ? handleRemoveImage : undefined}
-								onPreview={file ? handlePreviewImage : undefined}
-								onUpload={file ? undefined : handleUploadClick}
-							/>
-						);
-					})}
-				</div>
-			</div>
-
-			<div className="flex flex-col gap-2">
-				<label htmlFor="title" className="font-medium">
-					Raffle title
-				</label>
-				<Input
-					id="title"
-					type="text"
-					placeholder="Smart Watch"
-					className="border-[#E5E5E5]"
-					aria-invalid={!!errors.title}
-					aria-describedby={errors.title ? 'title-error' : undefined}
-					{...register('title')}
-				/>
-				{touchedFields.title && errors.title ? (
-					<span className="text-sm text-red-500">{errors.title.message}</span>
-				) : null}
-				<p className="text-muted-foreground min-h-[20px] text-sm">
-					{previewSlugPath
-						? `Slug preview: ${previewSlugPath} (final URL may differ)`
-						: null}
-				</p>
-			</div>
+			<TitleSlugField
+				register={register('title')}
+				title={title}
+				error={errors.title?.message}
+				touched={touchedFields.title}
+				showSlugPreview
+			/>
 
 			<DescriptionEditor control={form.control} trigger={trigger} />
 
@@ -235,7 +135,7 @@ export function BasicInfoStep() {
 							type="number"
 							step="0.01"
 							min="0.5"
-							className="border-[#E5E5E5] pl-9"
+							className="border-ink-200 pl-9"
 							placeholder="0.50"
 							{...register('price', { valueAsNumber: true })}
 						/>
@@ -244,26 +144,15 @@ export function BasicInfoStep() {
 						<span className="text-sm text-red-500">{errors.price.message}</span>
 					) : null}
 				</div>
-				<div className="flex flex-col gap-2">
-					<label htmlFor="category" className="font-medium">
-						Category
-					</label>
-					<Combobox
-						options={categoryOptions}
-						value={category}
-						onValueChange={value =>
-							setValue('category', value, { shouldValidate: true })
-						}
-						placeholder="Select category"
-						searchPlaceholder="Search category..."
-						emptyText="No category found."
-					/>
-					{touchedFields.category && errors.category ? (
-						<span className="text-sm text-red-500">
-							{errors.category.message}
-						</span>
-					) : null}
-				</div>
+				<CategoryComboboxField
+					categories={categories}
+					value={category}
+					onValueChange={value =>
+						setValue('category', value, { shouldValidate: true })
+					}
+					error={errors.category?.message}
+					touched={touchedFields.category}
+				/>
 			</div>
 
 			<div className="flex items-center gap-2">
@@ -274,7 +163,6 @@ export function BasicInfoStep() {
 				>
 					Continue
 				</Button>
-
 				<Button
 					variant="ghost"
 					type="button"
@@ -286,17 +174,6 @@ export function BasicInfoStep() {
 					<span className="text-sm font-semibold">Clear all</span>
 				</Button>
 			</div>
-
-			{/* Image Lightbox for full-screen preview */}
-			<ImageLightbox
-				images={coverImage ?? []}
-				currentIndex={previewIndex ?? 0}
-				open={previewIndex !== null}
-				onOpenChange={open => {
-					if (!open) setPreviewIndex(null);
-				}}
-				onNavigate={setPreviewIndex}
-			/>
 		</div>
 	);
 }

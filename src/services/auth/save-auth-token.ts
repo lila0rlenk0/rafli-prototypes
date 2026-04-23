@@ -1,10 +1,6 @@
 'use server';
 
-import {
-	decodeJwt,
-	jwtPayloadToUser,
-	validateJwtStructure,
-} from '@/lib/auth/jwt';
+import { validateJwtStructure } from '@/lib/auth/jwt';
 import { setAuthCookies } from '@/lib/auth/session';
 import { failure, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -35,13 +31,8 @@ export async function saveAuthToken(
 		// Step 2: Structural validation — rejects unsigned, expired, or absurdly long-lived tokens.
 		validateJwtStructure(token);
 
-		// Step 3: Decode JWT payload to extract user data (throws on malformed tokens)
-		const payload = decodeJwt(token);
-		const user = jwtPayloadToUser(payload);
-
-		// Step 4: Persist token + user into httpOnly/client-readable cookies
-		// Side-effects: sets raffly-token (httpOnly) and raffly-session cookies
-		await setAuthCookies(token, user);
+		// Step 3: Persist via GET /me — identity comes from the API, not client-decoded JWT
+		await setAuthCookies(token);
 
 		return success(undefined);
 	} catch (error) {

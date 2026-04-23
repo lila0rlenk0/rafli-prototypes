@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapReviewError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { REVIEW_ERROR_CODES, type ReviewErrorCode } from '@/types/errors';
@@ -23,7 +24,7 @@ export async function checkReview(
 ): Promise<ServiceResponse<CheckReviewResponse, ReviewErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/raffles/${raffleId}/review`,
+			`/raffles/${pathParam(raffleId)}/review`,
 		);
 		return success(checkReviewResponseSchema.parse(response.data));
 	} catch (error) {

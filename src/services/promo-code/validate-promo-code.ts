@@ -3,10 +3,11 @@
 import { ZodError } from 'zod';
 
 import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
+import { hashPromoCodeForAnalytics } from '@/lib/analytics/hash-sensitive';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
-import { getSession } from '@/lib/auth/session';
-import { failure, mapPromoCodeError, success } from '@/lib/errors';
+import { mapPromoCodeError } from '@/lib/errors/error-mapper';
+import { failure, success } from '@/lib/errors/service-result';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	PROMO_CODE_ERROR_CODES,
@@ -33,7 +34,7 @@ export async function validatePromoCode(
 	raffleId: string,
 	code: string,
 ): Promise<ServiceResponse<ValidatePromoCodeResponse, PromoCodeErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = import('@/lib/auth/session').then(m => m.getSession());
 
 	try {
 		const normalizedCode = code.trim().toUpperCase();
@@ -55,7 +56,7 @@ export async function validatePromoCode(
 			trackServer(
 				PROMO_CODE_EVENTS.VALIDATED,
 				{
-					code: normalizedCode,
+					code_fingerprint: hashPromoCodeForAnalytics(normalizedCode),
 					raffle_id: raffleId,
 					valid: data.valid,
 				},

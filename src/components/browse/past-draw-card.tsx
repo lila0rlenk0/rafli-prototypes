@@ -67,7 +67,7 @@ export function PastDrawCard({ raffle }: PastDrawCardProps) {
 				    vertical weight to register as a deliberate band inside the
 				    image — tighter padding read as a caption, which visually
 				    detached the verification signal from the cover it anchors to. */}
-				<div className="bg-accent-green/95 absolute inset-x-0 top-0 flex items-center gap-2 px-4 py-3 text-xs text-[#121211] backdrop-blur-sm">
+				<div className="bg-brand-mint text-ink-900 absolute inset-x-0 top-0 flex items-center gap-2 px-4 py-3 text-xs">
 					<ShieldCheck aria-hidden="true" className="size-4" />
 					<span className="font-medium">Selected on-chain · verified</span>
 				</div>
@@ -75,7 +75,7 @@ export function PastDrawCard({ raffle }: PastDrawCardProps) {
 
 			<div className="flex flex-1 flex-col gap-4 rounded-b-3xl bg-white p-6">
 				<div className="flex flex-col gap-2">
-					<h3 className="text-lg leading-none font-semibold text-[rgba(15,15,15,0.95)]">
+					<h3 className="text-ink-alpha text-lg/none font-semibold">
 						<Link
 							href={`/browse/${raffle.publicSlugOrCode}`}
 							className="line-clamp-1 after:absolute after:inset-0"
@@ -85,8 +85,8 @@ export function PastDrawCard({ raffle }: PastDrawCardProps) {
 					</h3>
 
 					<div className="flex items-center gap-2 sm:justify-between">
-						<span className="text-sm text-[#121211]">by {hostName}</span>
-						<span className="inline-flex items-center gap-1 rounded-[10px] border border-black px-1 py-0.5 text-xs text-[#121211]">
+						<span className="text-ink-900 text-sm">by {hostName}</span>
+						<span className="rounded-pill text-ink-900 inline-flex items-center gap-1 border border-black px-1 py-0.5 text-xs">
 							<CheckCircle aria-hidden="true" className="size-3.5" />
 							Verified host
 						</span>
@@ -94,10 +94,10 @@ export function PastDrawCard({ raffle }: PastDrawCardProps) {
 				</div>
 
 				<div className="flex items-center justify-between">
-					<span className="font-clash-display text-2xl leading-tight font-semibold tracking-[0.12px] text-[#182135]">
+					<span className="font-clash-display tracking-micro text-navy text-2xl/tight font-semibold">
 						${ticketPrice}
 					</span>
-					<span className="text-sm text-[#7b7b7b]">{endedLabel}</span>
+					<span className="text-ink-500 text-sm">{endedLabel}</span>
 				</div>
 			</div>
 		</div>

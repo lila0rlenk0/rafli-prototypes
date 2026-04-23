@@ -1,6 +1,7 @@
 'use server';
 
 import { WINNING_EVENTS } from '@/lib/analytics/events';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import { type Winning } from '@/types/winning';
@@ -24,7 +25,7 @@ export async function markDelivered(
 	publicSlug?: string,
 ): Promise<ServiceResponse<Winning, WinningErrorCode>> {
 	return updateWinningStatusBase({
-		endpoint: `/winnings/${winningId}/mark-delivered`,
+		endpoint: `/winnings/${pathParam(winningId)}/mark-delivered`,
 		action: 'mark-delivered',
 		event: WINNING_EVENTS.MARKED_DELIVERED,
 		zodErrorCode: WINNING_ERROR_CODES.MARK_DELIVERED_FAILED,

@@ -2,7 +2,18 @@ import { expect, test as setup } from '@playwright/test';
 
 const HOST_AUTH_FILE = 'e2e/.auth/host.json';
 
+function requireEnv(key: 'E2E_USER_EMAIL' | 'E2E_USER_PASSWORD'): string {
+	const value = process.env[key];
+	if (value === undefined || value === '') {
+		throw new Error(`Missing required E2E env var: ${key}`);
+	}
+	return value;
+}
+
 setup('authenticate as host', async ({ page }) => {
+	const email = requireEnv('E2E_USER_EMAIL');
+	const password = requireEnv('E2E_USER_PASSWORD');
+
 	// Sign in with shared test account
 	await page.goto('/sign-in');
 
@@ -14,8 +25,8 @@ setup('authenticate as host', async ({ page }) => {
 		await passwordModeButton.click();
 	}
 
-	await page.getByLabel('Email').fill(process.env.E2E_USER_EMAIL!);
-	await page.locator('#password').fill(process.env.E2E_USER_PASSWORD!);
+	await page.getByLabel('Email').fill(email);
+	await page.locator('#password').fill(password);
 	await page.getByRole('button', { name: 'Sign In' }).click();
 
 	await page.waitForURL('/browse');

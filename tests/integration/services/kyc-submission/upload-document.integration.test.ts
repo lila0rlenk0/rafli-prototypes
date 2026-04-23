@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { KYC_SUBMISSION_ERROR_CODES } from '@/types/errors/kyc-submission-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const mockPost = mock();
 
@@ -15,7 +15,7 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),
 	captureServiceError: mock(),
 }));
-mock.module('@/lib/api/config', () => ({
+mock.module('@/lib/api/constants', () => ({
 	API_TIMEOUTS: { UPLOAD: 60_000, QUERY: 10_000, MUTATION: 15_000 },
 }));
 

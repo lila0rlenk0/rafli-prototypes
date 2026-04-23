@@ -38,7 +38,7 @@ export function getVoteErrorMessage(errorCode: CommentErrorCode): string {
 		case COMMENT_ERROR_CODES.DELETED:
 			return 'This comment has been deleted.';
 		case COMMENT_ERROR_CODES.RAFFLE_NOT_COMMENTABLE:
-			return 'Voting is no longer available for this raffle.';
+			return 'Voting is no longer available for this sweepstakes.';
 		case COMMON_ERROR_CODES.NETWORK_ERROR:
 			return 'Network error. Please check your connection.';
 		case COMMON_ERROR_CODES.TIMEOUT_ERROR:
@@ -65,7 +65,7 @@ export function getReportErrorMessage(errorCode: ReportErrorCode): string {
 		case REPORT_ERROR_CODES.DUPLICATE:
 			return 'You have already reported this content.';
 		case REPORT_ERROR_CODES.RAFFLE_ID_REQUIRED:
-			return 'Could not identify the raffle for this report.';
+			return 'Could not identify the sweepstakes for this report.';
 		case REPORT_ERROR_CODES.RAFFLE_ID_MISMATCH:
 			return 'Report context mismatch. Please refresh and try again.';
 		case REPORT_ERROR_CODES.VALIDATION_FAILED:

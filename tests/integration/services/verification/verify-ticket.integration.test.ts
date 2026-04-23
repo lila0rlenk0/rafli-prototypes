@@ -4,7 +4,7 @@ import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { VERIFICATION_ERROR_CODES } from '@/types/errors/verification-errors';
 import type { TicketVerification } from '@/types/verification';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const VALID_RESPONSE: TicketVerification = {
 	ticketId: 42,
@@ -28,9 +28,7 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureServiceError: mock(),
 }));
 
-const { verifyTicket } = await import(
-	'@/services/verification/verify-ticket'
-);
+const { verifyTicket } = await import('@/services/verification/verify-ticket');
 
 describe('verifyTicket', () => {
 	test('returns validated ticket verification on success', async () => {
@@ -83,12 +81,16 @@ describe('verifyTicket', () => {
 		}
 	});
 
-	test('maps ticket-not-found from RFC 7807', async () => {
+	// Real backend URN for verify-ticket 404 is `ledger:ticket:not-found`
+	// (emitted by raffles.public.api.ts:381, not `core:verification:*`).
+	// Previously the test mocked a non-existent URN and the prefix-match
+	// accidentally "worked" — prod users hit 404 with no domain signal.
+	test('maps ticket-not-found from RFC 7807 (ledger:ticket:not-found)', async () => {
 		mockGet.mockRejectedValueOnce(
 			mockAxiosError({
 				status: 404,
 				data: {
-					type: 'urn:raffles:problem:core:verification:ticket-not-found',
+					type: 'urn:raffles:problem:ledger:ticket:not-found',
 				},
 			}),
 		);
@@ -98,6 +100,24 @@ describe('verifyTicket', () => {
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error).toBe(VERIFICATION_ERROR_CODES.TICKET_NOT_FOUND);
+		}
+	});
+
+	// Backend emits this when manifestHash is null for the raffle — no proof
+	// generation possible (get-merkle-proof.query.ts:161).
+	test('maps no-manifest from RFC 7807 to PROOF_NOT_FOUND', async () => {
+		mockGet.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 400,
+				data: { type: 'urn:raffles:problem:core:raffle:no-manifest' },
+			}),
+		);
+
+		const result = await verifyTicket('raffle-1', 'TC-042');
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(VERIFICATION_ERROR_CODES.PROOF_NOT_FOUND);
 		}
 	});
 

@@ -13,6 +13,9 @@ const authRoutes: readonly string[] = [
 	'/sign-up',
 	'/forgot-password',
 	'/reset-password',
+	'/verify-email',
+	'/auth/callback',
+	'/auth/resend-verification',
 ];
 
 export interface ProxyRouteDecisionInput {

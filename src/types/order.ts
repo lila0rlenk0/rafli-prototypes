@@ -40,15 +40,22 @@ export const orderSchema = z.object({
 	raffleId: z.uuidv7(),
 	userId: z.string(),
 	ticketQuantity: z.number().int().positive(),
-	unitPrice: z.string(), // Decimal as string (e.g., "10.0000")
-	totalAmount: z.string(), // Decimal as string (e.g., "50.0000")
-	currency: z.string().length(3), // ISO 4217 (e.g., "USD")
+	// decimal as string (e.g., "10.0000")
+	unitPrice: z.string(),
+	// decimal as string (e.g., "50.0000")
+	totalAmount: z.string(),
+	// ISO 4217 (e.g., "USD")
+	currency: z.string().length(3),
 	promoCode: z.string().nullable().optional(),
 	status: orderStatusSchema,
-	createdAt: z.string(), // ISO datetime
-	updatedAt: z.string(), // ISO datetime
-	raffleName: z.string().optional().default('N/A'), // Not in all endpoints — FE defaults to 'N/A' for display
-	raffleSlug: z.string().optional(), // Optional slug for linking
+	// ISO datetime
+	createdAt: z.string(),
+	// ISO datetime
+	updatedAt: z.string(),
+	// not in all endpoints — FE defaults to 'N/A' for display
+	raffleName: z.string().optional().default('N/A'),
+	// optional slug for linking
+	raffleSlug: z.string().optional(),
 	/** Nested crypto session summary — null when no crypto session exists for this order.
 	 * Matches BE CryptoSessionSummaryDto shape exactly. */
 	cryptoSession: z

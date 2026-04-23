@@ -4,8 +4,8 @@ import { REPORT_ERROR_CODES } from '@/types/errors/report-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import type { UserReportResponse } from '@/types/report';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
-import { MOCK_ANALYTICS_EVENTS } from '../../../helpers/mock-events';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
+import { MOCK_ANALYTICS_EVENTS } from '@tests/helpers/mock-events';
 
 const VALID_RESPONSE: UserReportResponse = {
 	id: 'report-1',

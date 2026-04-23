@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Mocks ---
 
@@ -18,9 +18,8 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureServiceError: mockCaptureServiceError,
 }));
 
-const { resendVerificationEmail } = await import(
-	'@/services/auth/resend-verification-email'
-);
+const { resendVerificationEmail } =
+	await import('@/services/auth/resend-verification-email');
 
 describe('resendVerificationEmail', () => {
 	test('returns success on valid request', async () => {
@@ -108,5 +107,27 @@ describe('resendVerificationEmail', () => {
 			COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR,
 			{ service: 'auth', action: 'resend-verification-email' },
 		);
+	});
+
+	// Defence: without Zod validation an attacker can flood the backend with
+	// garbage payloads (e.g. null, massively long strings, injection attempts).
+	// Reject malformed email shapes at the BFF before any outbound call.
+	test('rejects malformed email without hitting backend', async () => {
+		mockPost.mockReset();
+
+		const result = await resendVerificationEmail('not-an-email');
+
+		// Contract stays enumeration-safe (success), but no backend call.
+		expect(result.success).toBe(true);
+		expect(mockPost).not.toHaveBeenCalled();
+	});
+
+	test('rejects empty email without hitting backend', async () => {
+		mockPost.mockReset();
+
+		const result = await resendVerificationEmail('');
+
+		expect(result.success).toBe(true);
+		expect(mockPost).not.toHaveBeenCalled();
 	});
 });

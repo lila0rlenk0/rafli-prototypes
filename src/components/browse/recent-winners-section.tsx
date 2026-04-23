@@ -33,12 +33,12 @@ export function RecentWinnersSection({ winners }: RecentWinnersSectionProps) {
 	return (
 		<section className="flex flex-col gap-6">
 			<header className="flex items-center justify-between gap-4">
-				<h2 className="font-clash-display text-2xl leading-none font-semibold tracking-[0.12px] text-[#121211] sm:text-3xl">
+				<h2 className="font-clash-display tracking-micro text-ink-900 text-2xl/none font-semibold sm:text-3xl">
 					Most recent winners!
 				</h2>
 				<Link
 					href="/past-winners"
-					className="text-sm text-[#7b7b7b] underline-offset-4 hover:text-[#121211] hover:underline"
+					className="text-ink-500 hover:text-ink-900 text-sm underline-offset-4 hover:underline"
 				>
 					View all past winners
 				</Link>

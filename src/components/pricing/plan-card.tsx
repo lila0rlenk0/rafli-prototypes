@@ -1,11 +1,11 @@
 import { Check } from 'lucide-react';
 import Link from 'next/link';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 import type { SubscriptionPlan } from '@/types/subscription';
 
 import { formatPrice } from './format-price';
-import { SubscribeButton } from './subscribe-button';
+import { SubscribeButton } from '@/components/pricing/subscribe/subscribe-button';
 
 interface PlanCardProps {
 	plan: SubscriptionPlan;
@@ -29,7 +29,7 @@ interface PlanCardProps {
  * Feature-tag pill styling, gated by the plan's highlight status rather than
  * the tag string. The Figma design treats the *same* tag text (e.g. "LIMITED
  * OFFER") differently per card: the Starter card uses a quiet neutral-gray
- * pill, the Pro card uses the brand mint (`accent-green`) that reinforces the
+ * pill, the Pro card uses the brand mint (`brand-mint`) that reinforces the
  * "you're on the premium tier" read. Tying the palette to `isHighlighted`
  * avoids hard-coding plan names and lets Ops flip the featured plan without
  * a code change.
@@ -37,9 +37,10 @@ interface PlanCardProps {
  * @param isHighlighted - Whether the plan is featured (Pro tier today).
  * @returns Tailwind classes for background + text color of the tag pill.
  */
-function tagClasses(isHighlighted: boolean): string {
+function tagClasses(options: { isHighlighted: boolean }): string {
+	const { isHighlighted } = options;
 	if (isHighlighted) {
-		return 'bg-accent-green text-[#44b476]';
+		return 'bg-brand-mint text-[#44b476]';
 	}
 	return 'bg-[#d9d9d9] text-[#7b7b7b]';
 }
@@ -58,12 +59,16 @@ function tagClasses(isHighlighted: boolean): string {
  * @param isHighlighted - Plan is the featured tier (Pro today).
  * @returns Tailwind classes for the article's border + surface wash.
  */
-function shellClasses(isCurrent: boolean, isHighlighted: boolean): string {
+function shellClasses(options: {
+	isCurrent: boolean;
+	isHighlighted: boolean;
+}): string {
+	const { isCurrent, isHighlighted } = options;
 	// Current plan — solid green border + 25% mint wash so the "yours" read
 	// is immediate without hunting for a pill. Wash kept at 25% so the body
 	// typography still passes AA contrast against the tinted surface.
 	if (isCurrent) {
-		return 'border-2 border-[#13e36f] bg-[color-mix(in_oklab,var(--color-accent-green)_25%,white)]';
+		return 'border-2 border-[#13e36f] bg-[color-mix(in_oklab,var(--color-brand-mint)_25%,white)]';
 	}
 	// Featured plan — solid black border on white to pull the eye without
 	// changing the surface (keeps the yellow discount sticker + green
@@ -87,10 +92,11 @@ function shellClasses(isCurrent: boolean, isHighlighted: boolean): string {
  * @param highlightLabel - Plan's marketing label (may be null).
  * @returns `'current'` | `'highlight'` | `null`.
  */
-function resolveHeaderPill(
-	isCurrent: boolean,
-	highlightLabel: string | null,
-): 'current' | 'highlight' | null {
+function resolveHeaderPill(options: {
+	isCurrent: boolean;
+	highlightLabel: string | null;
+}): 'current' | 'highlight' | null {
+	const { isCurrent, highlightLabel } = options;
 	if (isCurrent) return 'current';
 	if (highlightLabel) return 'highlight';
 	return null;
@@ -118,7 +124,10 @@ export function PlanCard({
 	isCurrent = false,
 }: PlanCardProps) {
 	const highlighted = plan.metadata.isHighlighted;
-	const headerPill = resolveHeaderPill(isCurrent, plan.metadata.highlightLabel);
+	const headerPill = resolveHeaderPill({
+		isCurrent,
+		highlightLabel: plan.metadata.highlightLabel,
+	});
 
 	return (
 		<article
@@ -131,7 +140,7 @@ export function PlanCard({
 			aria-current={isCurrent ? 'true' : undefined}
 			className={cn(
 				'relative flex flex-col gap-6 rounded-3xl border bg-white p-6 text-black sm:gap-10 sm:p-10',
-				shellClasses(isCurrent, highlighted),
+				shellClasses({ isCurrent, isHighlighted: highlighted }),
 			)}
 		>
 			{/* Rotated "X% OFF" sticker that overlaps the top-right corner of the
@@ -151,13 +160,13 @@ export function PlanCard({
 						// right edge (instead of insetting) is what sells the "stuck on
 						// after the fact" effect — centered stickers read as planned
 						// chrome and lose their urgency.
-						'pointer-events-none absolute -top-5 right-2 flex h-[70px] w-[150px] -rotate-[15deg] flex-col items-center justify-center rounded-3xl border sm:-top-7 sm:right-4 sm:h-[85px] sm:w-[170px]',
+						'-rotate-tilt-sm pointer-events-none absolute -top-5 right-2 flex h-17.5 w-37.5 flex-col items-center justify-center rounded-3xl border sm:-top-7 sm:right-4 sm:h-21.25 sm:w-42.5',
 						highlighted
-							? 'bg-accent-yellow border-black'
-							: 'border-[#b4b4b4] bg-white',
+							? 'bg-brand-yellow border-black'
+							: 'border-ink-300 bg-white',
 					)}
 				>
-					<span className="font-clash-display text-xl leading-none font-semibold text-black sm:text-2xl">
+					<span className="font-clash-display text-xl/none font-semibold text-black sm:text-2xl">
 						{plan.metadata.badgeText}
 					</span>
 					<span className="mt-1 text-xs font-semibold text-black sm:text-sm">
@@ -174,7 +183,7 @@ export function PlanCard({
 				<div className="flex flex-wrap items-center gap-3">
 					<h3
 						id={`plan-${plan.id}-name`}
-						className="font-clash-display text-2xl leading-tight font-semibold tracking-[0.12px]"
+						className="font-clash-display tracking-micro text-2xl/tight font-semibold"
 					>
 						{plan.name}
 					</h3>
@@ -187,12 +196,12 @@ export function PlanCard({
 					    (intentionally contrasting the green feature-tag palette
 					    below so the two pill systems don't read as the same thing). */}
 					{headerPill === 'current' ? (
-						<span className="bg-accent-green inline-flex items-center rounded-lg px-3 py-1 text-[13px] font-semibold tracking-[0.26px] text-[#0e7a3f] uppercase">
+						<span className="bg-brand-mint text-mini tracking-micro-5 text-green-forest inline-flex items-center rounded-lg px-3 py-1 font-semibold uppercase">
 							Current
 						</span>
 					) : null}
 					{headerPill === 'highlight' ? (
-						<span className="bg-accent-blue inline-flex items-center rounded-lg px-3 py-1 text-[13px] font-semibold tracking-[0.26px] text-[#12739d] uppercase">
+						<span className="bg-brand-sky text-mini tracking-micro-5 text-brand-teal inline-flex items-center rounded-lg px-3 py-1 font-semibold uppercase">
 							{plan.metadata.highlightLabel}
 						</span>
 					) : null}
@@ -208,7 +217,7 @@ export function PlanCard({
 				>
 					<span
 						aria-hidden
-						className="font-clash-display text-5xl leading-none font-semibold"
+						className="font-clash-display text-5xl/none font-semibold"
 					>
 						{formatPrice(plan.monthlyPriceAmount)}
 					</span>
@@ -216,7 +225,7 @@ export function PlanCard({
 						/ month
 					</span>
 				</p>
-				<p className="text-foreground text-[14px] leading-[1.4] font-normal whitespace-pre-line">
+				<p className="text-foreground text-label/dense font-normal whitespace-pre-line">
 					{plan.metadata.tagline}
 				</p>
 			</header>
@@ -228,13 +237,13 @@ export function PlanCard({
 						// within a plan are unique, and a stable-enough key saves React from
 						// thrashing when plans refresh.
 						key={feature.text}
-						className="flex items-center gap-4 text-[14px]"
+						className="text-label flex items-center gap-4"
 					>
 						{/* Neutral gray rounded square containing the check glyph. The
 						    design swapped from a colored circle to a monochrome square
 						    so feature *tags* (LIMITED OFFER / NEW) carry the color weight
 						    and the check-icon becomes a quiet "yes, included" signal. */}
-						<span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-[#d9d9d9]">
+						<span className="bg-silver flex size-6 shrink-0 items-center justify-center rounded-lg">
 							<Check
 								aria-hidden
 								className="size-4 text-black"
@@ -246,8 +255,8 @@ export function PlanCard({
 							{feature.tag ? (
 								<span
 									className={cn(
-										'inline-flex h-[25px] items-center rounded-lg px-3 text-[13px] font-semibold tracking-[0.26px] uppercase',
-										tagClasses(highlighted),
+										'text-mini tracking-micro-5 inline-flex h-6.25 items-center rounded-lg px-3 font-semibold uppercase',
+										tagClasses({ isHighlighted: highlighted }),
 									)}
 								>
 									{feature.tag}
@@ -269,11 +278,11 @@ export function PlanCard({
 					<div className="flex flex-col gap-3">
 						<div
 							aria-label={`You are currently subscribed to ${plan.name}`}
-							className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border-2 border-[#13e36f] bg-white text-sm font-semibold text-black"
+							className="border-green-vivid inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border-2 bg-white text-sm font-semibold text-black"
 						>
 							<Check
 								aria-hidden
-								className="size-4 text-[#13e36f]"
+								className="text-green-vivid size-4"
 								strokeWidth={3}
 							/>
 							Your current plan
@@ -283,7 +292,7 @@ export function PlanCard({
 							// Adding a hash that maps to nothing would silently "work" (no error,
 							// no scroll) and rot silently once the section ships somewhere else.
 							href="/profile"
-							className="focus-visible:ring-ring/50 mx-auto rounded-sm text-sm font-medium text-black underline underline-offset-4 hover:no-underline focus-visible:ring-[3px] focus-visible:outline-none"
+							className="focus-visible:ring-ring/50 mx-auto rounded-sm text-sm font-medium text-black underline underline-offset-4 hover:no-underline focus-visible:ring-3 focus-visible:outline-none"
 						>
 							Manage subscription
 						</Link>

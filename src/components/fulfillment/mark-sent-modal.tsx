@@ -1,13 +1,13 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ComponentProps, useTransition } from 'react';
+import { type ComponentProps, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { useTimeout } from '@/lib/hooks/use-timeout';
-import { DIALOG_EXIT_ANIMATION_MS } from '@/lib/ui-constants';
+import { DIALOG_EXIT_ANIMATION_MS } from '@/lib/utils/ui-constants';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -94,7 +94,7 @@ export function MarkSentModal({
 		});
 	}
 
-	function handleOpenChange(newOpen: boolean) {
+	const handleOpenChange = (newOpen: boolean) => {
 		if (!newOpen) {
 			// Reset form after Dialog close animation completes
 			setCloseTimeout(() => {
@@ -102,15 +102,15 @@ export function MarkSentModal({
 			}, DIALOG_EXIT_ANIMATION_MS);
 		}
 		onOpenChange(newOpen);
-	}
+	};
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-w-2xl overflow-hidden border border-[#0F0F0FF2] bg-white px-16 py-12">
+			<DialogContent className="border-ink-alpha max-w-2xl overflow-hidden border bg-white px-16 py-12">
 				<LeftColoredCard className="absolute top-0 left-0" />
 				<RightColoredCard className="absolute top-0 right-0" />
 
-				<DialogHeader className="z-1 flex items-center justify-center space-y-2">
+				<DialogHeader className="z-1 flex flex-col items-center justify-center gap-2">
 					<div className="flex justify-center pb-4">
 						<ShippingIcon />
 					</div>
@@ -123,7 +123,7 @@ export function MarkSentModal({
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit(handleMarkSent)} className="z-1">
-					<FieldGroup className="space-y-4">
+					<FieldGroup className="flex flex-col gap-4">
 						<Field>
 							<FieldLabel htmlFor="proofUrl">Tracking / Proof URL</FieldLabel>
 							<Input

@@ -1,11 +1,11 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
-import type { RaffleVerificationData } from '@/types/verification';
+import type { RaffleVerificationPayload } from '@/types/verification';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
-const VALID_RESPONSE: RaffleVerificationData = {
+const VALID_RESPONSE: RaffleVerificationPayload = {
 	raffleId: 'raffle-1',
 	title: 'Test Raffle',
 	totalTickets: 100,
@@ -37,9 +37,8 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureServiceError: mock(),
 }));
 
-const { getRaffleVerification } = await import(
-	'@/services/verification/get-raffle-verification'
-);
+const { getRaffleVerification } =
+	await import('@/services/verification/get-raffle-verification');
 
 describe('getRaffleVerification', () => {
 	test('returns validated verification data on success', async () => {

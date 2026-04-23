@@ -11,7 +11,7 @@ import {
 	CarouselNext,
 	CarouselPrevious,
 } from '@/components/ui/carousel';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 import type { Raffle } from '@/types/raffle';
 
 interface PastDrawsSectionProps {
@@ -86,10 +86,10 @@ export function PastDrawsSection({ raffles }: PastDrawsSectionProps) {
 	return (
 		<section className="flex flex-col gap-6">
 			<header className="flex flex-col gap-1">
-				<h2 className="font-clash-display text-2xl leading-none font-semibold tracking-[0.12px] text-[#121211] sm:text-3xl">
+				<h2 className="font-clash-display tracking-micro text-ink-900 text-2xl/none font-semibold sm:text-3xl">
 					Past Draws
 				</h2>
-				<p className="text-sm text-[#7b7b7b]">
+				<p className="text-ink-500 text-sm">
 					See who won — results verified on-chain.
 				</p>
 			</header>
@@ -161,8 +161,8 @@ export function PastDrawsSection({ raffles }: PastDrawsSectionProps) {
 									className={cn(
 										'h-2 rounded-full transition-all duration-200',
 										isActive
-											? 'w-6 bg-[#121211]'
-											: 'w-2 bg-[#121211]/20 hover:bg-[#121211]/40',
+											? 'bg-ink-900 w-6'
+											: 'bg-ink-900/20 hover:bg-ink-900/40 w-2',
 									)}
 								/>
 							);

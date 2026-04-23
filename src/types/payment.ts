@@ -39,7 +39,8 @@ export const paymentSessionSchema = z.object({
 	orderId: z.uuidv7(),
 	userId: z.string(),
 	stripeSessionId: z.string(),
-	amount: z.string(), // Decimal as string
+	// decimal as string
+	amount: z.string(),
 	currency: z.string().length(3),
 	status: paymentStatusSchema,
 	completedAt: z.string().nullable().optional(),
@@ -53,7 +54,8 @@ export const paymentSessionSchema = z.object({
  * `expiresAt` is the Stripe session expiration timestamp.
  */
 export const checkoutSessionResponseSchema = z.object({
-	id: z.uuidv7(), // Payment session ID
+	// payment session ID
+	id: z.uuidv7(),
 	checkoutUrl: z.url(),
 	orderId: z.uuidv7(),
 	expiresAt: z.string(),

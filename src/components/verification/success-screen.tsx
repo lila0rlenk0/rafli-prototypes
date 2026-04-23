@@ -55,7 +55,7 @@ export function SuccessScreen() {
 						<Link href="/browse">Back to Browse</Link>
 					</Button>
 					<Button asChild variant="outline" className="w-full">
-						<Link href="/my-raffles">Go to My Raffles</Link>
+						<Link href="/my-raffles">Go to My Sweepstakes</Link>
 					</Button>
 				</div>
 			</div>

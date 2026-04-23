@@ -1,11 +1,9 @@
 import Link from 'next/link';
 
-import { KycStatusBadge } from '@/components/verification/kyc-status-badge';
-import { formatDate } from '@/lib/utils/date-format';
-import {
-	getVerificationTypeLabel,
-	type KycSubmissionSummary,
-} from '@/types/kyc-submission';
+import { KycStatusBadge } from '@/components/verification/badges/kyc-status-badge';
+import { getVerificationTypeLabel } from '@/lib/verification/labels';
+import { formatDate } from '@/lib/utils/format/date-format';
+import { type KycSubmissionSummary } from '@/types/kyc-submission';
 
 interface SubmissionsListProps {
 	submissions: KycSubmissionSummary[];

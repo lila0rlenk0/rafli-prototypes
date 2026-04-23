@@ -1,34 +1,36 @@
 ---
 description: "Lib"
 alwaysApply: false
-globs: "'src/lib/**'"
+globs: "'src/lib/**/*.{ts,tsx}'"
 ---
 
 # Lib
 
-Infrastructure utilities. API clients, error handling, auth, caching, analytics, Sentry.
+Infrastructure layer. Leaf dependency — imported by services, components, hooks, pages.
 
-## Directory
+## Folders
 
-- `api/` — HTTP clients (`baseClient`, `authenticatedClient`, `browserClient`)
-- `auth/` — session management, JWT utilities, cookie config
-- `cache/` — revalidation helpers (`revalidateMyRaffles`, `revalidateRaffleDetail`, `revalidateWinningPaths`)
-- `errors/` — error types, domain mappers, `success()`/`failure()` helpers
-- `query/` — React Query client and `serviceError()` bridge
-- `sentry/` — `captureServiceError` helper and `beforeSend` filter
-- `analytics/` — Mixpanel integration
-- `hooks/` — custom React hooks
-- `permissions.ts` — permission constants (`raffle:create`, `raffle:manage`, `raffle:participate`)
-- `notification-stream.ts` — WebSocket client for real-time notifications
-- `web3/` — Reown AppKit + wagmi (300+ wallets), route-gated to `/browse/[slug]`
-- `utils/` — general utilities (date formatting, etc.)
-- `utils.ts` — Tailwind `cn()` helper
-
-## Per-Request Deduplication
-
-`getCurrentUser` in `@/lib/auth/session` is wrapped with `React.cache()` — multiple calls within one server request execute only once. Prefer `getCurrentUser` over raw `getSession()` in server components to avoid redundant JWT decoding.
+- `api/` — HTTP clients: `client.ts` (server), `browser-client.ts` (OAuth only; no `server-only`)
+- `auth/` — session management, JWT verification, cookie helpers (`constants.ts` for cookie names / options)
+- `cache/` — `revalidatePath` / `revalidateTag` wrappers keyed by cache tag constants
+- `chat/` — chat WebSocket client (`stream.ts`), WS event dispatcher (`event-dispatch.ts`)
+- `errors/` — error types, domain mappers, `success()` / `failure()` helpers
+- `notifications/` — notification WebSocket client (`stream.ts`)
+- `query/` — React Query client, `serviceError()` bridge to mutations
+- `sentry/` — `captureServiceError`, `captureContractDrift`, `beforeSend` filter
+- `analytics/` — Mixpanel client
+- `hooks/` — custom React hooks (one per file, `use-<kebab>.ts`)
+- `permissions.ts` — permission constants
+- `feature-flags.ts` — compile-time feature switches + launch-pricing deadline
+- `web3/` — Reown AppKit + wagmi, route-gated to `/browse/[slug]` (`format/`, `config/`, `payment/`, `errors.ts` at root)
+- `utils/` — general utilities at root (incl. `run-after.ts`, `ui-constants.ts`); `format/`, `raffle/`, `media/`, `routing/` for grouped modules
+- `class-names.ts` — Tailwind `cn()` helper only (root; not under `utils/`)
+- `verification/` — KYC/verification UI helpers, explorer links
 
 ## Rules
 
-- Map errors through domain-specific mappers — never expose implementation details to consuming layers
-- Never leak internal HTTP/Axios details to components
+- `getCurrentUser` (React.cache-wrapped) over raw `getSession()` in server components
+- map errors through domain-specific mappers — never expose HTTP/Axios internals
+- never leak raw error shapes to components — always return `ServiceResponse`
+- server-only modules (`lib/api/*`, `lib/auth/*`) must `import 'server-only'` at the top
+- one hook per file in `lib/hooks/`, named `use-<kebab>.ts`

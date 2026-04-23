@@ -1,3 +1,3 @@
-export { FilterBar } from './filter-bar';
-export { FilterSelect, type FilterOption } from './filter-select';
-export { StickyFilterSection } from './sticky-filter-section';
+export { FilterBar } from './bar';
+export { FilterSelect, type FilterOption } from './select';
+export { StickyFilterSection } from './sticky-section';

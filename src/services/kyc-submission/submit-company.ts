@@ -5,7 +5,7 @@ import { ZodError } from 'zod';
 import { KYC_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapKycSubmissionError, success } from '@/lib/errors';
 import {

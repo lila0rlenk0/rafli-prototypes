@@ -1,14 +1,16 @@
 'use server';
 
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
-import { getSession } from '@/lib/auth/session';
-import { failure, mapCheckoutOrderError, success } from '@/lib/errors';
+import { API_TIMEOUTS } from '@/lib/api/constants';
+// Import mapper from the module — not `@/lib/errors` barrel — so `spyOn` / load order
+// on checkout-adjacent tests cannot create a half-initialized re-export (TDZ on mapper).
+import { mapCheckoutOrderError } from '@/lib/errors/error-mapper';
+import { failure, success } from '@/lib/errors/service-result';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { ORDER_ERROR_CODES, type CheckoutOrderErrorCode } from '@/types/errors';
 import {
@@ -49,7 +51,7 @@ export interface CheckoutOrderResponse {
 export async function checkoutOrder(
 	payload: CheckoutOrderPayload,
 ): Promise<ServiceResponse<CheckoutOrderResponse, CheckoutOrderErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = import('@/lib/auth/session').then(m => m.getSession());
 
 	try {
 		// Step 1: Validate input — defense-in-depth before forwarding to backend

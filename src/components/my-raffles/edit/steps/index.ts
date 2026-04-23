@@ -8,7 +8,7 @@ export const STEPS = [
 		component: BasicInfoStep,
 	},
 	{
-		title: 'Active time period & Tickets',
+		title: 'Active time period & Entries',
 		component: TicketsStep,
 	},
 	{

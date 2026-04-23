@@ -1,0 +1,49 @@
+---
+description: "Accessibility"
+alwaysApply: false
+globs: "'src/**/*.tsx'"
+---
+
+# Accessibility
+
+## Semantic HTML first
+
+- `<button>` for actions, `<a>` for navigation — never `<div onClick>`
+- `<nav>`, `<main>`, `<aside>`, `<header>`, `<footer>` for landmarks
+- heading hierarchy (`h1` > `h2` > `h3`) — never skip levels for styling
+- `<ul>`/`<ol>` for lists — screen readers announce item counts
+
+## ARIA
+
+- add ARIA only when semantic HTML is insufficient
+- `aria-label` on icon-only buttons: `<Button aria-label="Close dialog">`
+- `aria-describedby` for inputs with help text or errors
+- `aria-live="polite"` for dynamic content (toasts, status changes)
+- `role="status"` for loading indicators
+
+## Keyboard
+
+- every interactive element focusable + operable via keyboard
+- visible focus rings — never `outline-none` without `focus-visible:ring-2`
+- focus trap in modals — shadcn Dialog/Sheet/Drawer handles this
+- `Escape` closes modals/popovers/dropdowns — shadcn handles this
+
+## Forms
+
+- every input has a visible `<Label>` — shadcn `<Label htmlFor="...">`
+- group related fields with `<fieldset>` + `<legend>`
+- error messages linked via `aria-describedby` — never color-only
+- required fields: `aria-required="true"` or native `required`
+
+## Images + icons
+
+- `<img>` always has `alt`; decorative → `alt=""`
+- icons next to text are decorative: `aria-hidden="true"`
+- icon-only controls always carry `aria-label`
+
+## Rules
+
+- color is never the only indicator — pair with icon, text, or pattern
+- touch targets minimum 44×44px on mobile
+- test with keyboard-only navigation before shipping
+- never rely on hover to reveal primary affordances

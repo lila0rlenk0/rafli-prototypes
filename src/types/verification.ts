@@ -59,6 +59,6 @@ export type WinnerVerification = z.infer<typeof winnerVerificationSchema>;
 /** Merkle inclusion proof for a ticket. */
 export type MerkleProof = z.infer<typeof merkleProofSchema>;
 /** Complete raffle verification data including on-chain anchors and winner proofs. */
-export type RaffleVerificationData = z.infer<
+export type RaffleVerificationPayload = z.infer<
 	typeof raffleVerificationDataSchema
 >;

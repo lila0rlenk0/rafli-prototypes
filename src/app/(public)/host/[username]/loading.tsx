@@ -12,7 +12,7 @@ export default function HostProfileLoading() {
 		<div className="container mx-auto px-4 py-8">
 			<Link href="/browse" className="flex w-fit items-center gap-2">
 				<ArrowLeft className="size-4" />
-				<span className="font-semibold">Back to Raffle Browse</span>
+				<span className="font-semibold">Back to all sweepstakes</span>
 			</Link>
 
 			<div className="flex flex-col gap-8 lg:flex-row">
@@ -72,7 +72,7 @@ export default function HostProfileLoading() {
  */
 function RaffleCardSkeleton() {
 	return (
-		<div className="flex w-full flex-col overflow-hidden rounded-[24px] bg-white">
+		<div className="flex w-full flex-col overflow-hidden rounded-3xl bg-white">
 			{/* Image Skeleton */}
 			<Skeleton className="mb-4 aspect-square w-full rounded-none" />
 
@@ -97,7 +97,7 @@ function RaffleCardSkeleton() {
 					<Skeleton className="h-4 w-16" />
 					<Skeleton className="h-4 w-20" />
 				</div>
-				<Skeleton className="mb-6 h-[11px] w-full rounded-full" />
+				<Skeleton className="mb-6 h-2.75 w-full rounded-full" />
 
 				{/* Button Skeleton */}
 				<Skeleton className="h-12 w-full rounded-full" />

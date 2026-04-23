@@ -2,7 +2,7 @@
 
 import { PublishSplitButton } from '@/components/raffle/publish-split-button';
 
-import { useEditForm } from './edit-form-provider';
+import { useEditForm } from './form-provider';
 
 /**
  * Publish split button wired to the edit form context.

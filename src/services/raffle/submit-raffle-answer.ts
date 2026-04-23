@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -39,7 +40,7 @@ export async function submitRaffleAnswer(
 
 	try {
 		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/answer`,
+			`/raffles/${pathParam(raffleId)}/answer`,
 			{ optionId },
 		);
 

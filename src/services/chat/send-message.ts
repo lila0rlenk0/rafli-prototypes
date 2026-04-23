@@ -8,6 +8,7 @@ import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { CHAT_ERROR_CODES, type ChatErrorCode } from '@/types/errors';
 import {
 	type Message,
@@ -43,7 +44,7 @@ export async function sendMessage(
 
 	try {
 		const response = await authenticatedClient.post(
-			`/chat/conversations/${conversationId}/messages`,
+			`/chat/conversations/${pathParam(conversationId)}/messages`,
 			validated.data,
 		);
 		return success(messageSchema.parse(response.data));

@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { AUTH_ERROR_CODES } from '@/types/errors/auth-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Mocks ---
 
@@ -123,5 +123,39 @@ describe('changePassword', () => {
 			COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR,
 			{ service: 'auth', action: 'change-password' },
 		);
+	});
+
+	// Defence: server actions are public POST endpoints — attackers can add
+	// arbitrary fields to the body (mass-assignment). Input must be
+	// Zod-validated so extras are stripped before the backend call.
+	test('strips unknown fields before forwarding (mass-assignment defense)', async () => {
+		mockPost.mockResolvedValueOnce(mockAxiosResponse({}));
+
+		// Variable indirection bypasses the object-literal excess-property
+		// check to model a real attacker payload.
+		const tampered = {
+			...VALID_INPUT,
+			userId: 'another-user',
+			role: 'admin',
+			permissions: ['admin:kyc:review'],
+		};
+
+		await changePassword(tampered);
+
+		expect(mockPost).toHaveBeenCalledWith('/auth/change-password', VALID_INPUT);
+	});
+
+	test('rejects input below 12-char password policy without hitting backend', async () => {
+		mockPost.mockReset();
+		const result = await changePassword({
+			currentPassword: 'old',
+			newPassword: 'too-short',
+		});
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+		expect(mockPost).not.toHaveBeenCalled();
 	});
 });

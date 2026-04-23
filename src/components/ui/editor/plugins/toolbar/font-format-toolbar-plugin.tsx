@@ -3,9 +3,9 @@
 import { $isTableSelection } from '@lexical/table';
 import {
 	$isRangeSelection,
-	BaseSelection,
+	type BaseSelection,
 	FORMAT_TEXT_COMMAND,
-	TextFormatType,
+	type TextFormatType,
 } from 'lexical';
 import {
 	BoldIcon,

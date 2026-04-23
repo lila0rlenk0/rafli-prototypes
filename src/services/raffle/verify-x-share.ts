@@ -1,9 +1,10 @@
 'use server';
 
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 import { ZodError, z } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { revalidateRaffleDetail } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import {
@@ -35,7 +36,7 @@ export async function verifyXShare(
 ): Promise<ServiceResponse<VerifyXShareResponse, RaffleErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/verify-x-share`,
+			`/raffles/${pathParam(raffleId)}/verify-x-share`,
 		);
 
 		const verified = verifyXShareResponseSchema.parse(response.data);

@@ -1,6 +1,6 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 
-import { CACHE_TAGS } from '@/lib/api/config';
+import { CACHE_TAGS } from '@/lib/api/constants';
 
 /**
  * Revalidates the user's raffles cache.
@@ -9,7 +9,8 @@ import { CACHE_TAGS } from '@/lib/api/config';
  */
 export function revalidateMyRaffles(): void {
 	revalidateTag(CACHE_TAGS.MY_RAFFLES, 'max');
-	revalidatePath('/my-raffles');
+	// 'page' — invalidate the route page segment; pairs with revalidateTag for cacheComponents
+	revalidatePath('/my-raffles', 'page');
 }
 
 /**
@@ -31,10 +32,10 @@ export function revalidateRaffleDetail(raffleId: string): void {
  * @returns void
  */
 export function revalidateWinningPaths(publicSlug?: string): void {
-	revalidatePath('/my-raffles');
+	revalidatePath('/my-raffles', 'page');
 
 	if (!publicSlug) return;
 
-	revalidatePath(`/browse/${publicSlug}`);
-	revalidatePath(`/browse/${publicSlug}/fulfillment`);
+	revalidatePath(`/browse/${publicSlug}`, 'page');
+	revalidatePath(`/browse/${publicSlug}/fulfillment`, 'page');
 }

@@ -26,11 +26,19 @@ const TEST_COOKIE_OPTIONS = {
 	path: '/',
 };
 
-mock.module('@/lib/auth/config', () => ({
+mock.module('@/lib/auth/constants', () => ({
 	AUTH_COOKIES: {
 		TOKEN: 'raffly-token',
 		SESSION: 'raffly-session',
 		USER_MODE: 'raffly-user-mode',
+	},
+	// `session` and other modules import `COOKIE_OPTIONS` — partial mocks are suite-order fragile.
+	COOKIE_OPTIONS: {
+		httpOnly: true,
+		secure: false,
+		sameSite: 'lax' as const,
+		maxAge: 60 * 60 * 24 * 30,
+		path: '/',
 	},
 	MODE_COOKIE_OPTIONS: TEST_COOKIE_OPTIONS,
 }));

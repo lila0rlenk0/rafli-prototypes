@@ -1,13 +1,11 @@
 import Link from 'next/link';
 
-import { KycStatusBadge } from '@/components/verification/kyc-status-badge';
+import { KycStatusBadge } from '@/components/verification/badges/kyc-status-badge';
 import { Button } from '@/components/ui/button';
 import { getMySubmissions } from '@/services/kyc-submission/get-my-submissions';
-import { formatDate } from '@/lib/utils/date-format';
-import {
-	getVerificationTypeLabel,
-	type KycSubmissionSummary,
-} from '@/types/kyc-submission';
+import { getVerificationTypeLabel } from '@/lib/verification/labels';
+import { formatDate } from '@/lib/utils/format/date-format';
+import { type KycSubmissionSummary } from '@/types/kyc-submission';
 
 /**
  * VerificationSection Component
@@ -48,7 +46,7 @@ export async function VerificationSection() {
 			id="verification"
 		>
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-				<h3 className="font-clash-display text-h3 flex-1 font-semibold text-black">
+				<h3 className="font-clash-display text-headline-sm flex-1 font-semibold text-black">
 					Verification
 				</h3>
 				<Link href="/verification">

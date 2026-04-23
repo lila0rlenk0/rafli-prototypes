@@ -2,7 +2,7 @@ import { CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 import type { Raffle } from '@/types/raffle';
 
 type FeaturedVariant = 'blue' | 'green';
@@ -12,15 +12,18 @@ interface FeaturedRaffleCardProps {
 	variant: FeaturedVariant;
 }
 
+// -- resolved against globals.css tokens:
+//   sky-100 = #e1f8ff | sky-400 = #00b8ff (primary cyan, role=info badge)
+//   brand-mint = #beffdb | green-vivid = #13e36f (success accent)
 const VARIANT_CONFIG = {
 	blue: {
-		bg: 'bg-[#e1f8ff]',
-		badgeBg: 'bg-[#00b8ff]',
+		bg: 'bg-sky-100',
+		badgeBg: 'bg-sky-400',
 		badgeLabel: 'Best value',
 	},
 	green: {
-		bg: 'bg-[#beffdb]',
-		badgeBg: 'bg-[#13e36f]',
+		bg: 'bg-brand-mint',
+		badgeBg: 'bg-green-vivid',
 		badgeLabel: 'New this week',
 	},
 } as const;
@@ -65,35 +68,35 @@ export function FeaturedRaffleCard({
 		>
 			{/* Text content — flex-1 + mt-auto on the button keeps "Enter now!"
 			   bottom-aligned across cards with different title lengths. */}
-			<div className="flex flex-1 flex-col gap-6 sm:w-[60%]">
+			<div className="sm:w-sidebar-fill flex flex-1 flex-col gap-6">
 				<div className="flex flex-col gap-2">
 					<span
 						className={cn(
 							config.badgeBg,
-							'w-fit rounded-[10px] px-2 py-0.5 text-sm font-semibold text-[#121211]',
+							'rounded-pill text-ink-900 w-fit px-2 py-0.5 text-sm font-semibold',
 						)}
 					>
 						{config.badgeLabel}
 					</span>
 					<div className="flex flex-col gap-2">
-						<h3 className="font-clash-display text-2xl leading-tight font-semibold tracking-[0.12px] text-[#182135]">
+						<h3 className="font-clash-display tracking-micro text-navy text-2xl/tight font-semibold">
 							{raffle.title}
 						</h3>
 						<div className="flex flex-wrap items-center gap-2">
-							<span className="text-base text-[#121211]">by {hostName}</span>
-							<span className="inline-flex items-center gap-1 rounded-[10px] border border-black px-1 py-0.5 text-xs text-[#121211]">
+							<span className="text-ink-900 text-base">by {hostName}</span>
+							<span className="rounded-pill text-ink-900 inline-flex items-center gap-1 border border-black px-1 py-0.5 text-xs">
 								<CheckCircle className="size-3.5" />
 								Verified host
 							</span>
 						</div>
 					</div>
-					<p className="text-sm text-[#7b7b7b]">
+					<p className="text-ink-500 text-sm">
 						{raffle.participantsCount} participants &middot; ${getTicketPrice()}
 						/ticket &middot; {getTimeRemaining()}
 					</p>
 				</div>
-				<div className="mt-auto flex w-full items-center justify-center rounded-full bg-[#141416] px-6 py-4">
-					<span className="text-base font-semibold text-[#fcfcfd]">
+				<div className="bg-brand-dark mt-auto flex w-full items-center justify-center rounded-full px-6 py-4">
+					<span className="text-on-dark text-base font-semibold">
 						Enter now!
 					</span>
 				</div>
@@ -101,7 +104,7 @@ export function FeaturedRaffleCard({
 
 			{/* Cover image - below text on mobile, right side on desktop */}
 			{heroImage ? (
-				<div className="relative aspect-square w-full flex-shrink-0 self-start overflow-hidden rounded-3xl sm:w-[182px]">
+				<div className="relative aspect-square w-full flex-shrink-0 self-start overflow-hidden rounded-3xl sm:w-45.5">
 					<Image
 						src={heroImage}
 						alt={raffle.title}

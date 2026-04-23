@@ -9,7 +9,7 @@
 import { Star } from 'lucide-react';
 import { useState } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 type InteractiveStarsProps = {
 	/** Current rating value (1-5) or 0 if none selected. */

@@ -81,7 +81,7 @@ const originals = {
 	WebSocket: globalThis.WebSocket,
 };
 
-const { ChatStream } = await import('@/lib/chat-stream');
+const { ChatStream } = await import('@/lib/chat/stream');
 
 beforeEach(() => {
 	timerId = 0;

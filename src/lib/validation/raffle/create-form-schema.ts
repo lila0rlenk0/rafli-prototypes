@@ -1,18 +1,13 @@
 import { z } from 'zod';
 
-import { stripMarkdown } from '@/lib/utils/strip-markdown';
+import { stripMarkdown } from '@/lib/utils/format/strip-markdown';
+import {
+	MAX_FILE_SIZE,
+	raffleImageFileSchema,
+} from '@/lib/validation/raffle/form-file-schema';
 import { tokenPricingEntrySchema } from '@/types/raffle';
 
-export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-
-const fileSchema = z
-	.instanceof(File)
-	.refine(file => file.size <= MAX_FILE_SIZE, 'File size must be less than 5MB')
-	.refine(
-		file => ACCEPTED_IMAGE_TYPES.includes(file.type),
-		'Only PNG, JPEG and WebP files are accepted',
-	);
+export { MAX_FILE_SIZE };
 
 /**
  * Crypto config fields shared between create and edit form schemas.
@@ -70,7 +65,7 @@ export const raffleFormSchema = z
 			.transform(val => (isNaN(val) ? 0 : val))
 			.pipe(z.number().min(0.5, 'Declared value must be at least 0.5')),
 		category: z.string().min(1, 'Category is required'),
-		coverImage: z.array(fileSchema).optional(),
+		coverImage: z.array(raffleImageFileSchema).optional(),
 
 		// Step 2: Active time period & Tickets
 		startDate: z.string().min(1, 'Start date is required'),
@@ -81,7 +76,7 @@ export const raffleFormSchema = z
 			.number()
 			.or(z.nan())
 			.transform(val => (isNaN(val) ? 0 : val))
-			.pipe(z.number().min(0.5, 'Price per ticket must be at least 0.5')),
+			.pipe(z.number().min(0.5, 'Price per entry must be at least 0.5')),
 		numberOfWinners: z
 			.number()
 			.or(z.nan())
@@ -226,4 +221,4 @@ export const raffleDraftSchema = z.object({
 	currentStep: z.number(),
 });
 
-export type RaffleDraftData = z.infer<typeof raffleDraftSchema>;
+export type RaffleDraftPayload = z.infer<typeof raffleDraftSchema>;

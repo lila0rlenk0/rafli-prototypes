@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { RAFFLE_ERROR_CODES } from '@/types/errors/raffle-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Fixtures ---
 
@@ -54,7 +54,7 @@ mock.module('@/lib/cache/revalidation', () => ({
 	revalidateMyRaffles: mock(),
 	revalidateWinningPaths: mock(),
 }));
-mock.module('@/lib/run-after', () => ({
+mock.module('@/lib/utils/run-after', () => ({
 	runAfter: mockRunAfter,
 }));
 // All session exports required — incomplete mocks contaminate other test files via Bun's global mock.module()

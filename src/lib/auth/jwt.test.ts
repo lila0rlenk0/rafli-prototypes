@@ -25,7 +25,8 @@ const BASE_PAYLOAD: JwtPayload = {
 	emailVerified: true,
 	name: 'Test User',
 	permissions: ['raffle:create'],
-	exp: Math.floor(Date.now() / 1000) + 3_600, // 1 hour from now
+	// 1 hour from now
+	exp: Math.floor(Date.now() / 1000) + 3_600,
 	iat: Math.floor(Date.now() / 1000),
 };
 

@@ -1,11 +1,13 @@
 'use client';
 
+import type { CSSProperties } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-import { useEditForm } from './edit-form-provider';
+import { useEditForm } from './form-provider';
 import { PublishRaffleButton } from './publish-raffle-button';
 
 /**
@@ -22,6 +24,9 @@ export function FormHeader() {
 	const isDraft = originalRaffle.status === RAFFLE_STATUS.DRAFT;
 
 	const progress = ((currentStep + 1) / totalSteps) * 100;
+	// Runtime-computed width — Tailwind fractional `w-*` can't bind to a
+	// derived percentage from form state.
+	const progressStyle: CSSProperties = { width: `${progress}%` };
 
 	const shouldDisablePreviousStep = currentStep === 0;
 
@@ -44,7 +49,7 @@ export function FormHeader() {
 		<>
 			<div className="flex items-center justify-between">
 				<h1 className="font-clash-display text-4xl font-semibold">
-					Edit Raffle
+					Edit Sweepstakes
 				</h1>
 
 				<div className="flex items-center gap-2">
@@ -68,10 +73,10 @@ export function FormHeader() {
 			</div>
 
 			<div className="relative my-4 h-2 w-full">
-				<div className="absolute h-full w-full rounded-full bg-[#EEEEEE]" />
+				<div className="bg-ink-150 absolute h-full w-full rounded-full" />
 				<div
 					className="bg-green absolute h-full max-w-full rounded-full"
-					style={{ width: `${progress}%` }}
+					style={progressStyle}
 				/>
 			</div>
 		</>

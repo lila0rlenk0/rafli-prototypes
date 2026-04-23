@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 /**
- * Call-to-action section with daily raffles message.
+ * Call-to-action section with daily sweepstakes message.
  *
  * Server Component — purely static content, no data fetching or interactivity.
  *
@@ -11,22 +11,22 @@ import { Button } from '@/components/ui/button';
  */
 export function CTASection() {
 	return (
-		<section className="mx-auto max-w-[1720px] px-6 py-20 text-center lg:px-[108px] lg:py-[150px]">
+		<section className="max-w-wide mx-auto px-6 py-20 text-center lg:px-27 lg:py-37.5">
 			<div className="mb-8 flex justify-center">
 				<GiftIcon />
 			</div>
-			<h2 className="font-clash-display text-dark mb-6 text-4xl leading-none font-semibold lg:text-[80px]">
+			<h2 className="font-clash-display text-brand-dark lg:text-80 mb-6 text-4xl/none font-semibold">
 				Something new every day.
 			</h2>
-			<p className="mx-auto mb-10 max-w-[1000px] text-lg font-medium text-black lg:text-2xl">
+			<p className="max-w-tall mx-auto mb-10 text-lg font-medium text-black lg:text-2xl">
 				Tech gadgets, collectibles, digital items, art, accessories, experiences
 				— you never know what&apos;s coming next.
 			</p>
 			<Button
 				asChild
-				className="hover:bg-background h-[60px] w-full border-2 border-black bg-black text-lg hover:text-black sm:w-[234px]"
+				className="hover:bg-background h-15 w-full border-2 border-black bg-black text-lg hover:text-black sm:w-58.5"
 			>
-				<Link href="/browse">Explore raffles</Link>
+				<Link href="/browse">Explore sweepstakes</Link>
 			</Button>
 		</section>
 	);

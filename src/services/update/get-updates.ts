@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapUpdateError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { UPDATE_ERROR_CODES, type UpdateErrorCode } from '@/types/errors';
@@ -30,9 +31,12 @@ export async function getUpdates(
 	params?: GetUpdatesParams,
 ): Promise<ServiceResponse<ListUpdatesResponse, UpdateErrorCode>> {
 	try {
-		const response = await baseClient.get(`/raffles/${raffleId}/updates`, {
-			params,
-		});
+		const response = await baseClient.get(
+			`/raffles/${pathParam(raffleId)}/updates`,
+			{
+				params,
+			},
+		);
 		return success(listUpdatesResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {

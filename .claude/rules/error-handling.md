@@ -40,7 +40,7 @@ Zod `.parse()` on responses surfaces backend drift. Catch `ZodError` and call `c
 
 - `captureServiceError()` from `@/lib/sentry/capture` — required for critical services (auth, payments, crypto, wallet), optional for simple CRUD
 - `beforeSend` in `src/lib/sentry/filter.ts` auto-classifies: expected errors dropped, network/timeout sampled 10%
-- add new expected codes to `EXPECTED_ERROR_CODES` set
+- add new expected codes to `EXPECTED_ERROR_CODES` in `src/lib/sentry/expected-error-codes.ts`
 
 ## Component error handling
 

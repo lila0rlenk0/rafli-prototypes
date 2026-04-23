@@ -8,6 +8,12 @@ import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
 
+function computeStartSign(value: number, unit: string): string {
+	if (value === 0) return '';
+	if (value < 0) return `-=${Math.abs(value)}${unit}`;
+	return `+=${value}${unit}`;
+}
+
 export interface SplitTextProps {
 	text: string;
 	className?: string;
@@ -90,12 +96,7 @@ const SplitText: React.FC<SplitTextProps> = ({
 			const marginMatch = /^(-?\d+(?:\.\d+)?)(px|em|rem|%)?$/.exec(rootMargin);
 			const marginValue = marginMatch ? parseFloat(marginMatch[1]) : 0;
 			const marginUnit = marginMatch ? marginMatch[2] || 'px' : 'px';
-			const sign =
-				marginValue === 0
-					? ''
-					: marginValue < 0
-						? `-=${Math.abs(marginValue)}${marginUnit}`
-						: `+=${marginValue}${marginUnit}`;
+			const sign = computeStartSign(marginValue, marginUnit);
 			const start = `top ${startPct}%${sign}`;
 			let targets: Element[] = [];
 			const assignTargets = (self: GSAPSplitText) => {

@@ -14,7 +14,7 @@ export function DiamondIcon() {
 			viewBox="0 0 201 201"
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
-			className="h-32 w-32 lg:h-[201px] lg:w-[201px]"
+			className="size-32 lg:size-50.25"
 		>
 			<path
 				d="M100.5 0L150.75 50.25L100.5 100.5L50.25 50.25L100.5 0Z"
@@ -44,8 +44,8 @@ export function DiamondIcon() {
  */
 export function CheckmarkIcon() {
 	return (
-		<div className="flex h-6 w-6 shrink-0 items-center justify-center">
-			<CheckIcon className="h-5 w-5 text-black" strokeWidth={3} />
+		<div className="flex size-6 shrink-0 items-center justify-center">
+			<CheckIcon className="size-5 text-black" strokeWidth={3} />
 		</div>
 	);
 }

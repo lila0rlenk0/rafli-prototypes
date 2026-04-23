@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { AUTH_ERROR_CODES } from '@/types/errors/auth-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Mocks ---
 
@@ -125,5 +125,19 @@ describe('verifyEmail', () => {
 			COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR,
 			{ service: 'auth', action: 'verify-email' },
 		);
+	});
+
+	// Defence: empty / missing token should short-circuit before touching the
+	// backend — prevents unnecessary load and removes a timing side-channel
+	// between "empty token" and "malformed token" behaviour.
+	test('rejects empty token without hitting backend', async () => {
+		mockGet.mockReset();
+		const result = await verifyEmail('');
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.INVALID_CREDENTIALS);
+		}
+		expect(mockGet).not.toHaveBeenCalled();
 	});
 });

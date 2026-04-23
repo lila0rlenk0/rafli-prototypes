@@ -6,7 +6,7 @@ import { FaXTwitter } from 'react-icons/fa6';
 import { toast } from 'sonner';
 
 import { useTimeout } from '@/lib/hooks/use-timeout';
-import { DIALOG_EXIT_ANIMATION_MS } from '@/lib/ui-constants';
+import { DIALOG_EXIT_ANIMATION_MS } from '@/lib/utils/ui-constants';
 
 import {
 	Dialog,
@@ -67,17 +67,17 @@ export function ReviewHostModal({
 	function handleCopyLink() {
 		const link = `${window.location.origin}/browse/${publicSlug}`;
 		navigator.clipboard.writeText(link);
-		toast.success('Raffle link copied to clipboard!');
+		toast.success('Sweepstakes link copied to clipboard!');
 	}
 
 	function handleShare() {
-		const text = 'I just won a raffle! Check it out';
+		const text = 'I just won a sweepstakes! Check it out';
 		const link = `${window.location.origin}/browse/${publicSlug}`;
 		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
 		window.open(url, '_blank');
 	}
 
-	function handleOpenChange(newOpen: boolean) {
+	const handleOpenChange = (newOpen: boolean) => {
 		if (!newOpen) {
 			// Reset after Dialog close animation completes
 			setCloseTimeout(() => {
@@ -86,28 +86,28 @@ export function ReviewHostModal({
 			}, DIALOG_EXIT_ANIMATION_MS);
 		}
 		onOpenChange(newOpen);
-	}
+	};
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-w-2xl border border-[#0F0F0FF2] py-16">
+			<DialogContent className="border-ink-alpha max-w-2xl border py-16">
 				<LeftColoredCard className="absolute top-0 left-0" />
 				<RightColoredCard className="absolute top-0 right-0" />
 
-				<DialogHeader className="z-1 flex items-center justify-center space-y-2">
+				<DialogHeader className="z-1 flex flex-col items-center justify-center gap-2">
 					<div className="flex justify-center pb-4">
 						<PartyPopperIcon />
 					</div>
 					<DialogTitle className="font-clash-display text-center text-3xl">
 						Congratulations!
 						<br />
-						You won a raffle!
+						You won a sweepstakes!
 					</DialogTitle>
 
 					{isSuccess ? (
 						<>
 							<DialogDescription className="text-center text-lg font-medium text-black">
-								Thanks — your feedback helps keep raffles fair
+								Thanks — your feedback helps keep sweepstakes fair
 							</DialogDescription>
 							<p className="text-center text-sm text-gray-600">
 								You can update your rating once the prize arrives
@@ -158,7 +158,7 @@ export function ReviewHostModal({
 							className="flex items-center justify-center gap-2 text-sm font-medium"
 						>
 							<Copy className="size-4" />
-							Copy Raffle link
+							Copy Sweepstakes link
 						</button>
 					</div>
 				</div>

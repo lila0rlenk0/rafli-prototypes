@@ -4,7 +4,7 @@ import { Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 
 import { useBlobUrl } from '@/lib/hooks/use-blob-url';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 interface ImagePreviewProps {
 	file?: File;

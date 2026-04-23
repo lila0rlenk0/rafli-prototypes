@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 import { useUserStore } from '@/providers/user-store-provider';
 import { RAFFLE_STATUS } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
@@ -97,8 +97,8 @@ export function StatusTabs() {
 					type="button"
 					onClick={handleScheduledClick}
 					className={cn(
-						'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
-						'text-[rgba(15,15,15,0.95)] transition-colors',
+						'relative cursor-pointer px-2 text-center text-lg/none font-semibold',
+						'text-ink-alpha transition-colors',
 						'hover:text-black',
 					)}
 				>
@@ -114,8 +114,8 @@ export function StatusTabs() {
 				type="button"
 				onClick={handleLiveClick}
 				className={cn(
-					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
-					'text-[rgba(15,15,15,0.95)] transition-colors',
+					'relative cursor-pointer px-2 text-center text-lg/none font-semibold',
+					'text-ink-alpha transition-colors',
 					'hover:text-black',
 				)}
 			>
@@ -130,8 +130,8 @@ export function StatusTabs() {
 				type="button"
 				onClick={handleEndedClick}
 				className={cn(
-					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
-					'text-[rgba(15,15,15,0.95)] transition-colors',
+					'relative cursor-pointer px-2 text-center text-lg/none font-semibold',
+					'text-ink-alpha transition-colors',
 					'hover:text-black',
 				)}
 			>

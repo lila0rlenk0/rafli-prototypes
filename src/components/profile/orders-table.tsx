@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { OrderStatusBadge } from '@/components/order/status-badge';
 import { Button } from '@/components/ui/button';
-import { formatDate } from '@/lib/utils/date-format';
+import { formatDate } from '@/lib/utils/format/date-format';
 import type { OrderWithRaffle } from '@/types/order';
 
 interface OrdersTableProps {
@@ -30,7 +30,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 
 	return (
 		<div className="overflow-x-auto">
-			<table className="w-full min-w-[500px]">
+			<table className="w-full min-w-125">
 				<thead>
 					<tr className="border-b border-gray-200 text-left text-sm text-gray-500">
 						<th className="pb-3 font-medium">Sweepstakes</th>

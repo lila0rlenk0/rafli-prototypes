@@ -7,23 +7,27 @@ test.describe('Raffle Card Consistency', () => {
 		await page.goto('/browse');
 
 		const titles = page.locator('[data-testid="raffle-card-title"]');
-		const count = await titles.count();
 
-		/**
-		 * Skip if fewer than 2 cards — nothing to compare.
-		 * This avoids false failures in empty environments.
-		 */
-		if (count < 2) {
-			test.skip();
-			return;
-		}
+		// Assert the browse landing has ≥2 cards before measuring —
+		// silently skipping on sparse environments hid a real regression
+		// where the grid rendered empty. The browse fixture must seed at
+		// least two live raffles for this comparison to be meaningful.
+		await expect(
+			titles,
+			'Browse grid must surface ≥2 raffles for card-height parity check',
+		).toHaveCount(await titles.count(), { timeout: 10_000 });
+		const count = await titles.count();
+		expect(
+			count,
+			'Expected at least 2 raffle cards on /browse; fixture may be empty',
+		).toBeGreaterThanOrEqual(2);
 
 		const heights: number[] = [];
 
 		for (let i = 0; i < count; i++) {
 			const box = await titles.nth(i).boundingBox();
 			expect(box).not.toBeNull();
-			heights.push(box!.height);
+			if (box) heights.push(box.height);
 		}
 
 		/** Every title element should have the same height regardless of text length */

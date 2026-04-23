@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { BackLink } from '@/components/ui/back-link';
-import { PublicNavbar } from '@/components/ui/public-navbar';
+import { BackLink } from '@/components/ui-custom/back-link';
+import { PublicNavbar } from '@/components/ui-custom/public-navbar';
 import { getSession } from '@/lib/auth/session';
 import { parsePositivePageParam } from '@/lib/pagination/parse-positive-page-param';
 import { getRaffle } from '@/services/raffle/get-raffle';
@@ -99,12 +99,12 @@ export default async function TicketIdsPage({
 			<div className="container mx-auto flex max-w-4xl flex-col gap-6 px-4">
 				<BackLink
 					fallbackHref={`/browse/${publicSlug}`}
-					label="Back to Raffle"
+					label="Back to Sweepstakes"
 				/>
 
 				<div className="rounded-2xl bg-white p-8">
 					<h1 className="mb-6 text-xl font-semibold">
-						My Tickets — {raffle.title}
+						My Entries — {raffle.title}
 					</h1>
 
 					<TicketCodesTable

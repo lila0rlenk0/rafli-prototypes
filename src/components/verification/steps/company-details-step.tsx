@@ -1,6 +1,6 @@
 'use client';
 
-import type { CompanyFormData } from '@/lib/validation/verification/verification-form-schema';
+import type { CompanyFormData } from '@/lib/validation/verification/form-schema';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
-import { useVerificationForm } from '../verification-form-provider';
+import { useVerificationForm } from '@/components/verification/form/form-provider';
 
 /**
  * CompanyDetailsStep Component

@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapNotificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
@@ -26,7 +27,7 @@ export async function markNotificationRead(
 ): Promise<ServiceResponse<MarkReadResponse, NotificationErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
-			`/me/notifications/${notificationId}/read`,
+			`/me/notifications/${pathParam(notificationId)}/read`,
 		);
 		return success(markReadResponseSchema.parse(response.data));
 	} catch (error) {

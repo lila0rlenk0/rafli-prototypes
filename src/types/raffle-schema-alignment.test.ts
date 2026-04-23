@@ -72,7 +72,7 @@ describe('raffleSchema backend alignment', () => {
 			'insufficient_participants',
 			'no_tickets',
 			'partial_participation',
-		];
+		] as const;
 
 		for (const reason of reasons) {
 			const raffle = buildBackendRaffle({
@@ -155,15 +155,25 @@ describe('createRafflePayloadSchema UUID version enforcement', () => {
 		cryptoOptions: [],
 	} as const;
 
-	test('accepts v7 UUIDs on categoryId, questionId, hostId', () => {
+	test('accepts v7 UUIDs on categoryId, questionId', () => {
 		// Position 13 = version nibble; `7` denotes UUIDv7 (time-ordered).
 		// Backend emits v7 for all entity IDs, so payload schemas narrow to v7.
 		const result = createRafflePayloadSchema.safeParse({
 			...VALID_PAYLOAD,
-			hostId: '33333333-3333-7333-8333-333333333333',
 		});
 
 		expect(result.success).toBe(true);
+	});
+
+	test('strips client hostId if present — mass-assignment mitigated', () => {
+		const result = createRafflePayloadSchema.safeParse({
+			...VALID_PAYLOAD,
+			hostId: '33333333-3333-7333-8333-333333333333',
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect('hostId' in result.data).toBe(false);
+		}
 	});
 
 	test('rejects v4 UUIDs on categoryId — locks in v7-only contract', () => {
@@ -181,15 +191,6 @@ describe('createRafflePayloadSchema UUID version enforcement', () => {
 		const result = createRafflePayloadSchema.safeParse({
 			...VALID_PAYLOAD,
 			questionId: '22222222-2222-4222-8222-222222222222',
-		});
-
-		expect(result.success).toBe(false);
-	});
-
-	test('rejects v4 UUIDs on optional hostId when provided', () => {
-		const result = createRafflePayloadSchema.safeParse({
-			...VALID_PAYLOAD,
-			hostId: '33333333-3333-4333-8333-333333333333',
 		});
 
 		expect(result.success).toBe(false);

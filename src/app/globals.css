@@ -48,16 +48,54 @@
 
 	--color-green: #86ffae;
 
-	/* Landing page accent colors */
-	--color-accent-blue: #c4edff;
-	--color-accent-green: #beffdb;
-	--color-accent-yellow: #f6ff8b;
-	/* Soft cream — distinct from accent-yellow (#f6ff8b, a brighter lemon
-	   used by the landing/marketing surfaces). Dedicated to the "Host"
-	   role tag on raffle cards + my-raffles page header so the marketing
+	/* ------------------------------------------------------------------ */
+	/* Brand palette — DESIGN.md canonical names.                         */
+	/*                                                                    */
+	/* `brand-dark` is the cooler near-black used for every high-emphasis */
+	/* surface in the product (buttons, pill CTAs, default Badge, progress*/
+	/* fills, focus rings, unread chips, outgoing bubbles). `--primary`   */
+	/* resolves to the same hex on purpose — the design system is mono-   */
+	/* chromatic by intent, so `bg-primary` and `bg-brand-dark` are       */
+	/* interchangeable aliases. `--foreground` (stone near-black) is      */
+	/* the separate body-copy ink.                                        */
+	/*                                                                    */
+	/* `brand-yellow`/`brand-mint`/`brand-sky`/`brand-green` are the      */
+	/* named accent blocks used by landing and countdown surfaces. These  */
+	/* are the DESIGN.md names; `accent-*` below are kept as legacy       */
+	/* aliases for files that have not migrated yet.                      */
+	/* ------------------------------------------------------------------ */
+	--color-brand-dark: #141416;
+	--color-brand-yellow: #f6ff8b;
+	--color-brand-mint: #beffdb;
+	--color-brand-sky: #c4edff;
+	--color-brand-green: #86ffae;
+
+	/* Legacy aliases — same hex as brand-*, kept so the pre-rename call
+	   sites (`bg-accent-yellow`, `bg-dark`) still resolve. Prefer the
+	   `brand-*` names in new code; these will be removed once the last
+	   consumer migrates. */
+	--color-accent-blue: var(--color-brand-sky);
+	--color-accent-green: var(--color-brand-mint);
+	--color-accent-yellow: var(--color-brand-yellow);
+	--color-dark: var(--color-brand-dark);
+
+	/* Soft cream — distinct from brand-yellow (#f6ff8b, a brighter lemon
+	   used by landing/marketing surfaces). Dedicated to the "Host" role
+	   tag on raffle cards + my-raffles page header so the marketing
 	   yellow stays free of role-semantic overloading. */
 	--color-accent-cream: #faffc4;
-	--color-dark: #141416;
+
+	/* ------------------------------------------------------------------ */
+	/* Status pills — raffle lifecycle taxonomy, DESIGN.md canonical.     */
+	/* Six colours, one per state. Never introduce a new pill colour      */
+	/* without updating DESIGN.md; this list is the full vocabulary.      */
+	/* ------------------------------------------------------------------ */
+	--color-status-live: #22c55e;
+	--color-status-scheduled: #3b82f6;
+	--color-status-ended: #9ca3af;
+	--color-status-completed: #a855f7;
+	--color-status-auto-cancelled: #f97316;
+	--color-status-cancelled: #ef4444;
 
 	/* Foreground pairings for role-tag surfaces. The browse-card design
 	   uses muted same-hue foregrounds (softer than text-black on the chat
@@ -138,6 +176,344 @@
 	   (e.g. 14px for denser UI) without a codebase-wide rename. */
 	--text-body-m: 16px;
 	--text-body-m--line-height: 1.4;
+
+	/* ------------------------------------------------------------------ */
+	/* DESIGN.md canonical typography scale — emitted with the full       */
+	/* frontmatter names so `text-headline-md`, `text-body-md`, etc.      */
+	/* resolve. These are the names used across raffle cards, section    */
+	/* headers, and profile pages; without them Tailwind v4 silently     */
+	/* drops the class and the element falls back to the browser's       */
+	/* default element size (why the browse `<h2>` rendered too small).  */
+	/*                                                                   */
+	/* Kept alongside the older `--text-h2` / `--text-body-m` aliases    */
+	/* above so existing call sites keep rendering until they migrate    */
+	/* to DESIGN.md names. When the last ad-hoc caller migrates, the     */
+	/* aliases can be removed in one pass.                               */
+	/* ------------------------------------------------------------------ */
+	--text-display-hero: 160px;
+	--text-display-hero--line-height: 0.95;
+	--text-display-hero--letter-spacing: -0.03em;
+	--text-display-lg: 72px;
+	--text-display-lg--line-height: 1;
+	--text-display-lg--letter-spacing: -0.02em;
+	--text-display-md: 48px;
+	--text-display-md--line-height: 1.05;
+	--text-display-md--letter-spacing: -0.02em;
+	--text-headline-lg: 36px;
+	--text-headline-lg--line-height: 1.1;
+	--text-headline-lg--letter-spacing: -0.01em;
+	--text-headline-md: 24px;
+	--text-headline-md--line-height: 1.2;
+	--text-headline-sm: 18px;
+	--text-headline-sm--line-height: 1.35;
+	--text-body-lg: 18px;
+	--text-body-lg--line-height: 1.6;
+	--text-body-md: 16px;
+	--text-body-md--line-height: 1.5;
+	--text-body-sm: 14px;
+	--text-body-sm--line-height: 1.5;
+	--text-label-md: 14px;
+	--text-label-md--line-height: 1.2;
+	--text-label-sm: 12px;
+	--text-label-sm--line-height: 1;
+	--text-label-sm--letter-spacing: 0.02em;
+	--text-countdown-digit: 36px;
+	--text-countdown-digit--line-height: 1;
+	--text-countdown-digit--letter-spacing: -0.01em;
+	--text-mono-md: 14px;
+	--text-mono-md--line-height: 1.5;
+
+	/* ------------------------------------------------------------------ */
+	/* Ink scale — warm neutral ramp paired with the off-white canvas.    */
+	/* Replaces the `text-[#hex]` / `border-[#hex]` / `bg-[#hex]` drift   */
+	/* that bypassed `muted-foreground` / `border` because those oklch    */
+	/* tokens drifted ~3% off the Figma values over time. Explicit scale  */
+	/* keeps the brand intent (warm grey, not cool grey) auditable.       */
+	/* ------------------------------------------------------------------ */
+	--color-ink-900: #121211;
+	--color-ink-800: #151516;
+	--color-ink-700: #4a4a4a;
+	--color-ink-600: #6e6e6e;
+	--color-ink-500: #7b7b7b;
+	--color-ink-400: #929292;
+	--color-ink-300: #b4b4b4;
+	--color-ink-250: #d4d4d4;
+	--color-ink-200: #e5e5e5;
+	--color-ink-150: #eeeeee;
+	--color-ink-alpha: rgba(15, 15, 15, 0.95);
+	--color-on-dark: #fcfcfd;
+	--color-navy: #182135;
+
+	/* Surface greys — cards, stepper wells, skeleton fills. */
+	--color-paper-100: #f4f4f4;
+	--color-paper-200: #f5f5f5;
+	--color-paper-300: #f6f6f6;
+	--color-cream: #f5f5f0;
+	--color-silver: #d9d9d9;
+	--color-sand: #b9af86;
+	--color-cool-100: #f1f3f5;
+	--color-cool-200: #e6e8ec;
+
+	/* Sky family — brand blues paired with the `brand-sky` accent block.
+	   Cyan is a decorative accent only; the action colour is the mono-
+	   chromatic `primary` / `brand-dark`. */
+	--color-sky-100: #e1f8ff;
+	--color-sky-200: #c2e6ff;
+	--color-sky-300: #84dcff;
+	--color-sky-400: #00b8ff;
+	--color-brand-blue: #2870bd;
+	--color-brand-teal: #12739d;
+
+	/* Mint/green family — success, verification, participant. */
+	--color-mint-100: #dfffed;
+	--color-mint-200: #9ffbc8;
+	--color-mint-300: #a3e8c0;
+	--color-green-vivid: #13e36f;
+	--color-green-strong: #00c853;
+	--color-green-forest: #0e7a3f;
+
+	/* Yellow family — softer variants of accent-yellow. */
+	--color-yellow-100: #feffe3;
+	--color-yellow-200: #f9ffb5;
+	--color-yellow-300: #f9ffab;
+	--color-yellow-400: #e9f27a;
+	--color-olive: #b7ce00;
+
+	/* Peach / warn. */
+	--color-peach-100: #fff3e3;
+	--color-amber: #f59e0b;
+
+	/* ------------------------------------------------------------------ */
+	/* Typography fill-ins — sizes that drifted outside the DESIGN scale  */
+	/* (10-14px micro-labels, 30/40/60/72/80px marketing display).        */
+	/* ------------------------------------------------------------------ */
+	--text-3xs: 10px;
+	--text-3xs--line-height: 1.2;
+	--text-2xs: 11px;
+	--text-2xs--line-height: 1.2;
+	--text-mini: 13px;
+	--text-mini--line-height: 1.4;
+	--text-label: 14px;
+	--text-label--line-height: 1.4;
+	/* 26/28 tune the subscribe-promo headline at card widths the standard
+	   scale (24/30) can't hit without wrapping — documented inline in
+	   browse/subscribe-promo-card.tsx. Line-height attaches to the token
+	   so callers drop `leading-*` in favour of the v4 slash syntax. */
+	--text-26: 26px;
+	--text-26--line-height: 1.05;
+	--text-28: 28px;
+	--text-28--line-height: 1.05;
+	--text-30: 30px;
+	--text-30--line-height: 1.1;
+	--text-40: 40px;
+	--text-40--line-height: 1.05;
+	--text-60: 60px;
+	--text-60--line-height: 1.05;
+	--text-72: 72px;
+	--text-72--line-height: 1;
+	--text-80: 80px;
+	--text-80--line-height: 1;
+	--text-160: 160px;
+	--text-160--line-height: 1;
+
+	/* Clamped display sizes — marketing landing pages. */
+	--text-display-fluid-md: clamp(18px, 2.5vw, 26px);
+	--text-display-fluid-lg: clamp(28px, 4vw, 42px);
+	--text-display-fluid-xl: clamp(42px, 7vw, 80px);
+
+	/* Tracking — named rather than numeric so the scale survives a font
+	   swap. Suffixes after `-` describe the optical usage. */
+	--tracking-display-tight: -2px;
+	--tracking-display-mid: -1.5px;
+	--tracking-display-sm: -0.5px;
+	/* Marketing body-tight — ~half the optical correction of tracking-tight
+	   Tailwind default (-0.025em). Used by promo card headlines where
+	   Clash Display needs a nudge without the display-tight crunch. */
+	--tracking-display-xs: -0.01em;
+	--tracking-micro: 0.12px;
+	--tracking-micro-2: 0.15px;
+	--tracking-micro-3: 0.18px;
+	--tracking-micro-4: 0.24px;
+	--tracking-micro-5: 0.26px;
+	--tracking-micro-6: 0.6px;
+	--tracking-micro-7: 0.8px;
+	--tracking-caps-1: 1%;
+	--tracking-caps-2: 0.05em;
+	--tracking-caps-3: 0.12em;
+	--tracking-caps-4: 0.14em;
+	--tracking-caps-5: 0.15em;
+	--tracking-caps-6: 0.2em;
+
+	/* Leading — compact display headers past the default tight/snug. */
+	--leading-display: 1.05;
+	--leading-headline: 1.1;
+	--leading-dense: 1.4;
+	--leading-loose: 1.7;
+
+	/* ------------------------------------------------------------------ */
+	/* Max-width containers — page shells + modal copy wells.             */
+	/* Pixel values mirror Figma frame sizes; using tokens keeps the      */
+	/* landing/pricing pages in lock-step with design hand-off. Width     */
+	/* and height primitives still use Tailwind's `--spacing` scale via   */
+	/* fractional utilities (h-9.5 = 38px, w-37.5 = 150px).               */
+	/* ------------------------------------------------------------------ */
+	--container-hero: 1440px;
+	--container-wide: 1720px;
+	--container-copy: 1016px;
+	--container-docs: 1168px;
+	--container-pricing: 1131px;
+	--container-tall: 1000px;
+	--container-body: 900px;
+	--container-reading: 780px;
+	--container-reading-md: 820px;
+	--container-reading-lg: 885px;
+	--container-column: 778px;
+	--container-column-md: 796px;
+	--container-prose: 679px;
+	--container-card: 540px;
+	--container-card-sm: 520px;
+	--container-card-xs: 480px;
+
+	/* Viewport-anchored spacing — modals, hero wells, sidebar rails. */
+	--spacing-half-screen: 50vh;
+	--spacing-three-fifths-screen: 60dvh;
+	--spacing-tall-screen: 60vh;
+	--spacing-full-modal: 90vh;
+	--spacing-full-screen: 90dvh;
+	--spacing-full-screen-sm: 85%;
+	--spacing-full-screen-md: 90vw;
+	--spacing-full-screen-lg: 90dvw;
+	--spacing-sidebar-fill: 60%;
+	--spacing-drawer-main: calc(100vw - 2rem);
+	--spacing-drawer-shell: calc(100% - 2rem);
+	--spacing-drawer-hairline: calc(100% - 2px);
+	--spacing-drawer-hairline-tight: calc(100% - 1px);
+	--spacing-drawer-card: calc(100% - 20px);
+	--spacing-shell-dvh: calc(100dvh - 4rem);
+	--spacing-page-dvh: calc(100dvh - 10rem);
+	--spacing-page-vh: calc(100vh - 50px);
+	--spacing-half-nudge: calc(-50% - 2px);
+
+	/* Rounded radii past the default scale. */
+	--radius-pill: 10px;
+	--radius-pill-lg: 20px;
+	--radius-pill-xl: 28px;
+	--radius-pill-2xl: 30px;
+	--radius-pill-3xl: 60px;
+	--radius-pill-hero: 120px;
+
+	/* Aspect ratios outside Tailwind defaults. */
+	--aspect-card: 4 / 3;
+
+	/* Tracking — additional display token. */
+	--tracking-micro-8: 0.4px;
+
+	/* ------------------------------------------------------------------ */
+	/* Z-index scale — named tokens so stacking order is auditable.       */
+	/* Tailwind v4 doesn't ship a default z-index theme namespace;        */
+	/* declaring them here makes `z-(--z-*)` the canonical syntax and    */
+	/* keeps `z-[NN]` arbitrary numbers out of the codebase (see          */
+	/* .claude/rules/tailwind-v4.md + .cursor/rules/tailwind-v4.mdc).    */
+	/*                                                                    */
+	/* Ordering (low → high):                                             */
+	/*   sticky      — pinned filters / sub-navs below the main navbar    */
+	/*   sticky-hi   — main navbar content, sits above decorative layers  */
+	/*   sticky-peak — elevated overlays that still respect the navbar    */
+	/*   toast       — transient surfaces (toasts, floating alerts)       */
+	/* ------------------------------------------------------------------ */
+	--z-sticky: 15;
+	--z-sticky-hi: 16;
+	--z-sticky-peak: 19;
+	--z-toast: 100;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Custom numeric utilities — scale + brightness + rotation steps that    */
+/* fall between Tailwind's default increments. Declared via `@utility`    */
+/* because Tailwind v4 doesn't ship named theme namespaces for these      */
+/* properties.                                                            */
+/*                                                                        */
+/* Z-index lives in the `@theme` block above as `--z-*` tokens; use       */
+/* `z-(--z-sticky)` / `z-(--z-toast)` call-sites (tailwind-v4 skill).    */
+/* ---------------------------------------------------------------------- */
+
+@utility scale-xxs {
+	scale: 0.55;
+}
+@utility scale-xs {
+	scale: 0.65;
+}
+@utility scale-sm {
+	scale: 0.75;
+}
+@utility scale-md {
+	scale: 0.85;
+}
+
+@utility brightness-soft {
+	filter: brightness(0.2);
+}
+
+/* Rotations for landing-page decorative SVGs — aligned with Figma
+   rotations rather than Tailwind's default 1/2/3/6/12/45/90° steps. */
+@utility rotate-tilt-xs {
+	rotate: 12deg;
+}
+@utility rotate-tilt-sm {
+	rotate: 15deg;
+}
+@utility rotate-tilt-md {
+	rotate: 18deg;
+}
+@utility rotate-tilt-hero-a {
+	rotate: 15.483deg;
+}
+@utility rotate-tilt-hero-b {
+	rotate: 27.845deg;
+}
+@utility -rotate-tilt-xs {
+	rotate: -12deg;
+}
+@utility -rotate-tilt-sm {
+	rotate: -15deg;
+}
+@utility -rotate-tilt-hero-a {
+	rotate: -15.483deg;
+}
+@utility -rotate-tilt-hero-b {
+	rotate: -27.845deg;
+}
+
+/* Min-height anchored to viewport units that Tailwind doesn't cover. */
+@utility min-h-page-dvh {
+	min-height: calc(100dvh - 4rem);
+}
+
+/* Sidebar grid rail — content column + fixed 24rem aside. */
+@utility grid-cols-sidebar {
+	grid-template-columns: 1fr 24rem;
+}
+
+/* Additional decorative rotation used by landing layouts. */
+@utility rotate-tilt-lg {
+	rotate: 25deg;
+}
+
+/* Line-height-anchored min-height — keeps the placeholder at two text
+   lines even when the localized translation wraps. */
+@utility min-h-2lh {
+	min-height: 2lh;
+}
+
+/* Stroke-width step used by ticket-step icon pairs; sits between
+   Tailwind's `stroke-3` and `stroke-4`. */
+@utility stroke-3-5 {
+	stroke-width: 3.5;
+}
+
+/* Border-bottom width step — 3px tab indicator used by browse tabs. */
+@utility border-b-3 {
+	border-bottom-width: 3px;
 }
 
 :root {
@@ -148,6 +524,13 @@
 	--card-foreground: oklch(0.147 0.004 49.25);
 	--popover: oklch(1 0 0);
 	--popover-foreground: oklch(0.147 0.004 49.25);
+	/* `primary` === `brand-dark` — one near-black for every high-emphasis
+	   surface: buttons, badges, progress fills, links, selection, focus.
+	   The product is monochromatic by design; the yellow/mint/sky brand
+	   accents do the mood-setting, and cyan is not an action colour in
+	   this system. `--primary` and `--color-brand-dark` resolve to the
+	   same hex on purpose so `bg-primary` and `bg-brand-dark` are
+	   interchangeable at the call site. */
 	--primary: #141416;
 	--primary-foreground: #ffffff;
 	--secondary: oklch(0.97 0.001 106.424);

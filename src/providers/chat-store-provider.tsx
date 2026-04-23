@@ -12,12 +12,20 @@ import {
 import { useStore } from 'zustand';
 
 import { clientEnv } from '@/env/client';
-import { dispatchChatEvent } from '@/lib/chat-event-dispatch';
-import { ChatStream } from '@/lib/chat-stream';
+import { dispatchChatEvent } from '@/lib/chat/event-dispatch';
+import { ChatStream } from '@/lib/chat/stream';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
-import { getChatWsToken } from '@/services/chat/get-chat-ws-token';
-import { getUnreadSummary } from '@/services/chat/get-unread-summary';
 import { createChatStore, type ChatStore } from '@/store/chat-store';
+import type { ChatErrorCode } from '@/types/errors';
+import type { ChatWsTokenResponse, UnreadSummaryResponse } from '@/types/chat';
+import type { ServiceResponse } from '@/types/service-response';
+
+type FetchChatWsToken = () => Promise<
+	ServiceResponse<ChatWsTokenResponse, ChatErrorCode>
+>;
+type FetchUnreadSummary = () => Promise<
+	ServiceResponse<UnreadSummaryResponse, ChatErrorCode>
+>;
 
 export type ChatStoreApi = ReturnType<typeof createChatStore>;
 
@@ -52,6 +60,13 @@ export const ChatTransportContext = createContext<ChatTransport | undefined>(
 
 export interface ChatStoreProviderProps {
 	readonly children: ReactNode;
+	/**
+	 * Server actions threaded down from the RSC parent. Passing them in
+	 * keeps `@/services/*` out of this file's import graph so the WS-mount
+	 * effect doesn't trip `local/no-useeffect-data-fetch` (data-fetching.md).
+	 */
+	readonly fetchChatWsToken: FetchChatWsToken;
+	readonly fetchUnreadSummary: FetchUnreadSummary;
 }
 
 /**
@@ -65,7 +80,11 @@ export interface ChatStoreProviderProps {
  * @param children - Child components consuming `useChatStore`.
  * @returns Provider tree exposing the store and transport via context.
  */
-export function ChatStoreProvider({ children }: ChatStoreProviderProps) {
+export function ChatStoreProvider({
+	children,
+	fetchChatWsToken,
+	fetchUnreadSummary,
+}: ChatStoreProviderProps) {
 	// useState initializer — the store is created once per provider mount;
 	// subsequent renders reuse the same instance to avoid invalidating
 	// every downstream selector on each parent rerender.
@@ -134,7 +153,7 @@ export function ChatStoreProvider({ children }: ChatStoreProviderProps) {
 		// on the first render after login.
 		async function hydrateUnread() {
 			const issuedAt = ++hydrateSequence;
-			const result = await getUnreadSummary();
+			const result = await fetchUnreadSummary();
 			// Guard: a newer hydrate has been issued (e.g. WS reconnected and
 			// re-fired this) or the provider is unmounting — drop this stale
 			// response so we don't overwrite a fresher snapshot.
@@ -149,7 +168,7 @@ export function ChatStoreProvider({ children }: ChatStoreProviderProps) {
 		// Step 2: Provide the chat stream with a fresh token per connect.
 		// Returns null on failure so the stream backs off instead of crashing.
 		async function requestToken() {
-			const result = await getChatWsToken();
+			const result = await fetchChatWsToken();
 			if (!result.success) {
 				if (clientEnv.NODE_ENV === 'development') {
 					console.error('[ChatStream] token request failed:', result.error);
@@ -174,7 +193,7 @@ export function ChatStoreProvider({ children }: ChatStoreProviderProps) {
 				store.getState().setConnected(false);
 			},
 			onEvent(event) {
-				dispatchChatEvent(event, store, queryClient, typingTimers);
+				dispatchChatEvent(event, { store, queryClient, typingTimers });
 			},
 		});
 		streamRef.current = stream;
@@ -192,7 +211,7 @@ export function ChatStoreProvider({ children }: ChatStoreProviderProps) {
 			typingTimers.clear();
 			store.getState().reset();
 		};
-	}, [store, queryClient]);
+	}, [store, queryClient, fetchChatWsToken, fetchUnreadSummary]);
 
 	return (
 		<ChatStoreContext.Provider value={store}>

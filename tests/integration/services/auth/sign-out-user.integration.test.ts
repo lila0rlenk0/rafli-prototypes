@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Mocks ---
 
@@ -32,7 +32,7 @@ mock.module('@/lib/sentry/user', () => ({
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
 }));
-mock.module('@/lib/run-after', () => ({
+mock.module('@/lib/utils/run-after', () => ({
 	runAfter: mock(),
 }));
 

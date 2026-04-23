@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
@@ -19,7 +20,7 @@ export async function getRaffle(
 	publicSlug: string,
 ): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
 	try {
-		const response = await baseClient.get(`/raffles/${publicSlug}`);
+		const response = await baseClient.get(`/raffles/${pathParam(publicSlug)}`);
 		return success(raffleSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {

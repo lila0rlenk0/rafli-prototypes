@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
 	return (
@@ -115,7 +115,7 @@ function FieldLabel({
 		<Label
 			data-slot="field-label"
 			className={cn(
-				'group/field-label peer/field-label flex w-fit gap-2 text-sm leading-snug text-[#0F0F0FF2] group-data-[disabled=true]/field:opacity-50',
+				'group/field-label peer/field-label flex w-fit gap-2 text-sm/snug text-[#0F0F0FF2] group-data-[disabled=true]/field:opacity-50',
 				'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border [&>*]:data-[slot=field]:p-4',
 				'has-data-[state=checked]:bg-primary/5 has-data-[state=checked]:border-primary dark:has-data-[state=checked]:bg-primary/10',
 				className,
@@ -130,7 +130,7 @@ function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
 		<div
 			data-slot="field-label"
 			className={cn(
-				'flex w-fit items-center gap-2 text-sm leading-snug font-medium group-data-[disabled=true]/field:opacity-50',
+				'flex w-fit items-center gap-2 text-sm/snug font-medium group-data-[disabled=true]/field:opacity-50',
 				className,
 			)}
 			{...props}
@@ -143,7 +143,7 @@ function FieldDescription({ className, ...props }: React.ComponentProps<'p'>) {
 		<p
 			data-slot="field-description"
 			className={cn(
-				'text-muted-foreground text-sm leading-normal font-normal group-has-[[data-orientation=horizontal]]/field:text-balance',
+				'text-muted-foreground text-sm/normal font-normal group-has-[[data-orientation=horizontal]]/field:text-balance',
 				'last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&]:-mt-1.5',
 				'[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4',
 				className,

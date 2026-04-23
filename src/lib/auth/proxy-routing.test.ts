@@ -30,6 +30,27 @@ describe('getProxyRedirectPath', () => {
 		expect(redirectPath).toBe('/browse');
 	});
 
+	test('redirects authenticated users away from verify-email and oauth callback', () => {
+		expect(
+			getProxyRedirectPath({
+				pathname: '/verify-email',
+				hasValidToken: true,
+			}),
+		).toBe('/browse');
+		expect(
+			getProxyRedirectPath({
+				pathname: '/auth/callback',
+				hasValidToken: true,
+			}),
+		).toBe('/browse');
+		expect(
+			getProxyRedirectPath({
+				pathname: '/auth/resend-verification',
+				hasValidToken: true,
+			}),
+		).toBe('/browse');
+	});
+
 	test('allows unauthenticated users on auth routes', () => {
 		const redirectPath = getProxyRedirectPath({
 			pathname: '/reset-password',

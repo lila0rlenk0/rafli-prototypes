@@ -1,0 +1,33 @@
+---
+description: "ESLint"
+alwaysApply: false
+globs: "'eslint.config.mjs','src/**/*.{ts,tsx}'"
+---
+
+# ESLint
+
+Config: `eslint.config.mjs` — flat config, extends `next/core-web-vitals`, `next/typescript`, `prettier`. Custom overrides: `no-unused-vars` and `no-explicit-any` both `error`.
+
+## Rules
+
+- zero `eslint-disable` directives — no exceptions
+- zero `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`
+- fix the code, never suppress. If the rule is wrong, refactor to avoid triggering it
+
+## Config gaps
+
+Fix when touching `eslint.config.mjs`:
+
+- `ban-ts-comment` allows `@ts-expect-error` with description — override to ban all three
+- `no-unused-expressions` downgraded to `warn` — override to `error`
+- `reportUnusedDisableDirectives` is `warn` — set to `error`
+- no `no-restricted-syntax` to ban direct `useEffect` calls
+
+## exhaustive-deps with optional chaining
+
+Extract chained values to local variables — the linter accepts simple identifiers:
+
+```tsx
+const submitDeadline = session?.submitDeadline;
+useEffect(() => { ... }, [submitDeadline]); // not session?.submitDeadline
+```

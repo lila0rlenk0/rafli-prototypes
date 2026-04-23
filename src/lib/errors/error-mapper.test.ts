@@ -1,10 +1,17 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError } from 'axios';
 
+import { COMMON_ERROR_CODES } from '@/types/errors';
+
+import { mockAxiosError } from '@tests/helpers/mock-axios';
+
 import {
+	mapAdminKycError,
 	mapAuthError,
+	mapChatError,
 	mapCommentError,
 	mapHostError,
+	mapKycSubmissionError,
 	mapNotificationError,
 	mapOrderError,
 	mapPaymentError,
@@ -90,9 +97,19 @@ describe('mapAuthError', () => {
 	describe('message field extraction', () => {
 		test('extracts auth code from message field', () => {
 			const error = makeAxiosError({
-				message: 'auth:password:too-weak',
+				message: 'auth:password:compromised',
 			});
-			expect(mapAuthError(error)).toBe('auth:password:too-weak');
+			expect(mapAuthError(error)).toBe('auth:password:compromised');
+		});
+
+		test('does not treat arbitrary colon text as a machine error code', () => {
+			// 404 — no `mapCommonError` branch; proves we did not use `data.message` as a code
+			// (if we did, fallbacks would differ). 400 would yield validation_error and mask the intent.
+			const error = makeAxiosError(
+				{ message: 'Error: file /tmp/x: not found' },
+				404,
+			);
+			expect(mapAuthError(error)).toBe('unknown_error');
 		});
 	});
 
@@ -193,9 +210,9 @@ describe('mapRaffleError', () => {
 describe('mapOrderError', () => {
 	test('accepts core:order: prefix', () => {
 		const error = makeAxiosError({
-			type: 'urn:raffles:problem:core:order:already-exists',
+			type: 'urn:raffles:problem:core:order:not-found',
 		});
-		expect(mapOrderError(error)).toBe('core:order:already-exists');
+		expect(mapOrderError(error)).toBe('core:order:not-found');
 	});
 
 	test('accepts core:raffle: prefix', () => {
@@ -220,9 +237,9 @@ describe('mapOrderError', () => {
 describe('mapWalletError', () => {
 	test('accepts auth:wallet: prefix', () => {
 		const error = makeAxiosError({
-			type: 'urn:raffles:problem:auth:wallet:already-linked',
+			type: 'urn:raffles:problem:auth:wallet:not-verified',
 		});
-		expect(mapWalletError(error)).toBe('auth:wallet:already-linked');
+		expect(mapWalletError(error)).toBe('auth:wallet:not-verified');
 	});
 
 	test('rejects core: prefix', () => {
@@ -241,16 +258,27 @@ describe('mapWalletError', () => {
 describe('mapPaymentError', () => {
 	test('accepts payments: prefix', () => {
 		const error = makeAxiosError({
-			type: 'urn:raffles:problem:payments:card:declined',
+			type: 'urn:raffles:problem:payments:checkout:failed',
 		});
-		expect(mapPaymentError(error)).toBe('payments:card:declined');
+		expect(mapPaymentError(error)).toBe('payments:checkout:failed');
 	});
 
 	test('accepts core: prefix for crypto checkout', () => {
 		const error = makeAxiosError({
-			type: 'urn:raffles:problem:core:order:expired',
+			type: 'urn:raffles:problem:core:order:not-found',
 		});
-		expect(mapPaymentError(error)).toBe('core:order:expired');
+		expect(mapPaymentError(error)).toBe('core:order:not-found');
+	});
+});
+
+// ==========================================
+// mapChatError / mapReportError — message-field codes (F14)
+// ==========================================
+
+describe('mapChatError', () => {
+	test('accepts chat: code from message field when URN and code are absent', () => {
+		const error = makeAxiosError({ message: 'chat:room:not-found' }, 404);
+		expect(mapChatError(error)).toBe('chat:room:not-found');
 	});
 });
 
@@ -263,6 +291,14 @@ describe('mapReportError', () => {
 		const error = makeAxiosError({
 			type: 'urn:raffles:problem:moderation:report:duplicate',
 		});
+		expect(mapReportError(error)).toBe('moderation:report:duplicate');
+	});
+
+	test('accepts moderation: code from message field when URN and code are absent', () => {
+		const error = makeAxiosError(
+			{ message: 'moderation:report:duplicate' },
+			404,
+		);
 		expect(mapReportError(error)).toBe('moderation:report:duplicate');
 	});
 
@@ -298,7 +334,8 @@ describe('domain mappers — shared pattern', () => {
 				const error = makeAxiosError({
 					type: 'urn:raffles:problem:core:resource:not-found',
 				});
-				expect(fn(error)).toBe('core:resource:not-found');
+				const extracted: string = fn(error);
+				expect(extracted).toBe('core:resource:not-found');
 			});
 
 			test('extracts global: code', () => {
@@ -322,4 +359,127 @@ describe('domain mappers — shared pattern', () => {
 			});
 		});
 	}
+});
+
+describe('mapKycSubmissionError', () => {
+	describe('RFC 7807 backend codes', () => {
+		test('extracts core:verification:* code from URN type', () => {
+			const error = mockAxiosError({
+				status: 409,
+				data: {
+					type: 'urn:raffles:problem:core:verification:already-pending',
+				},
+			});
+			expect(mapKycSubmissionError(error)).toBe(
+				'core:verification:already-pending',
+			);
+		});
+
+		test('maps core:verification:not-pending from RFC 7807 type field', () => {
+			const error = mockAxiosError({
+				status: 400,
+				data: {
+					type: 'urn:raffles:problem:core:verification:not-pending',
+				},
+			});
+			expect(mapKycSubmissionError(error)).toBe(
+				'core:verification:not-pending',
+			);
+		});
+
+		test('maps global:upload:invalid-content-type from RFC 7807 type field', () => {
+			const error = mockAxiosError({
+				status: 400,
+				data: {
+					type: 'urn:raffles:problem:global:upload:invalid-content-type',
+				},
+			});
+			expect(mapKycSubmissionError(error)).toBe(
+				'global:upload:invalid-content-type',
+			);
+		});
+
+		test('extracts global:* code from URN type', () => {
+			const error = mockAxiosError({
+				status: 401,
+				data: {
+					type: 'urn:raffles:problem:global:auth:unauthenticated',
+				},
+			});
+			expect(mapKycSubmissionError(error)).toBe('global:auth:unauthenticated');
+		});
+	});
+
+	describe('HTTP status fallbacks', () => {
+		test('maps 401 to unauthorized', () => {
+			const error = mockAxiosError({ status: 401 });
+			expect(mapKycSubmissionError(error)).toBe(
+				COMMON_ERROR_CODES.UNAUTHORIZED,
+			);
+		});
+
+		test('maps 403 to forbidden', () => {
+			const error = mockAxiosError({ status: 403 });
+			expect(mapKycSubmissionError(error)).toBe(COMMON_ERROR_CODES.FORBIDDEN);
+		});
+
+		test('maps 500 to internal_server_error', () => {
+			const error = mockAxiosError({ status: 500 });
+			expect(mapKycSubmissionError(error)).toBe(
+				COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR,
+			);
+		});
+	});
+
+	describe('network errors', () => {
+		test('maps ERR_NETWORK to network_error', () => {
+			const error = mockAxiosError({ code: 'ERR_NETWORK' });
+			expect(mapKycSubmissionError(error)).toBe(
+				COMMON_ERROR_CODES.NETWORK_ERROR,
+			);
+		});
+
+		test('maps ECONNABORTED to timeout_error', () => {
+			const error = mockAxiosError({ code: 'ECONNABORTED' });
+			expect(mapKycSubmissionError(error)).toBe(
+				COMMON_ERROR_CODES.TIMEOUT_ERROR,
+			);
+		});
+	});
+
+	describe('non-Axios errors', () => {
+		test('maps plain Error to unknown_error', () => {
+			// Non-Axios errors have no status/code to extract — fall through to unknown
+			expect(mapKycSubmissionError(new Error('boom'))).toBe(
+				COMMON_ERROR_CODES.UNKNOWN_ERROR,
+			);
+		});
+
+		test('maps null to unknown_error', () => {
+			expect(mapKycSubmissionError(null)).toBe(
+				COMMON_ERROR_CODES.UNKNOWN_ERROR,
+			);
+		});
+	});
+});
+
+describe('mapAdminKycError', () => {
+	describe('delegation to mapKycSubmissionError', () => {
+		test('maps RFC 7807 verification codes identically', () => {
+			const error = mockAxiosError({
+				status: 409,
+				data: {
+					type: 'urn:raffles:problem:core:verification:already-reviewed',
+				},
+			});
+			expect(mapAdminKycError(error)).toBe(
+				'core:verification:already-reviewed',
+			);
+		});
+
+		test('returns common error for network failures', () => {
+			const error = mockAxiosError({ code: 'ERR_NETWORK' });
+			expect(mapAdminKycError(error)).toBe(COMMON_ERROR_CODES.NETWORK_ERROR);
+		});
+	});
 });

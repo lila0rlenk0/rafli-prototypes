@@ -11,7 +11,7 @@ export default function RaffleVerificationLoading() {
 				<div className="h-5 w-96 animate-pulse rounded bg-neutral-100" />
 			</div>
 
-			<div className="space-y-6">
+			<div className="flex flex-col gap-6">
 				<div className="h-24 animate-pulse rounded-2xl border border-neutral-200 bg-neutral-100" />
 				<div className="h-64 animate-pulse rounded-2xl border border-neutral-200 bg-neutral-100" />
 				<div className="h-48 animate-pulse rounded-2xl border border-neutral-200 bg-neutral-100" />

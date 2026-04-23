@@ -1,6 +1,6 @@
 'use server';
 
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 
 import { AUTH_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
@@ -49,7 +49,7 @@ export async function signInUser(
 
 		// Step 5: Persist auth state into cookies
 		// Side-effects: sets raffly-token (httpOnly) and raffly-session cookies
-		await setAuthCookies(token, user);
+		await setAuthCookies(token);
 
 		// Step 6: Tag Sentry scope so subsequent errors are attributed to this user
 		setSentryUser(user.id);

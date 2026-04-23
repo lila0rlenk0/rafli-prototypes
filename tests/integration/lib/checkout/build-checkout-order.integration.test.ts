@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
-import { MOCK_ANALYTICS_EVENTS } from '../../../helpers/mock-events';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
+import { MOCK_ANALYTICS_EVENTS } from '@tests/helpers/mock-events';
 import type { Order } from '@/types/order';
 
 // --- Mock toast (sonner) ---
@@ -42,7 +42,7 @@ mock.module('@/lib/analytics/mixpanel-server', () => ({
 }));
 // All event exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
 mock.module('@/lib/analytics/events', () => MOCK_ANALYTICS_EVENTS);
-mock.module('@/lib/run-after', () => ({
+mock.module('@/lib/utils/run-after', () => ({
 	runAfter: mock(),
 }));
 

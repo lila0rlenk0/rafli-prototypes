@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { buildQueryParams } from '@/lib/api/utils';
+import { buildQueryParams } from '@/lib/api/query-params';
 import { failure, mapTicketError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { TICKET_ERROR_CODES, type TicketErrorCode } from '@/types/errors';

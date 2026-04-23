@@ -3,7 +3,8 @@
 import { KYC_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapKycSubmissionError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -23,7 +24,7 @@ export async function finalizeSubmission(
 
 	try {
 		await authenticatedClient.post(
-			`/verification/${submissionId}/finalize`,
+			`/verification/${pathParam(submissionId)}/finalize`,
 			undefined,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);

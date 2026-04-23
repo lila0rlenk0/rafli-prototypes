@@ -13,7 +13,7 @@ import { getRaffleCover } from '@/services/raffle/get-raffle-cover';
 import { getRaffleGallery } from '@/services/raffle/get-raffle-gallery';
 import type { EditFormData } from '@/lib/validation/raffle/edit-form-schema';
 import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
-import { EditFormProvider } from '@/components/my-raffles/edit/edit-form-provider';
+import { EditFormProvider } from '@/components/my-raffles/edit/form-provider';
 import { FormHeader } from '@/components/my-raffles/edit/form-header';
 import { FormStepComponent } from '@/components/my-raffles/edit/form-step-component';
 
@@ -23,7 +23,7 @@ const LEFT_PANEL_LINKS = [
 		href: '/blog/legal-stuff',
 	},
 	{
-		label: 'How to host a Raffle',
+		label: 'How to host a Sweepstakes',
 		href: '/blog/how-to-host-a-raffle',
 	},
 	{
@@ -35,7 +35,7 @@ const LEFT_PANEL_LINKS = [
 		href: '/blog/promo-tips',
 	},
 	{
-		label: 'Ticket Bundles',
+		label: 'Entry Bundles',
 		href: '/blog/ticket-bundles',
 	},
 ];
@@ -86,7 +86,8 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 		description: raffle.description,
 		price: parseFloat(raffle.declaredValueAmount),
 		category,
-		coverImage: [], // Images are handled separately via existing URLs
+		// images are handled separately via existing URLs
+		coverImage: [],
 		startDate,
 		startTime,
 		endDate,
@@ -139,7 +140,7 @@ export default async function EditRafflePage({ params }: PageProps) {
 		redirect('/my-raffles');
 	}
 
-	const userName = session?.user?.name || 'Raffle Host';
+	const userName = session?.user?.name || 'Sweepstakes Host';
 
 	const [
 		coverResult,
@@ -182,11 +183,11 @@ export default async function EditRafflePage({ params }: PageProps) {
 
 	return (
 		<div className="flex w-full gap-4">
-			<div className="flex h-fit min-w-fit flex-col space-y-8 rounded-2xl bg-white px-6 py-12">
+			<div className="flex h-fit min-w-fit flex-col gap-8 rounded-2xl bg-white px-6 py-12">
 				<InfoBigIcon />
 
 				<span className="mr-12 text-xl font-semibold">
-					How to build the best Raffle?
+					How to build the best Sweepstakes?
 				</span>
 
 				{LEFT_PANEL_LINKS.map(link => (
@@ -196,7 +197,7 @@ export default async function EditRafflePage({ params }: PageProps) {
 						className="flex w-fit items-center gap-4"
 					>
 						<Copy className="size-6" />
-						<span className="text-[#6E6E6E]">{link.label}</span>
+						<span className="text-ink-600">{link.label}</span>
 					</Link>
 				))}
 			</div>

@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapAdminKycError, success } from '@/lib/errors';
 import { parsePermissions, PERMISSIONS } from '@/lib/permissions';

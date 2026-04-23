@@ -9,7 +9,7 @@ import {
 	type PromoManageableStatus,
 } from '@/types/raffle';
 
-import { PromoCodesContent } from '@/components/my-raffles/promo-codes/promo-codes-content';
+import { PromoCodesContent } from '@/components/my-raffles/promo-codes/content';
 
 /**
  * Props for PromoCodesPage
@@ -70,7 +70,7 @@ export default async function PromoCodesPage({ params }: PageProps) {
 					className="flex w-fit items-center gap-2"
 				>
 					<ArrowLeft className="size-4" />
-					<span className="font-semibold">Back to Raffle</span>
+					<span className="font-semibold">Back to Sweepstakes</span>
 				</Link>
 
 				<div>
@@ -87,7 +87,7 @@ export default async function PromoCodesPage({ params }: PageProps) {
 			{/* Read-only notice */}
 			{isReadOnly ? (
 				<div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-					This raffle has ended. Promo codes are view-only.
+					This sweepstakes has ended. Promo codes are view-only.
 				</div>
 			) : null}
 

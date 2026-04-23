@@ -5,8 +5,8 @@ import {
 	type UpdateManageableStatus,
 } from '@/types/raffle';
 import { notFound, redirect } from 'next/navigation';
-import { UpdateForm } from '@/components/my-raffles/update/update-form';
-import { UpdateFormProvider } from '@/components/my-raffles/update/update-form-provider';
+import { UpdateForm } from '@/components/my-raffles/update/form';
+import { UpdateFormProvider } from '@/components/my-raffles/update/form-provider';
 
 interface PageProps {
 	params: Promise<{

@@ -37,7 +37,7 @@ export const commentSchema = z.object({
 	id: z.string(),
 	author: commentAuthorSchema,
 	// Nullable: backend returns `null` for soft-deleted comments (see `isDeleted`).
-	// Consumers must guard with `isDeleted` before rendering — see `comment-item.tsx`.
+	// Consumers must guard with `isDeleted` before rendering — see `comments/item.tsx`.
 	body: z.string().nullable(),
 	parentId: z.string().nullable(),
 	raffleId: z.string(),

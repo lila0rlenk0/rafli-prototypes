@@ -42,3 +42,5 @@ Primitives in `src/components/ui/`. Managed by CLI — `bunx --bun shadcn@latest
 ## Colors
 
 Semantic tokens only (`bg-primary`, `text-muted-foreground`). Never raw scales (`bg-blue-500`). Use built-in variants before adding custom styles.
+
+`primary` and `brand-dark` are **distinct** per DESIGN.md. `--primary` is cyan `#00b8ff` — reserved for links, progress fills, selection, and focus rings. `--color-brand-dark` / `--color-rafli-black` is `#141416` — every action surface (buttons, notification badges, unread chips, default `Badge` fill, pill CTAs). `Button` `default` uses `bg-brand-dark` with the black↔white hover flip. `Badge` `default` uses `bg-brand-dark` too — notification counters and emphasis pills are action surfaces, never cyan. Only link-styled `Button` variants and progress fills reach for `bg-primary`. Local ESLint rule `local/no-primary-on-button` enforces this at lint time.

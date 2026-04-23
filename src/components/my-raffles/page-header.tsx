@@ -25,15 +25,17 @@ export function PageHeader() {
 
 	const isHostMode = mode === USER_MODE.HOST;
 	const modeLabel = isHostMode ? 'Host Mode' : 'Participant Mode';
-	const pageTitle = isHostMode ? 'My Created Raffles' : 'My Entered Raffles';
+	const pageTitle = isHostMode
+		? 'My Created Sweepstakes'
+		: 'My Entered Sweepstakes';
 
 	return (
 		<div className="mb-16 text-center">
 			<div
 				className={`mb-6 inline-block rounded-lg px-4 py-2 text-sm font-medium ${
 					isHostMode
-						? 'bg-accent-cream text-accent-cream-foreground'
-						: 'bg-accent-green text-accent-green-foreground'
+						? 'bg-role-host-bg text-role-host-fg'
+						: 'bg-brand-mint text-role-participant-fg'
 				}`}
 			>
 				{modeLabel}

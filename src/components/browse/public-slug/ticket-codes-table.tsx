@@ -79,18 +79,18 @@ export function TicketCodesTable({
 	if (ticketCodes.length === 0) {
 		return (
 			<p className="text-muted-foreground py-8 text-center text-sm">
-				No tickets yet
+				No entries yet
 			</p>
 		);
 	}
 
 	return (
 		<div className="overflow-x-auto">
-			<table className="w-full min-w-[500px]">
+			<table className="w-full min-w-125">
 				<thead>
 					<tr className="border-b border-gray-200 text-left text-sm text-gray-500">
 						<th className="pb-3 font-medium">#</th>
-						<th className="pb-3 font-medium">Ticket Code</th>
+						<th className="pb-3 font-medium">Entry Code</th>
 						<th className="pb-3 font-medium">Source</th>
 						<th className="pb-3 font-medium">Date</th>
 						{canVerify ? <th className="pb-3 font-medium">Verify</th> : null}

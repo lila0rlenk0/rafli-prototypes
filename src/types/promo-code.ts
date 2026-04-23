@@ -113,7 +113,7 @@ export const bulkCreatePromoCodesInputSchema = z
 			return true;
 		},
 		{
-			message: 'Free tickets count must be a positive integer',
+			message: 'Bonus entries count must be a positive integer',
 			path: ['value'],
 		},
 	);
@@ -130,80 +130,6 @@ export type BulkCreatePromoCodesInput = z.infer<
 export type BulkCreatePromoCodesResponse = z.infer<
 	typeof bulkCreatePromoCodesResponseSchema
 >;
-
-/**
- * Derives display status from promo code data.
- * Backend stores isActive flag, but display status depends on expiry and usage.
- *
- * @param code - Promo code object
- * @returns Computed display status
- */
-export function getPromoCodeStatus(code: PromoCode): PromoCodeStatus {
-	// Step 1: Inactive overrides all.
-	if (!code.isActive) {
-		return PROMO_CODE_STATUS.INACTIVE;
-	}
-
-	// Step 2: Expiration check.
-	if (code.expiresAt && new Date(code.expiresAt) < new Date()) {
-		return PROMO_CODE_STATUS.EXPIRED;
-	}
-
-	// Step 3: Usage exhaustion check.
-	if (code.maxUses > 0 && code.usedCount >= code.maxUses) {
-		return PROMO_CODE_STATUS.EXHAUSTED;
-	}
-
-	// Step 4: Default to active.
-	return PROMO_CODE_STATUS.ACTIVE;
-}
-
-/**
- * Formats promo code value for display in the host-side promo table.
- *
- * @param code - Promo code object
- * @returns Formatted value string (e.g., "3 entries", "$5.00", "10%")
- */
-export function formatPromoCodeValue(code: PromoCode): string {
-	const value = parseFloat(code.value);
-
-	// Step 1: Format by promo type — exhaustive switch ensures all types handled.
-	switch (code.type) {
-		case PROMO_CODE_TYPE.FREE_TICKETS:
-			return `${Math.floor(value)} entr${value !== 1 ? 'ies' : 'y'}`;
-		case PROMO_CODE_TYPE.DISCOUNT_FIXED:
-			return `$${value.toFixed(2)}`;
-		case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
-			return `${Math.floor(value)}%`;
-		default: {
-			// Exhaustiveness guard — TS errors here if a new type is added to PromoCodeType
-			const _exhaustive: never = code.type;
-			return String(_exhaustive);
-		}
-	}
-}
-
-/**
- * Formats usage count for display
- *
- * @param code - Promo code object
- * @returns Formatted usage string (e.g., "5/100" or "5/∞")
- */
-export function formatPromoCodeUsage(code: PromoCode): string {
-	// Step 1: Normalize max uses for display.
-	const maxDisplay = code.maxUses === 0 ? '∞' : code.maxUses.toString();
-	return `${code.usedCount}/${maxDisplay}`;
-}
-
-/**
- * Formats a usage limit for display (0 = unlimited → ∞)
- * Used for both max uses per code and per-user redemption limits
- *
- * @returns Human-readable limit string
- */
-export function formatUsageLimit(limit: number): string {
-	return limit === 0 ? '∞' : String(limit);
-}
 
 /**
  * Backend returns different fields based on promo type:
@@ -240,37 +166,3 @@ export const validatedPromoCodeSchema = z.object({
 });
 
 export type ValidatedPromoCode = z.infer<typeof validatedPromoCodeSchema>;
-
-/**
- * Gets human-readable description for a validated promo code.
- *
- * Note: For discount_percent, backend returns per-ticket discount amount
- * (not the percentage), so we show it as a per-entry discount.
- *
- * Legal framing: "free tickets" is reframed to "bonus entries" so promo
- * grants read as bundled entries included with the Access Pass, not
- * standalone ticket purchases. Matches the Access Pass disclaimer
- * rendered above the buy CTA.
- *
- * @param promo - Validated promo code
- * @returns Description string for display (e.g., "3 bonus entries", "$5.00 off your order")
- */
-export function getPromoCodeDescription(promo: ValidatedPromoCode): string {
-	const value = parseFloat(promo.value);
-
-	// Step 1: Format description by promo type — exhaustive switch.
-	switch (promo.type) {
-		case PROMO_CODE_TYPE.FREE_TICKETS:
-			return `${Math.floor(value)} bonus entr${value !== 1 ? 'ies' : 'y'}`;
-		case PROMO_CODE_TYPE.DISCOUNT_FIXED:
-			return `$${value.toFixed(2)} off your order`;
-		case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
-			// Backend returns per-ticket discount amount, not percentage
-			return `$${value.toFixed(2)} off per entry`;
-		default: {
-			// Exhaustiveness guard — TS errors here if a new type is added to PromoCodeType
-			const _exhaustive: never = promo.type;
-			return String(_exhaustive);
-		}
-	}
-}

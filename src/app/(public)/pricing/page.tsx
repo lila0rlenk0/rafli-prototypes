@@ -3,12 +3,12 @@ import Link from 'next/link';
 
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { NoPurchaseNecessaryFootnote } from '@/components/compliance/no-purchase-necessary-footnote';
-import { LaunchCountdown } from '@/components/pricing/launch-countdown';
+import { LaunchCountdown } from '@/components/pricing/countdown/launch-countdown';
 import { PlanCard } from '@/components/pricing/plan-card';
-import { PricingFaq } from '@/components/pricing/pricing-faq';
-import { SubscribeResumeTrigger } from '@/components/pricing/subscribe-resume-trigger';
-import { SubscriptionCancelToast } from '@/components/pricing/subscription-cancel-toast';
-import { SubscriptionSuccessDialog } from '@/components/pricing/subscription-success-dialog';
+import { PricingFaq } from '@/components/pricing/faq';
+import { SubscribeResumeTrigger } from '@/components/pricing/subscribe/subscribe-resume-trigger';
+import { SubscriptionCancelToast } from '@/components/pricing/subscribe/subscription-cancel-toast';
+import { SubscriptionSuccessDialog } from '@/components/pricing/subscribe/subscription-success-dialog';
 import { LAUNCH_PRICING_ENDS_AT } from '@/lib/feature-flags';
 import { getSession } from '@/lib/auth/session';
 import { getMySubscription } from '@/services/subscription/get-my-subscription';
@@ -106,9 +106,9 @@ export default async function PricingPage() {
 	// error surface feels consistent across public pages.
 	if (!plansResult.success) {
 		return (
-			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 text-center">
+			<div className="h-half-screen flex w-full flex-col items-center justify-center gap-10 text-center">
 				<BugIcon />
-				<hgroup className="space-y-4">
+				<hgroup className="flex flex-col gap-4">
 					<h1 className="text-xl font-semibold">Unable to load pricing</h1>
 					<p className="mt-2 text-lg">
 						Something went wrong on our end. Please try again in a moment.
@@ -116,9 +116,9 @@ export default async function PricingPage() {
 				</hgroup>
 				<Link
 					href="/browse"
-					className="focus-visible:ring-ring/50 inline-flex items-center justify-center rounded-full border border-black bg-white px-12 py-3 text-sm font-semibold text-black transition-colors hover:bg-black hover:text-white focus-visible:ring-[3px] focus-visible:outline-none"
+					className="focus-visible:ring-ring/50 inline-flex items-center justify-center rounded-full border border-black bg-white px-12 py-3 text-sm font-semibold text-black transition-colors hover:bg-black hover:text-white focus-visible:ring-3 focus-visible:outline-none"
 				>
-					Back to Sweepstakes Browse
+					Back to all sweepstakes
 				</Link>
 			</div>
 		);
@@ -136,7 +136,7 @@ export default async function PricingPage() {
 	const currentPlanId = currentSubscription?.planId ?? null;
 
 	return (
-		<div className="mx-auto flex w-full max-w-[1016px] flex-col gap-10 px-4 py-8 sm:gap-14 sm:py-12">
+		<div className="max-w-copy mx-auto flex w-full flex-col gap-10 px-4 py-8 sm:gap-14 sm:py-12">
 			{/* Post-Stripe return handlers. Success opens a dialog (weighty
 			    affordance for a paid conversion); cancel fires a toast (light
 			    acknowledgement of an abandoned intent). Split by query-param
@@ -156,10 +156,10 @@ export default async function PricingPage() {
 			<div>
 				<Link
 					href="/browse"
-					className="focus-visible:ring-ring/50 sm:text-h4 inline-flex items-center gap-2 rounded-sm text-lg font-semibold text-black underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
+					className="focus-visible:ring-ring/50 sm:text-body-md inline-flex items-center gap-2 rounded-sm text-lg font-semibold text-black underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:outline-none"
 				>
 					<ArrowLeft className="size-6" aria-hidden />
-					Back to Sweepstakes Browse
+					Back to all sweepstakes
 				</Link>
 			</div>
 
@@ -171,20 +171,20 @@ export default async function PricingPage() {
 				    the earlier emerald accent so the headline isn't pre-announced in a
 				    loud color; the eyebrow now reads as quiet supporting copy. "Enhanced
 				    odds" and "Risk-Free" were removed from the prior revision: both
-				    phrases, in a sweepstakes context, read as claims that paid entrants
+				    phrases, in a sweepstake context, read as claims that paid entrants
 				    are advantaged over AMOE entrants. Compliance requires identical odds
 				    across paid and free paths — see /free-entry. */}
-				<p className="text-foreground text-base leading-[1.4] font-medium">
+				<p className="text-foreground text-base/dense font-medium">
 					Gain access to member benefits across every sweepstakes. Subscribe now
 					to unlock bigger discounts and bonus entries.
 				</p>
 				{/* No trailing period after "Win" — the design treats the three
 				    words as a staccato triplet; a terminal period would kill the
 				    rhythm and make the headline feel like a full sentence. */}
-				<h1 className="font-clash-display sm:text-h3-featured text-4xl leading-none font-semibold">
+				<h1 className="font-clash-display sm:text-headline-lg text-4xl/none font-semibold">
 					Subscribe Today. Save. Win
 				</h1>
-				<p className="text-foreground max-w-[854px] text-base leading-[1.4] font-normal text-balance">
+				<p className="text-foreground text-base/dense max-w-213.5 font-normal text-balance">
 					Rafli is LIVE. Subscribe now to lock in exclusive member discounts and
 					bonus entries across hundreds of new sweepstakes every month. Become a
 					founding member of this community NOW.
@@ -202,7 +202,7 @@ export default async function PricingPage() {
 							    checkmarks, so the smaller unadorned dot is more honest. */}
 							<span
 								aria-hidden
-								className="size-2 shrink-0 rounded-full bg-[#13e36f]"
+								className="bg-green-vivid size-2 shrink-0 rounded-full"
 							/>
 							<span className="text-foreground font-semibold">{stat.bold}</span>
 							<span className="text-foreground font-normal">{stat.suffix}</span>

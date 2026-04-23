@@ -4,7 +4,7 @@ import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { RAFFLE_ERROR_CODES } from '@/types/errors/raffle-errors';
 import type { Raffle } from '@/types/raffle';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Fixtures ---
 
@@ -57,7 +57,7 @@ mock.module('@/lib/cache/revalidation', () => ({
 	revalidateRaffleDetail: mock(),
 	revalidateWinningPaths: mock(),
 }));
-mock.module('@/lib/run-after', () => ({
+mock.module('@/lib/utils/run-after', () => ({
 	runAfter: mock(),
 }));
 

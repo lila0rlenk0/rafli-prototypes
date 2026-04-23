@@ -12,15 +12,23 @@ test.describe('Raffle Update', () => {
 			timeout: 15_000,
 		});
 
-		// Wait for Lexical editor to fully mount
+		// Wait for Lexical editor to fully mount — `contenteditable=true` is
+		// set only after the `RichTextPlugin` has attached its listeners, so
+		// keying against that attribute replaces the legacy arbitrary sleep.
 		const editor = page.getByRole('textbox');
 		await expect(editor).toBeVisible({ timeout: 10_000 });
-		await page.waitForTimeout(500);
+		await expect(editor).toHaveAttribute('contenteditable', 'true', {
+			timeout: 10_000,
+		});
 
-		// Type text into the Lexical editor
+		// Type text into the Lexical editor. Wait for the text to land in the
+		// DOM before proceeding — `page.keyboard.type` queues keystrokes
+		// synchronously but Lexical flushes its reconciler asynchronously.
 		await editor.click();
 		await page.keyboard.type('E2E test update');
-		await page.waitForTimeout(300);
+		await expect(editor).toContainText('E2E test update', {
+			timeout: 5_000,
+		});
 
 		// Lexical editor state updates correctly but OnChangePlugin doesn't sync to
 		// react-hook-form in headless Chromium. Force sync by setting the form value

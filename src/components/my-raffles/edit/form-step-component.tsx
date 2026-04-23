@@ -1,7 +1,7 @@
 'use client';
 
 import { FormStep } from '@/components/my-raffles/shared/form-step';
-import { useEditForm } from './edit-form-provider';
+import { useEditForm } from './form-provider';
 import { STEPS } from './steps';
 
 export function FormStepComponent() {

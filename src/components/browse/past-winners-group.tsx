@@ -1,7 +1,7 @@
 import { ArrowUpRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 import type { RecentWinner } from '@/types/winning';
 
 /**
@@ -24,15 +24,15 @@ interface PastWinnersGroupProps {
 
 /**
  * Tailwind background classes keyed to the theme tokens declared in
- * globals.css (`--color-accent-blue/green/yellow`). Using tokens here
+ * globals.css (`--color-brand-sky/green/yellow`). Using tokens here
  * rather than raw hex keeps the band color in lock-step with the rest
  * of the system — if the brand ever rebalances the pastels we get the
  * update for free instead of editing three magic numbers.
  */
 const ACCENT_BG: Record<PastWinnersGroupVariant, string> = {
-	blue: 'bg-accent-blue',
-	green: 'bg-accent-green',
-	yellow: 'bg-accent-yellow',
+	blue: 'bg-brand-sky',
+	green: 'bg-brand-mint',
+	yellow: 'bg-brand-yellow',
 };
 
 /**
@@ -87,11 +87,11 @@ export function PastWinnersGroup({
 				)}
 			>
 				<div className="flex min-w-0 flex-col gap-1">
-					<div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.14em] text-[#121211]/70 uppercase sm:text-[11px]">
+					<div className="text-3xs tracking-caps-4 text-ink-900/70 sm:text-2xs flex items-center gap-1.5 font-semibold uppercase">
 						<ShieldCheck aria-hidden="true" className="size-3" />
 						<span>Drawn {drawnDate} · Verified on-chain</span>
 					</div>
-					<h2 className="font-clash-display line-clamp-2 text-lg leading-tight font-semibold text-[#121211] sm:text-xl">
+					<h2 className="font-clash-display text-ink-900 line-clamp-2 text-lg/tight font-semibold sm:text-xl">
 						<Link
 							href={`/browse/${raffleSlug}`}
 							className="underline-offset-4 hover:underline"
@@ -102,9 +102,9 @@ export function PastWinnersGroup({
 				</div>
 				<Link
 					href={`/browse/${raffleSlug}`}
-					className="inline-flex flex-shrink-0 items-center gap-1 self-start rounded-full border border-black px-3 py-1 text-[11px] font-semibold text-[#121211] transition-colors hover:bg-black hover:text-white sm:self-auto"
+					className="text-2xs text-ink-900 inline-flex flex-shrink-0 items-center gap-1 self-start rounded-full border border-black px-3 py-1 font-semibold transition-colors hover:bg-black hover:text-white sm:self-auto"
 				>
-					View raffle
+					View sweepstakes
 					<ArrowUpRight aria-hidden="true" className="size-3" />
 				</Link>
 			</header>
@@ -124,7 +124,7 @@ export function PastWinnersGroup({
 							href={`/verify?raffle=${encodeURIComponent(
 								winner.raffleSlug,
 							)}&code=${encodeURIComponent(winner.ticketCode)}`}
-							className="group/row flex items-center gap-5 border-t border-[#eee] px-6 py-5 transition-colors first:border-t-0 hover:bg-[#f9f8f4] sm:gap-6 sm:px-8"
+							className="group/row border-ink-150 hover:bg-background flex items-center gap-5 border-t px-6 py-5 transition-colors first:border-t-0 sm:gap-6 sm:px-8"
 						>
 							{/* Display-type position number — zero-padded to 2 digits so
 							    "01" and "10" line up at the same x-offset in the list.
@@ -133,20 +133,20 @@ export function PastWinnersGroup({
 							    adjacent prize/name text already conveys ordinal meaning;
 							    screen readers don't need "zero one" read aloud. */}
 							<span
-								className="font-clash-display flex-shrink-0 text-4xl leading-none font-semibold text-[#121211] tabular-nums sm:text-5xl"
+								className="font-clash-display text-ink-900 flex-shrink-0 text-4xl/none font-semibold tabular-nums sm:text-5xl"
 								aria-hidden="true"
 							>
 								{String(winner.position).padStart(2, '0')}
 							</span>
 
 							<div className="flex min-w-0 flex-1 flex-col">
-								<span className="text-[11px] font-semibold tracking-[0.12em] text-[#7b7b7b] uppercase">
+								<span className="text-2xs tracking-caps-3 text-ink-500 font-semibold uppercase">
 									For {winner.prizeLabel}
 								</span>
-								<span className="font-clash-display truncate text-xl font-semibold text-[#121211]">
+								<span className="font-clash-display text-ink-900 truncate text-xl font-semibold">
 									{winner.winnerDisplayName}
 								</span>
-								<span className="mt-0.5 truncate text-xs text-[#7b7b7b]">
+								<span className="text-ink-500 mt-0.5 truncate text-xs">
 									Winning ticket · {winner.ticketCode}
 								</span>
 							</div>
@@ -156,7 +156,7 @@ export function PastWinnersGroup({
 							    affordance for the link target. */}
 							<ArrowUpRight
 								aria-hidden="true"
-								className="size-5 flex-shrink-0 text-[#121211] transition-transform duration-150 group-hover/row:translate-x-0.5 group-hover/row:-translate-y-0.5"
+								className="text-ink-900 size-5 flex-shrink-0 transition-transform duration-150 group-hover/row:translate-x-0.5 group-hover/row:-translate-y-0.5"
 							/>
 						</Link>
 					</li>

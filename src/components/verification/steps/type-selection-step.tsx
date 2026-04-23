@@ -4,33 +4,34 @@ import { Building2, Trophy, User } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 import {
 	VERIFICATION_TYPE,
 	type VerificationType,
 } from '@/types/kyc-submission';
 
-import { useVerificationForm } from '../verification-form-provider';
+import { useVerificationForm } from '@/components/verification/form/form-provider';
 
 const TYPE_OPTIONS = [
 	{
 		value: VERIFICATION_TYPE.KYB_INDIVIDUAL,
 		title: 'Individual Host',
 		description:
-			'Verify your identity as an individual to start hosting raffles on the platform.',
+			'Verify your identity as an individual to start hosting sweepstakes on the platform.',
 		icon: User,
 	},
 	{
 		value: VERIFICATION_TYPE.KYB_COMPANY,
 		title: 'Company Host',
 		description:
-			'Register your business to host raffles as a company or organization.',
+			'Register your business to host sweepstakes as a company or organization.',
 		icon: Building2,
 	},
 	{
 		value: VERIFICATION_TYPE.KYC_WINNER,
-		title: 'Raffle Winner',
-		description: 'Verify your identity to claim a raffle prize you have won.',
+		title: 'Sweepstakes Winner',
+		description:
+			'Verify your identity to claim a sweepstakes prize you have won.',
 		icon: Trophy,
 	},
 ] as const;

@@ -18,7 +18,7 @@ const LEFT_PANEL_LINKS = [
 		href: '/blog/legal-stuff',
 	},
 	{
-		label: 'How to host a Raffle',
+		label: 'How to host a Sweepstakes',
 		href: '/blog/how-to-host-a-raffle',
 	},
 	{
@@ -30,7 +30,7 @@ const LEFT_PANEL_LINKS = [
 		href: '/blog/promo-tips',
 	},
 	{
-		label: 'Ticket Bundles',
+		label: 'Entry Bundles',
 		href: '/blog/ticket-bundles',
 	},
 ];
@@ -53,7 +53,7 @@ export default async function RafflesCreatePage() {
 		redirect('/my-raffles');
 	}
 
-	const userName = session?.user?.name || 'Raffle Host';
+	const userName = session?.user?.name || 'Sweepstakes Host';
 
 	const [rafflesResponse, questionsResponse, categoriesResponse] =
 		await Promise.all([getMyRaffles(), getQuestions(), getCategories()]);
@@ -71,12 +71,12 @@ export default async function RafflesCreatePage() {
 		: [];
 
 	return (
-		<div className="flex w-full items-start gap-[32px]">
-			<aside className="flex h-fit w-[285px] shrink-0 flex-col space-y-6 rounded-3xl bg-white px-6 py-12">
+		<div className="flex w-full items-start gap-8">
+			<aside className="flex h-fit w-71.25 shrink-0 flex-col gap-6 rounded-3xl bg-white px-6 py-12">
 				<InfoBigIcon />
 
 				<span className="mr-12 text-xl font-semibold">
-					How to build the best Raffle?
+					How to build the best Sweepstakes?
 				</span>
 
 				{LEFT_PANEL_LINKS.map(link => (
@@ -86,7 +86,7 @@ export default async function RafflesCreatePage() {
 						className="flex w-fit items-center gap-4"
 					>
 						<Copy className="size-4" />
-						<span className="text-[#6E6E6E]">{link.label}</span>
+						<span className="text-ink-600">{link.label}</span>
 					</Link>
 				))}
 			</aside>

@@ -1,42 +1,43 @@
 ---
 description: "Services"
 alwaysApply: false
-globs: "'src/services/**'"
+globs: "'src/services/**/*.ts'"
 ---
 
 # Services
 
-Server actions for all external API communication. One action per file, kebab-case naming.
+Server actions for all API communication. One action per file, kebab-case. Grouped by domain: `auth`, `raffle`, `host`, `order`, `payment`, `ticket`, `wallet`, `winning`, `verification`, `notification`, `review`, `comment`, `report`, `promo-code`, `update`, `kyc-submission`, `admin-kyc`, `subscription`, `user`, `chat`.
 
-## API Clients
+**Non-action modules** (same domain folder, kebab-case): shared React Query key factories (`query-keys.ts`), static config (`past-winners-config.ts`), and similar — no `'use server'` marker.
 
-- `baseClient` — server-only, public endpoints, S2S secret, no auth token
-- `authenticatedClient` — server-only, protected endpoints, S2S secret + Bearer JWT
-- `browserClient` — browser-only, OAuth flows, `withCredentials: true`, no S2S. File: `@/lib/api/client-browser`
+## API clients
 
-Both server clients from `@/lib/api/client`. Retry: only GET/HEAD on network errors, max 1 retry. Mutations never retried. `createRequest()` for custom timeout.
+- `baseClient` — server-only, public endpoints, S2S secret, no auth
+- `authenticatedClient` — server-only, protected endpoints, S2S + Bearer JWT
+- `browserClient` (`@/lib/api/browser-client`) — browser-only, OAuth flows, `withCredentials: true`
 
-## Server Action Pattern
+Retry: GET/HEAD only, network errors, max 1. Mutations never retried. Use `createRequest()` for custom timeouts.
 
-```tsx
+## Server action template
+
+```ts
 'use server';
 
-import { authenticatedClient } from '@/lib/api/client';
-import { failure, mapRaffleError, success } from '@/lib/errors';
-import type { ServiceResponse } from '@/types/service-response';
-import { ZodError } from 'zod';
-
-/** @returns ServiceResponse with data or error code */
+// 1. validate input (safeParse for UX feedback — backend is authoritative)
+// 2. delegate to the client (auth re-verified by backend)
+// 3. parse response (contract drift surfaced to Sentry)
+// 4. map + capture errors
+// 5. return ServiceResponse — never throw
 export async function getData(): Promise<ServiceResponse<MyType, MyErrorCode>> {
 	try {
 		const response = await authenticatedClient.get('/endpoint');
 		return success(mySchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {
-			console.error('Validation failed:', error);
+			captureContractDrift(error, 'domain', 'getData');
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
-		const errorCode = mapRaffleError(error);
+		const errorCode = mapDomainError(error);
 		captureServiceError(error, errorCode, {
 			service: 'domain',
 			action: 'getData',
@@ -48,45 +49,32 @@ export async function getData(): Promise<ServiceResponse<MyType, MyErrorCode>> {
 
 ## Validation
 
-- `safeParse` for input validation (early return on failure)
-- `.parse()` for response validation (throws into catch block)
+- `safeParse` for input — early return on failure with validation error code
+- `.parse()` for API responses — throws into the `ZodError` branch above
 
-## File Upload
+## React Query hooks
 
-Validate type/size before sending. Use `FormData`. Pass `'Content-Type': 'multipart/form-data'`.
+Live alongside actions. File: `use-<action>.ts`, marked `'use client'`.
 
-## React Query Hooks
+- keys: `[domain, scope, ...params]` — domain prefix first
+- mutations invalidate with the domain prefix
+- `serviceError()` from `@/lib/query` bridges `ServiceResponse` to React Query error state
+- `placeholderData: keepPreviousData` for pagination
 
-Hooks live alongside server actions. File: `use-<action>.ts`. Mark `'use client'`.
+## Non-blocking side effects
 
-- Query keys: `[domain, scope, ...params]`
-- Mutations invalidate using domain prefix `['domain']`
-- `serviceError()` from `@/lib/query/errors` bridges ServiceResponse errors to React Query
-- `placeholderData: keepPreviousData` for paginated queries
+`after()` from `next/server` for analytics, audit logging, cache invalidation. Never `await` analytics on the success path — use `after(() => ...)` or `void`.
 
-```tsx
-'use client';
+## When to use what
 
-export function useMyData(options?: { limit?: number; enabled?: boolean }) {
-	return useQuery<MyResponse, ServiceError<MyErrorCode>>({
-		queryKey: ['my-domain', 'list', { limit: options?.limit }],
-		queryFn: async function fetchMyData() {
-			const result = await getMyData({ limit: options?.limit });
-			if (!result.success) throw serviceError(result.error);
-			return result.data;
-		},
-		enabled: options?.enabled ?? true,
-	});
-}
-```
+- **query hook** — client needs cached data, pagination, on-demand fetch
+- **mutation hook** — loading/error states + cache invalidation
+- **direct action + `useTransition`** — form submissions, one-off actions
+- **direct action in server component** — SSR data fetching
 
-## Non-Blocking Side Effects
+## Forbidden
 
-`after()` from `next/server` for work that shouldn't block the response — analytics, audit logging, cache invalidation.
-
-## When to Use What
-
-- React Query query hook — client component needs cached data, pagination, on-demand fetching
-- React Query mutation hook — client component needs loading/error states + cache invalidation
-- Direct server action + `useTransition` — form submissions, one-off actions
-- Direct server action in server component — SSR data fetching
+- throwing from a server action — return `failure(code)`
+- exposing raw Axios errors to the caller
+- retrying mutations
+- unauthenticated calls to `authenticatedClient`

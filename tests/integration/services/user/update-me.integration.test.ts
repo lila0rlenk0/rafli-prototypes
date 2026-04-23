@@ -4,7 +4,7 @@ import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { RAFFLE_ERROR_CODES } from '@/types/errors/raffle-errors';
 import type { UpdateMePayload } from '@/types/user';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Fixtures ---
 
@@ -29,7 +29,7 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),
 	captureServiceError: mock(),
 }));
-mock.module('@/lib/run-after', () => ({
+mock.module('@/lib/utils/run-after', () => ({
 	runAfter: mock(),
 }));
 // revalidateProfile calls revalidatePath — mock next/cache

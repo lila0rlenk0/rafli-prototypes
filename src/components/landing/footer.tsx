@@ -11,12 +11,12 @@ import type { ComponentProps } from 'react';
  */
 export function Footer() {
 	return (
-		<footer className="relative overflow-hidden px-6 py-20 lg:px-[108px]">
+		<footer className="relative overflow-hidden px-6 py-20 lg:px-27">
 			{/* Decorative background shapes */}
 			<LeftColoredCards className="absolute bottom-0 left-0 origin-bottom-left scale-[.75]" />
 			<RightColoredCards className="absolute right-0 bottom-0" />
 
-			<div className="relative z-10 mx-auto max-w-[1720px] text-center">
+			<div className="max-w-wide relative z-10 mx-auto text-center">
 				<div className="mb-4 flex flex-col items-center gap-2">
 					<Link
 						href="/support"
@@ -48,7 +48,7 @@ export function Footer() {
 				    consumer-protection expectations on gambling-adjacent
 				    platforms. External anchors (new tab) because the target
 				    orgs are outside our domain. */}
-				<div className="mb-4 flex flex-col items-center gap-1 text-sm text-[#4a4a4a]">
+				<div className="text-ink-700 mb-4 flex flex-col items-center gap-1 text-sm">
 					<p className="font-semibold">Play responsibly</p>
 					<p>
 						US:{' '}
@@ -74,7 +74,7 @@ export function Footer() {
 					</p>
 				</div>
 
-				<p className="text-lg leading-8 font-medium tracking-wide text-[#7b7b7b]">
+				<p className="text-ink-500 text-lg/8 font-medium tracking-wide">
 					Rafli is a subsidiary of the EARN&apos;M Foundation
 					<br />
 					Copyright ©2026 — Rafli, Inc — All rights reserved.

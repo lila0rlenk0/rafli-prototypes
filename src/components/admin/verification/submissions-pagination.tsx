@@ -15,7 +15,7 @@ interface SubmissionsPaginationProps {
  * SubmissionsPagination Component
  *
  * Prev/Next pagination for the admin submissions list.
- * Follows the established pattern from promo-codes-content.tsx.
+ * Follows the established pattern from promo-codes/content.tsx.
  * Only renders when there's more than one page of results.
  *
  * @returns Pagination controls or null if single page

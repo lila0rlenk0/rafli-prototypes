@@ -13,8 +13,27 @@ mock.module('next/headers', () => ({
 mock.module('@/lib/mode/cookies', () => ({
 	clearUserModeCookie: mockClearUserModeCookie,
 }));
-mock.module('@/lib/auth/config', () => ({
-	AUTH_COOKIES: { TOKEN: 'raffly-token', SESSION: 'raffly-session' },
+// Full surface — `mock.module` is global; missing exports break later imports of `session` etc.
+mock.module('@/lib/auth/constants', () => ({
+	AUTH_COOKIES: {
+		TOKEN: 'raffly-token',
+		SESSION: 'raffly-session',
+		USER_MODE: 'raffly-user-mode',
+	},
+	COOKIE_OPTIONS: {
+		httpOnly: true,
+		secure: false,
+		sameSite: 'lax' as const,
+		maxAge: 60 * 60 * 24 * 30,
+		path: '/',
+	},
+	MODE_COOKIE_OPTIONS: {
+		httpOnly: true,
+		secure: false,
+		sameSite: 'lax' as const,
+		maxAge: 60 * 60 * 24 * 365,
+		path: '/',
+	},
 }));
 
 const { clearAuthCookies } = await import('@/services/auth/clear-auth');

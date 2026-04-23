@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { CHAT_ERROR_CODES } from '@/types/errors/chat-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const mockPatch = mock();
 const mockCaptureServiceError = mock();

@@ -2,24 +2,23 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Suspense, type ComponentProps, type ReactNode } from 'react';
 
-import { PublicNavbar } from '@/components/ui/public-navbar';
-import { ScreenLoader } from '@/components/ui/screen-loader';
+import { PublicNavbar } from '@/components/ui-custom/public-navbar';
+import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 import { env } from '@/env/server';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
-import { ChatStoreProvider } from '@/providers/chat-store-provider';
-import { NotificationStoreProvider } from '@/providers/notification-store-provider';
+import { RealtimeProviders } from '@/providers/realtime-providers';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
 export const metadata: Metadata = {
-	title: 'Verify Raffle Results | Rafli',
+	title: 'Verify Sweepstakes Results | Rafli',
 	description:
-		'Independently verify any raffle result using cryptographic proofs. Check ticket existence, winner selection, and blockchain records.',
+		'Independently verify any sweepstakes result using cryptographic proofs. Check entry existence, winner selection, and blockchain records.',
 	keywords: [
-		'verify raffle',
-		'raffle verification',
+		'verify sweepstakes',
+		'sweepstakes verification',
 		'provably fair check',
-		'ticket verification',
+		'entry verification',
 		'winner verification',
 		'blockchain proof',
 		'Merkle tree verification',
@@ -28,9 +27,9 @@ export const metadata: Metadata = {
 		canonical: `${env.APP_URL}/verify`,
 	},
 	openGraph: {
-		title: 'Verify Raffle Results | Rafli',
+		title: 'Verify Sweepstakes Results | Rafli',
 		description:
-			'Independently verify any raffle result using cryptographic proofs and blockchain records.',
+			'Independently verify any sweepstakes result using cryptographic proofs and blockchain records.',
 		url: `${env.APP_URL}/verify`,
 		siteName: 'Rafli',
 		type: 'website',
@@ -38,8 +37,9 @@ export const metadata: Metadata = {
 	},
 	twitter: {
 		card: 'summary_large_image',
-		title: 'Verify Raffle Results',
-		description: 'Cryptographic verification for provably fair raffle results.',
+		title: 'Verify Sweepstakes Results',
+		description:
+			'Cryptographic verification for provably fair sweepstakes results.',
 	},
 	robots: {
 		index: true,
@@ -56,7 +56,7 @@ const jsonLd = {
 	'@type': 'WebApplication',
 	name: 'Rafli Verification Tool',
 	description:
-		'Independently verify raffle results using cryptographic proofs and blockchain records.',
+		'Independently verify sweepstakes results using cryptographic proofs and blockchain records.',
 	applicationCategory: 'UtilitiesApplication',
 	operatingSystem: 'Any',
 	offers: {
@@ -65,7 +65,7 @@ const jsonLd = {
 		priceCurrency: 'USD',
 	},
 	featureList: [
-		'Ticket verification',
+		'Entry verification',
 		'Winner verification',
 		'Merkle proof display',
 		'Blockchain transaction links',
@@ -109,9 +109,7 @@ async function VerifyLayoutContent({ children }: VerifyLayoutProps) {
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
-				<NotificationStoreProvider>
-					<ChatStoreProvider>{content}</ChatStoreProvider>
-				</NotificationStoreProvider>
+				<RealtimeProviders>{content}</RealtimeProviders>
 			</UserStoreProvider>
 		);
 	}
@@ -134,8 +132,8 @@ export default function VerifyLayout({ children }: VerifyLayoutProps) {
 				type="application/ld+json"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
 			/>
-			<main className="relative min-h-screen">
-				<ColoredShapes className="pointer-events-none fixed top-0 left-0 z-[15] origin-top-left scale-[.65]" />
+			<main className="relative min-h-dvh">
+				<ColoredShapes className="scale-xs pointer-events-none fixed top-0 left-0 z-(--z-sticky) origin-top-left" />
 				<Suspense fallback={<ScreenLoader />}>
 					<VerifyLayoutContent>{children}</VerifyLayoutContent>
 				</Suspense>

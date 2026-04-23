@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
-import { stripMarkdown } from '@/lib/utils/strip-markdown';
+import { stripMarkdown } from '@/lib/utils/format/strip-markdown';
 
-export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+// 5 MB
+export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
 const fileSchema = z

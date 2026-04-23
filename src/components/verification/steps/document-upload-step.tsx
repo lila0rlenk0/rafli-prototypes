@@ -17,10 +17,10 @@ import {
 import {
 	ACCEPTED_DOC_TYPES_MAP,
 	MAX_DOC_SIZE,
-} from '@/lib/validation/verification/verification-form-schema';
+} from '@/lib/validation/verification/form-schema';
 import { VERIFICATION_TYPE } from '@/types/kyc-submission';
 
-import { useVerificationForm } from '../verification-form-provider';
+import { useVerificationForm } from '@/components/verification/form/form-provider';
 
 interface DocumentFieldConfig {
 	name: string;

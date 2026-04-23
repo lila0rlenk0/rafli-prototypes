@@ -6,34 +6,30 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
-	useRef,
 	useState,
 	type ReactNode,
 } from 'react';
-import { useForm, type UseFormReturn } from 'react-hook-form';
+import { useForm, useWatch, type UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
-import { z } from 'zod';
+import { type z } from 'zod';
 
-import type { CreatePromoCodeData } from '@/components/promo-code/create-promo-code-modal';
-import { RaffleCreatedModal } from '@/components/raffle/raffle-created-modal';
+import type { CreatePromoCodePayload } from '@/components/promo-code/create/modal';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
-import { bulkCreatePromoCodes } from '@/services/promo-code/bulk-create-promo-codes';
-import { createRaffle } from '@/services/raffle/create-raffle';
-import { publishRaffle } from '@/services/raffle/publish-raffle';
-import { uploadCover } from '@/services/raffle/upload-cover';
-import { uploadGalleryImages } from '@/services/raffle/upload-gallery';
-import type { Category } from '@/types/category';
-import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
-import type { Question } from '@/types/question';
 import { useRaffleDraft } from '@/lib/hooks/use-raffle-draft';
-import { RestoreDraftModal } from './restore-draft-modal';
-import { SaveDraftModal } from './save-draft-modal';
-import {
-	CRYPTO_FORM_DEFAULTS,
-	raffleFormSchema,
-} from '@/lib/validation/raffle/create-form-schema';
-import { STEPS } from './steps';
+import { raffleFormSchema } from '@/lib/validation/raffle/create-form-schema';
+import type { Category } from '@/types/category';
+import type { Question } from '@/types/question';
+
+import { ProviderModals } from '@/components/my-raffles/create/modals/provider-modals';
+import { getRaffleFormDefaults } from '@/components/my-raffles/create/form-defaults';
+import { STEPS } from '@/components/my-raffles/create/steps';
+import { useExitDraftActions } from '@/components/my-raffles/create/hooks/use-exit-draft-actions';
+import { usePendingPromoCodes } from '@/components/my-raffles/create/hooks/use-pending-promo-codes';
+import { useRaffleDraftActions } from '@/components/my-raffles/create/hooks/use-raffle-draft-actions';
+import { useStepNavigation } from '@/components/my-raffles/create/hooks/use-step-navigation';
+import { useUnsavedChangesGuard } from '@/components/my-raffles/create/hooks/use-unsaved-changes-guard';
+import { useWizardSubmit } from '@/components/my-raffles/create/hooks/use-wizard-submit';
 
 type RaffleFormData = z.infer<typeof raffleFormSchema>;
 
@@ -55,8 +51,8 @@ interface MultiStepFormContextType {
 	setShowExitModal: (show: boolean) => void;
 	questions: Question[];
 	categories: Category[];
-	pendingPromoCodes: CreatePromoCodeData[];
-	addPendingPromoCode: (data: CreatePromoCodeData) => void;
+	pendingPromoCodes: CreatePromoCodePayload[];
+	addPendingPromoCode: (data: CreatePromoCodePayload) => void;
 	removePendingPromoCode: (index: number) => void;
 	clearPendingPromoCodes: () => void;
 }
@@ -74,12 +70,74 @@ interface MultiStepFormProviderProps {
 }
 
 /**
- * MultiStepFormProvider Component
+ * One-shot toast that tells the user why the form came up empty when
+ * `loadRaffleDraft` had to quarantine a corrupt blob (schema drift
+ * across deploys, half-flushed write). Suppressed when a valid draft
+ * exists — the restore modal already surfaces recovery UX and stacking
+ * both would be noise.
  *
- * Provides a context for managing multi-step raffle creation form state.
- * Handles form navigation, validation, and raffle creation with image uploads.
- * Uses React Hook Form for form management and includes optimized memoization
- * to prevent unnecessary re-renders in consuming components.
+ * Extracted from the provider body so the host function stays under the
+ * 150-LOC cap enforced by ESLint `max-lines-per-function`.
+ */
+interface AbandonedDraftNoticeProps {
+	hasAbandoned: boolean;
+	hasDraft: boolean;
+	dismiss: () => void;
+}
+
+function useAbandonedDraftNotice(props: AbandonedDraftNoticeProps): void {
+	const { hasAbandoned, hasDraft, dismiss } = props;
+	useEffect(() => {
+		if (!hasAbandoned || hasDraft) return;
+		toast.info(
+			"We couldn't restore your last draft. A backup is kept on this device — contact support if you need to recover it.",
+		);
+		dismiss();
+	}, [hasAbandoned, hasDraft, dismiss]);
+}
+
+/**
+ * Mount-only analytics ping: fires `CREATE_STARTED` once per provider
+ * instance so we can diff wizard entries against completion rate.
+ * Extracted from the provider body to fit under the 150-LOC cap.
+ */
+function useTrackWizardEntry(): void {
+	useEffect(() => {
+		track(RAFFLE_EVENTS.CREATE_STARTED, {});
+	}, []);
+}
+
+/**
+ * Tests whether the form currently carries any data worth persisting as
+ * a draft. Intentionally excludes `coverImage` (File[] can't be
+ * serialized to localStorage) and inspects only the primitive fields.
+ */
+function hasFormChanges(values: RaffleFormData): boolean {
+	return (
+		values.title !== '' ||
+		values.description !== '' ||
+		!Number.isNaN(values.price) ||
+		values.category !== '' ||
+		values.startDate !== '' ||
+		values.endDate !== '' ||
+		!Number.isNaN(values.pricePerTicket) ||
+		!Number.isNaN(values.numberOfWinners) ||
+		values.minParticipants !== 0 ||
+		values.maxParticipants !== 0 ||
+		values.checkInQuestion !== '' ||
+		values.acceptsCrypto !== false ||
+		values.cryptoChainIds.length > 0 ||
+		values.cryptoTokens.length > 0 ||
+		values.cryptoTokenPricing.length > 0
+	);
+}
+
+/**
+ * Provides a context for managing multi-step raffle-creation form
+ * state. Orchestrates wizard navigation, the submit pipeline + success
+ * modal (delegated to `useWizardSubmit`), unsaved-changes guarding
+ * (delegated to `useUnsavedChangesGuard`), and the save/restore-draft
+ * modals. Consumers read state + mutators via `useMultiStepForm`.
  */
 export function MultiStepFormProvider({
 	children,
@@ -88,57 +146,24 @@ export function MultiStepFormProvider({
 	questions,
 	categories,
 }: MultiStepFormProviderProps) {
-	// Wizard navigation — 0-indexed step position
-	const [currentStep, setCurrentStep] = useState(0);
-	// Tracks in-flight API calls during raffle creation to disable submit
-	const [isCreating, setIsCreating] = useState(false);
-	// Controls the "Raffle Created" success modal visibility
-	const [isModalOpen, setIsModalOpen] = useState(false);
-	// Controls the "Save Draft" exit confirmation modal
+	const {
+		currentStep,
+		setCurrentStep,
+		nextStep,
+		previousStep,
+		goToStep,
+		isFirstStep,
+		isLastStep,
+	} = useStepNavigation(STEPS.length);
 	const [showExitModal, setShowExitModal] = useState(false);
-	// Guards against re-showing the restore modal after initial draft detection
 	const [draftLoaded, setDraftLoaded] = useState(false);
-	// Controls the "Restore Draft" modal on page entry
 	const [showRestoreModal, setShowRestoreModal] = useState(false);
-	// Stores created raffle info for the success modal — null until creation succeeds
-	const [createdRaffle, setCreatedRaffle] = useState<{
-		publicSlug: string;
-		raffleStartDate: string;
-	} | null>(null);
-	// Promo codes queued for creation after raffle is saved — not yet persisted
-	const [pendingPromoCodes, setPendingPromoCodes] = useState<
-		CreatePromoCodeData[]
-	>([]);
-
-	/**
-	 * Adds a promo code batch to the pending list
-	 */
-	const addPendingPromoCode = useCallback((data: CreatePromoCodeData) => {
-		setPendingPromoCodes(prev => [...prev, data]);
-	}, []);
-
-	/**
-	 * Removes a promo code batch from the pending list by index
-	 */
-	const removePendingPromoCode = useCallback((index: number) => {
-		setPendingPromoCodes(prev => prev.filter((_, i) => i !== index));
-	}, []);
-
-	/**
-	 * Clears all pending promo codes
-	 */
-	const clearPendingPromoCodes = useCallback(() => {
-		setPendingPromoCodes([]);
-	}, []);
-
-	// Ref instead of state — stores the href the user tried to navigate to before
-	// being intercepted. Does not trigger re-renders; read only in callbacks.
-	const pendingNavigationRef = useRef<string | null>(null);
-
-	// Ref instead of state — boolean flag that bypasses the beforeunload dialog
-	// after the user has already confirmed exit. Must survive across renders
-	// without triggering them.
-	const isLeavingRef = useRef(false);
+	const {
+		pendingPromoCodes,
+		addPendingPromoCode,
+		removePendingPromoCode,
+		clearPendingPromoCodes,
+	} = usePendingPromoCodes();
 
 	const {
 		draft,
@@ -146,501 +171,82 @@ export function MultiStepFormProvider({
 		saveDraft,
 		clearDraft,
 		isLoading: isDraftLoading,
+		hasAbandonedDraft: hasAbandoned,
+		dismissAbandonedDraft,
 	} = useRaffleDraft();
-
-	const totalSteps = STEPS.length;
 
 	const form = useForm<RaffleFormData>({
 		resolver: zodResolver(raffleFormSchema),
 		mode: 'onChange',
-		defaultValues: {
-			title: '',
-			description: '',
-			price: NaN,
-			category: '',
-			coverImage: [],
-			startDate: '',
-			startTime: '',
-			endDate: '',
-			endTime: '',
-			pricePerTicket: NaN,
-			numberOfWinners: NaN,
-			minParticipants: 0,
-			maxParticipants: 0,
-			checkInQuestion: '',
-			...CRYPTO_FORM_DEFAULTS,
-		},
+		defaultValues: getRaffleFormDefaults(),
 	});
 
-	const formValues = form.watch();
+	// useWatch subscribes to every field — equivalent to `form.watch()`
+	// but compatible with React Compiler memoization (the raw `watch()`
+	// trips `react-hooks/incompatible-library`).
+	const formValues = useWatch({ control: form.control });
+	const hasUnsavedChanges = hasFormChanges(formValues as RaffleFormData);
 
-	/**
-	 * Checks if the form has any unsaved changes worth persisting as draft
-	 * Excludes coverImage since File[] cannot be serialized to localStorage
-	 */
-	function checkHasUnsavedChanges(): boolean {
-		return (
-			formValues.title !== '' ||
-			formValues.description !== '' ||
-			!isNaN(formValues.price) ||
-			formValues.category !== '' ||
-			formValues.startDate !== '' ||
-			formValues.endDate !== '' ||
-			!isNaN(formValues.pricePerTicket) ||
-			!isNaN(formValues.numberOfWinners) ||
-			formValues.minParticipants !== 0 ||
-			formValues.maxParticipants !== 0 ||
-			formValues.checkInQuestion !== '' ||
-			formValues.acceptsCrypto !== false ||
-			formValues.cryptoChainIds.length > 0 ||
-			formValues.cryptoTokens.length > 0 ||
-			formValues.cryptoTokenPricing.length > 0
-		);
-	}
+	useTrackWizardEntry();
+	useAbandonedDraftNotice({
+		hasAbandoned,
+		hasDraft,
+		dismiss: dismissAbandonedDraft,
+	});
 
-	const hasUnsavedChanges = checkHasUnsavedChanges();
-
-	// mount: track creation wizard entry — measures how many users start vs complete
-	useEffect(() => {
-		track(RAFFLE_EVENTS.CREATE_STARTED, {});
-	}, []);
-
-	/**
-	 * Draft detection is pure state derivation from the storage hook.
-	 * Promote it into render-time state syncing so the modal opens in the same
-	 * render pass that draft data becomes available, without an extra effect hop.
-	 */
+	// Render-time sync — open the restore modal in the same render that
+	// draft data first becomes available, rather than an extra effect hop.
 	if (!isDraftLoading && !draftLoaded && hasDraft && draft) {
 		setShowRestoreModal(true);
 		setDraftLoaded(true);
 	}
 
-	/**
-	 * Loads draft data into form when user chooses to continue
-	 */
-	const handleContinueDraft = useCallback(() => {
-		if (!draft) return;
+	const { handleContinueDraft, handleStartFresh } = useRaffleDraftActions({
+		form,
+		draft: draft ?? null,
+		clearDraft,
+		setCurrentStep,
+	});
 
-		form.reset({
-			title: draft.title,
-			description: draft.description,
-			price: draft.price || NaN,
-			category: draft.category,
-			coverImage: [],
-			startDate: draft.startDate,
-			startTime: draft.startTime,
-			endDate: draft.endDate,
-			endTime: draft.endTime,
-			pricePerTicket: draft.pricePerTicket || NaN,
-			numberOfWinners: draft.numberOfWinners || NaN,
-			minParticipants: draft.minParticipants,
-			maxParticipants: draft.maxParticipants,
-			checkInQuestion: draft.checkInQuestion || '',
-			acceptsCrypto: draft.acceptsCrypto ?? false,
-			cryptoChainIds: draft.cryptoChainIds ?? [],
-			cryptoTokens: draft.cryptoTokens ?? [],
-			cryptoTokenPricing: draft.cryptoTokenPricing ?? [],
-		});
+	const { isLeavingRef, pendingNavigationRef } = useUnsavedChangesGuard({
+		hasUnsavedChanges,
+		onInterceptNavigation: useCallback(() => setShowExitModal(true), []),
+	});
 
-		setCurrentStep(draft.currentStep);
-		toast.info('Draft restored. Please re-upload your images if needed.');
-	}, [draft, form]);
-
-	/**
-	 * Clears the draft and resets all form fields when user chooses to start fresh
-	 */
-	const handleStartFresh = useCallback(() => {
-		clearDraft();
-		form.reset({
-			title: '',
-			description: '',
-			price: NaN,
-			category: '',
-			coverImage: [],
-			startDate: '',
-			startTime: '',
-			endDate: '',
-			endTime: '',
-			pricePerTicket: NaN,
-			numberOfWinners: NaN,
-			minParticipants: 0,
-			maxParticipants: 0,
-			checkInQuestion: '',
-			...CRYPTO_FORM_DEFAULTS,
-		});
-		setCurrentStep(0);
-	}, [clearDraft, form]);
-
-	/**
-	 * Adds beforeunload event listener when form has unsaved changes
-	 * Shows browser's native "Leave site?" dialog
-	 */
-	useEffect(() => {
-		if (!hasUnsavedChanges) return;
-
-		function handleBeforeUnload(event: BeforeUnloadEvent) {
-			if (isLeavingRef.current) return;
-			event.preventDefault();
-		}
-
-		window.addEventListener('beforeunload', handleBeforeUnload);
-		return () => {
-			window.removeEventListener('beforeunload', handleBeforeUnload);
-		};
-	}, [hasUnsavedChanges]);
-
-	/**
-	 * Intercepts internal link clicks when form has unsaved changes.
-	 * Captures clicks on <a> tags (including Next.js <Link>) in capture phase
-	 * before the router processes them, stores the target href, and shows the
-	 * save draft modal instead of navigating away.
-	 */
-	useEffect(() => {
-		if (!hasUnsavedChanges) return;
-
-		function handleLinkClick(event: MouseEvent) {
-			const anchor = (event.target as HTMLElement).closest('a');
-			if (!anchor) return;
-
-			const href = anchor.getAttribute('href');
-			if (!href || href.startsWith('#')) return;
-
-			// Skip external links
-			if (href.startsWith('http') && !href.startsWith(window.location.origin)) {
-				return;
-			}
-
-			// Skip same-page navigation
-			if (href === window.location.pathname) return;
-
-			event.preventDefault();
-			event.stopPropagation();
-			pendingNavigationRef.current = href;
-			setShowExitModal(true);
-		}
-
-		document.addEventListener('click', handleLinkClick, true);
-		return () => {
-			document.removeEventListener('click', handleLinkClick, true);
-		};
-	}, [hasUnsavedChanges]);
-
-	/**
-	 * Saves current form data as draft and navigates to target.
-	 * Uses full page navigation to ensure clean state on return.
-	 */
-	const handleSaveDraft = useCallback(() => {
-		const values = form.getValues();
-		saveDraft(
-			{
-				title: values.title,
-				description: values.description,
-				price: isNaN(values.price) ? 0 : values.price,
-				category: values.category,
-				startDate: values.startDate,
-				startTime: values.startTime,
-				endDate: values.endDate,
-				endTime: values.endTime,
-				pricePerTicket: isNaN(values.pricePerTicket)
-					? 0
-					: values.pricePerTicket,
-				numberOfWinners: isNaN(values.numberOfWinners)
-					? 0
-					: values.numberOfWinners,
-				minParticipants: values.minParticipants,
-				maxParticipants: values.maxParticipants,
-				checkInQuestion: values.checkInQuestion,
-				// Crypto config persists across draft saves
-				acceptsCrypto: values.acceptsCrypto,
-				cryptoChainIds: values.cryptoChainIds,
-				cryptoTokens: values.cryptoTokens,
-				cryptoTokenPricing: values.cryptoTokenPricing,
-				currentStep,
-			},
+	const { handleStay, handleSaveDraft, handleLeaveWithoutSaving } =
+		useExitDraftActions({
+			form,
 			currentStep,
-		);
-		toast.success('Draft saved successfully!');
-		isLeavingRef.current = true;
-		const target = pendingNavigationRef.current || '/my-raffles';
-		pendingNavigationRef.current = null;
-		window.location.href = target;
-	}, [form, saveDraft, currentStep]);
+			saveDraft,
+			clearDraft,
+			setShowExitModal,
+			isLeavingRef,
+			pendingNavigationRef,
+		});
 
-	/**
-	 * Closes the exit modal and clears pending navigation
-	 */
-	const handleStay = useCallback(() => {
-		pendingNavigationRef.current = null;
-		setShowExitModal(false);
-	}, []);
-
-	/**
-	 * Clears draft and navigates to pending target without saving.
-	 * Uses full page navigation to ensure clean state on return.
-	 */
-	const handleLeaveWithoutSaving = useCallback(() => {
-		clearDraft();
-		isLeavingRef.current = true;
-		const target = pendingNavigationRef.current || '/my-raffles';
-		pendingNavigationRef.current = null;
-		window.location.href = target;
-	}, [clearDraft]);
-
-	/**
-	 * Advances to the next step in the form
-	 * Does nothing if already on the last step
-	 */
-	const nextStep = useCallback(() => {
-		if (currentStep < totalSteps - 1) {
-			setCurrentStep(prev => prev + 1);
-		}
-	}, [currentStep, totalSteps]);
-
-	/**
-	 * Returns to the previous step in the form
-	 * Does nothing if already on the first step
-	 */
-	const previousStep = useCallback(() => {
-		if (currentStep > 0) {
-			setCurrentStep(prev => prev - 1);
-		}
-	}, [currentStep]);
-
-	/**
-	 * Navigates to a specific step in the form
-	 * @param step - The step index to navigate to (0-based)
-	 */
-	const goToStep = useCallback(
-		(step: number) => {
-			if (step >= 0 && step < totalSteps) {
-				setCurrentStep(step);
-			}
-		},
-		[totalSteps],
-	);
-
-	const isFirstStep = currentStep === 0;
-	const isLastStep = currentStep === totalSteps - 1;
-
-	/**
-	 * Maps server error codes to user-facing messages and optional form field targets
-	 * Field-targeted errors trigger form.setError + navigate to the relevant step
-	 */
-	function getRaffleServerError(code: RaffleErrorCode): {
-		message: string;
-		field?: keyof RaffleFormData;
-	} {
-		switch (code) {
-			case RAFFLE_ERROR_CODES.MIN_PARTICIPANTS_MUST_EXCEED_WINNERS:
-				return {
-					message:
-						'Minimum participants must be greater than the number of winners',
-					field: 'minParticipants',
-				};
-			case RAFFLE_ERROR_CODES.INVALID_DATES:
-				return {
-					message: 'Invalid dates. End date must be after start date.',
-					field: 'endDate',
-				};
-			case RAFFLE_ERROR_CODES.NOT_DRAFT:
-				return {
-					message: 'Raffle is not in draft status and cannot be edited',
-				};
-			case RAFFLE_ERROR_CODES.PERMISSION_DENIED:
-				return {
-					message: 'You do not have permission to perform this action',
-				};
-			case RAFFLE_ERROR_CODES.MISSING_FIELDS:
-				return { message: 'Some required fields are missing' };
-			default:
-				return { message: 'Failed to create raffle' };
-		}
-	}
-
-	/**
-	 * Handles raffle creation through a multi-phase server action pipeline.
-	 * Shows modal on success instead of redirecting immediately.
-	 *
-	 * Steps:
-	 * 1. Validate check-in question presence (client guard before API call)
-	 * 2. Create raffle record via server action
-	 * 3. Upload cover image (if provided)
-	 * 4. Upload gallery images (if provided, slots 2-4)
-	 * 5. Bulk-create pending promo codes
-	 * 6. Auto-publish if start datetime is now/past and cover uploaded
-	 * 7. Clear draft and open success modal
-	 *
-	 * @param data - The validated raffle form data
-	 */
-	const handleCreateRaffle = useCallback(
-		async (data: RaffleFormData) => {
-			setIsCreating(true);
-
-			try {
-				const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-				// Step 1: Client-side guard — backend requires a question ID
-				if (!data.checkInQuestion) {
-					toast.error('Please select a check-in question');
-					setIsCreating(false);
-					return;
-				}
-
-				// Step 2: Create the raffle record
-				const result = await createRaffle({
-					title: data.title,
-					description: data.description,
-					price: data.price,
-					category: data.category,
-					// Combine date + time into a single datetime string (YYYY-MM-DDTHH:mm)
-					startDate: `${data.startDate}T${data.startTime || '00:00'}`,
-					endDate: `${data.endDate}T${data.endTime || '00:00'}`,
-					pricePerTicket: data.pricePerTicket,
-					numberOfWinners: data.numberOfWinners,
-					minParticipants: data.minParticipants,
-					maxParticipants: data.maxParticipants,
-					checkInQuestion: data.checkInQuestion,
-					timezone: userTimezone,
-					// Crypto config — only sent when enabled
-					acceptsCrypto: data.acceptsCrypto,
-					cryptoChainIds: data.cryptoChainIds,
-					cryptoTokens: data.cryptoTokens,
-					cryptoTokenPricing: data.cryptoTokenPricing,
-				});
-
-				if (!result.success) {
-					const { message, field } = getRaffleServerError(result.error);
-					toast.error(message);
-					// Navigate to the relevant step and set field-level error
-					if (field) {
-						form.setError(field, { message });
-						// Tickets step = index 1 (minParticipants, endDate live there)
-						setCurrentStep(1);
-					}
-					return;
-				}
-
-				const raffleId = result.data.id;
-				let coverUploaded = false;
-
-				// Step 3: Upload cover image (first file in coverImage array)
-				if (data.coverImage && data.coverImage.length > 0) {
-					const coverResult = await uploadCover(raffleId, data.coverImage[0]);
-					if (!coverResult.success) {
-						console.error('Cover upload failed:', coverResult.error);
-						toast.error('Raffle created but cover upload failed.');
-					} else {
-						coverUploaded = true;
-					}
-				}
-
-				// Step 4: Upload gallery images (slots 2-4 of coverImage array)
-				if (data.coverImage && data.coverImage.length > 1) {
-					const galleryFiles = data.coverImage.slice(1);
-					const galleryResult = await uploadGalleryImages(
-						raffleId,
-						galleryFiles,
-					);
-					if (!galleryResult.success) {
-						console.error('Gallery upload failed:', galleryResult.error);
-						toast.error('Raffle created but gallery upload failed.');
-					}
-				}
-
-				// Step 5: Create pending promo codes — sequential to avoid rate limits
-				if (pendingPromoCodes.length > 0) {
-					let failedCount = 0;
-					for (const promoCode of pendingPromoCodes) {
-						const promoResult = await bulkCreatePromoCodes(raffleId, promoCode);
-						if (!promoResult.success) {
-							console.error('Promo code creation failed:', promoResult.error);
-							failedCount++;
-						}
-					}
-					if (failedCount > 0) {
-						toast.error(
-							`${failedCount} promo code batch${failedCount > 1 ? 'es' : ''} failed to create`,
-						);
-					}
-				}
-
-				// Step 6: Auto-publish only if start datetime is now or in the past and cover was uploaded
-				const startDateTime = new Date(data.startDate);
-
-				if (startDateTime <= new Date() && coverUploaded) {
-					const publishResult = await publishRaffle(raffleId);
-					if (!publishResult.success) {
-						console.error('Auto-publish failed:', publishResult.error);
-						toast.warning(
-							'Raffle created as draft. Please go live manually from your dashboard.',
-						);
-					}
-				}
-
-				// Step 7: Clear draft and reset form state for next creation
-				clearDraft();
-				form.reset({
-					title: '',
-					description: '',
-					price: NaN,
-					category: '',
-					coverImage: [],
-					startDate: '',
-					startTime: '',
-					endDate: '',
-					endTime: '',
-					pricePerTicket: NaN,
-					numberOfWinners: NaN,
-					minParticipants: 0,
-					maxParticipants: 0,
-					checkInQuestion: '',
-					...CRYPTO_FORM_DEFAULTS,
-				});
-				setCurrentStep(0);
-				setPendingPromoCodes([]);
-
-				// Open success modal instead of redirecting
-				setCreatedRaffle({
-					publicSlug: result.data.publicSlugOrCode,
-					raffleStartDate: data.startDate,
-				});
-				setIsModalOpen(true);
-			} catch (error) {
-				console.error('Create raffle error:', error);
-				toast.error('Something went wrong. Please try again');
-			} finally {
-				setIsCreating(false);
-			}
-		},
-		[clearDraft, form, pendingPromoCodes],
-	);
-
-	/**
-	 * Handles form submission
-	 * Advances to the next step or triggers raffle creation on the last step
-	 *
-	 * @param data - The validated raffle form data
-	 */
-	const handleSubmit = useCallback(
-		(data: RaffleFormData) => {
-			if (isLastStep) {
-				handleCreateRaffle(data);
-			} else {
-				track(RAFFLE_EVENTS.CREATE_STEP_COMPLETED, {
-					step_name: STEPS[currentStep].title,
-					step_number: currentStep + 1,
-				});
-				nextStep();
-			}
-		},
-		[isLastStep, handleCreateRaffle, nextStep, currentStep],
-	);
+	const {
+		handleSubmit,
+		isCreating,
+		createdRaffle,
+		setCreatedRaffle,
+		isModalOpen,
+		setIsModalOpen,
+	} = useWizardSubmit({
+		form,
+		pendingPromoCodes,
+		currentStep,
+		isLastStep,
+		nextStep,
+		setCurrentStep,
+		clearDraft,
+		clearPendingPromoCodes,
+	});
 
 	return (
 		<MultiStepFormContext.Provider
 			value={{
 				currentStep,
-				totalSteps,
+				totalSteps: STEPS.length,
 				form,
 				nextStep,
 				previousStep,
@@ -663,27 +269,20 @@ export function MultiStepFormProvider({
 			}}
 		>
 			{children}
-			{createdRaffle ? (
-				<RaffleCreatedModal
-					publicSlug={createdRaffle.publicSlug}
-					raffleStartDate={createdRaffle.raffleStartDate}
-					open={isModalOpen}
-					onOpenChange={open => {
-						setIsModalOpen(open);
-						if (!open) setCreatedRaffle(null);
-					}}
-				/>
-			) : null}
-			<SaveDraftModal
-				open={showExitModal}
-				onOpenChange={setShowExitModal}
+			<ProviderModals
+				createdRaffle={createdRaffle}
+				isModalOpen={isModalOpen}
+				onModalOpenChange={open => {
+					setIsModalOpen(open);
+					if (!open) setCreatedRaffle(null);
+				}}
+				showExitModal={showExitModal}
+				onExitModalOpenChange={setShowExitModal}
 				onStay={handleStay}
 				onSaveDraft={handleSaveDraft}
 				onLeaveWithoutSaving={handleLeaveWithoutSaving}
-			/>
-			<RestoreDraftModal
-				open={showRestoreModal}
-				onOpenChange={setShowRestoreModal}
+				showRestoreModal={showRestoreModal}
+				onRestoreModalOpenChange={setShowRestoreModal}
 				onContinueDraft={handleContinueDraft}
 				onStartFresh={handleStartFresh}
 			/>
@@ -692,11 +291,11 @@ export function MultiStepFormProvider({
 }
 
 /**
- * Hook to access the multi-step form context
- * Must be used within a MultiStepFormProvider
+ * Hook to access the multi-step form context. Must be used within a
+ * `MultiStepFormProvider`.
  *
- * @returns The multi-step form context containing form state and navigation methods
- * @throws Error if used outside of MultiStepFormProvider
+ * @returns The multi-step form context.
+ * @throws Error if used outside of `MultiStepFormProvider`.
  */
 export function useMultiStepForm() {
 	const context = useContext(MultiStepFormContext);

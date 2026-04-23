@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 import { ORDER_STATUS, type OrderStatus } from '@/types/order';
 
 interface OrderStatusBadgeProps {

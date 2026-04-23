@@ -1,13 +1,14 @@
 'use server';
 
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 import { ZodError, z } from 'zod';
 
 import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
+import { hashPromoCodeForAnalytics } from '@/lib/analytics/hash-sensitive';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
-import { getSession } from '@/lib/auth/session';
-import { failure, mapPromoCodeError, success } from '@/lib/errors';
+import { mapPromoCodeError } from '@/lib/errors/error-mapper';
+import { failure, success } from '@/lib/errors/service-result';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	PROMO_CODE_ERROR_CODES,
@@ -53,7 +54,10 @@ export type RedeemPromoCodeResponse = z.infer<
 export async function redeemPromoCode(
 	payload: RedeemPromoCodePayload,
 ): Promise<ServiceResponse<RedeemPromoCodeResponse, PromoCodeErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	// Dynamic import — static `getSession` would load `auth/session` (and bind
+	// `fetchMeWithBearerToken`) at module load; unit tests import this file
+	// before integration tests can install `fetch-me` mocks.
+	const sessionPromise = import('@/lib/auth/session').then(m => m.getSession());
 
 	try {
 		const validationResult = redeemPromoCodePayloadSchema.safeParse(payload);
@@ -78,7 +82,9 @@ export async function redeemPromoCode(
 			await trackServer(
 				PROMO_CODE_EVENTS.REDEEMED,
 				{
-					code: validationResult.data.code,
+					code_fingerprint: hashPromoCodeForAnalytics(
+						validationResult.data.code,
+					),
 					raffle_id: validationResult.data.raffleId,
 					type: data.type,
 					tickets_granted: data.ticketsGranted,
@@ -103,7 +109,7 @@ export async function redeemPromoCode(
 			await trackServer(
 				PROMO_CODE_EVENTS.REDEEM_FAILED,
 				{
-					code: payload.code,
+					code_fingerprint: hashPromoCodeForAnalytics(payload.code),
 					raffle_id: payload.raffleId,
 					error_code: errorCode,
 				},

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { WinnersTable } from '@/components/fulfillment/winners-table';
-import { PublicNavbar } from '@/components/ui/public-navbar';
+import { PublicNavbar } from '@/components/ui-custom/public-navbar';
 import { getSession } from '@/lib/auth/session';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleWinnings } from '@/services/winning/get-raffle-winnings';
@@ -71,10 +71,10 @@ export default async function FulfillmentPage({ params }: PageProps) {
 					className="flex w-fit items-center gap-2"
 				>
 					<ArrowLeft className="size-4" />
-					<span className="font-semibold">Back to Raffle</span>
+					<span className="font-semibold">Back to Sweepstakes</span>
 				</Link>
 
-				<div className="space-y-2">
+				<div className="flex flex-col gap-2">
 					<h1 className="font-clash-display text-3xl font-bold">
 						Manage Fulfillment
 					</h1>

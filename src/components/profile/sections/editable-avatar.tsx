@@ -5,7 +5,7 @@ import { uploadAvatar } from '@/services/user/upload-avatar';
 import { CLIENT_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { Pencil } from 'lucide-react';
 import Image from 'next/image';
-import { useRef, useState } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { toast } from 'sonner';
 
 /**
@@ -128,10 +128,15 @@ export function EditableAvatar({
 		setIsHovered(false);
 	}
 
+	// Avatar size is a prop — Tailwind can't emit a static utility for a
+	// runtime number, so route the dimensions through a variable-bound
+	// style object to satisfy `local/no-inline-style`.
+	const wrapperStyle: CSSProperties = { width: size, height: size };
+
 	return (
 		<div
 			className="relative cursor-pointer overflow-hidden rounded-full transition-all duration-300"
-			style={{ width: size, height: size }}
+			style={wrapperStyle}
 			onMouseEnter={handleMouseEnter}
 			onMouseLeave={handleMouseLeave}
 			onClick={handleAvatarClick}

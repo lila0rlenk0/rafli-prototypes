@@ -24,7 +24,7 @@ All API calls go through server actions in `@/services/<domain>`. Never fetch di
 
 ## Caching
 
-TTLs in `@/lib/api/config`:
+TTLs in `@/lib/api/constants`:
 
 - `MY_RAFFLES`: 60s (tagged)
 - `RAFFLE_DETAIL`: 300s (tagged)

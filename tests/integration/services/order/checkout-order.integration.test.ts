@@ -4,8 +4,8 @@ import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { ORDER_ERROR_CODES } from '@/types/errors/order-errors';
 import type { Order } from '@/types/order';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
-import { MOCK_ANALYTICS_EVENTS } from '../../../helpers/mock-events';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
+import { MOCK_ANALYTICS_EVENTS } from '@tests/helpers/mock-events';
 
 // --- Fixtures ---
 
@@ -61,7 +61,7 @@ mock.module('@/lib/auth/session', () => ({
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
 }));
-mock.module('@/lib/run-after', () => ({
+mock.module('@/lib/utils/run-after', () => ({
 	runAfter: mock(),
 }));
 // All event exports required — incomplete mocks contaminate other test files via Bun's global mock.module()

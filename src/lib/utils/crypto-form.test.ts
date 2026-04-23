@@ -133,48 +133,78 @@ describe('extractCryptoFormFields', () => {
 describe('getCryptoSummary', () => {
 	describe('crypto disabled', () => {
 		test('returns "Card only" when acceptsCrypto is false', () => {
-			expect(getCryptoSummary(false, [], [])).toBe('Card only');
+			expect(
+				getCryptoSummary({
+					acceptsCrypto: false,
+					cryptoChainIds: [],
+					cryptoTokens: [],
+				}),
+			).toBe('Card only');
 		});
 	});
 
 	describe('partial selection', () => {
 		test('shows chain and token counts', () => {
-			const result = getCryptoSummary(true, [137, 42_161], ['usdc', 'earnm']);
+			const result = getCryptoSummary({
+				acceptsCrypto: true,
+				cryptoChainIds: [137, 42_161],
+				cryptoTokens: ['usdc', 'earnm'],
+			});
 			expect(result).toBe('2 chain(s) \u00B7 2 token(s)');
 		});
 
 		test('shows 1 chain 1 token', () => {
-			const result = getCryptoSummary(true, [137], ['usdc']);
+			const result = getCryptoSummary({
+				acceptsCrypto: true,
+				cryptoChainIds: [137],
+				cryptoTokens: ['usdc'],
+			});
 			expect(result).toBe('1 chain(s) \u00B7 1 token(s)');
 		});
 	});
 
 	describe('all selected', () => {
 		test('shows "All chains" when count matches total', () => {
-			const result = getCryptoSummary(true, [137, 42_161], ['usdc'], 2, 3);
+			const result = getCryptoSummary({
+				acceptsCrypto: true,
+				cryptoChainIds: [137, 42_161],
+				cryptoTokens: ['usdc'],
+				totalChains: 2,
+				totalTokens: 3,
+			});
 			expect(result).toBe('All chains \u00B7 1 token(s)');
 		});
 
 		test('shows "All tokens" when count matches total', () => {
-			const result = getCryptoSummary(true, [137], ['usdc', 'earnm'], 3, 2);
+			const result = getCryptoSummary({
+				acceptsCrypto: true,
+				cryptoChainIds: [137],
+				cryptoTokens: ['usdc', 'earnm'],
+				totalChains: 3,
+				totalTokens: 2,
+			});
 			expect(result).toBe('1 chain(s) \u00B7 All tokens');
 		});
 
 		test('shows both "All" when all match totals', () => {
-			const result = getCryptoSummary(
-				true,
-				[137, 42_161],
-				['usdc', 'earnm'],
-				2,
-				2,
-			);
+			const result = getCryptoSummary({
+				acceptsCrypto: true,
+				cryptoChainIds: [137, 42_161],
+				cryptoTokens: ['usdc', 'earnm'],
+				totalChains: 2,
+				totalTokens: 2,
+			});
 			expect(result).toBe('All chains \u00B7 All tokens');
 		});
 	});
 
 	describe('no totals provided', () => {
 		test('falls back to count format when totals undefined', () => {
-			const result = getCryptoSummary(true, [137], ['usdc']);
+			const result = getCryptoSummary({
+				acceptsCrypto: true,
+				cryptoChainIds: [137],
+				cryptoTokens: ['usdc'],
+			});
 			expect(result).toBe('1 chain(s) \u00B7 1 token(s)');
 		});
 	});

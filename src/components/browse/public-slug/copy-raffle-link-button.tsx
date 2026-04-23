@@ -32,7 +32,7 @@ export function CopyRaffleLinkButton({
 			raffle_slug: publicSlug,
 			method: 'copy_link',
 		});
-		toast.success('Raffle link copied to clipboard!');
+		toast.success('Sweepstakes link copied to clipboard!');
 	}
 
 	return (
@@ -43,12 +43,12 @@ export function CopyRaffleLinkButton({
 					size="icon"
 					onClick={handleCopyLink}
 					className="size-8 shrink-0 text-gray-400 hover:text-gray-600"
-					aria-label="Copy raffle link"
+					aria-label="Copy sweepstakes link"
 				>
 					<Copy className="size-4" />
 				</Button>
 			</TooltipTrigger>
-			<TooltipContent>Copy raffle link</TooltipContent>
+			<TooltipContent>Copy sweepstakes link</TooltipContent>
 		</Tooltip>
 	);
 }

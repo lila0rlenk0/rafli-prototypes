@@ -1,5 +1,5 @@
-import { AuthPageShell } from '@/components/auth/auth-page-shell';
-import { ForgotPasswordForm } from '@/components/auth/forgot-password-form';
+import { AuthPageShell } from '@/components/auth/page-shell';
+import { ForgotPasswordForm } from '@/components/auth/password/forgot-form';
 
 /**
  * Forgot Password Page

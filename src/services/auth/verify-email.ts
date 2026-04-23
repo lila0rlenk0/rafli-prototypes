@@ -42,12 +42,23 @@ type VerifyEmailServiceResponse = ServiceResponse<
  * @param token - Verification token from the email link
  * @returns ServiceResponse with verification data or error code
  */
+/** Token shape check — backend verifies signature/expiry; BFF rejects empty. */
+const verifyEmailTokenSchema = z.string().min(1);
+
 export async function verifyEmail(
 	token: string,
 ): Promise<VerifyEmailServiceResponse> {
+	// Step 1: Short-circuit empty tokens — backend would reject anyway and
+	// burning a network round-trip creates a timing side-channel between
+	// "empty" and "malformed" that we prefer to collapse here.
+	const validated = verifyEmailTokenSchema.safeParse(token);
+	if (!validated.success) {
+		return failure(AUTH_ERROR_CODES.INVALID_CREDENTIALS);
+	}
+
 	try {
 		const response = await baseClient.get('/auth/verify-email', {
-			params: { token },
+			params: { token: validated.data },
 		});
 
 		// .parse() for response — throws ZodError into catch for contract drift detection

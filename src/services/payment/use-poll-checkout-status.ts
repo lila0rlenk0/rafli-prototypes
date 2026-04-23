@@ -113,12 +113,17 @@ export function usePollCheckoutStatus(
 	const query = useQuery<CheckoutStatus, ServiceError<PaymentErrorCode>>({
 		queryKey: pollCheckoutStatusKey(orderId),
 		queryFn: async function pollCheckoutStatus() {
-			// orderId is guaranteed non-null by enabled: !!orderId above
-			const result = await getCheckoutStatus(orderId!);
+			// `enabled: orderId !== null` below gates this fn — react-query never
+			// invokes it with null. The guard is belt-and-suspenders so a future
+			// caller change can't crash with a misleading "cannot read .x of null".
+			if (orderId === null) {
+				throw new Error('pollCheckoutStatus invoked without an orderId');
+			}
+			const result = await getCheckoutStatus(orderId);
 			if (!result.success) throw serviceError(result.error);
 			return result.data;
 		},
-		enabled: !!orderId,
+		enabled: orderId !== null,
 		// Polling itself is already the retry strategy — disable hidden retries
 		retry: false,
 		refetchInterval: function computeRefetchInterval(q) {

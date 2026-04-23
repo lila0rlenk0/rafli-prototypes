@@ -1,8 +1,8 @@
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { PublicPageHeader } from '@/components/host/public-page-header';
-import { HostProfileCard } from '@/components/host/host-profile-card';
+import { HostProfileCard } from '@/components/host/profile-card';
 import { PublicStatusTabs } from '@/components/host/public-status-tabs';
-import { PublicRaffleCard } from '@/components/raffle/public-raffle-card';
+import { PublicRaffleCard } from '@/components/raffle/cards/public-card';
 import { Button } from '@/components/ui/button';
 import { getHostProfile } from '@/services/host/get-host-profile';
 import { getHostRaffles } from '@/services/host/get-host-raffles';
@@ -114,7 +114,7 @@ export default async function HostProfilePage({
 		// timeout, 5xx, contract drift) lands here so the user can distinguish
 		// "this host doesn't exist" from "we couldn't reach the service".
 		return (
-			<div className="flex min-h-[60dvh] w-full flex-col items-center justify-center gap-6 px-4 text-center">
+			<div className="min-h-three-fifths-screen flex w-full flex-col items-center justify-center gap-6 px-4 text-center">
 				<BugIcon aria-hidden="true" className="size-20" />
 				<hgroup className="flex flex-col gap-2">
 					<h2 className="text-foreground text-2xl font-semibold">
@@ -155,7 +155,7 @@ export default async function HostProfilePage({
 					<main className="flex-1">
 						<div className="flex flex-col items-center justify-center gap-2 py-20 text-center">
 							<h3 className="text-foreground text-xl font-semibold">
-								Error loading raffles
+								Error loading sweepstakes
 							</h3>
 							<p className="text-muted-foreground">Please try again later.</p>
 						</div>
@@ -169,12 +169,12 @@ export default async function HostProfilePage({
 
 	const emptyMessage = isEnded
 		? {
-				title: 'No ended raffles',
-				description: 'This host has no ended raffles yet.',
+				title: 'No ended sweepstakes',
+				description: 'This host has no ended sweepstakes yet.',
 			}
 		: {
-				title: 'No active raffles',
-				description: 'This host has no active raffles right now.',
+				title: 'No active sweepstakes',
+				description: 'This host has no active sweepstakes right now.',
 			};
 
 	return (

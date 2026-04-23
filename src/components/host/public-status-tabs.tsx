@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 /**
  * StatusTabs Component
@@ -74,8 +74,8 @@ export function PublicStatusTabs() {
 				type="button"
 				onClick={handleActiveClick}
 				className={cn(
-					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
-					'text-[rgba(15,15,15,0.95)] transition-colors',
+					'relative cursor-pointer px-2 text-center text-lg/none font-semibold',
+					'text-ink-alpha transition-colors',
 					'hover:text-black',
 				)}
 			>
@@ -90,8 +90,8 @@ export function PublicStatusTabs() {
 				type="button"
 				onClick={handleEndedClick}
 				className={cn(
-					'relative cursor-pointer px-2 text-center text-lg leading-none font-semibold',
-					'text-[rgba(15,15,15,0.95)] transition-colors',
+					'relative cursor-pointer px-2 text-center text-lg/none font-semibold',
+					'text-ink-alpha transition-colors',
 					'hover:text-black',
 				)}
 			>

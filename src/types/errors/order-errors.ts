@@ -3,6 +3,12 @@ import type { CommonErrorCode } from './common-errors';
 import type { PromoCodeErrorCode } from './promo-code-errors';
 
 export const ORDER_ERROR_CODES = {
+	// Backend never emits `core:order:invalid-quantity` or
+	// `core:order:already-completed`. Quantity failures surface as
+	// `payments:session:invalid-ticket-quantity`, and "already completed"
+	// as `payments:order:already-paid` — both handled by the payment
+	// domain. Dead codes dropped.
+
 	// Order errors
 	/** Raffle is not live */
 	NOT_ACTIVE: 'core:raffle:not-active',
@@ -14,10 +20,6 @@ export const ORDER_ERROR_CODES = {
 	NOT_FOUND: 'core:order:not-found',
 	/** User doesn't have permission to access this order */
 	PERMISSION_DENIED: 'core:order:permission-denied',
-	/** Invalid ticket quantity (e.g., <= 0) */
-	INVALID_QUANTITY: 'core:order:invalid-quantity',
-	/** Order already completed */
-	ALREADY_COMPLETED: 'core:order:already-completed',
 	/** Required raffle question not answered before purchase */
 	QUESTION_NOT_ANSWERED: 'core:order:question-not-answered',
 	/** Raffle not found (deleted or invalid ID) */

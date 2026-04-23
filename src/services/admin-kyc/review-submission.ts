@@ -1,11 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS, pathParam } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapAdminKycError, success } from '@/lib/errors';
 import { parsePermissions, PERMISSIONS } from '@/lib/permissions';
@@ -69,8 +70,8 @@ export async function reviewSubmission(
 		// Step 5: Revalidate admin verification pages so list and detail reflect updated status
 		// Revalidation targets: /admin/verification (list) and /admin/verification/:id (detail)
 		runAfter(() => {
-			revalidatePath('/admin/verification');
-			revalidatePath(`/admin/verification/${id}`);
+			revalidatePath('/admin/verification', 'page');
+			revalidatePath(`/admin/verification/${pathParam(id)}`, 'page');
 		});
 
 		return success(data);

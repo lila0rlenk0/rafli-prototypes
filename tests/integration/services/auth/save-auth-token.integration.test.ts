@@ -5,14 +5,10 @@ import { AUTH_ERROR_CODES } from '@/types/errors/auth-errors';
 // --- Mocks ---
 
 const mockSetAuthCookies = mock();
-const mockDecodeJwt = mock();
-const mockJwtPayloadToUser = mock();
 const mockValidateJwtStructure = mock();
 const mockCaptureServiceError = mock();
 
 mock.module('@/lib/auth/jwt', () => ({
-	decodeJwt: mockDecodeJwt,
-	jwtPayloadToUser: mockJwtPayloadToUser,
 	validateJwtStructure: mockValidateJwtStructure,
 }));
 // All session exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
@@ -31,24 +27,15 @@ mock.module('@/lib/sentry/capture', () => ({
 
 const { saveAuthToken } = await import('@/services/auth/save-auth-token');
 
-/** Fake decoded JWT payload */
-const MOCK_PAYLOAD = { sub: 'user-1', email: 'test@example.com' };
-
-/** Fake user extracted from JWT */
-const MOCK_USER = { id: 'user-1', email: 'test@example.com', name: 'Test' };
-
 describe('saveAuthToken', () => {
 	test('returns success when token is valid', async () => {
-		mockDecodeJwt.mockReturnValueOnce(MOCK_PAYLOAD);
-		mockJwtPayloadToUser.mockReturnValueOnce(MOCK_USER);
+		mockValidateJwtStructure.mockImplementationOnce(() => {});
+		mockSetAuthCookies.mockResolvedValueOnce(undefined);
 
 		const result = await saveAuthToken('valid-jwt-token');
 
 		expect(result.success).toBe(true);
-		expect(mockSetAuthCookies).toHaveBeenCalledWith(
-			'valid-jwt-token',
-			MOCK_USER,
-		);
+		expect(mockSetAuthCookies).toHaveBeenCalledWith('valid-jwt-token');
 	});
 
 	test('returns SOCIAL_TOKEN_EXCHANGE_FAILED on empty token', async () => {
@@ -78,7 +65,7 @@ describe('saveAuthToken', () => {
 		}
 	});
 
-	test('calls captureServiceError on decode failure', async () => {
+	test('calls captureServiceError on validate failure', async () => {
 		const structureError = new Error('Invalid JWT: expected 3 segments');
 		mockValidateJwtStructure.mockImplementationOnce(() => {
 			throw structureError;
@@ -94,8 +81,7 @@ describe('saveAuthToken', () => {
 	});
 
 	test('returns SOCIAL_TOKEN_EXCHANGE_FAILED when setAuthCookies fails', async () => {
-		mockDecodeJwt.mockReturnValueOnce(MOCK_PAYLOAD);
-		mockJwtPayloadToUser.mockReturnValueOnce(MOCK_USER);
+		mockValidateJwtStructure.mockImplementationOnce(() => {});
 		mockSetAuthCookies.mockRejectedValueOnce(new Error('Cookie error'));
 
 		const result = await saveAuthToken('valid-jwt-token');

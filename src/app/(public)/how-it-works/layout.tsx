@@ -2,26 +2,25 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Suspense, type ComponentProps, type ReactNode } from 'react';
 
-import { PublicNavbar } from '@/components/ui/public-navbar';
-import { ScreenLoader } from '@/components/ui/screen-loader';
+import { PublicNavbar } from '@/components/ui-custom/public-navbar';
+import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 import { env } from '@/env/server';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
-import { ChatStoreProvider } from '@/providers/chat-store-provider';
-import { NotificationStoreProvider } from '@/providers/notification-store-provider';
+import { RealtimeProviders } from '@/providers/realtime-providers';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
 export const metadata: Metadata = {
-	title: 'How Provably Fair Raffles Work | Rafli',
+	title: 'How Provably Fair Sweepstakes Work | Rafli',
 	description:
-		'Learn how Rafli uses blockchain technology, Chainlink VRF, and Merkle trees to ensure cryptographically verifiable raffle results. No trust required.',
+		'Learn how Rafli uses blockchain technology, Chainlink VRF, and Merkle trees to ensure cryptographically verifiable sweepstakes results. No trust required.',
 	keywords: [
-		'provably fair raffle',
-		'blockchain raffle',
+		'provably fair sweepstakes',
+		'blockchain sweepstakes',
 		'verifiable random function',
 		'Chainlink VRF',
 		'Merkle tree verification',
-		'transparent lottery',
+		'transparent sweepstakes',
 		'cryptographic proof',
 		'fair drawing system',
 	],
@@ -29,9 +28,9 @@ export const metadata: Metadata = {
 		canonical: `${env.APP_URL}/how-it-works`,
 	},
 	openGraph: {
-		title: 'How Provably Fair Raffles Work | Rafli',
+		title: 'How Provably Fair Sweepstakes Work | Rafli',
 		description:
-			'Learn how Rafli uses blockchain technology and cryptographic proofs to ensure fair, verifiable raffle results that anyone can audit.',
+			'Learn how Rafli uses blockchain technology and cryptographic proofs to ensure fair, verifiable sweepstakes results that anyone can audit.',
 		url: `${env.APP_URL}/how-it-works`,
 		siteName: 'Rafli',
 		type: 'article',
@@ -39,9 +38,9 @@ export const metadata: Metadata = {
 	},
 	twitter: {
 		card: 'summary_large_image',
-		title: 'How Provably Fair Raffles Work',
+		title: 'How Provably Fair Sweepstakes Work',
 		description:
-			'Blockchain-powered raffles with cryptographic proofs. Every winner verifiable.',
+			'Blockchain-powered sweepstakes with cryptographic proofs. Every winner verifiable.',
 	},
 	robots: {
 		index: true,
@@ -56,19 +55,19 @@ export const metadata: Metadata = {
 const jsonLd = {
 	'@context': 'https://schema.org',
 	'@type': 'HowTo',
-	name: 'How Provably Fair Raffles Work',
+	name: 'How Provably Fair Sweepstakes Work',
 	description:
-		'Learn how Rafli uses blockchain technology and cryptographic proofs to ensure fair, verifiable raffle results.',
+		'Learn how Rafli uses blockchain technology and cryptographic proofs to ensure fair, verifiable sweepstakes results.',
 	step: [
 		{
 			'@type': 'HowToStep',
 			name: 'Manifest Creation',
-			text: 'When sales close, a complete list of all tickets with their owners is created and uploaded to IPFS.',
+			text: 'When sales close, a complete list of all entries with their owners is created and uploaded to IPFS.',
 		},
 		{
 			'@type': 'HowToStep',
 			name: 'Blockchain Commitment',
-			text: "The manifest's unique fingerprint (hash) is recorded on the Arbitrum blockchain, proving the ticket list existed at a specific time.",
+			text: "The manifest's unique fingerprint (hash) is recorded on the Arbitrum blockchain, proving the entry list existed at a specific time.",
 		},
 		{
 			'@type': 'HowToStep',
@@ -78,7 +77,7 @@ const jsonLd = {
 		{
 			'@type': 'HowToStep',
 			name: 'Winner Selection',
-			text: 'The random number is applied to the committed ticket list using a public, verifiable formula.',
+			text: 'The random number is applied to the committed entry list using a public, verifiable formula.',
 		},
 	],
 	tool: [
@@ -105,10 +104,10 @@ const faqJsonLd = {
 	mainEntity: [
 		{
 			'@type': 'Question',
-			name: 'What is a provably fair raffle?',
+			name: 'What is a provably fair sweepstakes?',
 			acceptedAnswer: {
 				'@type': 'Answer',
-				text: 'A provably fair raffle uses cryptographic proofs and blockchain technology to ensure that results cannot be manipulated. Anyone can independently verify that the winner was selected fairly.',
+				text: 'A provably fair sweepstakes uses cryptographic proofs and blockchain technology to ensure that results cannot be manipulated. Anyone can independently verify that the winner was selected fairly.',
 			},
 		},
 		{
@@ -121,10 +120,10 @@ const faqJsonLd = {
 		},
 		{
 			'@type': 'Question',
-			name: 'Can I verify raffle results myself?',
+			name: 'Can I verify sweepstakes results myself?',
 			acceptedAnswer: {
 				'@type': 'Answer',
-				text: 'Yes. Every raffle on Rafli includes blockchain transaction links, IPFS manifest links, and the exact formula used for winner selection. Anyone can independently verify the results.',
+				text: 'Yes. Every sweepstakes on Rafli includes blockchain transaction links, IPFS manifest links, and the exact formula used for winner selection. Anyone can independently verify the results.',
 			},
 		},
 	],
@@ -161,9 +160,7 @@ async function HowItWorksLayoutContent({ children }: HowItWorksLayoutProps) {
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
-				<NotificationStoreProvider>
-					<ChatStoreProvider>{content}</ChatStoreProvider>
-				</NotificationStoreProvider>
+				<RealtimeProviders>{content}</RealtimeProviders>
 			</UserStoreProvider>
 		);
 	}
@@ -182,11 +179,11 @@ function DecorativeShapes(props: ComponentProps<'div'>) {
 	return (
 		<div aria-hidden {...props}>
 			{/* Blue — large, slightly rotated left */}
-			<div className="absolute -top-20 -left-40 h-[400px] w-[500px] -rotate-12 rounded-3xl bg-[#C4EDFF] opacity-50 blur-2xl" />
+			<div className="bg-brand-sky absolute -top-20 -left-40 h-100 w-125 -rotate-12 rounded-3xl opacity-50 blur-2xl" />
 			{/* Green — overlapping, steeper rotation */}
-			<div className="absolute -top-60 -left-20 h-[400px] w-[500px] rotate-[25deg] rounded-3xl bg-[#BEFFDB] opacity-50 blur-2xl" />
+			<div className="rotate-tilt-lg bg-brand-mint absolute -top-60 -left-20 h-100 w-125 rounded-3xl opacity-50 blur-2xl" />
 			{/* Yellow — smallest, angled furthest */}
-			<div className="absolute -top-40 left-10 h-[350px] w-[450px] rotate-45 rounded-3xl bg-[#F6FF8B] opacity-50 blur-2xl" />
+			<div className="bg-brand-yellow absolute -top-40 left-10 h-87.5 w-112.5 rotate-45 rounded-3xl opacity-50 blur-2xl" />
 		</div>
 	);
 }
@@ -211,7 +208,7 @@ export default function HowItWorksLayout({ children }: HowItWorksLayoutProps) {
 				type="application/ld+json"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
 			/>
-			<main className="relative min-h-screen">
+			<main className="relative min-h-dvh">
 				{/*
 				 * Decorative shapes — CSS divs instead of raw SVG paths.
 				 * Uses the same brand colors (#C4EDFF blue, #BEFFDB green, #F6FF8B yellow)
@@ -219,7 +216,7 @@ export default function HowItWorksLayout({ children }: HowItWorksLayoutProps) {
 				 * Blur + reduced opacity creates a softer, less distracting atmosphere
 				 * compared to the hard-edged SVG version.
 				 */}
-				<DecorativeShapes className="pointer-events-none fixed top-0 left-0 z-[15] origin-top-left scale-[.65]" />
+				<DecorativeShapes className="scale-xs pointer-events-none fixed top-0 left-0 z-(--z-sticky) origin-top-left" />
 				<Suspense fallback={<ScreenLoader />}>
 					<HowItWorksLayoutContent>{children}</HowItWorksLayoutContent>
 				</Suspense>

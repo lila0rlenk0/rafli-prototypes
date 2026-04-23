@@ -7,9 +7,11 @@ paths:
 
 ## cn()
 
-Always use `cn()` from `@/lib/utils` for conditional or merged classes. Handles Tailwind conflicts correctly.
+Use `cn()` from `@/lib/class-names` when there's something to merge: a conditional, an external `className` prop, or ≥2 arg fragments. Static strings go straight in `className`.
 
 ```tsx
+<div className="flex items-center gap-2 rounded-md p-3" />
+
 <div
 	className={cn(
 		'flex items-center gap-2 rounded-md p-3',
@@ -21,6 +23,7 @@ Always use `cn()` from `@/lib/utils` for conditional or merged classes. Handles 
 
 - never string-concatenate Tailwind classes
 - never template-literal ternaries — `cn('a', cond && 'b')`
+- never `cn('single static string')` — drop the wrapper, ESLint flags it
 - Prettier plugin auto-sorts class order
 
 ## Variants — CVA
@@ -42,8 +45,21 @@ Always use `cn()` from `@/lib/utils` for conditional or merged classes. Handles 
 - semantic tokens only — never raw scales inside primitives
 - built-in variants before custom styles
 
+## Colour tokens — `primary` ≠ `rafli-black`
+
+DESIGN.md splits the two. `--primary` is **cyan `#00b8ff`** — reserved for **links, progress fills, selection / focus rings** (anywhere the UI needs "this element is the thing the cursor or cyan is carrying"). `--color-brand-dark` / `--color-rafli-black` is **`#141416`** — the single high-emphasis **action** colour: buttons, notification badges, unread chips, default `Badge` fill, pill CTAs, outgoing message bubbles.
+
+- **Buttons always use `bg-brand-dark`** (or the shadcn `<Button>` primitive, which already resolves to brand-dark). Never `bg-primary` on a `<button>` / `<Button>` — ESLint flags it via `local/no-primary-on-button`.
+- **Notification badges, unread chips, counter pills, default `<Badge>` fill** → `bg-brand-dark`. These are action surfaces, not decorative.
+- **Links, progress-bar fills, selection states, focus rings** → `bg-primary` / `text-primary`. The cyan is deliberate and only appears in these roles.
+- **CTAs** flow through the shadcn `<Button>` primitive or `<Button asChild><Link>…</Link></Button>` so the white-on-dark hover flip lives in one place.
+- **Do not introduce a third action colour.** The action energy comes from the `rafli-black` hover flip + the `yellow/mint/sky` brand accents; cyan is the link/selection colour, not an action.
+- **Do not rename a class** (`bg-accent-yellow` → `bg-brand-yellow`, `text-body-m` → `text-body-md`) without adding the matching `--color-*` / `--text-*` token to `@theme inline` in the same commit — Tailwind v4 silently drops unknown utilities.
+
 ## Forbidden
 
 - arbitrary values where a token works: `w-[347px]`, `text-[13px]`, `#1a1a1a`
 - inline `style={}` for anything Tailwind can express
 - duplicate base classes via `cn()` — let tailwind-merge collapse them once, not at two call sites
+- a hand-rolled CTA without the white-on-dark hover flip — go through the shadcn `<Button>` primitive
+- referencing `brand-*` / `accent-*` / `text-headline-*` / `text-body-*` classes without the corresponding `--color-*` / `--text-*` token in `@theme inline` — mass renames that skip globals.css silently no-op

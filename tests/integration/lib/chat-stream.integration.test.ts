@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
-import type { ChatStreamConfig } from '@/lib/chat-stream';
+import type { ChatStreamConfig } from '@/lib/chat/stream';
 
 // Stub clientEnv BEFORE the stream module is imported so `buildWsUrl`
 // reads a deterministic backend URL.
@@ -118,7 +118,7 @@ const originals = {
 };
 
 // Import AFTER mocks so the module picks up the stubbed env.
-const { ChatStream, buildWsUrl } = await import('@/lib/chat-stream');
+const { ChatStream, buildWsUrl } = await import('@/lib/chat/stream');
 
 beforeEach(() => {
 	timerId = 0;
@@ -138,26 +138,30 @@ afterEach(() => {
 	Object.assign(globalThis, originals);
 });
 
-function makeConfig(
-	overrides?: Partial<ChatStreamConfig>,
-): ChatStreamConfig & {
-	onEvent: ReturnType<typeof mock>;
-	getToken: ReturnType<typeof mock>;
-	onConnected: ReturnType<typeof mock>;
-	onDisconnected: ReturnType<typeof mock>;
+function makeConfig(overrides?: Partial<ChatStreamConfig>): {
+	onEvent: ChatStreamConfig['onEvent'] & ReturnType<typeof mock>;
+	getToken: ChatStreamConfig['getToken'] & ReturnType<typeof mock>;
+	onConnected: NonNullable<ChatStreamConfig['onConnected']> &
+		ReturnType<typeof mock>;
+	onDisconnected: NonNullable<ChatStreamConfig['onDisconnected']> &
+		ReturnType<typeof mock>;
 } {
-	const onEvent = mock();
-	const getToken = mock(async () => ({ token: 'tok-1', expiresIn: 300 }));
-	const onConnected = mock();
-	const onDisconnected = mock();
-
-	return {
-		onEvent,
-		getToken,
-		onConnected,
-		onDisconnected,
-		...overrides,
+	// `overrides` is spread into the returned object, but any test that
+	// supplies a non-mock callback loses mock assertions on that field —
+	// so overrides are merged before the defaults, letting mocks win unless
+	// the caller explicitly replaces the field with another mock.
+	const defaults = {
+		onEvent: mock() as ChatStreamConfig['onEvent'] & ReturnType<typeof mock>,
+		getToken: mock(async () => ({
+			token: 'tok-1',
+			expiresIn: 300,
+		})) as ChatStreamConfig['getToken'] & ReturnType<typeof mock>,
+		onConnected: mock() as NonNullable<ChatStreamConfig['onConnected']> &
+			ReturnType<typeof mock>,
+		onDisconnected: mock() as NonNullable<ChatStreamConfig['onDisconnected']> &
+			ReturnType<typeof mock>,
 	};
+	return { ...defaults, ...overrides } as typeof defaults;
 }
 
 async function drainMicrotasks(): Promise<void> {

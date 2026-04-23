@@ -5,7 +5,8 @@ import { ZodError } from 'zod';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -42,7 +43,7 @@ export async function updateRaffle(
 
 		// Step 3: Send partial update — backend restricts to draft raffles only
 		const response = await authenticatedClient.put(
-			`/raffles/${raffleId}`,
+			`/raffles/${pathParam(raffleId)}`,
 			validationResult.data,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);

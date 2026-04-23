@@ -52,7 +52,7 @@ export default function SubmissionDetailLoading() {
 				<Skeleton className="mb-4 h-7 w-28" />
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{Array.from({ length: 2 }).map((_, i) => (
-						<Skeleton key={i} className="aspect-[4/3] w-full rounded-lg" />
+						<Skeleton key={i} className="aspect-card w-full rounded-lg" />
 					))}
 				</div>
 			</div>

@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { WINNING_ERROR_CODES } from '@/types/errors/winning-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const VALID_RESPONSE = {
 	winners: [

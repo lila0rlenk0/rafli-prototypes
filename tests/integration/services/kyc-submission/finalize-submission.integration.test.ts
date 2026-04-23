@@ -3,8 +3,8 @@ import { describe, expect, mock, test } from 'bun:test';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { KYC_SUBMISSION_ERROR_CODES } from '@/types/errors/kyc-submission-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
-import { MOCK_ANALYTICS_EVENTS } from '../../../helpers/mock-events';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
+import { MOCK_ANALYTICS_EVENTS } from '@tests/helpers/mock-events';
 
 const mockPost = mock();
 
@@ -30,7 +30,7 @@ mock.module('@/lib/auth/session', () => ({
 	requireAuth: mock(),
 	requireEmailVerification: mock(),
 }));
-mock.module('@/lib/api/config', () => ({
+mock.module('@/lib/api/constants', () => ({
 	API_TIMEOUTS: { UPLOAD: 60_000, QUERY: 10_000, MUTATION: 15_000 },
 }));
 

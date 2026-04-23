@@ -9,7 +9,7 @@ import { WinnerLookup } from '@/components/verification/winner-lookup';
 // Verify page content is static — scroll animations are progressive enhancement,
 // so deferring this import doesn't affect core functionality or SEO.
 const ScrollReveal = dynamic(() =>
-	import('@/components/ui/scroll-reveal').then(mod => ({
+	import('@/components/ui-custom/scroll-reveal').then(mod => ({
 		default: mod.ScrollReveal,
 	})),
 );
@@ -51,7 +51,7 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
 						Verify Any Result
 					</h1>
 					<p className="mx-auto max-w-2xl text-lg text-gray-600">
-						Don&apos;t trust, verify. Check any ticket or winner using
+						Don&apos;t trust, verify. Check any entry or winner using
 						cryptographic proofs.
 					</p>
 				</header>
@@ -83,10 +83,10 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
 				<div className="mt-12 rounded-2xl border border-black bg-white p-6 text-center">
 					<h2 className="mb-2 text-lg font-semibold">How Verification Works</h2>
 					<p className="mb-4 text-sm text-neutral-600">
-						Every raffle on Rafli uses blockchain technology and cryptographic
-						proofs to ensure results cannot be manipulated. Ticket data is
-						locked before the draw, and random numbers come from an external,
-						verifiable source.
+						Every sweepstakes on Rafli uses blockchain technology and
+						cryptographic proofs to ensure results cannot be manipulated. Entry
+						data is locked before the draw, and random numbers come from an
+						external, verifiable source.
 					</p>
 					<Link
 						href="/how-it-works"

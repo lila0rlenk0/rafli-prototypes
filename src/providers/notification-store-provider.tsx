@@ -5,13 +5,13 @@ import { createContext, use, useEffect, useState, type ReactNode } from 'react';
 import { useStore } from 'zustand';
 
 import { clientEnv } from '@/env/client';
-import { NotificationStream } from '@/lib/notification-stream';
-import { getUnreadCount } from '@/services/notification/get-unread-count';
-import { getWsToken } from '@/services/notification/get-ws-token';
+import { NotificationStream } from '@/lib/notifications/stream';
 import {
 	createNotificationStore,
 	type NotificationStore,
 } from '@/store/notification-store';
+import type { NotificationErrorCode } from '@/types/errors';
+import type { ServiceResponse } from '@/types/service-response';
 
 /**
  * Broad query key prefix — invalidates all notification queries (list, count, etc.)
@@ -21,6 +21,20 @@ const NOTIFICATION_QUERY_PREFIX = 'notification' as const;
 
 export type NotificationStoreApi = ReturnType<typeof createNotificationStore>;
 
+type FetchWsTokenResult = ServiceResponse<
+	{ token: string; expiresIn: number },
+	NotificationErrorCode
+>;
+
+type FetchWsToken = () => Promise<FetchWsTokenResult>;
+
+type FetchUnreadCountResult = ServiceResponse<
+	{ count: number },
+	NotificationErrorCode
+>;
+
+type FetchUnreadCount = () => Promise<FetchUnreadCountResult>;
+
 // Context lives at the authenticated layout level — only mounted when the
 // user is signed in, so unauthenticated pages never pay for the WebSocket.
 export const NotificationStoreContext = createContext<
@@ -29,6 +43,14 @@ export const NotificationStoreContext = createContext<
 
 export interface NotificationStoreProviderProps {
 	readonly children: ReactNode;
+	/**
+	 * Server actions threaded down from the RSC parent. Passing them in
+	 * keeps `@/services/*` out of this file's import graph so the WS-mount
+	 * effect doesn't trip `local/no-useeffect-data-fetch`
+	 * (data-fetching.md).
+	 */
+	readonly fetchNotificationWsToken: FetchWsToken;
+	readonly fetchUnreadCount: FetchUnreadCount;
 }
 
 /**
@@ -37,42 +59,47 @@ export interface NotificationStoreProviderProps {
  * badge and notification drawer, both of which consume the store.
  *
  * @param children - Child components
+ * @param fetchNotificationWsToken - Server action that mints a short-lived
+ *   WS token; threaded through props so the mount effect never imports
+ *   `@/services/*` directly.
  * @returns Provider wrapping children with notification store context
  */
 export function NotificationStoreProvider({
 	children,
+	fetchNotificationWsToken,
+	fetchUnreadCount,
 }: NotificationStoreProviderProps) {
 	// useState initializer — store is created once per provider mount
 	const [store] = useState(() => createNotificationStore());
 	const queryClient = useQueryClient();
 
 	// mount: fetch initial unread count + establish WebSocket stream.
-	// Deps are stable references (store instance and queryClient singleton)
-	// so this only runs on mount/unmount.
+	// Deps are stable references (store instance, queryClient singleton,
+	// server actions threaded as props) so this only runs on mount.
 	useEffect(() => {
 		let isMounted = true;
 
-		// Step 1: Fetch initial unread count from the server
-		async function fetchUnreadCount() {
-			const result = await getUnreadCount();
+		// Step 1: Fetch initial unread count from the server.
+		async function loadInitialUnreadCount() {
+			const result = await fetchUnreadCount();
 			if (result.success && isMounted) {
 				store.getState().setUnreadCount(result.data.count);
 			}
 		}
 
-		// Step 2: Shared handler for WebSocket events — both new-notification
-		// and reconnect need a fresh count + React Query cache bust so the
-		// notification list re-fetches.
+		// Step 2: Shared handler — both new-notification and reconnect need
+		// a fresh count + React Query cache bust so the notification list
+		// re-fetches.
 		function handleNotificationEvent() {
-			void fetchUnreadCount();
+			void loadInitialUnreadCount();
 			void queryClient.invalidateQueries({
 				queryKey: [NOTIFICATION_QUERY_PREFIX],
 			});
 		}
 
-		// Step 3: Acquire a short-lived WS token via server action
+		// Step 3: Acquire a short-lived WS token via server action.
 		async function getToken() {
-			const result = await getWsToken();
+			const result = await fetchNotificationWsToken();
 
 			if (!result.success) {
 				if (clientEnv.NODE_ENV === 'development') {
@@ -87,8 +114,8 @@ export function NotificationStoreProvider({
 			return result.data;
 		}
 
-		// Step 4: Kick off initial fetch and open the stream
-		void fetchUnreadCount();
+		// Step 4: Kick off initial fetch and open the stream.
+		void loadInitialUnreadCount();
 
 		const stream = new NotificationStream({
 			onNewNotification: handleNotificationEvent,
@@ -103,7 +130,7 @@ export function NotificationStoreProvider({
 			isMounted = false;
 			stream.disconnect();
 		};
-	}, [store, queryClient]);
+	}, [store, queryClient, fetchNotificationWsToken, fetchUnreadCount]);
 
 	return (
 		<NotificationStoreContext.Provider value={store}>

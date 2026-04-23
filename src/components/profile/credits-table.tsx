@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 import {
 	CREDIT_ENTRY_TYPE,
 	CREDIT_REASON,
@@ -98,7 +98,7 @@ export function CreditHistoryTable({ entries }: CreditHistoryTableProps) {
 
 	return (
 		<div className="overflow-x-auto">
-			<table className="w-full min-w-[500px]">
+			<table className="w-full min-w-125">
 				<thead>
 					<tr className="border-b border-gray-200 text-left text-sm text-gray-500">
 						<th className="pb-3 font-medium">Type</th>

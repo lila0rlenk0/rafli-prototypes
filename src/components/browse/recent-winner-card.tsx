@@ -35,7 +35,7 @@ export function RecentWinnerCard({ winner }: RecentWinnerCardProps) {
 		>
 			<div className="flex min-w-0 items-center gap-4">
 				{/* Lime circle echoes the brand accent used in the decorative shapes
-				    in browse/layout.tsx. Uses the `--color-accent-yellow` theme
+				    in browse/layout.tsx. Uses the `--color-brand-yellow` theme
 				    token so if the brand ever retunes the pastel, this single
 				    celebration surface updates alongside the rest of the system
 				    — same tokenized approach PastWinnersGroup uses. */}
@@ -44,22 +44,22 @@ export function RecentWinnerCard({ winner }: RecentWinnerCardProps) {
 				    eyebrow text that follows. */}
 				<span
 					aria-hidden="true"
-					className="bg-accent-yellow flex size-10 flex-shrink-0 items-center justify-center rounded-full text-[#121211] sm:size-12"
+					className="bg-brand-yellow text-ink-900 flex size-10 flex-shrink-0 items-center justify-center rounded-full sm:size-12"
 				>
 					<PartyPopper className="size-5 sm:size-6" />
 				</span>
 				<div className="flex min-w-0 flex-col">
-					<span className="truncate text-xs text-[#7b7b7b] sm:text-sm">
+					<span className="text-ink-500 truncate text-xs sm:text-sm">
 						{headline}
 					</span>
-					<span className="truncate text-sm font-semibold text-[#121211] sm:text-base">
+					<span className="text-ink-900 truncate text-sm font-semibold sm:text-base">
 						{winner.winnerDisplayName}
 					</span>
 				</div>
 			</div>
 			<ArrowUpRight
 				aria-hidden="true"
-				className="size-5 flex-shrink-0 text-[#121211] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+				className="text-ink-900 size-5 flex-shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
 			/>
 		</Link>
 	);

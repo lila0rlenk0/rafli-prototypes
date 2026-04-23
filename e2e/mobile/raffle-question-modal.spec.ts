@@ -12,42 +12,31 @@ test.describe('Raffle Question Modal — Mobile', () => {
 
 		// Gate on the mobile sticky CTA's primary button — `#checkout-section`
 		// is wrapped in `hidden lg:block` and therefore never visible on the
-		// Pixel 7 project, so reading its visibility always returned false and
-		// this test silently skipped on every mobile run. `#checkout-action`
-		// is owned by the sticky's primary CTA on mobile (see
-		// StickyBuyTicketsCta) so that's the correct mobile anchor.
+		// Pixel 7 project. `#checkout-action` is owned by the sticky's primary
+		// CTA on mobile (see StickyBuyTicketsCta). The fixture raffle must be
+		// live at test time — a missing CTA is a seed-data regression the
+		// test should report loudly, not silently skip.
 		const buyButton = page.locator('#checkout-action');
-		const hasBuyButton = await buyButton
-			.isVisible({ timeout: 10_000 })
-			.catch(() => false);
-
-		if (!hasBuyButton) {
-			test.skip(true, 'Raffle is not in an active/live state');
-			return;
-		}
-
-		// Click the buy button to trigger the question modal
+		await expect(
+			buyButton,
+			'Expected the mobile Buy CTA — fixture raffle must be live',
+		).toBeVisible({ timeout: 10_000 });
 		await buyButton.click();
 
-		// Check if the question modal appeared (raffle may not have a question)
+		// Gate 2: fixture raffle must carry a question — without one the modal
+		// never mounts and the mobile layout assertions below have nothing to
+		// verify. Assert the precondition explicitly so the test fails loud.
 		const modalTitle = page.getByRole('heading', {
 			name: 'Quick check before you join',
 		});
-		const hasModal = await modalTitle
-			.isVisible({ timeout: 5_000 })
-			.catch(() => false);
-
-		if (!hasModal) {
-			test.skip(true, 'Raffle does not have a question configured');
-			return;
-		}
+		await expect(
+			modalTitle,
+			'Expected a question modal — fixture raffle must define a question',
+		).toBeVisible({ timeout: 5_000 });
 
 		// Verify the modal dialog is visible and fullscreen on mobile
 		const dialog = page.locator('[data-slot="dialog-content"]');
 		await expect(dialog).toBeVisible();
-
-		// Verify title is visible
-		await expect(modalTitle).toBeVisible();
 
 		// Verify description is visible
 		const description = page.getByText(
@@ -76,15 +65,15 @@ test.describe('Raffle Question Modal — Mobile', () => {
 		const confirmButton = page.getByRole('button', { name: 'Confirm' });
 		await expect(confirmButton).toBeVisible();
 
-		// Verify button fills the available width (no max-w-xs constraint)
+		// Verify button fills the available width (no max-w-xs constraint).
+		// On mobile fullscreen the dialog is viewport-wide, so the button
+		// should be near-full.
 		const buttonBox = await confirmButton.boundingBox();
 		const dialogBox = await dialog.boundingBox();
 		expect(buttonBox).toBeTruthy();
 		expect(dialogBox).toBeTruthy();
 
 		if (buttonBox && dialogBox) {
-			// Button should use most of the dialog width (accounting for padding)
-			// On mobile fullscreen: dialog is viewport-wide, button should be near-full
 			const buttonWidthRatio = buttonBox.width / dialogBox.width;
 			expect(buttonWidthRatio).toBeGreaterThan(0.7);
 		}
@@ -109,34 +98,17 @@ test.describe('Raffle Question Modal — Mobile', () => {
 		}
 	});
 
-	test('radio options and labels are tappable on mobile', async ({
-		page,
-	}) => {
+	test('radio options and labels are tappable on mobile', async ({ page }) => {
 		await page.goto(`/browse/${RAFFLE_SLUG}`);
 
 		const buyButton = page.locator('#checkout-action');
-		const hasBuyButton = await buyButton
-			.isVisible({ timeout: 10_000 })
-			.catch(() => false);
-
-		if (!hasBuyButton) {
-			test.skip(true, 'Raffle is not in an active/live state');
-			return;
-		}
-
+		await expect(buyButton).toBeVisible({ timeout: 10_000 });
 		await buyButton.click();
 
 		const modalTitle = page.getByRole('heading', {
 			name: 'Quick check before you join',
 		});
-		const hasModal = await modalTitle
-			.isVisible({ timeout: 5_000 })
-			.catch(() => false);
-
-		if (!hasModal) {
-			test.skip(true, 'Raffle does not have a question configured');
-			return;
-		}
+		await expect(modalTitle).toBeVisible({ timeout: 5_000 });
 
 		const dialog = page.locator('[data-slot="dialog-content"]');
 

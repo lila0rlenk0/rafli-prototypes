@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { buildQueryParams } from '@/lib/api/utils';
+import { buildQueryParams } from '@/lib/api/query-params';
 import { failure, mapChatError, success } from '@/lib/errors';
 import {
 	captureContractDrift,
@@ -22,8 +22,8 @@ import type { ServiceResponse } from '@/types/service-response';
  *
  * Mirrors the `q` param of {@link getConversations} so the badge numbers track
  * what each tab would render if selected — a search for "ada" narrows the All
- * count down to the matching rows, so the Unread / Winners / Raffles counts
- * show how many of those matches fall into each bucket.
+ * count down to the matching rows, so the Unread count shows how many of
+ * those matches are still unread.
  *
  * @param query - Optional search string (same as the list endpoint).
  * @returns ServiceResponse with per-chip counts on success.

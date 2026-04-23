@@ -36,10 +36,10 @@ describe('getVoteErrorMessage', () => {
 			);
 		});
 
-		test('RAFFLE_NOT_COMMENTABLE → raffle lock copy', () => {
+		test('RAFFLE_NOT_COMMENTABLE → sweepstakes lock copy', () => {
 			expect(
 				getVoteErrorMessage(COMMENT_ERROR_CODES.RAFFLE_NOT_COMMENTABLE),
-			).toBe('Voting is no longer available for this raffle.');
+			).toBe('Voting is no longer available for this sweepstakes.');
 		});
 	});
 
@@ -93,9 +93,9 @@ describe('getReportErrorMessage', () => {
 			);
 		});
 
-		test('RAFFLE_ID_REQUIRED → missing raffle context', () => {
+		test('RAFFLE_ID_REQUIRED → missing sweepstakes context', () => {
 			expect(getReportErrorMessage(REPORT_ERROR_CODES.RAFFLE_ID_REQUIRED)).toBe(
-				'Could not identify the raffle for this report.',
+				'Could not identify the sweepstakes for this report.',
 			);
 		});
 

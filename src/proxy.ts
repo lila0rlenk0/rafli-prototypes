@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { AUTH_COOKIES } from './lib/auth/config';
-import { isJwtExpired } from './lib/auth/jwt';
-import { getProxyRedirectPath } from './lib/auth/proxy-routing';
+import { type NextRequest, NextResponse } from 'next/server';
+
+import { AUTH_COOKIES } from '@/lib/auth/constants';
+import { isJwtExpired } from '@/lib/auth/jwt';
+import { getProxyRedirectPath } from '@/lib/auth/proxy-routing';
 
 /**
  * Next.js 16 proxy function for route protection and authentication flows.
@@ -16,7 +17,7 @@ import { getProxyRedirectPath } from './lib/auth/proxy-routing';
  * @param request - NextRequest object from Next.js
  * @returns NextResponse with appropriate redirect or continuation
  */
-export default function proxy(request: NextRequest) {
+export function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 	const token = request.cookies.get(AUTH_COOKIES.TOKEN)?.value;
 

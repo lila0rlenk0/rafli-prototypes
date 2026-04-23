@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 /**
  * Password input with visibility toggle

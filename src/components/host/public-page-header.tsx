@@ -7,9 +7,9 @@ export function PublicPageHeader() {
 	return (
 		<div className="mb-16 text-center">
 			<h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-				Raffle Host
+				Sweepstakes Host
 			</h1>
-			<p className="mt-4 text-lg">View host&apos;s raffles</p>
+			<p className="mt-4 text-lg">View host&apos;s sweepstakes</p>
 		</div>
 	);
 }

@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
  */
 export default function ProtectedNotFound() {
 	return (
-		<div className="flex min-h-[60dvh] flex-col items-center justify-center gap-6 px-4 py-16 text-center md:py-24">
+		<div className="min-h-three-fifths-screen flex flex-col items-center justify-center gap-6 px-4 py-16 text-center md:py-24">
 			<h1 className="font-clash-display text-foreground text-7xl font-bold tracking-tight sm:text-8xl md:text-9xl">
 				404
 			</h1>

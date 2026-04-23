@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { CHAT_ERROR_CODES } from '@/types/errors/chat-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const mockDelete = mock();
 const mockCaptureServiceError = mock();
@@ -148,5 +148,25 @@ describe('deleteMessage', () => {
 		if (!result.success) {
 			expect(result.error).toBe('network_error');
 		}
+	});
+
+	test('percent-encodes attacker-controlled messageId to block path injection', async () => {
+		// Server actions are public POST endpoints; a caller can pass arbitrary strings.
+		// Without encoding, `../../admin/users/target` would travel to the backend as
+		// `DELETE /chat/messages/../../admin/users/target` and route to a different
+		// resource on any backend that doesn't normalize RFC 3986 dot-segments.
+		mockDelete.mockReset();
+		mockDelete.mockResolvedValueOnce(mockAxiosResponse(VALID_TOMBSTONE));
+
+		await deleteMessage('../../admin/users/target');
+
+		expect(mockDelete).toHaveBeenCalledTimes(1);
+		const calledUrl = mockDelete.mock.calls[0]?.[0] as string;
+		// Every path-separator slash in the injected value must be encoded so
+		// the backend router sees one path segment, not five. Dot chars alone
+		// are harmless once the slashes disappear (`..` without `/` is literal).
+		expect(calledUrl).not.toMatch(/\/\.\.\//);
+		expect(calledUrl).not.toContain('/admin/');
+		expect(calledUrl).toBe('/chat/messages/..%2F..%2Fadmin%2Fusers%2Ftarget');
 	});
 });

@@ -1,6 +1,7 @@
 'use server';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
@@ -23,7 +24,7 @@ export async function getRaffleQuestion(
 ): Promise<ServiceResponse<RaffleQuestion, RaffleErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/raffles/${raffleId}/question`,
+			`/raffles/${pathParam(raffleId)}/question`,
 		);
 		return success(raffleQuestionSchema.parse(response.data));
 	} catch (error) {

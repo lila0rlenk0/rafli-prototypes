@@ -6,14 +6,14 @@
  * Handles OAuth flow initiation. MUST run client-side because
  * better-auth sets state cookies that need to be in the browser.
  *
- * @see src/app/(auth)/auth/callback/callback-handler.tsx for callback handling
+ * @see src/components/auth/oauth-callback-flow.tsx for callback handling
  */
 
 import { ZodError } from 'zod';
 
 import { AUTH_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
-import { browserClient } from '@/lib/api/client-browser';
+import { browserClient } from '@/lib/api/browser-client';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import {
 	captureContractDrift,

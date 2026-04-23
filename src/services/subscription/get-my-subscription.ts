@@ -4,7 +4,7 @@ import { AxiosError } from 'axios';
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
 import { failure, mapSubscriptionError, success } from '@/lib/errors';
 import {
 	captureContractDrift,

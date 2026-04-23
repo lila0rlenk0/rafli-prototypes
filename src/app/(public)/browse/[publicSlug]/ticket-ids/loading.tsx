@@ -23,7 +23,7 @@ export default function Loading() {
 			<div className="rounded-2xl bg-white p-8">
 				<Skeleton className="mb-6 h-7 w-64" />
 
-				<div className="space-y-0">
+				<div className="flex flex-col gap-0">
 					{/* Table header */}
 					<div className="flex gap-8 border-b border-gray-200 pb-3">
 						<Skeleton className="h-4 w-8" />

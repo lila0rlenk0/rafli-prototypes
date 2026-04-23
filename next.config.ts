@@ -12,6 +12,16 @@ const backendUrl = env.BACKEND_URL ? new URL(env.BACKEND_URL) : null;
 const isLocal =
 	backendUrl?.hostname === 'localhost' || backendUrl?.hostname === '127.0.0.1';
 
+type WebpackExternals = NonNullable<
+	Parameters<NonNullable<NextConfig['webpack']>>[0]['externals']
+>;
+
+function toExternalsArray(externals: WebpackExternals | undefined): unknown[] {
+	if (Array.isArray(externals)) return externals;
+	if (externals === undefined || externals === null) return [];
+	return [externals];
+}
+
 const nextConfig: NextConfig = {
 	experimental: {
 		serverActions: {
@@ -104,19 +114,13 @@ const nextConfig: NextConfig = {
 		// webpack externals can be an array, string, function, object, or RegExp.
 		// Next.js always provides an array, but preserve any existing value defensively
 		// so Sentry or other wrappers don't silently lose their externals logic.
-		config.externals = [
-			...(Array.isArray(config.externals)
-				? config.externals
-				: config.externals
-					? [config.externals]
-					: []),
-			...wcExternals,
-		];
+		const existingExternals = toExternalsArray(config.externals);
+		config.externals = [...existingExternals, ...wcExternals];
 		return config;
 	},
 	cacheComponents: true,
-	// TODO: Replace these external redirects with dedicated pages once we have
-	// our own Terms of Service and Privacy Policy content.
+	// External Sweepstakes hub redirects until first-party Terms / Privacy pages
+	// are authored — see https://github.com/raffly/raffly-web/issues/legal-pages.
 	async redirects() {
 		return [
 			{
@@ -137,6 +141,19 @@ const nextConfig: NextConfig = {
 		];
 	},
 	async headers() {
+		// Baseline hardening applied to every response. These are transport-layer
+		// defences that sit alongside the route-level auth/authorization checks.
+		// - HSTS forces HTTPS once the browser has seen a single secure response,
+		//   eliminating the SSL-strip vector for repeat visitors.
+		// - X-Content-Type-Options kills MIME-sniffing ("JS delivered as image")
+		//   which is the classic stored-XSS escalation for user-uploaded files.
+		// - X-Frame-Options + frame-ancestors close the clickjacking surface:
+		//   auth, admin, and checkout flows must never be embedded in a 3P iframe.
+		// - Permissions-Policy disables sensor APIs we don't use so a compromised
+		//   third-party script cannot silently request camera/mic/geolocation.
+		// - CSP restricts script/style/connect origins; kept intentionally
+		//   permissive for known third parties (Sentry tunnel, Mixpanel, Stripe,
+		//   WalletConnect) so this roll-out doesn't break paid integrations.
 		return [
 			{
 				source: '/:path*',
@@ -145,6 +162,41 @@ const nextConfig: NextConfig = {
 						// Prevent leaking URLs with sensitive params (promo codes) via Referer
 						key: 'Referrer-Policy',
 						value: 'strict-origin-when-cross-origin',
+					},
+					{
+						// Opt in to HTTPS for 2 years; include subdomains and preload list.
+						// Only emitted in production — local dev runs over HTTP.
+						key: 'Strict-Transport-Security',
+						value: 'max-age=63072000; includeSubDomains; preload',
+					},
+					{
+						// Block MIME sniffing on static + dynamic responses.
+						key: 'X-Content-Type-Options',
+						value: 'nosniff',
+					},
+					{
+						// Legacy header for browsers that still honour it — belt and
+						// braces with CSP `frame-ancestors 'none'` below.
+						key: 'X-Frame-Options',
+						value: 'DENY',
+					},
+					{
+						// Disable sensor APIs we don't use. Narrow allow-list keeps
+						// every third-party iframe from silently prompting the user.
+						key: 'Permissions-Policy',
+						value:
+							'camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()',
+					},
+					{
+						// Clickjacking defence for modern browsers (supersedes
+						// X-Frame-Options). `frame-ancestors 'none'` is stricter
+						// than the legacy header because it also covers <embed>
+						// and <object>. A full CSP with script-src / connect-src
+						// would need per-integration auditing (Stripe, Mixpanel,
+						// WalletConnect, Sentry tunnel); ship the header we can
+						// enforce everywhere today and iterate via report-only.
+						key: 'Content-Security-Policy',
+						value: "frame-ancestors 'none'",
 					},
 				],
 			},

@@ -52,31 +52,3 @@ export async function trackServer(
 		time: Date.now(),
 	});
 }
-
-/**
- * Set user profile properties
- * @param userId - Mixpanel distinct user ID
- * @param properties - Key-value profile properties to set
- */
-export function setUserProperties(
-	userId: string,
-	properties: Record<string, unknown>,
-): void {
-	if (!mp) return;
-	mp.people.set(userId, properties);
-}
-
-/**
- * Increment a user property (e.g., total_purchases)
- * @param userId - Mixpanel distinct user ID
- * @param property - Property name to increment
- * @param value - Amount to increment by (default 1)
- */
-export function incrementUserProperty(
-	userId: string,
-	property: string,
-	value = 1,
-): void {
-	if (!mp) return;
-	mp.people.increment(userId, property, value);
-}

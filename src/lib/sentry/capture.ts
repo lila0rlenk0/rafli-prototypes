@@ -176,9 +176,16 @@ export function captureContractDrift(
 	action: string,
 ): void {
 	Sentry.withScope(scope => {
-		applyContractDriftScope(scope, error, service, action);
+		applyContractDriftScope(scope, error, { service, action });
 		Sentry.captureException(error);
 	});
+}
+
+export interface ContractDriftContext {
+	/** Domain name (e.g. 'payment', 'raffle'). */
+	service: string;
+	/** Server action name within the domain. */
+	action: string;
 }
 
 /**
@@ -188,15 +195,14 @@ export function captureContractDrift(
  *
  * @param scope - The Sentry scope to mutate
  * @param error - ZodError from `.parse()` on the API response
- * @param service - Domain name (e.g. 'payment', 'raffle')
- * @param action - Server action name
+ * @param ctx - Domain + action bundle identifying the drift source
  */
 export function applyContractDriftScope(
 	scope: Scope,
 	error: ZodError,
-	service: string,
-	action: string,
+	ctx: ContractDriftContext,
 ): void {
+	const { service, action } = ctx;
 	scope.setTag('errorCode', 'contract_drift');
 	scope.setTag('service', service);
 	scope.setTag('action', action);

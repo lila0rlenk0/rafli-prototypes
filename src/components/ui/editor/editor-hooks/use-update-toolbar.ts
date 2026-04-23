@@ -1,6 +1,6 @@
 import {
 	$getSelection,
-	BaseSelection,
+	type BaseSelection,
 	COMMAND_PRIORITY_CRITICAL,
 	SELECTION_CHANGE_COMMAND,
 } from 'lexical';

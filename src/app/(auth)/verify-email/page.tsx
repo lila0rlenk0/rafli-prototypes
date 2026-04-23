@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import { VerifyEmailHandler } from '@/components/auth/verify-email-handler';
+import { VerifyEmailFlow } from '@/components/auth/email/verify-email-flow';
 
 interface VerifyEmailPageProps {
 	searchParams: Promise<{ token?: string }>;
@@ -14,7 +14,7 @@ interface VerifyEmailPageProps {
  * Does NOT use the AuthPageShell (minimal centered layout for single-purpose flow).
  *
  * Data flow: searchParams.token is passed as a prop to the Client Component
- * VerifyEmailHandler, which performs the actual verification via server action.
+ * VerifyEmailFlow, which performs the actual verification via server action.
  *
  * Guard: missing token renders an error with resend/sign-in links immediately
  * (no spinner, no Suspense needed for the error case).
@@ -29,7 +29,7 @@ export default async function VerifyEmailPage({
 	// Guard: no token in URL — invalid or manually truncated verification link
 	if (!token) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
+			<div className="flex min-h-dvh items-center justify-center">
 				<div className="flex flex-col items-center gap-4 text-center">
 					<p className="text-red-600">
 						Invalid verification link. No token provided.
@@ -51,20 +51,20 @@ export default async function VerifyEmailPage({
 	}
 
 	return (
-		<div className="flex min-h-screen items-center justify-center">
-			{/* Suspense fallback: spinner while VerifyEmailHandler client bundle loads */}
+		<div className="flex min-h-dvh items-center justify-center">
+			{/* Suspense fallback: spinner while VerifyEmailFlow client bundle loads */}
 			<Suspense fallback={<VerifyEmailLoading />}>
-				<VerifyEmailHandler token={token} />
+				<VerifyEmailFlow token={token} />
 			</Suspense>
 		</div>
 	);
 }
 
-/** Spinner shown while the VerifyEmailHandler client JS bundle is loading */
+/** Spinner shown while the VerifyEmailFlow client JS bundle is loading */
 function VerifyEmailLoading() {
 	return (
 		<div className="flex flex-col items-center gap-4">
-			<div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
+			<div className="border-primary size-8 animate-spin rounded-full border-4 border-t-transparent" />
 			<p className="text-muted-foreground">Verifying your email...</p>
 		</div>
 	);

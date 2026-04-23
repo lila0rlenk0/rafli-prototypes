@@ -23,22 +23,22 @@ export function HostSection() {
 	const benefits = [
 		'Get verified in a few minutes',
 		'Set your prize and rules',
-		'Launch your raffle',
+		'Launch your sweepstakes',
 		'Share it with your audience',
 	];
 
 	return (
 		<section
 			id="hosts"
-			className="mx-auto max-w-[1720px] overflow-hidden px-6 py-10 lg:px-[108px] lg:py-20"
+			className="max-w-wide mx-auto overflow-hidden px-6 py-10 lg:px-27 lg:py-20"
 		>
 			{/* Wrapper to allow decorative elements to overflow */}
 			<div className="relative">
 				{/* Decorative background shapes - positioned outside the card */}
 				<div className="pointer-events-none absolute -right-10 bottom-32 z-10 hidden lg:block">
-					<div className="relative h-[600px] w-[500px]">
-						<div className="absolute top-[100px] right-0 h-[532px] w-[532px] rotate-[27.845deg] rounded-3xl bg-[#e9f27a]" />
-						<div className="absolute top-0 right-[50px] h-[600px] w-[600px] rotate-[15.483deg] rounded-3xl bg-[#f9ffab]">
+					<div className="relative h-150 w-125">
+						<div className="rotate-tilt-hero-b absolute top-25 right-0 size-133 rounded-3xl bg-yellow-400" />
+						<div className="rotate-tilt-hero-a absolute top-0 right-12.5 size-150 rounded-3xl bg-yellow-300">
 							<div className="flex h-full w-full items-center justify-center">
 								<FlagIcon />
 							</div>
@@ -47,17 +47,17 @@ export function HostSection() {
 				</div>
 
 				{/* Main card container */}
-				<div className="bg-background relative rounded-[60px] border-2 border-black px-8 py-12 lg:rounded-[120px] lg:px-20 lg:py-24">
+				<div className="bg-background rounded-pill-3xl lg:rounded-pill-hero relative border-2 border-black px-8 py-12 lg:px-20 lg:py-24">
 					{/* Grid layout: left side content, right side decorative */}
 					<div className="grid lg:grid-cols-2">
 						{/* Left side - Content */}
 						<div className="relative">
 							<p className="mb-4 text-lg font-bold text-black lg:text-2xl">
-								BECOME A RAFFLE HOST!
+								BECOME A SWEEPSTAKES HOST!
 							</p>
 							<SplitText
-								text="Run Your Own Raffle Without Headache"
-								className="font-clash-display text-dark mb-10 text-4xl leading-none font-semibold tracking-[0.8px] lg:text-[72px]"
+								text="Run Your Own Sweepstakes Without Headache"
+								className="font-clash-display text-brand-dark tracking-micro-7 lg:text-72 mb-10 text-4xl/none font-semibold"
 								delay={50}
 								duration={1.25}
 								ease="power3.out"
@@ -67,7 +67,7 @@ export function HostSection() {
 								threshold={0.1}
 								textAlign="left"
 							/>
-							<ul className="mb-10 space-y-4">
+							<ul className="mb-10 flex flex-col gap-4">
 								{benefits.map(benefit => (
 									<li
 										key={benefit}
@@ -81,7 +81,7 @@ export function HostSection() {
 							<Button
 								asChild
 								variant="outline"
-								className="hover:text-background h-[60px] w-full border-2 border-black text-lg text-black/95 hover:bg-black sm:w-[238px]"
+								className="hover:text-background h-15 w-full border-2 border-black text-lg text-black/95 hover:bg-black sm:w-59.5"
 							>
 								<Link href="https://forms.gle/RqihwzjyBcjjwUa97">
 									Become a host

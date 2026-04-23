@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import {
 	getRaffleSaleWindow,
 	type RaffleSaleWindow,
-} from '@/lib/utils/raffle-sale-window';
+} from '@/lib/utils/raffle/raffle-sale-window';
 
 interface UseRaffleSaleWindowResult extends RaffleSaleWindow {
 	isHydrated: boolean;

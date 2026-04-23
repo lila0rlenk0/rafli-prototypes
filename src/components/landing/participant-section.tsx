@@ -21,25 +21,25 @@ const SplitText = dynamic(
 export function ParticipantSection() {
 	/** Participant trust signals — displayed as a checkmark list */
 	const benefits = [
-		'Raffles hosted by verified creators',
+		'Sweepstakes hosted by verified creators',
 		'Winners selected using verifiable randomness',
 		'Prize details visible before entry',
 		'Track progress from start to finish',
-		'Transparent rules for every raffle',
+		'Transparent rules for every sweepstakes',
 	];
 
 	return (
 		<section
 			id="participants"
-			className="mx-auto max-w-[1720px] px-6 py-10 lg:px-[108px] lg:py-20"
+			className="max-w-wide mx-auto px-6 py-10 lg:px-27 lg:py-20"
 		>
 			{/* Wrapper to allow decorative elements to overflow */}
 			<div className="relative">
 				{/* Decorative background shapes - positioned outside the card */}
 				<div className="pointer-events-none absolute bottom-32 -left-10 z-10 hidden lg:block">
-					<div className="relative h-[600px] w-[500px]">
-						<div className="absolute top-[100px] left-0 h-[532px] w-[532px] rotate-[-27.845deg] rounded-3xl bg-[#9ffbc8]" />
-						<div className="absolute top-0 left-[50px] h-[600px] w-[600px] rotate-[-15.483deg] rounded-3xl bg-[#beffdb]">
+					<div className="relative h-150 w-125">
+						<div className="-rotate-tilt-hero-b bg-mint-200 absolute top-25 left-0 size-133 rounded-3xl" />
+						<div className="-rotate-tilt-hero-a bg-brand-mint absolute top-0 left-12.5 size-150 rounded-3xl">
 							<div className="flex h-full w-full items-center justify-center">
 								<TadaIcon />
 							</div>
@@ -48,7 +48,7 @@ export function ParticipantSection() {
 				</div>
 
 				{/* Main card container */}
-				<div className="bg-background relative rounded-[60px] border-2 border-black px-8 py-12 lg:rounded-[120px] lg:px-20 lg:py-24">
+				<div className="bg-background rounded-pill-3xl lg:rounded-pill-hero relative border-2 border-black px-8 py-12 lg:px-20 lg:py-24">
 					{/* Grid layout: left side decorative, right side content */}
 					<div className="grid lg:grid-cols-2">
 						{/* Left side - Diamond icon (visible on mobile, hidden positioning on desktop) */}
@@ -64,8 +64,8 @@ export function ParticipantSection() {
 								WANT TO PARTICIPATE?
 							</p>
 							<SplitText
-								text="Unlock Exclusive Raffle Access"
-								className="font-clash-display text-dark mb-10 text-4xl leading-none font-semibold tracking-[0.8px] lg:text-[72px]"
+								text="Unlock Exclusive Sweepstakes Access"
+								className="font-clash-display text-brand-dark tracking-micro-7 lg:text-72 mb-10 text-4xl/none font-semibold"
 								delay={50}
 								duration={1.25}
 								ease="power3.out"
@@ -75,7 +75,7 @@ export function ParticipantSection() {
 								threshold={0.1}
 								textAlign="left"
 							/>
-							<ul className="mb-10 space-y-4">
+							<ul className="mb-10 flex flex-col gap-4">
 								{benefits.map(benefit => (
 									<li
 										key={benefit}
@@ -88,9 +88,9 @@ export function ParticipantSection() {
 							</ul>
 							<Button
 								asChild
-								className="text-background hover:bg-background h-[60px] w-full border-2 border-black bg-black text-lg hover:text-black sm:w-[234px]"
+								className="text-background hover:bg-background h-15 w-full border-2 border-black bg-black text-lg hover:text-black sm:w-58.5"
 							>
-								<Link href="/browse">Explore raffles</Link>
+								<Link href="/browse">Explore sweepstakes</Link>
 							</Button>
 						</div>
 					</div>

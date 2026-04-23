@@ -1,0 +1,50 @@
+---
+description: "Routing"
+alwaysApply: false
+globs: "'src/app/**/*.{ts,tsx}'"
+---
+
+# Routing
+
+App Router. Server Components by default.
+
+## Special files
+
+- `page.tsx` — default export, async when fetching data in RSC
+- `layout.tsx` — shared shell, receives `children`, persists across navigations
+- `loading.tsx` — Suspense fallback, skeleton matching page shape
+- `error.tsx` — error boundary, `'use client'`, receives `error` + `reset`
+- `not-found.tsx` — 404 UI, triggered by `notFound()`
+- `global-error.tsx` — root error boundary, `'use client'`
+- `route.ts` — Route Handlers only for webhooks or OAuth callbacks, never UI data
+
+## Route groups
+
+- `(admin)`, `(auth)`, `(landing)`, `(protected)`, `(public)` — layout separation, no URL impact
+- `[...not-found]` catch-all for 404 fallback
+
+## Dynamic segments
+
+- `[slug]/page.tsx` — access via `params` prop
+- async params (Next 15+): `const { slug } = await params`
+- `searchParams` also async: `const sp = await searchParams`
+
+## Metadata
+
+- static: `export const metadata: Metadata = { title, description }`
+- dynamic: `generateMetadata({ params })` — param-based titles
+- set at the deepest segment owning the title
+
+## Runtime data in layouts
+
+`cookies()`, `headers()`, `getSession()` block streaming. Extract to async child wrapped in `<Suspense>` — never in the layout body.
+
+## Auth redirects
+
+Route guards live in `src/proxy.ts`. Never perform auth logic in pages/layouts — call `requireAuth()` / `requireEmailVerification()` from `@/lib/auth/session` when the RSC needs the user.
+
+## Rules
+
+- page fetches data, passes to feature components as props — never fetch inside domain components
+- never `'use client'` on `page.tsx` or `layout.tsx`
+- co-locate `loading.tsx` next to the page that owns the slow fetch

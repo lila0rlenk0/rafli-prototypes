@@ -14,17 +14,18 @@ import Link from 'next/link';
 // picked conservatively enough that natural wrapping never fires.
 //
 // Size ladder (paired with card padding in the <aside> className below):
-//   - base `text-[26px]` — mobile, card ~px-6, internal ~280–460px. Fits
+//   - base `text-26` — mobile, card ~px-6, internal ~280–460px. Fits
 //     the longer line "Up To 20% OFF on every entry!" (~29 chars) comfortably.
-//   - `sm:text-[30px]` — tablet onward gains breathing room (sm:px-10),
+//   - `sm:text-30` — tablet onward gains breathing room (sm:px-10),
 //     internal ~420–480px. Both lines fit, headline reads larger.
-//   - `lg:text-[28px]` — card becomes the right rail (440–540px column,
+//   - `lg:text-28` — card becomes the right rail (440–540px column,
 //     lg:px-6 → ~392–492px internal). 28px keeps "Subscribe Now. Save.
 //     Win." on one line at the rail's lower bound (440px).
-//   - `xl:text-[30px]` — restores presence once the rail widens past 480px,
-//     where 28px starts to feel undersized relative to the hero headline.
+// Sizes emit their own line-height (1.05) via globals.css token metadata,
+// so no separate `leading-*` is needed. Tracking uses `tracking-display-xs`
+// (-0.01em) — added to globals.css for this and future promo surfaces.
 const HEADLINE_CLASSES =
-	'font-clash-display text-[26px] leading-[1.05] font-semibold tracking-[-0.01em] sm:text-[30px] lg:text-[28px]';
+	'font-clash-display text-26 tracking-display-xs font-semibold sm:text-30 lg:text-28';
 
 interface SubscribePromoCardProps {
 	/**
@@ -86,7 +87,7 @@ export function SubscribePromoCard({
 			//     render a 2px-thick double line that looks like a bug.
 			// Below lg the card renders as a fully-rounded yellow panel
 			// stacked under the hero, and all three overrides no-op.
-			className="bg-accent-yellow relative mx-auto flex w-full max-w-[520px] flex-col items-center justify-center gap-5 rounded-[28px] border border-black px-2 py-8 text-center sm:gap-6 sm:rounded-3xl sm:px-3 sm:py-10 lg:mx-0 lg:-mt-10 lg:max-w-none lg:gap-5 lg:rounded-t-none lg:border-t-0 lg:px-3 lg:py-8"
+			className="bg-brand-yellow max-w-card-sm rounded-pill-xl relative mx-auto flex w-full flex-col items-center justify-center gap-5 border border-black px-2 py-8 text-center sm:gap-6 sm:rounded-3xl sm:px-3 sm:py-10 lg:mx-0 lg:-mt-10 lg:max-w-none lg:gap-5 lg:rounded-t-none lg:border-t-0 lg:px-3 lg:py-8"
 		>
 			{/* `gap-0.5` (2px) pulls the two headline lines into a single
 			    typographic block rather than reading as two separate lines.
@@ -115,7 +116,7 @@ export function SubscribePromoCard({
 			    Height: 44px (iOS min touch target) → 48px sm → 52px lg. */}
 			<Link
 				href="/pricing"
-				className="focus-visible:ring-ring/50 inline-flex h-11 w-full max-w-[22rem] items-center justify-center rounded-full bg-black px-8 text-sm font-semibold text-white transition-colors hover:bg-black/90 focus-visible:ring-[3px] focus-visible:outline-none sm:h-12 sm:text-base lg:h-[52px] lg:max-w-[24rem]"
+				className="focus-visible:ring-ring/50 inline-flex h-11 w-full max-w-88 items-center justify-center rounded-full bg-black px-8 text-sm font-semibold text-white transition-colors hover:bg-black/90 focus-visible:ring-3 focus-visible:outline-none sm:h-12 sm:text-base lg:h-13 lg:max-w-96"
 			>
 				Get Credits!
 			</Link>

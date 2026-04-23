@@ -95,13 +95,24 @@ export function extractCryptoFormFields(
  * @param totalTokens - Total available tokens (to detect "all selected")
  * @returns Summary string like "All chains · 3 token(s)" or "Card only"
  */
-export function getCryptoSummary(
-	acceptsCrypto: boolean,
-	cryptoChainIds: number[],
-	cryptoTokens: string[],
-	totalChains?: number,
-	totalTokens?: number,
-): string {
+export interface CryptoSummaryInput {
+	acceptsCrypto: boolean;
+	cryptoChainIds: number[];
+	cryptoTokens: string[];
+	/** Total available chains — set to detect "all selected". */
+	totalChains?: number;
+	/** Total available tokens — set to detect "all selected". */
+	totalTokens?: number;
+}
+
+export function getCryptoSummary(input: CryptoSummaryInput): string {
+	const {
+		acceptsCrypto,
+		cryptoChainIds,
+		cryptoTokens,
+		totalChains,
+		totalTokens,
+	} = input;
 	if (!acceptsCrypto) return 'Card only';
 
 	const chainsAllSelected =

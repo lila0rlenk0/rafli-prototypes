@@ -11,7 +11,7 @@ mock.module('next/server', () => ({
 	after: mockAfter,
 }));
 
-const { runAfter } = await import('@/lib/run-after');
+const { runAfter } = await import('@/lib/utils/run-after');
 
 function resetAllMocks(): void {
 	mockAfter.mockReset();

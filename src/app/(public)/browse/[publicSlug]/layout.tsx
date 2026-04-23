@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 
-import { extractWagmiCookie } from '@/lib/web3/extract-wagmi-cookie';
+import { extractWagmiCookie } from '@/lib/web3/config/extract-wagmi-cookie';
 import { Web3Provider } from '@/providers/web3-provider';
 
 interface RaffleDetailLayoutProps {

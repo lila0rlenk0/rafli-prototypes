@@ -3,7 +3,8 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { API_TIMEOUTS } from '@/lib/api/config';
+import { API_TIMEOUTS } from '@/lib/api/constants';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapUpdateError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
@@ -18,7 +19,8 @@ import {
 } from '@/types/update';
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+// 5 MB
+const MAX_SIZE = 5 * 1024 * 1024;
 const MAX_IMAGES = 5;
 
 /**
@@ -63,7 +65,7 @@ export async function uploadUpdateImages(
 		});
 
 		const response = await authenticatedClient.post(
-			`/updates/${updateId}/images`,
+			`/updates/${pathParam(updateId)}/images`,
 			formData,
 			{
 				timeout: API_TIMEOUTS.UPLOAD,

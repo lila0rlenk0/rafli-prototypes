@@ -1,6 +1,7 @@
 'use server';
 
 import { WINNING_EVENTS } from '@/lib/analytics/events';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { WINNING_ERROR_CODES, type WinningErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 import { type Winning } from '@/types/winning';
@@ -25,7 +26,7 @@ export async function confirmReceived(
 	publicSlug?: string,
 ): Promise<ServiceResponse<Winning, WinningErrorCode>> {
 	return updateWinningStatusBase({
-		endpoint: `/winnings/${winningId}/confirm-received`,
+		endpoint: `/winnings/${pathParam(winningId)}/confirm-received`,
 		action: 'confirm-received',
 		event: WINNING_EVENTS.CONFIRMED_RECEIVED,
 		zodErrorCode: WINNING_ERROR_CODES.CONFIRM_FAILED,

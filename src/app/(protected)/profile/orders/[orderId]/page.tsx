@@ -92,7 +92,7 @@ export default async function OrderDetailPage({
 							className="flex items-center gap-2 text-black hover:underline"
 						>
 							<span className="font-medium">{order.raffleName}</span>
-							<ExternalLink className="h-4 w-4" />
+							<ExternalLink className="size-4" />
 						</Link>
 					</div>
 

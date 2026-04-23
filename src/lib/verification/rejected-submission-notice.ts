@@ -14,7 +14,7 @@ interface RejectedEntryCandidate {
 	type: VerificationType;
 }
 
-export interface RejectedSubmissionNoticeData {
+export interface RejectedSubmissionNoticePayload {
 	rejectionReason: string | null;
 	submission: KycSubmissionSummary;
 }
@@ -62,7 +62,7 @@ function getCurrentRejectedStatus(
 export function getCurrentRejectedSubmissionNotice(
 	submissions: KycSubmissionSummary[],
 	statusData: VerificationStatusResponse | null,
-): RejectedSubmissionNoticeData | null {
+): RejectedSubmissionNoticePayload | null {
 	if (!statusData) return null;
 
 	const rejected = getCurrentRejectedStatus(statusData);

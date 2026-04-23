@@ -34,9 +34,9 @@ export default async function PastWinnersPage() {
 
 	if (!response.success) {
 		return (
-			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 px-4 text-center">
+			<div className="h-half-screen flex w-full flex-col items-center justify-center gap-10 px-4 text-center">
 				<BugIcon />
-				<hgroup className="space-y-4">
+				<hgroup className="flex flex-col gap-4">
 					<h2 className="text-xl font-semibold">Error loading past winners</h2>
 					<p className="mt-2 text-lg">
 						Something went wrong while loading the winners list. Please try
@@ -65,10 +65,10 @@ export default async function PastWinnersPage() {
 			    gutter to anchor on when scrolling the archive. */}
 			<div className="mx-auto max-w-4xl">
 				<header className="mb-10 flex flex-col gap-4 sm:mb-16">
-					<p className="text-sm font-normal text-[rgba(15,15,15,0.95)] sm:text-base sm:font-medium">
+					<p className="text-ink-alpha text-sm font-normal sm:text-base sm:font-medium">
 						Every draw verified on-chain. Names masked for privacy.
 					</p>
-					<h1 className="font-clash-display sm:text-display text-[40px] leading-none font-semibold tracking-[0.4px] sm:tracking-normal">
+					<h1 className="font-clash-display sm:text-display-md/none text-40 tracking-micro-8 font-semibold sm:tracking-normal">
 						Past winners
 					</h1>
 				</header>

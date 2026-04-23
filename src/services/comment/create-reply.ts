@@ -4,7 +4,7 @@ import type { Comment, CreateCommentPayload } from '@/types/comment';
 import type { CommentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
-import { pathParam } from '@/lib/api/config';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { createCommentBase } from './create-comment-base';
 
 /**

@@ -80,7 +80,7 @@ export async function buildCheckoutOrder(
 
 	// Step 3: Notify on fully-discounted orders (promo covered 100% of the price).
 	if (result.data.isFullyDiscounted) {
-		toast.success('Promo applied. Tickets claimed successfully!');
+		toast.success('Promo applied. Entries claimed successfully!');
 	}
 
 	return {

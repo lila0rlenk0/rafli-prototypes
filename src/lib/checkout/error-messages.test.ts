@@ -9,9 +9,9 @@ import {
 } from './error-messages';
 
 describe('getOrderErrorMessage', () => {
-	test('maps already-completed order error', () => {
-		expect(getOrderErrorMessage('core:order:already-completed')).toBe(
-			'This order has already been completed.',
+	test('maps sold-out order error', () => {
+		expect(getOrderErrorMessage('core:raffle:sold-out')).toBe(
+			'Not enough entries available',
 		);
 	});
 
@@ -166,13 +166,13 @@ describe('getPromoErrorMessage', () => {
 
 	test('maps host-cannot-redeem error', () => {
 		expect(getPromoErrorMessage('core:promo:host-cannot-redeem')).toBe(
-			'You cannot use codes on your own raffle',
+			'You cannot use codes on your own sweepstakes',
 		);
 	});
 
 	test('maps raffle-mismatch error', () => {
 		expect(getPromoErrorMessage('core:promo:raffle-mismatch')).toBe(
-			'This code is not valid for this raffle',
+			'This code is not valid for this sweepstakes',
 		);
 	});
 

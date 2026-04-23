@@ -2,8 +2,8 @@
 
 import { ZodError } from 'zod';
 
-import { pathParam } from '@/lib/api/config';
 import { baseClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapCommentError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {

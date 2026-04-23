@@ -11,8 +11,8 @@ test.describe('Create Raffle — Auto-Publish (Live)', () => {
 		const { title } = await createTestRaffle(page, { startToday: true });
 
 		// Assert live modal content
-		await expect(page.getByText('Your raffle is live!')).toBeVisible();
-		await expect(page.getByText('Share your raffle!')).toBeVisible();
+		await expect(page.getByText('Your sweepstakes is live!')).toBeVisible();
+		await expect(page.getByText('Share your sweepstakes!')).toBeVisible();
 
 		// Navigate to my-raffles with hard navigation to bypass Next.js router cache
 		await page.goto('/my-raffles');
@@ -24,7 +24,7 @@ test.describe('Create Raffle — Auto-Publish (Live)', () => {
 			.catch(() => false);
 
 		if (!isInLive) {
-			// Raffle might still be in Scheduled tab (publish can be async)
+			// Sweepstakes might still be in Scheduled tab (publish can be async)
 			await page.getByRole('button', { name: 'Scheduled' }).click();
 			await expect(page.getByText(title).first()).toBeVisible({
 				timeout: 10_000,

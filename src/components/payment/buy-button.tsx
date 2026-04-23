@@ -2,7 +2,7 @@
 
 import { Loader2Icon } from 'lucide-react';
 
-import { RaffleQuestionModal } from '@/components/raffle/raffle-question-modal';
+import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
 import { Button } from '@/components/ui/button';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
@@ -68,7 +68,10 @@ export function BuyButton({
 	function getButtonText(): string {
 		if (isLoading) return 'Processing...';
 		if (isFreeTickets) {
-			return `Claim bonus entr${quantity > 1 ? 'ies' : 'y'}`;
+			// Floor matches the displayed integer — guards against decimal drift
+			// if quantity ever arrives as a non-integer (mirrors promo-code.ts).
+			const count = Math.floor(quantity);
+			return `Claim bonus entr${count === 1 ? 'y' : 'ies'}`;
 		}
 		return 'Enter now';
 	}

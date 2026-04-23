@@ -4,7 +4,7 @@ import { COMMENT_ERROR_CODES } from '@/types/errors/comment-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import type { ListCommentsResponse } from '@/types/comment';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 /** Minimal valid response — authenticated endpoint includes userVote */
 const VALID_RESPONSE: ListCommentsResponse = {

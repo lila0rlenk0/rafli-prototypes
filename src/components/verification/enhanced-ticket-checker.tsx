@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { MerkleProofDisplay } from '@/components/verification/merkle-proof-display';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 import { getMerkleProof } from '@/services/verification/get-merkle-proof';
 import { verifyTicket } from '@/services/verification/verify-ticket';
 import { VERIFICATION_ERROR_CODES } from '@/types/errors/verification-errors';
@@ -37,11 +37,14 @@ interface EnhancedTicketCheckerProps {
 function getErrorMessage(code: VerificationErrorCode): string {
 	switch (code) {
 		case VERIFICATION_ERROR_CODES.TICKET_NOT_FOUND:
-			return 'Ticket not found. Check your ticket code and try again.';
+			return 'Entry not found. Check your entry code and try again.';
+		// Backend emits either `no-vrf-data` (VRF still pending) or
+		// `not-completed` (status guard). Both map to the same user message.
 		case VERIFICATION_ERROR_CODES.RAFFLE_NOT_COMPLETED:
-			return 'This raffle has not been drawn yet.';
+		case VERIFICATION_ERROR_CODES.RAFFLE_NOT_COMPLETED_ALT:
+			return 'This sweepstakes has not been drawn yet.';
 		case VERIFICATION_ERROR_CODES.PROOF_NOT_FOUND:
-			return 'Merkle proof not available for this ticket.';
+			return 'Merkle proof not available for this entry.';
 		case 'validation_error':
 			return 'Invalid response from server.';
 		case 'network_error':
@@ -63,7 +66,7 @@ export function EnhancedTicketChecker({
 	const [result, setResult] = useState<ResultState | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	async function handleVerify(e: React.FormEvent) {
+	async function handleVerify(e: React.SyntheticEvent<HTMLFormElement>) {
 		e.preventDefault();
 
 		if (!raffleSlug.trim() || !ticketCode.trim()) return;
@@ -106,29 +109,24 @@ export function EnhancedTicketChecker({
 		setTicketCode('');
 	}
 
-	return (
-		<div className="rounded-2xl border border-black bg-white p-6 shadow-sm">
-			<div className="mb-4 flex items-center gap-2">
-				<Search className="size-5 text-neutral-900" />
-				<h3 className="text-lg font-semibold">Verify Your Ticket</h3>
-			</div>
-
-			{!result ? (
-				<form onSubmit={handleVerify} className="space-y-4">
+	function renderResultBody() {
+		if (!result) {
+			return (
+				<form onSubmit={handleVerify} className="flex flex-col gap-4">
 					<div>
 						<label
 							htmlFor="raffleSlug"
 							className="mb-1 block text-sm font-medium text-neutral-700"
 						>
-							Raffle ID or Slug
+							Sweepstakes ID or Slug
 						</label>
 						<input
 							id="raffleSlug"
 							type="text"
 							value={raffleSlug}
 							onChange={e => setRaffleSlug(e.target.value)}
-							placeholder="e.g., my-raffle or raffle_abc123"
-							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:ring-1 focus:ring-black/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+							placeholder="e.g., my-sweepstakes or sweepstakes_abc123"
+							className="border-ink-200 w-full rounded-lg border px-4 py-2.5 text-sm transition-colors focus:border-black focus:ring-1 focus:ring-black/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
@@ -138,7 +136,7 @@ export function EnhancedTicketChecker({
 							htmlFor="ticketCode"
 							className="mb-1 block text-sm font-medium text-neutral-700"
 						>
-							Ticket Code
+							Entry Code
 						</label>
 						<input
 							id="ticketCode"
@@ -146,7 +144,7 @@ export function EnhancedTicketChecker({
 							value={ticketCode}
 							onChange={e => setTicketCode(e.target.value)}
 							placeholder="e.g., TKT-1234-ABCDEF"
-							className="w-full rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm transition-colors focus:border-black focus:ring-1 focus:ring-black/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+							className="border-ink-200 w-full rounded-lg border px-4 py-2.5 text-sm transition-colors focus:border-black focus:ring-1 focus:ring-black/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
 					</div>
@@ -169,16 +167,27 @@ export function EnhancedTicketChecker({
 						) : (
 							<>
 								<Search className="size-4" />
-								Verify Ticket
+								Verify Entry
 							</>
 						)}
 					</button>
 				</form>
-			) : result.type === 'success' ? (
-				<VerificationSuccess data={result.data} onReset={handleReset} />
-			) : (
-				<VerificationError message={result.message} onReset={handleReset} />
-			)}
+			);
+		}
+		if (result.type === 'success') {
+			return <VerificationSuccess data={result.data} onReset={handleReset} />;
+		}
+		return <VerificationError message={result.message} onReset={handleReset} />;
+	}
+
+	return (
+		<div className="rounded-2xl border border-black bg-white p-6 shadow-sm">
+			<div className="mb-4 flex items-center gap-2">
+				<Search className="size-5 text-neutral-900" />
+				<h3 className="text-lg font-semibold">Verify Your Entry</h3>
+			</div>
+
+			{renderResultBody()}
 		</div>
 	);
 }
@@ -192,15 +201,15 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 	const { ticket, proof } = data;
 
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4">
 			<div className="flex items-center gap-2 text-green-600">
 				<CheckCircle2 className="size-5" />
-				<span className="font-semibold">Ticket Verified</span>
+				<span className="font-semibold">Entry Verified</span>
 			</div>
 
-			<div className="space-y-3 rounded-lg bg-neutral-50 p-4">
-				<VerificationRow label="Ticket ID" value={`#${ticket.ticketId}`} />
-				<VerificationRow label="Ticket Code" value={ticket.ticketCode} mono />
+			<div className="flex flex-col gap-3 rounded-lg bg-neutral-50 p-4">
+				<VerificationRow label="Entry ID" value={`#${ticket.ticketId}`} />
+				<VerificationRow label="Entry Code" value={ticket.ticketCode} mono />
 				<VerificationRow
 					label="Merkle Verified"
 					value={
@@ -271,7 +280,7 @@ interface VerificationErrorProps {
 
 function VerificationError({ message, onReset }: VerificationErrorProps) {
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4">
 			<div className="flex items-center gap-2 text-red-600">
 				<AlertCircle className="size-5" />
 				<span className="font-semibold">Verification Failed</span>

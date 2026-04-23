@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import type { MerkleProof } from '@/types/verification';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const VALID_RESPONSE: MerkleProof = {
 	ticketId: 42,
@@ -25,9 +25,8 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureServiceError: mock(),
 }));
 
-const { getMerkleProof } = await import(
-	'@/services/verification/get-merkle-proof'
-);
+const { getMerkleProof } =
+	await import('@/services/verification/get-merkle-proof');
 
 describe('getMerkleProof', () => {
 	test('returns validated merkle proof on success', async () => {

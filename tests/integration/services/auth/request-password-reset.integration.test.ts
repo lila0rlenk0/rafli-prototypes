@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Mocks ---
 
@@ -21,9 +21,8 @@ mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
 }));
 
-const { requestPasswordReset } = await import(
-	'@/services/auth/request-password-reset'
-);
+const { requestPasswordReset } =
+	await import('@/services/auth/request-password-reset');
 
 const VALID_INPUT = { email: 'test@example.com' };
 
@@ -113,5 +112,32 @@ describe('requestPasswordReset', () => {
 			COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR,
 			{ service: 'auth', action: 'request-password-reset' },
 		);
+	});
+
+	// Defence: unvalidated body lets an attacker inject fields the backend may
+	// still honour — e.g. a tampered `redirectTo` (open-redirect inside reset
+	// email) or future admin-only fields. Strip unknowns with Zod first.
+	test('strips unknown fields before forwarding (mass-assignment defense)', async () => {
+		mockPost.mockResolvedValueOnce(mockAxiosResponse({}));
+
+		const tampered = {
+			...VALID_INPUT,
+			role: 'admin',
+			userId: 'victim',
+		};
+
+		await requestPasswordReset(tampered);
+
+		expect(mockPost).toHaveBeenCalledWith('/auth/forget-password', VALID_INPUT);
+	});
+
+	test('rejects malformed email without hitting backend', async () => {
+		mockPost.mockReset();
+
+		const result = await requestPasswordReset({ email: 'not-an-email' });
+
+		// Still success: enumeration-safe contract — but NO outbound call.
+		expect(result.success).toBe(true);
+		expect(mockPost).not.toHaveBeenCalled();
 	});
 });

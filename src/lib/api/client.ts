@@ -1,3 +1,5 @@
+import 'server-only';
+
 /**
  * Server-side API clients (server actions only)
  *
@@ -15,7 +17,7 @@
  *
  * SECURITY - BROWSER CLIENT:
  * ──────────────────────────
- * browserClient (client-browser.ts) has NO S2S secret - would be exposed in DevTools.
+ * browserClient (browser-client.ts) has NO S2S secret - would be exposed in DevTools.
  * Backend uses connection IP directly for browser requests (OAuth flows).
  *
  * @see https://vercel.com/docs/headers/request-headers
@@ -29,9 +31,8 @@ import axios, {
 import { headers } from 'next/headers';
 
 import { env } from '@/env/server';
-import { AUTH_COOKIES } from '@/lib/auth/config';
-import { getAuthToken } from '@/lib/auth/session';
-import { API_RETRY, API_TIMEOUTS } from './config';
+import { AUTH_COOKIES } from '@/lib/auth/constants';
+import { API_RETRY, API_TIMEOUTS } from './constants';
 
 /**
  * API base URL with versioned path
@@ -162,6 +163,10 @@ const authenticatedClient: AxiosInstance = axios.create({
  */
 authenticatedClient.interceptors.request.use(
 	async config => {
+		// Dynamic import breaks the static `api/client` → `auth/session` →
+		// `fetch-me` → `api/client` loop so Bun tests can register `session` and
+		// `fetch-me` behavior before the module graph is first closed.
+		const { getAuthToken } = await import('@/lib/auth/session');
 		const [tokenResult, ipResult] = await Promise.allSettled([
 			getAuthToken(),
 			getClientIp(),
@@ -220,6 +225,11 @@ addRetryInterceptor(authenticatedClient);
  * The actual error code mapping (→ UNAUTHORIZED) is handled by domain error mappers.
  *
  * Runs after retry interceptor so retried requests that still 401 are caught here.
+ *
+ * Kept in sync with `session.ts`'s `unauthorized` branch: both paths must
+ * clear the same cookie set (TOKEN, SESSION, USER_MODE) and detach the
+ * Sentry user from the request-scoped isolation scope so post-401 errors
+ * aren't misattributed to the now-logged-out user.
  */
 authenticatedClient.interceptors.response.use(
 	undefined,
@@ -230,6 +240,17 @@ authenticatedClient.interceptors.response.use(
 				const cookieStore = await getCookies();
 				cookieStore.delete(AUTH_COOKIES.TOKEN);
 				cookieStore.delete(AUTH_COOKIES.SESSION);
+				// Dynamic imports — `@/lib/mode/cookies` and `@/lib/sentry/user`
+				// are server-only but harmless to load here; keeping them lazy
+				// avoids booting those modules on every authenticated request,
+				// only on the rare 401 path.
+				const [{ clearUserModeCookie }, { clearSentryUser }] =
+					await Promise.all([
+						import('@/lib/mode/cookies'),
+						import('@/lib/sentry/user'),
+					]);
+				await clearUserModeCookie();
+				clearSentryUser();
 			} catch {
 				// Best-effort cleanup — fails silently outside request context (e.g. during build)
 				// No action needed: stale cookies will be caught by the next request cycle

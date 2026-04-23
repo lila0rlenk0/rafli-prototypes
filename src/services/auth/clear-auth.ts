@@ -1,6 +1,6 @@
 'use server';
 
-import { AUTH_COOKIES } from '@/lib/auth/config';
+import { AUTH_COOKIES } from '@/lib/auth/constants';
 import { clearUserModeCookie } from '@/lib/mode/cookies';
 import { cookies } from 'next/headers';
 

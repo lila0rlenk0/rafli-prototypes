@@ -1,13 +1,12 @@
 import type { Metadata } from 'next';
 import { Suspense, type ComponentProps, type ReactNode } from 'react';
 
-import { PublicNavbar } from '@/components/ui/public-navbar';
-import { ScreenLoader } from '@/components/ui/screen-loader';
+import { PublicNavbar } from '@/components/ui-custom/public-navbar';
+import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 import { env } from '@/env/server';
 import { getSession } from '@/lib/auth/session';
 import { parsePermissions } from '@/lib/permissions';
-import { ChatStoreProvider } from '@/providers/chat-store-provider';
-import { NotificationStoreProvider } from '@/providers/notification-store-provider';
+import { RealtimeProviders } from '@/providers/realtime-providers';
 import { UserStoreProvider } from '@/providers/user-store-provider';
 
 export const metadata: Metadata = {
@@ -58,9 +57,7 @@ async function PastWinnersLayoutContent({ children }: PastWinnersLayoutProps) {
 	if (isAuthenticated) {
 		return (
 			<UserStoreProvider permissions={permissions}>
-				<NotificationStoreProvider>
-					<ChatStoreProvider>{content}</ChatStoreProvider>
-				</NotificationStoreProvider>
+				<RealtimeProviders>{content}</RealtimeProviders>
 			</UserStoreProvider>
 		);
 	}
@@ -78,9 +75,9 @@ async function PastWinnersLayoutContent({ children }: PastWinnersLayoutProps) {
 function DecorativeShapes(props: ComponentProps<'div'>) {
 	return (
 		<div aria-hidden {...props}>
-			<div className="bg-accent-blue absolute -top-20 -left-40 h-[400px] w-[500px] -rotate-12 rounded-3xl opacity-50 blur-2xl" />
-			<div className="bg-accent-green absolute -top-60 -left-20 h-[400px] w-[500px] rotate-[25deg] rounded-3xl opacity-50 blur-2xl" />
-			<div className="bg-accent-yellow absolute -top-40 left-10 h-[350px] w-[450px] rotate-45 rounded-3xl opacity-50 blur-2xl" />
+			<div className="bg-brand-sky absolute -top-20 -left-40 h-100 w-125 -rotate-12 rounded-3xl opacity-50 blur-2xl" />
+			<div className="bg-brand-mint rotate-tilt-lg absolute -top-60 -left-20 h-100 w-125 rounded-3xl opacity-50 blur-2xl" />
+			<div className="bg-brand-yellow absolute -top-40 left-10 h-87.5 w-112.5 rotate-45 rounded-3xl opacity-50 blur-2xl" />
 		</div>
 	);
 }
@@ -92,8 +89,8 @@ export default function PastWinnersLayout({
 	children,
 }: PastWinnersLayoutProps) {
 	return (
-		<main className="relative min-h-screen">
-			<DecorativeShapes className="pointer-events-none fixed top-0 left-0 z-[15] origin-top-left scale-[.65]" />
+		<main className="relative min-h-dvh">
+			<DecorativeShapes className="scale-xs pointer-events-none fixed top-0 left-0 z-(--z-sticky) origin-top-left" />
 			<Suspense fallback={<ScreenLoader />}>
 				<PastWinnersLayoutContent>{children}</PastWinnersLayoutContent>
 			</Suspense>

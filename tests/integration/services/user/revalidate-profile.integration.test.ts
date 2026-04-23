@@ -25,7 +25,7 @@ describe('revalidateProfile', () => {
 
 		await revalidateProfile();
 
-		expect(mockRevalidatePath).toHaveBeenCalledWith('/profile');
+		expect(mockRevalidatePath).toHaveBeenCalledWith('/profile', 'page');
 	});
 
 	test('resolves without error', async () => {

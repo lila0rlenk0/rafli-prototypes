@@ -46,8 +46,8 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 					<ColoredCard className="absolute top-0 right-0 z-0 origin-top-right scale-[.55] md:scale-[.85]" />
 				) : null}
 
-				<div className="relative z-10 mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4 lg:px-[100px] lg:py-5">
-					<div className="flex items-center gap-8 lg:gap-[48px]">
+				<div className="max-w-hero relative z-10 mx-auto flex items-center justify-between px-6 py-4 lg:px-25 lg:py-5">
+					<div className="flex items-center gap-8 lg:gap-12">
 						<Link href="/" aria-label="Home">
 							<Logo className="h-5 w-auto" />
 						</Link>
@@ -58,7 +58,7 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 							>
 								For Participants
 							</Link>
-							<Link href="#hosts" className="text-[#121211] hover:opacity-80">
+							<Link href="#hosts" className="text-ink-900 hover:opacity-80">
 								For Hosts
 							</Link>
 						</div>
@@ -70,13 +70,13 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 							href={FEEDBACK_FORM_URL}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="flex h-[38px] items-center rounded-full border border-black px-4 text-sm font-medium text-black"
+							className="flex h-9.5 items-center rounded-full border border-black px-4 text-sm font-medium text-black"
 						>
 							Help us improve
 						</a>
 						<Button
 							asChild
-							className="h-[38px] bg-black px-6 text-sm text-white hover:bg-black/90"
+							className="h-9.5 bg-black px-6 text-sm text-white hover:bg-black/90"
 						>
 							<Link href="/sign-in">Enter the App</Link>
 						</Button>
@@ -100,7 +100,7 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 
 			{/* Mobile menu overlay */}
 			{isMenuOpen ? (
-				<div className="fixed inset-0 z-50 bg-[#f9f8f4] md:hidden">
+				<div className="bg-background fixed inset-0 z-50 md:hidden">
 					<div className="flex items-center justify-between px-6 py-4">
 						<Link href="/" aria-label="Home" onClick={closeMenu}>
 							<Logo className="h-5 w-auto" />
@@ -131,7 +131,7 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 						</Link>
 						<Button
 							asChild
-							className="mt-4 h-[38px] bg-black text-sm text-white hover:bg-black/90"
+							className="mt-4 h-9.5 bg-black text-sm text-white hover:bg-black/90"
 						>
 							<Link href="/sign-in" onClick={closeMenu}>
 								Enter the App
@@ -142,7 +142,7 @@ export function Navbar({ showDecoration = true }: NavbarProps) {
 							target="_blank"
 							rel="noopener noreferrer"
 							onClick={closeMenu}
-							className="flex h-[38px] items-center justify-center rounded-full border border-black px-4 text-sm font-medium text-black"
+							className="flex h-9.5 items-center justify-center rounded-full border border-black px-4 text-sm font-medium text-black"
 						>
 							Help us improve
 						</a>

@@ -3,12 +3,13 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { buildQueryParams } from '@/lib/api/utils';
+import { buildQueryParams } from '@/lib/api/query-params';
 import { failure, mapChatError, success } from '@/lib/errors';
 import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { CHAT_ERROR_CODES, type ChatErrorCode } from '@/types/errors';
 import {
 	type ChatPaginationQuery,
@@ -34,7 +35,7 @@ export async function getMessages(
 ): Promise<ServiceResponse<MessageListResponse, ChatErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/chat/conversations/${conversationId}/messages`,
+			`/chat/conversations/${pathParam(conversationId)}/messages`,
 			{ params: buildQueryParams(query) },
 		);
 		return success(messageListResponseSchema.parse(response.data));

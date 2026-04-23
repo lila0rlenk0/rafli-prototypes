@@ -96,7 +96,7 @@ export function AccessPassDisclaimer({
 	const accessMonths = resolveAccessMonths(ticketQuantity);
 
 	return (
-		<div className="rounded-xl border border-[#B4B4B4] bg-[#F6F6F6] px-4 py-3 text-xs leading-relaxed text-[#4A4A4A]">
+		<div className="border-ink-300 bg-paper-300 text-ink-700 rounded-xl border px-4 py-3 text-xs/relaxed">
 			<p className="mb-1 font-semibold text-black">
 				More entries, better chances of winning.
 			</p>
@@ -104,11 +104,11 @@ export function AccessPassDisclaimer({
 				Your purchase is an Access Pass for{' '}
 				{trimmedTitle ? (
 					<>
-						the following sweepstake:{' '}
+						the following sweepstakes:{' '}
 						<span className="italic">{trimmedTitle}</span>
 					</>
 				) : (
-					<>this sweepstake</>
+					<>this sweepstakes</>
 				)}
 				. It unlocks exclusive content and opportunities —{' '}
 				<strong className="font-semibold text-black">

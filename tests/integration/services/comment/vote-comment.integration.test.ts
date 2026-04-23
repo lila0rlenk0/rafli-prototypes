@@ -4,8 +4,8 @@ import { COMMENT_ERROR_CODES } from '@/types/errors/comment-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import type { VoteResponse } from '@/types/comment';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
-import { MOCK_ANALYTICS_EVENTS } from '../../../helpers/mock-events';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
+import { MOCK_ANALYTICS_EVENTS } from '@tests/helpers/mock-events';
 
 /** Minimal valid vote response */
 const VALID_RESPONSE: VoteResponse = {

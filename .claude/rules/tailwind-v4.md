@@ -20,13 +20,17 @@ CSS-first. Theme lives in `src/app/globals.css` via `@theme inline` and CSS cust
 - never arbitrary colors: no `bg-[#1a1a1a]`, `text-[13px]`
 - never raw scales in product code: no `bg-blue-500`, `text-gray-400`
 - missing token → add it to `@theme inline`, never inline
+- renaming a class (`bg-accent-yellow` → `bg-brand-yellow`, `text-body-m` → `text-body-md`) is a **token migration**, not a find-and-replace — add the new `--color-*` / `--text-*` to `@theme inline` in the same commit, otherwise Tailwind v4 silently drops the class and the element renders transparent (backgrounds) or at the browser-default size (typography)
+- brand colour names follow DESIGN.md: `rafli-black` / `brand-dark` (`#141416`, every action surface), `rafli-yellow` / `brand-yellow`, `rafli-green` / `brand-mint`, `rafli-blue` / `brand-sky`, `brand-green`. Legacy `accent-*`/`dark` aliases still resolve but are deprecated
+- typography token names follow DESIGN.md: `text-display-hero`, `text-display-hero-mobile`, `text-display-section`, `text-display-section-mobile`, `text-display-browse`, `text-headline-lg`, `text-headline-md`, `text-headline-sm`, `text-body-lg`, `text-body-md`, `text-body-sm`, `text-card-title`, `text-card-price`, `text-label-md`, `text-label-sm`, `text-caption`, `text-countdown-digit`, `text-mono-md`. The older `text-h2`/`text-body-m`/etc. aliases still resolve but are deprecated
+- `primary` ≠ `brand-dark`. DESIGN.md splits them: `--primary` is cyan `#00b8ff` (links, progress fills, selection, focus rings); `--color-brand-dark` / `--color-rafli-black` is `#141416` (every action surface — buttons, notification badges, unread chips, default `Badge` fill). Buttons use `bg-brand-dark`, never `bg-primary` — ESLint flags the latter via `local/no-primary-on-button`. Do not introduce a third action colour.
 
 ## v4 renames
 
 - border radius: `rounded-xs`=2px, `rounded-sm`=4px, `rounded`=6px, `rounded-md`=8px — do not port v3 sizes blindly
-- gradients: `bg-linear-to-r` (new), also `bg-radial`, `bg-conic`
-- opacity: `bg-red-500/60` — `bg-opacity-*` removed
-- line height: `text-base/7` — never `text-base leading-7`
+- gradients: `bg-linear-to-r` (new), also `bg-radial`, `bg-conic` — `bg-gradient-*` removed
+- opacity: `bg-red-500/60`, `text-black/60`, `border-black/10` — all `*-opacity-*` utilities removed
+- line height: `text-base/7`, `text-xl/none`, `text-display-md/tight` — never `text-base leading-7` or `text-xl leading-none`. works with both numeric (`/7`, `/[1.25]`) and named (`/none`, `/tight`, `/snug`, `/relaxed`, `/loose`) leading, and with our custom size tokens (`text-display-md/none`, `text-headline-md/tight`)
 
 ## Shorthand
 
@@ -37,9 +41,15 @@ CSS-first. Theme lives in `src/app/globals.css` via `@theme inline` and CSS cust
 
 ## Z-index
 
-- default scale (`z-0`, `z-10`, `z-30`, `z-50`) for common layers
-- custom stacking contexts → add a token (`--z-modal`) in `@theme`, apply via `z-(--z-modal)`
-- never arbitrary `z-[100]`
+- named tokens in `@theme`: `--z-sticky`, `--z-sticky-hi`, `--z-sticky-peak`, `--z-toast` — reference as `z-(--z-sticky)` etc.
+- custom stacking contexts → add a token in `@theme`, apply via `z-(--z-<name>)`
+- never arbitrary `z-[100]` / `z-[16]` — ESLint flags it
+
+## `cn()` usage
+
+- `cn()` exists for conditionals and merge conflicts, not cosmetics
+- raw string > `cn()` for static classNames — `className="size-4 animate-spin"`, never `className={cn('size-4 animate-spin')}`
+- use `cn()` only when there's ≥1 conditional, ≥2 args, or an interpolation (dynamic merging). ESLint flags `cn('single static')`
 
 ## Forbidden
 

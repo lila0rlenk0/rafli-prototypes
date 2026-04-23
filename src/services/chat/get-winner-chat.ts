@@ -8,6 +8,7 @@ import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { CHAT_ERROR_CODES, type ChatErrorCode } from '@/types/errors';
 import { type Conversation, conversationSchema } from '@/types/chat';
 import type { ServiceResponse } from '@/types/service-response';
@@ -29,7 +30,7 @@ export async function getWinnerChat(
 ): Promise<ServiceResponse<Conversation, ChatErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/chat/raffle/${raffleId}/winner-chat`,
+			`/chat/raffle/${pathParam(raffleId)}/winner-chat`,
 		);
 		return success(conversationSchema.parse(response.data));
 	} catch (error) {

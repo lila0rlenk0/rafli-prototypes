@@ -35,7 +35,7 @@ export function WinnersTable({
 		}
 		const names = name.trim().split(/\s+/);
 		const twoNames = names.slice(0, 2).join(' ');
-		return twoNames.length > 20 ? twoNames.slice(0, 17) + '...' : twoNames;
+		return twoNames.length > 20 ? `${twoNames.slice(0, 17)}...` : twoNames;
 	}
 
 	function getLocation(winner: HostWinnerEntry): string {
@@ -114,39 +114,37 @@ export function WinnersTable({
 									</td>
 								</tr>
 
-								{isExpanded ? (
-									shipping ? (
-										<tr className="bg-gray-50 text-sm">
-											<td colSpan={5} className="px-6 py-4">
-												<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-													<p>
-														<span className="font-semibold">Name:</span>{' '}
-														{shipping.name}
-													</p>
-													<p>
-														<span className="font-semibold">Phone:</span>{' '}
-														{shipping.phone || 'Not provided'}
-													</p>
-													<p className="sm:col-span-2">
-														<span className="font-semibold">Address:</span>{' '}
-														{shipping.address}
-													</p>
-													<p>
-														<span className="font-semibold">City:</span>{' '}
-														{shipping.city}
-													</p>
-													<p>
-														<span className="font-semibold">ZIP:</span>{' '}
-														{shipping.zip}
-													</p>
-													<p>
-														<span className="font-semibold">Country:</span>{' '}
-														{shipping.country}
-													</p>
-												</div>
-											</td>
-										</tr>
-									) : null
+								{isExpanded && shipping ? (
+									<tr className="bg-gray-50 text-sm">
+										<td colSpan={5} className="px-6 py-4">
+											<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+												<p>
+													<span className="font-semibold">Name:</span>{' '}
+													{shipping.name}
+												</p>
+												<p>
+													<span className="font-semibold">Phone:</span>{' '}
+													{shipping.phone || 'Not provided'}
+												</p>
+												<p className="sm:col-span-2">
+													<span className="font-semibold">Address:</span>{' '}
+													{shipping.address}
+												</p>
+												<p>
+													<span className="font-semibold">City:</span>{' '}
+													{shipping.city}
+												</p>
+												<p>
+													<span className="font-semibold">ZIP:</span>{' '}
+													{shipping.zip}
+												</p>
+												<p>
+													<span className="font-semibold">Country:</span>{' '}
+													{shipping.country}
+												</p>
+											</div>
+										</td>
+									</tr>
 								) : null}
 							</Fragment>
 						);

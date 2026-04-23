@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { ChatInbox } from '@/components/messages/chat-inbox';
+import { ChatInbox } from '@/components/messages/chat/inbox';
 import { getCurrentUser } from '@/lib/auth/session';
 
 export const metadata: Metadata = {

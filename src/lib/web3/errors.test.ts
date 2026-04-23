@@ -98,6 +98,17 @@ describe('isWalletRpcFetchFailure', () => {
 		);
 		expect(isWalletRpcFetchFailure(null)).toBe(false);
 	});
+
+	test('walks non-BaseError wrappers that preserve cause', () => {
+		// Some SDKs (wagmi, adapter middlewares) wrap viem errors in their
+		// own Error subclasses without extending BaseError. The cause-walk
+		// fallback catches transport failures hidden inside those wrappers.
+		const error = new Error('Wrapped failure', {
+			cause: new Error('Failed to fetch'),
+		});
+
+		expect(isWalletRpcFetchFailure(error)).toBe(true);
+	});
 });
 
 describe('isWalletFeeCapTooLow', () => {
@@ -128,6 +139,18 @@ describe('isWalletFeeCapTooLow', () => {
 			),
 		).toBe(false);
 		expect(isWalletFeeCapTooLow(null)).toBe(false);
+	});
+
+	test('walks non-BaseError wrappers that preserve cause', () => {
+		// Mirror the isWalletRpcFetchFailure behaviour — wagmi and custom
+		// adapter errors wrap fee-cap signals inside plain Error wrappers.
+		const error = new Error('Wrapped failure', {
+			cause: new Error(
+				'max fee per gas less than block base fee: maxFeePerGas: 1 baseFee: 2',
+			),
+		});
+
+		expect(isWalletFeeCapTooLow(error)).toBe(true);
 	});
 });
 

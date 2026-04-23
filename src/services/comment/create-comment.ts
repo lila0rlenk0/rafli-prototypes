@@ -1,5 +1,6 @@
 'use server';
 
+import { pathParam } from '@/lib/utils/routing/path-param';
 import type { Comment, CreateCommentPayload } from '@/types/comment';
 import type { CommentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -24,7 +25,7 @@ export async function createComment(
 ): Promise<ServiceResponse<Comment, CommentErrorCode>> {
 	return createCommentBase({
 		raffleId,
-		endpoint: `/raffles/${raffleId}/comments`,
+		endpoint: `/raffles/${pathParam(raffleId)}/comments`,
 		payload,
 		action: 'create-comment',
 	});

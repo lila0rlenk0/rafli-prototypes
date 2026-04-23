@@ -3,139 +3,149 @@
 import { Eye, Pencil, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type CSSProperties } from 'react';
 import { toast } from 'sonner';
 
 import { EditRaffleButton } from '@/components/raffle/edit-raffle-button';
 import { PublishSplitButton } from '@/components/raffle/publish-split-button';
-import { RaffleShareButtons } from '@/components/raffle/raffle-share-buttons';
+import { RaffleShareButtons } from '@/components/raffle/share-buttons';
 import { Button } from '@/components/ui/button';
-import { ImageCarousel } from '@/components/ui/image-carousel';
-import { isAutoCancelled } from '@/lib/utils/cancellation-reason';
-import { cn } from '@/lib/utils';
+import { ImageCarousel } from '@/components/ui-custom/image-carousel';
+import { isAutoCancelled } from '@/lib/utils/raffle/cancellation-reason';
+import { isEnrolledRaffle } from '@/lib/utils/raffle/raffle-guards';
+import { cn } from '@/lib/class-names';
 import { useUserStore } from '@/providers/user-store-provider';
 import { activateRaffle } from '@/services/raffle/activate-raffle';
 import { unpublishRaffle } from '@/services/raffle/unpublish-raffle';
 import { usePublishRaffle } from '@/services/raffle/use-publish-raffle';
-import {
-	isEnrolledRaffle,
-	RAFFLE_STATUS,
-	type MyRaffleItem,
-} from '@/types/raffle';
+import { RAFFLE_STATUS, type MyRaffleItem } from '@/types/raffle';
 import { USER_MODE } from '@/types/user-mode';
 
 interface RaffleCardProps {
 	raffle: MyRaffleItem;
 }
 
+interface CancelledBadge {
+	label: string;
+	className: string;
+}
+
 /**
- * RaffleCard Component
+ * Percentage of filled spots, clamped to 100. Unlimited raffles report 0
+ * so the progress bar stays empty and the "Unlimited" label takes over
+ * in the adjacent status span.
  *
- * Displays a summary card for a raffle, including its cover image, status,
- * progress bar, and action buttons.
+ * @returns Fraction between 0 and 100.
+ */
+function calculateProgress(current: number, max: number): number {
+	if (max === 0) return 0;
+	return Math.min((current / max) * 100, 100);
+}
+
+/**
+ * Auto-cancelled raffles (missed threshold, no tickets) render orange;
+ * host-cancelled raffles render red to signal a deliberate withdrawal.
+ *
+ * @returns Badge config or null when the raffle is not cancelled.
+ */
+function getCancelledBadge(raffle: MyRaffleItem): CancelledBadge | null {
+	if (raffle.status !== RAFFLE_STATUS.CANCELLED) return null;
+	if (isAutoCancelled(raffle)) {
+		return {
+			label: 'Auto-Cancelled',
+			className: 'bg-orange-50 text-orange-600',
+		};
+	}
+	return {
+		label: 'Cancelled',
+		className: 'bg-red-50 text-red-600',
+	};
+}
+
+/**
+ * Money formatter shared by price and prize value — US-localized with up
+ * to two decimals, dropped when the amount is an integer.
+ *
+ * @returns Formatted amount without currency symbol.
+ */
+function formatMoney(amount: string | number): string {
+	return Number(amount).toLocaleString('en-US', {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 2,
+	});
+}
+
+/**
+ * Formats the fill status — "Unlimited" for uncapped raffles, otherwise a
+ * percentage with up to two decimals.
+ */
+function formatFillStatus(options: {
+	isUnlimited: boolean;
+	progress: number;
+}): string {
+	const { isUnlimited, progress } = options;
+	if (isUnlimited) return 'Unlimited';
+	return `${progress.toLocaleString('en-US', {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 2,
+	})}% filled`;
+}
+
+/**
+ * Participants label — only the current count for unlimited raffles,
+ * otherwise `current/max`.
+ */
+function formatParticipants(options: {
+	participantsCount: number;
+	maxParticipants: number;
+	isUnlimited: boolean;
+}): string {
+	const { participantsCount, maxParticipants, isUnlimited } = options;
+	const formatter = new Intl.NumberFormat('en-US');
+	if (isUnlimited) return formatter.format(participantsCount);
+	return `${formatter.format(participantsCount)}/${formatter.format(maxParticipants)}`;
+}
+
+/**
+ * RaffleCard — summary tile shown on the host's my-raffles dashboard.
+ * Renders cover carousel, status badge, progress bar, and a mode-driven
+ * action row (draft edit, queued go-live, or public-facing Details link).
  */
 export function RaffleCard({ raffle }: RaffleCardProps) {
 	const mode = useUserStore(state => state.mode);
-
 	const isUnlimited = raffle.maxParticipants === 0;
-
-	/**
-	 * Calculates the percentage of filled spots in a raffle
-	 * @param current - Current number of participants
-	 * @param max - Maximum number of participants
-	 * @returns Percentage value between 0 and 100
-	 */
-	function calculateProgress(current: number, max: number): number {
-		if (max === 0) return 0;
-		return Math.min((current / max) * 100, 100);
-	}
-
-	/** Show edit button only for draft raffles in host mode (backend restricts updates to draft). */
-	function shouldShowEditButton(): boolean {
-		if (mode === null) {
-			return false;
-		}
-
-		const isHostMode = mode === USER_MODE.HOST;
-		return isHostMode && raffle.status === RAFFLE_STATUS.DRAFT;
-	}
-
 	const progress = calculateProgress(
 		raffle.participantsCount,
 		raffle.maxParticipants,
 	);
-	const showEditButton = shouldShowEditButton();
+	// Progress-bar fill comes from a derived number — Tailwind cannot emit
+	// the exact fractional width, so we hand off a variable reference.
+	const progressFillStyle: CSSProperties = { width: `${progress}%` };
+	const isHostMode = mode === USER_MODE.HOST;
+	const showEditButton =
+		mode !== null && isHostMode && raffle.status === RAFFLE_STATUS.DRAFT;
 	const showQueuedActions =
-		mode === USER_MODE.HOST && raffle.status === RAFFLE_STATUS.QUEUED;
-
-	/**
-	 * Gets cancellation badge label and color for cancelled raffles.
-	 * Auto-cancelled → orange, host-cancelled → red.
-	 * @returns Badge config or null if not cancelled
-	 */
-	function getCancelledBadge(): {
-		label: string;
-		className: string;
-	} | null {
-		if (raffle.status !== RAFFLE_STATUS.CANCELLED) return null;
-		if (isAutoCancelled(raffle)) {
-			return {
-				label: 'Auto-Cancelled',
-				className: 'bg-orange-50 text-orange-600',
-			};
-		}
-		return {
-			label: 'Cancelled',
-			className: 'bg-red-50 text-red-600',
-		};
-	}
-
-	const cancelledBadge = getCancelledBadge();
-
-	/**
-	 * Gets the fill status text
-	 * @returns "Unlimited" for unlimited raffles, otherwise percentage
-	 */
-	function getFillStatus(): string {
-		if (isUnlimited) return 'Unlimited';
-		return `${progress.toLocaleString('en-US', {
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 2,
-		})}% filled`;
-	}
-
-	/**
-	 * Gets the participants display text
-	 * @returns Only current count for unlimited, otherwise "current/max"
-	 */
-	function getParticipantsDisplay(): string {
-		const formatter = new Intl.NumberFormat('en-US');
-		if (isUnlimited) {
-			return formatter.format(raffle.participantsCount);
-		}
-		return `${formatter.format(raffle.participantsCount)}/${formatter.format(raffle.maxParticipants)}`;
-	}
-
-	function getTicketPrice() {
-		const value = Number(raffle.ticketPriceAmount);
-		return value.toLocaleString('en-US', {
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 2,
-		});
-	}
-
-	function getPrizeValue() {
-		const prizeValue = Number(raffle.declaredValueAmount);
-		return prizeValue.toLocaleString('en-US', {
-			minimumFractionDigits: 0,
-			maximumFractionDigits: 2,
-		});
-	}
-
+		isHostMode && raffle.status === RAFFLE_STATUS.QUEUED;
+	const cancelledBadge = getCancelledBadge(raffle);
 	const isClickableCard = !showEditButton && !showQueuedActions;
 
+	function renderCardActions() {
+		if (showEditButton) return <DraftRaffleActions raffle={raffle} />;
+		if (showQueuedActions) return <QueuedRaffleActions raffle={raffle} />;
+		return (
+			<Link
+				href={`/browse/${raffle.publicSlugOrCode}`}
+				className="relative z-10 mt-0 block"
+			>
+				<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
+					Details
+				</Button>
+			</Link>
+		);
+	}
+
 	return (
-		<div className="group relative flex max-w-70 min-w-70 flex-col overflow-hidden rounded-[24px] border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
+		<div className="group relative flex max-w-70 min-w-70 flex-col overflow-hidden rounded-3xl border-2 border-transparent bg-white transition-colors duration-150 hover:border-black">
 			<ImageCarousel
 				coverImage={raffle.coverMediaUrl}
 				galleryImages={raffle.galleryMediaUrls}
@@ -171,47 +181,46 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 
 				<div className="mb-4 flex flex-col">
 					<div className="flex items-center justify-between">
-						<p className="text-muted-foreground">Ticket prize</p>
-						<p className="text-xl font-semibold">${getTicketPrice()}</p>
+						<p className="text-muted-foreground">Entry price</p>
+						<p className="text-xl font-semibold">
+							${formatMoney(raffle.ticketPriceAmount)}
+						</p>
 					</div>
 					<div className="flex items-center justify-between">
 						<p className="text-muted-foreground">Prize value</p>
-						<p className="text-xl font-semibold">${getPrizeValue()}</p>
+						<p className="text-xl font-semibold">
+							${formatMoney(raffle.declaredValueAmount)}
+						</p>
 					</div>
 					{isEnrolledRaffle(raffle) ? (
 						<div className="flex items-center justify-between">
-							<p className="text-muted-foreground">My Tickets</p>
+							<p className="text-muted-foreground">My Entries</p>
 							<p className="text-xl font-semibold">{raffle.myTicketCount}</p>
 						</div>
 					) : null}
 				</div>
 
 				<div className="mb-2 flex items-center justify-between text-sm">
-					<span className="text-[#7B7B7B]">{getParticipantsDisplay()}</span>
-					<span className="text-[#7B7B7B]">{getFillStatus()}</span>
+					<span className="text-ink-500">
+						{formatParticipants({
+							participantsCount: raffle.participantsCount,
+							maxParticipants: raffle.maxParticipants,
+							isUnlimited,
+						})}
+					</span>
+					<span className="text-ink-500">
+						{formatFillStatus({ isUnlimited, progress })}
+					</span>
 				</div>
 
-				<div className="mb-6 h-[11px] w-full overflow-hidden rounded-full bg-gray-100">
+				<div className="mb-6 h-2.75 w-full overflow-hidden rounded-full bg-gray-100">
 					<div
 						className="bg-primary h-full transition-all duration-300 ease-out"
-						style={{ width: `${progress}%` }}
+						style={progressFillStyle}
 					/>
 				</div>
 
-				{showEditButton ? (
-					<DraftRaffleActions raffle={raffle} />
-				) : showQueuedActions ? (
-					<QueuedRaffleActions raffle={raffle} />
-				) : (
-					<Link
-						href={`/browse/${raffle.publicSlugOrCode}`}
-						className="relative z-10 mt-0 block"
-					>
-						<Button className="w-full cursor-pointer rounded-full border-2 border-black bg-black py-4 font-semibold text-white hover:bg-white hover:text-black">
-							Details
-						</Button>
-					</Link>
-				)}
+				{renderCardActions()}
 
 				<div className="relative z-10">
 					<RaffleShareButtons
@@ -225,8 +234,8 @@ export function RaffleCard({ raffle }: RaffleCardProps) {
 }
 
 /**
- * Draft-only actions (edit, preview, publish).
- * Isolated so usePublishRaffle hook is only mounted for draft cards.
+ * Draft-only actions (edit, preview, publish). Isolated so
+ * `usePublishRaffle` is only mounted for draft cards.
  */
 function DraftRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 	const { isPublishing, handlePublish } = usePublishRaffle({
@@ -241,7 +250,7 @@ function DraftRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 				<Link href={`/browse/${raffle.publicSlugOrCode}`}>
 					<Button
 						variant="outline"
-						className="cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
+						className="cursor-pointer rounded-full border-2 border-black p-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
 					>
 						<Eye className="size-4" />
 						Preview
@@ -258,27 +267,29 @@ function DraftRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 }
 
 /**
- * Queued raffle actions — Edit (unpublish→draft then navigate) and Go Live Now.
- * Mirrors DraftRaffleActions layout: [Edit] [Preview] on top, action button below.
+ * Queued raffle actions — Edit (unpublish→draft then navigate) and Go
+ * Live Now. Mirrors DraftRaffleActions layout so the CTA row alignment
+ * is identical across statuses.
  */
 function QueuedRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 	const router = useRouter();
-	// Tracks in-flight "Go Live Now" request to disable both buttons
+	// Tracks in-flight "Go Live Now" request to disable both buttons.
 	const [isActivating, setIsActivating] = useState(false);
-	// Tracks in-flight "Edit" (unpublish then navigate) request
+	// Tracks in-flight "Edit" (unpublish then navigate) request.
 	const [isUnpublishing, setIsUnpublishing] = useState(false);
 
-	// useCallback: stable reference passed as onClick — avoids re-render of Button children
+	// useCallback: stable reference passed as onClick — avoids re-render
+	// of Button children when parent re-renders for unrelated reasons.
 	const handleActivate = useCallback(async () => {
 		setIsActivating(true);
 		try {
 			const result = await activateRaffle(raffle.id);
 			if (!result.success) {
-				toast.error('Failed to activate raffle. Please try again.');
+				toast.error('Failed to activate sweepstakes. Please try again.');
 				return;
 			}
-			toast.success('Raffle is now live!');
-			// Server action already revalidated — refresh to pick up new status
+			toast.success('Sweepstakes is now live!');
+			// Server action already revalidated — refresh picks up the new status.
 			router.refresh();
 		} catch {
 			toast.error('Something went wrong. Please try again.');
@@ -287,16 +298,14 @@ function QueuedRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 		}
 	}, [raffle.id, router]);
 
-	/**
-	 * Unpublishes the raffle (queued→draft) then navigates to the edit page.
-	 * The backend must revert to draft before the update endpoint accepts changes.
-	 */
+	// Backend requires the status to revert to draft before the update
+	// endpoint accepts changes; unpublish then navigate.
 	const handleEdit = useCallback(async () => {
 		setIsUnpublishing(true);
 		try {
 			const result = await unpublishRaffle(raffle.id);
 			if (!result.success) {
-				toast.error('Failed to revert raffle to draft. Please try again.');
+				toast.error('Failed to revert sweepstakes to draft. Please try again.');
 				return;
 			}
 			router.push(`/my-raffles/${raffle.publicSlugOrCode}/edit`);
@@ -324,7 +333,7 @@ function QueuedRaffleActions({ raffle }: { raffle: MyRaffleItem }) {
 					<Button
 						variant="outline"
 						disabled={isBusy}
-						className="cursor-pointer rounded-full border-2 border-black px-4 py-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
+						className="cursor-pointer rounded-full border-2 border-black p-4 font-semibold transition-colors duration-150 hover:bg-black hover:text-white"
 					>
 						<Eye className="size-4" />
 						Preview

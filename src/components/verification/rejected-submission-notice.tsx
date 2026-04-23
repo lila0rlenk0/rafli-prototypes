@@ -1,9 +1,7 @@
 import { XCircle } from 'lucide-react';
 
-import {
-	getVerificationTypeLabel,
-	type KycSubmissionSummary,
-} from '@/types/kyc-submission';
+import { getVerificationTypeLabel } from '@/lib/verification/labels';
+import { type KycSubmissionSummary } from '@/types/kyc-submission';
 
 interface RejectedSubmissionNoticeProps {
 	submission: KycSubmissionSummary;

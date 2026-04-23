@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { AUTH_ERROR_CODES } from '@/types/errors/auth-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Mocks ---
 
@@ -112,5 +112,50 @@ describe('resetPassword', () => {
 			COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR,
 			{ service: 'auth', action: 'reset-password' },
 		);
+	});
+
+	// Defence: server actions are public POST endpoints — a crafted body with
+	// an extra `email` or `userId` could flip the wrong account if the backend
+	// ever trusts more than the token. Strip unknowns with Zod before forward.
+	test('strips unknown fields before forwarding (mass-assignment defense)', async () => {
+		mockPost.mockResolvedValueOnce(mockAxiosResponse({}));
+
+		const tampered = {
+			...VALID_INPUT,
+			email: 'victim@example.com',
+			userId: 'victim-id',
+		};
+
+		await resetPassword(tampered);
+
+		expect(mockPost).toHaveBeenCalledWith('/auth/reset-password', VALID_INPUT);
+	});
+
+	test('rejects input below 12-char password policy without hitting backend', async () => {
+		mockPost.mockReset();
+		const result = await resetPassword({
+			token: 'reset-token',
+			newPassword: 'short',
+		});
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+		expect(mockPost).not.toHaveBeenCalled();
+	});
+
+	test('rejects empty reset token without hitting backend', async () => {
+		mockPost.mockReset();
+		const result = await resetPassword({
+			token: '',
+			newPassword: 'newpassword12!',
+		});
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+		expect(mockPost).not.toHaveBeenCalled();
 	});
 });

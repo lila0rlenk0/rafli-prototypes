@@ -43,7 +43,7 @@ export async function CreditsSection() {
 			id="credits"
 		>
 			<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-				<h3 className="font-clash-display text-h3 flex-1 font-semibold text-black">
+				<h3 className="font-clash-display text-headline-sm flex-1 font-semibold text-black">
 					Credits
 				</h3>
 				{hasHistory ? (
@@ -61,19 +61,19 @@ export async function CreditsSection() {
 
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
 				<div className="flex flex-col gap-1">
-					<span className="text-sm text-[#929292]">Available Balance</span>
+					<span className="text-ink-400 text-sm">Available Balance</span>
 					<span className="font-clash-display text-2xl font-semibold">
 						{formatCredits(availableAmount)}
 					</span>
 				</div>
 				<div className="flex flex-col gap-1">
-					<span className="text-sm text-[#929292]">Total Earned</span>
+					<span className="text-ink-400 text-sm">Total Earned</span>
 					<span className="font-clash-display text-2xl font-semibold">
 						{formatCredits(totalGranted)}
 					</span>
 				</div>
 				<div className="flex flex-col gap-1">
-					<span className="text-sm text-[#929292]">Total Spent</span>
+					<span className="text-ink-400 text-sm">Total Spent</span>
 					<span className="font-clash-display text-2xl font-semibold">
 						{formatCredits(totalSpent)}
 					</span>

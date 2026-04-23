@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 type StepStatus = 'completed' | 'active' | 'pending';
 

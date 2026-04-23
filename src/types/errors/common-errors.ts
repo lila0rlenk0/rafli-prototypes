@@ -34,9 +34,7 @@ export const COMMON_ERROR_CODES = {
 	GLOBAL_UPLOAD_FILE_TOO_LARGE: 'global:upload:file-too-large',
 	/** Backend: Invalid image format - thrown by image processor */
 	GLOBAL_UPLOAD_INVALID_IMAGE: 'global:upload:invalid-image',
-	/** Backend: uploaded file MIME type or magic bytes didn't match allowed types */
-	GLOBAL_UPLOAD_INVALID_FILE_TYPE: 'global:upload:invalid-file-type',
-	/** Backend: multipart request missing Content-Type or not multipart/form-data */
+	/** Backend: uploaded file MIME type or magic bytes did not match allowed types */
 	GLOBAL_UPLOAD_INVALID_CONTENT_TYPE: 'global:upload:invalid-content-type',
 	/** Backend: multipart Content-Type missing boundary parameter */
 	GLOBAL_UPLOAD_MISSING_BOUNDARY: 'global:upload:missing-boundary',

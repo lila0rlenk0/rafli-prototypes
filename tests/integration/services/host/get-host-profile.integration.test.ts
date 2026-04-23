@@ -4,7 +4,7 @@ import { HOST_ERROR_CODES } from '@/types/errors/host-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import type { HostProfile } from '@/types/host';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 /** Minimal valid host profile */
 const VALID_PROFILE: HostProfile = {

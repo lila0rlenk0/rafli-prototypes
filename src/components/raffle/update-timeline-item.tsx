@@ -1,7 +1,7 @@
 'use client';
 
-import { ImageCarousel } from '@/components/ui/image-carousel';
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer';
+import { ImageCarousel } from '@/components/ui-custom/image-carousel';
+import { MarkdownRenderer } from '@/components/ui-custom/markdown-renderer';
 import type { Update } from '@/types/update';
 
 interface UpdateTimelineItemProps {
@@ -43,7 +43,7 @@ export function UpdateTimelineItem({
 	const hasText = update.text && update.text.trim().length > 0;
 
 	return (
-		<div className="space-y-2 pb-6 last:pb-0">
+		<div className="flex flex-col gap-2 pb-6 last:pb-0">
 			{/* Host info */}
 			<div className="flex items-center gap-1">
 				<span className="font-semibold">
@@ -71,8 +71,8 @@ export function UpdateTimelineItem({
 
 			{/* Description */}
 			{hasText ? (
-				<div className="mt-4 space-y-2">
-					<p className="text-[#7B7B7B]">Description</p>
+				<div className="mt-4 flex flex-col gap-2">
+					<p className="text-ink-500">Description</p>
 					<MarkdownRenderer content={update.text} />
 				</div>
 			) : null}

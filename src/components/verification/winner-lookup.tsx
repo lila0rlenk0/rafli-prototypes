@@ -11,12 +11,12 @@ import {
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { CopyButton } from '@/components/ui/copy-button';
-import { cn } from '@/lib/utils';
+import { CopyButton } from '@/components/ui-custom/copy-button';
+import { cn } from '@/lib/class-names';
 import {
 	getVrfCoordinatorUrl,
 	getVrfHandlerUrl,
-} from '@/lib/verification-links';
+} from '@/lib/verification/links';
 import { verifyWinner } from '@/services/verification/verify-winner';
 import { VERIFICATION_ERROR_CODES } from '@/types/errors/verification-errors';
 import type { VerificationErrorCode } from '@/types/errors/verification-errors';
@@ -29,9 +29,12 @@ type ResultState =
 function getErrorMessage(code: VerificationErrorCode): string {
 	switch (code) {
 		case VERIFICATION_ERROR_CODES.WINNER_NOT_FOUND:
-			return 'Winner not found. Check the raffle ID and position.';
+			return 'Winner not found. Check the sweepstakes ID and position.';
+		// Backend emits either `no-vrf-data` (VRF still pending) or
+		// `not-completed` (status guard). Both map to the same user message.
 		case VERIFICATION_ERROR_CODES.RAFFLE_NOT_COMPLETED:
-			return 'This raffle has not been drawn yet.';
+		case VERIFICATION_ERROR_CODES.RAFFLE_NOT_COMPLETED_ALT:
+			return 'This sweepstakes has not been drawn yet.';
 		case 'validation_error':
 			return 'Invalid response from server.';
 		case 'network_error':
@@ -47,7 +50,7 @@ export function WinnerLookup() {
 	const [result, setResult] = useState<ResultState | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	async function handleLookup(e: React.FormEvent) {
+	async function handleLookup(e: React.SyntheticEvent<HTMLFormElement>) {
 		e.preventDefault();
 
 		const posNum = parseInt(position, 10);
@@ -85,28 +88,23 @@ export function WinnerLookup() {
 		setPosition('1');
 	}
 
-	return (
-		<div className="rounded-2xl border border-black bg-white p-6 shadow-sm">
-			<div className="mb-4 flex items-center gap-2">
-				<Trophy className="size-5 text-amber-600" />
-				<h3 className="text-lg font-semibold">Verify a Winner</h3>
-			</div>
-
-			{!result ? (
-				<form onSubmit={handleLookup} className="space-y-4">
+	function renderLookupBody() {
+		if (!result) {
+			return (
+				<form onSubmit={handleLookup} className="flex flex-col gap-4">
 					<div>
 						<label
 							htmlFor="raffleId"
 							className="mb-1 block text-sm font-medium text-neutral-700"
 						>
-							Raffle ID
+							Sweepstakes ID
 						</label>
 						<input
 							id="raffleId"
 							type="text"
 							value={raffleId}
 							onChange={e => setRaffleId(e.target.value)}
-							placeholder="e.g., raffle_abc123"
+							placeholder="e.g., sweepstakes_abc123"
 							className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-colors focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={loading}
 						/>
@@ -154,15 +152,28 @@ export function WinnerLookup() {
 						)}
 					</button>
 				</form>
-			) : result.type === 'success' ? (
+			);
+		}
+		if (result.type === 'success') {
+			return (
 				<WinnerSuccess
 					data={result.data}
 					raffleId={raffleId}
 					onReset={handleReset}
 				/>
-			) : (
-				<LookupError message={result.message} onReset={handleReset} />
-			)}
+			);
+		}
+		return <LookupError message={result.message} onReset={handleReset} />;
+	}
+
+	return (
+		<div className="rounded-2xl border border-black bg-white p-6 shadow-sm">
+			<div className="mb-4 flex items-center gap-2">
+				<Trophy className="size-5 text-amber-600" />
+				<h3 className="text-lg font-semibold">Verify a Winner</h3>
+			</div>
+
+			{renderLookupBody()}
 		</div>
 	);
 }
@@ -180,7 +191,7 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 	}
 
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4">
 			<div className="flex items-center gap-2 text-amber-600">
 				<Trophy className="size-5" />
 				<span className="font-semibold">
@@ -189,9 +200,9 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 				</span>
 			</div>
 
-			<div className="space-y-3 rounded-lg bg-neutral-50 p-4">
-				<WinnerRow label="Winning Ticket" value={`#${data.actualTicketId}`} />
-				<WinnerRow label="Ticket Code" value={data.ticketCode} mono />
+			<div className="flex flex-col gap-3 rounded-lg bg-neutral-50 p-4">
+				<WinnerRow label="Winning Entry" value={`#${data.actualTicketId}`} />
+				<WinnerRow label="Entry Code" value={data.ticketCode} mono />
 				<WinnerRow
 					label="Merkle Verified"
 					value={
@@ -234,14 +245,14 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 				/>
 			</div>
 
-			<div className="space-y-2">
+			<div className="flex flex-col gap-2">
 				<div className="flex items-center justify-between">
 					<span className="text-xs text-neutral-500">Random Number</span>
 					<CopyButton value={data.randomNumber} />
 				</div>
 				<div className="rounded bg-neutral-100 px-2 py-1.5">
 					<code
-						className="block font-mono text-[11px] break-all"
+						className="text-2xs block font-mono break-all"
 						title={data.randomNumber}
 					>
 						{truncateHex(data.randomNumber)}
@@ -249,10 +260,10 @@ function WinnerSuccess({ data, raffleId, onReset }: WinnerSuccessProps) {
 				</div>
 			</div>
 
-			<div className="space-y-2">
+			<div className="flex flex-col gap-2">
 				<span className="text-xs text-neutral-500">Selection Formula</span>
 				<div className="rounded bg-neutral-100 px-2 py-1.5">
-					<code className="block font-mono text-[11px] break-all">
+					<code className="text-2xs block font-mono break-all">
 						{data.formula}
 					</code>
 				</div>
@@ -306,7 +317,7 @@ interface LookupErrorProps {
 
 function LookupError({ message, onReset }: LookupErrorProps) {
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4">
 			<div className="flex items-center gap-2 text-red-600">
 				<AlertCircle className="size-5" />
 				<span className="font-semibold">Lookup Failed</span>

@@ -65,7 +65,7 @@ export function clearSentryUser(): void {
  * Returns `null` in SSR (no `document`), when the cookie is absent, or
  * when parsing fails. Never throws — telemetry should never crash the UI.
  *
- * Must stay in sync with `AUTH_COOKIES.SESSION` in `@/lib/auth/config`,
+ * Must stay in sync with `AUTH_COOKIES.SESSION` in `@/lib/auth/constants`,
  * which can't be imported here because this file is imported by the
  * Sentry client bootstrap and we want zero-cost dependencies during
  * SDK init. The cookie key is declared inline for that reason.

@@ -50,12 +50,12 @@ export function CookieConsentBanner() {
 			aria-label="Cookie consent"
 			aria-describedby="cookie-consent-description"
 			aria-modal="false"
-			className="bg-card text-card-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 fixed end-4 bottom-4 z-50 w-[calc(100vw-2rem)] max-w-sm rounded-xl border-2 border-black p-4 shadow-lg duration-300"
+			className="bg-card text-card-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 w-drawer-main fixed end-4 bottom-4 z-50 max-w-sm rounded-xl border-2 border-black p-4 shadow-lg duration-300"
 		>
 			<p className="text-sm font-semibold">We value your privacy</p>
 			<p
 				id="cookie-consent-description"
-				className="text-muted-foreground mt-1 text-xs leading-relaxed"
+				className="text-muted-foreground mt-1 text-xs/relaxed"
 			>
 				We use cookies to run our service, remember your preferences, and
 				understand how the platform is used. You can accept all or reject

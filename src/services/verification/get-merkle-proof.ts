@@ -1,7 +1,7 @@
 'use server';
 
-import { pathParam } from '@/lib/api/config';
 import { baseClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapVerificationError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { COMMON_ERROR_CODES } from '@/types/errors';

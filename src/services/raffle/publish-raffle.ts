@@ -1,11 +1,12 @@
 'use server';
 
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -31,7 +32,7 @@ export async function publishRaffle(
 	try {
 		// Step 1: Publish draft — backend transitions to queued or live based on startAt
 		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/publish`,
+			`/raffles/${pathParam(raffleId)}/publish`,
 		);
 
 		// Step 2: Validate response shape

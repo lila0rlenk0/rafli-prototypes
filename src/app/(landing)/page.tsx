@@ -19,7 +19,7 @@ import { TrustSection } from '@/components/landing/trust-section';
  */
 export default function LandingPage() {
 	return (
-		<div className="min-h-screen bg-[#f9f8f4]">
+		<div className="bg-background min-h-dvh">
 			<Navbar />
 			<main>
 				<HeroSection />

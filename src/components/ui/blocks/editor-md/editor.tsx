@@ -1,15 +1,15 @@
 'use client';
 
 import {
-	InitialConfigType,
+	type InitialConfigType,
 	LexicalComposer,
 } from '@lexical/react/LexicalComposer';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { EditorState, SerializedEditorState } from 'lexical';
+import { type EditorState, type SerializedEditorState } from 'lexical';
 
 import { editorTheme } from '@/components/ui/editor/themes/editor-theme';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/class-names';
 
 import { nodes } from './nodes';
 import { Plugins } from './plugins';

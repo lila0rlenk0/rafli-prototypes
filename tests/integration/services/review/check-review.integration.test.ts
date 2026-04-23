@@ -4,7 +4,7 @@ import { REVIEW_ERROR_CODES } from '@/types/errors/review-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import type { CheckReviewResponse } from '@/types/review';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const VALID_RESPONSE: CheckReviewResponse = {
 	canReview: true,

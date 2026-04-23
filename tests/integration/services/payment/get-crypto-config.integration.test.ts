@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { PAYMENT_ERROR_CODES } from '@/types/errors/payment-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const mockBaseGet = mock();
 const mockCaptureServiceError = mock();

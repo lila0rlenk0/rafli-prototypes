@@ -3,3 +3,15 @@
 # to mitigate supply chain attacks, giving time for malicious
 # packages to be detected and removed before reaching this project.
 minimumReleaseAge = 1296000
+# Security patches (CVE) may ship before the age gate; allow these packages through.
+minimumReleaseAgeExcludes = [
+	"next",
+	"react",
+	"react-dom",
+	"eslint-config-next",
+]
+
+[test]
+# Neutralise `server-only` so `@/lib/api/*` modules can be imported from
+# integration tests. The real guard still runs during Next.js build.
+preload = ["./tests/preload.ts"]

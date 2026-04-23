@@ -45,6 +45,21 @@ import {
 const RE_URN_PREFIX = /^urn:raffles:problem:(.+)$/;
 
 /**
+ * Only treat `message` as a transport for machine codes when it matches a known
+ * domain prefix — arbitrary "foo: bar" user-facing text is not a code (injection mitigated)
+ */
+const MESSAGE_AS_ERROR_CODE_PREFIXES: readonly string[] = [
+	'global:',
+	'auth:',
+	'core:',
+	'payments:',
+	'admin:',
+	'promo:',
+	'chat:',
+	'moderation:',
+];
+
+/**
  * Extracts error code from backend RFC 7807 response
  *
  * Handles multiple response formats:
@@ -74,12 +89,11 @@ function extractErrorCode(error: unknown): string | null {
 
 	// Step 3: Try 'message' field with colon-separated code (e.g. "auth:user:invalid-credentials").
 	// (Some endpoints return code in message field)
-	if (
-		data.message &&
-		typeof data.message === 'string' &&
-		data.message.includes(':')
-	) {
-		return data.message;
+	if (data.message && typeof data.message === 'string') {
+		const t = data.message.trim();
+		if (MESSAGE_AS_ERROR_CODE_PREFIXES.some(prefix => t.startsWith(prefix))) {
+			return data.message;
+		}
 	}
 
 	// Step 4: Try simple 'code' field (e.g. "unauthenticated").
@@ -337,10 +351,18 @@ export const mapUpdateError = createDomainErrorMapper<UpdateErrorCode>([
 
 /**
  * Maps verification errors to VerificationErrorCode.
- * Accepts `core:*` and `global:*` prefixes.
+ *
+ * Accepts `core:`, `ledger:`, and `global:` prefixes. The public verify-ticket
+ * endpoint returns `ledger:ticket:not-found` for the unknown-code 404 —
+ * routing it through `core:` alone collapsed it into `unknown_error` and the
+ * user saw a generic "something went wrong" instead of "ticket not found".
  */
 export const mapVerificationError =
-	createDomainErrorMapper<VerificationErrorCode>(['core:', 'global:']);
+	createDomainErrorMapper<VerificationErrorCode>([
+		'core:',
+		'ledger:',
+		'global:',
+	]);
 
 /**
  * Maps notification errors to NotificationErrorCode.

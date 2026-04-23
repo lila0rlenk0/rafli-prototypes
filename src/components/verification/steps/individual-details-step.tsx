@@ -12,90 +12,63 @@ import {
 	FieldSet,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select';
-import {
-	CATEGORY_LABELS,
-	ADDRESS_DOC_LABELS,
-	ID_TYPE_LABELS,
-} from '@/lib/verification/labels';
-import { cn } from '@/lib/utils';
-import type { IndividualFormData } from '@/lib/validation/verification/verification-form-schema';
+import { CATEGORY_LABELS } from '@/lib/verification/labels';
+import { cn } from '@/lib/class-names';
+import type { IndividualFormData } from '@/lib/validation/verification/form-schema';
 
-import { useVerificationForm } from '../verification-form-provider';
+import { VERIFICATION_TYPE } from '@/types/kyc-submission';
+
+import { useVerificationForm } from '@/components/verification/form/form-provider';
+import { IdentityDocumentFieldset } from './shared/identity-document-fieldset';
+import { useDobField } from './shared/use-dob-field';
+import { shouldCollectAddressDoc } from './shared/use-doc-type-field';
 
 const PHONE_ALLOWED_CHARS = /[^0-9+\-()\s]/g;
+
+// Pre-computed once — the picker's upper bound matches "today" and changes
+// only across year rollovers, which never happens during a single session.
+const CURRENT_YEAR = new Date().getFullYear();
+
+// Fields the step validates before advancing — kept adjacent to the step so
+// the schema source of truth (verificationFormSchema) is the only place
+// names are declared authoritatively.
+const INDIVIDUAL_STEP_FIELDS = [
+	'fullLegalName',
+	'dateOfBirth',
+	'phoneNumber',
+	'residentialAddress',
+	'identityDocType',
+	'addressDocType',
+	'plannedCategories',
+] as const;
 
 /**
  * IndividualDetailsStep Component
  *
  * Collects personal information for KYB individual host verification.
- * Fields: name, DOB, phone, address, ID type, address doc type,
- * and planned raffle categories. Email is sent automatically from the
- * user's session.
+ * Fields: name, DOB, phone, address, ID type, address doc type, planned
+ * raffle categories. Email is pulled from the user's session in the
+ * provider, not entered here.
  *
- * @returns Form fields for individual host verification
+ * @returns Form fields for individual host verification.
  */
 export function IndividualDetailsStep() {
 	const { form, nextStep } = useVerificationForm();
-	const {
-		register,
-		formState: { errors },
-		setValue,
-		watch,
-		trigger,
-	} = form;
-
-	// Type casts needed throughout this step: VerificationFormData is a Zod
-	// discriminated union, so RHF's generics don't narrow field names per branch.
-	// Each step knows its branch but the form type is the full union.
-	const fieldErrors = errors as Record<string, { message?: string }>;
-
-	const dateOfBirth = watch(
-		'dateOfBirth' as keyof IndividualFormData,
-	) as string;
-	const identityDocType = watch(
-		'identityDocType' as keyof IndividualFormData,
-	) as string;
-	const addressDocType = watch(
-		'addressDocType' as keyof IndividualFormData,
-	) as string;
+	const { register, formState, setValue, watch, trigger } = form;
+	// Cast once at the boundary — the union RHF type resists per-branch narrowing.
+	const fieldErrors = formState.errors as Record<string, { message?: string }>;
+	const dob = useDobField(form);
 	const plannedCategories =
 		(watch('plannedCategories' as keyof IndividualFormData) as
 			| string[]
 			| undefined) ?? [];
 
-	// Named handlers for setValue calls — avoids inline arrows in JSX.
-	// The `as never` casts are needed because VerificationFormData is a
-	// discriminated union and RHF's generics don't narrow per branch.
-	function handleDateOfBirthChange(value: string) {
-		setValue('dateOfBirth' as keyof IndividualFormData, value as never, {
-			shouldValidate: true,
-		});
-	}
-
-	function handleIdentityDocTypeChange(value: string) {
-		setValue('identityDocType' as keyof IndividualFormData, value as never, {
-			shouldValidate: true,
-		});
-	}
-
-	function handleAddressDocTypeChange(value: string) {
-		setValue('addressDocType' as keyof IndividualFormData, value as never, {
-			shouldValidate: true,
-		});
-	}
-
 	function handleCategoryToggle(category: string) {
-		const current = plannedCategories;
-		const updated = current.includes(category)
-			? current.filter((c: string) => c !== category)
-			: [...current, category];
+		const updated = plannedCategories.includes(category)
+			? plannedCategories.filter(function drop(c) {
+					return c !== category;
+				})
+			: [...plannedCategories, category];
 		setValue(
 			'plannedCategories' as keyof IndividualFormData,
 			updated as never,
@@ -105,9 +78,9 @@ export function IndividualDetailsStep() {
 		);
 	}
 
-	/**
-	 * Strips non-phone characters on input to enforce the mask
-	 */
+	// Stripping non-phone characters on every keystroke keeps the mask in sync
+	// with the Zod `regex` on `phoneNumber` — otherwise invalid chars would be
+	// accepted into state and only fail at submit time.
 	function handlePhoneChange(event: ChangeEvent<HTMLInputElement>) {
 		const cleaned = event.target.value.replace(PHONE_ALLOWED_CHARS, '');
 		setValue('phoneNumber' as keyof IndividualFormData, cleaned as never, {
@@ -116,22 +89,10 @@ export function IndividualDetailsStep() {
 	}
 
 	async function handleNext() {
-		const fieldsToValidate = [
-			'fullLegalName',
-			'dateOfBirth',
-			'phoneNumber',
-			'residentialAddress',
-			'identityDocType',
-			'addressDocType',
-			'plannedCategories',
-		] as const;
-
 		const isValid = await trigger(
-			fieldsToValidate as unknown as (keyof IndividualFormData)[],
+			INDIVIDUAL_STEP_FIELDS as unknown as (keyof IndividualFormData)[],
 		);
-		if (isValid) {
-			nextStep();
-		}
+		if (isValid) nextStep();
 	}
 
 	return (
@@ -153,16 +114,16 @@ export function IndividualDetailsStep() {
 					<Field>
 						<FieldLabel>Date of Birth</FieldLabel>
 						<DatePicker
-							value={dateOfBirth}
-							onValueChange={handleDateOfBirthChange}
+							value={dob.value}
+							onValueChange={dob.onChange}
 							placeholder="Select your date of birth"
 							className="bg-transparent"
 							captionLayout="dropdown"
 							fromYear={1920}
-							toYear={new Date().getFullYear()}
+							toYear={CURRENT_YEAR}
 						/>
-						{fieldErrors.dateOfBirth ? (
-							<FieldError>{fieldErrors.dateOfBirth.message}</FieldError>
+						{dob.errorMessage ? (
+							<FieldError>{dob.errorMessage}</FieldError>
 						) : null}
 					</Field>
 
@@ -194,71 +155,21 @@ export function IndividualDetailsStep() {
 						) : null}
 					</Field>
 
-					<Field>
-						<FieldLabel>Proof of Identity Document Type</FieldLabel>
-						<Select
-							value={identityDocType}
-							onValueChange={handleIdentityDocTypeChange}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select document type" />
-							</SelectTrigger>
-							<SelectContent>
-								{Object.entries(ID_TYPE_LABELS).map(([value, label]) => (
-									<SelectItem key={value} value={value}>
-										{label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{fieldErrors.identityDocType ? (
-							<FieldError>{fieldErrors.identityDocType.message}</FieldError>
-						) : null}
-					</Field>
-
-					<Field>
-						<FieldLabel>Proof of Address Document Type</FieldLabel>
-						<Select
-							value={addressDocType}
-							onValueChange={handleAddressDocTypeChange}
-						>
-							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select document type" />
-							</SelectTrigger>
-							<SelectContent>
-								{Object.entries(ADDRESS_DOC_LABELS).map(([value, label]) => (
-									<SelectItem key={value} value={value}>
-										{label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{fieldErrors.addressDocType ? (
-							<FieldError>{fieldErrors.addressDocType.message}</FieldError>
-						) : null}
-					</Field>
+					<IdentityDocumentFieldset
+						form={form}
+						includeAddressDoc={shouldCollectAddressDoc(
+							VERIFICATION_TYPE.KYB_INDIVIDUAL,
+						)}
+					/>
 
 					<Field>
 						<FieldLabel>
 							What kind of raffles are you planning to host?
 						</FieldLabel>
-						<div className="flex flex-wrap gap-2">
-							{Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-								<button
-									key={value}
-									type="button"
-									onClick={() => handleCategoryToggle(value)}
-									className={cn(
-										'rounded-full border px-3.5 py-1.5 text-sm transition-colors',
-										plannedCategories.includes(value)
-											? 'border-black bg-black text-white'
-											: 'border-border hover:border-black/30',
-									)}
-								>
-									{label}
-								</button>
-							))}
-						</div>
+						<CategoryChipGrid
+							selected={plannedCategories}
+							onToggle={handleCategoryToggle}
+						/>
 						{fieldErrors.plannedCategories ? (
 							<FieldError>{fieldErrors.plannedCategories.message}</FieldError>
 						) : null}
@@ -269,6 +180,42 @@ export function IndividualDetailsStep() {
 			<Button type="button" onClick={handleNext} className="mt-2 w-full">
 				Continue to Documents
 			</Button>
+		</div>
+	);
+}
+
+interface CategoryChipGridProps {
+	selected: string[];
+	onToggle: (value: string) => void;
+}
+
+/**
+ * Toggle-chip grid for planned-raffle categories. Extracted so the parent
+ * step stays under the 3-level JSX nesting budget.
+ */
+function CategoryChipGrid({ selected, onToggle }: CategoryChipGridProps) {
+	return (
+		<div className="flex flex-wrap gap-2">
+			{Object.entries(CATEGORY_LABELS).map(function renderChip([value, label]) {
+				const isActive = selected.includes(value);
+				return (
+					<button
+						key={value}
+						type="button"
+						onClick={function handleClick() {
+							onToggle(value);
+						}}
+						className={cn(
+							'rounded-full border px-3.5 py-1.5 text-sm transition-colors',
+							isActive
+								? 'border-foreground bg-foreground text-background'
+								: 'border-border hover:border-foreground/30',
+						)}
+					>
+						{label}
+					</button>
+				);
+			})}
 		</div>
 	);
 }

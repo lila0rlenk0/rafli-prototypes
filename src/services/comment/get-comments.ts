@@ -3,6 +3,7 @@
 import { ZodError } from 'zod';
 
 import { baseClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapCommentError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import type { CommentSort } from '@/types/comment';
@@ -32,9 +33,10 @@ export async function getComments(
 	params?: GetCommentsParams,
 ): Promise<ServiceResponse<ListCommentsResponse, CommentErrorCode>> {
 	try {
-		const response = await baseClient.get(`/raffles/${raffleId}/comments`, {
-			params,
-		});
+		const response = await baseClient.get(
+			`/raffles/${pathParam(raffleId)}/comments`,
+			{ params },
+		);
 		return success(listCommentsResponseSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {

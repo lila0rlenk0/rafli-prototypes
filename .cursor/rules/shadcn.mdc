@@ -1,40 +1,47 @@
 ---
-description: "shadcn/ui Conventions"
+description: "shadcn/ui"
 alwaysApply: false
-globs: "'src/components/**'"
+globs: "'src/components/**/*.tsx'"
 ---
 
-# shadcn/ui Conventions
+# shadcn/ui
 
-Project uses shadcn components in `src/components/ui/`. CLI: `bunx --bun shadcn@latest`.
+Primitives in `src/components/ui/`. Managed by CLI — `bunx --bun shadcn@latest add <component>`. Never hand-edit files in `ui/`.
+
+## Usage
+
+- always prefer a shadcn primitive over a hand-rolled or third-party equivalent
+- missing primitive → install it via CLI, never fork
+- import from `@/components/ui/<component>` — e.g., `import { Button } from '@/components/ui/button'`
+- compose primitives into domain components — never extend or fork `ui/` files
 
 ## Styling
 
-- `className` for layout only — never override component colors or typography
-- `gap-*` not `space-x-*`/`space-y-*` — use `flex` with `gap-*`, vertical stacks: `flex flex-col gap-*`
-- `size-*` when width equals height — `size-10` not `w-10 h-10`
-- `truncate` shorthand — not `overflow-hidden text-ellipsis whitespace-nowrap`
-- No manual `dark:` overrides — use semantic tokens (`bg-background`, `text-muted-foreground`)
+- `className` for layout only — never override component colors/typography
+- `gap-*` not `space-x-*` / `space-y-*`
+- `size-*` when width = height
+- `truncate` shorthand
+- no manual `dark:` overrides — semantic tokens handle theming
 - `cn()` for conditional classes — no template literal ternaries
-- No manual `z-index` on overlay components (Dialog, Sheet, Popover handle stacking)
+- no manual `z-index` on overlays — primitive handles stacking
 
 ## Composition
 
-- Items inside their Group: `SelectItem` in `SelectGroup`, `DropdownMenuItem` in `DropdownMenuGroup`
-- Dialog/Sheet/Drawer always need a Title component (use `className="sr-only"` if hidden)
-- Full Card composition: `CardHeader`/`CardTitle`/`CardDescription`/`CardContent`/`CardFooter`
-- `TabsTrigger` must be inside `TabsList`
-- `Avatar` always needs `AvatarFallback`
-- Use `Alert` for callouts, `Badge` for status, `Skeleton` for loading, `Separator` for dividers
-- Toast via `sonner` — `toast()` from `sonner`
+- items inside groups: `SelectItem` in `SelectGroup`, `DropdownMenuItem` in `DropdownMenuGroup`
+- Dialog/Sheet/Drawer need Title (use `className="sr-only"` if hidden)
+- full Card: `CardHeader` / `CardTitle` / `CardDescription` / `CardContent` / `CardFooter`
+- `TabsTrigger` inside `TabsList`
+- `Avatar` needs `AvatarFallback`
+- toasts via `sonner` — `toast()` from `sonner`
 
 ## Icons
 
-- Icons in Button use `data-icon="inline-start"` or `data-icon="inline-end"`
-- No sizing classes on icons inside shadcn components — CSS handles it
-- Import from `lucide-react` (barrel imports, tree-shaken via `optimizePackageImports`)
+- `data-icon="inline-start"` or `data-icon="inline-end"` inside Button — CSS handles sizing
+- no `size-*` classes on icons inside shadcn primitives
+- import from `lucide-react` — tree-shaken via `optimizePackageImports` in `next.config.ts`
 
-## Semantic Colors
+## Colors
 
-- `bg-primary`, `text-muted-foreground` — never raw values like `bg-blue-500`
-- Use built-in variants (`variant="outline"`, `size="sm"`) before custom styles
+Semantic tokens only (`bg-primary`, `text-muted-foreground`). Never raw scales (`bg-blue-500`). Use built-in variants before adding custom styles.
+
+`primary` and `brand-dark` are **distinct** per DESIGN.md. `--primary` is cyan `#00b8ff` (links / progress fills / selection / focus rings), `--color-brand-dark` / `--color-rafli-black` is `#141416` (every action surface). `Button` `default` uses `bg-brand-dark` with the black↔white hover flip. `Badge` `default` uses `bg-brand-dark` too — notification counters, unread chips, and emphasis pills are action surfaces, never cyan. Only link-styled `Button` variants and progress fills reach for `bg-primary`. Local ESLint rule `local/no-primary-on-button` enforces this at lint time.

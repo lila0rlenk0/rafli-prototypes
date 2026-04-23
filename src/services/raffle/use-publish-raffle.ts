@@ -83,8 +83,8 @@ export function usePublishRaffle({
 			// Feedback matches the selected mode so hosts know what to expect
 			const message =
 				mode === 'now'
-					? 'Your raffle is going live! It may take 1-2 minutes.'
-					: 'Your raffle is scheduled. It will go live at the start time you set.';
+					? 'Your sweepstakes is going live! It may take 1-2 minutes.'
+					: 'Your sweepstakes is scheduled. It will go live at the start time you set.';
 			toast.info(message);
 			router.push(redirectTo);
 		} catch (error) {

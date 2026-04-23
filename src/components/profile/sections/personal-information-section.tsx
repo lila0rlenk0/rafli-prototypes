@@ -56,12 +56,10 @@ export function PersonalInformationSection({
 			/>
 
 			<div className="flex flex-col gap-8">
-				<div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:gap-[202px]">
+				<div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:gap-50.5">
 					<EditableName name={getUserName()} />
 					<div className="flex min-w-0 flex-col gap-2">
-						<span className="text-sm leading-relaxed text-[#7B7B7B]">
-							Email
-						</span>
+						<span className="text-ink-500 text-sm/relaxed">Email</span>
 						<span className="truncate text-base font-medium text-black/95">
 							{getUserEmail()}
 						</span>

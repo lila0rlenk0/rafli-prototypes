@@ -5,7 +5,10 @@ import { CreateRaffleButton } from '@/components/my-raffles/create-raffle-button
 import { PageHeader } from '@/components/my-raffles/page-header';
 import { RaffleCard } from '@/components/my-raffles/raffle-card';
 import { StatusTabs } from '@/components/my-raffles/status-tabs';
-import { parsePage, parseRaffleStatus } from '@/lib/raffle/parse-search-params';
+import {
+	parsePage,
+	parseRaffleStatus,
+} from '@/lib/utils/raffle/raffle-search-params';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { getUserModeCookie } from '@/lib/mode/cookies';
 import { getEnrolledRaffles } from '@/services/raffle/get-enrolled-raffles';
@@ -67,13 +70,15 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 
 	if (!response.success) {
 		return (
-			<div className="flex h-[50vh] w-full flex-col items-center justify-center gap-10 text-center">
+			<div className="h-half-screen flex w-full flex-col items-center justify-center gap-10 text-center">
 				<BugIcon />
 
-				<hgroup className="space-y-4">
-					<h2 className="text-xl font-semibold">Error loading your raffles</h2>
+				<hgroup className="flex flex-col gap-4">
+					<h2 className="text-xl font-semibold">
+						Error loading your sweepstakes
+					</h2>
 					<p className="mt-2 text-lg">
-						Something went wrong while trying to load your raffles.
+						Something went wrong while trying to load your sweepstakes.
 					</p>
 				</hgroup>
 
@@ -99,8 +104,8 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 				statusList.includes(RAFFLE_STATUS.QUEUED))
 		) {
 			return {
-				title: 'No scheduled raffles',
-				description: "You don't have any scheduled raffles yet.",
+				title: 'No scheduled sweepstakes',
+				description: "You don't have any scheduled sweepstakes yet.",
 			};
 		}
 		// Check if any status in the list is ended (cancelled, completed, or ended)
@@ -110,17 +115,17 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 			statusList.includes(RAFFLE_STATUS.ENDED)
 		) {
 			return {
-				title: 'No ended raffles',
+				title: 'No ended sweepstakes',
 				description: isHost
-					? "You don't have any completed raffles yet."
-					: "You haven't participated in any ended raffles yet.",
+					? "You don't have any completed sweepstakes yet."
+					: "You haven't participated in any ended sweepstakes yet.",
 			};
 		}
 		return {
-			title: isHost ? 'No active raffles' : 'No enrolled raffles',
+			title: isHost ? 'No active sweepstakes' : 'No sweepstakes entered',
 			description: isHost
-				? 'Create your first raffle to get started!'
-				: "You haven't enrolled in any raffles yet.",
+				? 'Create your first sweepstakes to get started!'
+				: "You haven't entered any sweepstakes yet.",
 		};
 	}
 

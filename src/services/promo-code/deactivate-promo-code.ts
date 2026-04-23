@@ -3,6 +3,7 @@
 import { z, ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { requireAuth } from '@/lib/auth/session';
 import { failure, mapPromoCodeError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -30,7 +31,7 @@ export async function deactivatePromoCode(
 
 	try {
 		const response = await authenticatedClient.delete(
-			`/promo-codes/${promoCodeId}`,
+			`/promo-codes/${pathParam(promoCodeId)}`,
 		);
 		deactivatePromoCodeResponseSchema.parse(response.data);
 		return success(undefined);

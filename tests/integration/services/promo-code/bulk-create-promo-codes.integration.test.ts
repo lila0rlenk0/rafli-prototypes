@@ -4,8 +4,8 @@ import { PROMO_CODE_ERROR_CODES } from '@/types/errors/promo-code-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import type { BulkCreatePromoCodesResponse } from '@/types/promo-code';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
-import { MOCK_ANALYTICS_EVENTS } from '../../../helpers/mock-events';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
+import { MOCK_ANALYTICS_EVENTS } from '@tests/helpers/mock-events';
 
 const VALID_RESPONSE: BulkCreatePromoCodesResponse = {
 	bulkId: '550e8400-e29b-71d4-a716-446655440000',

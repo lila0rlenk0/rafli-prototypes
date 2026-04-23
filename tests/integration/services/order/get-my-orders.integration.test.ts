@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { ORDER_ERROR_CODES } from '@/types/errors';
 
-import { mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const mockGet = mock();
 const mockCaptureContractDrift = mock();

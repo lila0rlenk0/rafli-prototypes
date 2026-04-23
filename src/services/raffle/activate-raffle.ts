@@ -1,9 +1,10 @@
 'use server';
 
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { revalidateMyRaffles } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -24,7 +25,7 @@ export async function activateRaffle(
 	try {
 		// Step 1: Activate queued raffle — sets startAt to now, transitions to live
 		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/activate`,
+			`/raffles/${pathParam(raffleId)}/activate`,
 		);
 
 		// Step 2: Validate response shape

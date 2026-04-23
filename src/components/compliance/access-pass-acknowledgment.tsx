@@ -53,7 +53,7 @@ export function AccessPassAcknowledgment() {
 			/>
 			<label
 				htmlFor={checkboxId}
-				className="cursor-pointer text-xs leading-relaxed text-[#4A4A4A]"
+				className="text-ink-700 cursor-pointer text-xs/relaxed"
 			>
 				I confirm I&apos;m 18+ and agree to the{' '}
 				<Link href="/terms" className="underline">

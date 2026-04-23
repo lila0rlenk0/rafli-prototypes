@@ -11,5 +11,5 @@ import { revalidatePath } from 'next/cache';
  * @returns Promise that resolves when revalidation is scheduled
  */
 export async function revalidateProfile(): Promise<void> {
-	revalidatePath('/profile');
+	revalidatePath('/profile', 'page');
 }

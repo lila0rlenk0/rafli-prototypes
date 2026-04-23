@@ -4,7 +4,7 @@ import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { VERIFICATION_ERROR_CODES } from '@/types/errors/verification-errors';
 import type { WinnerVerification } from '@/types/verification';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // Backend returns 0-indexed positions (0 = first place, 1 = second place)
 const VALID_RESPONSE: WinnerVerification = {
@@ -28,9 +28,7 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureServiceError: mock(),
 }));
 
-const { verifyWinner } = await import(
-	'@/services/verification/verify-winner'
-);
+const { verifyWinner } = await import('@/services/verification/verify-winner');
 
 describe('verifyWinner', () => {
 	test('returns validated winner verification on success', async () => {
@@ -58,12 +56,16 @@ describe('verifyWinner', () => {
 		}
 	});
 
-	test('maps winner-not-found from RFC 7807', async () => {
+	// Real backend URN for verify-winner out-of-range position is
+	// `core:winner:invalid-position` (raffles.public.api.ts:89). The old
+	// `core:verification:winner-not-found` was never emitted — switch cases
+	// in `winner-lookup.tsx` silently fell into the default branch.
+	test('maps invalid-position from RFC 7807 to WINNER_NOT_FOUND', async () => {
 		mockGet.mockRejectedValueOnce(
 			mockAxiosError({
-				status: 404,
+				status: 400,
 				data: {
-					type: 'urn:raffles:problem:core:verification:winner-not-found',
+					type: 'urn:raffles:problem:core:winner:invalid-position',
 				},
 			}),
 		);
@@ -73,6 +75,24 @@ describe('verifyWinner', () => {
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error).toBe(VERIFICATION_ERROR_CODES.WINNER_NOT_FOUND);
+		}
+	});
+
+	// Backend emits no-vrf-data when the raffle hasn't yet received its VRF
+	// randomness — same user-visible meaning as "raffle not completed".
+	test('maps no-vrf-data from RFC 7807 to RAFFLE_NOT_COMPLETED', async () => {
+		mockGet.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 400,
+				data: { type: 'urn:raffles:problem:core:raffle:no-vrf-data' },
+			}),
+		);
+
+		const result = await verifyWinner('raffle-1', 0);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(VERIFICATION_ERROR_CODES.RAFFLE_NOT_COMPLETED);
 		}
 	});
 

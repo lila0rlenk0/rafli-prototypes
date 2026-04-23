@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import { COMMENT_EVENTS } from '@/lib/analytics/events';
 import { trackServer } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapCommentError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -35,7 +36,7 @@ export async function voteComment(
 	try {
 		// Step 1: Submit vote — backend toggles: same direction twice removes the vote
 		const response = await authenticatedClient.post(
-			`/comments/${commentId}/vote`,
+			`/comments/${pathParam(commentId)}/vote`,
 			{ voteType: type },
 		);
 

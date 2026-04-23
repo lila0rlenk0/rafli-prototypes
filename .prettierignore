@@ -24,3 +24,6 @@ coverage
 .eslintcache
 
 .next
+
+# Design documents
+DESIGN.md

@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
-import { buildQueryParams } from '@/lib/api/utils';
+import { buildQueryParams } from '@/lib/api/query-params';
 import { failure, mapChatError, success } from '@/lib/errors';
 import {
 	captureContractDrift,

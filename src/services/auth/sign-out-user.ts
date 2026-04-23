@@ -1,6 +1,6 @@
 'use server';
 
-import { runAfter } from '@/lib/run-after';
+import { runAfter } from '@/lib/utils/run-after';
 import { redirect } from 'next/navigation';
 
 import { AUTH_EVENTS } from '@/lib/analytics/events';

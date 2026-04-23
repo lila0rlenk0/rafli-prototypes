@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { COMMENT_ERROR_CODES } from '@/types/errors/comment-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 const mockDelete = mock();
 

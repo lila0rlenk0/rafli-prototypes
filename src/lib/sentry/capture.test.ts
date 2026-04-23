@@ -171,7 +171,10 @@ describe('applyContractDriftScope', () => {
 		}
 		if (!zodError) throw new Error('expected schema to fail');
 
-		applyContractDriftScope(scope, zodError, 'comment', 'get-my-comments');
+		applyContractDriftScope(scope, zodError, {
+			service: 'comment',
+			action: 'get-my-comments',
+		});
 
 		expect(record.tags).toEqual({
 			errorCode: 'contract_drift',
@@ -207,7 +210,10 @@ describe('applyContractDriftScope', () => {
 		}
 		if (!zodError) throw new Error('expected schema to fail');
 
-		applyContractDriftScope(scope, zodError, 'comment', 'get-my-comments');
+		applyContractDriftScope(scope, zodError, {
+			service: 'comment',
+			action: 'get-my-comments',
+		});
 
 		const zodIssues = record.contexts.zodIssues as {
 			issues: Array<{ path: string; code: string; message: string }>;

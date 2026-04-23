@@ -19,7 +19,8 @@
 			}
 		],
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./src/*"],
+			"@tests/*": ["./tests/*"]
 		},
 		// `bun` types carry the `bun:test` module declarations used by every
 		// co-located `*.test.ts` and the integration tests under `tests/`.

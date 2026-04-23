@@ -8,6 +8,7 @@ import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { CHAT_ERROR_CODES, type ChatErrorCode } from '@/types/errors';
 import {
 	editMessageInputSchema,
@@ -37,7 +38,7 @@ export async function editMessage(
 
 	try {
 		const response = await authenticatedClient.patch(
-			`/chat/messages/${messageId}`,
+			`/chat/messages/${pathParam(messageId)}`,
 			validated.data,
 		);
 		return success(messageSchema.parse(response.data));

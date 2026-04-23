@@ -3,16 +3,16 @@ import { describe, expect, mock, test } from 'bun:test';
 import { AUTH_ERROR_CODES } from '@/types/errors/auth-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Mocks ---
-// social-sign-in.ts is 'use client' and uses browserClient from @/lib/api/client-browser
+// social-sign-in.ts is 'use client' and uses browserClient from @/lib/api/browser-client
 
 const mockPost = mock();
 const mockCaptureServiceError = mock();
 const mockCaptureContractDrift = mock();
 
-mock.module('@/lib/api/client-browser', () => ({
+mock.module('@/lib/api/browser-client', () => ({
 	browserClient: { get: mock(), post: mockPost },
 }));
 mock.module('@/lib/sentry/capture', () => ({

@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { VerificationDeepDive } from '@/components/verification/verification-deep-dive';
+import { VerificationDeepDive } from '@/components/verification/deep-dive';
 import { env } from '@/env/server';
 
 interface PageProps {

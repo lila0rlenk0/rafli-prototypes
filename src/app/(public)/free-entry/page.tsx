@@ -47,7 +47,7 @@ export default function FreeEntryPage() {
 				</p>
 			</header>
 
-			<div className="space-y-8 text-sm leading-relaxed">
+			<div className="flex flex-col gap-8 text-sm/relaxed">
 				<section className="bg-card rounded-xl border-2 border-black p-6">
 					<h2 className="font-clash-display mb-3 text-2xl font-semibold">
 						You never have to pay to enter
@@ -56,7 +56,7 @@ export default function FreeEntryPage() {
 						Every Rafli sweepstakes that accepts paid entries also accepts a
 						free Alternative Method of Entry (AMOE) via a public share on X
 						(formerly Twitter). Free entries have{' '}
-						<strong>identical odds of winning</strong> as any paid entry. The
+						<strong>identical odds of winning</strong> to any paid entry. The
 						free path exists so no one is ever required to spend money to
 						participate.
 					</p>
@@ -64,7 +64,7 @@ export default function FreeEntryPage() {
 
 				<Section title="How to enter for free — Share on X">
 					<p>From any sweepstakes detail page:</p>
-					<ol className="mt-3 list-inside list-decimal space-y-2">
+					<ol className="mt-3 flex list-inside list-decimal flex-col gap-2">
 						<li>
 							Locate the{' '}
 							<strong>&quot;Get Bonus Entries! Share on X&quot;</strong> button
@@ -109,15 +109,14 @@ export default function FreeEntryPage() {
 						Verification is typically instant. Shares that cannot be verified
 						(private account, post deleted before verification, share link
 						altered) will not grant an entry; you may retry once the issue is
-						corrected. Free entries must be claimed before the
-						sweepstakes&apos;s end time — shares posted after the countdown ends
-						cannot be credited.
+						corrected. Free entries must be claimed before the sweepstakes ends
+						— shares posted after the countdown ends cannot be credited.
 					</p>
 				</Section>
 
 				<Section title="Eligibility">
 					<p>You may enter the free path only if you:</p>
-					<ul className="mt-2 list-inside list-disc space-y-1">
+					<ul className="mt-2 flex list-inside list-disc flex-col gap-1">
 						<li>are 18 years of age or older (21 where required by law);</li>
 						<li>
 							are not a resident of a jurisdiction where the sweepstakes is

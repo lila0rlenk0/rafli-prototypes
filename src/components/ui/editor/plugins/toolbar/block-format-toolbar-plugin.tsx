@@ -11,7 +11,7 @@ import {
 	$createHeadingNode,
 	$createQuoteNode,
 	$isHeadingNode,
-	HeadingTagType,
+	type HeadingTagType,
 } from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
 import { $findMatchingParent, $getNearestNodeOfType } from '@lexical/utils';
@@ -20,7 +20,7 @@ import {
 	$getSelection,
 	$isRangeSelection,
 	$isRootOrShadowRoot,
-	BaseSelection,
+	type BaseSelection,
 } from 'lexical';
 
 import { useToolbarContext } from '@/components/ui/editor/context/toolbar-context';

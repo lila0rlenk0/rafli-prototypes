@@ -3,6 +3,7 @@
 import { ZodError, z } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import {
 	captureContractDrift,
@@ -33,7 +34,7 @@ export async function createXShareIntent(
 ): Promise<ServiceResponse<XShareIntentResponse, RaffleErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
-			`/raffles/${raffleId}/x-share-intent`,
+			`/raffles/${pathParam(raffleId)}/x-share-intent`,
 		);
 
 		return success(xShareIntentResponseSchema.parse(response.data));

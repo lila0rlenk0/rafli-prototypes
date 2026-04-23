@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { getNavigationPath } from '@/components/notifications/get-navigation-path';
-import { NotificationIcon } from '@/components/notifications/notification-icon';
-import { cn } from '@/lib/utils';
-import { formatTimeAgo } from '@/lib/utils/format-time-ago';
+import { NotificationIcon } from '@/components/notifications/icon';
+import { cn } from '@/lib/class-names';
+import { formatTimeAgo } from '@/lib/utils/format/format-time-ago';
 import { useNotificationStore } from '@/providers/notification-store-provider';
 import { markNotificationRead } from '@/services/notification/mark-notification-read';
 import type { Notification } from '@/types/notification';

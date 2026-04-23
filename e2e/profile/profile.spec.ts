@@ -185,7 +185,7 @@ test.describe('Email Preferences', () => {
 	test('shows all preference categories', async ({ page }) => {
 		const section = page.locator('#email-preferences');
 
-		await expect(section.getByText('Raffle Updates')).toBeVisible();
+		await expect(section.getByText('Sweepstakes Updates')).toBeVisible();
 		await expect(section.getByText('Prize Updates')).toBeVisible();
 		await expect(section.getByText('Host Notifications')).toBeVisible();
 		await expect(section.getByText('Reviews', { exact: true })).toBeVisible();
@@ -195,7 +195,7 @@ test.describe('Email Preferences', () => {
 		const section = page.locator('#email-preferences');
 
 		await expect(
-			section.getByRole('switch', { name: 'Raffle Updates' }),
+			section.getByRole('switch', { name: 'Sweepstakes Updates' }),
 		).toBeVisible();
 		await expect(
 			section.getByRole('switch', { name: 'Prize Updates' }),

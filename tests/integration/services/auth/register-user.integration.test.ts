@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { AUTH_ERROR_CODES } from '@/types/errors/auth-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
-import { mockAxiosError, mockAxiosResponse } from '../../../helpers/mock-axios';
+import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
 // --- Mocks ---
 
@@ -21,7 +21,7 @@ mock.module('@/lib/sentry/capture', () => ({
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
 }));
-mock.module('@/lib/run-after', () => ({
+mock.module('@/lib/utils/run-after', () => ({
 	runAfter: mock(),
 }));
 

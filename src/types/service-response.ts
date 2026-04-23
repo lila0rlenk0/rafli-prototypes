@@ -4,7 +4,7 @@
  *
  * All server actions return this shape. Components check `result.success` to
  * narrow into the data or error branch. Helper constructors `success()` and
- * `failure()` live in `@/lib/errors/error-handler` to avoid circular deps.
+ * `failure()` live in `@/lib/errors/service-result` to avoid circular deps.
  *
  * @template TData - The type of successful response data
  * @template TErrorCode - Union type of possible error codes (defaults to string)

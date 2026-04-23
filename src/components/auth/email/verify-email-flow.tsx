@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { useVerifyEmailExchange } from '@/services/auth/use-verify-email-exchange';
@@ -29,12 +29,21 @@ interface VerifyEmailFlowProps {
 export function VerifyEmailFlow({ token }: VerifyEmailFlowProps) {
 	const router = useRouter();
 	const exchange = useVerifyEmailExchange();
+	const { mutate } = exchange;
 
-	// mount: trigger verification once. `mutate` is stable; depending on
-	// `token`/`router` re-runs verification only if either reference swaps.
+	// mount-only: verify the token exactly once per page load.
+	// A `useRef` flag is required because the hook returns a fresh result
+	// object each render (new `exchange` reference), and TanStack Query's
+	// internal state transitions (pending → error) trigger re-renders that
+	// would otherwise re-fire this effect in a loop, storming the verify
+	// endpoint with concurrent requests. The ref also absorbs React
+	// StrictMode's intentional double-invoke in development.
+	const hasVerified = useRef(false);
 	useEffect(() => {
-		exchange.mutate({ token, router });
-	}, [exchange, token, router]);
+		if (hasVerified.current) return;
+		hasVerified.current = true;
+		mutate({ token, router });
+	}, [mutate, token, router]);
 
 	if (exchange.isError) {
 		return (

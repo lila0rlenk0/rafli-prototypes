@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { useOAuthCallbackExchange } from '@/services/auth/use-oauth-callback-exchange';
@@ -25,13 +25,21 @@ export function OauthCallbackFlow() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const exchange = useOAuthCallbackExchange();
+	const { mutate } = exchange;
 
-	// mount: a navigation landing handler — fire the OAuth exchange exactly
-	// once. `mutate` is stable across renders; depending on `searchParams`
-	// re-runs the exchange if Next.js swaps the snapshot mid-flight.
+	// mount-only: fire the OAuth exchange exactly once per page load.
+	// A `useRef` flag is required because the hook returns a fresh result
+	// object each render (new `exchange` reference), and TanStack Query's
+	// internal state transitions (pending → error) trigger re-renders that
+	// would otherwise re-fire this effect in a loop, storming `/auth/token`
+	// with concurrent XHRs. The ref also absorbs React StrictMode's
+	// intentional double-invoke in development.
+	const hasExchanged = useRef(false);
 	useEffect(() => {
-		exchange.mutate({ searchParams, router });
-	}, [exchange, searchParams, router]);
+		if (hasExchanged.current) return;
+		hasExchanged.current = true;
+		mutate({ searchParams, router });
+	}, [mutate, searchParams, router]);
 
 	if (exchange.isError) {
 		return (

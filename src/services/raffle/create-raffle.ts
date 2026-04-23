@@ -1,10 +1,9 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -68,24 +67,22 @@ export async function createRaffle(
 
 		const raffle = raffleSchema.parse(response.data);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				RAFFLE_EVENTS.CREATED,
-				{
-					raffle_id: raffle.id,
-					category: input.category,
-					ticket_price: input.pricePerTicket,
-					max_participants: input.maxParticipants,
-					min_participants: input.minParticipants,
-					number_of_winners: input.numberOfWinners,
-					accepts_crypto: input.acceptsCrypto,
-					has_question: !!input.checkInQuestion,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			RAFFLE_EVENTS.CREATED,
+			{
+				raffle_id: raffle.id,
+				category: input.category,
+				ticket_price: input.pricePerTicket,
+				max_participants: input.maxParticipants,
+				min_participants: input.minParticipants,
+				number_of_winners: input.numberOfWinners,
+				accepts_crypto: input.acceptsCrypto,
+				has_question: !!input.checkInQuestion,
+			},
+			{ userId },
+		);
 
 		return success(raffle);
 	} catch (error) {
@@ -103,15 +100,13 @@ export async function createRaffle(
 			action: 'create-raffle',
 		});
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				RAFFLE_EVENTS.CREATE_FAILED,
-				{ error_code: errorCode },
-				{ userId },
-			);
-		});
+		await trackAfter(
+			RAFFLE_EVENTS.CREATE_FAILED,
+			{ error_code: errorCode },
+			{ userId },
+		);
 
 		return failure(errorCode);
 	}

@@ -21,6 +21,7 @@ mock.module('@/lib/sentry/capture', () => ({
 }));
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
+	trackAfter: mock(),
 }));
 
 const { verifyEmail } = await import('@/services/auth/verify-email');

@@ -4,7 +4,7 @@ import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { WINNING_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
@@ -49,21 +49,23 @@ export async function claimWinning(
 		// Step 2: Validate response shape
 		const validated = winningSchema.parse(response.data);
 
-		// Step 3: Non-blocking cache revalidation + analytics
-		runAfter(async () => {
+		// Step 3: Non-blocking cache revalidation
+		runAfter(() => {
 			// Revalidation target: winning detail and list pages
 			revalidateWinningPaths(publicSlug);
-
-			const userId = (await sessionPromise)?.user?.id;
-			await trackServer(
-				WINNING_EVENTS.CLAIMED,
-				{
-					winning_id: validated.id,
-					raffle_id: validated.raffleId,
-				},
-				{ userId },
-			);
 		});
+
+		// Step 4: Non-blocking analytics — pre-resolve session + IP in request
+		// scope (headers() is illegal inside after()), then defer Mixpanel send.
+		const userId = (await sessionPromise)?.user?.id;
+		await trackAfter(
+			WINNING_EVENTS.CLAIMED,
+			{
+				winning_id: validated.id,
+				raffle_id: validated.raffleId,
+			},
+			{ userId },
+		);
 
 		return success(validated);
 	} catch (error) {
@@ -72,7 +74,7 @@ export async function claimWinning(
 			return failure(WINNING_ERROR_CODES.CLAIM_FAILED);
 		}
 
-		// Step 4: Map and capture — prize-fulfillment failures must reach Sentry
+		// Step 5: Map and capture — prize-fulfillment failures must reach Sentry
 		// with the same criticality as auth/payment (winner cannot claim prize)
 		const errorCode = mapWinningError(error);
 		captureServiceError(error, errorCode, {

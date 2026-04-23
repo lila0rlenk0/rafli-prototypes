@@ -1,10 +1,9 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -38,18 +37,16 @@ export async function payWithCredits(
 
 	try {
 		// Step 1: Non-blocking checkout-started analytics
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.CHECKOUT_STARTED,
-				{
-					order_id: orderId,
-					payment_method: 'credits',
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.CHECKOUT_STARTED,
+			{
+				order_id: orderId,
+				payment_method: 'credits',
+			},
+			{ userId },
+		);
 
 		// Step 2: Atomically debit credits and complete order — instant settlement
 		const response = await authenticatedClient.post(
@@ -61,19 +58,15 @@ export async function payWithCredits(
 		// Step 3: Validate response — contains balance after payment
 		const data = spendCreditsResponseSchema.parse(response.data);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
-
-			await trackServer(
-				PURCHASE_EVENTS.COMPLETED,
-				{
-					order_id: orderId,
-					payment_method: 'credits',
-					remaining_balance: data.balanceAfter,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.COMPLETED,
+			{
+				order_id: orderId,
+				payment_method: 'credits',
+				remaining_balance: data.balanceAfter,
+			},
+			{ userId },
+		);
 
 		return success(data);
 	} catch (error) {
@@ -89,19 +82,17 @@ export async function payWithCredits(
 			orderId,
 		});
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.FAILED,
-				{
-					order_id: orderId,
-					payment_method: 'credits',
-					error_code: errorCode,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.FAILED,
+			{
+				order_id: orderId,
+				payment_method: 'credits',
+				error_code: errorCode,
+			},
+			{ userId },
+		);
 
 		return failure(errorCode);
 	}

@@ -1,10 +1,9 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
@@ -39,21 +38,19 @@ export async function publishRaffle(
 		const raffle = raffleSchema.parse(response.data);
 
 		// Step 3: Non-blocking publish analytics
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				RAFFLE_EVENTS.PUBLISHED,
-				{
-					raffle_id: raffle.id,
-					category_id: raffle.categoryId,
-					ticket_price: raffle.ticketPriceAmount,
-					max_participants: raffle.maxParticipants,
-					number_of_winners: raffle.numberOfWinners,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			RAFFLE_EVENTS.PUBLISHED,
+			{
+				raffle_id: raffle.id,
+				category_id: raffle.categoryId,
+				ticket_price: raffle.ticketPriceAmount,
+				max_participants: raffle.maxParticipants,
+				number_of_winners: raffle.numberOfWinners,
+			},
+			{ userId },
+		);
 
 		return success(raffle);
 	} catch (error) {

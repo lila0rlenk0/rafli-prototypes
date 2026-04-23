@@ -1,10 +1,9 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -57,22 +56,20 @@ export async function createAtomicCryptoCheckout(
 		// Step 3: Validate response — `session` is null when order is $0 (fully discounted)
 		const data = atomicCryptoCheckoutResponseSchema.parse(response.data);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.CRYPTO_CHECKOUT_STARTED,
-				{
-					order_id: data.order.id,
-					raffle_id: payload.raffleId,
-					chain_id: payload.chainId,
-					amount: data.order.totalAmount,
-					ticket_quantity: payload.ticketQuantity,
-					has_promo: !!payload.promoCode,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.CRYPTO_CHECKOUT_STARTED,
+			{
+				order_id: data.order.id,
+				raffle_id: payload.raffleId,
+				chain_id: payload.chainId,
+				amount: data.order.totalAmount,
+				ticket_quantity: payload.ticketQuantity,
+				has_promo: !!payload.promoCode,
+			},
+			{ userId },
+		);
 
 		return success(data);
 	} catch (error) {

@@ -60,6 +60,7 @@ mock.module('@/lib/auth/session', () => ({
 }));
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
+	trackAfter: mock(),
 }));
 mock.module('@/lib/utils/run-after', () => ({
 	runAfter: mock(),

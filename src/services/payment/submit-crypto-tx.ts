@@ -1,10 +1,9 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -55,18 +54,16 @@ export async function submitCryptoTx(
 		// Step 3: Validate response shape
 		const data = cryptoTxMutationResponseSchema.parse(response.data);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.CRYPTO_TX_SUBMITTED,
-				{
-					session_id: payload.sessionId,
-					tx_hash: payload.txHash,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.CRYPTO_TX_SUBMITTED,
+			{
+				session_id: payload.sessionId,
+				tx_hash: payload.txHash,
+			},
+			{ userId },
+		);
 
 		return success(data);
 	} catch (error) {

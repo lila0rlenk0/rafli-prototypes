@@ -1,9 +1,7 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
-
 import { AUTH_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter, trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -48,16 +46,14 @@ export async function registerUser(
 		}
 
 		// Step 5: Non-blocking analytics — track successful registration after response
-		runAfter(async () => {
-			await trackServer(
-				AUTH_EVENTS.SIGN_UP_COMPLETED,
-				{
-					method: 'email',
-					user_id: response.data.user.id,
-				},
-				{ userId: response.data.user.id },
-			);
-		});
+		await trackAfter(
+			AUTH_EVENTS.SIGN_UP_COMPLETED,
+			{
+				method: 'email',
+				user_id: response.data.user.id,
+			},
+			{ userId: response.data.user.id },
+		);
 
 		return success(undefined);
 	} catch (error) {
@@ -69,11 +65,9 @@ export async function registerUser(
 		});
 
 		// Non-blocking failure analytics
-		runAfter(async () => {
-			await trackServer(AUTH_EVENTS.SIGN_UP_FAILED, {
-				method: 'email',
-				error_code: errorCode,
-			});
+		await trackAfter(AUTH_EVENTS.SIGN_UP_FAILED, {
+			method: 'email',
+			error_code: errorCode,
 		});
 
 		return failure(errorCode);

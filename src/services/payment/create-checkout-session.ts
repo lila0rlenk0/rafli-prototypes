@@ -1,11 +1,10 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { env } from '@/env/server';
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -67,19 +66,17 @@ export async function createCheckoutSession(
 		// Step 4: Validate response shape
 		const checkoutSession = checkoutSessionResponseSchema.parse(response.data);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.CHECKOUT_STARTED,
-				{
-					order_id: orderId,
-					session_id: checkoutSession.id,
-					payment_method: 'stripe',
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.CHECKOUT_STARTED,
+			{
+				order_id: orderId,
+				session_id: checkoutSession.id,
+				payment_method: 'stripe',
+			},
+			{ userId },
+		);
 
 		return success(checkoutSession);
 	} catch (error) {
@@ -95,15 +92,13 @@ export async function createCheckoutSession(
 			orderId: payload.orderId,
 		});
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.FAILED,
-				{ order_id: payload.orderId, error_code: errorCode },
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.FAILED,
+			{ order_id: payload.orderId, error_code: errorCode },
+			{ userId },
+		);
 
 		return failure(errorCode);
 	}

@@ -1,10 +1,9 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 // Import mapper from the module — not `@/lib/errors` barrel — so `spyOn` / load order
@@ -70,22 +69,20 @@ export async function checkoutOrder(
 		// Step 3: Validate response shape
 		const order = orderSchema.parse(response.data);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.ORDER_CREATED,
-				{
-					order_id: order.id,
-					raffle_id: payload.raffleId,
-					quantity: payload.ticketQuantity,
-					has_promo: !!payload.promoCode,
-					total_amount: order.totalAmount,
-					is_fully_discounted: parseFloat(order.totalAmount) === 0,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.ORDER_CREATED,
+			{
+				order_id: order.id,
+				raffle_id: payload.raffleId,
+				quantity: payload.ticketQuantity,
+				has_promo: !!payload.promoCode,
+				total_amount: order.totalAmount,
+				is_fully_discounted: parseFloat(order.totalAmount) === 0,
+			},
+			{ userId },
+		);
 
 		return success({
 			order,
@@ -100,15 +97,13 @@ export async function checkoutOrder(
 
 		const errorCode = mapCheckoutOrderError(error);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.ORDER_FAILED,
-				{ raffle_id: payload.raffleId, error_code: errorCode },
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.ORDER_FAILED,
+			{ raffle_id: payload.raffleId, error_code: errorCode },
+			{ userId },
+		);
 
 		return failure(errorCode);
 	}

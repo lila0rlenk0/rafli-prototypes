@@ -4,7 +4,7 @@ import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
@@ -34,16 +34,16 @@ export async function unpublishRaffle(
 
 		const raffle = raffleSchema.parse(response.data);
 
-		runAfter(async () => {
+		runAfter(() => {
 			revalidateMyRaffles();
-
-			const userId = (await sessionPromise)?.user?.id;
-			await trackServer(
-				RAFFLE_EVENTS.UNPUBLISHED,
-				{ raffle_id: raffle.id },
-				{ userId },
-			);
 		});
+
+		const userId = (await sessionPromise)?.user?.id;
+		await trackAfter(
+			RAFFLE_EVENTS.UNPUBLISHED,
+			{ raffle_id: raffle.id },
+			{ userId },
+		);
 
 		return success(raffle);
 	} catch (error) {

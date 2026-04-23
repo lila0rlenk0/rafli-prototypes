@@ -7,7 +7,7 @@
 // client regardless.
 import { ZodError } from 'zod';
 
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { revalidateWinningPaths } from '@/lib/cache/revalidation';
@@ -98,24 +98,23 @@ export async function updateWinningStatusBase(
 		// the catch branch below.
 		const validated = winningSchema.parse(response.data);
 
-		// Step 3: Non-blocking revalidation + analytics. Runs after the response
-		// is streamed so the client isn't held up by cache tag invalidation or
-		// the Mixpanel round-trip. Mirror the `runAfter` shape the three
-		// original files used so test mocks keep working unchanged.
-		runAfter(async () => {
-			// Revalidation target: winning detail list + optionally public raffle page
+		// Step 3: Non-blocking revalidation — runs after the response so the
+		// client isn't held up by cache tag invalidation.
+		runAfter(() => {
 			revalidateWinningPaths(input.publicSlug);
-
-			const userId = (await sessionPromise)?.user?.id;
-			await trackServer(
-				input.event,
-				{
-					winning_id: validated.id,
-					raffle_id: validated.raffleId,
-				},
-				{ userId },
-			);
 		});
+
+		// Step 4: Non-blocking analytics — pre-resolve session + IP in request
+		// scope (headers() is illegal inside after()), then defer Mixpanel send.
+		const userId = (await sessionPromise)?.user?.id;
+		await trackAfter(
+			input.event,
+			{
+				winning_id: validated.id,
+				raffle_id: validated.raffleId,
+			},
+			{ userId },
+		);
 
 		return success(validated);
 	} catch (error) {
@@ -126,7 +125,7 @@ export async function updateWinningStatusBase(
 			return failure(input.zodErrorCode);
 		}
 
-		// Step 4: Map and capture — prize-fulfillment failures must reach
+		// Step 5: Map and capture — prize-fulfillment failures must reach
 		// Sentry with the same criticality as auth/payment: a stuck status
 		// transition blocks the entire prize-release flow for the winner.
 		const errorCode = mapWinningError(error);

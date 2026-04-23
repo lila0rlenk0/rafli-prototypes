@@ -61,6 +61,7 @@ mock.module('@/lib/auth/session', () => ({
 }));
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
+	trackAfter: mock(),
 }));
 
 // Import AFTER mocking

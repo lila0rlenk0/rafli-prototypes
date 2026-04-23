@@ -31,6 +31,7 @@ mock.module('@/lib/sentry/user', () => ({
 }));
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
+	trackAfter: mock(),
 }));
 mock.module('@/lib/utils/run-after', () => ({
 	runAfter: mock(),

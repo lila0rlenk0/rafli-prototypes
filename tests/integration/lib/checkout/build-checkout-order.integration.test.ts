@@ -39,6 +39,7 @@ mock.module('@/lib/auth/session', () => ({
 }));
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
+	trackAfter: mock(),
 }));
 // All event exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
 mock.module('@/lib/analytics/events', () => MOCK_ANALYTICS_EVENTS);

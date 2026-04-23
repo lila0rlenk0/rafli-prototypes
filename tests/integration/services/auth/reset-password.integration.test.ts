@@ -20,6 +20,7 @@ mock.module('@/lib/sentry/capture', () => ({
 }));
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
+	trackAfter: mock(),
 }));
 
 const { resetPassword } = await import('@/services/auth/reset-password');

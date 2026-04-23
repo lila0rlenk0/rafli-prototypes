@@ -1,9 +1,7 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
-
 import { AUTH_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter, trackServer } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { setAuthCookies } from '@/lib/auth/session';
 import { failure, mapAuthError, success } from '@/lib/errors';
@@ -55,13 +53,11 @@ export async function signInUser(
 		setSentryUser(user.id);
 
 		// Step 7: Non-blocking success analytics
-		runAfter(async () => {
-			await trackServer(
-				AUTH_EVENTS.SIGN_IN_COMPLETED,
-				{ method: 'email' },
-				{ userId: user.id },
-			);
-		});
+		await trackAfter(
+			AUTH_EVENTS.SIGN_IN_COMPLETED,
+			{ method: 'email' },
+			{ userId: user.id },
+		);
 
 		return success(undefined);
 	} catch (error) {
@@ -73,11 +69,9 @@ export async function signInUser(
 		});
 
 		// Non-blocking failure analytics
-		runAfter(async () => {
-			await trackServer(AUTH_EVENTS.SIGN_IN_FAILED, {
-				method: 'email',
-				error_code: errorCode,
-			});
+		await trackAfter(AUTH_EVENTS.SIGN_IN_FAILED, {
+			method: 'email',
+			error_code: errorCode,
 		});
 
 		return failure(errorCode);

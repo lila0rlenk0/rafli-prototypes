@@ -4,12 +4,11 @@ import { ZodError } from 'zod';
 
 import { env } from '@/env/server';
 import { SUBSCRIPTION_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapSubscriptionError, success } from '@/lib/errors';
-import { runAfter } from '@/lib/utils/run-after';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -49,8 +48,8 @@ export async function subscribeToPlan(
 	// Resolve the session once up-front so analytics can attribute the event
 	// to the right user regardless of which branch we exit from. Wrapped in
 	// Promise.resolve because `getSession` is already async — kept for
-	// symmetry with the rest of the payment actions that capture analytics in
-	// `runAfter` callbacks.
+	// symmetry with the rest of the payment actions that capture analytics via
+	// `trackAfter`.
 	const sessionPromise = Promise.resolve(getSession());
 
 	try {
@@ -89,17 +88,15 @@ export async function subscribeToPlan(
 		const data = createSubscriptionResponseSchema.parse(response.data);
 
 		// Step 5: Analytics after successful session creation — fire-and-forget
-		// via runAfter so it never blocks the redirect. Attribution to
+		// via trackAfter so it never blocks the redirect. Attribution to
 		// authenticated user only; anonymous callers don't reach this branch
 		// because the backend already rejected them at Step 3.
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
-			await trackServer(
-				SUBSCRIPTION_EVENTS.CHECKOUT_REDIRECTED,
-				{ plan_id: validation.data.planId },
-				{ userId },
-			);
-		});
+		const userId = (await sessionPromise)?.user?.id;
+		await trackAfter(
+			SUBSCRIPTION_EVENTS.CHECKOUT_REDIRECTED,
+			{ plan_id: validation.data.planId },
+			{ userId },
+		);
 
 		return success(data);
 	} catch (error) {
@@ -122,14 +119,12 @@ export async function subscribeToPlan(
 			action: 'subscribe-to-plan',
 		});
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
-			await trackServer(
-				SUBSCRIPTION_EVENTS.FAILED,
-				{ plan_id: payload.planId, error_code: errorCode },
-				{ userId },
-			);
-		});
+		const userId = (await sessionPromise)?.user?.id;
+		await trackAfter(
+			SUBSCRIPTION_EVENTS.FAILED,
+			{ plan_id: payload.planId, error_code: errorCode },
+			{ userId },
+		);
 
 		return failure(errorCode);
 	}

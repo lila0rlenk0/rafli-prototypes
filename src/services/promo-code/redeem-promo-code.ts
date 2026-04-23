@@ -1,11 +1,10 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError, z } from 'zod';
 
 import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
 import { hashPromoCodeForAnalytics } from '@/lib/analytics/hash-sensitive';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { mapPromoCodeError } from '@/lib/errors/error-mapper';
 import { failure, success } from '@/lib/errors/service-result';
@@ -76,23 +75,19 @@ export async function redeemPromoCode(
 
 		const data = redeemPromoCodeResponseSchema.parse(response.data);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PROMO_CODE_EVENTS.REDEEMED,
-				{
-					code_fingerprint: hashPromoCodeForAnalytics(
-						validationResult.data.code,
-					),
-					raffle_id: validationResult.data.raffleId,
-					type: data.type,
-					tickets_granted: data.ticketsGranted,
-					discount_amount: data.discountAmount,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PROMO_CODE_EVENTS.REDEEMED,
+			{
+				code_fingerprint: hashPromoCodeForAnalytics(validationResult.data.code),
+				raffle_id: validationResult.data.raffleId,
+				type: data.type,
+				tickets_granted: data.ticketsGranted,
+				discount_amount: data.discountAmount,
+			},
+			{ userId },
+		);
 
 		return success(data);
 	} catch (error) {
@@ -103,19 +98,17 @@ export async function redeemPromoCode(
 
 		const errorCode = mapPromoCodeError(error);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PROMO_CODE_EVENTS.REDEEM_FAILED,
-				{
-					code_fingerprint: hashPromoCodeForAnalytics(payload.code),
-					raffle_id: payload.raffleId,
-					error_code: errorCode,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PROMO_CODE_EVENTS.REDEEM_FAILED,
+			{
+				code_fingerprint: hashPromoCodeForAnalytics(payload.code),
+				raffle_id: payload.raffleId,
+				error_code: errorCode,
+			},
+			{ userId },
+		);
 
 		return failure(errorCode);
 	}

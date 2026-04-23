@@ -1,10 +1,9 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { redirect } from 'next/navigation';
 
 import { AUTH_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -37,12 +36,10 @@ export async function signOutUser(): Promise<never> {
 		});
 	} finally {
 		// Step 3: Non-blocking sign-out analytics
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
-			if (!userId) return;
-
-			await trackServer(AUTH_EVENTS.SIGN_OUT, {}, { userId });
-		});
+		const userId = (await sessionPromise)?.user?.id;
+		if (userId) {
+			await trackAfter(AUTH_EVENTS.SIGN_OUT, {}, { userId });
+		}
 
 		// Step 4: Clear all auth cookies
 		// Side-effects: deletes raffly-token, raffly-session, raffly-user-mode cookies

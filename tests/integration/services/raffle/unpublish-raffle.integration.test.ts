@@ -62,6 +62,7 @@ mock.module('@/lib/auth/session', () => ({
 }));
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
+	trackAfter: mock(),
 }));
 // All revalidation exports required — incomplete mocks contaminate other test files
 mock.module('@/lib/cache/revalidation', () => ({

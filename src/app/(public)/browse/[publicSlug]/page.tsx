@@ -12,8 +12,7 @@ import { BackLink } from '@/components/ui-custom/back-link';
 import { PublicNavbar } from '@/components/ui-custom/public-navbar';
 import { getCurrentUser } from '@/lib/auth/session';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
-import { runAfter } from '@/lib/utils/run-after';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { TicketQuantityStoreProvider } from '@/providers/ticket-quantity-store-provider';
 import type { XShareConfig } from '@/components/browse/public-slug/x-share/use-share';
 
@@ -57,23 +56,21 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		questionId: raffle.questionId,
 	};
 
-	runAfter(() => {
-		void trackServer(
-			RAFFLE_EVENTS.VIEWED,
-			{
-				raffle_id: raffle.id,
-				raffle_slug: raffle.publicSlugOrCode,
-				category: categoryName,
-				status: raffle.status,
-				ticket_price: raffle.ticketPriceAmount,
-				host_id: raffle.hostId,
-				participants_count: raffle.participantsCount,
-				max_participants: raffle.maxParticipants,
-				is_authenticated: user !== null,
-			},
-			{ userId: user?.id },
-		);
-	});
+	await trackAfter(
+		RAFFLE_EVENTS.VIEWED,
+		{
+			raffle_id: raffle.id,
+			raffle_slug: raffle.publicSlugOrCode,
+			category: categoryName,
+			status: raffle.status,
+			ticket_price: raffle.ticketPriceAmount,
+			host_id: raffle.hostId,
+			participants_count: raffle.participantsCount,
+			max_participants: raffle.maxParticipants,
+			is_authenticated: user !== null,
+		},
+		{ userId: user?.id },
+	);
 
 	return (
 		<PublicNavbar

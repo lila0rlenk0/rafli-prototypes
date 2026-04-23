@@ -1,10 +1,9 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -60,23 +59,21 @@ export async function confirmCryptoTx(
 		// Step 3: Validate response shape
 		const data = cryptoTxMutationResponseSchema.parse(response.data);
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.CRYPTO_TX_CONFIRMED,
-				{
-					session_id: payload.sessionId,
-					tx_hash: payload.txHash,
-					chain_id: payload.chainId,
-					confirmations: payload.confirmations,
-				},
-				{ userId },
-			);
+		await trackAfter(
+			PURCHASE_EVENTS.CRYPTO_TX_CONFIRMED,
+			{
+				session_id: payload.sessionId,
+				tx_hash: payload.txHash,
+				chain_id: payload.chainId,
+				confirmations: payload.confirmations,
+			},
+			{ userId },
+		);
 
-			if (data.status !== CRYPTO_PAYMENT_STATUS.COMPLETED) return;
-
-			await trackServer(
+		if (data.status === CRYPTO_PAYMENT_STATUS.COMPLETED) {
+			await trackAfter(
 				PURCHASE_EVENTS.COMPLETED,
 				{
 					session_id: payload.sessionId,
@@ -85,7 +82,7 @@ export async function confirmCryptoTx(
 				},
 				{ userId },
 			);
-		});
+		}
 
 		return success(data);
 	} catch (error) {
@@ -103,19 +100,17 @@ export async function confirmCryptoTx(
 			chainId: payload.chainId,
 		});
 
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				PURCHASE_EVENTS.FAILED,
-				{
-					session_id: payload.sessionId,
-					payment_method: 'crypto',
-					error_code: errorCode,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			PURCHASE_EVENTS.FAILED,
+			{
+				session_id: payload.sessionId,
+				payment_method: 'crypto',
+				error_code: errorCode,
+			},
+			{ userId },
+		);
 
 		return failure(errorCode);
 	}

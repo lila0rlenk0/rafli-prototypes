@@ -26,6 +26,7 @@ mock.module('@/lib/auth/session', () => ({
 
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(() => Promise.resolve()),
+	trackAfter: mock(),
 }));
 
 mock.module('@/lib/sentry/capture', () => ({

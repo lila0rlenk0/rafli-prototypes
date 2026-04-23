@@ -1,10 +1,9 @@
 'use server';
 
-import { runAfter } from '@/lib/utils/run-after';
 import { ZodError } from 'zod';
 
 import { ACCOUNT_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -41,15 +40,13 @@ export async function verifyWallet(
 		const wallet = walletResponseSchema.parse(response.data);
 
 		// Step 3: Non-blocking analytics — wallet verification success
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				ACCOUNT_EVENTS.WALLET_VERIFIED,
-				{ chain: 'evm' },
-				{ userId },
-			);
-		});
+		await trackAfter(
+			ACCOUNT_EVENTS.WALLET_VERIFIED,
+			{ chain: 'evm' },
+			{ userId },
+		);
 
 		return success(wallet);
 	} catch (error) {
@@ -68,18 +65,16 @@ export async function verifyWallet(
 		});
 
 		// Track wallet verification failure — measures Web3 onboarding friction
-		runAfter(async () => {
-			const userId = (await sessionPromise)?.user?.id;
+		const userId = (await sessionPromise)?.user?.id;
 
-			await trackServer(
-				ACCOUNT_EVENTS.WALLET_VERIFICATION_FAILED,
-				{
-					chain: 'evm',
-					error_code: errorCode,
-				},
-				{ userId },
-			);
-		});
+		await trackAfter(
+			ACCOUNT_EVENTS.WALLET_VERIFICATION_FAILED,
+			{
+				chain: 'evm',
+				error_code: errorCode,
+			},
+			{ userId },
+		);
 
 		return failure(errorCode);
 	}

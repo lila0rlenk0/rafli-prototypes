@@ -5,6 +5,7 @@
 import * as Sentry from '@sentry/nextjs';
 
 import { BROWSER_NOISE_PATTERNS, filterEvent } from '@/lib/sentry/filter';
+import { attachVercelIdTag } from '@/lib/sentry/vercel-id-processor';
 
 Sentry.init({
 	dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -29,3 +30,5 @@ Sentry.init({
 	// Drops expected business errors, samples network errors, filters browser noise
 	beforeSend: filterEvent,
 });
+
+Sentry.getGlobalScope().addEventProcessor(attachVercelIdTag);

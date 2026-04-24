@@ -13,6 +13,7 @@ import { PublicNavbar } from '@/components/ui-custom/public-navbar';
 import { getCurrentUser } from '@/lib/auth/session';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackAfter } from '@/lib/analytics/mixpanel-server';
+import { SERVER_ACTION_MAX_DURATION_SECONDS } from '@/lib/api/constants';
 import { TicketQuantityStoreProvider } from '@/providers/ticket-quantity-store-provider';
 import type { XShareConfig } from '@/components/browse/public-slug/x-share/use-share';
 
@@ -31,6 +32,8 @@ interface PageProps {
 	params: Promise<{ publicSlug: string }>;
 	searchParams: Promise<{ session_id?: string }>;
 }
+
+export const maxDuration = SERVER_ACTION_MAX_DURATION_SECONDS;
 
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;

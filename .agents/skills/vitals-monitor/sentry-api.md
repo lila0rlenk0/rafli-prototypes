@@ -72,7 +72,7 @@ For Discover, stats_v2, sessions, alerts, and any endpoint without a dedicated c
 
 ```bash
 # source project config
-source .claude/skills/vitals-monitor/.env
+source .agents/skills/vitals-monitor/.env
 
 # stats_v2 -- error volume
 sentry api "organizations/$SENTRY_ORG/stats_v2/?field=sum(quantity)&groupBy=outcome&category=error&statsPeriod=7d&interval=1d" --json

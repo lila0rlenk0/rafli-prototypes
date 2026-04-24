@@ -3,7 +3,7 @@
 import { z, ZodError } from 'zod';
 
 import { ACCOUNT_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import {
@@ -69,9 +69,9 @@ export async function verifyEmail(
 			return failure(AUTH_ERROR_CODES.INVALID_CREDENTIALS);
 		}
 
-		// Fire-and-forget — verification is complete, tracking must not block redirect
+		// Deferred analytics — runs post-response so it never blocks the redirect
 		if (data.user?.id) {
-			void trackServer(
+			await trackAfter(
 				ACCOUNT_EVENTS.EMAIL_VERIFIED,
 				{ user_email: data.user.email },
 				{ userId: data.user.id },

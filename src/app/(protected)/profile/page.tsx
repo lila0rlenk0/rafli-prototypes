@@ -1,5 +1,5 @@
 import { PROFILE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { getSession } from '@/lib/auth/session';
 import { getMe } from '@/services/user/get-me';
 import { getVerificationStatus } from '@/services/kyc-submission/get-verification-status';
@@ -69,9 +69,9 @@ export default async function ProfilePage() {
 	]);
 	const user = session?.user;
 
-	// Fire-and-forget — profile view tracking for engagement metrics
+	// Deferred — view tracking runs after the RSC payload ships
 	if (user?.id) {
-		void trackServer(
+		await trackAfter(
 			PROFILE_EVENTS.VIEWED,
 			{
 				has_verification: verificationResult.success,

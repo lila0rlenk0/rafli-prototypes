@@ -1,7 +1,7 @@
 'use server';
 
 import { AUTH_EVENTS } from '@/lib/analytics/events';
-import { trackAfter, trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { setAuthCookies } from '@/lib/auth/session';
 import { failure, mapAuthError, success } from '@/lib/errors';
@@ -28,11 +28,7 @@ export async function signInUser(
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
-		// Step 2: Fire-and-forget intent tracking — captures drop-off between
-		// form submit and completion. Not awaited so it doesn't block the response.
-		void trackServer(AUTH_EVENTS.SIGN_IN_STARTED, { method: 'email' });
-
-		// Step 3: Authenticate against backend (public endpoint)
+		// Step 2: Authenticate against backend (public endpoint)
 		const response = await baseClient.post(
 			'/auth/sign-in/email',
 			validationResult.data,
@@ -40,19 +36,19 @@ export async function signInUser(
 
 		const { token, user } = response.data;
 
-		// Step 4: Guard — backend must return both token and user on success
+		// Step 3: Guard — backend must return both token and user on success
 		if (!token || !user) {
 			return failure(COMMON_ERROR_CODES.UNKNOWN_ERROR);
 		}
 
-		// Step 5: Persist auth state into cookies
+		// Step 4: Persist auth state into cookies
 		// Side-effects: sets raffly-token (httpOnly) and raffly-session cookies
 		await setAuthCookies(token);
 
-		// Step 6: Tag Sentry scope so subsequent errors are attributed to this user
+		// Step 5: Tag Sentry scope so subsequent errors are attributed to this user
 		setSentryUser(user.id);
 
-		// Step 7: Non-blocking success analytics
+		// Step 6: Non-blocking success analytics
 		await trackAfter(
 			AUTH_EVENTS.SIGN_IN_COMPLETED,
 			{ method: 'email' },
@@ -61,7 +57,7 @@ export async function signInUser(
 
 		return success(undefined);
 	} catch (error) {
-		// Step 8: Map and capture — auth is a critical service
+		// Step 7: Map and capture — auth is a critical service
 		const errorCode = mapAuthError(error);
 		captureServiceError(error, errorCode, {
 			service: 'auth',

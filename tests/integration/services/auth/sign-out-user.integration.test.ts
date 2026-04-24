@@ -1,16 +1,17 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
-
 // --- Mocks ---
 
-const mockPost = mock();
 const mockClearAuthCookies = mock();
 const mockGetSession = mock();
+const mockTrackAfter = mock();
+const mockRunAfter = mock();
+const mockClearSentryUser = mock();
 
 mock.module('@/lib/api/client', () => ({
 	baseClient: { get: mock(), post: mock() },
-	authenticatedClient: { get: mock(), post: mockPost },
+	authenticatedClient: { get: mock(), post: mock() },
+	getClientIp: mock(() => Promise.resolve('203.0.113.1')),
 }));
 mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),
@@ -27,14 +28,14 @@ mock.module('@/lib/auth/session', () => ({
 }));
 mock.module('@/lib/sentry/user', () => ({
 	setSentryUser: mock(),
-	clearSentryUser: mock(),
+	clearSentryUser: mockClearSentryUser,
 }));
 mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackServer: mock(),
-	trackAfter: mock(),
+	trackAfter: mockTrackAfter,
 }));
 mock.module('@/lib/utils/run-after', () => ({
-	runAfter: mock(),
+	runAfter: mockRunAfter,
 }));
 
 // next/navigation redirect throws NEXT_REDIRECT — mock to capture the call
@@ -54,36 +55,41 @@ mock.module('@/services/auth/clear-auth', () => ({
 const { signOutUser } = await import('@/services/auth/sign-out-user');
 
 describe('signOutUser', () => {
-	test('calls backend sign-out, clears cookies, and redirects', async () => {
-		mockPost.mockResolvedValueOnce(mockAxiosResponse({}));
-		mockGetSession.mockReturnValueOnce({ user: { id: 'user-1' } });
+	test('clears cookies, fires analytics, schedules backend invalidation, and redirects when authenticated', async () => {
+		mockClearAuthCookies.mockClear();
+		mockRedirect.mockClear();
+		mockTrackAfter.mockClear();
+		mockRunAfter.mockClear();
+		mockClearSentryUser.mockClear();
+		mockGetSession.mockReturnValueOnce({
+			user: { id: 'user-1' },
+			token: 'jwt-token',
+		});
 
-		// signOutUser always redirects — redirect throws NEXT_REDIRECT
 		await expect(signOutUser()).rejects.toThrow('NEXT_REDIRECT');
 
-		expect(mockClearAuthCookies).toHaveBeenCalled();
+		expect(mockClearAuthCookies).toHaveBeenCalledTimes(1);
+		expect(mockClearSentryUser).toHaveBeenCalledTimes(1);
+		expect(mockTrackAfter).toHaveBeenCalledTimes(1);
+		// Backend invalidation is deferred via runAfter so the redirect is not gated on it.
+		expect(mockRunAfter).toHaveBeenCalledTimes(1);
 		expect(mockRedirect).toHaveBeenCalledWith('/sign-in');
 	});
 
-	test('clears cookies and redirects even if backend sign-out fails', async () => {
-		// Backend down — sign-out is best-effort
-		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
+	test('skips analytics and backend scheduling when no session, still clears cookies and redirects', async () => {
+		mockClearAuthCookies.mockClear();
+		mockRedirect.mockClear();
+		mockTrackAfter.mockClear();
+		mockRunAfter.mockClear();
 		mockGetSession.mockReturnValueOnce(null);
 
 		await expect(signOutUser()).rejects.toThrow('NEXT_REDIRECT');
 
-		// Cookies still cleared despite backend failure
-		expect(mockClearAuthCookies).toHaveBeenCalled();
-		expect(mockRedirect).toHaveBeenCalledWith('/sign-in');
-	});
-
-	test('clears cookies and redirects on network error', async () => {
-		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ERR_NETWORK' }));
-		mockGetSession.mockReturnValueOnce(null);
-
-		await expect(signOutUser()).rejects.toThrow('NEXT_REDIRECT');
-
-		expect(mockClearAuthCookies).toHaveBeenCalled();
+		expect(mockClearAuthCookies).toHaveBeenCalledTimes(1);
+		// No userId to attach — analytics skipped.
+		expect(mockTrackAfter).not.toHaveBeenCalled();
+		// No token to forward — backend invalidation skipped.
+		expect(mockRunAfter).not.toHaveBeenCalled();
 		expect(mockRedirect).toHaveBeenCalledWith('/sign-in');
 	});
 });

@@ -20,6 +20,11 @@ const mp =
 		? Mixpanel.init(env.MIXPANEL_TOKEN)
 		: null;
 
+// `mixpanel` (v0.20.x) issues `http.request()` with no timeout. Without
+// this ceiling an unreachable api.mixpanel.com would keep the Node
+// serverless function alive via an open socket until Vercel's maxDuration.
+const MIXPANEL_TIMEOUT_MS = 2_000;
+
 export interface TrackOptions {
 	userId?: string;
 	deviceId?: string;
@@ -42,7 +47,7 @@ export interface TrackOptions {
  * @param event - Mixpanel event name (use constants from events.ts)
  * @param properties - Event properties (business context: raffleId, amount, etc.)
  * @param options - User/device identification; pass `ip` to skip the headers() lookup
- * @returns Promise that resolves when tracking is complete
+ * @returns Resolves when Mixpanel acknowledges the event OR after `MIXPANEL_TIMEOUT_MS`, whichever is first
  */
 export async function trackServer(
 	event: string,
@@ -50,13 +55,12 @@ export async function trackServer(
 	options: TrackOptions = {},
 ): Promise<void> {
 	if (!mp) return;
+	const client = mp;
 
 	const { userId, deviceId, ip: providedIp } = options;
-	// Only touch headers() when the caller didn't pre-resolve the IP — required
-	// to stay safe inside after() callbacks, which cannot access headers().
 	const ip = providedIp !== undefined ? providedIp : await getClientIp();
 
-	mp.track(event, {
+	const payload = {
 		...properties,
 		// Mixpanel requires distinct_id — fall back to "anonymous" for unauthenticated events
 		distinct_id: userId || deviceId || 'anonymous',
@@ -64,6 +68,22 @@ export async function trackServer(
 		$device_id: deviceId,
 		...(ip && { ip }),
 		time: Date.now(),
+	};
+
+	// Race the SDK's callback against a hard timer — the SDK has no request
+	// timeout so a stalled endpoint would otherwise never resolve. Double
+	// resolve is harmless (Promise spec ignores subsequent calls).
+	await new Promise<void>(resolve => {
+		const timer = setTimeout(resolve, MIXPANEL_TIMEOUT_MS);
+		function done(): void {
+			clearTimeout(timer);
+			resolve();
+		}
+		try {
+			client.track(event, payload, done);
+		} catch {
+			done();
+		}
 	});
 }
 
@@ -71,14 +91,15 @@ export async function trackServer(
  * Schedules `trackServer` as non-blocking work after the response, safe to call
  * from route handlers, server actions, and RSCs.
  *
- * Resolves the client IP synchronously in request scope (where `headers()` is
- * legal) before handing control to `runAfter`. This is the canonical way to
- * fire analytics post-response — Next.js forbids `headers()` inside `after()`,
- * so `trackServer` can't safely self-lookup from within the callback.
+ * Resolves the client IP while still in request scope (where `headers()` is
+ * legal) and forwards it into the deferred `after()` callback — Next.js
+ * forbids `headers()` inside `after()`, so `trackServer` can't safely
+ * self-lookup from within the callback once the response has shipped.
  *
  * @param event - Mixpanel event name
  * @param properties - Event properties
  * @param options - User/device identification (ip is resolved here and forwarded)
+ * @returns Resolves once the IP lookup completes and the deferred task is scheduled — does NOT await the Mixpanel round-trip
  */
 export async function trackAfter(
 	event: string,
@@ -87,10 +108,8 @@ export async function trackAfter(
 ): Promise<void> {
 	if (!mp) return;
 
-	// Step 1: Resolve IP in request scope — headers() is illegal inside after().
 	const ip = await getClientIp();
 
-	// Step 2: Defer the Mixpanel round-trip until after the response ships.
 	runAfter(async () => {
 		await trackServer(event, properties, { ...options, ip });
 	});

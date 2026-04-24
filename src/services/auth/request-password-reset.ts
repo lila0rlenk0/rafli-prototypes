@@ -1,7 +1,7 @@
 'use server';
 
 import { ACCOUNT_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -37,8 +37,8 @@ export async function requestPasswordReset(
 		// Step 2: Request password reset email from backend
 		await baseClient.post('/auth/forget-password', validated.data);
 
-		// Step 3: Fire-and-forget analytics — no userId available (unauthenticated flow)
-		void trackServer(ACCOUNT_EVENTS.PASSWORD_RESET_REQUESTED, {});
+		// Step 3: Deferred analytics — no userId available (unauthenticated flow)
+		await trackAfter(ACCOUNT_EVENTS.PASSWORD_RESET_REQUESTED, {});
 
 		return success(undefined);
 	} catch (error) {

@@ -29,6 +29,7 @@ import axios, {
 	type AxiosRequestConfig,
 } from 'axios';
 import { headers } from 'next/headers';
+import { cache } from 'react';
 
 import { env } from '@/env/server';
 import { AUTH_COOKIES } from '@/lib/auth/constants';
@@ -51,9 +52,13 @@ const API_BASE_URL = `${env.BACKEND_URL}/api/v1`;
  * Note: cf-connecting-ip is NOT used - Vercel overwrites all incoming headers.
  * For Cloudflare integration, use Vercel's "Verified Proxy" Enterprise feature.
  *
+ * Wrapped in `React.cache` so the axios interceptors (base + authenticated),
+ * `trackAfter`, and any RSC that forwards the IP all share a single
+ * `headers()` read per request instead of hitting AsyncLocalStorage N times.
+ *
  * @see https://vercel.com/docs/headers/request-headers
  */
-async function getClientIp(): Promise<string | null> {
+const getClientIp = cache(async function getClientIp(): Promise<string | null> {
 	const h = await headers();
 
 	return (
@@ -62,7 +67,7 @@ async function getClientIp(): Promise<string | null> {
 		h.get('x-real-ip') ||
 		null
 	);
-}
+});
 
 /** Axios config extended with retry tracking */
 interface RetryableConfig extends AxiosRequestConfig {

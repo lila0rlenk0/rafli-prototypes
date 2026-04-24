@@ -1,7 +1,7 @@
 'use server';
 
 import { AUTH_EVENTS } from '@/lib/analytics/events';
-import { trackAfter, trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { baseClient } from '@/lib/api/client';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
@@ -30,22 +30,18 @@ export async function registerUser(
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
-		// Step 2: Fire-and-forget intent tracking — captures drop-off between
-		// form submit and completion. Not awaited so it doesn't block the response.
-		void trackServer(AUTH_EVENTS.SIGN_UP_STARTED, { method: 'email' });
-
-		// Step 3: Create user account on backend (public endpoint, no auth required)
+		// Step 2: Create user account on backend (public endpoint, no auth required)
 		const response = await baseClient.post(
 			'/auth/sign-up/email',
 			validationResult.data,
 		);
 
-		// Step 4: Guard — backend must return a user object on success
+		// Step 3: Guard — backend must return a user object on success
 		if (!response.data.user) {
 			return failure(AUTH_ERROR_CODES.SIGNUP_FAILED);
 		}
 
-		// Step 5: Non-blocking analytics — track successful registration after response
+		// Step 4: Non-blocking analytics — track successful registration after response
 		await trackAfter(
 			AUTH_EVENTS.SIGN_UP_COMPLETED,
 			{
@@ -57,7 +53,7 @@ export async function registerUser(
 
 		return success(undefined);
 	} catch (error) {
-		// Step 6: Map and capture — auth is a critical service
+		// Step 5: Map and capture — auth is a critical service
 		const errorCode = mapAuthError(error);
 		captureServiceError(error, errorCode, {
 			service: 'auth',

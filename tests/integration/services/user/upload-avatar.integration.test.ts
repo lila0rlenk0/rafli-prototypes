@@ -26,6 +26,7 @@ function createTestFile(
 // --- Mocks ---
 
 const mockPost = mock();
+const mockRunAfter = mock();
 
 mock.module('@/lib/api/client', () => ({
 	baseClient: { get: mock(), post: mock() },
@@ -35,6 +36,11 @@ mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),
 	captureServiceError: mock(),
 }));
+// `revalidateProfile` hits next/cache under the hood — mock `runAfter` so the
+// deferred task never runs in the test runner (no request scope).
+mock.module('@/lib/utils/run-after', () => ({
+	runAfter: mockRunAfter,
+}));
 
 // Import AFTER mocking
 const { uploadAvatar } = await import('@/services/user/upload-avatar');
@@ -42,6 +48,7 @@ const { uploadAvatar } = await import('@/services/user/upload-avatar');
 describe('uploadAvatar', () => {
 	describe('success', () => {
 		test('returns success undefined on valid upload', async () => {
+			mockRunAfter.mockClear();
 			mockPost.mockResolvedValueOnce(
 				mockAxiosResponse(VALID_AVATAR_RESPONSE),
 			);
@@ -53,6 +60,8 @@ describe('uploadAvatar', () => {
 			if (result.success) {
 				expect(result.data).toBeUndefined();
 			}
+			// Revalidation is deferred via runAfter so callers don't pay for the cache purge.
+			expect(mockRunAfter).toHaveBeenCalledTimes(1);
 		});
 	});
 

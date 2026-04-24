@@ -1,6 +1,6 @@
 'use client';
 
-import { revalidateProfile } from '@/services/user/revalidate-profile';
+import { cn } from '@/lib/class-names';
 import { uploadAvatar } from '@/services/user/upload-avatar';
 import { CLIENT_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { Pencil } from 'lucide-react';
@@ -96,9 +96,8 @@ export function EditableAvatar({
 
 			toast.success('Avatar updated successfully!');
 
-			// Invalidate /me endpoint cache to force fresh data fetch
-			await revalidateProfile();
-
+			// Full reload picks up the refreshed /profile HTML — `uploadAvatar`
+			// schedules the cache invalidation server-side via `runAfter`.
 			window.location.reload();
 		} catch (error) {
 			console.error('Unexpected error during avatar upload:', error);
@@ -167,9 +166,10 @@ export function EditableAvatar({
 			{/* Overlay with pencil icon on hover */}
 			{!isUploading ? (
 				<div
-					className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity duration-300 ${
-						isHovered ? 'opacity-100' : 'pointer-events-none opacity-0'
-					}`}
+					className={cn(
+						'absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity duration-300',
+						isHovered ? 'opacity-100' : 'pointer-events-none opacity-0',
+					)}
 				>
 					<Pencil className="size-5 text-white" />
 				</div>

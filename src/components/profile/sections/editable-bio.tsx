@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { revalidateProfile } from '@/services/user/revalidate-profile';
 import { updateMe } from '@/services/user/update-me';
 import { Check, Pencil, X } from 'lucide-react';
 import { useState } from 'react';
@@ -53,7 +52,6 @@ export function EditableBio({ bio }: EditableBioProps) {
 			}
 
 			toast.success('Bio updated successfully!');
-			await revalidateProfile();
 			setIsEditing(false);
 		} catch (error) {
 			console.error('Unexpected error during bio update:', error);

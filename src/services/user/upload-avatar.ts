@@ -6,6 +6,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
+import { runAfter } from '@/lib/utils/run-after';
 import {
 	CLIENT_ERROR_CODES,
 	COMMON_ERROR_CODES,
@@ -14,6 +15,8 @@ import {
 import type { ServiceResponse } from '@/types/service-response';
 import { uploadAvatarResponseSchema } from '@/types/user';
 
+import { revalidateProfile } from './revalidate-profile';
+
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 // 5 MB
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -21,8 +24,9 @@ const MAX_SIZE = 5 * 1024 * 1024;
 /**
  * Uploads a user avatar image.
  *
- * Returns void on success — caller should revalidate /me to get the updated URL.
- * Backend expects 'file' field for avatar upload.
+ * Schedules a /profile revalidation via `runAfter` so the cache is refreshed
+ * without gating the response — callers no longer need to call
+ * `revalidateProfile()` themselves.
  *
  * @param file - The image file to upload
  * @returns ServiceResponse void on success, RaffleErrorCode on failure
@@ -42,7 +46,6 @@ export async function uploadAvatar(
 		}
 
 		// Step 3: Upload avatar — backend expects 'file' field
-		// Side-effects: caller should revalidate /me to get updated avatar URL
 		const formData = new FormData();
 		formData.append('file', file);
 
@@ -55,6 +58,12 @@ export async function uploadAvatar(
 
 		// Step 4: Validate response to detect contract drift
 		uploadAvatarResponseSchema.parse(response.data);
+
+		// Step 5: Revalidate /profile post-response so the refreshed avatar URL
+		// lands on the next navigation without blocking the caller.
+		runAfter(async () => {
+			await revalidateProfile();
+		});
 
 		return success(undefined);
 	} catch (error) {

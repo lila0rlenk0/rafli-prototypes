@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { MODERATION_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapReportError, success } from '@/lib/errors';
@@ -44,18 +44,19 @@ export async function createReport(
 		// Step 3: Validate response shape
 		const data = userReportResponseSchema.parse(response.data);
 
-		// Step 4: Fire-and-forget analytics — report submission must not be delayed
-		void sessionPromise.then(session =>
-			trackServer(
-				MODERATION_EVENTS.CONTENT_REPORTED,
-				{
-					content_type: parsed.data.contentType,
-					content_id: parsed.data.contentId,
-					reason: parsed.data.reason,
-					has_raffle_context: !!parsed.data.raffleId,
-				},
-				{ userId: session?.user?.id },
-			),
+		// Step 4: Must `await` trackAfter — it resolves IP via headers() in
+		// request scope then defers Mixpanel via after(). `void trackAfter(...)`
+		// would run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			MODERATION_EVENTS.CONTENT_REPORTED,
+			{
+				content_type: parsed.data.contentType,
+				content_id: parsed.data.contentId,
+				reason: parsed.data.reason,
+				has_raffle_context: !!parsed.data.raffleId,
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(data);

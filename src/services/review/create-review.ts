@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { REVIEW_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapReviewError, success } from '@/lib/errors';
@@ -34,18 +34,19 @@ export async function createReview(
 		// Step 2: Validate response shape
 		const validated = reviewSchema.parse(response.data);
 
-		// Step 3: Fire-and-forget analytics — don't block review submission
-		void sessionPromise.then(session =>
-			trackServer(
-				REVIEW_EVENTS.CREATED,
-				{
-					raffle_id: payload.raffleId,
-					host_id: payload.hostId,
-					rating: payload.rating,
-					has_comment: !!payload.comment,
-				},
-				{ userId: session?.user?.id },
-			),
+		// Step 3: Must `await` trackAfter — it resolves IP via headers() in
+		// request scope then defers Mixpanel via after(). `void trackAfter(...)`
+		// would run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			REVIEW_EVENTS.CREATED,
+			{
+				raffle_id: payload.raffleId,
+				host_id: payload.hostId,
+				rating: payload.rating,
+				has_comment: !!payload.comment,
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(validated);

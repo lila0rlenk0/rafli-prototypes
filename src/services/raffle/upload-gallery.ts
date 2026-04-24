@@ -1,7 +1,7 @@
 'use server';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { pathParam } from '@/lib/utils/routing/path-param';
@@ -77,17 +77,18 @@ export async function uploadGalleryImages(
 
 		const parsed = uploadGalleryResponseSchema.parse(response.data);
 
-		// Fire-and-forget — upload tracking must not block
-		void sessionPromise.then(session =>
-			trackServer(
-				RAFFLE_EVENTS.GALLERY_UPLOADED,
-				{
-					raffle_id: raffleId,
-					image_count: files.length,
-					total_size_bytes: files.reduce((sum, f) => sum + f.size, 0),
-				},
-				{ userId: session?.user?.id },
-			),
+		// Must `await` trackAfter — it resolves IP via headers() in request
+		// scope then defers Mixpanel via after(). `void trackAfter(...)` would
+		// run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			RAFFLE_EVENTS.GALLERY_UPLOADED,
+			{
+				raffle_id: raffleId,
+				image_count: files.length,
+				total_size_bytes: files.reduce((sum, f) => sum + f.size, 0),
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(parsed);

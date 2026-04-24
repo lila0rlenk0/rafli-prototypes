@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { COMMENT_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
@@ -43,13 +43,14 @@ export async function voteComment(
 		// Step 2: Validate response shape
 		const validated = voteResponseSchema.parse(response.data);
 
-		// Step 3: Fire-and-forget analytics — don't block vote UX
-		void sessionPromise.then(session =>
-			trackServer(
-				COMMENT_EVENTS.VOTED,
-				{ comment_id: commentId, direction: type },
-				{ userId: session?.user?.id },
-			),
+		// Step 3: Must `await` trackAfter — it resolves IP via headers() in
+		// request scope then defers Mixpanel via after(). `void trackAfter(...)`
+		// would run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			COMMENT_EVENTS.VOTED,
+			{ comment_id: commentId, direction: type },
+			{ userId: session?.user?.id },
 		);
 
 		return success(validated);

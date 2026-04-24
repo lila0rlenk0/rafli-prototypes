@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { pathParam } from '@/lib/utils/routing/path-param';
@@ -51,16 +51,17 @@ export async function updateRaffle(
 		// Step 4: Validate response shape
 		const raffle = raffleSchema.parse(response.data);
 
-		// Step 5: Fire-and-forget analytics — update is frequent, don't block
-		void sessionPromise.then(session =>
-			trackServer(
-				RAFFLE_EVENTS.UPDATED,
-				{
-					raffle_id: raffle.id,
-					fields_changed: Object.keys(validationResult.data),
-				},
-				{ userId: session?.user?.id },
-			),
+		// Step 5: Must `await` trackAfter — it resolves IP via headers() in
+		// request scope then defers Mixpanel via after(). `void trackAfter(...)`
+		// would run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			RAFFLE_EVENTS.UPDATED,
+			{
+				raffle_id: raffle.id,
+				fields_changed: Object.keys(validationResult.data),
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(raffle);

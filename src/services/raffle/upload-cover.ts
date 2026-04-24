@@ -1,7 +1,7 @@
 'use server';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { pathParam } from '@/lib/utils/routing/path-param';
@@ -64,17 +64,18 @@ export async function uploadCover(
 
 		const parsed = uploadCoverResponseSchema.parse(response.data);
 
-		// Fire-and-forget — upload tracking must not block
-		void sessionPromise.then(session =>
-			trackServer(
-				RAFFLE_EVENTS.COVER_UPLOADED,
-				{
-					raffle_id: raffleId,
-					file_type: file.type,
-					file_size_bytes: file.size,
-				},
-				{ userId: session?.user?.id },
-			),
+		// Must `await` trackAfter — it resolves IP via headers() in request
+		// scope then defers Mixpanel via after(). `void trackAfter(...)` would
+		// run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			RAFFLE_EVENTS.COVER_UPLOADED,
+			{
+				raffle_id: raffleId,
+				file_type: file.type,
+				file_size_bytes: file.size,
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(parsed);

@@ -7,7 +7,7 @@
 import { ZodError } from 'zod';
 
 import { COMMENT_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapCommentError, success } from '@/lib/errors';
@@ -77,26 +77,27 @@ export async function createCommentBase(
 		// the catch below where it becomes a contract-drift event, not a crash.
 		const validated = commentSchema.parse(response.data);
 
-		// Step 3: Fire-and-forget analytics — don't block comment UX on Mixpanel.
+		// Step 3: Must `await` trackAfter — it resolves IP via headers() in
+		// request scope then defers Mixpanel via after(). `void trackAfter(...)`
+		// would run headers() post-response and throw.
 		// `is_reply` / `parent_comment_id` are only set when we're in reply mode,
 		// mirroring the property shape the previous two files emitted so
 		// downstream dashboards keep working without a schema migration.
-		void sessionPromise.then(session =>
-			trackServer(
-				COMMENT_EVENTS.CREATED,
-				{
-					raffle_id: input.raffleId,
-					comment_id: validated.id,
-					is_reply: input.parentCommentId !== undefined,
-					body_length: input.payload.body.length,
-					// Only include parent_comment_id key when actually replying —
-					// avoids littering top-level comment events with `undefined` fields
-					...(input.parentCommentId !== undefined && {
-						parent_comment_id: input.parentCommentId,
-					}),
-				},
-				{ userId: session?.user?.id },
-			),
+		const session = await sessionPromise;
+		await trackAfter(
+			COMMENT_EVENTS.CREATED,
+			{
+				raffle_id: input.raffleId,
+				comment_id: validated.id,
+				is_reply: input.parentCommentId !== undefined,
+				body_length: input.payload.body.length,
+				// Only include parent_comment_id key when actually replying —
+				// avoids littering top-level comment events with `undefined` fields
+				...(input.parentCommentId !== undefined && {
+					parent_comment_id: input.parentCommentId,
+				}),
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(validated);

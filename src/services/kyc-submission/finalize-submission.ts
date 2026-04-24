@@ -1,7 +1,7 @@
 'use server';
 
 import { KYC_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { pathParam } from '@/lib/utils/routing/path-param';
@@ -29,13 +29,14 @@ export async function finalizeSubmission(
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 
-		// Track KYC finalization — end of verification submission funnel
-		void sessionPromise.then(session =>
-			trackServer(
-				KYC_EVENTS.FINALIZED,
-				{ submission_id: submissionId },
-				{ userId: session?.user?.id },
-			),
+		// Must `await` trackAfter — it resolves IP via headers() in request
+		// scope then defers Mixpanel via after(). `void trackAfter(...)` would
+		// run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			KYC_EVENTS.FINALIZED,
+			{ submission_id: submissionId },
+			{ userId: session?.user?.id },
 		);
 
 		return success(undefined);
@@ -47,16 +48,15 @@ export async function finalizeSubmission(
 			submissionId,
 		});
 
-		void sessionPromise.then(session =>
-			trackServer(
-				KYC_EVENTS.SUBMISSION_FAILED,
-				{
-					type: 'finalize',
-					submission_id: submissionId,
-					error_code: errorCode,
-				},
-				{ userId: session?.user?.id },
-			),
+		const session = await sessionPromise;
+		await trackAfter(
+			KYC_EVENTS.SUBMISSION_FAILED,
+			{
+				type: 'finalize',
+				submission_id: submissionId,
+				error_code: errorCode,
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return failure(errorCode);

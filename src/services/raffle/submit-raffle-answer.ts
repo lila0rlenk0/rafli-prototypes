@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
@@ -46,16 +46,17 @@ export async function submitRaffleAnswer(
 
 		const validated = answerResponseSchema.parse(response.data);
 
-		// Fire-and-forget — don't block answer UX
-		void sessionPromise.then(session =>
-			trackServer(
-				RAFFLE_EVENTS.QUESTION_ANSWERED,
-				{
-					raffle_id: raffleId,
-					correct: validated.correct,
-				},
-				{ userId: session?.user?.id },
-			),
+		// Must `await` trackAfter — it resolves IP via headers() in request
+		// scope then defers Mixpanel via after(). `void trackAfter(...)` would
+		// run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			RAFFLE_EVENTS.QUESTION_ANSWERED,
+			{
+				raffle_id: raffleId,
+				correct: validated.correct,
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(validated);

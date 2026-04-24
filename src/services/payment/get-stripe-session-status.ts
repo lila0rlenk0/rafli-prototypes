@@ -3,7 +3,7 @@
 import { z, ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -51,34 +51,25 @@ export async function getStripeSessionStatus(
 		// Step 2: Validate response shape
 		const data = stripeSessionStatusSchema.parse(response.data);
 
-		// Step 3: Track purchase completed when Stripe confirms payment
-		if (data.status === 'paid') {
-			void sessionPromise.then(session =>
-				trackServer(
-					PURCHASE_EVENTS.COMPLETED,
-					{
-						order_id: data.orderId,
-						payment_method: 'stripe',
-						stripe_session_id: sessionId,
-					},
-					{ userId: session?.user?.id },
-				),
-			);
-		}
+		// Step 3+4: Must `await` trackAfter — it resolves IP via headers() in
+		// request scope then defers Mixpanel via after(). `void trackAfter(...)`
+		// would run headers() post-response and throw.
+		if (data.status === 'paid' || data.status === 'expired') {
+			const session = await sessionPromise;
+			const event =
+				data.status === 'paid'
+					? PURCHASE_EVENTS.COMPLETED
+					: PURCHASE_EVENTS.FAILED;
 
-		// Step 4: Track Stripe failures — expired sessions or unpaid terminal states
-		if (data.status === 'expired') {
-			void sessionPromise.then(session =>
-				trackServer(
-					PURCHASE_EVENTS.FAILED,
-					{
-						order_id: data.orderId,
-						payment_method: 'stripe',
-						stripe_session_id: sessionId,
-						failure_reason: data.status,
-					},
-					{ userId: session?.user?.id },
-				),
+			await trackAfter(
+				event,
+				{
+					order_id: data.orderId,
+					payment_method: 'stripe',
+					stripe_session_id: sessionId,
+					...(data.status === 'expired' && { failure_reason: data.status }),
+				},
+				{ userId: session?.user?.id },
 			);
 		}
 

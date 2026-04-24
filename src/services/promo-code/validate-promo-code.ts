@@ -4,7 +4,7 @@ import { ZodError } from 'zod';
 
 import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
 import { hashPromoCodeForAnalytics } from '@/lib/analytics/hash-sensitive';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { mapPromoCodeError } from '@/lib/errors/error-mapper';
 import { failure, success } from '@/lib/errors/service-result';
@@ -51,17 +51,18 @@ export async function validatePromoCode(
 
 		const data = validatePromoCodeResponseSchema.parse(response.data);
 
-		// Fire-and-forget — validation is a read-like operation, don't block
-		void sessionPromise.then(session =>
-			trackServer(
-				PROMO_CODE_EVENTS.VALIDATED,
-				{
-					code_fingerprint: hashPromoCodeForAnalytics(normalizedCode),
-					raffle_id: raffleId,
-					valid: data.valid,
-				},
-				{ userId: session?.user?.id },
-			),
+		// Must `await` trackAfter — it resolves IP via headers() in request
+		// scope then defers Mixpanel via after(). `void trackAfter(...)` would
+		// run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			PROMO_CODE_EVENTS.VALIDATED,
+			{
+				code_fingerprint: hashPromoCodeForAnalytics(normalizedCode),
+				raffle_id: raffleId,
+				valid: data.valid,
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(data);

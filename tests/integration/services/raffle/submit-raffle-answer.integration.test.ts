@@ -14,7 +14,7 @@ const OPTION_ID = '22222222-2222-7222-8222-222222222222';
 // --- Mocks ---
 
 const mockPost = mock();
-const mockTrackServer = mock();
+const mockTrackAfter = mock();
 const mockCaptureContractDrift = mock();
 // getSession is invoked synchronously but wrapped in Promise.resolve; the return
 // value must match { user: { id } } for the analytics tag to resolve correctly
@@ -38,8 +38,8 @@ mock.module('@/lib/auth/session', () => ({
 	requireEmailVerification: mock(),
 }));
 mock.module('@/lib/analytics/mixpanel-server', () => ({
-	trackServer: mockTrackServer,
-	trackAfter: mock(),
+	trackServer: mock(),
+	trackAfter: mockTrackAfter,
 }));
 // All event exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
 mock.module('@/lib/analytics/events', () => MOCK_ANALYTICS_EVENTS);
@@ -50,22 +50,15 @@ const { submitRaffleAnswer } = await import(
 
 function resetAllMocks(): void {
 	mockPost.mockReset();
-	mockTrackServer.mockReset();
+	mockTrackAfter.mockReset();
 	mockCaptureContractDrift.mockReset();
 	// Keep default impl; clear call history
 	mockGetSession.mockClear();
 }
 
-/**
- * The analytics call is fire-and-forget via `void sessionPromise.then(...)`,
- * so we need to drain the microtask queue before asserting on mockTrackServer.
- * 3 ticks: (1) sessionPromise.then fires, (2) trackServer resolves, (3) safety margin.
- */
-async function drainMicrotasks(): Promise<void> {
-	await Promise.resolve();
-	await Promise.resolve();
-	await Promise.resolve();
-}
+// Analytics is awaited inside the service via `await trackAfter(...)`, so by
+// the time `submitRaffleAnswer` resolves, the tracker has already been called.
+// No microtask drain needed.
 
 describe('submitRaffleAnswer', () => {
 	describe('success', () => {
@@ -103,10 +96,9 @@ describe('submitRaffleAnswer', () => {
 			mockPost.mockResolvedValueOnce(mockAxiosResponse({ correct: true }));
 
 			await submitRaffleAnswer(RAFFLE_ID, OPTION_ID);
-			await drainMicrotasks();
 
-			expect(mockTrackServer).toHaveBeenCalledTimes(1);
-			expect(mockTrackServer).toHaveBeenCalledWith(
+			expect(mockTrackAfter).toHaveBeenCalledTimes(1);
+			expect(mockTrackAfter).toHaveBeenCalledWith(
 				MOCK_ANALYTICS_EVENTS.RAFFLE_EVENTS.QUESTION_ANSWERED,
 				{ raffle_id: RAFFLE_ID, correct: true },
 				{ userId: 'user-1' },
@@ -127,7 +119,7 @@ describe('submitRaffleAnswer', () => {
 			}
 			expect(mockCaptureContractDrift).toHaveBeenCalledTimes(1);
 			// Analytics must NOT fire on validation failure — no confirmed answer to track
-			expect(mockTrackServer).not.toHaveBeenCalled();
+			expect(mockTrackAfter).not.toHaveBeenCalled();
 		});
 	});
 
@@ -147,7 +139,7 @@ describe('submitRaffleAnswer', () => {
 			if (!result.success) {
 				expect(result.error).toBe(RAFFLE_ERROR_CODES.OPTION_NOT_FOUND);
 			}
-			expect(mockTrackServer).not.toHaveBeenCalled();
+			expect(mockTrackAfter).not.toHaveBeenCalled();
 		});
 	});
 

@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { KYC_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -51,13 +51,14 @@ export async function submitIndividual(
 
 		const parsed = kycSubmissionResponseSchema.parse(response.data);
 
-		// Track KYC individual submission — measures host onboarding funnel
-		void sessionPromise.then(session =>
-			trackServer(
-				KYC_EVENTS.INDIVIDUAL_SUBMITTED,
-				{ submission_id: parsed.id },
-				{ userId: session?.user?.id },
-			),
+		// Must `await` trackAfter — it resolves IP via headers() in request
+		// scope then defers Mixpanel via after(). `void trackAfter(...)` would
+		// run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			KYC_EVENTS.INDIVIDUAL_SUBMITTED,
+			{ submission_id: parsed.id },
+			{ userId: session?.user?.id },
 		);
 
 		return success(parsed);
@@ -73,12 +74,11 @@ export async function submitIndividual(
 			action: 'submit-individual',
 		});
 
-		void sessionPromise.then(session =>
-			trackServer(
-				KYC_EVENTS.SUBMISSION_FAILED,
-				{ type: 'individual', error_code: errorCode },
-				{ userId: session?.user?.id },
-			),
+		const session = await sessionPromise;
+		await trackAfter(
+			KYC_EVENTS.SUBMISSION_FAILED,
+			{ type: 'individual', error_code: errorCode },
+			{ userId: session?.user?.id },
 		);
 
 		return failure(errorCode);

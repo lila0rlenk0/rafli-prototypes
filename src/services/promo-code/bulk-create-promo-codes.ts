@@ -3,7 +3,7 @@
 import { ZodError } from 'zod';
 
 import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession, requireAuth } from '@/lib/auth/session';
@@ -57,20 +57,21 @@ export async function bulkCreatePromoCodes(
 		// Step 2: Validate response shape
 		const data = bulkCreatePromoCodesResponseSchema.parse(response.data);
 
-		// Step 3: Fire-and-forget analytics — promo creation is not latency-sensitive
-		void sessionPromise.then(session =>
-			trackServer(
-				PROMO_CODE_EVENTS.BULK_CREATED,
-				{
-					raffle_id: raffleId,
-					count: payload.count,
-					type: payload.type,
-					value: payload.value,
-					has_expiry: !!payload.expiresAt,
-					max_uses: payload.maxUses,
-				},
-				{ userId: session?.user?.id },
-			),
+		// Step 3: Must `await` trackAfter — it resolves IP via headers() in
+		// request scope then defers Mixpanel via after(). `void trackAfter(...)`
+		// would run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			PROMO_CODE_EVENTS.BULK_CREATED,
+			{
+				raffle_id: raffleId,
+				count: payload.count,
+				type: payload.type,
+				value: payload.value,
+				has_expiry: !!payload.expiresAt,
+				max_uses: payload.maxUses,
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(data);

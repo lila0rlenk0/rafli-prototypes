@@ -23,7 +23,7 @@ const realSessionForRestore = {
 } as const;
 
 const mockPost = mock();
-const mockTrackServer = mock();
+const mockTrackAfter = mock();
 
 mock.module('@/lib/api/client', () => ({
 	authenticatedClient: { get: mock(), post: mockPost, delete: mock() },
@@ -35,7 +35,7 @@ mock.module('@/lib/sentry/capture', () => ({
 }));
 mock.module('@/lib/analytics/events', () => MOCK_ANALYTICS_EVENTS);
 mock.module('@/lib/analytics/mixpanel-server', () => ({
-	trackServer: mockTrackServer,
+	trackAfter: mockTrackAfter,
 }));
 mock.module('@/lib/auth/session', () => ({
 	getSession: () => null,
@@ -66,12 +66,9 @@ describe('validatePromoCode analytics (VALIDATED)', () => {
 		const codeInput = 'ab23-cd45';
 		const normalized = 'AB23-CD45';
 		await validatePromoCode('raffle-1', codeInput);
-		// `void sessionPromise.then(trackServer)` — flush microtask after the action returns
-		await Promise.resolve();
-		await Promise.resolve();
 
-		expect(mockTrackServer).toHaveBeenCalledTimes(1);
-		const [eventName, props] = mockTrackServer.mock.calls[0] as [
+		expect(mockTrackAfter).toHaveBeenCalledTimes(1);
+		const [eventName, props] = mockTrackAfter.mock.calls[0] as [
 			string,
 			Record<string, unknown>,
 		];

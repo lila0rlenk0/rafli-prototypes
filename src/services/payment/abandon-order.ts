@@ -3,7 +3,7 @@
 import { z, ZodError } from 'zod';
 
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
-import { trackServer } from '@/lib/analytics/mixpanel-server';
+import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
@@ -49,16 +49,17 @@ export async function abandonOrder(
 		// Step 2: Validate response shape
 		const data = abandonOrderResponseSchema.parse(response.data);
 
-		// Step 3: Fire-and-forget analytics — abandon is best-effort, must not block
-		void sessionPromise.then(session =>
-			trackServer(
-				PURCHASE_EVENTS.ORDER_ABANDONED,
-				{
-					order_id: orderId,
-					...(paymentMethod && { payment_method: paymentMethod }),
-				},
-				{ userId: session?.user?.id },
-			),
+		// Step 3: Must `await` trackAfter — it resolves IP via headers() in
+		// request scope then defers Mixpanel via after(). `void trackAfter(...)`
+		// would run headers() post-response and throw.
+		const session = await sessionPromise;
+		await trackAfter(
+			PURCHASE_EVENTS.ORDER_ABANDONED,
+			{
+				order_id: orderId,
+				...(paymentMethod && { payment_method: paymentMethod }),
+			},
+			{ userId: session?.user?.id },
 		);
 
 		return success(data);

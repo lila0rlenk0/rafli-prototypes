@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react';
 
+import { cdnUrl } from '@/lib/utils/cdn';
+
 /**
  * Green uppercase label that anchors each section heading. Kept in its
  * own component so copy edits to the badge style touch one file.
@@ -109,10 +111,16 @@ export function StepItem({ number, children }: StepItemProps) {
 	);
 }
 
-/** Press release image paths in display order. */
+/**
+ * Press release image URLs in display order. Served as WebP from the
+ * media CDN (`cdn-media.raffly.win`) — pulled out of the static bundle
+ * so the landing route ships a smaller payload. The `as const` is gone
+ * because `cdnUrl` returns a runtime `string`; the keys remain the
+ * stable contract callers depend on.
+ */
 export const PRESS_IMAGES = {
-	banner: '/press/banner.png',
-	raffleList: '/press/raffle-list.png',
-	raffleDetails: '/press/raffle-details.png',
-	footer: '/press/footer.png',
-} as const;
+	banner: cdnUrl('static/press/banner.webp'),
+	raffleList: cdnUrl('static/press/raffle-list.webp'),
+	raffleDetails: cdnUrl('static/press/raffle-details.webp'),
+	footer: cdnUrl('static/press/footer.webp'),
+};

@@ -3,8 +3,10 @@ import Image from 'next/image';
 
 export interface Benefit {
 	/**
-	 * Path to the illustration PNG under `/public/images/subscribe`.
-	 * PNGs carry transparency so the mint card shows through edges.
+	 * Absolute CDN URL for the illustration (WebP). Constructed via
+	 * `cdnUrl(...)` at the call site — the file lives in the media
+	 * bucket under `images/subscribe/`. WebP keeps the alpha channel
+	 * so the mint card shows through edges, at a fraction of PNG size.
 	 */
 	readonly image: string;
 	readonly title: string;

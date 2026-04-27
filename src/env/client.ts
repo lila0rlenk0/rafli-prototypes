@@ -31,6 +31,13 @@ export const clientEnv = createEnv({
 		NEXT_PUBLIC_IPFS_GATEWAY_URL: z
 			.url()
 			.default('https://gateway.pinata.cloud/ipfs/'),
+		// Static media CDN — fronts the S3 media bucket. Same origin for staging + prod;
+		// environment isolation is by key prefix in the bucket, not by hostname.
+		// Trailing slash forbidden so callers can compose `${cdn}/path` safely.
+		NEXT_PUBLIC_CDN_URL: z
+			.url()
+			.refine(u => !u.endsWith('/'), 'CDN URL must not end with "/"')
+			.default('https://cdn-media.raffly.win'),
 		// Optional — Web3 features degrade gracefully when unset
 		NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
 		// Optional — Sentry disabled when unset (local dev)
@@ -48,6 +55,7 @@ export const clientEnv = createEnv({
 		NEXT_PUBLIC_VRF_COORDINATOR_ADDRESS:
 			process.env.NEXT_PUBLIC_VRF_COORDINATOR_ADDRESS,
 		NEXT_PUBLIC_IPFS_GATEWAY_URL: process.env.NEXT_PUBLIC_IPFS_GATEWAY_URL,
+		NEXT_PUBLIC_CDN_URL: process.env.NEXT_PUBLIC_CDN_URL,
 		NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:
 			process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
 		NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,

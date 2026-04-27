@@ -1,3 +1,4 @@
+import { cdnUrl } from '@/lib/utils/cdn';
 import { BenefitCard, type Benefit } from './benefit-card';
 
 /**
@@ -7,12 +8,13 @@ import { BenefitCard, type Benefit } from './benefit-card';
  * content access to recurring earnings to monthly giveaways.
  *
  * Lives at module scope so re-renders don't re-allocate the array.
- * Illustrations live under `/public/images/subscribe` — the same set
- * delivered with the Figma handoff.
+ * Illustrations are served from the media CDN (`cdn-media.raffly.win`)
+ * as WebP — same source set delivered with the Figma handoff, just
+ * out of the build to keep the static bundle small.
  */
 const BENEFITS: readonly Benefit[] = [
 	{
-		image: '/images/subscribe/benefit-content-portal.png',
+		image: cdnUrl('static/images/subscribe/benefit-content-portal.webp'),
 		title: 'Content Portal',
 		items: [
 			'Unlimited access to our exclusive content portal',
@@ -20,7 +22,7 @@ const BENEFITS: readonly Benefit[] = [
 		],
 	},
 	{
-		image: '/images/subscribe/benefit-boosted-earnings.png',
+		image: cdnUrl('static/images/subscribe/benefit-boosted-earnings.webp'),
 		title: 'Boosted Earnings',
 		items: [
 			'Boosted earning across Mode ecosystem',
@@ -28,7 +30,7 @@ const BENEFITS: readonly Benefit[] = [
 		],
 	},
 	{
-		image: '/images/subscribe/benefit-free-phone.png',
+		image: cdnUrl('static/images/subscribe/benefit-free-phone.webp'),
 		title: 'Free phone plan',
 		items: [
 			'Free Phone plan on a T Mobile-based MVNO',
@@ -37,7 +39,7 @@ const BENEFITS: readonly Benefit[] = [
 		],
 	},
 	{
-		image: '/images/subscribe/benefit-sweepstakes.png',
+		image: cdnUrl('static/images/subscribe/benefit-sweepstakes.webp'),
 		title: 'Sweepstakes Access',
 		items: [
 			'Weekly + Monthly prize pools',

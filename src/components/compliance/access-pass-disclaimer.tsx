@@ -55,10 +55,14 @@ function resolveAccessMonths(quantity: number | undefined): number {
  * already has instead of undercutting it. The product-framing paragraph
  * then scopes the paid transaction to this specific raffle's Access Pass
  * — a deliberate defense-in-depth layer that reframes consideration as
- * attaching to per-raffle access (entry history, receipt, host updates,
- * bonus entries) rather than to the chance of winning. The AMOE + "void
- * where prohibited" + Terms references close out in neutral secondary
- * copy — still adjacent to the CTA, still satisfying equal prominence.
+ * attaching to per-raffle access (content library, behind-the-scenes
+ * posts, product updates, bonus entries into future draws) rather than
+ * to the chance of winning. Bulleted itemisation makes each non-entry
+ * deliverable individually visible, strengthening the "platform access
+ * bundles entries" reframe over a comma-run-on sentence. The AMOE +
+ * "void where prohibited" + Terms references close out in neutral
+ * secondary copy — still adjacent to the CTA, still satisfying equal
+ * prominence.
  *
  * Legal framing (defense in depth):
  *
@@ -110,14 +114,19 @@ export function AccessPassDisclaimer({
 				) : (
 					<>this sweepstakes</>
 				)}
-				. It unlocks exclusive content and opportunities —{' '}
-				<strong className="font-semibold text-black">
-					{accessMonths}-month FREE
-				</strong>{' '}
-				access to a 10k+ content library with online tips &amp; tricks, host
-				updates, behind-the-scenes posts, early notifications, entry history,
-				payment receipt, and bonus entries into the draw.
+				. It unlocks exclusive content and opportunities:
 			</p>
+			<ul className="mb-2 list-disc pl-5">
+				<li>
+					<strong className="font-semibold text-black">
+						{accessMonths}-month FREE
+					</strong>{' '}
+					access to a 10k+ content library with online tips &amp; tricks
+				</li>
+				<li>Behind-the-scenes posts</li>
+				<li>Early access to product updates</li>
+				<li>Bonus entries into future draws</li>
+			</ul>
 			<p>
 				Every entry — paid or free — carries identical odds. Check{' '}
 				<Link href="/free-entry" className="underline">

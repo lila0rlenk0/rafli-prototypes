@@ -8,7 +8,7 @@ import type { FanbasisPublicCreditErrorCode } from '@/types/errors';
 import {
 	createFanbasisPublicCreditCheckout,
 	type FanbasisPublicCreditCheckoutResponse,
-} from './create-fanbasis-public-credit-checkout';
+} from '@/services/payment/create-fanbasis-public-credit-checkout';
 
 /**
  * Query key for the Fanbasis public-credit session-mint call.
@@ -30,10 +30,9 @@ export function fanbasisPublicCreditSessionQueryOptions() {
 			if (!result.success) throw serviceError(result.error);
 			return result.data;
 		},
-		// Fanbasis session secrets are single-use-ish checkout credentials.
-		// Do not let a route revisit reuse an old secret from React Query cache.
-		gcTime: 0,
-		refetchOnMount: 'always' as const,
+		// 5 minutes — within one tab session, reuse the minted Fanbasis session
+		// if the user navigates away and back. Beyond that, mint fresh.
+		gcTime: 5 * 60 * 1000,
 		// Within one mounted card, avoid surprise refreshes that would re-init
 		// the iframe and discard partially entered payment details.
 		staleTime: Infinity,
@@ -54,11 +53,15 @@ export function fanbasisPublicCreditSessionQueryOptions() {
  * `react-hooks/set-state-in-effect`. `useQuery` runs the mint in its
  * own scheduling primitive, no effect needed in the consumer.
  *
- * `staleTime: Infinity` + `retry: false` keep the call exactly
- * one-shot: React Query does not auto-refetch on focus, reconnect, or
- * background revalidation. The user gets a single session per page
- * load; they explicitly opt in to a fresh mint via `refetch()` if the
- * first attempt failed.
+ * The `gcTime` window keeps the same minted session reusable for short
+ * navigation hops within the tab — bouncing to another route and back
+ * does not re-mint, sparing the backend broker (and Fanbasis) from a
+ * fresh per-IP hit on every `/subscribe` mount. `staleTime: Infinity`
+ * plus `refetchOnWindowFocus: false` and `refetchOnReconnect: false`
+ * prevent surprise refreshes that would re-init the iframe and discard
+ * partially entered payment details. When a fresh mint is genuinely
+ * needed (failed attempt, expired session), the consumer calls
+ * `refetch()` explicitly.
  *
  * @returns React Query result with the embed config or a typed Fanbasis error
  */

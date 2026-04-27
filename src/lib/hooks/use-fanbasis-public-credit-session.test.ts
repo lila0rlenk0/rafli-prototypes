@@ -6,12 +6,14 @@ import {
 } from './use-fanbasis-public-credit-session';
 
 describe('fanbasisPublicCreditSessionQueryOptions', () => {
-	test('mints a fresh Fanbasis session on each subscribe-page mount', () => {
+	test('reuses the minted Fanbasis session across short navigation hops, never auto-refreshes', () => {
 		const options = fanbasisPublicCreditSessionQueryOptions();
 
 		expect(options.queryKey).toEqual(fanbasisPublicCreditSessionKey());
-		expect(options.gcTime).toBe(0);
-		expect(options.refetchOnMount).toBe('always');
+		// 5-minute gcTime — within one tab session, navigating away and back
+		// reuses the same minted session instead of hammering the backend broker.
+		expect(options.gcTime).toBe(5 * 60 * 1000);
+		expect(options.staleTime).toBe(Infinity);
 		expect(options.retry).toBe(false);
 		expect(options.refetchOnWindowFocus).toBe(false);
 		expect(options.refetchOnReconnect).toBe(false);

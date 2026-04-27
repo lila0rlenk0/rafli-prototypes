@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { captureServiceError } from '@/lib/sentry/capture';
 import type { ServiceError } from '@/lib/query/errors';
 import type { FanbasisPublicCreditCheckoutResponse } from '@/services/payment/create-fanbasis-public-credit-checkout';
-import { useFanbasisPublicCreditSession } from '@/services/payment/use-fanbasis-public-credit-session';
+import { useFanbasisPublicCreditSession } from '@/lib/hooks/use-fanbasis-public-credit-session';
 import {
 	FANBASIS_PUBLIC_CREDIT_ERROR_CODES,
 	type FanbasisPublicCreditErrorCode,
@@ -53,9 +53,9 @@ import { CREDITS_CLAIMED_PATH, CREDIT_CHARGE_USD } from './offer';
  *
  * Palette pulled directly from the Figma mock:
  * - inputs: stone-100 fill (#f5f5f4) + gray-200 hairline (#e5e7eb)
- * - submit button: neutral-900 (#171717)
+ * - submit button: rafli-black (#141416)
  * - labels: neutral-500 (#737373)
- * - body ink: neutral-900 (#171717)
+ * - body ink: rafli-black (#141416)
  *
  * `show_product_info: false` because our chrome already shows the
  * offer-details band above the iframe — letting Fanbasis render its
@@ -78,13 +78,13 @@ const FANBASIS_THEME: CustomizationParams = {
 	show_product_info: false,
 	product_layout: 'above',
 	show_coupon_row: false,
-	accent_color: '#171717',
+	accent_color: '#141416',
 	background_color: '#ffffff',
 	input_background_color: '#f5f5f4',
 	border_color: '#e5e7eb',
 	label_color: '#737373',
-	heading_color: '#171717',
-	product_text_color: '#171717',
+	heading_color: '#141416',
+	product_text_color: '#141416',
 	secondary_color: '#737373',
 	surface_color: '#ffffff',
 	billing_form_placement: 'above',

@@ -86,7 +86,7 @@ export function BuyButton({
 						? 'Please acknowledge the terms above to continue'
 						: undefined
 				}
-				className="h-12 w-full cursor-pointer border-2 border-black bg-black hover:bg-white hover:text-black"
+				className="h-12 w-full cursor-pointer"
 			>
 				{isLoading ? (
 					<Loader2Icon className="mr-2 size-4 animate-spin" />

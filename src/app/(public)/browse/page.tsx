@@ -17,7 +17,6 @@ import {
 	type RaffleRole,
 } from '@/components/raffle/cards/public-card';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
-import { SERVER_ACTION_MAX_DURATION_SECONDS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getFeaturedRaffles } from '@/services/raffle/get-featured-raffles';
@@ -53,7 +52,10 @@ interface PageProps {
 	}>;
 }
 
-export const maxDuration = SERVER_ACTION_MAX_DURATION_SECONDS;
+// Next segment config must be a statically analyzable literal. Keep this
+// aligned with the API timeout ladder: 30s is above the 20s backend read
+// timeout, but below Vercel's long default for hung invocations.
+export const maxDuration = 30;
 
 export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const params = await searchParams;

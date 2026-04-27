@@ -12,7 +12,7 @@ Server Components by default, organized by domain.
 
 - `ui/` — shadcn primitives, managed by CLI, never hand-edit
 - `ui-custom/` — non-stock shell pieces (public navbar, loaders, copy/media helpers) that compose `ui/` primitives
-- domain folders: `auth`, `raffle`, `host`, `payment`, `filters`, `promo-code`, `mode`, `order`, `fulfillment`, `notifications`, `report`, `verification`, `my-raffles`, `browse`, `profile`, `landing`, `pricing`, `messages`, `admin`
+- domain folders: `auth`, `raffle`, `host`, `payment`, `filters`, `promo-code`, `mode`, `order`, `fulfillment`, `notifications`, `report`, `verification`, `my-raffles`, `browse`, `profile`, `landing`, `pricing`, `subscribe`, `messages`, `admin`
 
 ## Server vs Client
 

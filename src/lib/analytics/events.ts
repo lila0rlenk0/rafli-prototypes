@@ -124,6 +124,39 @@ export const SUBSCRIPTION_EVENTS = {
 } as const;
 
 /**
+ * Fanbasis public-credit (landing page "$10 → $11 credits") funnel events.
+ *
+ * Tracked server-side because the entire flow is unauthenticated until the
+ * magic-link callback fires — so every step before `CLAIMED` is attributed
+ * to an anonymous distinct_id plus the submitted email as a property. Once
+ * the session cookie lands on `/credits-claimed`, `CLAIMED` ties the prior
+ * anonymous events to the real user via Mixpanel's identity merging.
+ *
+ * Kept in a dedicated group (not folded into `PURCHASE_EVENTS`) because
+ * those funnel metrics power the authenticated checkout dashboard; mixing
+ * in landing-page traffic would skew conversion rates for the core product.
+ */
+export const PUBLIC_CREDIT_EVENTS = {
+	/**
+	 * Fanbasis embedded session minted; the iframe is about to render.
+	 *
+	 * No `fanbasis_session_id` is forwarded — the backend's secret-mint
+	 * contract intentionally exposes no session id to the FE (see
+	 * `FanbasisPublicCreditCheckoutResponseDto`), so the funnel-start event
+	 * carries no upstream identifier. Identity stitching happens server-side
+	 * in `CLAIMED` once the magic-link callback resolves the real user id.
+	 */
+	CHECKOUT_STARTED: 'Public Credit Checkout Started',
+	/** Checkout creation failed (includes `error_code`). */
+	CHECKOUT_FAILED: 'Public Credit Checkout Failed',
+	/**
+	 * Magic-link callback confirmed — user is signed in and has credits.
+	 * Fires once per successful landing on `/credits-claimed`.
+	 */
+	CLAIMED: 'Public Credit Claimed',
+} as const;
+
+/**
  * Promo code events
  * Tracked server-side — measures promo effectiveness and revenue impact
  */

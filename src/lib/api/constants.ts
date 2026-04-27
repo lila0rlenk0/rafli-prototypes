@@ -34,15 +34,6 @@ export const CACHE_TAGS = {
 } as const;
 
 /**
- * Upper bound for Server Action + RSC render duration on action pages.
- * Sits comfortably above `API_TIMEOUTS.DEFAULT` (20s) but well below
- * Vercel Pro's 300s default — bounds the blast radius of any unbounded
- * upstream stall (e.g. a third-party SDK without its own timeout) so a
- * hung invocation surfaces to the user as a 30s error instead of 300s.
- */
-export const SERVER_ACTION_MAX_DURATION_SECONDS = 30;
-
-/**
  * Cache revalidation times in seconds
  * Defines how long the cache is considered valid before being updated
  */

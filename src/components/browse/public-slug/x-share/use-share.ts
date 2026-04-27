@@ -1,65 +1,14 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import {
-	type AutoRetryController,
-	createAutoRetryController,
-} from './auto-retry';
+import { usePollMyTicketCodes } from '@/services/ticket/use-poll-my-ticket-codes';
+
 import { useXIntent } from './use-intent';
 import { useXVerify } from './use-verify';
 
-type XShareState = 'idle' | 'loading' | 'shared' | 'verifying';
-
-interface VerifyWiringParams {
-	raffleId: string;
-	publicSlug: string;
-	retryController: AutoRetryController;
-	setState: (s: XShareState) => void;
-	setRetryCountdown: (n: number) => void;
-	verifyRef: React.RefObject<() => Promise<void>>;
-}
-
-/**
- * Wires the verify hook to orchestrator state + auto-retry controller.
- * Extracted so `useXShare` stays under the 60-line cap — the verify
- * callbacks alone would push it over.
- *
- * @param params - State setters + shared auto-retry controller.
- * @returns The memoized `handleVerify` callback consumers bind to.
- */
-function useVerifyWithRetry(params: VerifyWiringParams): () => Promise<void> {
-	const {
-		raffleId,
-		publicSlug,
-		retryController,
-		setState,
-		setRetryCountdown,
-		verifyRef,
-	} = params;
-
-	const { verify } = useXVerify({
-		raffleId,
-		publicSlug,
-		onVerifyStart: () => {
-			// Cancel pending retry so we don't double-schedule when the
-			// user taps verify manually (or auto-retry fires).
-			retryController.cancel();
-			setRetryCountdown(0);
-			setState('verifying');
-		},
-		onVerifyFailure: needsRestart => setState(needsRestart ? 'idle' : 'shared'),
-		onVerified: () => setState('idle'),
-		onNotFound: () => {
-			setState('shared');
-			retryController.start(setRetryCountdown, () => {
-				void verifyRef.current();
-			});
-		},
-	});
-
-	return useCallback(() => verify(), [verify]);
-}
+type XShareState = 'idle' | 'loading' | 'shared' | 'verifying' | 'verified';
 
 /** Props needed by both ShareOnXButton and StickyBuyTicketsCta. */
 export interface XShareConfig {
@@ -67,21 +16,27 @@ export interface XShareConfig {
 	title: string;
 	publicSlug: string;
 	xShareEnabled: boolean;
-	xShareClaimStatus?: 'completed' | 'expired' | 'pending' | null;
+	/**
+	 * Backend claim status — `'verified'` is terminal (one bonus ticket per
+	 * user per raffle, lifetime). `'pending'` resumes the verify CTA after a
+	 * mid-flow refresh. `null` when the user has not started a tokenized
+	 * share yet.
+	 */
+	xShareClaimStatus?: 'pending' | 'verified' | null;
 	/** When set, user must answer the quiz correctly before sharing (same gate as purchase flow) */
 	questionId?: string | null;
+	/** Server-rendered ticket total before this share attempt — enables async issuance polling. */
+	myTicketsTotal?: number;
 }
 
 interface UseXShareResult {
 	state: XShareState;
 	/** True when the user already earned their bonus entry for this sweepstakes */
 	alreadyVerified: boolean;
-	/** True when the claim is in any terminal state (completed/expired) — no re-share allowed */
+	/** True when the claim is terminal (verified) — no re-share allowed */
 	claimUsed: boolean;
 	/** Raw claim status for per-status UI messaging */
-	xShareClaimStatus?: 'completed' | 'expired' | 'pending' | null;
-	/** Seconds until auto-retry fires (0 = no countdown active) */
-	retryCountdown: number;
+	xShareClaimStatus?: 'pending' | 'verified' | null;
 	handleShare: () => void | Promise<void>;
 	handleVerify: () => Promise<void>;
 }
@@ -101,20 +56,69 @@ function useStripXrefToken(): void {
 }
 
 /**
+ * Waits for ticket-code issuance to catch up after verify succeeds, then
+ * refreshes RSC once the "My Tickets" source of truth can show the new entry.
+ */
+function useXShareTicketSync(params: {
+	raffleId: string;
+	myTicketsTotal?: number;
+}): (ticketsGranted: number) => void {
+	const { raffleId, myTicketsTotal } = params;
+	const router = useRouter();
+	const [ticketSyncTarget, setTicketSyncTarget] = useState<number | null>(null);
+	const resolvedTicketSyncTarget = useRef<number | null>(null);
+	const { isExpired, isSynced } = usePollMyTicketCodes(
+		ticketSyncTarget !== null ? raffleId : null,
+		ticketSyncTarget,
+	);
+
+	useEffect(() => {
+		const didSyncSettle = isSynced || isExpired;
+		if (ticketSyncTarget === null || !didSyncSettle) return;
+		if (resolvedTicketSyncTarget.current === ticketSyncTarget) return;
+
+		resolvedTicketSyncTarget.current = ticketSyncTarget;
+
+		queueMicrotask(() => {
+			setTicketSyncTarget(current =>
+				current === ticketSyncTarget ? null : current,
+			);
+			router.refresh();
+		});
+	}, [isSynced, isExpired, router, ticketSyncTarget]);
+
+	return useCallback(
+		(ticketsGranted: number) => {
+			resolvedTicketSyncTarget.current = null;
+
+			if (myTicketsTotal === undefined) {
+				router.refresh();
+				return;
+			}
+
+			// X-share verification commits the claim before ticket-ledger code
+			// generation finishes, so wait for the same endpoint the UI renders.
+			setTicketSyncTarget(myTicketsTotal + ticketsGranted);
+		},
+		[myTicketsTotal, router],
+	);
+}
+
+/**
  * Shared hook for X share → verify → free ticket flow.
  *
- * Orchestrates three sub-concerns:
+ * Two sub-concerns:
  *  1. Intent creation (`use-intent`) — plain or tokenized share.
  *  2. Verify + transitions (`use-verify`) — claim the bonus entry.
- *  3. Auto-retry (`auto-retry`) — re-verify when X hasn't indexed yet.
  *
- * Return shape is preserved exactly for `ShareOnXButton` and
- * `StickyBuyTicketsCta` — both call the hook directly.
+ * The previous auto-retry timer existed to paper over X-search index lag
+ * (the backend used to return `not_found` and we'd poll until the tweet
+ * was indexed). Backend now grants on the first verify call regardless of
+ * whether the tweet is found, so the loop is gone.
  *
  * @param config - Raffle identifiers + claim status + share gate flag.
  * @returns `{ state, alreadyVerified, claimUsed, xShareClaimStatus,
- *   retryCountdown, handleShare, handleVerify }` preserving the original
- *   contract with `ShareOnXButton` and `StickyBuyTicketsCta`.
+ *   handleShare, handleVerify }`.
  */
 export function useXShare({
 	raffleId,
@@ -122,33 +126,20 @@ export function useXShare({
 	publicSlug,
 	xShareEnabled,
 	xShareClaimStatus,
+	myTicketsTotal,
 }: XShareConfig): UseXShareResult {
-	// Any terminal status means the user's one chance is consumed — no
-	// resets. completed = ticket earned, expired = opportunity used.
-	const alreadyVerified = xShareClaimStatus === 'completed';
-	const claimUsed = alreadyVerified || xShareClaimStatus === 'expired';
-	// Resume "verify" UI if the user has a pending claim from a prior
+	// Backend collapsed the status enum to `pending | verified`; verified is
+	// the only terminal state and means the bonus ticket was already granted.
+	const alreadyVerified = xShareClaimStatus === 'verified';
+	// Resume the verify CTA if the user has a pending claim from a prior
 	// session (they shared but navigated away before verifying).
 	const [state, setState] = useState<XShareState>(
 		xShareClaimStatus === 'pending' ? 'shared' : 'idle',
 	);
-	const [retryCountdown, setRetryCountdown] = useState(0);
-
-	// Stable controller via `useState` lazy init — idiomatic React 19
-	// pattern for a singleton created outside render. Reading a ref's
-	// `.current` during render is banned by `react-hooks/refs`.
-	const [retryController] = useState<AutoRetryController>(
-		createAutoRetryController,
-	);
-	// Ref to the latest verify so the auto-retry onFire closure always
-	// calls the freshest callback (router/props change across renders).
-	const verifyRef = useRef<() => Promise<void>>(() => Promise.resolve());
+	const claimUsed = alreadyVerified || state === 'verified';
 
 	useStripXrefToken();
-	// useEffect: mount-only cleanup so the interval never leaks.
-	useEffect(() => {
-		return () => retryController.cancel();
-	}, [retryController]);
+	const syncTickets = useXShareTicketSync({ raffleId, myTicketsTotal });
 
 	const useTokenizedFlow = xShareEnabled && !claimUsed;
 
@@ -160,28 +151,27 @@ export function useXShare({
 		onSharePrepared: () => setState('shared'),
 	});
 
-	const handleVerify = useVerifyWithRetry({
+	const { verify } = useXVerify({
 		raffleId,
 		publicSlug,
-		retryController,
-		setState,
-		setRetryCountdown,
-		verifyRef,
+		onVerifyStart: () => setState('verifying'),
+		// `needsRestart` collapses to `'idle'` so the share CTA reappears
+		// (e.g. backend rejected an expired pending claim — re-share to
+		// refresh the row). Otherwise stay on `'shared'` for a manual retry.
+		onVerifyFailure: needsRestart => setState(needsRestart ? 'idle' : 'shared'),
+		onVerified: ticketsGranted => {
+			setState('verified');
+			syncTickets(ticketsGranted);
+		},
 	});
 
-	// useEffect: keep verifyRef pointing to the latest handleVerify so
-	// the auto-retry timer fires the freshest closure (stale verify
-	// would use outdated router/props).
-	useEffect(() => {
-		verifyRef.current = handleVerify;
-	}, [handleVerify]);
+	const handleVerify = useCallback(() => verify(), [verify]);
 
 	return {
 		state,
 		alreadyVerified,
 		claimUsed,
 		xShareClaimStatus,
-		retryCountdown,
 		handleShare: useTokenizedFlow ? triggerTokenizedShare : triggerPlainShare,
 		handleVerify,
 	};

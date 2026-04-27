@@ -66,8 +66,7 @@ export default function FreeEntryPage() {
 					<p>From any sweepstakes detail page:</p>
 					<ol className="mt-3 flex list-inside list-decimal flex-col gap-2">
 						<li>
-							Locate the{' '}
-							<strong>&quot;Get Bonus Entries! Share on X&quot;</strong> button
+							Locate the <strong>&quot;AMOE - Free Entries&quot;</strong> button
 							in the checkout card.
 						</li>
 						<li>

@@ -5,6 +5,7 @@ export {
 	mapChatError,
 	mapCheckoutOrderError,
 	mapCommentError,
+	mapFanbasisPublicCreditError,
 	mapHostError,
 	mapKycSubmissionError,
 	mapNotificationError,

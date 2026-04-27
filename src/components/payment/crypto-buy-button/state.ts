@@ -77,13 +77,12 @@ export function getCryptoBuyButtonUiState({
 		};
 	}
 
-	// Labels mirror the Stripe + Credits CTAs ("One Time Purchase ...") so all
-	// three payment methods frame the click as a single one-time transaction
-	// for the Access Pass. Entries are a bundled benefit, never the object of
-	// the purchase — the regulator-facing narrative we own across every CTA.
+	// Crypto uses the same visible label before and after wallet connection.
+	// The click behavior can still open the wallet modal, but the action text
+	// stays on the canonical tender label instead of switching copy mid-flow.
 	if (!isConnected) {
 		return {
-			label: 'Connect wallet for one time purchase',
+			label: 'One Time Purchase with Crypto',
 			showLoadingIcon: false,
 			isDisabled: disabled,
 			variant: 'ready-to-connect',

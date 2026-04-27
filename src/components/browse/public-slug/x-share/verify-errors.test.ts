@@ -4,15 +4,12 @@ import { getVerifyErrorMessage } from './verify-errors';
 
 describe('getVerifyErrorMessage', () => {
 	describe('xshare-specific codes', () => {
-		test('expired → one-attempt wording', () => {
+		test('expired → restart-the-share wording', () => {
+			// Backend rejects pending claims past their `expiresAt` lazily —
+			// the user must re-run the intent, so the message points back
+			// to the share CTA.
 			expect(getVerifyErrorMessage('core:xshare:expired')).toBe(
-				'Your share link has expired. Each sweepstakes allows one bonus-entry share attempt.',
-			);
-		});
-
-		test('rate-limited → short-wait wording', () => {
-			expect(getVerifyErrorMessage('core:xshare:rate-limited')).toBe(
-				'Please wait a few seconds before trying again.',
+				'Your share link has expired. Tap "Share on X" to start a new attempt.',
 			);
 		});
 

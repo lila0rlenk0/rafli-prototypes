@@ -7,6 +7,7 @@ import {
 	type CheckoutOrderErrorCode,
 	type CommentErrorCode,
 	COMMON_ERROR_CODES,
+	type FanbasisPublicCreditErrorCode,
 	type HostErrorCode,
 	type KycSubmissionErrorCode,
 	type NotificationErrorCode,
@@ -92,7 +93,7 @@ function extractErrorCode(error: unknown): string | null {
 	if (data.message && typeof data.message === 'string') {
 		const t = data.message.trim();
 		if (MESSAGE_AS_ERROR_CODE_PREFIXES.some(prefix => t.startsWith(prefix))) {
-			return data.message;
+			return t;
 		}
 	}
 
@@ -146,13 +147,13 @@ function mapCommonError(
 ): (typeof COMMON_ERROR_CODES)[keyof typeof COMMON_ERROR_CODES] {
 	if (!(error instanceof AxiosError)) return COMMON_ERROR_CODES.UNKNOWN_ERROR;
 
-	// Step 1: Check axios error codes — request never reached backend.
+	// Step 1: Check transport-only axios error codes — request never reached backend.
 	if (error.code === 'ECONNABORTED') return COMMON_ERROR_CODES.TIMEOUT_ERROR;
 	if (error.code === 'ERR_NETWORK') return COMMON_ERROR_CODES.NETWORK_ERROR;
-	if (error.code === 'ERR_BAD_REQUEST')
-		return COMMON_ERROR_CODES.VALIDATION_ERROR;
 
-	// Step 2: HTTP status fallbacks — backend returned status without an error body.
+	// Step 2: HTTP status fallbacks. Axios labels most 4xx responses as
+	// `ERR_BAD_REQUEST`, so status must win over code here or 401/403
+	// responses collapse to `validation_error`.
 	if (error.response) {
 		const { status } = error.response;
 		if (status === 400) return COMMON_ERROR_CODES.VALIDATION_ERROR;
@@ -161,6 +162,10 @@ function mapCommonError(
 		if (status === 500) return COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR;
 		if (status === 503) return COMMON_ERROR_CODES.SERVICE_UNAVAILABLE;
 	}
+
+	// Step 3: Axios produced a bad-request code without a response status.
+	if (error.code === 'ERR_BAD_REQUEST')
+		return COMMON_ERROR_CODES.VALIDATION_ERROR;
 
 	return COMMON_ERROR_CODES.UNKNOWN_ERROR;
 }
@@ -306,6 +311,24 @@ export const mapPaymentError = createDomainErrorMapper<PaymentErrorCode>([
 	'core:',
 	'global:',
 ]);
+
+/**
+ * Maps Fanbasis public-credit checkout errors to FanbasisPublicCreditErrorCode.
+ *
+ * Accepts only `payments:fanbasis:*` and `global:*` — this endpoint is the
+ * unauthenticated landing-page promo, so we deliberately do NOT open the map to
+ * the full `payments:*` namespace the authenticated flow uses. The broad
+ * surface would let unrelated Stripe/crypto URNs leak into a toast intended for
+ * the promo checkout and silently widen the allowed code set in a way
+ * reviewers would miss. Errors outside the accepted prefixes fall through to
+ * CommonErrorCode (network / HTTP-status fallbacks), which already covers the
+ * network-level failure modes this service cares about.
+ */
+export const mapFanbasisPublicCreditError =
+	createDomainErrorMapper<FanbasisPublicCreditErrorCode>([
+		'payments:fanbasis:',
+		'global:',
+	]);
 
 /**
  * Maps ticket errors to TicketErrorCode.

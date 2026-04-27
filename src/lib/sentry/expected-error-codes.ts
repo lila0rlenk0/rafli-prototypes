@@ -89,14 +89,14 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 
 	// X-share free-ticket claim — two-step intent → verify flow. Every code
 	// is a backend-enforced business rule with a mapped toast in
-	// `use-share.ts`; none indicate a defect. Note `already-claimed`
-	// collapses the verified/expired/revoked states (see use-share.ts:50),
-	// which is how a second-tab race surfaces here.
+	// `use-share.ts`; none indicate a defect. Backend collapsed the claim
+	// enum to `pending | verified` and dropped the per-attempt cooldown,
+	// so `rate-limited` is no longer reachable; `already-claimed` now means
+	// a verified claim already exists for this (raffle, user) pair.
 	'core:xshare:already-claimed',
 	'core:xshare:question-required',
 	'core:xshare:disabled',
 	'core:xshare:expired',
-	'core:xshare:rate-limited',
 	'core:xshare:not-found',
 
 	// Order — expected states
@@ -159,6 +159,13 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 	'payments:subscription:not-found',
 	'payments:subscription:not-active',
 	'payments:subscription:enrollment-conflict',
+
+	// Fanbasis public-credit — the embedded session-mint endpoint is
+	// unauthenticated and has no buyer-supplied payload. `rate-limited`
+	// covers Fanbasis 429s; `checkout-failed` is the upstream/config drift
+	// bucket. Neither should burn Sentry quota.
+	'payments:fanbasis:checkout-failed',
+	'payments:fanbasis:rate-limited',
 
 	// Credits — expected business errors
 	'payments:credits:insufficient-balance',

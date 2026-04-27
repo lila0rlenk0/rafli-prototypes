@@ -7,6 +7,10 @@ export { CHAT_ERROR_CODES, type ChatErrorCode } from './chat-errors';
 export { CLIENT_ERROR_CODES, type ClientErrorCode } from './client-errors';
 export { COMMENT_ERROR_CODES, type CommentErrorCode } from './comment-errors';
 export { COMMON_ERROR_CODES, type CommonErrorCode } from './common-errors';
+export {
+	FANBASIS_PUBLIC_CREDIT_ERROR_CODES,
+	type FanbasisPublicCreditErrorCode,
+} from './fanbasis-public-credit-errors';
 export { HOST_ERROR_CODES, type HostErrorCode } from './host-errors';
 export {
 	KYC_SUBMISSION_ERROR_CODES,
@@ -41,3 +45,9 @@ export {
 } from './verification-errors';
 export { WALLET_ERROR_CODES, type WalletErrorCode } from './wallet-errors';
 export { WINNING_ERROR_CODES, type WinningErrorCode } from './winning-errors';
+export {
+	X_SHARE_ERROR_CODES,
+	type XShareErrorCode,
+	type XShareIntentErrorCode,
+	type XShareVerifyErrorCode,
+} from './x-share-errors';

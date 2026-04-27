@@ -13,7 +13,6 @@ import { PublicNavbar } from '@/components/ui-custom/public-navbar';
 import { getCurrentUser } from '@/lib/auth/session';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackAfter } from '@/lib/analytics/mixpanel-server';
-import { SERVER_ACTION_MAX_DURATION_SECONDS } from '@/lib/api/constants';
 import { TicketQuantityStoreProvider } from '@/providers/ticket-quantity-store-provider';
 import type { XShareConfig } from '@/components/browse/public-slug/x-share/use-share';
 
@@ -33,7 +32,10 @@ interface PageProps {
 	searchParams: Promise<{ session_id?: string }>;
 }
 
-export const maxDuration = SERVER_ACTION_MAX_DURATION_SECONDS;
+// Next segment config must be a statically analyzable literal. Keep this
+// aligned with the API timeout ladder: 30s is above the 20s backend read
+// timeout, but below Vercel's long default for hung invocations.
+export const maxDuration = 30;
 
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;
@@ -59,7 +61,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		questionId: raffle.questionId,
 	};
 
-	await trackAfter(
+	void trackAfter(
 		RAFFLE_EVENTS.VIEWED,
 		{
 			raffle_id: raffle.id,
@@ -159,7 +161,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							availableTickets={view.availableTickets}
 							disabled={view.showEditButton || view.disablePurchase}
 							price={view.ticketPrice}
-							currency={raffle.ticketPriceCurrency}
 						/>
 					) : null}
 				</div>

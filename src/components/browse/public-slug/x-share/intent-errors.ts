@@ -5,10 +5,10 @@
  *
  * Kept separate from `verify-errors.ts` because the two flows surface
  * distinct code sets (intent-specific: already-claimed, question-required;
- * verify-specific: expired, rate-limited, not-found, sold-out). Shared
- * codes (network/timeout/ratelimit/disabled) are intentionally duplicated
- * rather than hoisted into a shared base — the duplication is tiny and
- * keeps each mapper self-contained for the reader.
+ * verify-specific: expired, not-found, sold-out). Shared codes
+ * (network/timeout/ratelimit/disabled) are intentionally duplicated rather
+ * than hoisted into a shared base — the duplication is tiny and keeps each
+ * mapper self-contained for the reader.
  */
 
 // Fallback when the backend returns an unmapped code. Kept generic so we
@@ -24,10 +24,11 @@ const INTENT_GENERIC_FALLBACK = 'Something went wrong. Please try again.';
 export function getIntentErrorMessage(errorCode: string): string {
 	switch (errorCode) {
 		case 'core:xshare:already-claimed':
-			// Covers verified (earned), expired (missed window), and revoked
-			// claims. Normally the button is disabled before this fires — this
-			// is a fallback for stale frontend state (e.g. claim created in
-			// another tab).
+			// Backend collapsed the claim status to `pending | verified`;
+			// this code now means a verified claim already exists for the
+			// (raffle, user) pair. The share button should be disabled before
+			// the call fires — this is a fallback for stale frontend state
+			// (e.g. claim verified in another tab).
 			return 'Already claimed bonus entry.';
 		case 'core:xshare:question-required':
 			return 'Answer the sweepstakes check-in question first to unlock sharing.';

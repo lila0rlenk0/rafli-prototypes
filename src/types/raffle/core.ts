@@ -182,13 +182,18 @@ export const raffleSchema = z.object({
 	xShareTicketsEnabled: z.boolean().optional(),
 	/**
 	 * User's X share claim state — only present when authenticated and xShareTicketsEnabled is true.
-	 * `.catch(null)` degrades gracefully if backend shape changes.
+	 *
+	 * Backend status enum collapsed to `'pending' | 'verified'` after the lifetime-cap
+	 * migration: a verify call always grants the ticket (UNIQUE(raffleId, userId) caps abuse),
+	 * so revoked/expired no longer appear on the wire. `expiresAt` is non-null only while pending;
+	 * pending claims past their `expiresAt` are rejected lazily at verify time, and a fresh
+	 * `createXShareIntent` call refreshes the same row. `.catch(null)` degrades gracefully
+	 * if backend shape changes.
 	 */
 	xShareClaim: z
 		.object({
 			claimId: z.string(),
-			// Backend statuses: pending (awaiting verification), completed (share confirmed), expired (timed out)
-			status: z.enum(['pending', 'completed', 'expired']),
+			status: z.enum(['pending', 'verified']),
 			token: z.string().nullable(),
 			expiresAt: z.string().nullable(),
 		})

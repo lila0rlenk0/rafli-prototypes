@@ -258,7 +258,9 @@ function ActiveCard({
 					</p>
 				) : null}
 			</RaffleExpiredGate>
-			{showShareOnX ? <ShareOnXButton {...xShareConfig} /> : null}
+			{showShareOnX ? (
+				<ShareOnXButton {...xShareConfig} myTicketsTotal={ctx.myTicketsTotal} />
+			) : null}
 		</div>
 	);
 }

@@ -41,10 +41,15 @@ const VALID_RAFFLE: Raffle = {
 
 // Mock the API client module before importing the server action
 const mockGet = mock();
+const mockAuthenticatedGet = mock();
+const mockGetSession = mock(() => Promise.resolve(null));
 
 mock.module('@/lib/api/client', () => ({
 	baseClient: { get: mockGet },
-	authenticatedClient: { get: mock(), post: mock() },
+	authenticatedClient: { get: mockAuthenticatedGet, post: mock() },
+}));
+mock.module('@/lib/auth/session', () => ({
+	getSession: mockGetSession,
 }));
 mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),
@@ -66,6 +71,35 @@ describe('getRaffle', () => {
 				expect(result.data.id).toBe('raffle-1');
 				expect(result.data.title).toBe('Test Raffle');
 				expect(result.data.status).toBe('live');
+			}
+		});
+
+		test('uses authenticated client only after session validation succeeds', async () => {
+			// Public raffle pages should enrich user-specific fields (like
+			// xShareClaim) only after `getSession()` confirms the cookie is valid.
+			// A stale raw token must not force authenticated fetches, but a verified
+			// session should opt into the richer backend response.
+			mockGet.mockClear();
+			mockAuthenticatedGet.mockResolvedValueOnce(
+				mockAxiosResponse({
+					...VALID_RAFFLE,
+					xShareClaim: {
+						claimId: 'claim-1',
+						status: 'pending',
+						token: 'xref-token',
+						expiresAt: '2026-01-01T01:00:00Z',
+					},
+				}),
+			);
+			mockGetSession.mockResolvedValueOnce({ user: { id: 'user-1' } });
+
+			const result = await getRaffle('test-raffle');
+
+			expect(result.success).toBe(true);
+			expect(mockAuthenticatedGet).toHaveBeenCalledWith('/raffles/test-raffle');
+			expect(mockGet).not.toHaveBeenCalled();
+			if (result.success) {
+				expect(result.data.xShareClaim?.status).toBe('pending');
 			}
 		});
 	});

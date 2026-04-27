@@ -229,7 +229,6 @@ export function CryptoBuyButton({
 				state={buttonState}
 				isConnecting={isConnecting}
 				onClick={handleClick}
-				chains={cryptoOptions.chains}
 			/>
 
 			{questionId ? (

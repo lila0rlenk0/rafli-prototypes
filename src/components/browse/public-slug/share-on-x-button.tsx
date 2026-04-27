@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { type XShareConfig, useXShare } from './x-share/use-share';
 
 /**
- * "Get Bonus Entries! Share on X" button for the desktop checkout card.
+ * "AMOE - Free Entries" button for the desktop checkout card.
  *
  * Flow when xShareEnabled:
  * 1. Click → quiz gate (if questionId set) → POST /x-share-intent → get tokenized share URL
@@ -18,8 +18,7 @@ import { type XShareConfig, useXShare } from './x-share/use-share';
  * Falls back to plain share (no entry grant) when xShare is disabled or claim is terminal.
  */
 export function ShareOnXButton(props: XShareConfig) {
-	const { state, claimUsed, retryCountdown, handleShare, handleVerify } =
-		useXShare(props);
+	const { state, claimUsed, handleShare, handleVerify } = useXShare(props);
 
 	// Quiz gate — same pattern as BuyButton/CryptoBuyButton.
 	// Without this, createXShareIntent rejects with core:xshare:question-required
@@ -36,13 +35,13 @@ export function ShareOnXButton(props: XShareConfig) {
 			setShowQuestionModal(true);
 			return;
 		}
-		handleShare();
+		void handleShare();
 	}
 
 	function handleCorrectAnswer() {
 		setQuestionAnswered(true);
 		// Proceed with share immediately after answering correctly
-		handleShare();
+		void handleShare();
 	}
 
 	// Terminal claim — disabled button so user knows the feature exists but is consumed
@@ -51,38 +50,30 @@ export function ShareOnXButton(props: XShareConfig) {
 			<Button
 				variant="outline"
 				disabled
-				className="mt-2 h-12 w-full rounded-full border-2 border-gray-300 bg-gray-50 text-gray-400"
+				className="mt-2 h-12 w-full rounded-full border-2"
 			>
 				<p className="font-semibold">Already claimed bonus entry</p>
 			</Button>
 		);
 	}
 
-	// Verification button — shown after sharing or when resuming a pending claim
+	// Verification button — shown after sharing or when resuming a pending claim.
+	// Backend grants the ticket on the first verify call regardless of whether
+	// the tweet was indexed by X, so the click is a one-shot action.
 	if (state === 'shared' || state === 'verifying') {
-		// Auto-retry countdown active — show seconds remaining
-		const isCountingDown = retryCountdown > 0 && state === 'shared';
-
 		return (
-			<div className="mt-2 flex flex-col gap-1">
-				<Button
-					variant="outline"
-					onClick={handleVerify}
-					disabled={state === 'verifying'}
-					className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
-				>
-					<p className="font-semibold">
-						{state === 'verifying'
-							? 'Verifying...'
-							: 'I shared it — Claim my bonus entry!'}
-					</p>
-				</Button>
-				{isCountingDown ? (
-					<p className="text-center text-xs text-gray-400">
-						Auto-checking in {retryCountdown}s...
-					</p>
-				) : null}
-			</div>
+			<Button
+				variant="outline"
+				onClick={handleVerify}
+				disabled={state === 'verifying'}
+				className="mt-2 h-12 w-full cursor-pointer rounded-full border-2"
+			>
+				<p className="font-semibold">
+					{state === 'verifying'
+						? 'Verifying...'
+						: 'I shared it — Claim my bonus entry!'}
+				</p>
+			</Button>
 		);
 	}
 
@@ -92,12 +83,10 @@ export function ShareOnXButton(props: XShareConfig) {
 				variant="outline"
 				onClick={handleShareClick}
 				disabled={state === 'loading'}
-				className="mt-2 h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
+				className="mt-2 h-12 w-full cursor-pointer rounded-full border-2"
 			>
 				<p className="font-semibold">
-					{state === 'loading'
-						? 'Preparing...'
-						: 'Get Bonus Entries! Share on X'}
+					{state === 'loading' ? 'Preparing...' : 'AMOE - Free Entries'}
 				</p>
 			</Button>
 

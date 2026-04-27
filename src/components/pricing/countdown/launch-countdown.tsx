@@ -6,30 +6,16 @@
 // run its own clock.
 
 import Link from 'next/link';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useHasMounted } from '@/lib/hooks/use-has-mounted';
 
 import { formatCountdown, type CountdownParts } from './format-countdown';
 import { INITIAL_PARTS } from './launch-countdown-initial-parts';
 
 /** Distance between ticks. 1s matches the SS field resolution in the UI. */
 const TICK_INTERVAL_MS = 1_000;
-
-// Module-scope snapshot callbacks for `useSyncExternalStore`. React compares
-// these by reference — inline arrow functions would tear down the subscription
-// on every render and defeat the "mount flag" pattern. The subscribe fn is a
-// no-op because we never need to notify React of an external change; the
-// client/server snapshot mismatch alone is what drives the one-time transition.
-function subscribeNoop(): () => void {
-	return function unsubscribe() {};
-}
-function getHasMountedClient(): boolean {
-	return true;
-}
-function getHasMountedServer(): boolean {
-	return false;
-}
 
 interface LaunchCountdownProps {
 	/** ISO datetime of the launch-pricing deadline — parsed via Date.parse. */
@@ -76,16 +62,10 @@ export function LaunchCountdown({
 	// strings, which `formatCountdown` already handles via its finite-check.
 	const endsAtMs = Date.parse(endsAt);
 
-	// `useSyncExternalStore` is the idiomatic React 18 "am I hydrated?" primitive:
-	// SSR + the first client render both read the server snapshot (`false`), so
-	// hydration matches byte-for-byte. React then flips to the client snapshot
-	// (`true`) in a follow-up commit — no setState-in-effect, no hydration warning,
-	// no `Date.now()` read during render (which the react-hooks purity rule forbids).
-	const hasMounted = useSyncExternalStore(
-		subscribeNoop,
-		getHasMountedClient,
-		getHasMountedServer,
-	);
+	// Gated on hydration via the shared `useHasMounted` hook — keeps SSR
+	// HTML identical across both renders, then arms the ticker in a
+	// follow-up commit.
+	const hasMounted = useHasMounted();
 
 	// Seeded with the stable placeholder so SSR HTML matches first hydrate. The
 	// effect below commits the live value as soon as we know we're on the client.

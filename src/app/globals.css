@@ -425,6 +425,112 @@
 	--z-sticky-hi: 16;
 	--z-sticky-peak: 19;
 	--z-toast: 100;
+
+	/* ------------------------------------------------------------------ */
+	/* Subscribe page — /subscribe-specific spacing, radius, container,   */
+	/* and color tokens.                                                  */
+	/*                                                                    */
+	/* Why this block exists: every subscribe component was authored to   */
+	/* reference named tokens (`h-(--spacing-subscribe-field-shell)`,    */
+	/* `rounded-(--radius-subscribe-benefit-card)`, etc.), but the        */
+	/* tokens were never added to `@theme inline`. Tailwind v4 silently  */
+	/* drops any utility whose CSS variable it can't resolve, so the      */
+	/* `$11` hero pill collapsed to 0×0, form shells fell back to their  */
+	/* content height at `sm+`, benefit cards lost their 284×544 Figma   */
+	/* frame, and the navbar kept its 12px mobile gutter at every        */
+	/* breakpoint. Defining the tokens here restores every silent drop   */
+	/* in one commit — see `.claude/rules/tailwind-v4.md`.               */
+	/*                                                                    */
+	/* Values traced back to the Figma handoff. Pill dimensions are      */
+	/* em-relative so the chip scales with the fluid H1 font-size; the   */
+	/* 44px field shell / 52px submit / 170px benefit image / etc. are   */
+	/* px because they're absolute targets, not type-scaled.             */
+	/* ------------------------------------------------------------------ */
+
+	/* Navbar gutter — 48px at `sm:` + on marketing surfaces, matches
+	   DESIGN.md navbar-padding-x-desktop (48px). Subscribe and
+	   credits-claimed page shells both ride this token. */
+	--spacing-navbar-pad: 48px;
+
+	/* Trustpilot brand green — applied to the 5-star row + wordmark. */
+	--color-trustpilot: #00b67a;
+
+	/* Hero `$11` pill — Figma pins this chip to fixed dimensions,
+	   NOT em-relative: 110.37×63.29 with 48px Clash Display inside.
+	   Tried em-relative earlier so the chip would scale with the
+	   fluid H1 — but Figma intentionally renders the `$11` at 48px
+	   inside a 60px H1, leaving comfortable padding inside the pill
+	   (48/63 = 76% of pill height). Em-scaling forced the text to
+	   match the H1's 60px, which crammed it into a too-small pill
+	   and broke the optical weight Figma set up.
+	   At 110×63 the pill has the same physical footprint regardless
+	   of surrounding H1 size; below xl where the H1 drops to 48px,
+	   the pill reads correctly alongside the smaller headline too. */
+	--spacing-subscribe-pill-w: 110px;
+	--spacing-subscribe-pill-h: 63px;
+
+	/* Credit-purchase card — shared field shell + submit-CTA heights
+	   so every row in the form renders at the same pixel target. 44px
+	   meets the 44×44 touch-target rule in `.claude/rules/responsive.md`;
+	   the submit CTA steps up to 52px to read as the action tier. */
+	--spacing-subscribe-field-shell: 44px;
+	--spacing-subscribe-claim-button: 52px;
+
+	/* Credit-purchase card outer width — Figma Plan frame is 492px.
+	   Previously reused `--container-card-xs` (480px) which was 12px
+	   narrow; the mint header "Get your credits now!" truncated against
+	   the label clamp and the form placeholders rendered in a cramped
+	   column vs the Figma reference. Dedicated token keeps the 480px
+	   card-xs free for the credit card's smaller siblings elsewhere. */
+	--container-credit-card: 492px;
+
+	/* Subscribe hero copy column — Figma Main Container is 710px
+	   wide. `max-w-3xl` (720px at 15px root) was 10px over and let
+	   the H1 tagline wrap differently from the reference; a dedicated
+	   token pins the column to the exact Figma pixel. Only activates
+	   at `xl:` when the 2-col hero splits — below xl the copy spans
+	   the full shell minus gutters. */
+	--container-subscribe-hero-copy: 710px;
+
+	/* Signup card mint header — Figma Plan Label frame is 80px
+	   (Tailwind `h-20`) per the embedded-checkout mock. Bumped from
+	   the prior 74px once the offer-details band moved between the
+	   header and the iframe — the larger banner balances the new
+	   composition where the disclosure copy sits below the title
+	   instead of at the card foot. Pixel-exact height with
+	   `items-center` keeps the 24px Clash Display title optically
+	   centered regardless of font-rendering line-height quirks. */
+	--spacing-subscribe-mint-header: 80px;
+
+	/* Benefit card — Figma 284×544 mint card with 40px radius, 54px
+	   top padding. Card height is fixed at 544px; bottom padding is
+	   the leftover space after pt + image + title + bullets drain
+	   the column. Two-bullet variants show the large empty "plinth"
+	   characteristic of the Figma composition; the three-bullet
+	   card (Free phone plan) naturally eats into the plinth by the
+	   exact bullet-row height, matching Figma's pb-55 / pb-122 split
+	   without per-card overrides.
+	   Outer gap 30px and list gap 19px come straight from Figma —
+	   earlier 16/14 values compressed the stack, making all four
+	   cards read as content-heavy instead of hero-like.
+	   Image slot is 170px square; title max-width 220px so two-line
+	   titles wrap at the same column regardless of copy length. */
+	--radius-subscribe-benefit-card: 40px;
+	--spacing-subscribe-benefit-card-w: 284px;
+	--spacing-subscribe-benefit-card-h: 544px;
+	--spacing-subscribe-benefit-card-gap: 30px;
+	--spacing-subscribe-benefit-card-pt: 54px;
+	--spacing-subscribe-benefit-card-pb: 48px;
+	--spacing-subscribe-benefit-image: 170px;
+	--spacing-subscribe-benefit-title: 220px;
+	--spacing-subscribe-benefit-list-gap: 19px;
+
+	/* Benefits section max-widths — heading block sits narrower than
+	   the full 1232px card row so the H2 doesn't span the whole
+	   surface (Figma handoff: 820px). The row width is 4×284 + 3×32 =
+	   1232 — expanding/shrinking the cards retunes this figure. */
+	--container-subscribe-benefits-heading: 820px;
+	--container-subscribe-benefits-row: 1232px;
 }
 
 /* ---------------------------------------------------------------------- */

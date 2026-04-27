@@ -85,6 +85,30 @@ describe('createXShareIntent', () => {
 			expect(mockCaptureContractDrift).toHaveBeenCalledTimes(1);
 			expect(mockCaptureServiceError).not.toHaveBeenCalled();
 		});
+
+		test('returns FETCH_FAILED when success payload contains unusable intent fields', async () => {
+			// A success response must contain a usable URL + token. Empty strings
+			// or non-URLs would move the client into "shared" state with nothing
+			// valid for X to open or for the backend to verify later.
+			resetAllMocks();
+			mockPost.mockResolvedValueOnce(
+				mockAxiosResponse({
+					claimId: '',
+					expiresAt: '2026-04-15T12:00:00.000Z',
+					shareUrl: 'not-a-url',
+					token: '',
+				}),
+			);
+
+			const result = await createXShareIntent(RAFFLE_ID);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(RAFFLE_ERROR_CODES.FETCH_FAILED);
+			}
+			expect(mockCaptureContractDrift).toHaveBeenCalledTimes(1);
+			expect(mockCaptureServiceError).not.toHaveBeenCalled();
+		});
 	});
 
 	describe('backend RFC 7807 errors', () => {

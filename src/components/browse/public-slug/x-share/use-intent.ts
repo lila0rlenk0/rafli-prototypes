@@ -75,10 +75,7 @@ export function useXIntent(params: UseXIntentParams): UseXIntentResult {
 
 		if (!result.success) {
 			onLoading(false);
-			// Cast to string — backend codes not enumerated in the narrow
-			// RaffleErrorCode union (e.g. `core:xshare:question-required`).
-			const errorCode = result.error as string;
-			toast.error(getIntentErrorMessage(errorCode));
+			toast.error(getIntentErrorMessage(result.error));
 			return;
 		}
 

@@ -39,16 +39,23 @@ const formSchema = z.object({
  * @returns Registration form with social sign-in alternative.
  */
 export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
+	const searchParams = useSearchParams();
 	const {
 		register,
 		handleSubmit,
 		formState: { errors },
 		setError,
-	} = useForm<SignUpFields>({ resolver: zodResolver(formSchema) });
+	} = useForm<SignUpFields>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			name: '',
+			email: '',
+			password: '',
+		},
+	});
 	const [isPending, startTransition] = useTransition();
 	const [isSocialPending, setIsSocialPending] = useState(false);
 	const router = useRouter();
-	const searchParams = useSearchParams();
 	// useMemo: avoid re-running validateReturnTo on every render — searchParams
 	// only changes on URL navigation, so this effectively caches the validated path.
 	const returnTo = useMemo(

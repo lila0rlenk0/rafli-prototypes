@@ -10,7 +10,6 @@ import {
 	parseRaffleStatus,
 } from '@/lib/utils/raffle/raffle-search-params';
 import { BugIcon } from '@/assets/icons/bug-icon';
-import { SERVER_ACTION_MAX_DURATION_SECONDS } from '@/lib/api/constants';
 import { getUserModeCookie } from '@/lib/mode/cookies';
 import { getEnrolledRaffles } from '@/services/raffle/get-enrolled-raffles';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
@@ -24,7 +23,10 @@ interface PageProps {
 	}>;
 }
 
-export const maxDuration = SERVER_ACTION_MAX_DURATION_SECONDS;
+// Next segment config must be a statically analyzable literal. Keep this
+// aligned with the API timeout ladder: 30s is above the 20s backend read
+// timeout, but below Vercel's long default for hung invocations.
+export const maxDuration = 30;
 
 /**
  * Filters out draft/queued statuses for participants

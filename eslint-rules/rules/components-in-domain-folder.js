@@ -26,6 +26,7 @@ const ALLOWED_DOMAINS = new Set([
   "promo-code",
   "raffle",
   "report",
+  "subscribe",
   "ui",
   "ui-custom",
   "verification",

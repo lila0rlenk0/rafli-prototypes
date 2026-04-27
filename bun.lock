@@ -5,6 +5,7 @@
     "": {
       "name": "raffly",
       "dependencies": {
+        "@fanbasis/checkout-react": "^0.2.7",
         "@gsap/react": "^2.1.2",
         "@hookform/resolvers": "^5.2.2",
         "@lexical/code": "^0.39.0",
@@ -175,6 +176,10 @@
     "@ethereumjs/tx": ["@ethereumjs/tx@4.2.0", "", { "dependencies": { "@ethereumjs/common": "^3.2.0", "@ethereumjs/rlp": "^4.0.1", "@ethereumjs/util": "^8.1.0", "ethereum-cryptography": "^2.0.0" } }, "sha512-1nc6VO4jtFd172BbSnTnDQVr9IYBFl1y4xPzZdtkrkKIncBCkdbgfdRV+MiTkJYAtTxvV12GRZLqBFT1PNK6Yw=="],
 
     "@ethereumjs/util": ["@ethereumjs/util@8.1.0", "", { "dependencies": { "@ethereumjs/rlp": "^4.0.1", "ethereum-cryptography": "^2.0.0", "micro-ftch": "^0.3.1" } }, "sha512-zQ0IqbdX8FZ9aw11vP+dZkKDkS+kgIvQPHnSAXzP9pLu+Rfu3D3XEeLbicvoXJTYnhZiPmsZUxgdzXwNKxRPbA=="],
+
+    "@fanbasis/checkout-core": ["@fanbasis/checkout-core@0.3.9", "", { "dependencies": { "eventemitter3": "^5.0.0" }, "peerDependencies": { "typescript": ">=5.0.0" } }, "sha512-cemSaaYmb2jz6vZwmCIHES6Olw4DlyN1F4gJHg1Oppl/w8ZTTdmmJWQB/Tsi/MEjT9lH+pgHWRnd8NbH5vXmqA=="],
+
+    "@fanbasis/checkout-react": ["@fanbasis/checkout-react@0.2.7", "", { "dependencies": { "@fanbasis/checkout-core": "0.3.9" }, "peerDependencies": { "react": ">=18.0.0", "react-dom": ">=18.0.0" } }, "sha512-ndmCy3EiSVUbzOykFVNdkz99lfoIS04tE+N+Je88bGE7J7xTT3VzL4mXYsk47F/owvMWOBa0UyZw7RDBtoFjMw=="],
 
     "@fastify/otel": ["@fastify/otel@0.18.0", "", { "dependencies": { "@opentelemetry/core": "^2.0.0", "@opentelemetry/instrumentation": "^0.212.0", "@opentelemetry/semantic-conventions": "^1.28.0", "minimatch": "^10.2.4" }, "peerDependencies": { "@opentelemetry/api": "^1.9.0" } }, "sha512-3TASCATfw+ctICSb4ymrv7iCm0qJ0N9CarB+CZ7zIJ7KqNbwI5JjyDL1/sxoC0ccTO1Zyd1iQ+oqncPg5FJXaA=="],
 

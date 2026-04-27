@@ -10,25 +10,25 @@ Project auto-detected from `.vercel/project.json`. Run `vercel link` in the proj
 
 ### Flag reference (exact, from docs)
 
-| Flag                     | Shorthand | Values                                             | Notes                                                       |
-| ------------------------ | --------- | -------------------------------------------------- | ----------------------------------------------------------- |
-| `--follow`               | `-f`      | (boolean)                                          | Live stream. Caps at 5 min per session. Blocking.           |
-| `--no-follow`            |           | (boolean)                                          | Disables auto-follow when a deployment arg is passed.       |
-| `--json`                 | `-j`      | (boolean)                                          | JSON Lines output. Pipe to `jq`.                            |
-| `--expand`               | `-x`      | (boolean)                                          | Show full message (stack traces) instead of truncating.     |
-| `--limit`                | `-n`      | integer                                            | Default 100.                                                |
-| `--level`                |           | `error` \| `warning` \| `info` \| `fatal`          | Repeatable (`--level error --level warning`).               |
-| `--status-code`          |           | specific code or wildcard (`500`, `5xx`, `4xx`)    | Filter by HTTP status.                                      |
-| `--source`               |           | `serverless` \| `edge-function` \| `edge-middleware` \| `static` | Repeatable.                                 |
-| `--query`                | `-q`      | string                                             | Full-text search across log messages.                       |
-| `--request-id`           |           | `req_xxx`                                          | Pull all logs for one request.                              |
-| `--environment`          |           | `production` \| `preview`                          | Environment filter.                                         |
-| `--since`                |           | relative (`1h`, `30m`) or ISO-8601                 | Default: 24h ago.                                           |
-| `--until`                |           | relative or ISO-8601                               | Default: now. Combine with `--since` for windows.           |
-| `--branch`               | `-b`      | branch name                                        | Auto-detects current branch. Use `--no-branch` for all.     |
-| `--no-branch`            |           | (boolean)                                          | Disables branch auto-filter.                                |
-| `--deployment`           | `-d`      | `dpl_xxx` or URL                                   | Scope to one deployment.                                    |
-| `--project`              | `-p`      | project ID or name                                 | Override linked project.                                    |
+| Flag            | Shorthand | Values                                                           | Notes                                                   |
+| --------------- | --------- | ---------------------------------------------------------------- | ------------------------------------------------------- |
+| `--follow`      | `-f`      | (boolean)                                                        | Live stream. Caps at 5 min per session. Blocking.       |
+| `--no-follow`   |           | (boolean)                                                        | Disables auto-follow when a deployment arg is passed.   |
+| `--json`        | `-j`      | (boolean)                                                        | JSON Lines output. Pipe to `jq`.                        |
+| `--expand`      | `-x`      | (boolean)                                                        | Show full message (stack traces) instead of truncating. |
+| `--limit`       | `-n`      | integer                                                          | Default 100.                                            |
+| `--level`       |           | `error` \| `warning` \| `info` \| `fatal`                        | Repeatable (`--level error --level warning`).           |
+| `--status-code` |           | specific code or wildcard (`500`, `5xx`, `4xx`)                  | Filter by HTTP status.                                  |
+| `--source`      |           | `serverless` \| `edge-function` \| `edge-middleware` \| `static` | Repeatable.                                             |
+| `--query`       | `-q`      | string                                                           | Full-text search across log messages.                   |
+| `--request-id`  |           | `req_xxx`                                                        | Pull all logs for one request.                          |
+| `--environment` |           | `production` \| `preview`                                        | Environment filter.                                     |
+| `--since`       |           | relative (`1h`, `30m`) or ISO-8601                               | Default: 24h ago.                                       |
+| `--until`       |           | relative or ISO-8601                                             | Default: now. Combine with `--since` for windows.       |
+| `--branch`      | `-b`      | branch name                                                      | Auto-detects current branch. Use `--no-branch` for all. |
+| `--no-branch`   |           | (boolean)                                                        | Disables branch auto-filter.                            |
+| `--deployment`  | `-d`      | `dpl_xxx` or URL                                                 | Scope to one deployment.                                |
+| `--project`     | `-p`      | project ID or name                                               | Override linked project.                                |
 
 ### Recipes
 
@@ -98,11 +98,11 @@ vercel logs --environment production --status-code 500 --since 1h --json \
 
 How `console.*` maps to Vercel log levels (informs what `--level` filters catch):
 
-| Source                       | Streaming functions | Non-streaming functions |
-| ---------------------------- | ------------------- | ----------------------- |
-| `stdout` (`console.log`)     | `info`              | `info`                  |
-| `stderr` (`console.error`)   | `error`             | `error`                 |
-| `console.warn`               | `warning`           | `error`                 |
+| Source                     | Streaming functions | Non-streaming functions |
+| -------------------------- | ------------------- | ----------------------- |
+| `stdout` (`console.log`)   | `info`              | `info`                  |
+| `stderr` (`console.error`) | `error`             | `error`                 |
+| `console.warn`             | `warning`           | `error`                 |
 
 Implicit levels from status: `4xx` → warning, `5xx` → error.
 
@@ -116,13 +116,13 @@ If a function exceeds these, older lines are dropped and only the most recent ar
 
 ### Retention (plan-dependent)
 
-| Plan                                | Retention |
-| ----------------------------------- | --------- |
-| Hobby                               | 1 hour    |
-| Pro                                 | 1 day     |
-| Pro + Observability Plus            | 30 days   |
-| Enterprise                          | 3 days    |
-| Enterprise + Observability Plus     | 30 days   |
+| Plan                            | Retention |
+| ------------------------------- | --------- |
+| Hobby                           | 1 hour    |
+| Pro                             | 1 day     |
+| Pro + Observability Plus        | 30 days   |
+| Enterprise                      | 3 days    |
+| Enterprise + Observability Plus | 30 days   |
 
 If `vercel logs` returns empty for a valid time window, the logs have fallen outside retention. Check plan first.
 

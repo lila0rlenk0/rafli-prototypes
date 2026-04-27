@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -18,15 +17,28 @@ interface UseXVerifyParams {
 	/** Called after a hard failure to resolve the UI back to "idle" or "shared". */
 	onVerifyFailure: (needsRestart: boolean) => void;
 	/** Called after successful verification (ticket granted). */
-	onVerified: () => void;
-	/** Called when X hasn't indexed the tweet yet — consumer typically schedules auto-retry. */
-	onNotFound: () => void;
+	onVerified: (ticketsGranted: number) => void;
 }
 
 interface TrackingContext {
 	raffleId: string;
 	publicSlug: string;
 }
+
+/**
+ * Backend error codes that invalidate the existing pending claim. The user
+ * must re-share to refresh the row before another verify can succeed —
+ * the orchestrator resets to `idle` so the share CTA reappears.
+ *
+ *  - `core:xshare:not-found` — claim row missing (e.g. user cleared cookies)
+ *  - `core:xshare:expired`   — pending claim past its `expiresAt`; backend
+ *    rejects lazily, so re-running `createXShareIntent` is required to
+ *    refresh `token`/`expiresAt` on the same row.
+ */
+const RESTART_ERROR_CODES = new Set<string>([
+	'core:xshare:not-found',
+	'core:xshare:expired',
+]);
 
 /**
  * Handles a verify failure branch — toasts the mapped message and
@@ -42,9 +54,7 @@ function handleFailure(
 		raffle_slug: context.publicSlug,
 		error_code: errorCode,
 	});
-	// not-found restarts from scratch — expired is terminal (no re-share).
-	const needsRestart = errorCode === 'core:xshare:not-found';
-	onVerifyFailure(needsRestart);
+	onVerifyFailure(RESTART_ERROR_CODES.has(errorCode));
 	toast.error(getVerifyErrorMessage(errorCode));
 }
 
@@ -55,25 +65,27 @@ function handleFailure(
 function handleVerifiedSuccess(
 	ticketsGranted: number,
 	context: TrackingContext,
-	onVerified: () => void,
+	onVerified: (ticketsGranted: number) => void,
 ): void {
 	track(X_SHARE_EVENTS.VERIFIED, {
 		raffle_id: context.raffleId,
 		raffle_slug: context.publicSlug,
 		tickets_granted: ticketsGranted,
 	});
-	// Pluralize — grant count is usually 1 but can exceed it.
+	// Pluralize — grant count is usually 1 but the wording stays robust if
+	// backend ever bumps it for a campaign.
 	const entryWord = ticketsGranted === 1 ? 'Bonus entry' : 'Bonus entries';
 	toast.success(`${entryWord} granted! You're in the sweepstakes now.`);
-	onVerified();
+	onVerified(ticketsGranted);
 }
 
 /**
  * Handles the "verify X post" half of the share flow.
  *
- * Calls `/verify-x-share`, narrows the response, and notifies the
- * orchestrator via transition callbacks. The orchestrator owns state
- * and auto-retry scheduling — this hook stays pure-transition.
+ * Backend grants the ticket on the success path regardless of whether the
+ * tweet was found by X search (UNIQUE(raffleId, userId) caps abuse), so
+ * there is no longer a `not_found` outcome to auto-retry on. The hook just
+ * narrows the response, surfaces toasts, and notifies the orchestrator.
  *
  * @param params - Raffle identifiers plus transition callbacks.
  * @returns A stable `verify` function ready to bind to a button handler.
@@ -81,15 +93,8 @@ function handleVerifiedSuccess(
 export function useXVerify(params: UseXVerifyParams): {
 	verify: () => Promise<void>;
 } {
-	const {
-		raffleId,
-		publicSlug,
-		onVerifyStart,
-		onVerifyFailure,
-		onVerified,
-		onNotFound,
-	} = params;
-	const router = useRouter();
+	const { raffleId, publicSlug, onVerifyStart, onVerifyFailure, onVerified } =
+		params;
 
 	const verify = useCallback(async () => {
 		onVerifyStart();
@@ -97,44 +102,11 @@ export function useXVerify(params: UseXVerifyParams): {
 		const context = { raffleId, publicSlug };
 
 		if (!result.success) {
-			// Cast — backend codes not enumerated in the narrow RaffleErrorCode union.
-			handleFailure(result.error as string, context, onVerifyFailure);
+			handleFailure(result.error, context, onVerifyFailure);
 			return;
 		}
-		if (result.data.status === 'verified') {
-			handleVerifiedSuccess(result.data.ticketsGranted, context, onVerified);
-			// Server action revalidated the cache tag — refresh paints RSC
-			// with fresh ticket count and claim status.
-			router.refresh();
-			return;
-		}
-		// Tweet not found — track with reason so we can analyze whether
-		// indexing latency or user error drives the miss rate.
-		track(X_SHARE_EVENTS.VERIFICATION_FAILED, {
-			raffle_id: raffleId,
-			raffle_slug: publicSlug,
-			error_code: 'not_found',
-			reason: result.data.reason,
-		});
-		if (result.data.reason === 'not_found') {
-			toast.info(
-				"Your post hasn't been indexed by X yet — we'll automatically check again in a few seconds.",
-			);
-			onNotFound();
-			return;
-		}
-		// Reason is null / unknown — no auto-retry, surface a generic error.
-		toast.error('Verification failed. Please try again.');
-		onVerifyFailure(false);
-	}, [
-		onNotFound,
-		onVerified,
-		onVerifyFailure,
-		onVerifyStart,
-		publicSlug,
-		raffleId,
-		router,
-	]);
+		handleVerifiedSuccess(result.data.ticketsGranted, context, onVerified);
+	}, [onVerified, onVerifyFailure, onVerifyStart, publicSlug, raffleId]);
 
 	return { verify };
 }

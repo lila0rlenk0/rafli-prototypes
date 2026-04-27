@@ -67,13 +67,7 @@ function ShareButtonForPurchasable({
 	state: PurchasableState;
 }): React.JSX.Element {
 	const { xShare, questionId, raffleId, xShareEnabled } = state;
-	const {
-		claimUsed,
-		state: shareState,
-		retryCountdown,
-		handleShare,
-		handleVerify,
-	} = xShare;
+	const { claimUsed, state: shareState, handleShare, handleVerify } = xShare;
 	// Quiz gate — same pattern as desktop ShareOnXButton. Tokenized
 	// share requires a correct answer before the backend issues an
 	// intent. Plain shares bypass (no backend).
@@ -98,33 +92,28 @@ function ShareButtonForPurchasable({
 			<Button
 				variant="outline"
 				disabled
-				className="h-12 w-full rounded-full border-2 border-gray-300 bg-gray-50 text-gray-400"
+				className="h-12 w-full rounded-full border-2"
 			>
 				<p className="font-semibold">Already claimed bonus entry</p>
 			</Button>
 		);
 	}
 	if (shareState === 'shared' || shareState === 'verifying') {
+		// Single-shot verify — backend grants the ticket regardless of whether
+		// X has indexed the tweet, so no countdown / auto-retry is needed.
 		return (
-			<div className="flex w-full flex-col gap-1">
-				<Button
-					variant="outline"
-					onClick={handleVerify}
-					disabled={shareState === 'verifying'}
-					className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
-				>
-					<p className="font-semibold">
-						{shareState === 'verifying'
-							? 'Verifying...'
-							: 'I shared it — Claim my bonus entry!'}
-					</p>
-				</Button>
-				{retryCountdown > 0 && shareState === 'shared' ? (
-					<p className="text-center text-xs text-gray-400">
-						Auto-checking in {retryCountdown}s...
-					</p>
-				) : null}
-			</div>
+			<Button
+				variant="outline"
+				onClick={handleVerify}
+				disabled={shareState === 'verifying'}
+				className="h-12 w-full cursor-pointer rounded-full border-2"
+			>
+				<p className="font-semibold">
+					{shareState === 'verifying'
+						? 'Verifying...'
+						: 'I shared it — Claim my bonus entry!'}
+				</p>
+			</Button>
 		);
 	}
 	return (
@@ -133,12 +122,10 @@ function ShareButtonForPurchasable({
 				variant="outline"
 				onClick={handleShareClick}
 				disabled={shareState === 'loading'}
-				className="h-12 w-full cursor-pointer rounded-full border-2 border-black bg-white text-black hover:bg-gray-50"
+				className="h-12 w-full cursor-pointer rounded-full border-2"
 			>
 				<p className="font-semibold">
-					{shareState === 'loading'
-						? 'Preparing...'
-						: 'Get Bonus Entries! Share on X'}
+					{shareState === 'loading' ? 'Preparing...' : 'AMOE - Free Entries'}
 				</p>
 			</Button>
 			{questionId ? (
@@ -155,7 +142,7 @@ function ShareButtonForPurchasable({
 
 /**
  * Purchasable branch — full sticky bar: bundle quick-picks, primary
- * "One Time Purchase - $X.XX" CTA, no-purchase footnote, optional question
+ * card/AMOE checkout CTA, no-purchase footnote, optional question
  * modal, and the share-on-X button.
  */
 function PurchasableVariant({

@@ -21,9 +21,10 @@ const VERIFY_GENERIC_FALLBACK = 'Verification failed. Please try again.';
 export function getVerifyErrorMessage(errorCode: string): string {
 	switch (errorCode) {
 		case 'core:xshare:expired':
-			return 'Your share link has expired. Each sweepstakes allows one bonus-entry share attempt.';
-		case 'core:xshare:rate-limited':
-			return 'Please wait a few seconds before trying again.';
+			// Backend rejects pending claims past their `expiresAt` lazily; the
+			// orchestrator routes this code back to the share CTA so the user
+			// can refresh the same claim row by re-running the intent.
+			return 'Your share link has expired. Tap "Share on X" to start a new attempt.';
 		case 'core:xshare:not-found':
 			return 'No share claim found. Tap "Share on X" to start.';
 		case 'core:xshare:disabled':

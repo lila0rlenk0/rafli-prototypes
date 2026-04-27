@@ -9,14 +9,14 @@ import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
-import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
+import { RAFFLE_ERROR_CODES, type XShareIntentErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 const xShareIntentResponseSchema = z.object({
-	claimId: z.string(),
+	claimId: z.string().min(1),
 	expiresAt: z.string(),
-	shareUrl: z.string(),
-	token: z.string(),
+	shareUrl: z.url(),
+	token: z.string().min(1),
 });
 
 type XShareIntentResponse = z.infer<typeof xShareIntentResponseSchema>;
@@ -31,7 +31,7 @@ type XShareIntentResponse = z.infer<typeof xShareIntentResponseSchema>;
  */
 export async function createXShareIntent(
 	raffleId: string,
-): Promise<ServiceResponse<XShareIntentResponse, RaffleErrorCode>> {
+): Promise<ServiceResponse<XShareIntentResponse, XShareIntentErrorCode>> {
 	try {
 		const response = await authenticatedClient.post(
 			`/raffles/${pathParam(raffleId)}/x-share-intent`,

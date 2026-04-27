@@ -2,6 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 import { RAFFLE_ERROR_CODES } from '@/types/errors/raffle-errors';
+import { X_SHARE_ERROR_CODES } from '@/types/errors/x-share-errors';
 
 import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
@@ -10,18 +11,13 @@ import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 const RAFFLE_ID = '11111111-1111-7111-8111-111111111111';
 const CLAIM_ID = '22222222-2222-7222-8222-222222222222';
 
+// Backend `VerifyXShareResponseDto`: status is always `'verified'` on the
+// success path; `ticketsGranted` is always 1 (UNIQUE(raffleId, userId)
+// caps abuse at one bonus ticket per user per raffle, lifetime).
 const VERIFIED_RESPONSE = {
 	claimId: CLAIM_ID,
-	reason: null,
 	status: 'verified' as const,
 	ticketsGranted: 1,
-};
-
-const NOT_FOUND_RESPONSE = {
-	claimId: CLAIM_ID,
-	reason: 'not_found' as const,
-	status: 'not_found' as const,
-	ticketsGranted: 0,
 };
 
 // --- Mocks ---
@@ -99,32 +95,16 @@ describe('verifyXShare', () => {
 		});
 	});
 
-	describe('success — not found', () => {
-		test('returns not_found payload without revalidating cache', async () => {
-			resetAllMocks();
-			mockPost.mockResolvedValueOnce(mockAxiosResponse(NOT_FOUND_RESPONSE));
-
-			const result = await verifyXShare(RAFFLE_ID);
-
-			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.status).toBe('not_found');
-				expect(result.data.ticketsGranted).toBe(0);
-			}
-			// No tickets granted → no cache change → must not invalidate
-			expect(mockRunAfter).not.toHaveBeenCalled();
-			expect(mockRevalidateRaffleDetail).not.toHaveBeenCalled();
-		});
-	});
-
 	describe('response validation failure', () => {
-		test('returns FETCH_FAILED when status enum value is unknown', async () => {
+		test('returns FETCH_FAILED when status is not the new "verified" literal', async () => {
+			// Backend reduced the status enum to a single `'verified'` literal on the
+			// success path. Anything else (legacy `'not_found'`, stale `'pending'`,
+			// new value) is a contract drift signal — surface it to Sentry and bail.
 			resetAllMocks();
 			mockPost.mockResolvedValueOnce(
 				mockAxiosResponse({
 					claimId: CLAIM_ID,
-					reason: null,
-					status: 'pending',
+					status: 'not_found',
 					ticketsGranted: 0,
 				}),
 			);
@@ -137,6 +117,29 @@ describe('verifyXShare', () => {
 			}
 			expect(mockCaptureContractDrift).toHaveBeenCalledTimes(1);
 			// Validation failure must NOT trigger revalidation — no confirmed state change
+			expect(mockRevalidateRaffleDetail).not.toHaveBeenCalled();
+		});
+
+		test('returns FETCH_FAILED when ticketsGranted is not a positive integer', async () => {
+			// A verified response means the backend granted at least one whole
+			// ticket. Accepting zero, negative, or fractional grants would refresh
+			// the UI into a "verified" state without a usable ledger change.
+			resetAllMocks();
+			mockPost.mockResolvedValueOnce(
+				mockAxiosResponse({
+					claimId: CLAIM_ID,
+					status: 'verified',
+					ticketsGranted: 0,
+				}),
+			);
+
+			const result = await verifyXShare(RAFFLE_ID);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(RAFFLE_ERROR_CODES.FETCH_FAILED);
+			}
+			expect(mockCaptureContractDrift).toHaveBeenCalledTimes(1);
 			expect(mockRevalidateRaffleDetail).not.toHaveBeenCalled();
 		});
 	});
@@ -158,6 +161,23 @@ describe('verifyXShare', () => {
 				expect(result.error).toBe(RAFFLE_ERROR_CODES.NOT_FOUND);
 			}
 			expect(mockCaptureServiceError).toHaveBeenCalledTimes(1);
+		});
+
+		test('maps core:xshare:expired through the dedicated X-share union', async () => {
+			resetAllMocks();
+			mockPost.mockRejectedValueOnce(
+				mockAxiosError({
+					status: 409,
+					data: { type: 'urn:raffles:problem:core:xshare:expired' },
+				}),
+			);
+
+			const result = await verifyXShare(RAFFLE_ID);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(X_SHARE_ERROR_CODES.EXPIRED);
+			}
 		});
 	});
 

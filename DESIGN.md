@@ -117,11 +117,26 @@ typography:
       letterSpacing: 0.12px,
     }
   body-lg:
-    { fontFamily: Geist Sans, fontSize: 18px, fontWeight: 500, lineHeight: 32px }
+    {
+      fontFamily: Geist Sans,
+      fontSize: 18px,
+      fontWeight: 500,
+      lineHeight: 32px,
+    }
   body-md:
-    { fontFamily: Geist Sans, fontSize: 15px, fontWeight: 400, lineHeight: 28px }
+    {
+      fontFamily: Geist Sans,
+      fontSize: 15px,
+      fontWeight: 400,
+      lineHeight: 28px,
+    }
   body-sm:
-    { fontFamily: Geist Sans, fontSize: 14px, fontWeight: 400, lineHeight: 24px }
+    {
+      fontFamily: Geist Sans,
+      fontSize: 14px,
+      fontWeight: 400,
+      lineHeight: 24px,
+    }
   card-title:
     { fontFamily: Geist Sans, fontSize: 15px, fontWeight: 600, lineHeight: 1.2 }
   card-price:
@@ -353,8 +368,7 @@ components:
   progress-bar:
     { backgroundColor: '{colors.gray-75}', rounded: 6px, height: 10px }
   progress-bar-fill: { backgroundColor: '{colors.cyan}', rounded: 6px }
-  form-field:
-    { backgroundColor: transparent, textColor: '{colors.foreground}' }
+  form-field: { backgroundColor: transparent, textColor: '{colors.foreground}' }
   search-bar:
     {
       backgroundColor: '{colors.white}',
@@ -407,13 +421,29 @@ components:
       borderColor: '{colors.rafli-black}',
     }
   card-winner:
-    { backgroundColor: '{colors.card}', rounded: '{rounded.2xl}', padding: 16px }
+    {
+      backgroundColor: '{colors.card}',
+      rounded: '{rounded.2xl}',
+      padding: 16px,
+    }
   card-past-draw:
-    { backgroundColor: '{colors.card}', rounded: '{rounded.2xl}', padding: 16px }
+    {
+      backgroundColor: '{colors.card}',
+      rounded: '{rounded.2xl}',
+      padding: 16px,
+    }
   card-content:
-    { backgroundColor: '{colors.card}', rounded: '{rounded.2xl}', padding: 24px }
+    {
+      backgroundColor: '{colors.card}',
+      rounded: '{rounded.2xl}',
+      padding: 24px,
+    }
   card-subscription-plan:
-    { backgroundColor: '{colors.card}', rounded: '{rounded.2xl}', padding: 24px }
+    {
+      backgroundColor: '{colors.card}',
+      rounded: '{rounded.2xl}',
+      padding: 24px,
+    }
   countdown-timer:
     {
       backgroundColor: '{colors.rafli-yellow}',

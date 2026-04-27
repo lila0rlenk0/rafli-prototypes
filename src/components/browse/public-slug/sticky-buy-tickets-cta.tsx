@@ -12,10 +12,8 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
 	availableTickets: number;
 	/** Mirrors the card's purchase-disabled gate (own raffle, not yet open, etc.) */
 	disabled?: boolean;
-	/** Per-ticket price in major currency units — drives the inline total label. */
+	/** Per-ticket price in major currency units — drives free-entry promo detection. */
 	price: number;
-	/** ISO 4217 currency code — drives the inline total label format. */
-	currency: string;
 }
 
 /**
@@ -34,7 +32,7 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
  *    The inline `TicketPurchaseCard` already renders disabled state +
  *    gate copy; duplicating in the sticky contradicts the card.
  *  - **Authenticated, non-host** — full bar: bundle quick-picks, primary
- *    "One Time Purchase - $X.XX" CTA, and "Get Bonus Entries! Share on X".
+ *    card checkout CTA, and "AMOE - Free Entries".
  *
  * Hidden on desktop (`lg:hidden` inside the variant shell) where the
  * sidebar checkout is always alongside content.
@@ -57,7 +55,6 @@ export function StickyBuyTicketsCta(
 		availableTickets: props.availableTickets,
 		disabled: props.disabled ?? false,
 		price: props.price,
-		currency: props.currency,
 	});
 	if (!visible) return null;
 	return <StickyCtaVariants state={state} />;

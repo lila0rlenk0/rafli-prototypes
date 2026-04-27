@@ -110,8 +110,34 @@ describe('raffleSchema backend alignment', () => {
 		}
 	});
 
-	test('parses xShareClaim with backend "completed" status', () => {
-		// Backend uses 'completed', not 'verified'.
+	test('parses xShareClaim with backend "verified" status', () => {
+		// Backend collapsed the status enum to `'pending' | 'verified'`.
+		// `expiresAt` is null once verified — the field only carries
+		// meaning while the claim is pending.
+		const raffle = buildBackendRaffle({
+			xShareClaim: {
+				claimId: '550e8400-e29b-71d4-a716-446655440003',
+				status: 'verified',
+				token: null,
+				expiresAt: null,
+			},
+		});
+
+		const result = raffleSchema.safeParse(raffle);
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			// Must not be silently nullified by .catch(null)
+			expect(result.data.xShareClaim).not.toBeNull();
+			expect(result.data.xShareClaim?.status).toBe('verified');
+		}
+	});
+
+	test('drops xShareClaim with legacy "completed" status to null via .catch', () => {
+		// Regression guard: the legacy `'completed'` literal is no longer in the
+		// enum. `.catch(null)` should swallow stale cached responses rather than
+		// failing the whole raffle parse — the user just sees no claim state until
+		// the next refresh.
 		const raffle = buildBackendRaffle({
 			xShareClaim: {
 				claimId: '550e8400-e29b-71d4-a716-446655440003',
@@ -125,9 +151,7 @@ describe('raffleSchema backend alignment', () => {
 
 		expect(result.success).toBe(true);
 		if (result.success) {
-			// Must not be silently nullified by .catch(null)
-			expect(result.data.xShareClaim).not.toBeNull();
-			expect(result.data.xShareClaim?.status).toBe('completed');
+			expect(result.data.xShareClaim).toBeNull();
 		}
 	});
 });

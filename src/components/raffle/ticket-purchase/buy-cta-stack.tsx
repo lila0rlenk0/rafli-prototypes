@@ -106,8 +106,6 @@ export function BuyCtaStack(props: BuyCtaStackProps) {
 					publicSlug={publicSlug}
 					disabled={disabled}
 					questionId={questionId}
-					total={total}
-					currency={currency}
 				/>
 			</div>
 

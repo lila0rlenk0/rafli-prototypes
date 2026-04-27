@@ -237,7 +237,7 @@ Based on Vercel's official CLI debugging flow, adapted to read-only.
 
 ## Workflow: targeted log search
 
-When the user knows *what* they're looking for (a specific error string, a request ID from a user report, a deployment ID):
+When the user knows _what_ they're looking for (a specific error string, a request ID from a user report, a deployment ID):
 
 ```bash
 # by request ID (most precise)
@@ -254,6 +254,7 @@ vercel logs --environment preview --branch feature/new-checkout --since 24h --le
 ```
 
 Then pivot to Sentry:
+
 - Search issues by message: `sentry issue list --query "ECONNRESET" --period 24h --json`
 - Filter events by user: `sentry event list ISSUE_ID --query "user.email:affected@user.com" --json`
 

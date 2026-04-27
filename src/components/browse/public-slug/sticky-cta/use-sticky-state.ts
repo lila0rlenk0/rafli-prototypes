@@ -4,7 +4,6 @@ import { usePathname, useSearchParams } from 'next/navigation';
 
 import { calculateOrderTotal } from '@/lib/checkout/calculate-order-total';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
-import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import type { ValidatedPromoCode } from '@/types/promo-code';
 
@@ -15,7 +14,6 @@ export interface StickyStateInputs extends XShareConfig {
 	disabled: boolean;
 	availableTickets: number;
 	price: number;
-	currency: string;
 }
 
 interface BundleControls {
@@ -33,7 +31,7 @@ interface PurchasableState {
 	kind: 'purchasable';
 	signInUrl: null;
 	bundles: BundleControls;
-	/** Primary CTA label — "One Time Purchase - $X.XX" or "Claim bonus entr(y|ies)" */
+	/** Primary CTA label — one of the canonical AMOE/card checkout labels. */
 	primaryCtaLabel: string;
 	primaryCtaTitle: string | undefined;
 	isPrimaryCtaDisabled: boolean;
@@ -69,26 +67,20 @@ export type StickyVariantState =
 const BUNDLE_SIZES_MOBILE = [10, 25, 50] as const;
 
 /**
- * Builds the primary CTA label. Free-tickets promos flip to a "Claim
- * bonus entries" copy with the granted count; otherwise "One Time
- * Purchase - $X.XX" so users always see the exact charge on the action
- * surface, matching the desktop in-card BuyButton copy.
+ * Builds the primary CTA label. Free-tickets promos use the canonical
+ * AMOE copy; paid card checkout uses the canonical one-time purchase
+ * label. Pricing still renders in the purchase summary, not inside the
+ * action text, so every payment method reads as a tender choice.
  */
 function buildPrimaryCtaLabel(params: {
 	isCheckoutLoading: boolean;
 	isFreeTicketsPromo: boolean;
-	freeTicketCount: number;
-	total: number;
-	currency: string;
 }): string {
 	if (params.isCheckoutLoading) return 'Processing...';
 	if (params.isFreeTicketsPromo) {
-		// Floor matches the displayed integer — guards against decimal
-		// drift if the grant count arrives non-integer (mirrors promo-code.ts).
-		const count = Math.floor(params.freeTicketCount);
-		return `Claim bonus entr${count === 1 ? 'y' : 'ies'}`;
+		return 'AMOE - Free Entries';
 	}
-	return `One Time Purchase - ${formatCurrency(params.total, params.currency)}`;
+	return 'One Time Purchase with Card';
 }
 
 interface StoreSnapshot {
@@ -133,7 +125,7 @@ function buildPurchasableState(
 	params: PurchasablePayloadParams,
 ): PurchasableState {
 	const { inputs, store, checkout, xShare } = params;
-	const { total, isFreeTicketsPromo, freeTicketCount } = calculateOrderTotal({
+	const { isFreeTicketsPromo } = calculateOrderTotal({
 		price: inputs.price,
 		quantity: store.quantity,
 		appliedPromo: store.appliedPromo,
@@ -157,9 +149,6 @@ function buildPurchasableState(
 		primaryCtaLabel: buildPrimaryCtaLabel({
 			isCheckoutLoading: checkout.isLoading,
 			isFreeTicketsPromo,
-			freeTicketCount,
-			total,
-			currency: inputs.currency,
 		}),
 		primaryCtaTitle:
 			isPrimaryCtaDisabled && !checkout.isLoading && !isFreeTicketsPromo

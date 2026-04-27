@@ -2,13 +2,32 @@
 
 import { ZodError } from 'zod';
 
-import { baseClient } from '@/lib/api/client';
+import { authenticatedClient, baseClient } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
+
+/**
+ * Chooses the authenticated client only after the session is backend-validated.
+ * A raw cookie token can be stale or revoked; using it directly would turn a
+ * public raffle page into a 401 for users with bad cookies. `getSession()`
+ * degrades invalid/transient auth to `null`, keeping the public page readable
+ * while still enriching `xShareClaim` for valid authenticated callers.
+ */
+async function getRaffleClient() {
+	try {
+		const { getSession } = await import('@/lib/auth/session');
+		const session = await getSession();
+		return session ? authenticatedClient : baseClient;
+	} catch {
+		// Outside a request scope (tests/build) there is no cookie store; public
+		// raffle data is still the correct fallback in that environment.
+		return baseClient;
+	}
+}
 
 /**
  * Fetches a single raffle by public slug
@@ -20,7 +39,8 @@ export async function getRaffle(
 	publicSlug: string,
 ): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
 	try {
-		const response = await baseClient.get(`/raffles/${pathParam(publicSlug)}`);
+		const client = await getRaffleClient();
+		const response = await client.get(`/raffles/${pathParam(publicSlug)}`);
 		return success(raffleSchema.parse(response.data));
 	} catch (error) {
 		if (error instanceof ZodError) {

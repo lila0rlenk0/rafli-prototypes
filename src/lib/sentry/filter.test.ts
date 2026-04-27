@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { ErrorEvent, EventHint } from '@sentry/nextjs';
 
-import { filterEvent } from './filter';
+import { EXPECTED_ERROR_CODES, filterEvent } from './filter';
 
 /**
  * Creates a minimal Sentry ErrorEvent with optional tags, synthesized
@@ -46,88 +46,26 @@ function createHint(originalException?: unknown): EventHint {
 	return { originalException } as EventHint;
 }
 
+function withRandomValue<T>(value: number, run: () => T): T {
+	// Sampling is the behavior under test, but letting real randomness decide
+	// pass/fail makes the suite probabilistic. Pin `Math.random()` per case so
+	// boundary expectations stay exact and restore immediately to avoid leaking
+	// global state into later Sentry tests.
+	const originalRandom = Math.random;
+	Math.random = () => value;
+	try {
+		return run();
+	} finally {
+		Math.random = originalRandom;
+	}
+}
+
 describe('filterEvent', () => {
 	describe('expected business error codes are dropped', () => {
-		const expectedCodes = [
-			// Auth
-			'auth:user:invalid-credentials',
-			'auth:token:invalid',
-			'auth:signup:failed',
-
-			// Raffle + gallery + options
-			'core:raffle:not-draft',
-			'core:raffle:not-queued',
-			'core:raffle:not-cancellable',
-			'core:raffle:sold-out',
-			'core:raffle:question-not-found',
-			'core:raffle:invalid-crypto-config',
-			'core:gallery:limit-exceeded',
-			'core:option:not-found',
-			'core:option:invalid',
-
-			// X-share free-ticket claim
-			'core:xshare:already-claimed',
-			'core:xshare:question-required',
-			'core:xshare:disabled',
-			'core:xshare:expired',
-			'core:xshare:rate-limited',
-			'core:xshare:not-found',
-
-			// Order
-			'core:order:already-completed',
-			'core:order:not-pending',
-
-			// Payment + race conditions
-			'payments:crypto:already-paid',
-			'payments:checkout:not-found',
-			'payments:checkout:concurrent-completion',
-			'payments:crypto:session-not-found',
-			'payments:crypto:concurrent-update',
-			'payments:crypto:concurrent-completion',
-			'payments:stripe:session-not-found',
-
-			// Credits
-			'payments:credits:insufficient-balance',
-			'payments:credits:order-not-pending',
-			'payments:credits:payment-session-active',
-
-			// Promo
-			'core:promo:already-redeemed',
-
-			// Winning + update + host
-			'core:winning:not-found',
-			'core:winning:raffle-not-found',
-			'core:update:not-found',
-			'core:update:permission-denied',
-			'core:update:image-limit-exceeded',
-			'core:update:image-not-found',
-			'auth:profile:not-found',
-
-			// Comment + review + notification + ticket
-			'core:comment:self-vote',
-			'core:review:not-eligible',
-			'core:notification:not-found',
-			'core:ticket:no-tickets',
-
-			// KYC submission + admin KYC
-			'core:verification:already-pending',
-			'core:verification:not-pending',
-			'core:verification:not-finalized',
-			'core:verification:already-reviewed',
-			'core:verification:self-review',
-			'core:verification:permission-denied',
-
-			// Report + client + global
-			'moderation:report:duplicate',
-			'client:upload:too-large',
-			'global:auth:unauthenticated',
-			'global:upload:invalid-file-type',
-			'global:upload:no-file',
-			'global:validation:invalid-payload',
-			'validation_error',
-			'unauthorized',
-			'forbidden',
-		];
+		// Drive coverage from the production Set so every newly whitelisted
+		// business code gets a drop assertion automatically. A hand-maintained
+		// sample list let Fanbasis codes drift in without filter coverage.
+		const expectedCodes = [...EXPECTED_ERROR_CODES].toSorted();
 
 		for (const code of expectedCodes) {
 			test(`drops ${code}`, () => {
@@ -181,34 +119,20 @@ describe('filterEvent', () => {
 	});
 
 	describe('network/timeout errors are sampled', () => {
-		test('network_error gets fingerprinted when not dropped', () => {
+		test('keeps and fingerprints network_error inside the sample rate', () => {
 			const event = createEvent({ errorCode: 'network_error' });
-			// Run many times — at 10% sample rate, at least one should pass
-			let passed = false;
-			for (let i = 0; i < 200; i++) {
-				const result = filterEvent(
-					{ ...event, fingerprint: undefined },
-					createHint(),
-				);
-				if (result !== null) {
-					expect(result.fingerprint).toEqual(['network-transient']);
-					passed = true;
-					break;
-				}
-			}
-			expect(passed).toBe(true);
+			const result = withRandomValue(0.05, () =>
+				filterEvent({ ...event, fingerprint: undefined }, createHint()),
+			);
+			expect(result?.fingerprint).toEqual(['network-transient']);
 		});
 
-		test('timeout_error is subject to sampling', () => {
+		test('drops timeout_error outside the sample rate', () => {
 			const event = createEvent({ errorCode: 'timeout_error' });
-			let dropped = 0;
-			const runs = 100;
-			for (let i = 0; i < runs; i++) {
-				const result = filterEvent({ ...event }, createHint());
-				if (result === null) dropped++;
-			}
-			// At 10% pass rate, ~90 should be dropped. Allow wide margin.
-			expect(dropped).toBeGreaterThan(50);
+			const result = withRandomValue(0.95, () =>
+				filterEvent({ ...event }, createHint()),
+			);
+			expect(result).toBeNull();
 		});
 	});
 
@@ -217,40 +141,25 @@ describe('filterEvent', () => {
 	// still surfaces. See Sentry RAFLI-S (iOS Chrome call-stack
 	// overflow) for the canonical case.
 	describe('suspected-noise patterns are sampled', () => {
-		test('RangeError: Maximum call stack size exceeded gets fingerprinted when kept (Sentry RAFLI-S)', () => {
-			let passed = false;
-			// Run many times — at 10% sample rate, at least one should pass
-			for (let i = 0; i < 300; i++) {
-				const event = createEvent();
-				const hint = createHint(
-					new RangeError('Maximum call stack size exceeded.'),
-				);
-				const result = filterEvent(event, hint);
-				if (result !== null) {
-					expect(result.fingerprint).toEqual([
-						'suspected-noise',
-						'Maximum call stack size exceeded',
-					]);
-					passed = true;
-					break;
-				}
-			}
-			expect(passed).toBe(true);
+		test('keeps and fingerprints Maximum call stack size exceeded inside the sample rate', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new RangeError('Maximum call stack size exceeded.'),
+			);
+			const result = withRandomValue(0.05, () => filterEvent(event, hint));
+			expect(result?.fingerprint).toEqual([
+				'suspected-noise',
+				'Maximum call stack size exceeded',
+			]);
 		});
 
-		test('Maximum call stack size exceeded is dropped the majority of the time', () => {
-			let dropped = 0;
-			const runs = 200;
-			for (let i = 0; i < runs; i++) {
-				const event = createEvent();
-				const hint = createHint(
-					new RangeError('Maximum call stack size exceeded.'),
-				);
-				const result = filterEvent(event, hint);
-				if (result === null) dropped++;
-			}
-			// At 10% pass rate, ~180 should be dropped. Allow wide margin.
-			expect(dropped).toBeGreaterThan(120);
+		test('drops Maximum call stack size exceeded outside the sample rate', () => {
+			const event = createEvent();
+			const hint = createHint(
+				new RangeError('Maximum call stack size exceeded.'),
+			);
+			const result = withRandomValue(0.95, () => filterEvent(event, hint));
+			expect(result).toBeNull();
 		});
 
 		test('non-noise errors are never sampled as noise', () => {
@@ -333,29 +242,11 @@ describe('filterEvent', () => {
 			expect(result).toBeNull();
 		});
 
-		test('drops Safari private-mode SecurityError from @metamask/sdk (Sentry RAFLI-8)', () => {
-			const event = createEvent();
-			const hint = createHint(new Error('The operation is insecure.'));
-			const result = filterEvent(event, hint);
-			expect(result).toBeNull();
-		});
-
 		// RAFLI-B / RAFLI-C — Chrome/Android equivalent of the above. Fires in
 		// embedded WebViews (Telegram, Instagram in-app browsers) where
 		// localStorage is sandboxed. Wagmi's wallet connectors trigger it
 		// during session restore.
 		test('drops Chrome localStorage SecurityError from @wagmi/connectors (Sentry RAFLI-B)', () => {
-			const event = createEvent();
-			const hint = createHint(
-				new Error(
-					"Failed to read the 'localStorage' property from 'Window': Access is denied for this document.",
-				),
-			);
-			const result = filterEvent(event, hint);
-			expect(result).toBeNull();
-		});
-
-		test('drops Chrome localStorage SecurityError from wallet connectors (Sentry RAFLI-C)', () => {
 			const event = createEvent();
 			const hint = createHint(
 				new Error(

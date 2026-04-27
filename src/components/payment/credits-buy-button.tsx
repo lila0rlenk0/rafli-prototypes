@@ -184,16 +184,13 @@ export function CreditsBuyButton({
 	}
 
 	/**
-	 * CTA label — mirrors the Stripe `BuyButton` "One Time Purchase - $X.XX"
-	 * framing so all three payment methods read as a single one-time
-	 * transaction for the Access Pass (entries are a bundled benefit, never
-	 * the object of the purchase). Shows `orderTotal` (what the user pays),
-	 * not the remaining balance — balance belongs in the tooltip for
-	 * insufficient-balance diagnostics.
+	 * CTA label — canonical tender copy. The balance / order amount stays in
+	 * the disabled tooltip and purchase summary so the primary action text
+	 * remains one of the approved one-time-purchase labels.
 	 */
 	function getButtonText(): string {
 		if (isLoading) return 'Processing...';
-		return `One Time Purchase with Credits - ${formatCurrency(orderTotal, currency)}`;
+		return 'One Time Purchase with Credits';
 	}
 
 	/**

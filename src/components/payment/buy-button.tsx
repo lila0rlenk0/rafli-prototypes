@@ -5,7 +5,6 @@ import { CreditCardIcon, Loader2Icon } from 'lucide-react';
 import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
 import { Button } from '@/components/ui/button';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
-import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { PROMO_CODE_TYPE } from '@/types/promo-code';
 
@@ -16,20 +15,12 @@ import { PROMO_CODE_TYPE } from '@/types/promo-code';
  * invalidation callback all live in the shared `TicketQuantityStore`.
  * The component reads them via the `useStripeCheckout` hook so it doesn't
  * need to receive them via prop drilling from `TicketPurchaseCard`.
- *
- * `total` + `currency` are the only pricing props: the label spells out
- * "One Time Purchase - $X.XX" so the user sees the exact charge on the
- * CTA itself, matching the mobile sticky bar's inline total.
  */
 interface BuyButtonProps {
 	raffleId: string;
 	publicSlug: string;
 	disabled?: boolean;
 	questionId?: string | null;
-	/** Final order total after discount — drives the inline amount on the label. */
-	total: number;
-	/** ISO 4217 currency code — drives the inline amount format. */
-	currency: string;
 }
 
 /**
@@ -44,14 +35,11 @@ export function BuyButton({
 	publicSlug,
 	disabled = false,
 	questionId,
-	total,
-	currency,
 }: BuyButtonProps) {
 	// Free-tickets state drives the button label — read straight from the store
 	// so the label flips the moment a free-tickets promo is applied/cleared,
 	// without an extra prop hop from `TicketPurchaseCard`.
 	const appliedPromo = useTicketQuantityStore(state => state.appliedPromo);
-	const quantity = useTicketQuantityStore(state => state.quantity);
 	const isFreeTickets = appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
 
 	// Access Pass acknowledgment gates the paid path only — free-tickets
@@ -79,15 +67,9 @@ export function BuyButton({
 	function getButtonText(): string {
 		if (isLoading) return 'Processing...';
 		if (isFreeTickets) {
-			// Floor matches the displayed integer — guards against decimal drift
-			// if quantity ever arrives as a non-integer (mirrors promo-code.ts).
-			const count = Math.floor(quantity);
-			return `Claim bonus entr${count === 1 ? 'y' : 'ies'}`;
+			return 'AMOE - Free Entries';
 		}
-		// Inline total matches the mobile sticky CTA so the user always sees
-		// the exact charge on the action surface itself — "- $X.XX" is the
-		// agreed separator (en-dash reads as "minus" for screen readers).
-		return `One Time Purchase - ${formatCurrency(total, currency)}`;
+		return 'One Time Purchase with Card';
 	}
 
 	return (

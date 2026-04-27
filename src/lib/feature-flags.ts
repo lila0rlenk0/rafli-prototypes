@@ -14,6 +14,18 @@ export const FEATURE_FLAGS = {
 	 * domain ships — flip to `true` once the backend is wired in production.
 	 */
 	CHAT_ENABLED: true,
+	/**
+	 * Gates the `/credits-claimed` "Credits claimed!" success branch.
+	 *
+	 * The Fanbasis webhook that provisions the user, grants credits, and
+	 * sends the magic link is not wired yet. With this flag off, every
+	 * post-payment landing on `/credits-claimed` shows an "awaiting magic
+	 * link" intermediate state regardless of session — the alternative is
+	 * misattributing every successful charge as an expired link, since
+	 * `getSession()` will be null until the webhook ships. Flip to `true`
+	 * the same commit that enables the webhook subscriber on the backend.
+	 */
+	FANBASIS_MAGIC_LINK_ENABLED: false,
 } as const;
 
 /**

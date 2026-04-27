@@ -10,6 +10,7 @@ import {
 	mapAuthError,
 	mapChatError,
 	mapCommentError,
+	mapFanbasisPublicCreditError,
 	mapHostError,
 	mapKycSubmissionError,
 	mapNotificationError,
@@ -102,6 +103,13 @@ describe('mapAuthError', () => {
 			expect(mapAuthError(error)).toBe('auth:password:compromised');
 		});
 
+		test('trims message-field codes before returning them', () => {
+			const error = makeAxiosError({
+				message: '  auth:password:compromised  ',
+			});
+			expect(mapAuthError(error)).toBe('auth:password:compromised');
+		});
+
 		test('does not treat arbitrary colon text as a machine error code', () => {
 			// 404 — no `mapCommonError` branch; proves we did not use `data.message` as a code
 			// (if we did, fallbacks would differ). 400 would yield validation_error and mask the intent.
@@ -142,8 +150,20 @@ describe('mapAuthError', () => {
 			expect(mapAuthError(makeStatusError(401))).toBe('unauthorized');
 		});
 
+		test('returns unauthorized for Axios ERR_BAD_REQUEST with 401 status', () => {
+			expect(
+				mapAuthError(mockAxiosError({ status: 401, code: 'ERR_BAD_REQUEST' })),
+			).toBe('unauthorized');
+		});
+
 		test('returns forbidden for 403 status', () => {
 			expect(mapAuthError(makeStatusError(403))).toBe('forbidden');
+		});
+
+		test('returns forbidden for Axios ERR_BAD_REQUEST with 403 status', () => {
+			expect(
+				mapAuthError(mockAxiosError({ status: 403, code: 'ERR_BAD_REQUEST' })),
+			).toBe('forbidden');
 		});
 
 		test('returns internal_server_error for 500 status', () => {
@@ -307,6 +327,45 @@ describe('mapReportError', () => {
 			type: 'urn:raffles:problem:core:raffle:not-found',
 		});
 		expect(mapReportError(error)).toBe('validation_error');
+	});
+});
+
+// ==========================================
+// mapFanbasisPublicCreditError
+// ==========================================
+
+describe('mapFanbasisPublicCreditError', () => {
+	test('accepts payments:fanbasis: prefix', () => {
+		const error = makeAxiosError({
+			type: 'urn:raffles:problem:payments:fanbasis:rate-limited',
+		});
+		expect(mapFanbasisPublicCreditError(error)).toBe(
+			'payments:fanbasis:rate-limited',
+		);
+	});
+
+	test('accepts global: prefix for ratelimit fallback', () => {
+		const error = makeAxiosError({
+			type: 'urn:raffles:problem:global:ratelimit:exceeded',
+		});
+		expect(mapFanbasisPublicCreditError(error)).toBe(
+			'global:ratelimit:exceeded',
+		);
+	});
+
+	test('rejects the broader payments: namespace', () => {
+		// `payments:stripe:*` is an authenticated-flow URN. Mapping it into the
+		// public-credit surface would widen the allowed code set past Fanbasis.
+		const error = makeAxiosError({
+			type: 'urn:raffles:problem:payments:stripe:crypto-session-active',
+		});
+		expect(mapFanbasisPublicCreditError(error)).toBe('validation_error');
+	});
+
+	test('returns unknown_error for non-AxiosError', () => {
+		expect(mapFanbasisPublicCreditError(new Error('boom'))).toBe(
+			'unknown_error',
+		);
 	});
 });
 

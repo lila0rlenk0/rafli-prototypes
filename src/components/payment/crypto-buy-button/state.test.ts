@@ -42,7 +42,7 @@ describe('getCryptoBuyButtonUiState', () => {
 			isAccessPassAcknowledged: true,
 		});
 
-		expect(state.label).toBe('Connect wallet to buy');
+		expect(state.label).toBe('Connect wallet for one time purchase');
 		expect(state.showLoadingIcon).toBe(false);
 		expect(state.isDisabled).toBe(false);
 		expect(state.variant).toBe('ready-to-connect');
@@ -57,7 +57,7 @@ describe('getCryptoBuyButtonUiState', () => {
 			isAccessPassAcknowledged: true,
 		});
 
-		expect(state.label).toBe('Buy with crypto');
+		expect(state.label).toBe('One Time Purchase with Crypto');
 		expect(state.showLoadingIcon).toBe(false);
 		expect(state.isDisabled).toBe(false);
 		expect(state.variant).toBe('connected');

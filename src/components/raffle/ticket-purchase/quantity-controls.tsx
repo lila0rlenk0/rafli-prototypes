@@ -1,6 +1,6 @@
 'use client';
 
-import { formatPrice } from '@/lib/checkout/calculate-order-total';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 
 import { TicketSelector } from '../ticket-selector';
 
@@ -38,7 +38,7 @@ export function QuantityControls({
 			<div className="flex items-center justify-between">
 				<p className="text-ink-400 text-sm">Per entry</p>
 				<p className="font-clash-display text-2xl font-semibold lg:text-3xl">
-					{formatPrice(price, currency)}
+					{formatCurrency(price, currency)}
 				</p>
 			</div>
 

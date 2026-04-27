@@ -36,17 +36,18 @@ interface BuyCtaStackProps {
 /**
  * Auth-gated CTA cluster — compliance copy (disclaimer + acknowledgment +
  * no-purchase-necessary footnote) plus the Stripe / credits / crypto
- * buttons. Anonymous users see the desktop-only sign-in CTA since the mobile
- * sticky bar already renders its own sign-in path.
+ * buttons stacked vertically. Anonymous users see the desktop-only
+ * sign-in CTA since the mobile sticky bar already renders its own
+ * sign-in path.
  *
  * Desktop-only wrapper on `BuyButton` and `SignInToBuyButton`: the mobile
- * `StickyBuyTicketsCta` drives the same primary flow via shared hooks, so
- * an in-card duplicate would stack two primary CTAs on top of each other.
- * Keeping the wrapper mounted on mobile (`display:none`) preserves the
- * React subtree lifecycle across breakpoints.
+ * `StickyBuyTicketsCta` drives the same primary flow via shared hooks,
+ * so an in-card duplicate would stack two primary CTAs on top of each
+ * other. Keeping the wrapper mounted on mobile (`display:none`)
+ * preserves the React subtree lifecycle across breakpoints.
  *
  * @param props - Full purchase context forwarded from the card
- * @returns Compliance copy + buy CTAs (authed) or sign-in CTA (anonymous)
+ * @returns Compliance copy + stacked buy CTAs (authed) or sign-in CTA (anonymous)
  */
 export function BuyCtaStack(props: BuyCtaStackProps) {
 	const {
@@ -105,6 +106,8 @@ export function BuyCtaStack(props: BuyCtaStackProps) {
 					publicSlug={publicSlug}
 					disabled={disabled}
 					questionId={questionId}
+					total={total}
+					currency={currency}
 				/>
 			</div>
 

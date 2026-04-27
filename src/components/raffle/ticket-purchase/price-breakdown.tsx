@@ -1,6 +1,6 @@
 'use client';
 
-import { formatPrice } from '@/lib/checkout/calculate-order-total';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 
 import { formatBonusEntriesLabel } from './ticket-purchase-present';
 
@@ -50,11 +50,11 @@ export function PriceBreakdown({
 				<>
 					<div className="flex items-center justify-between text-sm">
 						<span className="text-ink-500">Subtotal</span>
-						<span>{formatPrice(subtotal, currency)}</span>
+						<span>{formatCurrency(subtotal, currency)}</span>
 					</div>
 					<div className="flex items-center justify-between text-sm text-green-600">
 						<span>Discount</span>
-						<span>-{formatPrice(discount, currency)}</span>
+						<span>-{formatCurrency(discount, currency)}</span>
 					</div>
 				</>
 			) : null}
@@ -62,7 +62,7 @@ export function PriceBreakdown({
 			<div className="flex items-center justify-between">
 				<p className="text-ink-400 text-sm">Total</p>
 				<p className="font-clash-display text-3xl font-semibold">
-					{isFree ? 'FREE' : formatPrice(total, currency)}
+					{isFree ? 'FREE' : formatCurrency(total, currency)}
 				</p>
 			</div>
 

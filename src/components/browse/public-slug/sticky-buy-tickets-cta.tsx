@@ -34,7 +34,7 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
  *    The inline `TicketPurchaseCard` already renders disabled state +
  *    gate copy; duplicating in the sticky contradicts the card.
  *  - **Authenticated, non-host** — full bar: bundle quick-picks, primary
- *    "Enter now · $X.XX" CTA, and "Get Bonus Entries! Share on X".
+ *    "One Time Purchase - $X.XX" CTA, and "Get Bonus Entries! Share on X".
  *
  * Hidden on desktop (`lg:hidden` inside the variant shell) where the
  * sidebar checkout is always alongside content.

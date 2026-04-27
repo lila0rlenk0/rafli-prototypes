@@ -155,7 +155,7 @@ function ShareButtonForPurchasable({
 
 /**
  * Purchasable branch — full sticky bar: bundle quick-picks, primary
- * "Enter now · $X.XX" CTA, no-purchase footnote, optional question
+ * "One Time Purchase - $X.XX" CTA, no-purchase footnote, optional question
  * modal, and the share-on-X button.
  */
 function PurchasableVariant({

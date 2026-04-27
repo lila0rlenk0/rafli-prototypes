@@ -1,10 +1,11 @@
 'use client';
 
-import { Loader2Icon } from 'lucide-react';
+import { CreditCardIcon, Loader2Icon } from 'lucide-react';
 
 import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
 import { Button } from '@/components/ui/button';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { PROMO_CODE_TYPE } from '@/types/promo-code';
 
@@ -15,12 +16,20 @@ import { PROMO_CODE_TYPE } from '@/types/promo-code';
  * invalidation callback all live in the shared `TicketQuantityStore`.
  * The component reads them via the `useStripeCheckout` hook so it doesn't
  * need to receive them via prop drilling from `TicketPurchaseCard`.
+ *
+ * `total` + `currency` are the only pricing props: the label spells out
+ * "One Time Purchase - $X.XX" so the user sees the exact charge on the
+ * CTA itself, matching the mobile sticky bar's inline total.
  */
 interface BuyButtonProps {
 	raffleId: string;
 	publicSlug: string;
 	disabled?: boolean;
 	questionId?: string | null;
+	/** Final order total after discount — drives the inline amount on the label. */
+	total: number;
+	/** ISO 4217 currency code — drives the inline amount format. */
+	currency: string;
 }
 
 /**
@@ -35,6 +44,8 @@ export function BuyButton({
 	publicSlug,
 	disabled = false,
 	questionId,
+	total,
+	currency,
 }: BuyButtonProps) {
 	// Free-tickets state drives the button label — read straight from the store
 	// so the label flips the moment a free-tickets promo is applied/cleared,
@@ -73,7 +84,10 @@ export function BuyButton({
 			const count = Math.floor(quantity);
 			return `Claim bonus entr${count === 1 ? 'y' : 'ies'}`;
 		}
-		return 'Enter now';
+		// Inline total matches the mobile sticky CTA so the user always sees
+		// the exact charge on the action surface itself — "- $X.XX" is the
+		// agreed separator (en-dash reads as "minus" for screen readers).
+		return `One Time Purchase - ${formatCurrency(total, currency)}`;
 	}
 
 	return (
@@ -94,7 +108,9 @@ export function BuyButton({
 			>
 				{isLoading ? (
 					<Loader2Icon className="mr-2 size-4 animate-spin" />
-				) : null}
+				) : (
+					<CreditCardIcon className="mr-2 size-4" aria-hidden="true" />
+				)}
 				<p className="font-semibold">{getButtonText()}</p>
 			</Button>
 

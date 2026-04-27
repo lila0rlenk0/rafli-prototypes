@@ -2,11 +2,9 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 
-import {
-	calculateOrderTotal,
-	formatPrice,
-} from '@/lib/checkout/calculate-order-total';
+import { calculateOrderTotal } from '@/lib/checkout/calculate-order-total';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import type { ValidatedPromoCode } from '@/types/promo-code';
 
@@ -35,7 +33,7 @@ interface PurchasableState {
 	kind: 'purchasable';
 	signInUrl: null;
 	bundles: BundleControls;
-	/** Primary CTA label — "Enter now · $X.XX" or "Claim bonus entr(y|ies)" */
+	/** Primary CTA label — "One Time Purchase - $X.XX" or "Claim bonus entr(y|ies)" */
 	primaryCtaLabel: string;
 	primaryCtaTitle: string | undefined;
 	isPrimaryCtaDisabled: boolean;
@@ -72,8 +70,9 @@ const BUNDLE_SIZES_MOBILE = [10, 25, 50] as const;
 
 /**
  * Builds the primary CTA label. Free-tickets promos flip to a "Claim
- * bonus entries" copy with the granted count; otherwise "Enter now · $X.XX"
- * so users always see what they pay even when scrolled past the card.
+ * bonus entries" copy with the granted count; otherwise "One Time
+ * Purchase - $X.XX" so users always see the exact charge on the action
+ * surface, matching the desktop in-card BuyButton copy.
  */
 function buildPrimaryCtaLabel(params: {
 	isCheckoutLoading: boolean;
@@ -89,7 +88,7 @@ function buildPrimaryCtaLabel(params: {
 		const count = Math.floor(params.freeTicketCount);
 		return `Claim bonus entr${count === 1 ? 'y' : 'ies'}`;
 	}
-	return `Enter now · ${formatPrice(params.total, params.currency)}`;
+	return `One Time Purchase - ${formatCurrency(params.total, params.currency)}`;
 }
 
 interface StoreSnapshot {

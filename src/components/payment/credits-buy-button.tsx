@@ -12,6 +12,7 @@ import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
 import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
 import { getPaymentErrorMessage } from '@/lib/checkout/error-messages';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { abandonOrder } from '@/services/payment/abandon-order';
 import { creditBalanceKey } from '@/services/payment/use-credit-balance';
@@ -77,18 +78,6 @@ export function CreditsBuyButton({
 	// Free-tickets promos arrive as $0 orders — they don't consume credits
 	// and carry no consideration, so acknowledgment doesn't apply there.
 	const isGatedByAcknowledgment = orderTotal > 0 && !isAcknowledged;
-
-	/**
-	 * Formats a price value with currency symbol
-	 */
-	function formatPrice(amount: number): string {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency,
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(amount);
-	}
 
 	/**
 	 * Handles the buy button click.
@@ -195,11 +184,16 @@ export function CreditsBuyButton({
 	}
 
 	/**
-	 * Gets button label with balance info
+	 * CTA label — mirrors the Stripe `BuyButton` "One Time Purchase - $X.XX"
+	 * framing so all three payment methods read as a single one-time
+	 * transaction for the Access Pass (entries are a bundled benefit, never
+	 * the object of the purchase). Shows `orderTotal` (what the user pays),
+	 * not the remaining balance — balance belongs in the tooltip for
+	 * insufficient-balance diagnostics.
 	 */
 	function getButtonText(): string {
 		if (isLoading) return 'Processing...';
-		return `Pay with Credits (${formatPrice(balance)})`;
+		return `One Time Purchase with Credits - ${formatCurrency(orderTotal, currency)}`;
 	}
 
 	/**
@@ -213,7 +207,7 @@ export function CreditsBuyButton({
 			return 'Please acknowledge the terms above to continue';
 		}
 		if (!hasSufficientBalance) {
-			return `Insufficient credits (${formatPrice(balance)} available, ${formatPrice(orderTotal)} needed)`;
+			return `Insufficient credits (${formatCurrency(balance, currency)} available, ${formatCurrency(orderTotal, currency)} needed)`;
 		}
 		return undefined;
 	}

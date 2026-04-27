@@ -77,9 +77,13 @@ export function getCryptoBuyButtonUiState({
 		};
 	}
 
+	// Labels mirror the Stripe + Credits CTAs ("One Time Purchase ...") so all
+	// three payment methods frame the click as a single one-time transaction
+	// for the Access Pass. Entries are a bundled benefit, never the object of
+	// the purchase — the regulator-facing narrative we own across every CTA.
 	if (!isConnected) {
 		return {
-			label: 'Connect wallet to buy',
+			label: 'Connect wallet for one time purchase',
 			showLoadingIcon: false,
 			isDisabled: disabled,
 			variant: 'ready-to-connect',
@@ -87,7 +91,7 @@ export function getCryptoBuyButtonUiState({
 	}
 
 	return {
-		label: 'Buy with crypto',
+		label: 'One Time Purchase with Crypto',
 		showLoadingIcon: false,
 		isDisabled: disabled,
 		variant: 'connected',

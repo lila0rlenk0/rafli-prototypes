@@ -10,7 +10,7 @@ import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 //   at the bottom of the viewport, while the counter input lives inside the
 //   inline `TicketPurchaseCard`. Both subtrees need to read and write the same
 //   `quantity` value, and they sit in distant branches of the page tree.
-// - The mobile sticky CTA "Enter now" button drives the same Stripe checkout
+// - The mobile sticky CTA "One Time Purchase" button drives the same Stripe checkout
 //   flow as the desktop in-card BuyButton via the shared `useStripeCheckout`
 //   hook. That hook needs to read both `quantity` and `appliedPromo` to build
 //   the order. Promo state can't live in the card alone — the sticky needs to

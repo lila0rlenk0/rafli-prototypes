@@ -6,6 +6,8 @@ import {
 	type ValidatedPromoCode,
 } from '@/types/promo-code';
 
+import { formatCurrency } from './format-currency';
+
 /**
  * Derives display status from promo code data.
  * Backend stores isActive flag, but display status depends on expiry and usage.
@@ -32,7 +34,7 @@ export function formatPromoCodeValue(code: PromoCode): string {
 			return `${count} entr${count === 1 ? 'y' : 'ies'}`;
 		}
 		case PROMO_CODE_TYPE.DISCOUNT_FIXED:
-			return `$${value.toFixed(2)}`;
+			return formatCurrency(value, 'USD');
 		case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
 			return `${Math.floor(value)}%`;
 		default: {
@@ -63,9 +65,9 @@ export function getPromoCodeDescription(promo: ValidatedPromoCode): string {
 			return `${count} bonus entr${count === 1 ? 'y' : 'ies'}`;
 		}
 		case PROMO_CODE_TYPE.DISCOUNT_FIXED:
-			return `$${value.toFixed(2)} off your order`;
+			return `${formatCurrency(value, 'USD')} off your order`;
 		case PROMO_CODE_TYPE.DISCOUNT_PERCENT:
-			return `$${value.toFixed(2)} off per entry`;
+			return `${formatCurrency(value, 'USD')} off per entry`;
 		default: {
 			const _exhaustive: never = promo.type;
 			return String(_exhaustive);

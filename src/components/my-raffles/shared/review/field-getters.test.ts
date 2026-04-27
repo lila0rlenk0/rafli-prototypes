@@ -78,24 +78,24 @@ describe('getCategoryDisplay', () => {
 });
 
 describe('getDeclaredValueDisplay', () => {
-	test('formats integer prices with two decimals', () => {
-		expect(getDeclaredValueDisplay(BASE_VALUES)).toBe('$120.00');
+	test('formats integer prices without decimals', () => {
+		expect(getDeclaredValueDisplay(BASE_VALUES)).toBe('$120');
 	});
 
-	test('formats fractional prices to two decimals', () => {
+	test('formats fractional prices keeping significant decimals', () => {
 		expect(getDeclaredValueDisplay({ ...BASE_VALUES, price: 9.5 })).toBe(
-			'$9.50',
+			'$9.5',
 		);
 	});
 
-	test('formats zero as $0.00', () => {
-		expect(getDeclaredValueDisplay({ ...BASE_VALUES, price: 0 })).toBe('$0.00');
+	test('formats zero as $0', () => {
+		expect(getDeclaredValueDisplay({ ...BASE_VALUES, price: 0 })).toBe('$0');
 	});
 });
 
 describe('getPricePerTicketDisplay', () => {
-	test('formats integer ticket price', () => {
-		expect(getPricePerTicketDisplay(BASE_VALUES)).toBe('$5.00');
+	test('formats integer ticket price without decimals', () => {
+		expect(getPricePerTicketDisplay(BASE_VALUES)).toBe('$5');
 	});
 
 	test('formats fractional ticket price', () => {

@@ -1,5 +1,6 @@
 import { DollarSign, Percent, Ticket, type LucideIcon } from 'lucide-react';
 
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { PROMO_CODE_TYPE, type PromoCodeType } from '@/types/promo-code';
 
 /**
@@ -46,7 +47,7 @@ export const PROMO_TYPE_REGISTRY: ReadonlyMap<PromoCodeType, PromoTypeEntry> =
 				icon: DollarSign,
 				iconClassName: 'text-green-600',
 				label: 'Fixed',
-				format: value => `$${value.toFixed(2)}`,
+				format: value => formatCurrency(value, 'USD'),
 			},
 		],
 		[

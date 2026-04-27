@@ -13,6 +13,7 @@
 
 import { getCryptoSummary } from '@/lib/utils/crypto-form';
 import { formatDateTime } from '@/lib/utils/format/date-format';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import type { Category } from '@/types/category';
 
 /**
@@ -64,18 +65,18 @@ export function getCategoryDisplay(
 }
 
 /**
- * @returns Declared prize value formatted as USD currency (e.g., `$120.00`).
+ * @returns Declared prize value formatted as USD currency (e.g., `$120`).
  */
 export function getDeclaredValueDisplay(values: ReviewFormValues): string {
 	// Zod transform coerces NaN to 0, so a zero value is a legitimate zero.
-	return `$${values.price.toFixed(2)}`;
+	return formatCurrency(values.price, 'USD');
 }
 
 /**
- * @returns Price per ticket formatted as USD currency (e.g., `$5.00`).
+ * @returns Price per ticket formatted as USD currency (e.g., `$5`).
  */
 export function getPricePerTicketDisplay(values: ReviewFormValues): string {
-	return `$${values.pricePerTicket.toFixed(2)}`;
+	return formatCurrency(values.pricePerTicket, 'USD');
 }
 
 /**

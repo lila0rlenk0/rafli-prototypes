@@ -3,6 +3,7 @@
 import { Wallet } from 'lucide-react';
 import Link from 'next/link';
 
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useCreditBalance } from '@/services/payment/use-credit-balance';
 
 /**
@@ -21,14 +22,7 @@ export function CreditBalanceBadge() {
 	const { data } = useCreditBalance();
 
 	// Always show — even $0 so the user knows they have no credits (not a hidden surprise)
-	const amount = data ? parseFloat(data.availableAmount) : 0;
-
-	const formatted = new Intl.NumberFormat('en-US', {
-		style: 'currency',
-		currency: 'USD',
-		minimumFractionDigits: 0,
-		maximumFractionDigits: 2,
-	}).format(amount);
+	const formatted = formatCurrency(data?.availableAmount ?? 0, 'USD');
 
 	return (
 		// Badge, not a button — soft background distinguishes it from action buttons in the navbar.

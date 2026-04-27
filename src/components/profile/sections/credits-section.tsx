@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { getCreditBalance } from '@/services/payment/get-credit-balance';
 
 /**
@@ -21,21 +22,6 @@ export async function CreditsSection() {
 	const totalSpent = result.success ? result.data.totalSpent : '0';
 	// Show history link only when there's something to browse — no point linking to an empty table
 	const hasHistory = parseFloat(totalGranted) > 0 || parseFloat(totalSpent) > 0;
-
-	/**
-	 * Formats a decimal string to currency display.
-	 * Credits are always USD-denominated.
-	 *
-	 * @returns Formatted currency string (e.g. "$125.00")
-	 */
-	function formatCredits(amount: string): string {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(parseFloat(amount));
-	}
 
 	return (
 		<div
@@ -63,19 +49,19 @@ export async function CreditsSection() {
 				<div className="flex flex-col gap-1">
 					<span className="text-ink-400 text-sm">Available Balance</span>
 					<span className="font-clash-display text-2xl font-semibold">
-						{formatCredits(availableAmount)}
+						{formatCurrency(availableAmount, 'USD')}
 					</span>
 				</div>
 				<div className="flex flex-col gap-1">
 					<span className="text-ink-400 text-sm">Total Earned</span>
 					<span className="font-clash-display text-2xl font-semibold">
-						{formatCredits(totalGranted)}
+						{formatCurrency(totalGranted, 'USD')}
 					</span>
 				</div>
 				<div className="flex flex-col gap-1">
 					<span className="text-ink-400 text-sm">Total Spent</span>
 					<span className="font-clash-display text-2xl font-semibold">
-						{formatCredits(totalSpent)}
+						{formatCurrency(totalSpent, 'USD')}
 					</span>
 				</div>
 			</div>

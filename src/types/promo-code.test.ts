@@ -79,7 +79,7 @@ describe('getPromoCodeDescription', () => {
 				type: PROMO_CODE_TYPE.DISCOUNT_FIXED,
 				value: '10.00',
 			});
-			expect(description).toBe('$10.00 off your order');
+			expect(description).toBe('$10 off your order');
 		});
 	});
 
@@ -93,7 +93,7 @@ describe('getPromoCodeDescription', () => {
 				type: PROMO_CODE_TYPE.DISCOUNT_PERCENT,
 				value: '5.00',
 			});
-			expect(description).toBe('$5.00 off per entry');
+			expect(description).toBe('$5 off per entry');
 		});
 	});
 });

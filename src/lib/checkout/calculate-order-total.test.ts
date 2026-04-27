@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { PROMO_CODE_TYPE, type ValidatedPromoCode } from '@/types/promo-code';
 
-import { calculateOrderTotal, formatPrice } from './calculate-order-total';
+import { calculateOrderTotal } from './calculate-order-total';
 
 // Fixtures at module top per testing rule. The shared `code` and `valid`
 // fields stay constant across cases — only `type` and `value` vary.
@@ -207,28 +207,5 @@ describe('calculateOrderTotal', () => {
 
 			expect(result.freeTicketCount).toBe(3);
 		});
-	});
-});
-
-describe('formatPrice', () => {
-	test('formats USD with currency symbol', () => {
-		expect(formatPrice(25, 'USD')).toBe('$25');
-	});
-
-	test('drops trailing zero decimals', () => {
-		expect(formatPrice(25.0, 'USD')).toBe('$25');
-	});
-
-	test('shows fractional digits up to two decimals', () => {
-		// minimumFractionDigits: 0 — so .50 is rendered as .5, not .50.
-		// Documented quirk preserved from the original TicketPurchaseCard formatter.
-		expect(formatPrice(25.5, 'USD')).toBe('$25.5');
-		expect(formatPrice(25.55, 'USD')).toBe('$25.55');
-		// Three+ fractional digits round to two via maximumFractionDigits: 2
-		expect(formatPrice(25.559, 'USD')).toBe('$25.56');
-	});
-
-	test('handles zero', () => {
-		expect(formatPrice(0, 'USD')).toBe('$0');
 	});
 });

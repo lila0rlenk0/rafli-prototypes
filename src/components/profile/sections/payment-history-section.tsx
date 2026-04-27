@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { OrderStatusBadge } from '@/components/order/status-badge';
 import { Button } from '@/components/ui/button';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { getMyOrders } from '@/services/order/get-my-orders';
 import type { OrderWithRaffle } from '@/types/order';
 
@@ -17,19 +18,6 @@ export async function PaymentHistorySection() {
 	const result = await getMyOrders({ page: 1, limit: 5, excludeStale: true });
 
 	const orders = result.success ? result.data.items : [];
-
-	/**
-	 * Formats decimal string to currency display
-	 *
-	 * @returns Formatted currency string (e.g. "$1.00")
-	 */
-	function formatAmount(amount: string, currency: string): string {
-		const value = parseFloat(amount);
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency,
-		}).format(value);
-	}
 
 	/**
 	 * Formats ISO date to readable format
@@ -63,7 +51,7 @@ export async function PaymentHistorySection() {
 				</div>
 				<div className="flex items-center gap-3">
 					<span className="text-base font-medium">
-						{formatAmount(order.totalAmount, order.currency)}
+						{formatCurrency(order.totalAmount, order.currency)}
 					</span>
 					<OrderStatusBadge
 						status={order.status}

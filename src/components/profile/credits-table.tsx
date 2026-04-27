@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp } from 'lucide-react';
 
 import { cn } from '@/lib/class-names';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import {
 	CREDIT_ENTRY_TYPE,
 	CREDIT_REASON,
@@ -37,17 +38,10 @@ export function CreditHistoryTable({ entries }: CreditHistoryTableProps) {
 	 * Formats decimal string to currency display.
 	 * Credits are always USD-denominated.
 	 *
-	 * @returns Formatted string with +/- prefix (e.g. "+$50.00", "-$12.50")
+	 * @returns Formatted string with +/- prefix (e.g. "+$50", "-$12.5")
 	 */
 	function formatAmount(entry: CreditHistoryEntry): string {
-		const value = parseFloat(entry.amount);
-		const formatted = new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		}).format(value);
-
+		const formatted = formatCurrency(entry.amount, 'USD');
 		// Spends decrease balance, grants/reversals increase it
 		return isCredit(entry) ? `+${formatted}` : `-${formatted}`;
 	}
@@ -68,17 +62,6 @@ export function CreditHistoryTable({ entries }: CreditHistoryTableProps) {
 			day: 'numeric',
 			year: 'numeric',
 		});
-	}
-
-	/**
-	 * Formats a decimal string as USD currency without +/- prefix.
-	 * Used for the "Balance After" column.
-	 */
-	function formatBalanceAfter(amount: string): string {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD',
-		}).format(parseFloat(amount));
 	}
 
 	/**
@@ -142,7 +125,7 @@ export function CreditHistoryTable({ entries }: CreditHistoryTableProps) {
 
 								{/* Balance after */}
 								<td className="py-4 text-black">
-									{formatBalanceAfter(entry.balanceAfter)}
+									{formatCurrency(entry.balanceAfter, 'USD')}
 								</td>
 
 								{/* Date */}

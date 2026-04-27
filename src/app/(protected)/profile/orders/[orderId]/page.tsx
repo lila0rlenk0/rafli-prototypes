@@ -2,6 +2,7 @@ import { ArrowLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 import { OrderStatusBadge } from '@/components/order/status-badge';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { getOrder } from '@/services/order/get-order';
 
 /**
@@ -44,17 +45,6 @@ export default async function OrderDetailPage({
 	}
 
 	const order = result.data;
-
-	/**
-	 * Formats decimal string to currency display
-	 */
-	function formatAmount(amount: string, currency: string): string {
-		const value = parseFloat(amount);
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency,
-		}).format(value);
-	}
 
 	/**
 	 * Formats ISO date to readable format
@@ -108,14 +98,14 @@ export default async function OrderDetailPage({
 							Per-entry price
 						</span>
 						<span className="font-medium">
-							{formatAmount(order.unitPrice, order.currency)}
+							{formatCurrency(order.unitPrice, order.currency)}
 						</span>
 					</div>
 
 					<div className="flex flex-col gap-1">
 						<span className="text-muted-foreground text-sm">Total Amount</span>
 						<span className="text-lg font-semibold">
-							{formatAmount(order.totalAmount, order.currency)}
+							{formatCurrency(order.totalAmount, order.currency)}
 						</span>
 					</div>
 

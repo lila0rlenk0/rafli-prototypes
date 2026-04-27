@@ -3,17 +3,11 @@ import Link from 'next/link';
 import { OrderStatusBadge } from '@/components/order/status-badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils/format/date-format';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import type { OrderWithRaffle } from '@/types/order';
 
 interface OrdersTableProps {
 	orders: OrderWithRaffle[];
-}
-
-function formatAmount(amount: string, currency: string): string {
-	return new Intl.NumberFormat('en-US', {
-		style: 'currency',
-		currency,
-	}).format(parseFloat(amount));
 }
 
 /**
@@ -48,7 +42,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 						>
 							<td className="py-4 font-medium">{order.raffleName}</td>
 							<td className="py-4 font-medium">
-								{formatAmount(order.totalAmount, order.currency)}
+								{formatCurrency(order.totalAmount, order.currency)}
 							</td>
 							<td className="py-4">
 								<OrderStatusBadge status={order.status} />

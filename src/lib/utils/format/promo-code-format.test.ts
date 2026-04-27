@@ -113,22 +113,22 @@ describe('getPromoCodeStatus', () => {
 describe('formatPromoCodeValue — discount branches', () => {
 	// Previously only the free_tickets branch was covered. Discount types are
 	// the majority of created promos, so these were the highest-value gap.
-	test('formats fixed discounts as currency with 2 decimals', () => {
+	test('formats fixed discounts as currency dropping trailing zeros', () => {
 		const code: PromoCode = {
 			...BASE_PROMO_CODE,
 			type: PROMO_CODE_TYPE.DISCOUNT_FIXED,
 			value: '12.5',
 		};
-		expect(formatPromoCodeValue(code)).toBe('$12.50');
+		expect(formatPromoCodeValue(code)).toBe('$12.5');
 	});
 
-	test('fixed discount pads whole-dollar values to 2 decimals', () => {
+	test('fixed discount renders whole-dollar values without decimals', () => {
 		const code: PromoCode = {
 			...BASE_PROMO_CODE,
 			type: PROMO_CODE_TYPE.DISCOUNT_FIXED,
 			value: '10',
 		};
-		expect(formatPromoCodeValue(code)).toBe('$10.00');
+		expect(formatPromoCodeValue(code)).toBe('$10');
 	});
 
 	test('formats percent discounts as integer percent (floors fractional input)', () => {

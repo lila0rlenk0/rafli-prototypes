@@ -62,6 +62,10 @@ interface CryptoBuyButtonProps {
 	/** Current server-rendered ticket total — baseline for post-payment sync */
 	myTicketsTotal: number;
 	userId?: string | null;
+	/** Order total in fiat (after promo discount) — shown in CTA label */
+	total: number;
+	/** ISO currency code for total formatting (e.g. "USD") */
+	currency: string;
 }
 
 /**
@@ -86,6 +90,8 @@ export function CryptoBuyButton({
 	cryptoOptions,
 	myTicketsTotal,
 	userId,
+	total,
+	currency,
 }: CryptoBuyButtonProps) {
 	const { open: openAppKit } = useAppKit();
 	const { isConnected: appKitIsConnected, status: walletStatus } =
@@ -221,6 +227,8 @@ export function CryptoBuyButton({
 		canOpenConnectModal: canConnect,
 		disabled,
 		isAccessPassAcknowledged,
+		total,
+		currency,
 	});
 
 	return (

@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 
 import { calculateOrderTotal } from '@/lib/checkout/calculate-order-total';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import type { ValidatedPromoCode } from '@/types/promo-code';
 
@@ -14,6 +15,7 @@ export interface StickyStateInputs extends XShareConfig {
 	disabled: boolean;
 	availableTickets: number;
 	price: number;
+	currency: string;
 }
 
 interface BundleControls {
@@ -75,12 +77,14 @@ const BUNDLE_SIZES_MOBILE = [10, 25, 50] as const;
 function buildPrimaryCtaLabel(params: {
 	isCheckoutLoading: boolean;
 	isFreeTicketsPromo: boolean;
+	total: number;
+	currency: string;
 }): string {
 	if (params.isCheckoutLoading) return 'Processing...';
 	if (params.isFreeTicketsPromo) {
 		return 'AMOE - Free Entries';
 	}
-	return 'One Time Purchase with Card';
+	return `One Time Purchase with Card ${formatCurrency(params.total, params.currency)}`;
 }
 
 interface StoreSnapshot {
@@ -125,7 +129,7 @@ function buildPurchasableState(
 	params: PurchasablePayloadParams,
 ): PurchasableState {
 	const { inputs, store, checkout, xShare } = params;
-	const { isFreeTicketsPromo } = calculateOrderTotal({
+	const { total, isFreeTicketsPromo } = calculateOrderTotal({
 		price: inputs.price,
 		quantity: store.quantity,
 		appliedPromo: store.appliedPromo,
@@ -149,6 +153,8 @@ function buildPurchasableState(
 		primaryCtaLabel: buildPrimaryCtaLabel({
 			isCheckoutLoading: checkout.isLoading,
 			isFreeTicketsPromo,
+			total,
+			currency: inputs.currency,
 		}),
 		primaryCtaTitle:
 			isPrimaryCtaDisabled && !checkout.isLoading && !isFreeTicketsPromo

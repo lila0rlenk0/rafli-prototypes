@@ -1,10 +1,11 @@
 'use client';
 
-import { CreditCardIcon, Loader2Icon } from 'lucide-react';
+import { Loader2Icon } from 'lucide-react';
 
 import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
 import { Button } from '@/components/ui/button';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { PROMO_CODE_TYPE } from '@/types/promo-code';
 
@@ -21,6 +22,10 @@ interface BuyButtonProps {
 	publicSlug: string;
 	disabled?: boolean;
 	questionId?: string | null;
+	/** Order total in major currency units (after promo discount) */
+	total: number;
+	/** ISO currency code for total formatting (e.g. "USD") */
+	currency: string;
 }
 
 /**
@@ -35,6 +40,8 @@ export function BuyButton({
 	publicSlug,
 	disabled = false,
 	questionId,
+	total,
+	currency,
 }: BuyButtonProps) {
 	// Free-tickets state drives the button label — read straight from the store
 	// so the label flips the moment a free-tickets promo is applied/cleared,
@@ -69,7 +76,7 @@ export function BuyButton({
 		if (isFreeTickets) {
 			return 'AMOE - Free Entries';
 		}
-		return 'One Time Purchase with Card';
+		return `One Time Purchase with Card ${formatCurrency(total, currency)}`;
 	}
 
 	return (
@@ -90,9 +97,7 @@ export function BuyButton({
 			>
 				{isLoading ? (
 					<Loader2Icon className="mr-2 size-4 animate-spin" />
-				) : (
-					<CreditCardIcon className="mr-2 size-4" aria-hidden="true" />
-				)}
+				) : null}
 				<p className="font-semibold">{getButtonText()}</p>
 			</Button>
 

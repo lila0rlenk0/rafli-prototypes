@@ -14,6 +14,8 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
 	disabled?: boolean;
 	/** Per-ticket price in major currency units — drives free-entry promo detection. */
 	price: number;
+	/** ISO currency code — used to format the total in the primary CTA label. */
+	currency: string;
 }
 
 /**
@@ -55,6 +57,7 @@ export function StickyBuyTicketsCta(
 		availableTickets: props.availableTickets,
 		disabled: props.disabled ?? false,
 		price: props.price,
+		currency: props.currency,
 	});
 	if (!visible) return null;
 	return <StickyCtaVariants state={state} />;

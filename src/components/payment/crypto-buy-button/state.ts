@@ -1,3 +1,5 @@
+import { formatCurrency } from '@/lib/utils/format/format-currency';
+
 interface GetCryptoBuyButtonUiStateParams {
 	isConfirming: boolean;
 	isConnected: boolean;
@@ -9,6 +11,10 @@ interface GetCryptoBuyButtonUiStateParams {
 	 * `preparing` variants — see state-machine test for rationale.
 	 */
 	isAccessPassAcknowledged: boolean;
+	/** Order total in major currency units (after promo discount) */
+	total: number;
+	/** ISO currency code for total formatting (e.g. "USD") */
+	currency: string;
 }
 
 type CryptoBuyButtonUiVariant =
@@ -37,7 +43,10 @@ export function getCryptoBuyButtonUiState({
 	canOpenConnectModal,
 	disabled,
 	isAccessPassAcknowledged,
+	total,
+	currency,
 }: GetCryptoBuyButtonUiStateParams): CryptoBuyButtonUiState {
+	const purchaseLabel = `One Time Purchase with Crypto ${formatCurrency(total, currency)}`;
 	// Step 1: In-flight transaction dominates every other concern — once the
 	// wallet signs, the user has already consented and the chain controls the
 	// outcome. Gating this view on the acknowledgment checkbox would strand
@@ -82,7 +91,7 @@ export function getCryptoBuyButtonUiState({
 	// stays on the canonical tender label instead of switching copy mid-flow.
 	if (!isConnected) {
 		return {
-			label: 'One Time Purchase with Crypto',
+			label: purchaseLabel,
 			showLoadingIcon: false,
 			isDisabled: disabled,
 			variant: 'ready-to-connect',
@@ -90,7 +99,7 @@ export function getCryptoBuyButtonUiState({
 	}
 
 	return {
-		label: 'One Time Purchase with Crypto',
+		label: purchaseLabel,
 		showLoadingIcon: false,
 		isDisabled: disabled,
 		variant: 'connected',

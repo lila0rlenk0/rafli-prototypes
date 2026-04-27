@@ -161,6 +161,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							availableTickets={view.availableTickets}
 							disabled={view.showEditButton || view.disablePurchase}
 							price={view.ticketPrice}
+							currency={raffle.ticketPriceCurrency}
 						/>
 					) : null}
 				</div>

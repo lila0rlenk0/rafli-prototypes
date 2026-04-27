@@ -106,6 +106,8 @@ export function BuyCtaStack(props: BuyCtaStackProps) {
 					publicSlug={publicSlug}
 					disabled={disabled}
 					questionId={questionId}
+					total={total}
+					currency={currency}
 				/>
 			</div>
 
@@ -135,6 +137,8 @@ export function BuyCtaStack(props: BuyCtaStackProps) {
 					cryptoOptions={cryptoOptions}
 					myTicketsTotal={myTicketsTotal}
 					userId={userId}
+					total={total}
+					currency={currency}
 				/>
 			) : null}
 		</>

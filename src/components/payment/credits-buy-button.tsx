@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { Loader2Icon, WalletIcon } from 'lucide-react';
+import { Loader2Icon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -190,7 +190,7 @@ export function CreditsBuyButton({
 	 */
 	function getButtonText(): string {
 		if (isLoading) return 'Processing...';
-		return 'One Time Purchase with Credits';
+		return `One Time Purchase with Credits ${formatCurrency(orderTotal, currency)}`;
 	}
 
 	/**
@@ -224,9 +224,7 @@ export function CreditsBuyButton({
 			>
 				{isLoading ? (
 					<Loader2Icon className="mr-2 size-4 animate-spin" />
-				) : (
-					<WalletIcon className="mr-2 size-4" />
-				)}
+				) : null}
 				<p className="font-semibold">{getButtonText()}</p>
 			</Button>
 

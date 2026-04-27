@@ -10,6 +10,8 @@ describe('getCryptoBuyButtonUiState', () => {
 			canOpenConnectModal: true,
 			disabled: true,
 			isAccessPassAcknowledged: true,
+			total: 25,
+			currency: 'USD',
 		});
 
 		expect(state.label).toBe('Transaction pending...');
@@ -25,6 +27,8 @@ describe('getCryptoBuyButtonUiState', () => {
 			canOpenConnectModal: false,
 			disabled: false,
 			isAccessPassAcknowledged: true,
+			total: 25,
+			currency: 'USD',
 		});
 
 		expect(state.label).toBe('Preparing wallet...');
@@ -40,9 +44,11 @@ describe('getCryptoBuyButtonUiState', () => {
 			canOpenConnectModal: true,
 			disabled: false,
 			isAccessPassAcknowledged: true,
+			total: 25,
+			currency: 'USD',
 		});
 
-		expect(state.label).toBe('One Time Purchase with Crypto');
+		expect(state.label).toBe('One Time Purchase with Crypto $25');
 		expect(state.showLoadingIcon).toBe(false);
 		expect(state.isDisabled).toBe(false);
 		expect(state.variant).toBe('ready-to-connect');
@@ -55,9 +61,11 @@ describe('getCryptoBuyButtonUiState', () => {
 			canOpenConnectModal: true,
 			disabled: false,
 			isAccessPassAcknowledged: true,
+			total: 25,
+			currency: 'USD',
 		});
 
-		expect(state.label).toBe('One Time Purchase with Crypto');
+		expect(state.label).toBe('One Time Purchase with Crypto $25');
 		expect(state.showLoadingIcon).toBe(false);
 		expect(state.isDisabled).toBe(false);
 		expect(state.variant).toBe('connected');
@@ -78,6 +86,8 @@ describe('getCryptoBuyButtonUiState', () => {
 				canOpenConnectModal: true,
 				disabled: false,
 				isAccessPassAcknowledged: false,
+				total: 25,
+				currency: 'USD',
 			});
 
 			expect(state.isDisabled).toBe(true);
@@ -92,6 +102,8 @@ describe('getCryptoBuyButtonUiState', () => {
 				canOpenConnectModal: true,
 				disabled: false,
 				isAccessPassAcknowledged: false,
+				total: 25,
+				currency: 'USD',
 			});
 
 			expect(state.isDisabled).toBe(true);
@@ -109,6 +121,8 @@ describe('getCryptoBuyButtonUiState', () => {
 				canOpenConnectModal: true,
 				disabled: false,
 				isAccessPassAcknowledged: false,
+				total: 25,
+				currency: 'USD',
 			});
 
 			expect(state.variant).toBe('confirming');
@@ -125,6 +139,8 @@ describe('getCryptoBuyButtonUiState', () => {
 				canOpenConnectModal: false,
 				disabled: false,
 				isAccessPassAcknowledged: false,
+				total: 25,
+				currency: 'USD',
 			});
 
 			expect(state.variant).toBe('preparing');

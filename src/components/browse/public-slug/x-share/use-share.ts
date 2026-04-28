@@ -159,6 +159,10 @@ export function useXShare({
 		// (e.g. backend rejected an expired pending claim — re-share to
 		// refresh the row). Otherwise stay on `'shared'` for a manual retry.
 		onVerifyFailure: needsRestart => setState(needsRestart ? 'idle' : 'shared'),
+		// Lax-review deferred grant: keep the verify CTA visible so the user can
+		// retry past the cooldown. Backend grants blind once `attemptsRemaining`
+		// hits zero, so this state is bounded — no risk of an infinite stall.
+		onVerifyDeferred: () => setState('shared'),
 		onVerified: ticketsGranted => {
 			setState('verified');
 			syncTickets(ticketsGranted);

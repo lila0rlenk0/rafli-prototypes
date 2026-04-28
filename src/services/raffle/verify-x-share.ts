@@ -15,31 +15,55 @@ import { RAFFLE_ERROR_CODES, type XShareVerifyErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Backend collapsed verify into a single grant-on-success path. The previous
- * `not_found` outcome is gone — the X search is best-effort, and the ticket
- * is granted regardless of whether the tweet was indexed. Failure surfaces as
- * an HTTP error code (`core:xshare:expired`, `core:xshare:not-found`, ...).
+ * Lax-review wire contract. Backend returns a discriminated union:
+ *
+ *  - `verified` — terminal grant. X search returned `found`/`unavailable`, OR the user
+ *    exhausted the lax-retry budget and was granted blind. UNIQUE(raffleId, userId)
+ *    caps the prize at one bonus ticket per user per raffle (lifetime).
+ *  - `pending_review` — non-terminal. X's recent-search index didn't carry the tweet
+ *    yet (~30–120s lag); the user is asked to retry after `retryAfterSeconds`. After
+ *    `attemptsRemaining` hits zero, the next call grants blind so honest users hit
+ *    by index lag are never permanently locked out.
+ *
+ * Wire definition is the source of truth in `src/core/x-shares/dto/x-share.dto.ts` on
+ * the backend; keep this schema in lockstep with `VerifyXShareResponseDto`.
  */
-const verifyXShareResponseSchema = z.object({
+const verifiedResponseSchema = z.object({
 	claimId: z.string(),
 	status: z.literal('verified'),
-	// Success means a ledger grant happened. Reject impossible values before
-	// we refresh RSC into a verified UI state with no usable ticket change.
+	// Verified always means a ledger grant happened. Reject impossible values
+	// before we refresh RSC into a verified UI state with no usable ticket change.
 	ticketsGranted: z.number().int().positive(),
 });
+
+const pendingReviewResponseSchema = z.object({
+	// Lax-retry budget remaining. Frontend uses this to render "X attempts left"
+	// copy and to know that the next call will fall back to a blind grant when 0.
+	attemptsRemaining: z.number().int().nonnegative(),
+	claimId: z.string(),
+	// Server-enforced cooldown anchor — the next verify call inside this window
+	// rejects with `core:xshare:cooldown`, so the UI honors the same delay.
+	retryAfterSeconds: z.number().int().positive(),
+	status: z.literal('pending_review'),
+});
+
+const verifyXShareResponseSchema = z.discriminatedUnion('status', [
+	verifiedResponseSchema,
+	pendingReviewResponseSchema,
+]);
 
 type VerifyXShareResponse = z.infer<typeof verifyXShareResponseSchema>;
 
 /**
- * Verifies the user's X share claim and grants a free ticket.
+ * Verifies the user's X share claim under the backend's lax-review policy.
  *
- * Backend behaviour: a single best-effort X search runs server-side; the
- * ticket is granted on the success path regardless of search outcome.
- * UNIQUE(raffleId, userId) caps abuse at one ticket per user per raffle
- * (lifetime), so the previous client-side retry loop is no longer needed.
+ * Returns either a terminal `verified` grant or a deferred `pending_review` outcome.
+ * UNIQUE(raffleId, userId) on the backend caps the prize at one ticket per user per
+ * raffle (lifetime); the only legitimately strict gate is that uniqueness, so this
+ * client never converts a deferred response into a failure toast.
  *
  * @param raffleId - The UUID of the raffle being verified
- * @returns Verification result with ticket count, or error code
+ * @returns Lax-review result (verified or pending_review), or a typed error code
  */
 export async function verifyXShare(
 	raffleId: string,
@@ -49,16 +73,17 @@ export async function verifyXShare(
 			`/raffles/${pathParam(raffleId)}/verify-x-share`,
 		);
 
-		const verified = verifyXShareResponseSchema.parse(response.data);
+		const parsed = verifyXShareResponseSchema.parse(response.data);
 
-		// Verified always means tickets changed — flush the raffle cache so
-		// server components re-render with the updated ticket count and the
-		// claim status flips from `pending` to `verified` on next paint.
-		runAfter(() => {
-			revalidateRaffleDetail(raffleId);
-		});
+		// Only the verified branch mutates ticket totals — pending_review leaves the
+		// claim row alone, so the cache invalidation is a wasted RSC re-render.
+		if (parsed.status === 'verified') {
+			runAfter(() => {
+				revalidateRaffleDetail(raffleId);
+			});
+		}
 
-		return success(verified);
+		return success(parsed);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'verify-x-share');

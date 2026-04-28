@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { getVerifyErrorMessage } from './verify-errors';
+import { getPendingReviewMessage, getVerifyErrorMessage } from './verify-errors';
 
 describe('getVerifyErrorMessage', () => {
 	describe('xshare-specific codes', () => {
@@ -68,6 +68,16 @@ describe('getVerifyErrorMessage', () => {
 		});
 	});
 
+	describe('lax-review codes (NOT failures)', () => {
+		test('cooldown → wait wording, not a hard failure', () => {
+			// Server-side cooldown between successive lax retries — surface as a
+			// transient wait so the user knows the claim is still alive.
+			expect(getVerifyErrorMessage('core:xshare:cooldown')).toBe(
+				'Hold on a moment — try again shortly.',
+			);
+		});
+	});
+
 	describe('boundary', () => {
 		test('unknown code falls back to verification-specific generic', () => {
 			// Fallback wording differs from the intent fallback — the user
@@ -82,5 +92,31 @@ describe('getVerifyErrorMessage', () => {
 				'Verification failed. Please try again.',
 			);
 		});
+	});
+});
+
+describe('getPendingReviewMessage', () => {
+	test('plural attempts left — index-lag wording with retry window', () => {
+		// Lax-review deferred toast. Wording must communicate it's NOT a failure
+		// (X index lag, expected) and surface the budget so the user doesn't spam.
+		expect(getPendingReviewMessage(2, 30)).toBe(
+			"We couldn't find your post yet — X usually indexes within a minute. Try again in 30s. (2 tries left)",
+		);
+	});
+
+	test('exactly one attempt left — singularises', () => {
+		// Last lax retry before the blind-grant fallback. Copy must avoid scaring
+		// the user — the next call still grants the ticket regardless.
+		expect(getPendingReviewMessage(1, 30)).toBe(
+			"We couldn't find your post yet — X usually indexes within a minute. Try again in 30s. (1 try left)",
+		);
+	});
+
+	test('honours non-default cooldown values', () => {
+		// retryAfterSeconds is server-driven so the UI never out-of-syncs the
+		// cooldown gate — a hardcoded "30s" copy would lie if the gate widens.
+		expect(getPendingReviewMessage(2, 45)).toBe(
+			"We couldn't find your post yet — X usually indexes within a minute. Try again in 45s. (2 tries left)",
+		);
 	});
 });

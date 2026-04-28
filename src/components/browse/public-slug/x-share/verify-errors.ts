@@ -13,6 +13,25 @@
 const VERIFY_GENERIC_FALLBACK = 'Verification failed. Please try again.';
 
 /**
+ * Lax-review deferred toast. Backend's `pending_review` is NOT a failure — X's
+ * recent-search index lags 30–120s behind the tweet timeline, so honest users
+ * hit `not_found` on first verify. Copy keeps the user oriented (it's not their
+ * fault, no action needed besides waiting) and surfaces the remaining retry
+ * budget so they don't spam the button. Budget exhaustion grants the ticket
+ * blind on the next call, so this state is bounded.
+ *
+ * @param attemptsRemaining - Lax retries left before the blind-grant fallback.
+ * @param retryAfterSeconds - Server-enforced cooldown until the next call.
+ */
+export function getPendingReviewMessage(
+	attemptsRemaining: number,
+	retryAfterSeconds: number,
+): string {
+	const tries = attemptsRemaining === 1 ? '1 try' : `${attemptsRemaining} tries`;
+	return `We couldn't find your post yet — X usually indexes within a minute. Try again in ${retryAfterSeconds}s. (${tries} left)`;
+}
+
+/**
  * Resolves a user-facing toast message for an X share verify failure.
  *
  * @param errorCode - The ServiceResponse error code from `verifyXShare`.
@@ -20,6 +39,11 @@ const VERIFY_GENERIC_FALLBACK = 'Verification failed. Please try again.';
  */
 export function getVerifyErrorMessage(errorCode: string): string {
 	switch (errorCode) {
+		case 'core:xshare:cooldown':
+			// Server-side cooldown gate between successive lax-review retries —
+			// caps X-API spend. Surface as a transient wait, NOT a failure: the
+			// claim is still pending and will succeed on the next call past the window.
+			return 'Hold on a moment — try again shortly.';
 		case 'core:xshare:expired':
 			// Backend rejects pending claims past their `expiresAt` lazily; the
 			// orchestrator routes this code back to the share CTA so the user

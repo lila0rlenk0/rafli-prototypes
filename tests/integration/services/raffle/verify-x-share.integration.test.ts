@@ -11,13 +11,24 @@ import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 const RAFFLE_ID = '11111111-1111-7111-8111-111111111111';
 const CLAIM_ID = '22222222-2222-7222-8222-222222222222';
 
-// Backend `VerifyXShareResponseDto`: status is always `'verified'` on the
-// success path; `ticketsGranted` is always 1 (UNIQUE(raffleId, userId)
-// caps abuse at one bonus ticket per user per raffle, lifetime).
+// Backend `VerifyXShareResponseDto` is a discriminated union under the
+// lax-review policy:
+//  - `verified` — terminal grant; `ticketsGranted` is always 1
+//    (UNIQUE(raffleId, userId) caps abuse at one bonus per user per raffle).
+//  - `pending_review` — non-terminal; X's recent-search index hasn't picked
+//    the tweet up yet. The user retries after `retryAfterSeconds`; once
+//    `attemptsRemaining` hits zero, the next call grants blind.
 const VERIFIED_RESPONSE = {
 	claimId: CLAIM_ID,
 	status: 'verified' as const,
 	ticketsGranted: 1,
+};
+
+const PENDING_REVIEW_RESPONSE = {
+	attemptsRemaining: 2,
+	claimId: CLAIM_ID,
+	retryAfterSeconds: 30,
+	status: 'pending_review' as const,
 };
 
 // --- Mocks ---
@@ -82,8 +93,9 @@ describe('verifyXShare', () => {
 			const result = await verifyXShare(RAFFLE_ID);
 
 			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.status).toBe('verified');
+			// Discriminated union — narrow on `status` before reading the
+			// branch-specific `ticketsGranted` field.
+			if (result.success && result.data.status === 'verified') {
 				expect(result.data.ticketsGranted).toBe(1);
 			}
 			expect(mockPost).toHaveBeenCalledWith(
@@ -95,11 +107,58 @@ describe('verifyXShare', () => {
 		});
 	});
 
+	describe('success — pending_review (lax-review deferred)', () => {
+		test('returns deferred payload and SKIPS revalidation', async () => {
+			// Lax-review branch: backend hasn't seen the tweet in X's recent-search
+			// index yet, so the claim row is untouched. Revalidating the raffle
+			// detail cache here would be a wasted RSC re-render — assert it's
+			// skipped so the optimization can't regress silently.
+			resetAllMocks();
+			mockPost.mockResolvedValueOnce(
+				mockAxiosResponse(PENDING_REVIEW_RESPONSE),
+			);
+
+			const result = await verifyXShare(RAFFLE_ID);
+
+			expect(result.success).toBe(true);
+			if (result.success && result.data.status === 'pending_review') {
+				expect(result.data.attemptsRemaining).toBe(2);
+				expect(result.data.retryAfterSeconds).toBe(30);
+			}
+			// No ticket grant, no cache invalidation — the claim row is unchanged.
+			expect(mockRunAfter).not.toHaveBeenCalled();
+			expect(mockRevalidateRaffleDetail).not.toHaveBeenCalled();
+		});
+
+		test('honours zero remaining attempts on the boundary', async () => {
+			// `attemptsRemaining: 0` is the contract's boundary — the next call
+			// will grant blind. Schema accepts it via `nonnegative()`; lock that
+			// in so a future tightening to `positive()` doesn't silently break
+			// the last-retry render path.
+			resetAllMocks();
+			mockPost.mockResolvedValueOnce(
+				mockAxiosResponse({
+					...PENDING_REVIEW_RESPONSE,
+					attemptsRemaining: 0,
+				}),
+			);
+
+			const result = await verifyXShare(RAFFLE_ID);
+
+			expect(result.success).toBe(true);
+			if (result.success && result.data.status === 'pending_review') {
+				expect(result.data.attemptsRemaining).toBe(0);
+			}
+		});
+	});
+
 	describe('response validation failure', () => {
-		test('returns FETCH_FAILED when status is not the new "verified" literal', async () => {
-			// Backend reduced the status enum to a single `'verified'` literal on the
-			// success path. Anything else (legacy `'not_found'`, stale `'pending'`,
-			// new value) is a contract drift signal — surface it to Sentry and bail.
+		test('returns FETCH_FAILED when status is outside the discriminated union', async () => {
+			// Status is constrained to `'verified' | 'pending_review'` under the
+			// lax-review policy. Anything else (legacy `'not_found'`, stale
+			// `'pending'`, new value) is a contract drift signal — surface it to
+			// Sentry and bail rather than rendering on a status the UI can't reason
+			// about.
 			resetAllMocks();
 			mockPost.mockResolvedValueOnce(
 				mockAxiosResponse({

@@ -76,6 +76,13 @@ export const X_SHARE_EVENTS = {
 	INTENT_CREATED: 'X Share Intent Created',
 	/** User's X share was verified and free ticket granted */
 	VERIFIED: 'X Share Verified',
+	/**
+	 * Lax-review verify deferred — X's recent-search index hadn't picked up the
+	 * tweet yet. User is asked to retry after the cooldown. Distinguished from
+	 * VERIFICATION_FAILED so we don't pollute the failure funnel with normal
+	 * index-lag retries; budget exhaustion folds back into VERIFIED.
+	 */
+	VERIFICATION_DEFERRED: 'X Share Verification Deferred',
 	/** X share verification failed (includes reason) */
 	VERIFICATION_FAILED: 'X Share Verification Failed',
 } as const;

@@ -50,7 +50,7 @@ export function ShareOnXButton(props: XShareConfig) {
 			<Button
 				variant="outline"
 				disabled
-				className="mt-2 h-12 w-full rounded-full border-2"
+				className="mt-4 h-12 w-full rounded-full border-2"
 			>
 				<p className="font-semibold">Already claimed bonus entry</p>
 			</Button>
@@ -66,7 +66,7 @@ export function ShareOnXButton(props: XShareConfig) {
 				variant="outline"
 				onClick={handleVerify}
 				disabled={state === 'verifying'}
-				className="mt-2 h-12 w-full cursor-pointer rounded-full border-2"
+				className="mt-4 h-12 w-full cursor-pointer rounded-full border-2"
 			>
 				<p className="font-semibold">
 					{state === 'verifying'
@@ -83,7 +83,7 @@ export function ShareOnXButton(props: XShareConfig) {
 				variant="outline"
 				onClick={handleShareClick}
 				disabled={state === 'loading'}
-				className="mt-2 h-12 w-full cursor-pointer rounded-full border-2"
+				className="mt-4 h-12 w-full cursor-pointer rounded-full border-2"
 			>
 				<p className="font-semibold">
 					{state === 'loading' ? 'Preparing...' : 'AMOE - Free Entries'}

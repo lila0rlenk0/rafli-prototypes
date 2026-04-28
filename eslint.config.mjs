@@ -212,6 +212,12 @@ const eslintConfig = defineConfig([
 			// for zero benefit — drop the wrapper when the arg list has no
 			// conditionals or interpolations
 			'local/no-cn-static-only': 'error',
+			// -- TanStack Query result handles are referentially unstable per
+			// render — putting one in a useEffect/useMemo/useCallback deps
+			// array causes the hook to re-fire every render. 2026-04-28 prod
+			// incident: chat mark_read WS storm (~150 frames/min/user).
+			// Destructure `mutate`/`data` and depend on those instead.
+			'local/no-mutation-handle-in-deps': 'error',
 		},
 	},
 

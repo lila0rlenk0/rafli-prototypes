@@ -37,7 +37,10 @@ export function SubscribeResumeTrigger({
 }: SubscribeResumeTriggerProps) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
-	const subscribeResume = useSubscribeResume();
+	// Pull `mutate` only — the full TanStack handle changes reference every
+	// render and would re-fire this effect, defeating the
+	// `hasDispatchedRef` idempotency guard under any unrelated re-render.
+	const { mutate: subscribeResumeMutate } = useSubscribeResume();
 
 	// Idempotency guard — StrictMode double-mounts the effect in dev, and
 	// React concurrent rendering can run this effect more than once in prod
@@ -75,7 +78,7 @@ export function SubscribeResumeTrigger({
 		// Stripe. Failure → toast on /pricing where the plan cards let the
 		// user retry. Routing through the mutation keeps this effect free
 		// of `@/services/*` imports per `data-fetching.md`.
-		subscribeResume.mutate(
+		subscribeResumeMutate(
 			{ planId: decision.planId },
 			{
 				onSuccess: result => {
@@ -94,7 +97,7 @@ export function SubscribeResumeTrigger({
 				},
 			},
 		);
-	}, [isAuthenticated, router, searchParams, subscribeResume]);
+	}, [isAuthenticated, router, searchParams, subscribeResumeMutate]);
 
 	return null;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { deriveWinningStatusFromMessages } from '@/lib/utils/raffle/winning-status-from-messages';
 import {
@@ -69,7 +69,11 @@ export function ConversationView({
 	const upsertMessage = useChatStore(s => s.upsertMessage);
 	const markConversationRead = useChatStore(s => s.markConversationRead);
 
-	const markReadMutation = useMarkConversationRead();
+	// Pull `mutate` only — TanStack Query returns a fresh result object every
+	// render, but `mutate` is stable. Depending on the whole handle would
+	// re-fire the markRead effect on every render and storm the WS endpoint
+	// (one user hit ~150 mark_read frames/min before the fix).
+	const { mutate: markReadFallback } = useMarkConversationRead();
 
 	const {
 		data,
@@ -107,21 +111,43 @@ export function ConversationView({
 	// Fires on every `messages` change so new inbound messages clear the
 	// badge — the backend is idempotent on the watermark write.
 	const latestMessageId = messages.at(-1)?.id;
+	// Last watermark we've already acked to the server, keyed by conversation.
+	// A ref (not state) because flipping it must not re-render the component.
+	// Without this, transient WS reconnect flaps (`connected` toggles) would
+	// re-ack the same `latestMessageId` once per flip — backend rate-limits
+	// it, but the cleaner contract is "ack each watermark exactly once".
+	const lastAckedByConvoIdRef = useRef<Record<string, string>>({});
 	useEffect(
 		function markReadOnLatest() {
 			if (!latestMessageId) return;
+			// Skip if we've already acked this exact watermark for this convo —
+			// avoids reconnect-flap storm on a stale `latestMessageId`.
+			if (lastAckedByConvoIdRef.current[conversationId] === latestMessageId)
+				return;
 			// Step 2a: Local store update — clears the badge immediately.
 			markConversationRead(conversationId);
 			// Step 2b: WS path — cheaper than REST; server echoes read_receipt.
+			// Only record the ack on a confirmed dispatch (`send` returns true).
+			// If the socket was CLOSING/CLOSED in the gap between the store's
+			// `connected=true` flag and the close event, the next render of
+			// this effect will retry rather than skipping a never-acked watermark.
 			if (connected) {
-				transport.sendMarkRead(conversationId, latestMessageId);
-				return;
+				const dispatched = transport.sendMarkRead(
+					conversationId,
+					latestMessageId,
+				);
+				if (dispatched) {
+					lastAckedByConvoIdRef.current[conversationId] = latestMessageId;
+					return;
+				}
+				// fall through to REST fallback when WS dispatch failed silently
 			}
 			// Step 2c: REST fallback via React Query mutation. Fire-and-forget;
 			// failure is non-fatal — the next message re-triggers the watermark.
-			// Routing through `markReadMutation` keeps this effect out of
+			// Routing through the mutation keeps this effect out of
 			// `local/no-useeffect-data-fetch` reach (data-fetching.md).
-			markReadMutation.mutate({ conversationId, messageId: latestMessageId });
+			markReadFallback({ conversationId, messageId: latestMessageId });
+			lastAckedByConvoIdRef.current[conversationId] = latestMessageId;
 		},
 		[
 			conversationId,
@@ -129,7 +155,7 @@ export function ConversationView({
 			connected,
 			transport,
 			markConversationRead,
-			markReadMutation,
+			markReadFallback,
 		],
 	);
 

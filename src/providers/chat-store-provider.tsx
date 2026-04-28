@@ -45,7 +45,15 @@ export interface ChatTransport {
 	 */
 	sendMessage(conversationId: string, body: string, tempId: string): boolean;
 	sendTyping(conversationId: string): void;
-	sendMarkRead(conversationId: string, messageId: string): void;
+	/**
+	 * Acks a read watermark over WS.
+	 * @returns `true` if the frame was dispatched (socket was OPEN),
+	 *   `false` if the socket was missing or in CLOSING/CLOSED. Callers
+	 *   that dedupe acks should only record success on `true`, otherwise
+	 *   a flap during the gap between `connected=true` and the close
+	 *   event would mark a watermark "acked" without a server-side write.
+	 */
+	sendMarkRead(conversationId: string, messageId: string): boolean;
 }
 
 /** Context for the chat store. Mounted under authenticated layouts only. */
@@ -121,7 +129,9 @@ export function ChatStoreProvider({
 			streamRef.current?.send({ type: 'typing', conversationId });
 		},
 		sendMarkRead(conversationId, messageId) {
-			streamRef.current?.send({
+			const stream = streamRef.current;
+			if (!stream) return false;
+			return stream.send({
 				type: 'mark_read',
 				conversationId,
 				messageId,

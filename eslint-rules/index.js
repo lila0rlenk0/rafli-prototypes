@@ -42,6 +42,9 @@ import noJournalComment from "./rules/no-journal-comment.js";
 import noRedundantElse from "./rules/no-redundant-else.js";
 // -- tailwind-css skill: raw strings beat `cn("static string")` (no merge work)
 import noCnStaticOnly from "./rules/no-cn-static-only.js";
+// -- react-effects.md / data-fetching.md: TanStack Query handles are
+// referentially unstable per render; destructure `mutate`/`data` for deps.
+import noMutationHandleInDeps from "./rules/no-mutation-handle-in-deps.js";
 
 export default {
   meta: {
@@ -76,5 +79,6 @@ export default {
     "no-journal-comment": noJournalComment,
     "no-redundant-else": noRedundantElse,
     "no-cn-static-only": noCnStaticOnly,
+    "no-mutation-handle-in-deps": noMutationHandleInDeps,
   },
 };

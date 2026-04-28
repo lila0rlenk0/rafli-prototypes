@@ -5,6 +5,13 @@ import { cn } from '@/lib/class-names';
 import { getWinningStatusLabel } from '@/lib/utils/raffle/winning-status-label';
 import { WINNING_STATUS, type WinningStatus } from '@/types/winning';
 
+import {
+	findMainPathIndex,
+	getDisputeStepState,
+	getMainStepState,
+	type StepState,
+} from './status-stepper-state';
+
 /**
  * Descriptor for a single step in the stepper.
  *
@@ -131,6 +138,7 @@ export function WinningStatusStepper({
 					const state = getMainStepState({
 						index,
 						currentMainIndex,
+						mainPathLength: MAIN_PATH_STEPS.length,
 						inDisputeBranch,
 					});
 					const isLast = index === MAIN_PATH_STEPS.length - 1;
@@ -196,9 +204,6 @@ export function WinningStatusStepper({
 		</div>
 	);
 }
-
-/** Visual state of a single row in the stepper. */
-type StepState = 'completed' | 'current' | 'upcoming';
 
 interface StepRowProps {
 	readonly label: string;
@@ -344,86 +349,4 @@ function StepIcon({ state, isDispute }: StepIconProps) {
 			<Circle aria-hidden="true" className="size-2" />
 		</span>
 	);
-}
-
-/**
- * Maps the raw current status to an index in `MAIN_PATH_STEPS`.
- *
- * - `pending_partial_fulfillment` collapses to the `pending` index —
- *   historic DB rows still render on the first step instead of falling
- *   off the rail.
- * - `disputed` / `resolved` return -1; the caller switches to the
- *   dispute branch layout via `inDisputeBranch` and treats all mainline
- *   steps as "completed" (the machine can only enter dispute from
- *   `sent`+, so the trail is always at least partially walked).
- * - Unknown tokens (future enum additions) default to `pending` so the
- *   stepper degrades gracefully instead of rendering a blank rail.
- */
-function findMainPathIndex(status: WinningStatus): number {
-	switch (status) {
-		case WINNING_STATUS.PENDING:
-		case WINNING_STATUS.PENDING_PARTIAL_FULFILLMENT:
-			return 0;
-		case WINNING_STATUS.AWAITING_HOST:
-			return 1;
-		case WINNING_STATUS.SENT:
-			return 2;
-		case WINNING_STATUS.DELIVERED:
-			return 3;
-		case WINNING_STATUS.RECEIVED:
-			return 4;
-		case WINNING_STATUS.DISPUTED:
-		case WINNING_STATUS.RESOLVED:
-			return -1;
-		default: {
-			// Exhaustiveness guard — `satisfies never` breaks the build when
-			// a new WinningStatus member slips in without a case above. The
-			// runtime fallback keeps the stepper rendering (on the initial
-			// step) for a deployment mismatch where the backend ships the
-			// new enum before the client does.
-			status satisfies never;
-			return 0;
-		}
-	}
-}
-
-/**
- * Visual state for a mainline row.
- *
- * When the winning is in the dispute branch we still render the mainline
- * so the viewer sees how far the shipment got before the dispute
- * opened — every mainline row shows as "completed" because the state
- * machine can only reach `disputed` from `sent | delivered | received`.
- * Collapsing the entire mainline to completed keeps the surface honest
- * without carrying the pre-dispute step around separately (the chat
- * already has shipment_update messages for granular history).
- */
-function getMainStepState(args: {
-	readonly index: number;
-	readonly currentMainIndex: number;
-	readonly inDisputeBranch: boolean;
-}): StepState {
-	if (args.inDisputeBranch) return 'completed';
-	if (args.index < args.currentMainIndex) return 'completed';
-	if (args.index === args.currentMainIndex) return 'current';
-	return 'upcoming';
-}
-
-/**
- * Visual state for a dispute-branch row. `disputed` becomes completed
- * once `resolved` is reached; otherwise the matching row is current and
- * the other is upcoming.
- */
-function getDisputeStepState(args: {
-	readonly status: WinningStatus;
-	readonly currentStatus: WinningStatus;
-}): StepState {
-	if (args.status === args.currentStatus) return 'current';
-	if (
-		args.status === WINNING_STATUS.DISPUTED &&
-		args.currentStatus === WINNING_STATUS.RESOLVED
-	) {
-		return 'completed';
-	}
-	return 'upcoming';
 }

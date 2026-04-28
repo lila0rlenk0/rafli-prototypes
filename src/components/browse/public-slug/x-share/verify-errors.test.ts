@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
-import { getPendingReviewMessage, getVerifyErrorMessage } from './verify-errors';
+import {
+	getPendingReviewMessage,
+	getVerifyErrorMessage,
+} from './verify-errors';
 
 describe('getVerifyErrorMessage', () => {
 	describe('xshare-specific codes', () => {

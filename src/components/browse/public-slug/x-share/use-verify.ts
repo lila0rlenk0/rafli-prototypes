@@ -7,7 +7,10 @@ import { X_SHARE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
 import { verifyXShare } from '@/services/raffle/verify-x-share';
 
-import { getPendingReviewMessage, getVerifyErrorMessage } from './verify-errors';
+import {
+	getPendingReviewMessage,
+	getVerifyErrorMessage,
+} from './verify-errors';
 
 /**
  * Lax-review deferred payload from `verifyXShare`. Mirrors the
@@ -117,7 +120,9 @@ function handleVerifyDeferred(
 		raffle_slug: context.publicSlug,
 		retry_after_seconds: info.retryAfterSeconds,
 	});
-	toast.info(getPendingReviewMessage(info.attemptsRemaining, info.retryAfterSeconds));
+	toast.info(
+		getPendingReviewMessage(info.attemptsRemaining, info.retryAfterSeconds),
+	);
 	onVerifyDeferred(info);
 }
 

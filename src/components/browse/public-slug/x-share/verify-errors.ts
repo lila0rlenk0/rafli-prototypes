@@ -27,7 +27,8 @@ export function getPendingReviewMessage(
 	attemptsRemaining: number,
 	retryAfterSeconds: number,
 ): string {
-	const tries = attemptsRemaining === 1 ? '1 try' : `${attemptsRemaining} tries`;
+	const tries =
+		attemptsRemaining === 1 ? '1 try' : `${attemptsRemaining} tries`;
 	return `We couldn't find your post yet — X usually indexes within a minute. Try again in ${retryAfterSeconds}s. (${tries} left)`;
 }
 

@@ -34,17 +34,6 @@
     ]
   },
   "hooks": {
-    "WorktreeCreate": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'Worktree creation disabled' >&2 && exit 1"
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Bash",

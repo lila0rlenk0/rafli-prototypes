@@ -27,3 +27,6 @@ coverage
 
 # Design documents
 DESIGN.md
+
+# Claude Code worktrees
+.claude/worktrees

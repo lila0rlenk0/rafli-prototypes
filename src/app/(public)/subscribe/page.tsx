@@ -50,8 +50,8 @@ function prioritizeSubscribeRaffles(raffles: readonly Raffle[]) {
 /**
  * `/subscribe` — public landing page for the credit-purchase flow.
  *
- * Uses the dedicated `SubscribeNavbar` (logo + Trustpilot only)
- * instead of `PublicNavbar` — the page is a conversion surface and
+ * Uses the dedicated `SubscribeNavbar` (logo only) instead of
+ * `PublicNavbar` — the page is a conversion surface and
  * every extra link in the header is a leak away from the credit
  * purchase CTA. Session reading is unnecessary here: the page's
  * single CTA posts directly to the Fanbasis public-credit checkout

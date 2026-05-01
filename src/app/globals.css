@@ -46,7 +46,10 @@
 	--radius-3xl: calc(var(--radius) + 12px);
 	--radius-4xl: calc(var(--radius) + 16px);
 
-	--color-green: #86ffae;
+	/* Legacy alias — same hex as --color-brand-green, kept so pre-rename
+	   callers (`bg-green` in form-header / status-pill) still resolve.
+	   Prefer `brand-green` in new code. */
+	--color-green: var(--color-brand-green);
 
 	/* ------------------------------------------------------------------ */
 	/* Brand palette — DESIGN.md canonical names.                         */
@@ -337,7 +340,9 @@
 	--tracking-micro-5: 0.26px;
 	--tracking-micro-6: 0.6px;
 	--tracking-micro-7: 0.8px;
-	--tracking-caps-1: 1%;
+	/* `letter-spacing` does not accept `%`; browsers silently drop it.
+	   `0.01em` is the equivalent value the Figma 1% spec maps to. */
+	--tracking-caps-1: 0.01em;
 	--tracking-caps-2: 0.05em;
 	--tracking-caps-3: 0.12em;
 	--tracking-caps-4: 0.14em;
@@ -373,6 +378,9 @@
 	--container-card: 540px;
 	--container-card-sm: 520px;
 	--container-card-xs: 480px;
+	/* Pricing hero + launch-countdown copy column — Figma frame 854px.
+	   Shared by both surfaces so the wrap rhythm stays in lock-step. */
+	--container-launch-copy: 854px;
 
 	/* Viewport-anchored spacing — modals, hero wells, sidebar rails. */
 	--spacing-half-screen: 50vh;
@@ -451,9 +459,6 @@
 	   DESIGN.md navbar-padding-x-desktop (48px). Subscribe and
 	   credits-claimed page shells both ride this token. */
 	--spacing-navbar-pad: 48px;
-
-	/* Trustpilot brand green — applied to the 5-star row + wordmark. */
-	--color-trustpilot: #00b67a;
 
 	/* Hero `$11` pill — Figma pins this chip to fixed dimensions,
 	   NOT em-relative: 110.37×63.29 with 48px Clash Display inside.
@@ -603,6 +608,18 @@
 /* Additional decorative rotation used by landing layouts. */
 @utility rotate-tilt-lg {
 	rotate: 25deg;
+}
+
+/* Decorative rotation used by the pricing hero decor cluster. The
+   -30° angle counter-rotates the front-of-stack yellow square so the
+   three brand-color shapes don't read as three rotations of the same
+   shape. Positive variant kept for symmetry with the rest of the
+   `rotate-tilt-*` family. */
+@utility rotate-tilt-xl {
+	rotate: 30deg;
+}
+@utility -rotate-tilt-xl {
+	rotate: -30deg;
 }
 
 /* Line-height-anchored min-height — keeps the placeholder at two text

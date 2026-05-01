@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getPromoInputErrorMessage } from '@/components/promo-code/error-messages';
 import { useValidatePromoCode } from '@/services/promo-code/use-validate-promo-code';
-import type { ValidatedPromoCode } from '@/types/promo-code';
+import type {
+	ValidatePromoCodeResponse,
+	ValidatedPromoCode,
+} from '@/types/promo-code';
 
 interface UsePromoCodeValidationOptions {
 	raffleId: string;
@@ -26,121 +29,52 @@ interface UsePromoCodeValidationResult {
 	resetCode: () => void;
 }
 
-interface ValidatedResponse {
-	type: ValidatedPromoCode['type'];
-	ticketsGranted?: number;
-	discountAmount?: string;
-}
-
-type RunValidation = (targetCode: string) => Promise<void>;
-
 /**
- * Collapses the validator response into a single `value` string so the
- * UI renders without branching on the payload shape.
+ * Collapses the validator response into a `ValidatedPromoCode` for the store.
+ * `value` carries the per-ticket display preview (used by labels); `rawValue`
+ * carries the unmodified host-set promo value (used by all checkout math).
  */
 function buildValidatedPromo(
 	code: string,
-	response: ValidatedResponse,
+	response: Omit<ValidatePromoCodeResponse, 'valid'>,
 ): ValidatedPromoCode {
 	const value =
 		response.ticketsGranted !== undefined
 			? response.ticketsGranted.toString()
 			: (response.discountAmount ?? '0');
-	return { valid: true, code, type: response.type, value };
-}
-
-interface ResetCallbacksOptions {
-	autoValidatedCodeRef: React.RefObject<string | null>;
-	setCode: (next: string) => void;
-	setValidatedPromo: (next: ValidatedPromoCode | null) => void;
-	setError: (next: string | null) => void;
-	setIsExpanded: (next: boolean) => void;
-}
-
-/**
- * Bundle of reset helpers shared by the remove and cancel affordances.
- * Co-located so the primary hook body stays focused on async validation.
- */
-function useResetCallbacks({
-	autoValidatedCodeRef,
-	setCode,
-	setValidatedPromo,
-	setError,
-	setIsExpanded,
-}: ResetCallbacksOptions) {
-	const removeCode = useCallback(() => {
-		autoValidatedCodeRef.current = null;
-		setCode('');
-		setValidatedPromo(null);
-		setError(null);
-		setIsExpanded(false);
-	}, [
-		autoValidatedCodeRef,
-		setCode,
-		setValidatedPromo,
-		setError,
-		setIsExpanded,
-	]);
-
-	const resetCode = useCallback(() => {
-		autoValidatedCodeRef.current = null;
-		setCode('');
-		setError(null);
-		setIsExpanded(false);
-	}, [autoValidatedCodeRef, setCode, setError, setIsExpanded]);
-
-	return { removeCode, resetCode };
-}
-
-/**
- * Auto-validates a URL-provided initial code on mount (and whenever the
- * prop changes to a different non-empty value). Uses a ref-backed
- * single-shot guard so React Strict Mode double-fires and identity-only
- * parent rerenders don't repeatedly hit the API. Defers the actual call
- * via `queueMicrotask` so the effect body never runs `setState`
- * synchronously — the rule disallows effect-driven state mutation,
- * including transitively via async helpers.
- */
-function useAutoValidateInitialCode(
-	initialCode: string | undefined,
-	validatedPromoCode: string | undefined,
-	runValidation: RunValidation,
-) {
-	const autoValidatedCodeRef = useRef<string | null>(null);
-	useEffect(() => {
-		const normalized = initialCode?.trim().toUpperCase() ?? '';
-		if (!normalized) {
-			autoValidatedCodeRef.current = null;
-			return;
-		}
-		if (validatedPromoCode === normalized) return;
-		if (autoValidatedCodeRef.current === normalized) return;
-		autoValidatedCodeRef.current = normalized;
-		queueMicrotask(() => {
-			void runValidation(normalized);
-		});
-	}, [initialCode, validatedPromoCode, runValidation]);
-	return autoValidatedCodeRef;
+	return {
+		valid: true,
+		code,
+		type: response.type,
+		value,
+		rawValue: response.rawValue,
+	};
 }
 
 interface ValidationState {
-	code: string;
-	setCode: (next: string) => void;
-	isValidating: boolean;
-	validatedPromo: ValidatedPromoCode | null;
-	error: string | null;
-	setError: (next: string | null) => void;
-	isExpanded: boolean;
-	setIsExpanded: (next: boolean) => void;
-	setValidatedPromo: (next: ValidatedPromoCode | null) => void;
-	runValidation: RunValidation;
+	readonly code: string;
+	readonly setCode: React.Dispatch<React.SetStateAction<string>>;
+	readonly isValidating: boolean;
+	readonly validatedPromo: ValidatedPromoCode | null;
+	readonly setValidatedPromo: React.Dispatch<
+		React.SetStateAction<ValidatedPromoCode | null>
+	>;
+	readonly error: string | null;
+	readonly setError: React.Dispatch<React.SetStateAction<string | null>>;
+	readonly isExpanded: boolean;
+	readonly setIsExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+	readonly runValidation: (targetCode: string) => Promise<void>;
 }
 
 /**
- * Sets up the local state slots + the async `runValidation` callback,
- * along with the ref that keeps the `onValidCode` prop identity stable
- * across renders. Kept small so the top-level hook body stays under the
- * function-length cap.
+ * State + the async `runValidation` callback. Extracted so the public
+ * hook stays under the project-wide function-length cap; not designed
+ * for reuse outside this file.
+ *
+ * `onValidCode` lives in a latest-ref so `runValidation`'s identity stays
+ * stable across consumer-prop renders. Without the ref, an unmemoized
+ * parent callback would invalidate every dependent `useCallback` below
+ * and re-fire the auto-validate effect on every render.
  */
 function useValidationState(
 	raffleId: string,
@@ -158,10 +92,10 @@ function useValidationState(
 	const onValidCodeRef = useRef(onValidCode);
 	useEffect(() => {
 		onValidCodeRef.current = onValidCode;
-	}, [onValidCode]);
+	});
 
-	const runValidation = useCallback<RunValidation>(
-		async targetCode => {
+	const runValidation = useCallback(
+		async function runValidation(targetCode: string): Promise<void> {
 			setIsValidating(true);
 			setError(null);
 			const result = await validate(raffleId, targetCode);
@@ -193,6 +127,39 @@ function useValidationState(
 }
 
 /**
+ * Auto-validates a URL-provided initial code on mount and whenever it changes
+ * to a different non-empty value. The ref-backed single-shot guard collapses
+ * Strict Mode double-fires and identity-only re-renders to one API call per
+ * distinct code. Listed under the "legitimate `useEffect`" patterns in
+ * `.claude/rules/react-effects.md` (one-time external sync keyed by an
+ * external param). Returned ref is exposed so manual remove/reset can clear
+ * the guard, allowing the same `?code=` to auto-validate again after manual
+ * removal.
+ */
+function useAutoValidateInitialCode(
+	initialCode: string | undefined,
+	validatedPromoCode: string | undefined,
+	runValidation: (targetCode: string) => Promise<void>,
+): React.RefObject<string | null> {
+	const autoValidatedCodeRef = useRef<string | null>(null);
+	useEffect(
+		function autoValidateInitialCode() {
+			const normalized = initialCode?.trim().toUpperCase() ?? '';
+			if (!normalized) {
+				autoValidatedCodeRef.current = null;
+				return;
+			}
+			if (validatedPromoCode === normalized) return;
+			if (autoValidatedCodeRef.current === normalized) return;
+			autoValidatedCodeRef.current = normalized;
+			void runValidation(normalized);
+		},
+		[initialCode, validatedPromoCode, runValidation],
+	);
+	return autoValidatedCodeRef;
+}
+
+/**
  * Owns the promo-code validation lifecycle — local input state, the
  * async validator call, auto-validation of an initial URL-provided
  * code, and the remove/reset affordances. Keeps the UI component
@@ -212,22 +179,44 @@ export function usePromoCodeValidation({
 		state.runValidation,
 	);
 
+	const {
+		code,
+		runValidation,
+		setCode,
+		setValidatedPromo,
+		setError,
+		setIsExpanded,
+	} = state;
+
 	const manualValidate = useCallback(
-		async (codeToValidate?: string) => {
-			const targetCode = (codeToValidate ?? state.code).trim().toUpperCase();
+		async function manualValidate(codeToValidate?: string): Promise<void> {
+			const targetCode = (codeToValidate ?? code).trim().toUpperCase();
 			if (!targetCode) return;
-			await state.runValidation(targetCode);
+			await runValidation(targetCode);
 		},
-		[state],
+		[code, runValidation],
 	);
 
-	const { removeCode, resetCode } = useResetCallbacks({
-		autoValidatedCodeRef,
-		setCode: state.setCode,
-		setValidatedPromo: state.setValidatedPromo,
-		setError: state.setError,
-		setIsExpanded: state.setIsExpanded,
-	});
+	const removeCode = useCallback(
+		function removeCode() {
+			autoValidatedCodeRef.current = null;
+			setCode('');
+			setValidatedPromo(null);
+			setError(null);
+			setIsExpanded(false);
+		},
+		[autoValidatedCodeRef, setCode, setValidatedPromo, setError, setIsExpanded],
+	);
+
+	const resetCode = useCallback(
+		function resetCode() {
+			autoValidatedCodeRef.current = null;
+			setCode('');
+			setError(null);
+			setIsExpanded(false);
+		},
+		[autoValidatedCodeRef, setCode, setError, setIsExpanded],
+	);
 
 	return {
 		code: state.code,

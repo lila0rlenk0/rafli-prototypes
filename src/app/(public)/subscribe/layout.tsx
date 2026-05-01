@@ -58,12 +58,11 @@ interface SubscribeLayoutProps {
  * @returns Cream-canvas main wrapper
  */
 export default function SubscribeLayout({ children }: SubscribeLayoutProps) {
-	// Same gate as `/pricing` — the subscribe surface promotes the
-	// subscription product, so it must stay invisible to crawlers and
-	// users until `SUBSCRIPTION_ENABLED` flips. `notFound()` 404s the
-	// route at the layout boundary, so the page tree never renders and
-	// the embedded Fanbasis iframe never mints a session.
-	if (!FEATURE_FLAGS.SUBSCRIPTION_ENABLED) notFound();
+	// `notFound()` (not `redirect`) so probes can't distinguish "feature
+	// off" from "route never existed" — same opacity strategy as the
+	// `/messages` gate. Lives in the layout so every nested route under
+	// `/subscribe/*` inherits the gate without per-page guards.
+	if (!FEATURE_FLAGS.SUBSCRIBE_PAGE_ENABLED) notFound();
 
 	return (
 		<main className="bg-background relative min-h-dvh overflow-x-clip">

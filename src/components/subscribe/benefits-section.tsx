@@ -52,12 +52,10 @@ const BENEFITS: readonly Benefit[] = [
  * "EARLY MEMBER PERKS" benefits block — four mint-green cards under a
  * three-line heading stack.
  *
- * Below `sm:` the cards swipe horizontally via `snap-x snap-mandatory`,
- * with a negative horizontal margin that breaks out of the navbar
- * `px-3` padding so cards can peek past the page edge. From `md:` the
- * row collapses to a 2-column grid and from `lg:` expands to four
- * columns so all benefits sit side-by-side on desktop — matches the
- * Figma composition that treats the four cards as a single visual row.
+ * Card row is a responsive grid (1→2→3→4 columns at base/md/lg/xl) so all
+ * four benefits sit side-by-side on desktop and stack cleanly on narrower
+ * viewports — matches the Figma composition that treats the row as a single
+ * visual unit.
  *
  * Heading stack: uppercase eyebrow → bold Clash Display H2 → medium
  * Geist subtitle. The H2 is intentionally longer (no text-balance
@@ -81,11 +79,11 @@ export function BenefitsSection() {
 				</p>
 			</div>
 
-			{/* 4× 284px cards + 3× 32px gaps = 1,232px — the container cap
-			    from `--container-subscribe-benefits-row`. Grid steps 1→2→4
-			    at md/lg, which matches the reference tablet treatment
-			    (2-up cards at 768–1023, not 1-up-until-lg). */}
-			<div className="grid w-full max-w-(--container-subscribe-benefits-row) grid-cols-1 justify-items-center gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+			{/* 4× 284px cards + 3× 32px gaps = 1,232px — the full 4-up row
+			    only fits once the content rail reaches desktop width.
+			    Grid steps 1→2→3→4 at base/md/lg/xl keep cards readable and
+			    avoid horizontal pressure around 1024px viewports. */}
+			<div className="grid w-full max-w-(--container-subscribe-benefits-row) grid-cols-1 justify-items-center gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3 xl:grid-cols-4">
 				{BENEFITS.map(benefit => (
 					<BenefitCard key={benefit.title} benefit={benefit} />
 				))}

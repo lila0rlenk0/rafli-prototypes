@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Suspense, type ComponentProps, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 
+import { MarqueeBanner } from '@/components/browse/marquee-banner';
+import { PricingHeroDecor } from '@/components/pricing/hero-decor';
 import { PublicNavbar } from '@/components/ui-custom/public-navbar';
 import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 import { env } from '@/env/server';
-import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { getSession } from '@/lib/auth/session';
+import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { parsePermissions } from '@/lib/permissions';
 import { RealtimeProviders } from '@/providers/realtime-providers';
 import { UserStoreProvider } from '@/providers/user-store-provider';
@@ -46,6 +48,9 @@ interface PricingLayoutProps {
 	children: ReactNode;
 }
 
+const PRICING_MARQUEE_MESSAGE =
+	'Share selected sweepstakes on X and get free entries!';
+
 /**
  * Pricing Layout Content
  *
@@ -65,12 +70,16 @@ async function PricingLayoutContent({ children }: PricingLayoutProps) {
 		? parsePermissions(session?.user?.permissions)
 		: [];
 
-	// Step 3: Shared chrome for both auth states. No marquee here — the
-	// share-to-earn promo only makes sense on a selected active raffle (see
-	// `browse/[publicSlug]/page.tsx`); rendering it on /pricing promised a
-	// behaviour this surface can't deliver.
+	// Step 3: Shared chrome for both auth states. Pricing now intentionally
+	// reuses the yellow marquee treatment from the design handoff so the
+	// conversion flow has a consistent "social-share reward" surface.
 	const content = (
-		<PublicNavbar isAuthenticated={isAuthenticated}>{children}</PublicNavbar>
+		<PublicNavbar
+			isAuthenticated={isAuthenticated}
+			topBanner={<MarqueeBanner message={PRICING_MARQUEE_MESSAGE} />}
+		>
+			{children}
+		</PublicNavbar>
 	);
 
 	// Step 4: Only wrap in auth stores when logged in — hooks like
@@ -87,52 +96,43 @@ async function PricingLayoutContent({ children }: PricingLayoutProps) {
 }
 
 /**
- * Decorative pastel shapes positioned behind the hero — identical palette
- * (blue / green / yellow) to the browse and how-it-works backgrounds so the
- * /pricing surface stays visually continuous with the rest of the app.
- * Fixed-position and `pointer-events-none` so it never intercepts clicks.
- */
-function ColoredShapes(props: ComponentProps<'svg'>) {
-	return (
-		<svg
-			width="851"
-			height="559"
-			viewBox="0 0 851 559"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-			{...props}
-		>
-			<path
-				d="M-243.831 -72.0817C-240.401 -84.8849 -227.241 -92.4829 -214.437 -89.0523L259.373 37.9049C272.176 41.3355 279.774 54.4956 276.344 67.2988L149.387 541.109C145.956 553.913 132.796 561.511 119.993 558.08L-353.818 431.123C-366.621 427.692 -374.219 414.532 -370.788 401.729L-243.831 -72.0817Z"
-				fill="#C4EDFF"
-			/>
-			<path
-				d="M29.0231 -362.816C34.7295 -374.779 49.0539 -379.852 61.0174 -374.145L624.656 -105.298C636.62 -99.5917 641.692 -85.2673 635.986 -73.3037L367.139 490.335C361.432 502.299 347.108 507.371 335.144 501.665L-228.495 232.817C-240.458 227.111 -245.531 212.787 -239.824 200.823L29.0231 -362.816Z"
-				fill="#BEFFDB"
-			/>
-			<path
-				d="M135.361 -172.953C128.734 -184.432 132.667 -199.11 144.146 -205.738L568.953 -451C580.432 -457.627 595.11 -453.694 601.738 -442.215L847 -17.4084C853.627 -5.92936 849.694 8.74883 838.215 15.3762L413.408 260.639C401.929 267.266 387.251 263.333 380.624 251.854L135.361 -172.953Z"
-				fill="#F6FF8B"
-			/>
-		</svg>
-	);
-}
-
-/**
  * Pricing Layout
  *
  * Server Component — Suspense wraps the auth-resolving inner content so the
  * rest of the tree can stream while the session cookie is being decoded.
  * Fallback is a full-screen loader (matches browse/how-it-works).
+ *
+ * Decor placement:
+ *   The Figma reference clusters three brand-color rounded squares in the
+ *   upper-left of the page (bleeding off the viewport edge), behind the
+ *   navbar/marquee/hero copy. We render `PricingHeroDecor` here at the
+ *   layout level — NOT inside the centered hero section — because the
+ *   hero is `mx-auto max-w-copy` and would anchor the cluster to the
+ *   centered column, drifting the squares into the middle of the page.
+ *   At the `<main>` level the decor anchors to the viewport's top-left
+ *   and the `overflow-x-clip` shell crops the bleed cleanly at the
+ *   viewport edge, exactly matching the Figma frame.
+ *
+ * Stacking:
+ *   `isolate` opens a stacking context scoped to `<main>` so the decor's
+ *   `-z-10` only goes below sibling content within main (Suspense /
+ *   navbar / page tree) — without `isolate` the negative z would escape
+ *   to the root context and disappear beneath the body's painted bg.
+ *
+ * `overflow-x-clip` contains the decor cluster — the squares extend past
+ * the viewport's left edge, and `clip` crops the horizontal bleed without
+ * creating a scroll container (the way `overflow-x-hidden` would).
  */
 export default function PricingLayout({ children }: PricingLayoutProps) {
-	// Feature flag — returns 404 when subscriptions are disabled so the
-	// route is invisible to crawlers and users until the flag is flipped.
-	if (!FEATURE_FLAGS.SUBSCRIPTION_ENABLED) notFound();
+	// `notFound()` (not `redirect`) so external probes can't tell whether
+	// pricing is hidden behind a flag or simply doesn't exist yet — same
+	// opacity strategy as the `/subscribe` and `/messages` gates. Lives
+	// in the layout so any nested route under `/pricing/*` inherits it.
+	if (!FEATURE_FLAGS.PRICING_PAGE_ENABLED) notFound();
 
 	return (
-		<main className="relative min-h-dvh">
-			<ColoredShapes className="scale-xs pointer-events-none fixed top-0 left-0 z-(--z-sticky) origin-top-left" />
+		<main className="relative isolate min-h-dvh overflow-x-clip">
+			<PricingHeroDecor />
 			<Suspense fallback={<ScreenLoader />}>
 				<PricingLayoutContent>{children}</PricingLayoutContent>
 			</Suspense>

@@ -26,6 +26,13 @@ export const SUBSCRIPTION_ERROR_CODES = {
 	NOT_ACTIVE: 'payments:subscription:not-active',
 	/** Webhook enrollment race — user ended up double-subscribed, backend rolled back */
 	ENROLLMENT_CONFLICT: 'payments:subscription:enrollment-conflict',
+	/**
+	 * Billing portal — user has no Stripe customer record (never subscribed,
+	 * or Stripe deleted the customer). 404 from POST /subscriptions/portal.
+	 * Surfaced separately so the UI can deflect to /pricing instead of toasting
+	 * a generic "something went wrong".
+	 */
+	NO_CUSTOMER: 'payments:subscription:no-customer',
 
 	// Frontend-only — Zod parse failure on an otherwise-successful response.
 	/** Response shape drifted from the backend contract — captured as contract drift */

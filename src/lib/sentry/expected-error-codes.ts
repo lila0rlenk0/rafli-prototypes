@@ -159,6 +159,9 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 	'payments:subscription:not-found',
 	'payments:subscription:not-active',
 	'payments:subscription:enrollment-conflict',
+	// Portal — user has no Stripe customer; expected for never-subscribed
+	// accounts that somehow reach the manage flow. UI deflects to /pricing.
+	'payments:subscription:no-customer',
 
 	// Fanbasis public-credit — the embedded session-mint endpoint is
 	// unauthenticated and has no buyer-supplied payload. `rate-limited`

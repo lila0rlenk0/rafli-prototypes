@@ -15,10 +15,6 @@ import { z } from 'zod';
  *   in Sentry instead of silently in the UI.
  */
 
-// =============================================================================
-// Status enum — mirrors backend `subscription_status_enum` exactly
-// =============================================================================
-
 /**
  * Subscription lifecycle statuses from the backend `subscription_status_enum`.
  * Semantics:
@@ -37,16 +33,12 @@ export const SUBSCRIPTION_STATUS = {
 export type SubscriptionStatus =
 	(typeof SUBSCRIPTION_STATUS)[keyof typeof SUBSCRIPTION_STATUS];
 
-export const subscriptionStatusSchema = z.enum([
+const subscriptionStatusSchema = z.enum([
 	SUBSCRIPTION_STATUS.ACTIVE,
 	SUBSCRIPTION_STATUS.CANCELLED,
 	SUBSCRIPTION_STATUS.PAST_DUE,
 	SUBSCRIPTION_STATUS.EXPIRED,
 ]);
-
-// =============================================================================
-// Plan schemas
-// =============================================================================
 
 /**
  * Single feature bullet rendered inside a plan card.
@@ -56,7 +48,7 @@ export const subscriptionStatusSchema = z.enum([
  * metadata. `.nullable()` mirrors the backend DTO (`null | string`) rather
  * than omitting the key; matching the wire shape keeps parse errors honest.
  */
-export const subscriptionPlanFeatureSchema = z.object({
+const subscriptionPlanFeatureSchema = z.object({
 	text: z.string(),
 	tag: z.string().nullable(),
 });
@@ -69,7 +61,7 @@ export const subscriptionPlanFeatureSchema = z.object({
  * `T | null` fields over the wire — optional fields can be silently dropped
  * on cross-service hops, so the backend uses `null` sentinels deliberately.
  */
-export const subscriptionPlanMetadataSchema = z.object({
+const subscriptionPlanMetadataSchema = z.object({
 	badgeText: z.string().nullable(),
 	highlightLabel: z.string().nullable(),
 	isHighlighted: z.boolean(),
@@ -83,7 +75,7 @@ export const subscriptionPlanMetadataSchema = z.object({
  * Monetary values are decimal strings — format the display at the render
  * boundary, never parse to Number here.
  */
-export const subscriptionPlanSchema = z.object({
+const subscriptionPlanSchema = z.object({
 	id: z.uuidv7(),
 	name: z.string(),
 	monthlyPriceAmount: z.string(),
@@ -97,38 +89,45 @@ export const subscriptionPlansResponseSchema = z.object({
 	plans: z.array(subscriptionPlanSchema),
 });
 
-// =============================================================================
-// My-subscription schema — the authenticated user's current subscription
-// =============================================================================
-
 /**
  * The authenticated user's current subscription as returned by
- * `GET /subscriptions/me`.
+ * `GET /me/subscription`.
  *
  * Design choice: the backend embeds the full `SubscriptionPlan` entity rather
  * than returning just a `planId`. Embedding lets every consumer (dialog, nav
  * badge, pricing card "current" state) render tier visuals, price, feature
  * list, etc. without a second round-trip, and it collapses to a single cache
  * key in React Query. The small bandwidth cost is acceptable because the
- * `/me` payload is fetched at most a couple of times per session.
+ * `/me/subscription` payload is fetched at most a couple of times per session.
+ *
+ * Wire shape mirrors `UserSubscriptionResponseDto` on the backend — `id` plus
+ * the embedded `plan` are the FE's identity handles; we read `plan.id` rather
+ * than carrying a separate `planId` because the backend never returns one at
+ * the top level.
  *
  * `cancelledAt` is nullable — only set once the user requests cancel; benefits
  * continue until `currentPeriodEnd` regardless. Kept distinct from `status`
  * because a cancelled-but-still-active subscription is a valid state that the
  * UI needs to communicate differently from a fully expired one.
  */
-export const mySubscriptionSchema = z.object({
+const mySubscriptionSchema = z.object({
 	id: z.uuidv7(),
-	planId: z.uuidv7(),
 	plan: subscriptionPlanSchema,
 	status: subscriptionStatusSchema,
 	currentPeriodEnd: z.iso.datetime(),
 	cancelledAt: z.iso.datetime().nullable(),
 });
 
-// =============================================================================
-// Subscribe payload + response
-// =============================================================================
+/**
+ * Wire envelope for `GET /me/subscription`. The backend wraps the entity in
+ * `{ subscription: ... | null }` so a no-subscription state is a successful
+ * 200 with a null payload — not a 404. Parsing the wrapper here means the
+ * server action can branch on `data.subscription === null` instead of having
+ * to differentiate the not-found case from a transport-level 404.
+ */
+export const mySubscriptionResponseSchema = z.object({
+	subscription: mySubscriptionSchema.nullable(),
+});
 
 /**
  * FE payload for the subscribe action.
@@ -152,16 +151,20 @@ export const createSubscriptionResponseSchema = z.object({
 	checkoutUrl: z.url(),
 });
 
-// =============================================================================
-// Inferred types
-// =============================================================================
+/**
+ * Response from `POST /subscriptions/portal` — short-lived Stripe-hosted URL
+ * for the Customer Portal where users self-serve cancel, plan switch, payment
+ * method updates, and invoice history. The FE redirects the browser to it
+ * (full-page nav) so Stripe can run its own UX without a same-origin frame.
+ *
+ * Mirrors `CreateBillingPortalResponseDto` on the backend — single `url`
+ * field, deliberately kept narrow so we don't accidentally start consuming
+ * Stripe customer/session ids on the FE.
+ */
+export const createBillingPortalResponseSchema = z.object({
+	url: z.url(),
+});
 
-export type SubscriptionPlanFeature = z.infer<
-	typeof subscriptionPlanFeatureSchema
->;
-export type SubscriptionPlanMetadata = z.infer<
-	typeof subscriptionPlanMetadataSchema
->;
 export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
 export type SubscriptionPlansResponse = z.infer<
 	typeof subscriptionPlansResponseSchema
@@ -172,4 +175,32 @@ export type SubscribeToPlanPayload = z.infer<
 export type CreateSubscriptionResponse = z.infer<
 	typeof createSubscriptionResponseSchema
 >;
+export type CreateBillingPortalResponse = z.infer<
+	typeof createBillingPortalResponseSchema
+>;
 export type MySubscription = z.infer<typeof mySubscriptionSchema>;
+
+/**
+ * Subscription snapshot consumed by the ticket-purchase math + price breakdown.
+ *
+ * Mirrors the BE `ActiveSubscriptionInfoDto` minus identifiers — only the
+ * discount %, an active flag, and the plan display name reach the client.
+ * `planName` powers the price breakdown caption ("Saving $X with Premium")
+ * and is null when the user has no active subscription.
+ *
+ * Lives in `@/types/subscription` so the inactive sentinel + the type are the
+ * single source of truth shared by the React.cache-wrapped server fetch
+ * (`getRaffleSubscriptionContext`) and the client purchase hook.
+ */
+export interface RaffleSubscriptionContext {
+	readonly discountPercent: number;
+	readonly isActive: boolean;
+	readonly planName: string | null;
+}
+
+/** Sentinel used for guests / fetch failures / expired subscriptions. */
+export const INACTIVE_SUBSCRIPTION_CONTEXT: RaffleSubscriptionContext = {
+	discountPercent: 0,
+	isActive: false,
+	planName: null,
+};

@@ -2,7 +2,6 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { Logo } from '@/assets/logo';
-import { TrustpilotBadge } from '@/components/ui-custom/trustpilot-badge';
 
 interface SubscribeNavbarProps {
 	readonly children: ReactNode;
@@ -13,10 +12,9 @@ interface SubscribeNavbarProps {
  * Minimal marketing navbar for /subscribe.
  *
  * Figma collapses the full PublicNavbar (Browse link, mode toggle,
- * sign-in CTA) down to two elements: brand mark on the left, Trustpilot
- * trust signal on the right. The /subscribe page is a conversion
- * surface — every extra nav affordance is a leak away from the
- * credit-purchase CTA, so the shell stays deliberately empty.
+ * sign-in CTA) down to a single brand mark. The /subscribe page is a
+ * conversion surface — every extra nav affordance is a leak away from
+ * the credit-purchase CTA, so the shell stays deliberately empty.
  *
  * Structure mirrors PublicNavbar so shared consumers (marquee
  * `topBanner`, `max-w-hero` content container, `--spacing-navbar-pad`
@@ -35,12 +33,10 @@ export function SubscribeNavbar({ children, topBanner }: SubscribeNavbarProps) {
 	return (
 		<>
 			<nav className="bg-background border-ink-900 relative z-(--z-sticky-hi) border-b">
-				<div className="max-w-hero mx-auto flex h-14 w-full items-center justify-between gap-3 px-6 sm:h-16 md:px-(--spacing-navbar-pad)">
+				<div className="max-w-hero mx-auto flex h-14 w-full items-center px-6 sm:h-16 md:px-(--spacing-navbar-pad)">
 					<Link href="/" aria-label="Rafli home">
 						<Logo className="h-5 w-auto sm:h-6" />
 					</Link>
-
-					<TrustpilotBadge className="shrink-0" />
 				</div>
 			</nav>
 

@@ -6,6 +6,7 @@ import { PROMO_CODE_EVENTS } from '@/lib/analytics/events';
 import { hashPromoCodeForAnalytics } from '@/lib/analytics/hash-sensitive';
 import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
+import { getSession } from '@/lib/auth/session';
 import { mapPromoCodeError } from '@/lib/errors/error-mapper';
 import { failure, success } from '@/lib/errors/service-result';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -34,8 +35,6 @@ export async function validatePromoCode(
 	raffleId: string,
 	code: string,
 ): Promise<ServiceResponse<ValidatePromoCodeResponse, PromoCodeErrorCode>> {
-	const sessionPromise = import('@/lib/auth/session').then(m => m.getSession());
-
 	try {
 		const normalizedCode = code.trim().toUpperCase();
 
@@ -54,7 +53,7 @@ export async function validatePromoCode(
 		// Must `await` trackAfter — it resolves IP via headers() in request
 		// scope then defers Mixpanel via after(). `void trackAfter(...)` would
 		// run headers() post-response and throw.
-		const session = await sessionPromise;
+		const session = await getSession();
 		await trackAfter(
 			PROMO_CODE_EVENTS.VALIDATED,
 			{

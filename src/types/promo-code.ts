@@ -31,20 +31,17 @@ export const promoCodeTypeSchema = z.enum([
  * Promo code entity from backend.
  *
  * Validation boundary: server-side — parsed in promo code server actions.
- * `bulkId` defaults to null for backward compat with older payloads.
- * `maxRedemptionsPerUser` defaults to 0 (unlimited) for the same reason.
  */
-export const promoCodeSchema = z.object({
+const promoCodeSchema = z.object({
 	id: z.string(),
 	code: z.string(),
 	raffleId: z.string(),
-	// Backend may omit bulkId for older payloads; normalize to null for UI.
-	bulkId: z.uuidv7().nullable().optional().default(null),
+	bulkId: z.uuidv7().nullable(),
 	type: promoCodeTypeSchema,
 	value: z.string(),
 	maxUses: z.number(),
 	// 0 = unlimited — same convention as maxUses
-	maxRedemptionsPerUser: z.number().default(0),
+	maxRedemptionsPerUser: z.number(),
 	usedCount: z.number(),
 	isActive: z.boolean(),
 	expiresAt: z.string().nullable(),
@@ -86,63 +83,37 @@ export type ListPromoCodesResponse = z.infer<
 >;
 export type ExportPromoCodesQuery = z.infer<typeof exportPromoCodesQuerySchema>;
 
-export const bulkCreatePromoCodesInputSchema = z
-	.object({
-		count: z.number().int().min(1).max(100),
-		type: promoCodeTypeSchema,
-		value: z.number().positive(),
-		maxUses: z.number().int().min(0).max(10_000).default(1),
-		// 0 = unlimited — mirrors maxUses convention
-		maxRedemptionsPerUser: z.number().int().min(0).max(10_000).default(0),
-		expiresAt: z.string().optional(),
-	})
-	.refine(
-		data => {
-			if (data.type === PROMO_CODE_TYPE.DISCOUNT_PERCENT) {
-				return data.value >= 1 && data.value <= 100;
-			}
-			return true;
-		},
-		{ message: 'Discount percent must be between 1 and 100', path: ['value'] },
-	)
-	.refine(
-		data => {
-			if (data.type === PROMO_CODE_TYPE.FREE_TICKETS) {
-				return Number.isInteger(data.value) && data.value >= 1;
-			}
-			return true;
-		},
-		{
-			message: 'Bonus entries count must be a positive integer',
-			path: ['value'],
-		},
-	);
-
 export const bulkCreatePromoCodesResponseSchema = z.object({
 	bulkId: z.uuidv7(),
 	created: z.number(),
 	codes: z.array(z.string()),
 });
 
-export type BulkCreatePromoCodesInput = z.infer<
-	typeof bulkCreatePromoCodesInputSchema
->;
 export type BulkCreatePromoCodesResponse = z.infer<
 	typeof bulkCreatePromoCodesResponseSchema
 >;
 
 /**
  * Backend returns different fields based on promo type:
- * - free_tickets: { valid, type, ticketsGranted }
- * - discount_*: { valid, type, discountAmount }
+ * - free_tickets: { valid, type, ticketsGranted, rawValue }
+ * - discount_*: { valid, type, discountAmount, rawValue }
+ *
+ * `rawValue` is the unmodified `promoCode.value` decimal string. Required so
+ * the FE can mirror BE math at the order-total level (e.g. fixed-promo cap
+ * across qty > 1) — the per-ticket-capped `discountAmount` would otherwise
+ * understate savings the BE actually applies.
+ *
+ * `valid` is `literal(true)`: the BE throws on invalid codes (never returns a
+ * `false` payload), and the FE service action only ever sees a successful
+ * response here. A future BE change that surfaces `valid: false` instead of
+ * an error would land as a Zod parse failure → ContractDrift toast, which is
+ * the correct loud failure mode rather than a silent UX downgrade.
  */
 export const validatePromoCodeResponseSchema = z.object({
-	// BE always throws on invalid codes (never returns valid: false), but the
-	// interface declares `boolean`. Using z.boolean() hardens against future
-	// BE changes where valid: false is returned instead of an error.
-	valid: z.boolean(),
+	valid: z.literal(true),
 	type: promoCodeTypeSchema,
 	discountAmount: z.string().optional(),
+	rawValue: z.string(),
 	ticketsGranted: z.number().optional(),
 });
 
@@ -151,18 +122,24 @@ export type ValidatePromoCodeResponse = z.infer<
 >;
 
 /**
- * Schema for validated promo code used by frontend components after validation
+ * Schema for validated promo code used by frontend components after validation.
+ *
+ * `value` is the BE-computed per-ticket display label (subscriber-aware) — kept
+ * for UI copy ("$1.875 off per entry") that matches the user's effective price.
+ * `rawValue` is the unmodified host-set promo value used by all checkout math
+ * (subscriber-aware unit math + order-level cap math); see schema above.
  *
  * Value interpretation by type:
- * - free_tickets: number of free tickets (e.g., "3")
- * - discount_percent: per-ticket discount amount in currency (e.g., "5.00")
- * - discount_fixed: total fixed discount amount (e.g., "10.00")
+ * - free_tickets: `value` = grant count display, `rawValue` = grant count decimal string
+ * - discount_percent: `value` = per-ticket dollar preview, `rawValue` = percent (1-100)
+ * - discount_fixed: `value` = per-ticket-capped preview, `rawValue` = total dollar amount
  */
 export const validatedPromoCodeSchema = z.object({
 	valid: z.literal(true),
 	code: z.string(),
 	type: promoCodeTypeSchema,
 	value: z.string(),
+	rawValue: z.string(),
 });
 
 export type ValidatedPromoCode = z.infer<typeof validatedPromoCodeSchema>;

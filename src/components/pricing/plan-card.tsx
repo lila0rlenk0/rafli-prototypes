@@ -1,10 +1,10 @@
 import { Check } from 'lucide-react';
-import Link from 'next/link';
 
 import { cn } from '@/lib/class-names';
 import type { SubscriptionPlan } from '@/types/subscription';
 
 import { formatPrice } from './format-price';
+import { ManageSubscriptionButton } from '@/components/pricing/subscribe/manage-subscription-button';
 import { SubscribeButton } from '@/components/pricing/subscribe/subscribe-button';
 
 interface PlanCardProps {
@@ -26,23 +26,39 @@ interface PlanCardProps {
 }
 
 /**
- * Feature-tag pill styling, gated by the plan's highlight status rather than
- * the tag string. The Figma design treats the *same* tag text (e.g. "LIMITED
- * OFFER") differently per card: the Starter card uses a quiet neutral-gray
- * pill, the Pro card uses the brand mint (`brand-mint`) that reinforces the
- * "you're on the premium tier" read. Tying the palette to `isHighlighted`
- * avoids hard-coding plan names and lets Ops flip the featured plan without
- * a code change.
- *
- * @param isHighlighted - Whether the plan is featured (Pro tier today).
- * @returns Tailwind classes for background + text color of the tag pill.
+ * Feature-tag pill class string. Both plan cards in the Figma reference
+ * render every tag (`NEW`, `LIMITED OFFER`, `Only PROs`) with the same mint
+ * surface + dark-mint foreground — the design uses tag *colour* as a
+ * "this is a perk" signal across plans and reserves the per-plan hue for
+ * the check-icon tile (themed via `checkClasses`). Hoisted as a module
+ * constant so the JSX stays free of per-render allocation.
  */
-function tagClasses(options: { isHighlighted: boolean }): string {
+const TAG_CLASSES = 'bg-brand-mint text-accent-green-foreground';
+
+/**
+ * Check-icon tile palette, themed by the plan's highlight status. Figma
+ * mirrors the card's accent in the tile that holds the check glyph:
+ * - Starter (default): silver tile + ink-700 glyph — quiet, monochrome.
+ * - Pro (highlighted): sky tile + brand-teal glyph — reinforces the same
+ *   sky/teal accent the "BEST VALUE" header pill uses, so the entire
+ *   featured card reads as one colour story.
+ *
+ * Returned as a `tile` + `glyph` tuple because Tailwind needs the foreground
+ * colour on the icon element, not the wrapping span — splitting the strings
+ * keeps the JSX flat.
+ *
+ * @param isHighlighted - Whether the plan is the featured tier (Pro today).
+ * @returns `tile` + `glyph` Tailwind classes for the check-icon pair.
+ */
+function checkClasses(options: { isHighlighted: boolean }): {
+	tile: string;
+	glyph: string;
+} {
 	const { isHighlighted } = options;
 	if (isHighlighted) {
-		return 'bg-brand-mint text-[#44b476]';
+		return { tile: 'bg-sky-200', glyph: 'text-brand-teal' };
 	}
-	return 'bg-[#d9d9d9] text-[#7b7b7b]';
+	return { tile: 'bg-silver', glyph: 'text-ink-700' };
 }
 
 /**
@@ -68,7 +84,7 @@ function shellClasses(options: {
 	// is immediate without hunting for a pill. Wash kept at 25% so the body
 	// typography still passes AA contrast against the tinted surface.
 	if (isCurrent) {
-		return 'border-2 border-[#13e36f] bg-[color-mix(in_oklab,var(--color-brand-mint)_25%,white)]';
+		return 'border-2 border-green-vivid bg-brand-mint/25';
 	}
 	// Featured plan — solid black border on white to pull the eye without
 	// changing the surface (keeps the yellow discount sticker + green
@@ -79,6 +95,57 @@ function shellClasses(options: {
 	// Default — quiet neutral hairline; card recedes next to the featured
 	// sibling without disappearing.
 	return 'border-input';
+}
+
+/**
+ * Rotated "X% OFF" sticker overlapping the card's top-right corner.
+ *
+ * Extracted as its own component because PlanCard already brushes the
+ * `max-lines-per-function` ESLint cap; pulling the sticker out keeps the
+ * parent under 150 LOC without losing the inline comment density the
+ * style guide expects on cosmetic decisions.
+ *
+ * Tier-aware palette: featured plan gets the brand-yellow surface + black
+ * border for emphasis; the quieter plan gets a white pill with a hairline
+ * gray border so it recedes alongside the card chrome. `aria-hidden`
+ * because the discount percent is already surfaced in the feature list —
+ * repeating it to assistive tech would be noise.
+ *
+ * @param text - Marketing label (e.g. "15% OFF").
+ * @param isHighlighted - Whether the host plan is the featured tier.
+ * @returns Absolutely-positioned rotated sticker pinned to the card's
+ *   top-right corner across breakpoints.
+ */
+function DiscountSticker({
+	text,
+	isHighlighted,
+}: {
+	text: string;
+	isHighlighted: boolean;
+}) {
+	return (
+		<div
+			aria-hidden
+			className={cn(
+				// Sticker sits flush with the card's right edge and cantilevers
+				// ~28px above the top border on desktop. Pushing it past the
+				// right edge (instead of insetting) is what sells the "stuck
+				// on after the fact" effect — centered stickers read as
+				// planned chrome and lose their urgency.
+				'-rotate-tilt-sm pointer-events-none absolute -top-5 right-2 flex h-17.5 w-37.5 flex-col items-center justify-center rounded-3xl border sm:-top-7 sm:right-4 sm:h-21.25 sm:w-42.5',
+				isHighlighted
+					? 'bg-brand-yellow border-black'
+					: 'border-ink-300 bg-white',
+			)}
+		>
+			<span className="font-clash-display text-xl/none font-semibold text-black sm:text-2xl">
+				{text}
+			</span>
+			<span className="mt-1 text-xs font-semibold text-black sm:text-sm">
+				on every entry
+			</span>
+		</div>
+	);
 }
 
 /**
@@ -128,6 +195,7 @@ export function PlanCard({
 		isCurrent,
 		highlightLabel: plan.metadata.highlightLabel,
 	});
+	const check = checkClasses({ isHighlighted: highlighted });
 
 	return (
 		<article
@@ -143,36 +211,11 @@ export function PlanCard({
 				shellClasses({ isCurrent, isHighlighted: highlighted }),
 			)}
 		>
-			{/* Rotated "X% OFF" sticker that overlaps the top-right corner of the
-			    card, "hanging off" the border. Scoped to each card so it moves with
-			    the card when the grid wraps to a single column on mobile. Colors
-			    split by tier: the featured plan gets the brand yellow + black
-			    border for emphasis; the quieter plan gets a white pill with a
-			    hairline gray border so it recedes alongside the card chrome.
-			    `aria-hidden` because the discount percent is already surfaced in
-			    the feature list — repeating it to AT would be noise. */}
 			{plan.metadata.badgeText ? (
-				<div
-					aria-hidden
-					className={cn(
-						// Sticker sits flush with the card's right edge and cantilevers
-						// ~28px above the top border on desktop. Pushing it past the
-						// right edge (instead of insetting) is what sells the "stuck on
-						// after the fact" effect — centered stickers read as planned
-						// chrome and lose their urgency.
-						'-rotate-tilt-sm pointer-events-none absolute -top-5 right-2 flex h-17.5 w-37.5 flex-col items-center justify-center rounded-3xl border sm:-top-7 sm:right-4 sm:h-21.25 sm:w-42.5',
-						highlighted
-							? 'bg-brand-yellow border-black'
-							: 'border-ink-300 bg-white',
-					)}
-				>
-					<span className="font-clash-display text-xl/none font-semibold text-black sm:text-2xl">
-						{plan.metadata.badgeText}
-					</span>
-					<span className="mt-1 text-xs font-semibold text-black sm:text-sm">
-						on every entry
-					</span>
-				</div>
+				<DiscountSticker
+					text={plan.metadata.badgeText}
+					isHighlighted={highlighted}
+				/>
 			) : null}
 
 			<header className="flex flex-col gap-4">
@@ -187,14 +230,9 @@ export function PlanCard({
 					>
 						{plan.name}
 					</h3>
-					{/* Header pill. Precedence rules (enrolled user → "CURRENT";
-					    non-subscriber on the featured plan → "BEST VALUE") are
-					    resolved in `resolveHeaderPill` so the JSX stays flat —
-					    nested ternaries are banned by the project style rule.
-					    "CURRENT" uses the brand green to match the green border;
-					    "BEST VALUE" uses the cool-accent blue used on the FAQ
-					    (intentionally contrasting the green feature-tag palette
-					    below so the two pill systems don't read as the same thing). */}
+					{/* Precedence (enrolled → "CURRENT"; featured non-subscriber →
+					    "BEST VALUE") resolved in `resolveHeaderPill` to keep
+					    the JSX flat. Mint = "yours", sky = upsell. */}
 					{headerPill === 'current' ? (
 						<span className="bg-brand-mint text-mini tracking-micro-5 text-green-forest inline-flex items-center rounded-lg px-3 py-1 font-semibold uppercase">
 							Current
@@ -237,26 +275,30 @@ export function PlanCard({
 						// within a plan are unique, and a stable-enough key saves React from
 						// thrashing when plans refresh.
 						key={feature.text}
-						className="text-label flex items-center gap-4"
+						className="text-label flex items-start gap-4"
 					>
-						{/* Neutral gray rounded square containing the check glyph. The
-						    design swapped from a colored circle to a monochrome square
-						    so feature *tags* (LIMITED OFFER / NEW) carry the color weight
-						    and the check-icon becomes a quiet "yes, included" signal. */}
-						<span className="bg-silver flex size-6 shrink-0 items-center justify-center rounded-lg">
+						{/* Check-tile mirrors the card's accent (silver | sky) so
+						    the Pro tile + glyph stay in lock-step with its
+						    sky/teal "BEST VALUE" pill — see `checkClasses`. */}
+						<span
+							className={cn(
+								'flex size-6 shrink-0 items-center justify-center rounded-lg',
+								check.tile,
+							)}
+						>
 							<Check
 								aria-hidden
-								className="size-4 text-black"
+								className={cn('size-4', check.glyph)}
 								strokeWidth={3}
 							/>
 						</span>
-						<span className="flex flex-1 flex-wrap items-center gap-2 font-medium text-black">
+						<span className="flex flex-1 flex-wrap items-center gap-2 font-medium break-words text-black">
 							<span>{feature.text}</span>
 							{feature.tag ? (
 								<span
 									className={cn(
 										'text-mini tracking-micro-5 inline-flex h-6.25 items-center rounded-lg px-3 font-semibold uppercase',
-										tagClasses({ isHighlighted: highlighted }),
+										TAG_CLASSES,
 									)}
 								>
 									{feature.tag}
@@ -277,7 +319,13 @@ export function PlanCard({
 					// instead" without miscommunicating state.
 					<div className="flex flex-col gap-3">
 						<div
-							aria-label={`You are currently subscribed to ${plan.name}`}
+							// Non-interactive pill (deliberately not a disabled `<Button>`
+							// — disabled in a CTA slot reads as a form validation failure).
+							// No ARIA on the pill itself: the parent `<article>` already
+							// carries `aria-current="true"` + `aria-labelledby` pointing at
+							// the plan name, so AT users hear "current, [plan name]" when
+							// they enter the article. Adding `role="status"` here would
+							// create a redundant live region for static state.
 							className="border-green-vivid inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border-2 bg-white text-sm font-semibold text-black"
 						>
 							<Check
@@ -287,20 +335,18 @@ export function PlanCard({
 							/>
 							Your current plan
 						</div>
-						<Link
-							// `/profile` without a fragment — no subscription section exists yet.
-							// Adding a hash that maps to nothing would silently "work" (no error,
-							// no scroll) and rot silently once the section ships somewhere else.
-							href="/profile"
-							className="focus-visible:ring-ring/50 mx-auto rounded-sm text-sm font-medium text-black underline underline-offset-4 hover:no-underline focus-visible:ring-3 focus-visible:outline-none"
-						>
-							Manage subscription
-						</Link>
+						{/* Stripe-hosted Customer Portal — server action mints a
+						    short-lived URL, the client redirects. Stripe owns the
+						    cancel / plan-switch / payment-method / invoice UX so we
+						    stay out of PCI scope and inherit feature parity for free.
+						    Returning to `/pricing` (set server-side) re-renders the
+						    current-plan card with the user's updated state. */}
+						<ManageSubscriptionButton />
 					</div>
 				) : (
 					<SubscribeButton
 						planId={plan.id}
-						label={`Start ${plan.name}`}
+						label={`Get ${plan.name}`}
 						isAuthenticated={isAuthenticated}
 						// Highlighted plan gets the filled primary CTA to direct the eye;
 						// non-highlighted plans use the outline variant as a quiet

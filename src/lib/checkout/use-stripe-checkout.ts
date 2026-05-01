@@ -1,5 +1,6 @@
 'use client';
 
+import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
@@ -10,30 +11,64 @@ import { redeemFreeTickets } from '@/lib/checkout/redeem-free-tickets';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { PROMO_CODE_TYPE } from '@/types/promo-code';
 
-interface TrackInitiateOptions {
-	raffleId: string;
-	quantity: number;
-	promoCode: string | undefined;
+interface RunCheckoutFlowParams {
 	isFreeTicketsPromo: boolean;
+	promoCode: string | undefined;
+	raffleId: string;
+	publicSlug: string;
+	quantity: number;
+	expectedTotal: number;
+	pathname: string;
+	searchParams: ReturnType<typeof useSearchParams>;
+	router: AppRouterInstance;
+	clearPromo: () => void;
+	setIsLoading: (loading: boolean) => void;
 }
 
 /**
- * Fires the `TICKET_SELECTION_VIEWED` analytics event before any modal
- * or flow branches, so we capture intent regardless of abandonment
- * downstream.
+ * Routes a click between the BE-direct free-tickets redemption and the
+ * standard Stripe checkout flow. Both downstreams own module-scope
+ * single-flight guards, so this is pure routing.
  */
-function trackInitiate({
-	raffleId,
-	quantity,
-	promoCode,
-	isFreeTicketsPromo,
-}: TrackInitiateOptions): void {
+interface TrackSelectionParams {
+	raffleId: string;
+	quantity: number;
+	hasPromo: boolean;
+	isFreeTickets: boolean;
+}
+
+function trackTicketSelection(p: TrackSelectionParams): void {
 	track(PURCHASE_EVENTS.TICKET_SELECTION_VIEWED, {
-		raffle_id: raffleId,
-		quantity,
+		raffle_id: p.raffleId,
+		quantity: p.quantity,
 		payment_method: 'stripe',
-		has_promo: !!promoCode,
-		is_free_tickets: isFreeTicketsPromo,
+		has_promo: p.hasPromo,
+		is_free_tickets: p.isFreeTickets,
+	});
+}
+
+function runCheckoutFlow(p: RunCheckoutFlowParams): void {
+	if (p.isFreeTicketsPromo && p.promoCode) {
+		void redeemFreeTickets({
+			raffleId: p.raffleId,
+			promoCode: p.promoCode,
+			pathname: p.pathname,
+			searchParams: p.searchParams,
+			router: p.router,
+			clearPromo: p.clearPromo,
+			setIsLoading: p.setIsLoading,
+		});
+		return;
+	}
+	void proceedToStripeCheckout({
+		raffleId: p.raffleId,
+		publicSlug: p.publicSlug,
+		ticketQuantity: p.quantity,
+		promoCode: p.promoCode,
+		clearPromo: p.clearPromo,
+		router: p.router,
+		setIsLoading: p.setIsLoading,
+		expectedTotal: p.expectedTotal,
 	});
 }
 
@@ -42,16 +77,22 @@ function trackInitiate({
  * Stripe checkout flow. Quantity and promo state are read from the
  * shared `TicketQuantityStore` so callers don't have to pass them in.
  */
-export interface UseStripeCheckoutParams {
+interface UseStripeCheckoutParams {
 	raffleId: string;
 	publicSlug: string;
 	/** Optional quiz question that gates the purchase. */
 	questionId?: string | null;
 	/** Disabled by parent (host viewing own raffle, etc.) — short-circuits the action. */
 	disabled?: boolean;
+	/**
+	 * Displayed total at click time — forwarded to `proceedToStripeCheckout` for
+	 * the subscriber-pricing drift guard. Caller computes via `calculateOrderTotal`
+	 * so this hook stays free of math + subscription wiring.
+	 */
+	expectedTotal: number;
 }
 
-export interface UseStripeCheckoutResult {
+interface UseStripeCheckoutResult {
 	/** True while order build → checkout session creation is in flight. */
 	readonly isLoading: boolean;
 	/** Quiz modal open state — hook owns it so the modal lives next to the trigger. */
@@ -84,8 +125,13 @@ export interface UseStripeCheckoutResult {
 export function useStripeCheckout(
 	params: UseStripeCheckoutParams,
 ): UseStripeCheckoutResult {
-	const { raffleId, publicSlug, questionId, disabled = false } = params;
-
+	const {
+		raffleId,
+		publicSlug,
+		questionId,
+		disabled = false,
+		expectedTotal,
+	} = params;
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -98,38 +144,36 @@ export function useStripeCheckout(
 	const isFreeTicketsPromo =
 		appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
 
-	function startCheckoutFlow() {
-		if (isFreeTicketsPromo && promoCode) {
-			void redeemFreeTickets({
-				raffleId,
-				promoCode,
-				pathname,
-				searchParams,
-				router,
-				clearPromo,
-				setIsLoading,
-			});
-			return;
-		}
-		void proceedToStripeCheckout({
+	function runFlow() {
+		runCheckoutFlow({
+			isFreeTicketsPromo,
+			promoCode,
 			raffleId,
 			publicSlug,
-			ticketQuantity: quantity,
-			promoCode,
-			clearPromo,
+			quantity,
+			expectedTotal,
+			pathname,
+			searchParams,
 			router,
+			clearPromo,
 			setIsLoading,
 		});
 	}
 
 	function initiate() {
 		if (disabled || isLoading) return;
-		trackInitiate({ raffleId, quantity, promoCode, isFreeTicketsPromo });
+		// Fire intent before any branch so we capture abandonment downstream.
+		trackTicketSelection({
+			raffleId,
+			quantity,
+			hasPromo: !!promoCode,
+			isFreeTickets: isFreeTicketsPromo,
+		});
 		if (questionId) {
 			setShowQuestionModal(true);
 			return;
 		}
-		startCheckoutFlow();
+		runFlow();
 	}
 
 	return {
@@ -137,6 +181,6 @@ export function useStripeCheckout(
 		showQuestionModal,
 		setShowQuestionModal,
 		initiate,
-		handleCorrectAnswer: startCheckoutFlow,
+		handleCorrectAnswer: runFlow,
 	};
 }

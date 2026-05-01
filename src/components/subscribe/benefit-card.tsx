@@ -47,7 +47,7 @@ export function BenefitCard({ benefit }: BenefitCardProps) {
 	const { image, title, items } = benefit;
 
 	return (
-		<div className="bg-brand-mint border-ink-900 flex h-full w-full max-w-sm flex-col items-center gap-(--spacing-subscribe-benefit-card-gap) rounded-(--radius-subscribe-benefit-card) border px-6 pt-(--spacing-subscribe-benefit-card-pt) pb-(--spacing-subscribe-benefit-card-pb) lg:h-(--spacing-subscribe-benefit-card-h) lg:w-(--spacing-subscribe-benefit-card-w) lg:max-w-none">
+		<div className="bg-brand-mint border-ink-900 flex h-full w-full max-w-sm flex-col items-center gap-(--spacing-subscribe-benefit-card-gap) rounded-(--radius-subscribe-benefit-card) border px-6 pt-(--spacing-subscribe-benefit-card-pt) pb-(--spacing-subscribe-benefit-card-pb) xl:h-(--spacing-subscribe-benefit-card-h) xl:w-(--spacing-subscribe-benefit-card-w) xl:max-w-none">
 			<div className="relative size-(--spacing-subscribe-benefit-image) shrink-0 p-2.5">
 				<Image
 					src={image}
@@ -58,7 +58,7 @@ export function BenefitCard({ benefit }: BenefitCardProps) {
 				/>
 			</div>
 
-			<p className="font-clash-display text-ink-900 text-headline-md/tight w-(--spacing-subscribe-benefit-title) text-center font-bold text-balance">
+			<p className="font-clash-display text-ink-900 text-headline-md/tight w-full max-w-(--spacing-subscribe-benefit-title) text-center font-bold text-balance">
 				{title}
 			</p>
 

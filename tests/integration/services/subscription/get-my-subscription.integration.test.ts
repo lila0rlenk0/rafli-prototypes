@@ -44,16 +44,38 @@ const VALID_PLAN = {
 	},
 };
 
+// Wire envelope mirrors `GetSubscriptionResponseDto` on the backend — the
+// entity sits inside a `subscription` wrapper so the no-sub state can be a
+// 200 with a null payload instead of a 404. Tests must drive the action
+// through the real wire shape; otherwise a regression that removes the
+// wrapper would slip past every assertion below.
 const VALID_RESPONSE = {
-	id: '01929e55-9b1a-7c32-8ae0-fedcba987654',
-	planId: VALID_PLAN.id,
-	plan: VALID_PLAN,
-	status: 'active',
-	currentPeriodEnd: '2026-05-01T00:00:00.000Z',
-	cancelledAt: null,
+	subscription: {
+		id: '01929e55-9b1a-7c32-8ae0-fedcba987654',
+		plan: VALID_PLAN,
+		status: 'active',
+		currentPeriodEnd: '2026-05-01T00:00:00.000Z',
+		cancelledAt: null,
+	},
 };
 
 describe('getMySubscription', () => {
+	test('hits /me/subscription on the authenticated client', async () => {
+		// Regression guard for the path-mismatch bug that left the post-Stripe
+		// "setting up your membership" dialog spinning forever. Backend exposes
+		// `/api/v1/me/subscription`; the FE used to call `/api/v1/subscriptions/me`,
+		// which 404'd and folded into a phantom no-subscription state. A typed
+		// mock would not have caught this — only an explicit path assertion does.
+		mockGet.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
+
+		await getMySubscription();
+
+		expect(mockGet).toHaveBeenCalledWith(
+			'/me/subscription',
+			expect.objectContaining({ timeout: expect.any(Number) }),
+		);
+	});
+
 	test('returns the embedded plan on active subscription', async () => {
 		mockGet.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
 
@@ -68,18 +90,14 @@ describe('getMySubscription', () => {
 		}
 	});
 
-	test('returns success(null) when backend reports not-found', async () => {
-		// 404 with `payments:subscription:not-found` — the user simply has no
-		// subscription. Treated as a valid "empty" state, not an error, so the
-		// pricing page and nav badge can branch on data === null without
-		// threading a specific error code through the UI.
-		mockGet.mockRejectedValueOnce(
-			mockAxiosError({
-				status: 404,
-				data: {
-					type: 'urn:raffles:problem:payments:subscription:not-found',
-				},
-			}),
+	test('returns success(null) when backend reports no subscription', async () => {
+		// Backend returns 200 with `{ subscription: null }` for users who
+		// never subscribed or whose subscription has fully expired. Treated
+		// as a valid "empty" state, not an error, so the pricing page and
+		// nav badge can branch on `data === null` without threading a
+		// specific error code through the UI.
+		mockGet.mockResolvedValueOnce(
+			mockAxiosResponse({ subscription: null }),
 		);
 
 		const result = await getMySubscription();
@@ -90,18 +108,13 @@ describe('getMySubscription', () => {
 		}
 	});
 
-	test('does not capture not-found to Sentry', async () => {
-		// Regression guard — not-found is the common "no subscription" path for
-		// every guest-like session; spamming Sentry with it would bury real
-		// issues and burn quota.
+	test('does not capture the empty state to Sentry', async () => {
+		// Regression guard — the empty `{ subscription: null }` path is the
+		// common "no subscription" response for every guest-like session;
+		// spamming Sentry with it would bury real issues and burn quota.
 		mockCaptureServiceError.mockReset();
-		mockGet.mockRejectedValueOnce(
-			mockAxiosError({
-				status: 404,
-				data: {
-					type: 'urn:raffles:problem:payments:subscription:not-found',
-				},
-			}),
+		mockGet.mockResolvedValueOnce(
+			mockAxiosResponse({ subscription: null }),
 		);
 
 		await getMySubscription();
@@ -113,12 +126,13 @@ describe('getMySubscription', () => {
 		mockCaptureContractDrift.mockReset();
 		mockGet.mockResolvedValueOnce(
 			mockAxiosResponse({
-				// Missing `plan` field — Zod parse fails.
-				id: VALID_RESPONSE.id,
-				planId: VALID_PLAN.id,
-				status: 'active',
-				currentPeriodEnd: '2026-05-01T00:00:00.000Z',
-				cancelledAt: null,
+				// Missing `plan` field inside the wrapper — Zod parse fails.
+				subscription: {
+					id: VALID_RESPONSE.subscription.id,
+					status: 'active',
+					currentPeriodEnd: '2026-05-01T00:00:00.000Z',
+					cancelledAt: null,
+				},
 			}),
 		);
 

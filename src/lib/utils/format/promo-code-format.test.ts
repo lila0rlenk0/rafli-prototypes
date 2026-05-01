@@ -141,6 +141,22 @@ describe('formatPromoCodeValue — discount branches', () => {
 		};
 		expect(formatPromoCodeValue(code)).toBe('12%');
 	});
+
+	test('renders em-dash for malformed promo value across every type', () => {
+		// `value` is `z.string()` on the wire — a host or BE drift could send
+		// 'abc' / ''. Without the NaN guard the host promo table renders
+		// "NaN entries" / "$NaN" / "NaN%". Em-dash signals "no displayable value".
+		(
+			[
+				PROMO_CODE_TYPE.FREE_TICKETS,
+				PROMO_CODE_TYPE.DISCOUNT_FIXED,
+				PROMO_CODE_TYPE.DISCOUNT_PERCENT,
+			] as const
+		).forEach(type => {
+			const code: PromoCode = { ...BASE_PROMO_CODE, type, value: 'abc' };
+			expect(formatPromoCodeValue(code)).toBe('—');
+		});
+	});
 });
 
 describe('formatPromoCodeUsage', () => {

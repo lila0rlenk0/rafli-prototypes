@@ -1,6 +1,5 @@
 'use server';
 
-import { AxiosError } from 'axios';
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
@@ -15,7 +14,7 @@ import {
 	type SubscriptionErrorCode,
 } from '@/types/errors';
 import {
-	mySubscriptionSchema,
+	mySubscriptionResponseSchema,
 	type MySubscription,
 } from '@/types/subscription';
 import type { ServiceResponse } from '@/types/service-response';
@@ -23,13 +22,12 @@ import type { ServiceResponse } from '@/types/service-response';
 /**
  * Fetches the authenticated user's current subscription from the backend.
  *
- * Endpoint: `GET /subscriptions/me` (auth required). The backend returns 404
- * with `payments:subscription:not-found` for users who never subscribed or
- * whose subscription has fully expired — we fold that into `success(null)`
- * rather than bubbling as a failure so callers branch on `data === null`
- * instead of matching a specific error code. Every other failure path
- * (401, 500, network, contract drift) stays a `failure(...)` and is captured
- * for observability.
+ * Endpoint: `GET /me/subscription` (auth required). The backend always
+ * returns 200 with `{ subscription: null }` for users who never subscribed
+ * or whose subscription has fully expired, so the no-subscription state
+ * is a successful response with a null payload rather than a 404. Every
+ * failure path (401, 500, network, contract drift) returns `failure(...)`
+ * and is captured for observability.
  *
  * @returns ServiceResponse wrapping the subscription (or null) on success.
  */
@@ -39,13 +37,17 @@ export async function getMySubscription(): Promise<
 	try {
 		// Step 1: Hit the backend. `QUERY` timeout is tuned for cold-start
 		// latency on a serverless read path.
-		const response = await authenticatedClient.get('/subscriptions/me', {
+		const response = await authenticatedClient.get('/me/subscription', {
 			timeout: API_TIMEOUTS.QUERY,
 		});
 
-		// Step 2: Parse through the embedded-plan contract. A drift here
-		// lands in the catch below as ZodError and surfaces as FETCH_FAILED.
-		return success(mySubscriptionSchema.parse(response.data));
+		// Step 2: Parse the wire envelope, then unwrap. The wrapper shape is
+		// `{ subscription: T | null }` — keeping the parse on the envelope
+		// (rather than partially on `response.data.subscription`) means a
+		// renamed wrapper key surfaces as contract drift instead of silently
+		// reading `undefined`.
+		const parsed = mySubscriptionResponseSchema.parse(response.data);
+		return success(parsed.subscription);
 	} catch (error) {
 		// Step 3: Contract drift — response shape changed. Fingerprinted as
 		// a single Sentry issue per deploy regression (see captureContractDrift).
@@ -54,19 +56,7 @@ export async function getMySubscription(): Promise<
 			return failure(SUBSCRIPTION_ERROR_CODES.FETCH_FAILED);
 		}
 
-		// Step 4: 404 → no subscription. Short-circuit BEFORE the domain
-		// mapper so we never capture this as a service error — every guest
-		// pageview on /pricing would otherwise fire a "not found" capture
-		// and bury real issues. Checked against the HTTP status directly
-		// because the RFC 7807 extraction is deterministic only for the
-		// canonical `payments:subscription:not-found` shape — a backend
-		// returning a bare 404 body without a `type` field would still be
-		// the same "no subscription" state and should behave identically.
-		if (error instanceof AxiosError && error.response?.status === 404) {
-			return success(null);
-		}
-
-		// Step 5: Every other failure — map through the subscription mapper
+		// Step 4: Every other failure — map through the subscription mapper
 		// and capture for Sentry. Expected codes (e.g. unauthenticated) are
 		// dropped by EXPECTED_ERROR_CODES in the Sentry filter.
 		const errorCode = mapSubscriptionError(error);

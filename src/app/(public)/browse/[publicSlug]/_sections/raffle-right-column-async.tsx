@@ -37,7 +37,7 @@ interface RaffleRightColumnAsyncProps {
 
 /** Skeleton shown while the lazy crypto button bundle hydrates client-side. */
 const TICKET_PURCHASE_CARD_FALLBACK = (
-	<div className="h-32 animate-pulse rounded-xl bg-gray-100" />
+	<div className="bg-muted h-32 animate-pulse rounded-xl" />
 );
 
 /**
@@ -112,8 +112,11 @@ interface CardsProps {
  * by construction (see `deriveRaffleViewState`).
  */
 function TerminalCards({ raffle, publicSlug, view, ctx }: CardsProps) {
+	// Single null check on `ctx.myWinning` — the boolean alias is just for
+	// the late-branch readability (`!didUserWin` reads better than
+	// `ctx.myWinning === null` in the long expression below).
 	const didUserWin = ctx.myWinning !== null;
-	if (view.isConcluded && didUserWin && ctx.myWinning) {
+	if (view.isConcluded && didUserWin) {
 		return (
 			<WinnerBlock
 				raffle={raffle}
@@ -234,7 +237,7 @@ function ActiveCard({
 	return (
 		<div
 			id="checkout-section"
-			className="hidden h-fit rounded-2xl border border-black bg-white/95 p-8 lg:block"
+			className="border-border bg-card/95 hidden h-fit rounded-2xl border p-8 lg:block"
 		>
 			<RaffleFireIcon className="mx-auto size-16" />
 			<h2 className="font-clash-display my-4 text-center text-2xl font-semibold">
@@ -253,7 +256,7 @@ function ActiveCard({
 					/>
 				</Suspense>
 				{view.disablePurchase && !view.showEditButton ? (
-					<p className="mt-2 text-center text-sm text-gray-500">
+					<p className="text-muted-foreground mt-2 text-center text-sm">
 						You cannot enter your own sweepstakes
 					</p>
 				) : null}
@@ -284,6 +287,7 @@ function ActivePurchaseCard({ raffle, publicSlug, view, ctx }: CardsProps) {
 			userId={ctx.currentUserId}
 			availableCredits={ctx.availableCredits}
 			raffleTitle={raffle.title}
+			subscription={ctx.subscription}
 		/>
 	);
 }
@@ -378,7 +382,7 @@ export async function RaffleMobilePurchaseAsync({
 					/>
 				</Suspense>
 				{view.disablePurchase && !view.showEditButton ? (
-					<p className="mt-2 text-center text-sm text-gray-500">
+					<p className="text-muted-foreground mt-2 text-center text-sm">
 						You cannot enter your own sweepstakes
 					</p>
 				) : null}

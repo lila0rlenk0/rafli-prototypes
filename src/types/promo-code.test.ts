@@ -34,18 +34,23 @@ const BASE_VALIDATED: ValidatedPromoCode = {
 	code: 'ABCD-EFGH',
 	type: PROMO_CODE_TYPE.FREE_TICKETS,
 	value: '0',
+	rawValue: '0',
 };
 
 describe('getPromoCodeDescription', () => {
 	// Legal framing: participant-facing copy must say "bonus entries" (not
 	// "free tickets") so grants read as bundled entries included with the
 	// Access Pass, matching the checkout disclaimer.
+	//
+	// Driven by `rawValue` so the copy reflects the host-set value, not the
+	// per-ticket-capped preview that varies with subscriber state.
 	describe('free tickets — participant-facing copy', () => {
 		test('pluralizes for multiple entries', () => {
 			const description = getPromoCodeDescription({
 				...BASE_VALIDATED,
 				type: PROMO_CODE_TYPE.FREE_TICKETS,
 				value: '3',
+				rawValue: '3.0000',
 			});
 			expect(description).toBe('3 bonus entries');
 		});
@@ -55,6 +60,7 @@ describe('getPromoCodeDescription', () => {
 				...BASE_VALIDATED,
 				type: PROMO_CODE_TYPE.FREE_TICKETS,
 				value: '1',
+				rawValue: '1.0000',
 			});
 			expect(description).toBe('1 bonus entry');
 		});
@@ -66,34 +72,39 @@ describe('getPromoCodeDescription', () => {
 			const description = getPromoCodeDescription({
 				...BASE_VALIDATED,
 				type: PROMO_CODE_TYPE.FREE_TICKETS,
-				value: '2.7',
+				value: '2',
+				rawValue: '2.7000',
 			});
 			expect(description).toBe('2 bonus entries');
 		});
 	});
 
 	describe('fixed discount', () => {
-		test('formats as currency off the order', () => {
+		test('formats as currency off the order using rawValue (the host-set amount)', () => {
+			// Per-ticket-capped preview (`value`) would understate the host's intent at
+			// qty > 1 — copy uses rawValue instead so "10 off your order" never lies.
 			const description = getPromoCodeDescription({
 				...BASE_VALIDATED,
 				type: PROMO_CODE_TYPE.DISCOUNT_FIXED,
-				value: '10.00',
+				value: '5.00',
+				rawValue: '10.0000',
 			});
 			expect(description).toBe('$10 off your order');
 		});
 	});
 
 	describe('percent discount', () => {
-		test('formats as per-entry discount (backend returns amount, not %)', () => {
-			// Backend convention: `discount_percent` returns the per-ticket
-			// discount *amount*, not the percentage. Copy is "per entry" to
-			// match the Access Pass framing elsewhere in the UI.
+		test('formats as percent off per entry — host-set percent, not per-ticket dollar', () => {
+			// Pre-fix the copy showed "$5 off per entry" for a 5% promo by reading
+			// the per-ticket-amount preview. Post-fix it surfaces the actual percent
+			// the host configured so the user understands the math.
 			const description = getPromoCodeDescription({
 				...BASE_VALIDATED,
 				type: PROMO_CODE_TYPE.DISCOUNT_PERCENT,
-				value: '5.00',
+				value: '1.25',
+				rawValue: '5.0000',
 			});
-			expect(description).toBe('$5 off per entry');
+			expect(description).toBe('5% off per entry');
 		});
 	});
 });

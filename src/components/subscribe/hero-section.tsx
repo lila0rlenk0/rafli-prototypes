@@ -21,9 +21,6 @@ import {
  * three-line value stack marketing signed off on — bold hook, savings
  * figure, risk-free closer.
  *
- * Navbar owns the Trustpilot badge, so the hero no longer re-renders
- * it — avoids double-stacking the trust signal.
- *
  * @returns Hero composing eyebrow, headline with $11 pill, body copy,
  *   stat pills, and the credit purchase card
  */
@@ -52,7 +49,7 @@ export function HeroSection() {
 			// the two columns tight at a 24px gap, which is what
 			// anchors the rotated `$11` pill optically to the credit
 			// card's mint header above it.
-			className="relative isolate flex scroll-mt-20 flex-col items-start gap-10 pt-10 pb-12 xl:flex-row xl:items-center xl:justify-center xl:gap-6 xl:pt-14 xl:pb-16"
+			className="relative isolate flex scroll-mt-20 flex-col items-start gap-8 pt-10 pb-12 sm:gap-10 xl:flex-row xl:items-center xl:justify-center xl:gap-6 xl:pt-14 xl:pb-16"
 		>
 			<HeroDecor />
 
@@ -90,7 +87,7 @@ export function HeroSection() {
 				    cap sits at max-w-xl/2xl. `/tight` pairs 48/60px with
 				    a 1.05 leading so the pill line never overlaps the
 				    tagline. */}
-				<h1 className="font-clash-display text-display-md/tight text-ink-900 xl:text-60/tight font-semibold">
+				<h1 className="font-clash-display text-40/tight text-ink-900 sm:text-display-md/tight xl:text-60/tight font-semibold">
 					Pay ${CREDIT_CHARGE_USD}. Get <PriceBadge /> back.
 				</h1>
 
@@ -103,14 +100,15 @@ export function HeroSection() {
 				    gap that Tailwind's preflight can't fully neutralise
 				    on every breakpoint and drifted the tagline's second
 				    line off-rhythm from the reference's 20px leading.
-				    Size 18/20 at sm+ (`text-body-lg/5`), 16/20 below
-				    (`text-body-md/5`). Ink `text-ink-alpha` matches
-				    Figma's `rgba(15,15,15,0.95)`. */}
-				<p className="text-body-md/5 text-ink-alpha sm:text-body-lg/5 max-w-xl">
+				    Body copy stays at one fixed size per `responsive.md`
+				    — 18/20 (`text-body-lg/5`) reads cleanly across the
+				    column from mobile through xl. Ink `text-ink-alpha`
+				    matches Figma's `rgba(15,15,15,0.95)`. */}
+				<p className="text-body-lg/5 text-ink-alpha max-w-xl">
 					<span className="font-semibold">Save 10% on every deal.</span>{' '}
 					<span className="font-normal">
 						Over a $1000 in hacks every month.
-						<br />
+						<br className="hidden sm:block" />
 						Free tickets. No Risk. Cancel Anytime.
 					</span>
 				</p>

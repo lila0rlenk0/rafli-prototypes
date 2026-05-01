@@ -30,7 +30,7 @@ export function CtaSection() {
 				<h2 className="font-clash-display text-headline-lg text-ink-800 tracking-caps-1 text-center font-semibold">
 					Ready to enter?
 				</h2>
-				<p className="text-body-sm text-ink-alpha md:text-body-md max-w-3xl text-center font-medium">
+				<p className="text-body-md text-ink-alpha max-w-3xl text-center font-medium">
 					Get your ${CREDIT_PAYOUT_USD} in credits now and use them on any
 					active raffle above.
 				</p>
@@ -40,7 +40,7 @@ export function CtaSection() {
 					className="h-12 w-full max-w-md rounded-full font-semibold"
 				>
 					<a href={`#${SUBSCRIBE_HERO_ANCHOR_ID}`}>
-						One Time Purchase with Card
+						Choose subscription and claim now
 					</a>
 				</Button>
 				<p className="text-label-sm text-ink-500 max-w-3xl text-center">

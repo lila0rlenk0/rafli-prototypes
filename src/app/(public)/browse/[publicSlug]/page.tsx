@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { BugIcon } from '@/assets/icons/bug-icon';
+import { Button } from '@/components/ui/button';
 import { MarqueeBanner } from '@/components/browse/marquee-banner';
 import { MobileBackButton } from '@/components/browse/public-slug/mobile-back-button';
 import { PaymentModalHost } from '@/components/browse/public-slug/payment-modal-host';
@@ -26,6 +27,7 @@ import {
 	RaffleRightColumnAsync,
 	RaffleTitleMetaAsync,
 } from './_sections/raffle-right-column-async';
+import { getRaffleSubscriptionContext } from './_sections/raffle-user-context';
 
 interface PageProps {
 	params: Promise<{ publicSlug: string }>;
@@ -39,13 +41,26 @@ export const maxDuration = 30;
 
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;
-	const result = await loadRafflePage(publicSlug);
+	// Parallelize the raffle fetch + session decode — they're fully independent.
+	// Without Promise.all the user fetch would wait on `loadRafflePage`'s round-trip
+	// even though it only reads cookies + verifies a JWT.
+	const [result, user] = await Promise.all([
+		loadRafflePage(publicSlug),
+		getCurrentUser(),
+	]);
 
 	if (result.status === 'not-found') notFound();
 	if (result.status === 'error') return <RafflePageError />;
 
 	const { raffle, categories } = result.data;
-	const user = await getCurrentUser();
+	// Subscription context drives the subscriber-aware ticket math on both the
+	// inline `TicketPurchaseCard` and the page-level `StickyBuyTicketsCta`.
+	// `getRaffleSubscriptionContext` is React.cache-deduped so this call shares
+	// the same in-flight fetch as `buildUserContext` inside `RaffleRightColumnAsync`
+	// — single network round-trip per request, no divergence between the two surfaces.
+	// Sequenced after the parallel block because it needs `user !== null` to skip
+	// the BE call entirely for guests.
+	const subscription = await getRaffleSubscriptionContext(user !== null);
 	const view = deriveRaffleViewState({
 		read: result.data,
 		currentUserId: user?.id ?? null,
@@ -162,6 +177,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 							disabled={view.showEditButton || view.disablePurchase}
 							price={view.ticketPrice}
 							currency={raffle.ticketPriceCurrency}
+							subscription={subscription}
 						/>
 					) : null}
 				</div>
@@ -181,12 +197,9 @@ function RafflePageError() {
 					sweepstakes.
 				</p>
 			</hgroup>
-			<Link
-				href="/browse"
-				className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
-			>
-				Back to Browse
-			</Link>
+			<Button asChild variant="outline" className="rounded-full px-12">
+				<Link href="/browse">Back to Browse</Link>
+			</Button>
 		</div>
 	);
 }

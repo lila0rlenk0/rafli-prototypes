@@ -25,7 +25,10 @@ import { getRecentWinners } from '@/services/winning/get-recent-winners';
 import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
 import { Suspense } from 'react';
 
-import { loadAuthenticatedBrowseSummary } from './authenticated-browse-loader';
+import {
+	EMPTY_BROWSE_SUMMARY,
+	loadAuthenticatedBrowseSummary,
+} from './authenticated-browse-loader';
 
 /** Each featured band mount builds its own tree so both slots (desktop + mobile) keep distinct RSC node identity. */
 function renderFeaturedBand(featuredRaffles: Raffle[]) {
@@ -39,6 +42,62 @@ function renderFeaturedBand(featuredRaffles: Raffle[]) {
 					variant={i === 0 ? 'blue' : 'green'}
 				/>
 			))}
+		</div>
+	);
+}
+
+/**
+ * Hero rail — composes `<HeroSection>` with the `SubscribePromoCard` rail
+ * when the promo is enabled. Promo-on layout is a 2-col grid (mobile gets
+ * a stacked promo above), promo-off collapses to the hero alone.
+ *
+ * @returns Hero block sized for the browse top rail.
+ */
+function BrowseHeroRail({
+	raffles,
+	totalPrizeValue,
+	hasSubscription,
+}: {
+	raffles: Raffle[];
+	totalPrizeValue: number;
+	hasSubscription: boolean;
+}) {
+	if (!FEATURE_FLAGS.SUBSCRIBE_PROMO_ENABLED) {
+		return (
+			<div className="mb-10 sm:mb-16">
+				<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
+			</div>
+		);
+	}
+	return (
+		<>
+			<div className="mb-8 lg:hidden">
+				<SubscribePromoCard hasSubscription={hasSubscription} />
+			</div>
+			<div className="mb-10 grid items-start gap-6 sm:mb-16 lg:grid-cols-[minmax(0,1fr)_minmax(420px,460px)] lg:gap-10">
+				<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
+				<div className="hidden lg:block">
+					<SubscribePromoCard hasSubscription={hasSubscription} />
+				</div>
+			</div>
+		</>
+	);
+}
+
+/**
+ * Empty-state copy when the active filters return zero raffles.
+ *
+ * @returns Centered "No sweepstakes found" block.
+ */
+function BrowseEmptyState() {
+	return (
+		<div className="flex flex-col items-center justify-center py-20 text-center">
+			<h3 className="text-foreground text-xl font-semibold">
+				No sweepstakes found
+			</h3>
+			<p className="text-muted-foreground mt-2">
+				Check back later for new opportunities to win!
+			</p>
 		</div>
 	);
 }
@@ -63,13 +122,18 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 	const page = parsePage(params.page);
 	const category = params.category;
 
+	// Resolve session first — local cookie decode, no network. Knowing auth
+	// state up-front lets us promote `loadAuthenticatedBrowseSummary` into the
+	// parallel batch instead of awaiting it after the fan-out.
+	const session = await getSession();
+
 	const [
 		response,
 		featuredResponse,
 		categoriesResponse,
-		session,
 		recentWinnersResponse,
 		pastDrawsResponse,
+		browseSummary,
 	] = await Promise.all([
 		getRaffles({
 			status: RAFFLE_STATUS.LIVE,
@@ -80,18 +144,16 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 		}),
 		getFeaturedRaffles(),
 		getCategories(),
-		getSession(),
 		getRecentWinners(),
 		getRaffles({
 			status: RAFFLE_STATUS.COMPLETED,
 			limit: 12,
 			sort: 'newest',
 		}),
+		session ? loadAuthenticatedBrowseSummary() : EMPTY_BROWSE_SUMMARY,
 	]);
 
-	const { enrolledIds, hasSubscription } = session
-		? await loadAuthenticatedBrowseSummary()
-		: { enrolledIds: new Set<string>(), hasSubscription: false };
+	const { enrolledIds, hasSubscription } = browseSummary;
 
 	function getRaffleRole(raffle: Raffle): RaffleRole | undefined {
 		if (!session) return undefined;
@@ -132,27 +194,11 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 			}
 		>
 			<div className="z-10 pt-0 pb-8 sm:py-8">
-				{FEATURE_FLAGS.SUBSCRIPTION_ENABLED ? (
-					<>
-						<div className="mb-8 lg:hidden">
-							<SubscribePromoCard hasSubscription={hasSubscription} />
-						</div>
-
-						<div className="mb-10 grid items-start gap-6 sm:mb-16 lg:grid-cols-[minmax(0,1fr)_minmax(420px,460px)] lg:gap-10">
-							<HeroSection
-								raffles={raffles}
-								totalPrizeValue={totalPrizeValue}
-							/>
-							<div className="hidden lg:block">
-								<SubscribePromoCard hasSubscription={hasSubscription} />
-							</div>
-						</div>
-					</>
-				) : (
-					<div className="mb-10 sm:mb-16">
-						<HeroSection raffles={raffles} totalPrizeValue={totalPrizeValue} />
-					</div>
-				)}
+				<BrowseHeroRail
+					raffles={raffles}
+					totalPrizeValue={totalPrizeValue}
+					hasSubscription={hasSubscription}
+				/>
 
 				{recentWinners.length > 0 ? (
 					<div className="mb-10 sm:mb-16">
@@ -185,14 +231,7 @@ export default async function BrowseRafflesPage({ searchParams }: PageProps) {
 								))}
 							</div>
 						) : (
-							<div className="flex flex-col items-center justify-center py-20 text-center">
-								<h3 className="text-xl font-semibold text-gray-900">
-									No sweepstakes found
-								</h3>
-								<p className="mt-2 text-gray-500">
-									Check back later for new opportunities to win!
-								</p>
-							</div>
+							<BrowseEmptyState />
 						)
 					}
 				/>

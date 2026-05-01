@@ -20,17 +20,17 @@ const FAQ_ITEMS: readonly { question: string; answer: string }[] = [
 	{
 		question: 'What is a credit subscription?',
 		answer:
-			'You pay once and receive a permanent entry discount plus free weekly pool entries. There is no recurring charge unless you choose to top up.',
+			'A credit subscription gives you a monthly balance of Rafli credits you use to enter sweepstakes. Every month, your credits refresh automatically. Starter gives you $30 in credits for $25/mo. Pro gives you $125 in credits for $100/mo. Your subscription renews on the same date each month. Cancel anytime from your account settings.',
 	},
 	{
 		question: 'Does my subscription auto-renew?',
 		answer:
-			'No. Each subscription is a one-time purchase. You top up manually whenever you want.',
+			"Yes. Your subscription renews automatically each month on the date you signed up. You'll receive your fresh credits at the start of each billing cycle. You won't be charged after canceling, and your credits stay active until the end of the current cycle.",
 	},
 	{
-		question: 'Can I use my discount on any sweepstakes?',
+		question: 'Can I use my discount on any sweepstake?',
 		answer:
-			'Yes. Your discount applies to every active sweepstakes on the platform with no restrictions.',
+			'Yes. Your discount applies to every active sweepstake on the platform with no restrictions.',
 	},
 	{
 		question: 'Do my free pool entries refresh?',
@@ -55,6 +55,8 @@ const FAQ_ITEMS: readonly { question: string; answer: string }[] = [
  * Rendered as a Server Component: the accordion primitive itself is client
  * (Radix handles the state), but the content is static so no props pipe
  * through a client boundary.
+ *
+ * @returns White-card accordion with all FAQ items expanded on first paint.
  */
 export function PricingFaq() {
 	const allValues = FAQ_ITEMS.map((_, index) => `faq-${index}`);
@@ -62,13 +64,18 @@ export function PricingFaq() {
 	return (
 		<section
 			aria-labelledby="pricing-faq-heading"
-			className="flex w-full flex-col items-center gap-8 rounded-3xl bg-white px-6 py-10 sm:px-10 sm:py-12"
+			className="flex w-full flex-col items-center gap-8 rounded-3xl bg-white px-6 py-10 sm:px-10 sm:py-14"
 		>
 			{/* `#182135` is the deep indigo the Figma design uses for section titles —
 			    slightly warmer than black so it doesn't clash with the cyan pills. */}
+			{/* Figma pins the FAQ heading to 36px (text-headline-lg) on desktop —
+			    the heading carries the surface on its own (no eyebrow line above)
+			    so it has to read as a section break rather than a sub-section
+			    label. Mobile drops to 24px so the heading doesn't dwarf the
+			    accordion items underneath. */}
 			<h2
 				id="pricing-faq-heading"
-				className="font-clash-display text-headline-md text-navy text-center font-semibold"
+				className="font-clash-display text-headline-md sm:text-headline-lg text-navy text-center font-semibold"
 			>
 				Have a question?
 			</h2>

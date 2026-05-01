@@ -2,8 +2,8 @@
 
 import { StickyCtaVariants } from './sticky-cta/variants';
 import { useStickyState } from './sticky-cta/use-sticky-state';
-import { useStickyVisibility } from './sticky-cta/use-sticky-visibility';
 import type { XShareConfig } from './x-share/use-share';
+import type { RaffleSubscriptionContext } from '@/types/subscription';
 
 interface StickyBuyTicketsCtaProps extends XShareConfig {
 	/** Unauthenticated users get plain share — can't attribute tickets without an account */
@@ -16,6 +16,8 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
 	price: number;
 	/** ISO currency code — used to format the total in the primary CTA label. */
 	currency: string;
+	/** Active subscription snapshot — drives subscriber-effective total in the CTA label. */
+	subscription: RaffleSubscriptionContext;
 }
 
 /**
@@ -45,7 +47,6 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
 export function StickyBuyTicketsCta(
 	props: StickyBuyTicketsCtaProps,
 ): React.JSX.Element | null {
-	const { visible } = useStickyVisibility();
 	const state = useStickyState({
 		raffleId: props.raffleId,
 		title: props.title,
@@ -58,7 +59,7 @@ export function StickyBuyTicketsCta(
 		disabled: props.disabled ?? false,
 		price: props.price,
 		currency: props.currency,
+		subscription: props.subscription,
 	});
-	if (!visible) return null;
 	return <StickyCtaVariants state={state} />;
 }

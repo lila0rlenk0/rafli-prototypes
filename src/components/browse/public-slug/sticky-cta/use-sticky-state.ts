@@ -2,20 +2,25 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 
+import { buildPrimaryCtaLabel } from '@/components/raffle/ticket-purchase/cta-label';
 import { calculateOrderTotal } from '@/lib/checkout/calculate-order-total';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
-import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import type { ValidatedPromoCode } from '@/types/promo-code';
+import type { RaffleSubscriptionContext } from '@/types/subscription';
 
 import { type XShareConfig, useXShare } from '../x-share/use-share';
 
-export interface StickyStateInputs extends XShareConfig {
+interface StickyStateInputs extends XShareConfig {
 	isAuthenticated: boolean;
 	disabled: boolean;
 	availableTickets: number;
 	price: number;
 	currency: string;
+	/** Same subscription snapshot the inline `TicketPurchaseCard` consumes —
+	 * shared across desktop card + mobile sticky so both surfaces compute the
+	 * subscriber-effective total via the same scaled-int math. */
+	subscription: RaffleSubscriptionContext;
 }
 
 interface BundleControls {
@@ -68,25 +73,6 @@ export type StickyVariantState =
 // array identity is stable across renders.
 const BUNDLE_SIZES_MOBILE = [10, 25, 50] as const;
 
-/**
- * Builds the primary CTA label. Free-tickets promos use the canonical
- * AMOE copy; paid card checkout uses the canonical one-time purchase
- * label. Pricing still renders in the purchase summary, not inside the
- * action text, so every payment method reads as a tender choice.
- */
-function buildPrimaryCtaLabel(params: {
-	isCheckoutLoading: boolean;
-	isFreeTicketsPromo: boolean;
-	total: number;
-	currency: string;
-}): string {
-	if (params.isCheckoutLoading) return 'Processing...';
-	if (params.isFreeTicketsPromo) {
-		return 'AMOE - Free Entries';
-	}
-	return `One Time Purchase with Card ${formatCurrency(params.total, params.currency)}`;
-}
-
 interface StoreSnapshot {
 	quantity: number;
 	incrementBy: (size: number, cap: number) => void;
@@ -118,6 +104,8 @@ interface PurchasablePayloadParams {
 	store: StoreSnapshot;
 	checkout: ReturnType<typeof useStripeCheckout>;
 	xShare: ReturnType<typeof useXShare>;
+	/** Pre-computed by the hook so checkout-init + render share one math pass. */
+	orderTotal: ReturnType<typeof calculateOrderTotal>;
 }
 
 /**
@@ -128,12 +116,8 @@ interface PurchasablePayloadParams {
 function buildPurchasableState(
 	params: PurchasablePayloadParams,
 ): PurchasableState {
-	const { inputs, store, checkout, xShare } = params;
-	const { total, isFreeTicketsPromo } = calculateOrderTotal({
-		price: inputs.price,
-		quantity: store.quantity,
-		appliedPromo: store.appliedPromo,
-	});
+	const { inputs, store, checkout, xShare, orderTotal } = params;
+	const { total, isFreeTicketsPromo } = orderTotal;
 	// 0 means unlimited participants — bundle clicks skip the clamp.
 	const isUnlimited = inputs.availableTickets === 0;
 	const isPrimaryCtaDisabled =
@@ -188,11 +172,21 @@ export function useStickyState(inputs: StickyStateInputs): StickyVariantState {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const store = useQuantityStoreSlices();
+	// Pre-compute the displayed total once so `useStripeCheckout` can verify
+	// BE charges match what the user agreed to. Same math the variant renderer
+	// uses below — extracted to share the result without recomputing.
+	const orderTotal = calculateOrderTotal({
+		price: inputs.price,
+		quantity: store.quantity,
+		appliedPromo: store.appliedPromo,
+		subscription: inputs.subscription,
+	});
 	const checkout = useStripeCheckout({
 		raffleId: inputs.raffleId,
 		publicSlug: inputs.publicSlug,
 		questionId: inputs.questionId,
 		disabled: inputs.disabled,
+		expectedTotal: orderTotal.total,
 	});
 	const xShare = useXShare({
 		raffleId: inputs.raffleId,
@@ -215,5 +209,5 @@ export function useStickyState(inputs: StickyStateInputs): StickyVariantState {
 		};
 	}
 	if (inputs.disabled) return { kind: 'host-disabled' };
-	return buildPurchasableState({ inputs, store, checkout, xShare });
+	return buildPurchasableState({ inputs, store, checkout, xShare, orderTotal });
 }

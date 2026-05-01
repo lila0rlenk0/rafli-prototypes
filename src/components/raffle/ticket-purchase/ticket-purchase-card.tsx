@@ -2,6 +2,7 @@
 
 import { Separator } from '@/components/ui/separator';
 import type { RaffleCryptoOptions } from '@/types/raffle';
+import type { RaffleSubscriptionContext } from '@/types/subscription';
 
 import { BuyCtaStack } from './buy-cta-stack';
 import { getClosingSoonWarning } from './ticket-purchase-present';
@@ -34,6 +35,12 @@ interface TicketPurchaseCardProps {
 	 * compliance defense to be non-pretextual.
 	 */
 	raffleTitle?: string;
+	/**
+	 * Active subscription snapshot — drives subscriber-effective unit price math
+	 * and the savings caption in `PriceBreakdown`. Inactive sentinel keeps the
+	 * non-subscriber rendering path identical to pre-feature behavior.
+	 */
+	subscription: RaffleSubscriptionContext;
 }
 
 /**
@@ -60,6 +67,7 @@ export function TicketPurchaseCard({
 	userId,
 	availableCredits,
 	raffleTitle,
+	subscription,
 }: TicketPurchaseCardProps) {
 	const {
 		initialCode,
@@ -80,18 +88,24 @@ export function TicketPurchaseCard({
 		price,
 		cryptoOptions,
 		availableCredits,
+		subscription,
 	});
 
 	return (
-		<div className="mt-0 flex flex-col gap-2 gap-4 lg:flex">
+		<div className="flex flex-col gap-4">
 			{/* Quantity surface — price header, stepper, mobile summary.
-			    Hidden for free-tickets promos where the price is $0. */}
+			    Hidden for free-tickets promos where the price is $0.
+			    `effectiveUnitPrice` reflects the subscriber-discounted unit so the
+			    "Per entry" label matches what BE charges; the `Subscription` prop
+			    drives the strikethrough on the un-discounted price for transparency. */}
 			{!isFree ? (
 				<QuantityControls
 					price={price}
+					effectiveUnitPrice={orderTotal.effectiveUnitPrice}
 					currency={currency}
 					maxTickets={availableTickets}
 					ticketQuantity={ticketQuantity}
+					subscription={subscription}
 				/>
 			) : null}
 
@@ -105,7 +119,7 @@ export function TicketPurchaseCard({
 				onClear={handleClearPromo}
 			/>
 
-			<Separator className="bg-ink-300 my-4" />
+			<Separator className="my-4" />
 
 			<PriceBreakdown
 				currency={currency}
@@ -115,10 +129,12 @@ export function TicketPurchaseCard({
 				hasDiscount={hasDiscount}
 				isFree={isFree}
 				freeTicketCount={orderTotal.freeTicketCount}
+				subscriberDiscountAmount={orderTotal.subscriberDiscountAmount}
+				subscriptionPlanName={subscription.planName}
 			/>
 
 			{shouldShowClosingSoonWarning ? (
-				<div className="rounded-xl bg-amber-50 px-4 py-3 text-center text-xs text-amber-700">
+				<div className="bg-peach-100 text-amber rounded-xl px-4 py-3 text-center text-xs">
 					{getClosingSoonWarning({ hasSelectableCryptoPaymentOption })}
 				</div>
 			) : null}

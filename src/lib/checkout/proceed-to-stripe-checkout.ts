@@ -8,6 +8,16 @@ import { createCheckoutSession } from '@/services/payment/create-checkout-sessio
 /** Module scope — dual-mounted `useStripeCheckout` must share one in-flight guard */
 let stripeCheckoutInFlight = false;
 
+/**
+ * Tolerance for the displayed-vs-charged comparison (in major currency units).
+ *
+ * 0.005 = half a cent. Strict equality on floats is fragile due to JS scale-2 ↔ scale-4
+ * round-trips: the FE math runs scaled-int (exact) but `OrderTotal.total` is a `number`.
+ * 0.5¢ is tighter than any rounding mode could produce while still tolerating IEEE-754
+ * representation drift on amounts like $123.4500.
+ */
+const TOTAL_VERIFICATION_TOLERANCE = 0.005;
+
 interface ProceedToStripeCheckoutOptions {
 	raffleId: string;
 	publicSlug: string;
@@ -16,6 +26,14 @@ interface ProceedToStripeCheckoutOptions {
 	clearPromo: () => void;
 	router: AppRouterInstance;
 	setIsLoading: (loading: boolean) => void;
+	/**
+	 * Displayed total (post-promo, post-subscriber-discount) as the user sees it on the
+	 * CTA. Compared against the BE-returned `order.totalAmount` after build — divergence
+	 * means the user's pricing context (subscription / promo) shifted between page load
+	 * and click, and we must refresh rather than redirect to a Stripe page that would
+	 * charge an amount the user didn't agree to.
+	 */
+	expectedTotal: number;
 }
 
 /**
@@ -37,11 +55,15 @@ export async function proceedToStripeCheckout({
 	clearPromo,
 	router,
 	setIsLoading,
+	expectedTotal,
 }: ProceedToStripeCheckoutOptions): Promise<void> {
 	if (stripeCheckoutInFlight) return;
 	stripeCheckoutInFlight = true;
+	// `try/finally` (no catch) — `buildCheckoutOrder` and `createCheckoutSession`
+	// return typed results, never throw, so a top-level catch would only swallow
+	// real bugs. The finally clears the module guard even if `setIsLoading` itself
+	// throws, so a fragile parent can't lock the dual-mounted hooks out of retry.
 	try {
-		// Inside `try` so `finally` still clears the module guard if `setIsLoading` throws.
 		setIsLoading(true);
 		const result = await buildCheckoutOrder({
 			raffleId,
@@ -59,6 +81,28 @@ export async function proceedToStripeCheckout({
 			return;
 		}
 
+		// Pricing-drift guard — see TOTAL_VERIFICATION_TOLERANCE doc.
+		// The BE-returned `totalAmount` is the source of truth for what Stripe will charge.
+		// If it diverges from what the FE just rendered (subscription change mid-session,
+		// stale order reused before B5 caught it, etc.) refresh the page so the user
+		// re-confirms the new total instead of being redirected to a Stripe page that
+		// would charge an amount they didn't agree to.
+		// Polarity is "proceed only when both sides parse cleanly AND agree within
+		// tolerance" — a NaN either side means we can't compare safely, so refresh
+		// rather than silently fall through to checkout.
+		const chargedTotal = parseFloat(result.order.totalAmount);
+		const totalsMatch =
+			Number.isFinite(chargedTotal) &&
+			Number.isFinite(expectedTotal) &&
+			Math.abs(chargedTotal - expectedTotal) <= TOTAL_VERIFICATION_TOLERANCE;
+		if (!totalsMatch) {
+			toast.error(
+				'Price updated. Please review the new total before continuing.',
+			);
+			router.refresh();
+			return;
+		}
+
 		const checkoutResult = await createCheckoutSession({
 			orderId: result.order.id,
 			publicSlug,
@@ -69,16 +113,16 @@ export async function proceedToStripeCheckout({
 			return;
 		}
 
+		// URL constructor will throw on garbage strings; the upstream service action
+		// already validates a URL is returned, so any throw here is a contract drift
+		// bug worth surfacing rather than a user-facing case. Origin lockdown is the
+		// open-redirect defence even if the upstream payload were ever compromised.
 		const checkoutUrl = new URL(checkoutResult.data.checkoutUrl);
 		if (checkoutUrl.origin !== 'https://checkout.stripe.com') {
-			console.error('Unexpected checkout URL origin:', checkoutUrl.origin);
 			toast.error('Invalid checkout URL. Please try again');
 			return;
 		}
 		window.location.href = checkoutResult.data.checkoutUrl;
-	} catch (error) {
-		console.error('Unexpected error during checkout:', error);
-		toast.error('An unexpected error occurred. Please try again');
 	} finally {
 		stripeCheckoutInFlight = false;
 		setIsLoading(false);

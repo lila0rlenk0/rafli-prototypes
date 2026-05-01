@@ -8,17 +8,14 @@ import { Loader2 } from 'lucide-react';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 
+import { getSubscribeErrorMessage } from '@/components/pricing/subscribe/error-messages';
 import { Button } from '@/components/ui/button';
 import { subscribeToPlan } from '@/services/subscription/subscribe-to-plan';
-import {
-	SUBSCRIPTION_ERROR_CODES,
-	type SubscriptionErrorCode,
-} from '@/types/errors';
 
 interface SubscribeButtonProps {
 	/** Plan to subscribe to. Validated server-side too — this is best-effort. */
 	planId: string;
-	/** Button label — "Start Starter", "Start Pro", etc. */
+	/** Button label — "Get Starter", "Get Pro", etc. */
 	label: string;
 	/** Whether the current viewer has an active session. Gates the action. */
 	isAuthenticated: boolean;
@@ -27,58 +24,7 @@ interface SubscribeButtonProps {
 }
 
 /**
- * Surface label for each error code. Every `SubscriptionErrorCode` must map
- * to user-facing copy — adding a new backend code without an entry falls
- * through to the exhaustiveness guard in `errorMessage`, turning it into a
- * compile error rather than a silent "Something went wrong". Kept
- * module-scoped so we don't re-allocate per click.
- */
-const ERROR_MESSAGES = {
-	[SUBSCRIPTION_ERROR_CODES.PLAN_NOT_FOUND]:
-		'This plan is no longer available. Please refresh and try again.',
-	[SUBSCRIPTION_ERROR_CODES.ALREADY_SUBSCRIBED]:
-		"You're already subscribed. Manage your plan from your profile.",
-	[SUBSCRIPTION_ERROR_CODES.CHECKOUT_FAILED]:
-		"We couldn't start checkout. Please try again in a moment.",
-	[SUBSCRIPTION_ERROR_CODES.NOT_FOUND]:
-		'There was a problem with your subscription. Please contact support.',
-	[SUBSCRIPTION_ERROR_CODES.NOT_ACTIVE]:
-		'There was a problem with your subscription. Please contact support.',
-	[SUBSCRIPTION_ERROR_CODES.ENROLLMENT_CONFLICT]:
-		'There was a problem with your subscription. Please contact support.',
-	[SUBSCRIPTION_ERROR_CODES.FETCH_FAILED]:
-		"Something went wrong on our end. We've been notified.",
-	'global:auth:unauthenticated': 'Please sign in to subscribe.',
-	unauthorized: 'Please sign in to subscribe.',
-	session_expired: 'Please sign in to subscribe.',
-	'global:ratelimit:exceeded':
-		'Too many requests — please wait a moment and try again.',
-	network_error: 'Network trouble — check your connection and try again.',
-	timeout_error: 'Network trouble — check your connection and try again.',
-	connection_aborted: 'Network trouble — check your connection and try again.',
-	forbidden: "We couldn't start checkout. Please try again.",
-	invalid_request: "We couldn't start checkout. Please try again.",
-	validation_error: "We couldn't start checkout. Please try again.",
-	internal_server_error: "We couldn't start checkout. Please try again.",
-	service_unavailable: "We couldn't start checkout. Please try again.",
-	unknown_error: "We couldn't start checkout. Please try again.",
-	'global:upload:file-too-large':
-		"We couldn't start checkout. Please try again.",
-	'global:upload:invalid-image':
-		"We couldn't start checkout. Please try again.",
-	'global:upload:invalid-content-type':
-		"We couldn't start checkout. Please try again.",
-	'global:upload:missing-boundary':
-		"We couldn't start checkout. Please try again.",
-	'global:upload:no-file': "We couldn't start checkout. Please try again.",
-} as const satisfies Record<SubscriptionErrorCode, string>;
-
-function errorMessage(code: SubscriptionErrorCode): string {
-	return ERROR_MESSAGES[code];
-}
-
-/**
- * Per-plan "Start <plan>" CTA. Triggers the subscription server action, then
+ * Per-plan "Get <plan>" CTA. Triggers the subscription server action, then
  * redirects the browser to the Stripe-hosted checkout URL the backend returns.
  *
  * Unauthenticated click routes to /sign-in with a `returnTo` pointing back to
@@ -88,6 +34,8 @@ function errorMessage(code: SubscriptionErrorCode): string {
  * Error surface: every mapped code is shown via `sonner` toast. Server-side
  * analytics already captured the failure with plan_id + error_code before the
  * response returned — we deliberately don't double-track on the client.
+ *
+ * @returns Pending-aware Stripe-checkout CTA with sign-in deflection.
  */
 export function SubscribeButton({
 	planId,
@@ -99,13 +47,6 @@ export function SubscribeButton({
 	// it composes cleanly with the action's async nature. No useEffect needed.
 	const [isPending, startTransition] = useTransition();
 
-	/**
-	 * Handles the click:
-	 *   1. If anonymous, bounce to sign-in with `returnTo=/pricing` so they
-	 *      land back here already signed in — no lost intent.
-	 *   2. Otherwise, call the server action and redirect on success.
-	 *   3. On failure, show the mapped toast and stay on page.
-	 */
 	function handleClick() {
 		if (!isAuthenticated) {
 			// Preserve the plan the user clicked — plain `returnTo=/pricing`
@@ -126,7 +67,7 @@ export function SubscribeButton({
 			const result = await subscribeToPlan({ planId });
 
 			if (!result.success) {
-				toast.error(errorMessage(result.error));
+				toast.error(getSubscribeErrorMessage(result.error));
 				return;
 			}
 

@@ -9,7 +9,8 @@ import { PricingFaq } from '@/components/pricing/faq';
 import { SubscribeResumeTrigger } from '@/components/pricing/subscribe/subscribe-resume-trigger';
 import { SubscriptionCancelToast } from '@/components/pricing/subscribe/subscription-cancel-toast';
 import { SubscriptionSuccessDialog } from '@/components/pricing/subscribe/subscription-success-dialog';
-import { LAUNCH_PRICING_ENDS_AT } from '@/lib/feature-flags';
+import { Button } from '@/components/ui/button';
+import { LAUNCH_PRICING_WINDOW_MS } from '@/lib/feature-flags';
 import { getSession } from '@/lib/auth/session';
 import { getMySubscription } from '@/services/subscription/get-my-subscription';
 import { getPlans } from '@/services/subscription/get-plans';
@@ -25,8 +26,8 @@ import { getPlans } from '@/services/subscription/get-plans';
  * Concatenating into one string would force a mid-string font-weight swap
  * via `<strong>` — the tuple model keeps the JSX flat.
  *
- * Exported-adjacent (module-scoped) so the array reference is stable across
- * renders and React doesn't re-key the list on navigation.
+ * Module-scoped so the array reference is stable across renders and React
+ * doesn't re-key the list on navigation.
  */
 const HERO_STATS: readonly { bold: string; suffix: string }[] = [
 	{ bold: '$1,000,000+', suffix: 'in prizes distributed' },
@@ -34,106 +35,131 @@ const HERO_STATS: readonly { bold: string; suffix: string }[] = [
 ];
 
 /**
- * Determines whether the launch-pricing countdown should render.
+ * Bug-icon error card mirroring `/browse`'s failure state — renders when
+ * `getPlans()` fails so the surface stays consistent across public pages.
  *
- * Two gates:
- *   1. `LAUNCH_PRICING_ENDS_AT` must be set — null means launch pricing
- *      has no deadline (or is over), so the banner stays hidden.
- *   2. The deadline must be in the future — a past deadline would otherwise
- *      render "00:00:00" for one tick before the client component hides
- *      itself. This server-side gate prevents the flash entirely.
- *
- * Returns the raw ISO string (trusted by the client component) or null.
+ * @returns Centered error card with a "Back to Browse" CTA.
  */
-function resolveCountdownTarget(): string | null {
-	if (!LAUNCH_PRICING_ENDS_AT) return null;
-
-	const parsed = Date.parse(LAUNCH_PRICING_ENDS_AT);
-	if (!Number.isFinite(parsed) || parsed <= Date.now()) return null;
-
-	return LAUNCH_PRICING_ENDS_AT;
+function PricingErrorState() {
+	return (
+		<div className="h-half-screen flex w-full flex-col items-center justify-center gap-10 text-center">
+			<BugIcon />
+			<hgroup className="flex flex-col gap-4">
+				<h1 className="text-xl font-semibold">Unable to load pricing</h1>
+				<p className="mt-2 text-lg">
+					Something went wrong on our end. Please try again in a moment.
+				</p>
+			</hgroup>
+			<Button asChild size="lg" className="font-semibold sm:px-12">
+				<Link href="/browse">Back to Sweepstake Browse</Link>
+			</Button>
+		</div>
+	);
 }
 
 /**
- * Pricing Page
+ * Pricing hero — eyebrow, headline, supporting copy, and stat pills.
+ * Decor cluster lives at the layout level so the squares anchor to the
+ * viewport, not the centered hero column.
  *
- * Server Component — public-facing subscription pricing surface.
+ * Typography mirrors `browse/hero-section.tsx` (Clash Display semibold,
+ * fluid-ish sizing, tight leading) so the two hero surfaces feel authored
+ * by the same hand.
  *
- * Data flow:
- *   1. Resolve the session cookie (local decode — cheap). Decides whether
- *      we're going to bother fetching the user's subscription.
- *   2. Parallel fetch: plans list + my-subscription (authenticated only).
- *      Plans are the critical blocking data; my-subscription failure
- *      degrades silently to the non-subscriber experience.
- *   3. Failure: render the same error card used on /browse so users bounce
- *      back into the main flow with one click.
- *   4. Success: sort plans by `metadata.sortOrder` ascending (belt-and-
- *      suspenders — backend also orders). Render the success dialog (if
- *      returning from Stripe), hero, card grid with current-plan
- *      highlighting, countdown (env-gated), and FAQ.
+ * @returns Hero section with headline, copy, and stat pills.
+ */
+function PricingHero() {
+	return (
+		<section className="flex flex-col items-center gap-6 text-center">
+			{/* Eyebrow tagline — Geist Medium on the foreground color. "Enhanced
+			    odds" / "Risk-Free" were removed: in a sweepstakes context, those
+			    phrases read as claims that paid entrants are advantaged over
+			    AMOE entrants. Compliance requires identical odds across paid
+			    and free paths — see /free-entry. */}
+			<p className="text-foreground text-base/dense font-medium">
+				Access the best opportunities. Risk-Free. Subscribe now to get access.
+			</p>
+			{/* Figma pins the desktop size to 48px (text-display-md) so the line
+			    "Subscribe Today. Save. Win." sits ~30% larger than sub-section
+			    H2s. Mobile keeps the 36px (text-4xl) baseline so the headline
+			    doesn't wrap into four lines on a 360px viewport. */}
+			<h1 className="font-clash-display sm:text-display-md text-4xl/none font-semibold">
+				Subscribe Today. Save. Win.
+			</h1>
+			<p className="text-foreground text-base/dense max-w-(--container-launch-copy) font-normal text-balance">
+				Rafli is LIVE. Subscribe now and lock in your share of exclusive perks,
+				including free entries, discounts, and access to hundreds of new
+				sweepstakes every month. Become a member of this community NOW.
+			</p>
+			<ul className="flex flex-wrap items-center justify-center gap-4">
+				{HERO_STATS.map(stat => (
+					<li
+						key={stat.bold}
+						className="bg-paper-100 inline-flex items-center gap-1 rounded-full border border-black px-3 py-0.5 text-sm"
+					>
+						{/* Solid mint dot reads as a "live counter" signal, not a
+						    claim checkmark — more honest framing for stat pills. */}
+						<span
+							aria-hidden
+							className="bg-green-vivid size-2 shrink-0 rounded-full"
+						/>
+						<span className="text-foreground font-semibold">{stat.bold}</span>
+						<span className="text-foreground font-normal">{stat.suffix}</span>
+					</li>
+				))}
+			</ul>
+		</section>
+	);
+}
+
+/**
+ * Pricing Page — public-facing Server Component.
  *
- * Caching: default RSC behavior. The underlying `getPlans` call hits a
- * public endpoint whose payload rarely changes; if this becomes a hot path,
- * wrap `getPlans` in `unstable_cache` with a 5-minute revalidation window
- * — not done now because the /pricing traffic pattern doesn't justify it.
+ * Plans are the critical blocking data; my-subscription failure degrades
+ * silently to the non-subscriber experience. Plans failure renders the
+ * shared bug-icon error card.
+ *
+ * Caching: default RSC behavior. `getPlans` hits a public endpoint whose
+ * payload rarely changes; if this becomes a hot path, wrap in
+ * `unstable_cache` with a 5-minute revalidation — not done now because
+ * the /pricing traffic pattern doesn't justify it.
  */
 export default async function PricingPage() {
-	// Step 1: Resolve the cookie-backed session first — it's a local decode,
-	// strictly faster than any network call, and its result decides whether
-	// we bother fetching the user's subscription at all. Running it sequentially
-	// costs nothing measurable and avoids an unnecessary `/subscriptions/me`
-	// request for guests (which would 401 and be discarded).
+	// Step 1: Resolve the cookie-backed session first — local decode, no
+	// network. The result decides whether we bother fetching the user's
+	// subscription at all (guests would 401).
 	const session = await getSession();
 	const isAuthenticated = !!session;
 
 	// Step 2: Parallel network work — plans are public; my-subscription is
-	// only meaningful for authenticated viewers. Passing `Promise.resolve`
-	// for the guest path keeps the tuple destructure clean without a second
-	// async branch.
+	// only meaningful for authenticated viewers. `Promise.resolve(null)` on
+	// the guest path keeps the tuple destructure clean without a branch.
 	const [plansResult, currentSubResult] = await Promise.all([
 		getPlans(),
 		isAuthenticated ? getMySubscription() : Promise.resolve(null),
 	]);
 
-	// Step 3: Extract the current subscription, tolerating failures. A
-	// transient `/subscriptions/me` outage should degrade to "no current
-	// plan highlight" rather than take down the pricing page — the service
-	// already captured the error to Sentry on the failure path.
+	// Step 3: Tolerate `/subscriptions/me` failures — a transient outage
+	// should degrade to "no current plan highlight" rather than take down
+	// the page. Sentry already captured the error in the service.
 	const currentSubscription =
 		currentSubResult && currentSubResult.success ? currentSubResult.data : null;
 
-	// Step 4: Failure branch — mirror /browse's bug-icon error card so the
-	// error surface feels consistent across public pages.
-	if (!plansResult.success) {
-		return (
-			<div className="h-half-screen flex w-full flex-col items-center justify-center gap-10 text-center">
-				<BugIcon />
-				<hgroup className="flex flex-col gap-4">
-					<h1 className="text-xl font-semibold">Unable to load pricing</h1>
-					<p className="mt-2 text-lg">
-						Something went wrong on our end. Please try again in a moment.
-					</p>
-				</hgroup>
-				<Link
-					href="/browse"
-					className="focus-visible:ring-ring/50 inline-flex items-center justify-center rounded-full border border-black bg-white px-12 py-3 text-sm font-semibold text-black transition-colors hover:bg-black hover:text-white focus-visible:ring-3 focus-visible:outline-none"
-				>
-					Back to all sweepstakes
-				</Link>
-			</div>
-		);
-	}
+	if (!plansResult.success) return <PricingErrorState />;
 
-	// Step 5: Stable display order. Backend already returns plans ordered by
-	// price ascending, but `metadata.sortOrder` is the FE-authoritative key —
-	// Ops can pin a plan to a position without changing its price. `toSorted`
-	// keeps the original array immutable (project style rule).
+	// Step 4: Stable display order. Backend orders by price ascending, but
+	// `metadata.sortOrder` is the FE-authoritative key — Ops can pin a plan
+	// without changing its price. `toSorted` keeps the input immutable.
 	const plans = plansResult.data.plans.toSorted(
 		(a, b) => a.metadata.sortOrder - b.metadata.sortOrder,
 	);
 
-	const countdownEndsAt = resolveCountdownTarget();
-	const currentPlanId = currentSubscription?.planId ?? null;
+	// Compile-time gate: null means launch pricing is off and the banner
+	// stays hidden. The constant is a literal in `feature-flags.ts`, so no
+	// runtime validation is needed — a malformed value would be a code-time
+	// bug, not a deploy-time one.
+	const countdownWindowMs = LAUNCH_PRICING_WINDOW_MS;
+	const currentPlanId = currentSubscription?.plan.id ?? null;
 
 	return (
 		<div className="max-w-copy mx-auto flex w-full flex-col gap-10 px-4 py-8 sm:gap-14 sm:py-12">
@@ -156,60 +182,14 @@ export default async function PricingPage() {
 			<div>
 				<Link
 					href="/browse"
-					className="focus-visible:ring-ring/50 sm:text-body-md inline-flex items-center gap-2 rounded-sm text-lg font-semibold text-black underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:outline-none"
+					className="focus-visible:ring-ring/50 inline-flex items-center gap-2 rounded-sm text-lg font-semibold text-black underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:outline-none"
 				>
 					<ArrowLeft className="size-6" aria-hidden />
-					Back to all sweepstakes
+					Back to Sweepstake Browse
 				</Link>
 			</div>
 
-			{/* Hero — typography mirrors `browse/hero-section.tsx` (Clash Display
-			    semibold, fluid-ish sizing, tight leading, subtle tracking) so the
-			    two hero surfaces feel authored by the same hand. */}
-			<section className="flex flex-col items-center gap-6 text-center">
-				{/* Eyebrow tagline — Geist Medium on the foreground color. Figma dropped
-				    the earlier emerald accent so the headline isn't pre-announced in a
-				    loud color; the eyebrow now reads as quiet supporting copy. "Enhanced
-				    odds" and "Risk-Free" were removed from the prior revision: both
-				    phrases, in a sweepstake context, read as claims that paid entrants
-				    are advantaged over AMOE entrants. Compliance requires identical odds
-				    across paid and free paths — see /free-entry. */}
-				<p className="text-foreground text-base/dense font-medium">
-					Gain access to member benefits across every sweepstakes. Subscribe now
-					to unlock bigger discounts and bonus entries.
-				</p>
-				{/* No trailing period after "Win" — the design treats the three
-				    words as a staccato triplet; a terminal period would kill the
-				    rhythm and make the headline feel like a full sentence. */}
-				<h1 className="font-clash-display sm:text-headline-lg text-4xl/none font-semibold">
-					Subscribe Today. Save. Win
-				</h1>
-				<p className="text-foreground text-base/dense max-w-213.5 font-normal text-balance">
-					Rafli is LIVE. Subscribe now to lock in exclusive member discounts and
-					bonus entries across hundreds of new sweepstakes every month. Become a
-					founding member of this community NOW.
-				</p>
-				<ul className="flex flex-wrap items-center justify-center gap-4">
-					{HERO_STATS.map(stat => (
-						<li
-							// `bold`+`suffix` composite is a stable natural key — the list is
-							// module-scoped and never reorders.
-							key={stat.bold}
-							className="bg-background inline-flex items-center gap-1 rounded-full border border-black px-3 py-0.5 text-sm"
-						>
-							{/* Solid mint dot (`#13e36f`) replaces the earlier check glyph.
-							    Figma's stat pills read as "live counter" signals, not claim
-							    checkmarks, so the smaller unadorned dot is more honest. */}
-							<span
-								aria-hidden
-								className="bg-green-vivid size-2 shrink-0 rounded-full"
-							/>
-							<span className="text-foreground font-semibold">{stat.bold}</span>
-							<span className="text-foreground font-normal">{stat.suffix}</span>
-						</li>
-					))}
-				</ul>
-			</section>
+			<PricingHero />
 
 			{/* Equal-prominence AMOE callout — every paid-entry surface on the
 			    platform renders this footnote adjacent to the price so the free
@@ -225,7 +205,7 @@ export default async function PricingPage() {
 			<section
 				id="plans"
 				aria-label="Subscription plans"
-				className="grid gap-6 sm:grid-cols-2 sm:gap-8"
+				className="grid gap-6 lg:grid-cols-2 lg:gap-8"
 			>
 				{plans.map(plan => (
 					<PlanCard
@@ -243,7 +223,9 @@ export default async function PricingPage() {
 
 			{/* Launch countdown — gated server-side: env unset or deadline past
 			    means no banner ever reaches the client. */}
-			{countdownEndsAt ? <LaunchCountdown endsAt={countdownEndsAt} /> : null}
+			{countdownWindowMs !== null ? (
+				<LaunchCountdown windowMs={countdownWindowMs} />
+			) : null}
 
 			<PricingFaq />
 		</div>

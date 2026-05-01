@@ -15,6 +15,7 @@ import { hasSelectableCryptoChains } from '@/lib/web3/payment/raffle-crypto-opti
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 import type { ValidatedPromoCode } from '@/types/promo-code';
+import type { RaffleSubscriptionContext } from '@/types/subscription';
 
 import { parseAvailableCredits } from './ticket-purchase-present';
 
@@ -27,28 +28,24 @@ interface UseTicketPurchaseParams {
 	readonly cryptoOptions: RaffleCryptoOptions | null | undefined;
 	/** User credit balance as decimal string — null when unauthenticated or fetch failed. */
 	readonly availableCredits: string | null | undefined;
+	/** Active subscription snapshot — drives subscriber-effective unit price math. */
+	readonly subscription: RaffleSubscriptionContext;
 }
 
-export interface UseTicketPurchaseResult {
-	/** Initial promo code from the URL query — undefined when absent/empty. */
+interface UseTicketPurchaseResult {
 	readonly initialCode: string | undefined;
-	/** Current quantity from the shared store. */
 	readonly ticketQuantity: number;
-	/** Currently applied promo, or null. */
 	readonly appliedPromo: ValidatedPromoCode | null;
 	/** Monotonic reset version — keys the promo input to force remount on clear. */
 	readonly promoResetVersion: number;
-	/** Applies a validated promo to the shared store. */
 	readonly applyPromo: (promo: ValidatedPromoCode) => void;
 	/** Clears the promo without resetting quantity — used by outside invalidations. */
 	readonly clearPromo: () => void;
 	/** Explicit user-initiated clear — also resets quantity back to 1. */
 	readonly handleClearPromo: () => void;
-	/** Derived order math (subtotal / discount / total / free-ticket flags). */
 	readonly orderTotal: OrderTotal;
 	/** Render free-ticket branch when the applied promo is a free-tickets grant. */
 	readonly isFree: boolean;
-	/** Render subtotal/discount rows when a non-free discount is applied. */
 	readonly hasDiscount: boolean;
 	/** Gate the closing-soon warning until the browser clock has hydrated. */
 	readonly shouldShowClosingSoonWarning: boolean;
@@ -71,7 +68,8 @@ export interface UseTicketPurchaseResult {
 export function useTicketPurchase(
 	params: UseTicketPurchaseParams,
 ): UseTicketPurchaseResult {
-	const { endAt, price, cryptoOptions, availableCredits } = params;
+	const { endAt, price, cryptoOptions, availableCredits, subscription } =
+		params;
 
 	const searchParams = useSearchParams();
 	// `isClosingSoon` is only true when secondsRemaining > 0 — no separate
@@ -106,6 +104,7 @@ export function useTicketPurchase(
 		price,
 		quantity: ticketQuantity,
 		appliedPromo,
+		subscription,
 	});
 	const hasDiscount = orderTotal.discount > 0;
 	const isFree = orderTotal.isFreeTicketsPromo;

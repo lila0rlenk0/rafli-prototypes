@@ -31,7 +31,7 @@ export function PrizeSection({ raffles }: PrizeSectionProps) {
 				    nearest named step is `rotate-6` and the visual delta
 				    is imperceptible, so we ride the named token rather
 				    than shipping a custom @utility. */}
-				<span className="bg-brand-yellow border-ink-900 font-clash-display text-headline-sm text-ink-alpha md:text-headline-md mb-1 inline-block rotate-6 rounded-2xl border px-4 py-2 font-semibold">
+				<span className="bg-brand-yellow border-ink-900 font-clash-display text-headline-sm text-ink-alpha md:text-headline-md inline-block rotate-6 rounded-2xl border px-4 py-2 font-semibold">
 					WIN RIGHT NOW
 				</span>
 				<h2 className="font-clash-display text-headline-lg text-ink-alpha md:text-display-md font-semibold text-balance">
@@ -42,7 +42,7 @@ export function PrizeSection({ raffles }: PrizeSectionProps) {
 				</p>
 			</div>
 
-			<div className="grid w-full max-w-(--container-subscribe-benefits-row) grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+			<div className="grid w-full max-w-(--container-subscribe-benefits-row) grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3 xl:grid-cols-4">
 				{raffles.map(raffle => (
 					<PublicRaffleCard key={raffle.id} raffle={raffle} />
 				))}

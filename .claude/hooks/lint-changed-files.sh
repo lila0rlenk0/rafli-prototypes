@@ -32,6 +32,17 @@ if [[ "$FILE_PATH" == */src/components/ui/* ]]; then
   exit 0
 fi
 
+# Skip files outside this project's worktree — cross-repo edits are linted by
+# their own repo's hooks. Without this, bunx eslint runs against the FE config
+# for BE files and emits "File ignored because outside of base path".
+# Guard against an empty $CLAUDE_PROJECT_DIR — the unquoted glob would
+# otherwise expand to `/*` and match every absolute path the hook sees.
+[ -n "$CLAUDE_PROJECT_DIR" ] || exit 0
+case "$FILE_PATH" in
+  "$CLAUDE_PROJECT_DIR"/*) ;;
+  *) exit 0 ;;
+esac
+
 cd "$CLAUDE_PROJECT_DIR" || exit 0
 RESULT=$(bunx eslint --max-warnings=0 "$FILE_PATH" 2>&1)
 EXIT_CODE=$?

@@ -3,9 +3,9 @@
 import { Loader2Icon } from 'lucide-react';
 
 import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
+import { buildPrimaryCtaLabel } from '@/components/raffle/ticket-purchase/cta-label';
 import { Button } from '@/components/ui/button';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
-import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { PROMO_CODE_TYPE } from '@/types/promo-code';
 
@@ -69,15 +69,15 @@ export function BuyButton({
 		publicSlug,
 		questionId,
 		disabled,
+		expectedTotal: total,
 	});
 
-	function getButtonText(): string {
-		if (isLoading) return 'Processing...';
-		if (isFreeTickets) {
-			return 'AMOE - Free Entries';
-		}
-		return `One Time Purchase with Card ${formatCurrency(total, currency)}`;
-	}
+	const buttonLabel = buildPrimaryCtaLabel({
+		isCheckoutLoading: isLoading,
+		isFreeTicketsPromo: isFreeTickets,
+		total,
+		currency,
+	});
 
 	return (
 		<>
@@ -98,7 +98,7 @@ export function BuyButton({
 				{isLoading ? (
 					<Loader2Icon className="mr-2 size-4 animate-spin" />
 				) : null}
-				<p className="font-semibold">{getButtonText()}</p>
+				<p className="font-semibold">{buttonLabel}</p>
 			</Button>
 
 			{questionId ? (

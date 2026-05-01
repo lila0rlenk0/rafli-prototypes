@@ -5,13 +5,40 @@
  * feature graduates to permanent, delete the flag and remove all
  * call-site guards.
  */
+
+/**
+ * Gates the `/pricing` route (Stripe-backed subscription plans).
+ *
+ * When off, the route 404s via `notFound()` in its layout. Flip together
+ * with the `/subscriptions/*` backend endpoints. The `SubscribePromoCard`
+ * on /browse links to /pricing, so its flag derives from this one to keep
+ * the CTA from ever landing on a 404.
+ */
+const PRICING_PAGE_ENABLED = true;
+
 export const FEATURE_FLAGS = {
-	/** Gates /pricing page and subscription promo UI (browse page, navbar badge). */
-	SUBSCRIPTION_ENABLED: false,
+	/**
+	 * Gates the `/subscribe` route (Fanbasis credit-purchase landing).
+	 *
+	 * When off, the route 404s via `notFound()` in its layout — chosen
+	 * over a redirect so external probes can't distinguish "feature off"
+	 * from "route never existed". Leave off until the Fanbasis embedded
+	 * checkout + magic-link webhook are both wired in production; a half-
+	 * wired flow strands paying users on a checkout that can't complete.
+	 *
+	 * Independent of `PRICING_PAGE_ENABLED` and `SUBSCRIBE_PROMO_ENABLED`
+	 * — `/pricing` and the browse promo card target the Stripe-backed
+	 * subscription flow, not the Fanbasis credit flow, so they ship on
+	 * separate timelines.
+	 */
+	SUBSCRIBE_PAGE_ENABLED: false,
+	PRICING_PAGE_ENABLED,
+	SUBSCRIBE_PROMO_ENABLED: PRICING_PAGE_ENABLED,
 	/**
 	 * Gates /messages inbox, the WebSocket stream, and the navbar chat icon.
-	 * Keeping it off avoids paying for the WS connection until the chat
-	 * domain ships — flip to `true` once the backend is wired in production.
+	 * Live in production — the WS connection cost is now paid alongside the
+	 * notifications stream. Kept as a flag so the surface can be killed in
+	 * one redeploy if the chat backend regresses.
 	 */
 	CHAT_ENABLED: true,
 	/**
@@ -29,11 +56,16 @@ export const FEATURE_FLAGS = {
 } as const;
 
 /**
- * Launch-pricing countdown deadline (ISO 8601 datetime).
+ * Length of the rolling launch-pricing countdown window in milliseconds.
  *
- * Set to an ISO string to show the countdown banner on /pricing.
- * Set to `null` when launch pricing is over — the banner disappears
- * and the constant can be deleted in the same cleanup pass as the
- * `SUBSCRIPTION_ENABLED` flag.
+ * The /pricing banner counts down from this value to zero, then loops:
+ * once it hits 00:00:00 the deadline rolls forward by another window and
+ * the timer keeps ticking. Boundaries are anchored to the unix epoch so
+ * every client sees the same deadline at the same instant (no per-session
+ * randomness, no SSR drift across tabs).
+ *
+ * Set to `null` to hide the banner entirely. The constant — and the gate
+ * in `/pricing/page.tsx` — can be deleted in the same cleanup pass as the
+ * `PRICING_PAGE_ENABLED` flag once launch pricing is over for good.
  */
-export const LAUNCH_PRICING_ENDS_AT: string | null = null;
+export const LAUNCH_PRICING_WINDOW_MS: number | null = 2 * 24 * 60 * 60 * 1_000;

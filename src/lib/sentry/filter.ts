@@ -134,6 +134,14 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	// there is no actionable context. See Sentry RAFLI-Q.
 	'Load failed',
 
+	// Next.js RSC Turbopack client (`react-server-dom-turbopack-client.browser`)
+	// throws this when the streaming Server Component fetch closes
+	// unexpectedly — user navigated away mid-stream, tab backgrounded,
+	// network flap. Same abort class as `Load failed` above; dominated
+	// the inbox at production volume with `handled: yes`. See Sentry
+	// RAFLI-21, RAFLI-22.
+	'Connection closed.',
+
 	// Reown AppKit / WalletConnect call Telegram's `postEvent` bridge to
 	// detect whether the page is running inside a Telegram Mini App. Outside
 	// of Telegram the bridge responds with `Method not found`, which the

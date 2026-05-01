@@ -247,4 +247,12 @@ describe('shouldCaptureServiceError', () => {
 		);
 		expect(shouldCaptureServiceError('internal_server_error')).toBe(true);
 	});
+
+	test('drops core:xshare:cooldown — backend cooldown is a documented business rule', () => {
+		// Lax-review verify-x-share rejects retries inside the server-enforced
+		// cooldown window (see verify-x-share.ts schema + verify-errors.ts
+		// toast). Every hit was burning Sentry quota in production (RAFLI-1X)
+		// because the code was missing from EXPECTED_ERROR_CODES — pin it.
+		expect(shouldCaptureServiceError('core:xshare:cooldown')).toBe(false);
+	});
 });

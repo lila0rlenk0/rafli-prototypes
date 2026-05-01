@@ -89,15 +89,20 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 
 	// X-share free-ticket claim — two-step intent → verify flow. Every code
 	// is a backend-enforced business rule with a mapped toast in
-	// `use-share.ts`; none indicate a defect. Backend collapsed the claim
-	// enum to `pending | verified` and dropped the per-attempt cooldown,
-	// so `rate-limited` is no longer reachable; `already-claimed` now means
-	// a verified claim already exists for this (raffle, user) pair.
+	// `verify-errors.ts` / `intent-errors.ts`; none indicate a defect.
+	// Backend collapsed the claim enum to `pending | verified`, but
+	// `cooldown` is still raised on the verify endpoint to throttle the
+	// lax-review retry budget (see `verify-x-share.ts` schema:
+	// `pending_review.retryAfterSeconds`). `already-claimed` means a
+	// verified claim already exists for this (raffle, user) pair.
 	'core:xshare:already-claimed',
 	'core:xshare:question-required',
 	'core:xshare:disabled',
 	'core:xshare:expired',
 	'core:xshare:not-found',
+	// Server-enforced retry throttle inside the lax-review window — every
+	// hit had been burning Sentry quota until added (production RAFLI-1X).
+	'core:xshare:cooldown',
 
 	// Order — expected states
 	'core:order:not-found',

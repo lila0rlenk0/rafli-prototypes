@@ -373,6 +373,19 @@ describe('filterEvent', () => {
 			expect(result).toBeNull();
 		});
 
+		// RAFLI-22/21 — Next.js RSC Turbopack client throws "Connection
+		// closed." from `react-server-dom-turbopack-client.browser` when
+		// the streaming fetch is aborted (Safari/Chrome navigating away
+		// mid-stream, tab backgrounded, network flap). Same noise class
+		// as RAFLI-Q "Load failed" — environmental, handled, not a code
+		// defect, dominated the inbox at production volume.
+		test('drops RSC "Connection closed." stream abort (Sentry RAFLI-22)', () => {
+			const event = createEvent();
+			const hint = createHint(new Error('Connection closed.'));
+			const result = filterEvent(event, hint);
+			expect(result).toBeNull();
+		});
+
 		// RAFLI-R — Reown AppKit / WalletConnect probes Telegram's postEvent
 		// bridge to detect Mini App context. Outside Telegram the bridge
 		// responds "Method not found" which surfaces as an unhandled

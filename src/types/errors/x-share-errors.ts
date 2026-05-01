@@ -19,6 +19,14 @@ export const X_SHARE_ERROR_CODES = {
 	EXPIRED: 'core:xshare:expired',
 	/** No pending share claim exists for this user/raffle pair. */
 	NOT_FOUND: 'core:xshare:not-found',
+	/**
+	 * Server-enforced retry throttle inside the lax-review window — backend
+	 * caps X-API spend by rejecting verify retries that arrive before
+	 * `pending_review.retryAfterSeconds` elapses. Anchored as a constant so
+	 * the verify mapper, the Sentry filter, and the UI toast all reference
+	 * the same symbol instead of duplicating the string literal.
+	 */
+	COOLDOWN: 'core:xshare:cooldown',
 } as const;
 
 export type XShareErrorCode =

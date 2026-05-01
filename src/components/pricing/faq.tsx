@@ -20,7 +20,7 @@ const FAQ_ITEMS: readonly { question: string; answer: string }[] = [
 	{
 		question: 'What is a credit subscription?',
 		answer:
-			'A credit subscription gives you a monthly balance of Rafli credits you use to enter sweepstakes. Every month, your credits refresh automatically. Starter gives you $30 in credits for $25/mo. Pro gives you $125 in credits for $100/mo. Your subscription renews on the same date each month. Cancel anytime from your account settings.',
+			'A credit subscription gives you a monthly balance of Rafli credits you use to enter sweepstakes. Every month, your credits refresh automatically. Starter gives you $25 in credits worth $30. Pro gives you $100 in credits worth $125. Your subscription renews on the same date each month. Cancel anytime from your account settings.',
 	},
 	{
 		question: 'Does my subscription auto-renew?',

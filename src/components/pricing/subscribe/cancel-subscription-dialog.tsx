@@ -1,6 +1,7 @@
 'use client';
 
 import { HeartCrack, Loader2, TicketX, X } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -172,6 +173,18 @@ function ConfirmBody({
 					);
 				})}
 			</ul>
+			<p className="text-body-sm text-foreground">
+				Your subscription will stay active until the end of the current billing
+				cycle — your perks keep working until then. You can manage or restart
+				your subscription anytime from your{' '}
+				<Link
+					href="/profile#credits"
+					className="text-foreground font-semibold underline underline-offset-4 hover:no-underline"
+				>
+					profile page
+				</Link>
+				.
+			</p>
 			<div className="flex w-full flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center sm:gap-8">
 				<Button
 					size="lg"

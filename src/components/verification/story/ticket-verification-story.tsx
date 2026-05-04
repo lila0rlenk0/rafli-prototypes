@@ -26,7 +26,7 @@ type StoryPhaseState =
  * TicketVerificationStory
  *
  * Interactive verification component that tells the full story of an entry's
- * participation in a sweepstake draw. Shows 3 steps:
+ * participation in a sweepstakes draw. Shows 3 steps:
  * 1. Found in the committed set (IPFS ledger)
  * 2. Cryptographically verified (Merkle proof)
  * 3. Draw result (formula math — who won and why)

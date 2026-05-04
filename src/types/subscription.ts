@@ -152,6 +152,31 @@ export const createSubscriptionResponseSchema = z.object({
 });
 
 /**
+ * FE payload for the cancel-subscription action.
+ *
+ * Backend expects only the local subscription UUID; ownership and lifecycle
+ * checks (must be active, not already cancelled) live server-side. We
+ * `safeParse` the UUID locally so a stale cached page that lost the value
+ * fails fast without round-tripping the request.
+ */
+export const cancelSubscriptionPayloadSchema = z.object({
+	subscriptionId: z.uuidv7(),
+});
+
+/**
+ * Response from `POST /subscriptions/cancel`. The endpoint performs a
+ * cancel-at-period-end — the user keeps benefits until `expiresAt`, at which
+ * point the row flips to `expired` via the lifecycle reconcile cron.
+ *
+ * `status` echoes the post-mutation lifecycle status (typically `cancelled`)
+ * so the UI can reconcile its local view without a follow-up read.
+ */
+export const cancelSubscriptionResponseSchema = z.object({
+	expiresAt: z.iso.datetime(),
+	status: subscriptionStatusSchema,
+});
+
+/**
  * Response from `POST /subscriptions/portal` — short-lived Stripe-hosted URL
  * for the Customer Portal where users self-serve cancel, plan switch, payment
  * method updates, and invoice history. The FE redirects the browser to it
@@ -179,6 +204,12 @@ export type CreateBillingPortalResponse = z.infer<
 	typeof createBillingPortalResponseSchema
 >;
 export type MySubscription = z.infer<typeof mySubscriptionSchema>;
+export type CancelSubscriptionPayload = z.infer<
+	typeof cancelSubscriptionPayloadSchema
+>;
+export type CancelSubscriptionResponse = z.infer<
+	typeof cancelSubscriptionResponseSchema
+>;
 
 /**
  * Subscription snapshot consumed by the ticket-purchase math + price breakdown.

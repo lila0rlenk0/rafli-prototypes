@@ -99,6 +99,11 @@
 	--color-status-completed: #a855f7;
 	--color-status-auto-cancelled: #f97316;
 	--color-status-cancelled: #ef4444;
+	/* Soft companion to `status-cancelled` — used for the rounded-square
+	   chip behind the X icon in the cancel-subscription benefit list. The
+	   stroke colour is `status-cancelled` itself, so the pair stays in one
+	   semantic family. */
+	--color-status-cancelled-soft: #ffd1d9;
 
 	/* Foreground pairings for role-tag surfaces. The browse-card design
 	   uses muted same-hue foregrounds (softer than text-black on the chat
@@ -378,6 +383,10 @@
 	--container-card: 540px;
 	--container-card-sm: 520px;
 	--container-card-xs: 480px;
+	/* Wide-form modal width — cancellation flow renders a benefit list and
+	   side-by-side CTAs that don't fit the standard card width. Figma frame
+	   is 830px; one token covers both confirm and success states. */
+	--container-card-md: 52rem;
 	/* Pricing hero + launch-countdown copy column — Figma frame 854px.
 	   Shared by both surfaces so the wrap rhythm stays in lock-step. */
 	--container-launch-copy: 854px;

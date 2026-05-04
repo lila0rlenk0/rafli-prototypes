@@ -28,9 +28,9 @@ const FAQ_ITEMS: readonly { question: string; answer: string }[] = [
 			"Yes. Your subscription renews automatically each month on the date you signed up. You'll receive your fresh credits at the start of each billing cycle. You won't be charged after canceling, and your credits stay active until the end of the current cycle.",
 	},
 	{
-		question: 'Can I use my discount on any sweepstake?',
+		question: 'Can I use my discount on any sweepstakes?',
 		answer:
-			'Yes. Your discount applies to every active sweepstake on the platform with no restrictions.',
+			'Yes. Your discount applies to every active sweepstakes on the platform with no restrictions.',
 	},
 	{
 		question: 'Do my free pool entries refresh?',

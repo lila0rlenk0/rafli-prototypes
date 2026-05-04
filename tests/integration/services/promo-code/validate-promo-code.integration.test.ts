@@ -62,8 +62,9 @@ describe('validatePromoCode', () => {
 	});
 
 	test('returns INVALID_CODE for malformed code format', async () => {
-		// PROMO_CODE_REGEX expects XXXX-XXXX format — early rejection, no API call
-		const result = await validatePromoCode('raffle-1', 'bad-format');
+		// Underscore is outside the bearer-token charset ([A-Z0-9-]) the BE
+		// validator accepts — early rejection, no API call.
+		const result = await validatePromoCode('raffle-1', 'BAD_CODE_X');
 
 		expect(result.success).toBe(false);
 		if (!result.success) {

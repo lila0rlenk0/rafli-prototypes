@@ -16,6 +16,7 @@ import { WinnersList } from '@/components/raffle/winners/winners-list';
 import { CommentSection } from '@/components/raffle/comments/section';
 import { ReportRaffleButton } from '@/components/browse/public-slug/report-raffle-button';
 import { ShareOnXButton } from '@/components/browse/public-slug/share-on-x-button';
+import { SubscribeUpsellCard } from '@/components/pricing/subscribe/subscribe-upsell-card';
 import { getCurrentUser } from '@/lib/auth/session';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import type { Raffle } from '@/types/raffle';
@@ -75,6 +76,18 @@ export async function RaffleRightColumnAsync({
 					ctx={ctx}
 					xShareConfig={xShareConfig}
 				/>
+			) : null}
+			{/* Subscribe upsell — only when the viewer can actually buy entries
+			    and isn't already subscribed. `view.showActiveCard` gates on
+			    the raffle being mid-active (no point promoting discounts on a
+			    concluded surface), `!view.isOwner` hides the card from the
+			    host (they can't enter their own raffle so the discount is
+			    moot), and `!ctx.subscription.isActive` covers both guests
+			    (`EMPTY_CONTEXT` → inactive sentinel) and authenticated
+			    non-subscribers per the Figma "show only if user is not
+			    subscribed" annotation. */}
+			{view.showActiveCard && !view.isOwner && !ctx.subscription.isActive ? (
+				<SubscribeUpsellCard />
 			) : null}
 			{view.isConcluded && view.hasWinners && raffle.winners ? (
 				<WinnersList

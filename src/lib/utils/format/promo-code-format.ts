@@ -3,6 +3,7 @@ import {
 	PROMO_CODE_TYPE,
 	type PromoCode,
 	type PromoCodeStatus,
+	type RaffleScopedPromoCodeType,
 	type ValidatedPromoCode,
 } from '@/types/promo-code';
 
@@ -35,9 +36,7 @@ const MALFORMED_PROMO_VALUE = '—';
  * exhaustive switch from both call sites.
  */
 type PromoCodeFormatters = {
-	readonly [T in (typeof PROMO_CODE_TYPE)[keyof typeof PROMO_CODE_TYPE]]: (
-		numericValue: number,
-	) => string;
+	readonly [T in RaffleScopedPromoCodeType]: (numericValue: number) => string;
 };
 
 function formatPromoValueWith(

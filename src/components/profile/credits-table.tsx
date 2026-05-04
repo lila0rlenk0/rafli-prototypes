@@ -24,6 +24,10 @@ const REASON_LABELS: Record<string, string> = {
 	[CREDIT_REASON.CANCELLATION_REFUND]: 'Cancellation Refund',
 	[CREDIT_REASON.CHECKOUT_SPEND]: 'Checkout Payment',
 	[CREDIT_REASON.ORDER_REVERSAL]: 'Order Reversal',
+	// Surfaced in history immediately after a successful credit-grant promo
+	// redemption — the redeem entry on the profile page is the only client
+	// path that produces this reason today.
+	[CREDIT_REASON.PROMO_REDEMPTION]: 'Promo Code Redeemed',
 	[CREDIT_REASON.SUBSCRIPTION_RENEWAL]: 'Subscription Renewal',
 };
 

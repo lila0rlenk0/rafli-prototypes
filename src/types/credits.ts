@@ -17,6 +17,11 @@ export const CREDIT_REASON = {
 	CANCELLATION_REFUND: 'cancellation_refund',
 	CHECKOUT_SPEND: 'checkout_spend',
 	ORDER_REVERSAL: 'order_reversal',
+	// Credit-grant promo redemption — the BE writes ledger rows with this reason
+	// from `RedeemPromoCodeCommand` after a credit_grant code is redeemed. Without
+	// this entry the credit-history Zod parse rejects post-redeem rows and surfaces
+	// `captureContractDrift` for every newly-issued credit grant.
+	PROMO_REDEMPTION: 'promo_redemption',
 	SUBSCRIPTION_RENEWAL: 'subscription_renewal',
 } as const;
 
@@ -36,6 +41,7 @@ export const creditReasonSchema = z.enum([
 	CREDIT_REASON.CANCELLATION_REFUND,
 	CREDIT_REASON.CHECKOUT_SPEND,
 	CREDIT_REASON.ORDER_REVERSAL,
+	CREDIT_REASON.PROMO_REDEMPTION,
 	CREDIT_REASON.SUBSCRIPTION_RENEWAL,
 ]);
 

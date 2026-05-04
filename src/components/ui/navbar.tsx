@@ -8,7 +8,7 @@ import { Logo } from '@/assets/logo';
 import { ChatNavLink } from '@/components/messages/chat/nav-link';
 import { ModeSwitchToggle } from '@/components/mode/switch-toggle';
 import { NotificationBell } from '@/components/notifications/bell';
-import { CreditBalanceBadge } from '@/components/ui-custom/credit-balance-badge';
+import { SubscriptionPill } from '@/components/ui-custom/subscription-pill';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { cn } from '@/lib/class-names';
 
@@ -82,7 +82,7 @@ export function Navbar({ children }: NavbarProps) {
 
 					{/* Desktop: Right side icons */}
 					<div className="hidden items-center gap-4 sm:flex">
-						<CreditBalanceBadge />
+						<SubscriptionPill />
 						<a
 							href={FEEDBACK_FORM_URL}
 							target="_blank"
@@ -143,7 +143,7 @@ export function Navbar({ children }: NavbarProps) {
 							<ModeSwitchToggle />
 							{/* Bubble click closes mobile overlay on badge tap */}
 							<div onClick={closeMenu} role="presentation">
-								<CreditBalanceBadge />
+								<SubscriptionPill />
 							</div>
 
 							<Link

@@ -164,7 +164,7 @@ export function LaunchCountdown({
 				<p className="text-foreground text-base/dense max-w-(--container-launch-copy) font-normal text-pretty">
 					Right now Rafli is new. Sweepstakes are running with small participant
 					pools. New subscribers get early access to cheaper entries and free
-					sweepstake access before anyone else.
+					sweepstakes access before anyone else.
 				</p>
 				{/* `asChild` delegates rendering to the anchor while keeping the
 				    shadcn focus-visible ring + disabled semantics. Anchor inside

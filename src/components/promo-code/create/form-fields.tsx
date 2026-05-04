@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/class-names';
-import { PROMO_CODE_TYPE, type PromoCodeType } from '@/types/promo-code';
+import {
+	PROMO_CODE_TYPE,
+	type RaffleScopedPromoCodeType,
+} from '@/types/promo-code';
 
 import { CreatePromoCodeLimitFields } from './limit-fields';
 import type { CreatePromoCodeFormData } from './schema';
@@ -14,11 +17,11 @@ import type { CreatePromoCodeFormData } from './schema';
 interface CreatePromoCodeFormFieldsProps {
 	form: UseFormReturn<CreatePromoCodeFormData>;
 	allowFreeTickets: boolean;
-	watchType: PromoCodeType;
+	watchType: RaffleScopedPromoCodeType;
 	watchUnlimitedUses: boolean;
 	watchUnlimitedPerUser: boolean;
 	watchNoExpiration: boolean;
-	onTypeChange: (type: PromoCodeType) => void;
+	onTypeChange: (type: RaffleScopedPromoCodeType) => void;
 	onUnlimitedUsesChange: (checked: boolean) => void;
 	onUnlimitedPerUserChange: (checked: boolean) => void;
 	onNoExpirationChange: (checked: boolean) => void;
@@ -28,7 +31,7 @@ interface CreatePromoCodeFormFieldsProps {
  * Picks the value-field label based on the selected promo type. Keeps
  * the render body linear so it reads top-to-bottom.
  */
-function getValueLabel(type: PromoCodeType): string {
+function getValueLabel(type: RaffleScopedPromoCodeType): string {
 	switch (type) {
 		case PROMO_CODE_TYPE.FREE_TICKETS:
 			return 'Number of bonus entries';
@@ -43,7 +46,7 @@ function getValueLabel(type: PromoCodeType): string {
  * Picks the value-field step size — 0.01 for fixed dollar amounts,
  * 1 for ticket counts and percentages.
  */
-function getValueStep(type: PromoCodeType): string {
+function getValueStep(type: RaffleScopedPromoCodeType): string {
 	switch (type) {
 		case PROMO_CODE_TYPE.DISCOUNT_FIXED:
 			return '0.01';
@@ -93,7 +96,9 @@ export function CreatePromoCodeFormFields({
 				<Label>Type</Label>
 				<RadioGroup
 					value={watchType}
-					onValueChange={value => onTypeChange(value as PromoCodeType)}
+					onValueChange={value =>
+						onTypeChange(value as RaffleScopedPromoCodeType)
+					}
 					className="flex gap-4"
 				>
 					<div className="flex items-center gap-2">

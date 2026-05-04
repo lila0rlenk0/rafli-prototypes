@@ -128,6 +128,10 @@ export const SUBSCRIPTION_EVENTS = {
 	CHECKOUT_REDIRECTED: 'Subscription Checkout Redirected',
 	/** Subscribe action failed (includes error_code, plan_id) */
 	FAILED: 'Subscription Failed',
+	/** User opened the in-app cancel-subscription confirm dialog (client-side) */
+	CANCEL_REQUESTED: 'Subscription Cancel Requested',
+	/** Backend confirmed cancel-at-period-end (carries subscription_id) */
+	CANCEL_CONFIRMED: 'Subscription Cancel Confirmed',
 } as const;
 
 /**

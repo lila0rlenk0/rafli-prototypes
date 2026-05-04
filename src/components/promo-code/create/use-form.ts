@@ -4,7 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 
-import { PROMO_CODE_TYPE, type PromoCodeType } from '@/types/promo-code';
+import {
+	PROMO_CODE_TYPE,
+	type RaffleScopedPromoCodeType,
+} from '@/types/promo-code';
 
 import {
 	createPromoCodeFormSchema,
@@ -13,7 +16,7 @@ import {
 
 interface UseCreatePromoCodeFormResult {
 	form: UseFormReturn<CreatePromoCodeFormData>;
-	handleTypeChange: (type: PromoCodeType) => void;
+	handleTypeChange: (type: RaffleScopedPromoCodeType) => void;
 	handleUnlimitedUsesChange: (checked: boolean) => void;
 	handleUnlimitedPerUserChange: (checked: boolean) => void;
 	handleNoExpirationChange: (checked: boolean) => void;
@@ -38,7 +41,7 @@ const DEFAULT_VALUES_WITHOUT_TYPE = {
  */
 function buildFormHandlers(form: UseFormReturn<CreatePromoCodeFormData>) {
 	return {
-		handleTypeChange(type: PromoCodeType) {
+		handleTypeChange(type: RaffleScopedPromoCodeType) {
 			form.setValue('type', type);
 			// Free tickets must stay integer-backed so the form never renders
 			// a decimal quantity the schema rejects on submit.

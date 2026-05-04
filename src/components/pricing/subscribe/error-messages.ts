@@ -106,3 +106,27 @@ export function getManagePortalErrorMessage(
 		fallback: "We couldn't open the billing portal. Please try again.",
 	});
 }
+
+const CANCEL_OVERRIDES: Partial<Record<SubscriptionErrorCode, string>> = {
+	// Cancel-specific copy beats the shared "contact support" message — the
+	// user's intent is unambiguous (they're trying to cancel) so we can be
+	// honest about why the request was rejected without alarming them.
+	[SUBSCRIPTION_ERROR_CODES.NOT_FOUND]:
+		"We couldn't find that subscription. Refresh the page and try again.",
+	[SUBSCRIPTION_ERROR_CODES.NOT_ACTIVE]:
+		'This subscription is already cancelled.',
+};
+
+/**
+ * Toast copy for `cancelSubscription` failures rendered by the cancel
+ * confirmation dialog.
+ *
+ * @returns User-facing message for the supplied code.
+ */
+export function getCancelErrorMessage(code: SubscriptionErrorCode): string {
+	return resolveErrorMessage(code, {
+		signInPrompt: 'Please sign in to cancel your subscription.',
+		overrides: CANCEL_OVERRIDES,
+		fallback: "We couldn't cancel your subscription. Please try again.",
+	});
+}

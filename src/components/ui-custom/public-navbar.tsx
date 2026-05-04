@@ -11,8 +11,7 @@ import { ChatNavLink } from '@/components/messages/chat/nav-link';
 import { ModeSwitchToggle } from '@/components/mode/switch-toggle';
 import { NotificationBell } from '@/components/notifications/bell';
 import { Button } from '@/components/ui/button';
-import { CreditBalanceBadge } from '@/components/ui-custom/credit-balance-badge';
-import { SubscriptionTierBadge } from '@/components/ui-custom/subscription-tier-badge';
+import { SubscriptionPill } from '@/components/ui-custom/subscription-pill';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
@@ -114,15 +113,13 @@ export function PublicNavbar({
 
 					{/* Desktop: Right side */}
 					<div className="hidden items-center gap-4 sm:flex">
-						{/* Tier badge first, credit badge second — the tier is a
-						    status-identity marker that frames how the user reads the
-						    credit value (i.e. "I'm on Pro, with $12 credit"). Ordering
-						    them this way keeps the highest-signal pill closest to the
-						    page content on a LTR reading pass. Both hide themselves
-						    for viewers who don't apply (no subscription / no credit),
-						    so non-subscribers see the same nav they do today. */}
-						{isAuthenticated ? <SubscriptionTierBadge /> : null}
-						{isAuthenticated ? <CreditBalanceBadge /> : null}
+						{/* Single merged pill (tier | credit) per Figma navbar spec —
+						    fuses what used to be two adjacent badges into one rounded
+						    silhouette split by a vertical divider. Hidden for guests:
+						    the underlying `useMySubscription` call hits an authenticated
+						    endpoint and would fail outright with no session. Guests
+						    instead see the "Sign In" CTA in the right cluster. */}
+						{isAuthenticated ? <SubscriptionPill /> : null}
 						<a
 							href={FEEDBACK_FORM_URL}
 							target="_blank"
@@ -197,8 +194,7 @@ export function PublicNavbar({
 									role="presentation"
 									className="flex flex-wrap items-center gap-3"
 								>
-									<SubscriptionTierBadge />
-									<CreditBalanceBadge />
+									<SubscriptionPill />
 								</div>
 							) : null}
 

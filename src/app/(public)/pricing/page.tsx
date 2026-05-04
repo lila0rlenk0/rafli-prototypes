@@ -6,6 +6,7 @@ import { NoPurchaseNecessaryFootnote } from '@/components/compliance/no-purchase
 import { LaunchCountdown } from '@/components/pricing/countdown/launch-countdown';
 import { PlanCard } from '@/components/pricing/plan-card';
 import { PricingFaq } from '@/components/pricing/faq';
+import { CancelSubscriptionCard } from '@/components/pricing/subscribe/cancel-subscription-card';
 import { SubscribeResumeTrigger } from '@/components/pricing/subscribe/subscribe-resume-trigger';
 import { SubscriptionCancelToast } from '@/components/pricing/subscribe/subscription-cancel-toast';
 import { SubscriptionSuccessDialog } from '@/components/pricing/subscribe/subscription-success-dialog';
@@ -51,7 +52,7 @@ function PricingErrorState() {
 				</p>
 			</hgroup>
 			<Button asChild size="lg" className="font-semibold sm:px-12">
-				<Link href="/browse">Back to Sweepstake Browse</Link>
+				<Link href="/browse">Back to Sweepstakes Browse</Link>
 			</Button>
 		</div>
 	);
@@ -185,7 +186,7 @@ export default async function PricingPage() {
 					className="focus-visible:ring-ring/50 inline-flex items-center gap-2 rounded-sm text-lg font-semibold text-black underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:outline-none"
 				>
 					<ArrowLeft className="size-6" aria-hidden />
-					Back to Sweepstake Browse
+					Back to Sweepstakes Browse
 				</Link>
 			</div>
 
@@ -228,6 +229,24 @@ export default async function PricingPage() {
 			) : null}
 
 			<PricingFaq />
+
+			{/* Cancel-subscription card — pinned as the very last component
+			    per Figma. Sits below the FAQ because cancellation is the
+			    bottom-of-page de-escalation surface: a subscriber who has
+			    scrolled past the FAQ and still wants out gets the affordance
+			    here, not in the upgrade-focused upper page region.
+			    Visibility gate: only when the viewer holds an active
+			    subscription that hasn't been cancelled yet. The explicit
+			    `cancelledAt === null` gate is needed because a
+			    cancel-pending subscription stays at `status: 'active'` until
+			    `currentPeriodEnd`; checking status alone would let users
+			    reach the cancel CTA on a subscription that's already on its
+			    way out, which the backend would reject as `not-active`. */}
+			{currentSubscription !== null &&
+			currentSubscription.status === 'active' &&
+			currentSubscription.cancelledAt === null ? (
+				<CancelSubscriptionCard subscription={currentSubscription} />
+			) : null}
 		</div>
 	);
 }

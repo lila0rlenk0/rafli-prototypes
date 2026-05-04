@@ -7,6 +7,7 @@ import { deriveAggregateStatus } from '@/lib/verification/aggregate-status';
 
 import { SignOutButton } from '@/components/auth/sign-out/button';
 import { VerificationBadge } from '@/components/verification/badges/badge';
+import { CreditCodeRedeem } from '@/components/profile/credit-code-redeem';
 import { ProfileSidebar } from '@/components/profile/sidebar';
 import {
 	CreditsSection,
@@ -28,21 +29,25 @@ const SIDEBAR_ITEMS = [
 		label: 'Personal Information',
 		sectionId: 'personal-information',
 	},
+	// Credits surfaced second per Figma — the credits / subscription summary is
+	// the most-actionable card for returning users (top-up, upgrade), so it
+	// sits directly under personal info before the longer compliance + prefs
+	// stack.
 	{
-		label: 'Password',
-		sectionId: 'security',
+		label: 'Credits',
+		sectionId: 'credits',
 	},
 	{
 		label: 'Verification',
 		sectionId: 'verification',
 	},
 	{
-		label: 'Email Preferences',
-		sectionId: 'email-preferences',
+		label: 'Password',
+		sectionId: 'security',
 	},
 	{
-		label: 'Credits',
-		sectionId: 'credits',
+		label: 'Email Preferences',
+		sectionId: 'email-preferences',
 	},
 	{
 		label: 'Payment History',
@@ -131,6 +136,20 @@ export default async function ProfilePage() {
 						bio={userProfile?.bio ?? null}
 					/>
 
+					{/* Redemption affordance — sits as its own card above the
+					    credits summary so the input lives on a dedicated surface
+					    rather than competing with the balance grid for the
+					    visual anchor of the Credits card. Open to subscribers
+					    and non-subscribers alike (admin grants + partner
+					    promos). */}
+					<CreditCodeRedeem />
+
+					{/* Credits — second slot per Figma. Sits before the longer
+					    compliance + preferences stack because credit balance and
+					    subscription state are the cards returning users act on
+					    most often. */}
+					<CreditsSection />
+
 					{/* Verification */}
 					<VerificationSection />
 
@@ -139,9 +158,6 @@ export default async function ProfilePage() {
 
 					{/* Email Preferences */}
 					<EmailPreferencesSection />
-
-					{/* Credits */}
-					<CreditsSection />
 
 					{/* Payment History */}
 					<PaymentHistorySection />

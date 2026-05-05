@@ -1,105 +1,21 @@
 {
   "version": 1,
   "skills": {
-    "adapt": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "9411e87386a8f6cecf7548742fe26587ccd8d87e498eb8c87bafc0ff5c206624"
-    },
-    "animate": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "4eecd295d420574c072011a6654b22837f1d489372ee7199934e53aef0fc267a"
-    },
-    "audit": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "842ebe269ae488bb273bde1509975b1d37d828f1a9d606d49579afb10bde77b9"
-    },
-    "bolder": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "5317e7a23478fb81d4fe52b8cd9749f04e07dbc3048eebcbfdeaa2df379ad79e"
-    },
-    "clarify": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "46663ef3b40818b846b5b3eace0ccb177794d2e2788c3ed1c7d14978edeaf22c"
-    },
-    "colorize": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "cb3b8585c480c14600b7a9ad6de2a0559d4ab920a23b4cf6eae75cb859a83156"
-    },
-    "critique": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "869a0913be6fa054c3ad87230e5c43b4eec6e88154c0c832da30c78e853db457"
-    },
-    "delight": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "cce849fd8e9bad331367901dc87f67ead851c033bb6ebe90af977f209506a300"
-    },
-    "distill": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "70d4d81de5eb3399de0a8c1a912fe4dd372097de70e1468f3be827c201d16aab"
-    },
-    "harden": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "489f5ba0ae75c466c090efd2915bfc2fbcb7ede83782907a0a6f7517e88e0477"
-    },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "computedHash": "dd2c63139d8592b2521f706e58a31da0c85d9a0d8510163daa95a42dfcd83df4"
-    },
-    "layout": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "283d25bf665e06f9de370572c89f2ea07a4984416d2bec04eb82575d4248f92d"
-    },
-    "optimize": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "3a74bc4ffa6c2923c301a69f52f6a3dd03d5a05f53a6010b620e5bc48f2e4e4a"
-    },
-    "overdrive": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "7df8d6f66a3dfd91760418bf28e6e13ff354e46ad0e139840866d29dcb006bdb"
-    },
-    "polish": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "26ac9f46dac80407427c99c3176e5b515546124629ac1bae6918d393be7a153b"
-    },
-    "quieter": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "fc60c27009cd9839685a7156afd44ffb4ae46a006a9a51c0be5a2ed5b3d53b2d"
+      "skillPath": "skill/SKILL.md",
+      "computedHash": "8cdf2e788eaca3af7d02026ef9cec55b506100a00d130f938e3fb1ad669c0ad0"
     },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
       "computedHash": "4a3e95689090a3faf72fe083e1078ec24df44b804f6af9d1e196643573f8a6f0"
     },
-    "shape": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "99bd57f72bb5582b927a9bd6e97e6e7bd604e8619e55b5c648cca452a22a3c2e"
-    },
     "tailwind-css": {
       "source": "paulrberg/agent-skills",
       "sourceType": "github",
       "computedHash": "0d28f52b8db2fd09d0c167c5d32b8a676af39183027ac5e2b6bcff5f7ed84822"
-    },
-    "typeset": {
-      "source": "pbakaus/impeccable",
-      "sourceType": "github",
-      "computedHash": "3d686aa4145667edac8cd0778f42277816bcbb17b9b4131d0f20461cc394b0e0"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",

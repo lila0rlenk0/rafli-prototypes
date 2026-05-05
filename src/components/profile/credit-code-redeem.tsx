@@ -2,6 +2,7 @@
 
 import { Loader2, Sparkles, X } from 'lucide-react';
 import {
+	useRef,
 	useState,
 	type ChangeEvent,
 	type FormEvent,
@@ -159,6 +160,14 @@ export function CreditCodeRedeem() {
 	// outlive the in-flight request — `mutation.data` would clear if the user
 	// triggered another redemption while the modal was open.
 	const [success, setSuccess] = useState<RedemptionSuccess | null>(null);
+	// Replay detector — the BE's `/promo-codes/redeem` is idempotent for
+	// credit_grant: a second redemption of the same code by the same user
+	// returns 200 with the *original* `redemptionId` and stale
+	// `balanceAfter` (no new credits applied). We track ids seen this
+	// session so the modal doesn't pop again with misleading numbers; the
+	// canonical "already redeemed" copy is surfaced inline instead.
+	// `useRef` (not state) because we never need to render off this set.
+	const seenRedemptionIds = useRef<Set<string>>(new Set());
 	const mutation = useRedeemCreditCode();
 
 	function reset() {
@@ -200,6 +209,21 @@ export function CreditCodeRedeem() {
 			{ code: trimmed },
 			{
 				onSuccess(data) {
+					// Replay guard — the BE returns 200 with the original
+					// `redemptionId` + stale `balanceAfter` when the same
+					// user re-redeems a credit_grant code (idempotent by
+					// design, see `recoverCreditGrantRedemption` in the
+					// backend command). Surface the canonical
+					// "already redeemed" copy inline instead of opening the
+					// success modal with numbers that don't reflect any
+					// actual credit movement.
+					if (seenRedemptionIds.current.has(data.redemptionId)) {
+						setInlineError(
+							getPromoErrorMessage('core:promo:already-redeemed'),
+						);
+						return;
+					}
+					seenRedemptionIds.current.add(data.redemptionId);
 					// Capture `trimmed` (the BE-canonical uppercased form)
 					// alongside the BE response so the success dialog can
 					// detect the Earnmax migration prefix (`MAX-...`) without

@@ -27,9 +27,9 @@ export function RaffleShareButtons({
 	}
 
 	function handleShareOnX() {
-		const text = `Check out this sweepstakes: ${title}`;
 		const link = `${window.location.origin}/browse/${publicSlug}`;
-		const url = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+		const text = `I just got my free entry. Join @rafli_win to get yours: ${title} ${link}`;
+		const url = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
 		track(RAFFLE_EVENTS.SHARED, { raffle_slug: publicSlug, method: 'twitter' });
 		window.open(url, '_blank');
 	}

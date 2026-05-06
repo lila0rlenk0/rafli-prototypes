@@ -33,8 +33,8 @@ function openXIntent(params: {
 	shareUrl: string;
 }): void {
 	const { title, publicSlug, shareUrl } = params;
-	const text = `Check out this sweepstakes: ${title}`;
-	const intentUrl = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
+	const text = `I just got my free entry. Join @rafli_win to get yours: ${title} ${shareUrl}`;
+	const intentUrl = `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
 	track(RAFFLE_EVENTS.SHARED, {
 		raffle_slug: publicSlug,
 		method: 'twitter',

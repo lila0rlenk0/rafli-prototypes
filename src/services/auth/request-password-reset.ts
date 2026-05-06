@@ -70,8 +70,9 @@ export async function requestPasswordReset(
 			errorCode === COMMON_ERROR_CODES.TIMEOUT_ERROR ||
 			errorCode === COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR ||
 			errorCode === COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED ||
-			errorCode === AUTH_ERROR_CODES.CAPTCHA_FAILED ||
-			errorCode === AUTH_ERROR_CODES.CAPTCHA_MISSING
+			errorCode === AUTH_ERROR_CODES.CAPTCHA_INVALID ||
+			errorCode === AUTH_ERROR_CODES.CAPTCHA_MISSING ||
+			errorCode === AUTH_ERROR_CODES.CAPTCHA_UNAVAILABLE
 		) {
 			return failure(errorCode);
 		}

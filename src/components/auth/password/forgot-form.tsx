@@ -46,10 +46,12 @@ type FormType = z.infer<typeof formSchema>;
  */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
-		case AUTH_ERROR_CODES.CAPTCHA_FAILED:
+		case AUTH_ERROR_CODES.CAPTCHA_INVALID:
 			return 'Verification failed. Please try again.';
 		case AUTH_ERROR_CODES.CAPTCHA_MISSING:
 			return 'Please complete the verification challenge.';
+		case AUTH_ERROR_CODES.CAPTCHA_UNAVAILABLE:
+			return 'Verification service unavailable. Please try again shortly.';
 		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
 			return 'Too many attempts. Please wait a moment.';
 		case COMMON_ERROR_CODES.NETWORK_ERROR:

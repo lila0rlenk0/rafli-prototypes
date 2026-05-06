@@ -18,9 +18,11 @@ const SIGN_IN_ERROR_MESSAGE_BY_CODE: Partial<Record<AuthErrorCode, string>> = {
 		'Google sign in failed. Please try again.',
 	[AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED]:
 		'Google sign in failed. Please try again.',
-	[AUTH_ERROR_CODES.CAPTCHA_FAILED]: 'Verification failed. Please try again.',
+	[AUTH_ERROR_CODES.CAPTCHA_INVALID]: 'Verification failed. Please try again.',
 	[AUTH_ERROR_CODES.CAPTCHA_MISSING]:
 		'Please complete the verification challenge.',
+	[AUTH_ERROR_CODES.CAPTCHA_UNAVAILABLE]:
+		'Verification service unavailable. Please try again shortly.',
 	[COMMON_ERROR_CODES.GLOBAL_AUTH_UNAUTHENTICATED]: 'Authentication failed.',
 	[COMMON_ERROR_CODES.UNAUTHORIZED]: 'Authentication failed.',
 	[COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED]:

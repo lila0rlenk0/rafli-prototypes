@@ -104,7 +104,7 @@ describe('signInUser', () => {
 		}
 	});
 
-	test('maps Better Auth VERIFICATION_FAILED → auth:captcha:failed', async () => {
+	test('maps Better Auth VERIFICATION_FAILED → auth:captcha:invalid', async () => {
 		mockPost.mockRejectedValueOnce(
 			mockAxiosError({
 				status: 403,
@@ -119,7 +119,7 @@ describe('signInUser', () => {
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
-			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_FAILED);
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_INVALID);
 		}
 	});
 
@@ -139,6 +139,42 @@ describe('signInUser', () => {
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_MISSING);
+		}
+	});
+
+	test('maps Encore-boundary URN auth:captcha:invalid (live path, 400)', async () => {
+		// Live `verifyTurnstile` path emits RFC 7807 URNs at 400 — distinct from
+		// the legacy Better-Auth shorthand above. Both must funnel to CAPTCHA_INVALID.
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 400,
+				data: { type: 'urn:raffles:problem:auth:captcha:invalid' },
+			}),
+		);
+
+		const result = await signInUser(VALID_INPUT);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_INVALID);
+		}
+	});
+
+	test('maps Encore-boundary URN auth:captcha:unavailable (Cloudflare down, 503)', async () => {
+		// 503 fail-closed when Cloudflare siteverify is unreachable; URN extraction
+		// must win over the generic SERVICE_UNAVAILABLE status fallback.
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 503,
+				data: { type: 'urn:raffles:problem:auth:captcha:unavailable' },
+			}),
+		);
+
+		const result = await signInUser(VALID_INPUT);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_UNAVAILABLE);
 		}
 	});
 

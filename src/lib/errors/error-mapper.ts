@@ -114,8 +114,11 @@ const SIMPLE_CODE_MAP: Record<string, string> = {
 	invalid_argument: 'validation_error',
 	// better-auth plugin codes — uppercase shorthand the plugins return verbatim
 	// in `data.code`. Routed to canonical `auth:*` codes so domain mappers route them.
+	// Captcha codes mirror the Encore-boundary `verifyTurnstile` URNs so the
+	// shorthand path (better-auth catch-all) and the typed path resolve to the
+	// same FE constants.
 	PASSWORD_COMPROMISED: 'auth:password:compromised',
-	VERIFICATION_FAILED: 'auth:captcha:failed',
+	VERIFICATION_FAILED: 'auth:captcha:invalid',
 	MISSING_RESPONSE: 'auth:captcha:missing',
 };
 
@@ -346,13 +349,18 @@ export const mapTicketError = createDomainErrorMapper<TicketErrorCode>([
  * Maps host errors to HostErrorCode.
  *
  * The `/users/:id` public-profile endpoint is served by the authentication
- * service — its not-found URN is `auth:profile:not-found`, so `auth:` has to
- * sit in the accepted-prefix list alongside `core:` / `global:`. Dropping it
- * (as the original revision did) folded every real 404 into the
- * `mapCommonError` fallback, masking the backend's domain signal.
+ * service — its not-found URN is `auth:profile:not-found`, which is the only
+ * `auth:*` code host endpoints surface. We narrow the accepted prefix to
+ * `auth:profile:` (rather than the broader `auth:`) so the global
+ * `SIMPLE_CODE_MAP` rewrites — `VERIFICATION_FAILED` →
+ * `auth:captcha:invalid`, `MISSING_RESPONSE` → `auth:captcha:missing` — cannot
+ * leak through and pollute HostErrorCode with strings that are not in its
+ * union. Dropping the auth surface entirely (as the original revision did)
+ * folded real 404s into the `mapCommonError` fallback and masked the
+ * backend's domain signal, hence the deliberate sub-namespace.
  */
 export const mapHostError = createDomainErrorMapper<HostErrorCode>([
-	'auth:',
+	'auth:profile:',
 	'core:',
 	'global:',
 ]);

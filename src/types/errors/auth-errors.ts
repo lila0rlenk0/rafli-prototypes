@@ -35,11 +35,13 @@ export const AUTH_ERROR_CODES = {
 	/** Current password is incorrect (change-password flow) */
 	PASSWORD_INVALID: 'auth:password:invalid',
 
-	// Captcha errors (Better Auth captcha plugin → Cloudflare Turnstile)
+	// Captcha errors (Cloudflare Turnstile siteverify, enforced at Encore boundary)
 	/** Token rejected by Cloudflare siteverify — challenge failed or token reused */
-	CAPTCHA_FAILED: 'auth:captcha:failed',
-	/** Request reached the captcha plugin without an `x-captcha-response` header */
+	CAPTCHA_INVALID: 'auth:captcha:invalid',
+	/** Request reached the captcha gate without an `x-captcha-response` header */
 	CAPTCHA_MISSING: 'auth:captcha:missing',
+	/** Cloudflare siteverify unreachable — fail-closed 503 from the backend */
+	CAPTCHA_UNAVAILABLE: 'auth:captcha:unavailable',
 } as const;
 
 export type AuthErrorCode =

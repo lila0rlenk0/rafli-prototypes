@@ -218,9 +218,7 @@ export function CreditCodeRedeem() {
 					// success modal with numbers that don't reflect any
 					// actual credit movement.
 					if (seenRedemptionIds.current.has(data.redemptionId)) {
-						setInlineError(
-							getPromoErrorMessage('core:promo:already-redeemed'),
-						);
+						setInlineError(getPromoErrorMessage('core:promo:already-redeemed'));
 						return;
 					}
 					seenRedemptionIds.current.add(data.redemptionId);

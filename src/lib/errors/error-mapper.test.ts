@@ -93,6 +93,33 @@ describe('mapAuthError', () => {
 			});
 			expect(mapAuthError(error)).toBe('global:auth:unauthenticated');
 		});
+
+		// Encore-boundary `verifyTurnstile` emits these URNs at status 400/503 —
+		// the live captcha rejection path. Distinct from the SIMPLE_CODE_MAP
+		// shorthand path below, which only fires on the better-auth catch-all.
+		test('extracts auth:captcha:invalid from URN (Encore-boundary 400)', () => {
+			const error = makeAxiosError(
+				{ type: 'urn:raffles:problem:auth:captcha:invalid' },
+				400,
+			);
+			expect(mapAuthError(error)).toBe('auth:captcha:invalid');
+		});
+
+		test('extracts auth:captcha:missing from URN (Encore-boundary 400)', () => {
+			const error = makeAxiosError(
+				{ type: 'urn:raffles:problem:auth:captcha:missing' },
+				400,
+			);
+			expect(mapAuthError(error)).toBe('auth:captcha:missing');
+		});
+
+		test('extracts auth:captcha:unavailable from URN (Encore-boundary 503)', () => {
+			const error = makeAxiosError(
+				{ type: 'urn:raffles:problem:auth:captcha:unavailable' },
+				503,
+			);
+			expect(mapAuthError(error)).toBe('auth:captcha:unavailable');
+		});
 	});
 
 	describe('message field extraction', () => {
@@ -136,9 +163,9 @@ describe('mapAuthError', () => {
 		// `data.code`. Without the SIMPLE_CODE_MAP entry they collapse into the
 		// 400/403 status fallbacks (validation_error / forbidden) and the user
 		// sees a generic message instead of the actionable "retry verification".
-		test('maps "VERIFICATION_FAILED" to auth:captcha:failed', () => {
+		test('maps "VERIFICATION_FAILED" to auth:captcha:invalid', () => {
 			const error = makeAxiosError({ code: 'VERIFICATION_FAILED' }, 403);
-			expect(mapAuthError(error)).toBe('auth:captcha:failed');
+			expect(mapAuthError(error)).toBe('auth:captcha:invalid');
 		});
 
 		test('maps "MISSING_RESPONSE" to auth:captcha:missing', () => {
@@ -302,6 +329,32 @@ describe('mapPaymentError', () => {
 			type: 'urn:raffles:problem:core:order:not-found',
 		});
 		expect(mapPaymentError(error)).toBe('core:order:not-found');
+	});
+});
+
+// ==========================================
+// mapHostError — captcha pollution regression
+// ==========================================
+
+describe('mapHostError', () => {
+	// SIMPLE_CODE_MAP rewrites Better Auth's `VERIFICATION_FAILED` →
+	// `auth:captcha:invalid` at the global mapper layer. The captcha plugin
+	// only fires on auth endpoints, but `mapHostError` used to accept the
+	// broad `auth:` prefix to let `auth:profile:not-found` through — which
+	// also let the rewritten captcha code bleed into HostErrorCode (a union
+	// that does not include `auth:captcha:invalid`). Narrowing the accepted
+	// prefix to `auth:profile:` is the surgical fix: the only auth code host
+	// endpoints actually return is `auth:profile:not-found`.
+	test('does not let captcha codes pollute HostErrorCode', () => {
+		const error = makeAxiosError({ code: 'VERIFICATION_FAILED' }, 403);
+		expect(mapHostError(error)).toBe('forbidden');
+	});
+
+	test('still accepts auth:profile: codes — only the broader auth: surface is removed', () => {
+		const error = makeAxiosError({
+			type: 'urn:raffles:problem:auth:profile:not-found',
+		});
+		expect(mapHostError(error)).toBe('auth:profile:not-found');
 	});
 });
 

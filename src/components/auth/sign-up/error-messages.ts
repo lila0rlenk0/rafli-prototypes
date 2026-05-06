@@ -24,9 +24,11 @@ const MESSAGES: Partial<Record<AuthErrorCode, string>> = {
 		'Google sign in failed. Please try again.',
 	[AUTH_ERROR_CODES.SOCIAL_TOKEN_EXCHANGE_FAILED]:
 		'Google sign in failed. Please try again.',
-	[AUTH_ERROR_CODES.CAPTCHA_FAILED]: 'Verification failed. Please try again.',
+	[AUTH_ERROR_CODES.CAPTCHA_INVALID]: 'Verification failed. Please try again.',
 	[AUTH_ERROR_CODES.CAPTCHA_MISSING]:
 		'Please complete the verification challenge.',
+	[AUTH_ERROR_CODES.CAPTCHA_UNAVAILABLE]:
+		'Verification service unavailable. Please try again shortly.',
 	[COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED]:
 		'Too many attempts. Please wait a moment.',
 	[COMMON_ERROR_CODES.NETWORK_ERROR]:

@@ -70,7 +70,7 @@ describe('requestPasswordReset', () => {
 		expect(result.success).toBe(true);
 	});
 
-	test('surfaces auth:captcha:failed (user must retry the challenge)', async () => {
+	test('surfaces auth:captcha:invalid (user must retry the challenge)', async () => {
 		// Captcha rejections must NOT be enumeration-suppressed — user has no
 		// way to retry without an actionable error message. A failed challenge
 		// also doesn't leak account existence (it's pre-account-lookup).
@@ -88,7 +88,45 @@ describe('requestPasswordReset', () => {
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
-			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_FAILED);
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_INVALID);
+		}
+	});
+
+	test('surfaces auth:captcha:invalid via Encore-boundary URN (live path)', async () => {
+		// Live Encore-boundary `verifyTurnstile` returns RFC 7807 with the
+		// `auth:captcha:invalid` URN at status 400 — distinct from the legacy
+		// Better-Auth shorthand path above. Both must funnel into CAPTCHA_INVALID.
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 400,
+				data: { type: 'urn:raffles:problem:auth:captcha:invalid' },
+			}),
+		);
+
+		const result = await requestPasswordReset(VALID_INPUT);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_INVALID);
+		}
+	});
+
+	test('surfaces auth:captcha:unavailable (Cloudflare siteverify down)', async () => {
+		// 503 fail-closed from `verifyTurnstile` when Cloudflare is unreachable.
+		// Must surface so the user sees an actionable retry message instead of
+		// a silent success that hides the real failure.
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 503,
+				data: { type: 'urn:raffles:problem:auth:captcha:unavailable' },
+			}),
+		);
+
+		const result = await requestPasswordReset(VALID_INPUT);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_UNAVAILABLE);
 		}
 	});
 

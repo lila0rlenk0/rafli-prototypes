@@ -33,7 +33,9 @@ export function MagicLinkSentStep({
 	// enforces on `/sign-in/magic-link` regardless of resend semantics, and the
 	// initial token is already burned by the first send.
 	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-	const [turnstile, setTurnstile] = useState<TurnstileWidgetHandle | null>(null);
+	const [turnstile, setTurnstile] = useState<TurnstileWidgetHandle | null>(
+		null,
+	);
 
 	/** Resends the magic link to the same email address */
 	async function handleResend() {

@@ -18,10 +18,11 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 	'auth:password:invalid',
 	'auth:password:same',
 	'auth:password-reset:failed',
-	// Captcha — Cloudflare Turnstile token rejection / missing header. User
-	// retries on the same form; not a defect.
-	'auth:captcha:failed',
+	// Captcha — Cloudflare Turnstile token rejection / missing header / upstream
+	// fail-closed. User retries on the same form; not a defect.
+	'auth:captcha:invalid',
 	'auth:captcha:missing',
+	'auth:captcha:unavailable',
 	'auth:social:failed',
 	'auth:social:provider-error',
 	'auth:social:callback-failed',

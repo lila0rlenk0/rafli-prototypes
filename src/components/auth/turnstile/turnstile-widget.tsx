@@ -26,6 +26,22 @@ const RETRY_INTERVAL_MS = 8_000;
 
 interface TurnstileRenderOptions {
 	sitekey: string;
+	/**
+	 * Action label echoed by Cloudflare's siteverify response. Backend asserts
+	 * `expectedAction === response.action` per endpoint to prevent a token
+	 * issued by one widget being replayed against a different captcha-gated
+	 * endpoint within the 300s CF dedup window. Required by every form to
+	 * close that cross-endpoint replay surface (white-hat audit M1).
+	 */
+	action: string;
+	/**
+	 * Optional customer data echoed by siteverify (`response.cdata`). Backend
+	 * asserts equality when `expectedCdata` is configured per endpoint. Use a
+	 * stable scope tag (e.g. `'fanbasis-public-credit:v1'`) for surfaces that
+	 * cannot bind a per-user identifier at render time — the value is opaque
+	 * to Cloudflare and is purely a frontend↔backend contract.
+	 */
+	cData?: string;
 	callback: (token: string) => void;
 	// Cloudflare expects a boolean return: `true` means "we surfaced the
 	// error", suppressing the iframe's built-in error overlay so it does not
@@ -68,6 +84,24 @@ export interface TurnstileWidgetHandle {
 }
 
 interface TurnstileWidgetProps {
+	/**
+	 * Action label asserted by the backend against Cloudflare's siteverify
+	 * `action` field. Required — every captcha-gated form supplies a stable
+	 * kebab-case literal matching its backend `expectedAction` (e.g.
+	 * `'sign-up'`, `'sign-in'`, `'forget-password'`, `'magic-link'`,
+	 * `'send-verification'`, `'fanbasis-checkout'`). Mismatches fail
+	 * verification with no user-visible difference from a regular failure,
+	 * so the per-form literal is the only safety net against a copy-paste
+	 * regression silently weakening the cross-endpoint replay defence.
+	 */
+	action: string;
+	/**
+	 * Optional cdata binding asserted by the backend. Use a versioned scope
+	 * tag for endpoints that cannot bind a per-user identifier at render
+	 * time. Email-based forms leave this undefined because the email isn't
+	 * known until submit; backend skips the cdata assertion for those.
+	 */
+	cData?: string;
 	/** Fired with the verification token. Parent stores it and forwards it to the auth service. */
 	onToken: (token: string) => void;
 	/** Fired when the issued token expires (~5 min). Parent should clear stored token + disable submit. */
@@ -128,6 +162,8 @@ function getTurnstileClientErrorMessage(errorCode: string): string {
  * @returns Inline widget that wires Cloudflare's verification UI into a form
  */
 export function TurnstileWidget({
+	action,
+	cData,
 	onToken,
 	onExpire,
 	onError,
@@ -183,6 +219,8 @@ export function TurnstileWidget({
 		}
 		widgetIdRef.current = window.turnstile.render(containerRef.current, {
 			sitekey: clientEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+			action,
+			cData,
 			callback: token => {
 				// Successful issue — wipe any prior error banner so it does not
 				// stick around after Cloudflare quietly recovers (e.g. retry).

@@ -25,7 +25,7 @@ describe('resendVerificationEmail', () => {
 	test('returns success on valid request', async () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse({}));
 
-		const result = await resendVerificationEmail('test@example.com');
+		const result = await resendVerificationEmail({ email: 'test@example.com', captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(true);
 	});
@@ -34,7 +34,7 @@ describe('resendVerificationEmail', () => {
 		// 4XX errors silently succeed to prevent leaking account existence
 		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 404 }));
 
-		const result = await resendVerificationEmail('unknown@example.com');
+		const result = await resendVerificationEmail({ email: 'unknown@example.com', captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(true);
 	});
@@ -42,7 +42,7 @@ describe('resendVerificationEmail', () => {
 	test('returns success on 400 — prevents user enumeration', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 400 }));
 
-		const result = await resendVerificationEmail('test@example.com');
+		const result = await resendVerificationEmail({ email: 'test@example.com', captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(true);
 	});
@@ -50,7 +50,7 @@ describe('resendVerificationEmail', () => {
 	test('surfaces network_error (infrastructure failure)', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ERR_NETWORK' }));
 
-		const result = await resendVerificationEmail('test@example.com');
+		const result = await resendVerificationEmail({ email: 'test@example.com', captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -61,7 +61,7 @@ describe('resendVerificationEmail', () => {
 	test('surfaces timeout_error (infrastructure failure)', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ECONNABORTED' }));
 
-		const result = await resendVerificationEmail('test@example.com');
+		const result = await resendVerificationEmail({ email: 'test@example.com', captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -72,7 +72,7 @@ describe('resendVerificationEmail', () => {
 	test('surfaces internal_server_error (infrastructure failure)', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
 
-		const result = await resendVerificationEmail('test@example.com');
+		const result = await resendVerificationEmail({ email: 'test@example.com', captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -88,7 +88,7 @@ describe('resendVerificationEmail', () => {
 			}),
 		);
 
-		const result = await resendVerificationEmail('test@example.com');
+		const result = await resendVerificationEmail({ email: 'test@example.com', captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -100,7 +100,7 @@ describe('resendVerificationEmail', () => {
 		const axiosError = mockAxiosError({ status: 500 });
 		mockPost.mockRejectedValueOnce(axiosError);
 
-		await resendVerificationEmail('test@example.com');
+		await resendVerificationEmail({ email: 'test@example.com', captchaToken: 'test-captcha-token' });
 
 		expect(mockCaptureServiceError).toHaveBeenCalledWith(
 			axiosError,
@@ -115,7 +115,7 @@ describe('resendVerificationEmail', () => {
 	test('rejects malformed email without hitting backend', async () => {
 		mockPost.mockReset();
 
-		const result = await resendVerificationEmail('not-an-email');
+		const result = await resendVerificationEmail({ email: 'not-an-email', captchaToken: 'test-captcha-token' });
 
 		// Contract stays enumeration-safe (success), but no backend call.
 		expect(result.success).toBe(true);
@@ -125,7 +125,7 @@ describe('resendVerificationEmail', () => {
 	test('rejects empty email without hitting backend', async () => {
 		mockPost.mockReset();
 
-		const result = await resendVerificationEmail('');
+		const result = await resendVerificationEmail({ email: '', captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(true);
 		expect(mockPost).not.toHaveBeenCalled();

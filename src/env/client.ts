@@ -97,7 +97,7 @@ if (process.env.CI !== 'true') {
 		)
 	) {
 		throw new Error(
-			'NEXT_PUBLIC_TURNSTILE_SITE_KEY must be set to a real Cloudflare Turnstile sitekey when NEXT_PUBLIC_APP_ENV=production. The default test sitekey would silently bypass captcha verification.',
+			'NEXT_PUBLIC_TURNSTILE_SITE_KEY must be set to a real Cloudflare Turnstile sitekey for staging and production builds. The default test sitekey would either DoS auth (real backend secret) or silently bypass captcha verification (test backend secret) — both unacceptable in any deployed environment.',
 		);
 	}
 }

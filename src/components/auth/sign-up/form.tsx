@@ -151,6 +151,7 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 				<SignUpCredentialFields register={register} errors={errors} />
 				<TurnstileWidget
 					ref={setTurnstile}
+					action="sign-up"
 					onToken={setCaptchaToken}
 					onExpire={() => setCaptchaToken(null)}
 					onError={() => setCaptchaToken(null)}

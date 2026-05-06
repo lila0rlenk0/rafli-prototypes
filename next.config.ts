@@ -151,9 +151,20 @@ const nextConfig: NextConfig = {
 		//   auth, admin, and checkout flows must never be embedded in a 3P iframe.
 		// - Permissions-Policy disables sensor APIs we don't use so a compromised
 		//   third-party script cannot silently request camera/mic/geolocation.
-		// - CSP restricts script/style/connect origins; kept intentionally
-		//   permissive for known third parties (Sentry tunnel, Mixpanel, Stripe,
-		//   WalletConnect) so this roll-out doesn't break paid integrations.
+		// - CSP restricts script / style / connect / frame origins to a known
+		//   third-party allow-list (Cloudflare Turnstile, Stripe, Sentry tunnel,
+		//   Mixpanel, WalletConnect, Fanbasis). Audit L3 (2026-05) flagged the
+		//   prior `frame-ancestors 'none'`-only policy as missing the whole
+		//   script/connect/frame allow-list — XSS payloads could exfiltrate
+		//   captcha tokens or session cookies to any origin. The expanded
+		//   directives below add an actual origin-scoping layer.
+		//
+		// `'unsafe-inline'` and `'unsafe-eval'` stay on script-src + style-src:
+		//   Next.js currently emits inline runtime config and Turbopack /
+		//   framework chunks rely on `eval()` for module evaluation. Replacing
+		//   these with nonce-per-request hashing requires Next 15+ middleware
+		//   plumbing that is out of scope here; treat this as the iteration
+		//   step from "no CSP" to "origin-scoped CSP" and follow up on nonces.
 		return [
 			{
 				source: '/:path*',
@@ -188,15 +199,45 @@ const nextConfig: NextConfig = {
 							'camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()',
 					},
 					{
-						// Clickjacking defence for modern browsers (supersedes
-						// X-Frame-Options). `frame-ancestors 'none'` is stricter
-						// than the legacy header because it also covers <embed>
-						// and <object>. A full CSP with script-src / connect-src
-						// would need per-integration auditing (Stripe, Mixpanel,
-						// WalletConnect, Sentry tunnel); ship the header we can
-						// enforce everywhere today and iterate via report-only.
+						// Origin-scoping CSP. Per-directive rationale:
+						// - default-src 'self'      — fall-through deny everything not listed.
+						// - base-uri 'self'         — block injected `<base>` re-rooting URLs.
+						// - object-src 'none'       — kills Flash / PDF-plugin XSS vectors.
+						// - frame-ancestors 'none'  — clickjacking (preserved from prior CSP).
+						// - form-action 'self'      — prevents form-hijack to attacker host.
+						// - script-src              — Cloudflare Turnstile (captcha widget),
+						//                             Stripe.js (payments), Vercel insights,
+						//                             Mixpanel CDN.
+						// - connect-src             — siteverify-ish API endpoints + WS for
+						//                             WalletConnect relays + Sentry ingest
+						//                             tunnel (`/monitoring` is same-origin
+						//                             so 'self' covers it).
+						// - frame-src               — Turnstile challenge iframe, Stripe
+						//                             3DS / hooks, Fanbasis embedded checkout.
+						// - img-src 'self' data: blob: https: — third-party avatars + CDN
+						//                             media; tightening would break OAuth
+						//                             provider profile photos.
+						// - style-src 'self' 'unsafe-inline' — Next.js component styles
+						//                             require inline; track migration to
+						//                             nonce-based per follow-up.
+						// - font-src 'self' data:   — webfont data URIs from style chunks.
+						// - worker-src 'self' blob: — Sentry replay + Vercel insights workers.
 						key: 'Content-Security-Policy',
-						value: "frame-ancestors 'none'",
+						value: [
+							"default-src 'self'",
+							"base-uri 'self'",
+							"object-src 'none'",
+							"frame-ancestors 'none'",
+							"form-action 'self'",
+							"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://js.stripe.com https://m.stripe.network https://cdn.mxpnl.com https://*.mixpanel.com https://va.vercel-scripts.com",
+							"connect-src 'self' https://challenges.cloudflare.com https://api.stripe.com https://m.stripe.network https://*.mixpanel.com https://api.mixpanel.com https://*.sentry.io https://*.ingest.sentry.io https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org https://*.raffly.win https://*.rafli.win https://*.encr.app",
+							"frame-src 'self' https://challenges.cloudflare.com https://js.stripe.com https://hooks.stripe.com https://*.fan-basis.com https://*.fanbasis.io",
+							"img-src 'self' data: blob: https:",
+							"style-src 'self' 'unsafe-inline'",
+							"font-src 'self' data:",
+							"worker-src 'self' blob:",
+							"manifest-src 'self'",
+						].join('; '),
 					},
 				],
 			},

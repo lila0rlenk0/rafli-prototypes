@@ -7,6 +7,10 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { LogoIcon } from '@/assets/logo-icon';
+import {
+	TurnstileWidget,
+	type TurnstileWidgetHandle,
+} from '@/components/auth/turnstile/turnstile-widget';
 import { Button } from '@/components/ui/button';
 import {
 	Field,
@@ -18,7 +22,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/class-names';
 import { resendVerificationEmail } from '@/services/auth/resend-verification-email';
-import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import {
+	AUTH_ERROR_CODES,
+	COMMON_ERROR_CODES,
+	type AuthErrorCode,
+} from '@/types/errors';
 
 /** Email-only schema — no password needed for resend flow */
 const formSchema = z.object({
@@ -28,12 +36,18 @@ const formSchema = z.object({
 type FormType = z.infer<typeof formSchema>;
 
 /**
- * Maps infrastructure error codes to user-friendly messages.
- * Only infrastructure errors reach here — account-related errors
- * are swallowed by the service layer to prevent enumeration.
+ * Maps infrastructure + captcha error codes to user-friendly messages.
+ * Account-existence errors are swallowed by the service layer so they
+ * never reach this map; captcha failures (added 2026-05 per audit M3)
+ * surface so the user can solve a fresh challenge.
  */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
+		case AUTH_ERROR_CODES.CAPTCHA_INVALID:
+		case AUTH_ERROR_CODES.CAPTCHA_MISSING:
+			return 'Please complete the security check before resending.';
+		case AUTH_ERROR_CODES.CAPTCHA_UNAVAILABLE:
+			return 'Security check service is unavailable. Please try again shortly.';
 		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
 			return 'Too many attempts. Please wait a few minutes.';
 		case COMMON_ERROR_CODES.NETWORK_ERROR:
@@ -51,13 +65,21 @@ function getErrorMessage(errorCode: AuthErrorCode): string {
  * Resend verification email form.
  *
  * 'use client' required: uses useForm for validation, useTransition for
- * non-blocking server action calls, and useState for success state.
+ * non-blocking server action calls, and useState for success state +
+ * captcha token lifecycle.
  *
  * Shows a generic success message regardless of account existence — prevents
- * email enumeration attacks. Only infrastructure errors (rate limit, network)
- * are surfaced to the user.
+ * email enumeration attacks. Only infrastructure + captcha errors surface;
+ * 4XX account-related errors are swallowed by the service.
  *
- * @returns Form with email input, or success confirmation after submission
+ * Captcha gate (audit M3): mailbomb prevention. The verification-email
+ * endpoint accepts arbitrary addresses (the backend silently drops unknown
+ * ones to preserve the enumeration-safe contract), so without a captcha
+ * an attacker with a residential proxy pool can spray the platform's
+ * CleverTap quota at any list of emails. Turnstile here forces every
+ * resend through the human-challenge cost.
+ *
+ * @returns Form with email input + Turnstile widget, or success confirmation
  */
 export function ResendVerificationForm({
 	className,
@@ -73,21 +95,47 @@ export function ResendVerificationForm({
 	});
 	const [isPending, startTransition] = useTransition();
 	const [isSuccess, setIsSuccess] = useState(false);
+	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+	// Callback ref instead of `useRef` — react-hooks/refs forbids reading
+	// `.current` from a function passed to `handleSubmit`. Storing the
+	// imperative handle as state turns the access into a normal closure read.
+	const [turnstile, setTurnstile] = useState<TurnstileWidgetHandle | null>(
+		null,
+	);
 
 	/** Calls server action and transitions to success or error state */
 	async function handleResend(data: FormType) {
-		startTransition(async () => {
-			// Step 1: Call server action — backend always returns success to prevent enumeration
-			const result = await resendVerificationEmail(data.email);
+		// Submit button is disabled until the widget issues a token, so this
+		// guard only fires if a token expired between paint and click. Treat
+		// it as a missing-captcha so the message matches the backend URN.
+		if (!captchaToken) {
+			setError('root', {
+				message: getErrorMessage(AUTH_ERROR_CODES.CAPTCHA_MISSING),
+			});
+			return;
+		}
+		const submittedToken = captchaToken;
 
-			// Step 2: Only infrastructure errors bubble up (rate limit, network, timeout)
+		startTransition(async () => {
+			// Step 1: Call server action — backend always returns success for
+			// account-related branches but surfaces infra + captcha errors.
+			const result = await resendVerificationEmail({
+				captchaToken: submittedToken,
+				email: data.email,
+			});
+
+			// Step 2: Surface infra + captcha errors. Token is single-use —
+			// reset on every failure so the next retry has a fresh challenge.
 			if (!result.success) {
 				const message = getErrorMessage(result.error);
 				setError('root', { message });
+				turnstile?.reset();
+				setCaptchaToken(null);
 				return;
 			}
 
-			// Step 3: Show generic success — intentionally vague regardless of account existence
+			// Step 3: Show generic success — intentionally vague regardless of
+			// account existence to preserve the enumeration-safe contract.
 			setIsSuccess(true);
 		});
 	}
@@ -155,11 +203,19 @@ export function ResendVerificationForm({
 					/>
 					<FieldError errors={[errors.email]} />
 				</Field>
+				<TurnstileWidget
+					ref={setTurnstile}
+					action="send-verification"
+					onToken={setCaptchaToken}
+					onExpire={() => setCaptchaToken(null)}
+					onError={() => setCaptchaToken(null)}
+					className="mt-2 flex justify-center"
+				/>
 				<FieldError errors={[errors.root]} />
 				<Field className="mt-4">
 					<Button
 						type="submit"
-						disabled={isPending}
+						disabled={isPending || !captchaToken}
 						className="font-clash-display px-6 py-4 text-lg font-semibold"
 					>
 						{isPending ? 'Sending...' : 'Send Verification Email'}

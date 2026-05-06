@@ -79,7 +79,7 @@ describe('createFanbasisPublicCreditCheckout', () => {
 	test('forwards the embed config on happy path', async () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_BACKEND_RESPONSE));
 
-		const result = await createFanbasisPublicCreditCheckout();
+		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(true);
 		if (result.success) {
@@ -95,7 +95,7 @@ describe('createFanbasisPublicCreditCheckout', () => {
 		mockPost.mockClear();
 		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_BACKEND_RESPONSE));
 
-		await createFanbasisPublicCreditCheckout();
+		await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
 
 		// Bun types `mock.calls` as `[][]`; widen via `unknown` to read the
 		// recorded `(url, body, config)` tuple without `as never`.
@@ -115,7 +115,7 @@ describe('createFanbasisPublicCreditCheckout', () => {
 		mockTrackAfter.mockClear();
 		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
 
-		await createFanbasisPublicCreditCheckout();
+		await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
 
 		expect(mockTrackAfter).toHaveBeenCalled();
 		const calls = mockTrackAfter.mock.calls as unknown as ReadonlyArray<
@@ -134,7 +134,7 @@ describe('createFanbasisPublicCreditCheckout', () => {
 		);
 		mockCaptureContractDrift.mockReset();
 
-		const result = await createFanbasisPublicCreditCheckout();
+		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -155,7 +155,7 @@ describe('createFanbasisPublicCreditCheckout', () => {
 			}),
 		);
 
-		const result = await createFanbasisPublicCreditCheckout();
+		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -178,7 +178,7 @@ describe('createFanbasisPublicCreditCheckout', () => {
 			}),
 		);
 
-		const result = await createFanbasisPublicCreditCheckout();
+		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -192,7 +192,7 @@ describe('createFanbasisPublicCreditCheckout', () => {
 		mockCaptureServiceError.mockReset();
 		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
 
-		const result = await createFanbasisPublicCreditCheckout();
+		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		expect(mockCaptureServiceError).toHaveBeenCalled();
@@ -201,7 +201,7 @@ describe('createFanbasisPublicCreditCheckout', () => {
 	test('maps network error through CommonErrorCode fallback', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ERR_NETWORK' }));
 
-		const result = await createFanbasisPublicCreditCheckout();
+		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -212,7 +212,7 @@ describe('createFanbasisPublicCreditCheckout', () => {
 	test('maps timeout through CommonErrorCode fallback', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ECONNABORTED' }));
 
-		const result = await createFanbasisPublicCreditCheckout();
+		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {

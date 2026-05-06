@@ -98,6 +98,7 @@ export function MagicLinkSentStep({
 
 				<TurnstileWidget
 					ref={setTurnstile}
+					action="magic-link"
 					onToken={setCaptchaToken}
 					onExpire={() => setCaptchaToken(null)}
 					onError={() => setCaptchaToken(null)}

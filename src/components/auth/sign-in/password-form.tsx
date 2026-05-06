@@ -165,6 +165,7 @@ export function PasswordSignInForm({
 				</button>
 				<TurnstileWidget
 					ref={setTurnstile}
+					action="sign-in"
 					onToken={setCaptchaToken}
 					onExpire={() => setCaptchaToken(null)}
 					onError={() => setCaptchaToken(null)}

@@ -18,9 +18,13 @@ import {
 	CheckoutProvider,
 } from '@fanbasis/checkout-react';
 import { Loader2 } from 'lucide-react';
-import { type ComponentProps, useCallback, useMemo } from 'react';
+import { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import {
+	TurnstileWidget,
+	type TurnstileWidgetHandle,
+} from '@/components/auth/turnstile/turnstile-widget';
 import { Button } from '@/components/ui/button';
 import { captureServiceError } from '@/lib/sentry/capture';
 import type { ServiceError } from '@/lib/query/errors';
@@ -120,9 +124,25 @@ function sessionErrorMessage(code: FanbasisPublicCreditErrorCode): string {
  * @returns Bordered card with header, offer band, and iframe slot
  */
 export function CreditPurchaseCard() {
-	const sessionQuery = useFanbasisPublicCreditSession();
+	// Turnstile gate (audit H1): unauthenticated payment endpoints are the
+	// prime card-testing surface; the backend now requires a verified token
+	// (`fanbasis-checkout` action + `fanbasis-public-credit:v1` cdata) to
+	// mint the session. While the token is null the hook stays idle, which
+	// keeps the iframe from booting against a tokenless request.
+	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+	// Callback ref instead of `useRef` so retry handlers below can read the
+	// latest imperative handle without the ref-in-closure staleness trap.
+	const [turnstile, setTurnstile] = useState<TurnstileWidgetHandle | null>(
+		null,
+	);
+	const sessionQuery = useFanbasisPublicCreditSession(captchaToken);
 
 	function handleRetry() {
+		// Single-use token — re-issue a fresh challenge before refetching.
+		// `enabled` on the query keys off the new token, so React Query
+		// runs a fresh mint instead of replaying the rejected one.
+		turnstile?.reset();
+		setCaptchaToken(null);
 		void sessionQuery.refetch();
 	}
 
@@ -153,13 +173,32 @@ export function CreditPurchaseCard() {
 			    SDK's internal layout (email + card + submit ≈ 380–420px in
 			    the default Fanbasis composition). The min-height on each
 			    inner state keeps the card from collapsing while the loader
-			    or retry CTA renders. */}
-			<div className="p-5">
-				{sessionQuery.isPending ? <CheckoutLoading /> : null}
+			    or retry CTA renders.
+
+			    The Turnstile widget renders alongside the checkout slot
+			    rather than gating behind a separate "verify" step — most
+			    visitors never see an interactive challenge (managed mode,
+			    auto-pass) so the user-visible flow stays identical to the
+			    pre-captcha implementation. While the token is unresolved
+			    the loader covers the slot; once the token arrives the
+			    session-mint fires and the iframe takes over. */}
+			<div className="flex flex-col gap-3 p-5">
+				<TurnstileWidget
+					ref={setTurnstile}
+					action="fanbasis-checkout"
+					cData="fanbasis-public-credit:v1"
+					onToken={setCaptchaToken}
+					onExpire={() => setCaptchaToken(null)}
+					onError={() => setCaptchaToken(null)}
+					className="flex justify-center"
+				/>
+				{captchaToken === null || sessionQuery.isPending ? (
+					<CheckoutLoading />
+				) : null}
 				{sessionQuery.isError ? (
 					<CheckoutFailed error={sessionQuery.error} onRetry={handleRetry} />
 				) : null}
-				{sessionQuery.data ? (
+				{captchaToken !== null && sessionQuery.data ? (
 					<EmbeddedCheckout session={sessionQuery.data} />
 				) : null}
 			</div>

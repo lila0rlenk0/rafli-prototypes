@@ -199,6 +199,7 @@ export function ForgotPasswordForm({
 				</Field>
 				<TurnstileWidget
 					ref={setTurnstile}
+					action="forget-password"
 					onToken={setCaptchaToken}
 					onExpire={() => setCaptchaToken(null)}
 					onError={() => setCaptchaToken(null)}

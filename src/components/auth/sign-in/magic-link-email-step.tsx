@@ -12,6 +12,10 @@ import {
 	magicLinkEmailFormSchema,
 	type MagicLinkEmailFormValues,
 } from '@/components/auth/sign-in/schema';
+import {
+	TurnstileWidget,
+	type TurnstileWidgetHandle,
+} from '@/components/auth/turnstile/turnstile-widget';
 import { Button } from '@/components/ui/button';
 import {
 	Field,
@@ -23,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { buildOAuthCallbackUrl } from '@/lib/auth/build-oauth-callback-url';
 import { cn } from '@/lib/class-names';
 import { sendMagicLink } from '@/services/auth/magic-link';
+import { AUTH_ERROR_CODES } from '@/types/errors';
 
 export interface MagicLinkEmailStepProps extends ComponentProps<'form'> {
 	returnTo: string;
@@ -54,18 +59,44 @@ export function MagicLinkEmailStep({
 		resolver: zodResolver(magicLinkEmailFormSchema),
 	});
 	const [isPending, setIsPending] = useState(false);
+	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+	// Callback ref over `useRef` — react-hooks/refs forbids reading `.current`
+	// from a function passed to `handleSubmit`.
+	const [turnstile, setTurnstile] = useState<TurnstileWidgetHandle | null>(
+		null,
+	);
 
-	/** Sends magic link via server action and transitions to "link sent" step */
+	/** Sends magic link via service and transitions to "link sent" step */
 	async function handleSendLink(data: MagicLinkEmailFormValues) {
-		setIsPending(true);
 		clearErrors('root');
 
+		// Submit button is disabled until the widget issues a token, so this
+		// guard only fires if a token expired between paint and click. Run
+		// before `setIsPending(true)` so a guarded path doesn't flash the
+		// pending UI for a single render.
+		if (!captchaToken) {
+			setError('root', {
+				message: getSignInErrorMessage(AUTH_ERROR_CODES.CAPTCHA_MISSING),
+			});
+			return;
+		}
+		const submittedToken = captchaToken;
+
+		setIsPending(true);
+
 		const callbackURL = buildOAuthCallbackUrl(window.location.origin, returnTo);
-		const result = await sendMagicLink(data.email, callbackURL);
+		const result = await sendMagicLink({
+			email: data.email,
+			callbackURL,
+			captchaToken: submittedToken,
+		});
 
 		if (!result.success) {
 			setError('root', { message: getSignInErrorMessage(result.error) });
 			setIsPending(false);
+			// Single-use token burned on every backend response; reissue for retry.
+			turnstile?.reset();
+			setCaptchaToken(null);
 			return;
 		}
 
@@ -112,6 +143,13 @@ export function MagicLinkEmailStep({
 				>
 					Login with a password
 				</button>
+				<TurnstileWidget
+					ref={setTurnstile}
+					onToken={setCaptchaToken}
+					onExpire={() => setCaptchaToken(null)}
+					onError={() => setCaptchaToken(null)}
+					className="mt-2 flex justify-center"
+				/>
 				<FieldError errors={[errors.root]} />
 				{socialError ? (
 					<p className="text-destructive text-sm">{socialError}</p>
@@ -119,7 +157,7 @@ export function MagicLinkEmailStep({
 				<Field className="mt-4">
 					<Button
 						type="submit"
-						disabled={isDisabled}
+						disabled={isDisabled || !captchaToken}
 						className="font-clash-display px-6 py-4 text-lg font-semibold"
 					>
 						{isPending ? 'Sending...' : 'Sign In'}

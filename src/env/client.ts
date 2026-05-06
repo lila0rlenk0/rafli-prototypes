@@ -42,6 +42,13 @@ export const clientEnv = createEnv({
 		NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
 		// Optional — Sentry disabled when unset (local dev)
 		NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+		// Cloudflare Turnstile sitekey — public; backend Better Auth captcha plugin
+		// validates the token. Use Cloudflare's `1x00000000000000000000AA` (always
+		// passes) for local/CI; real key per environment otherwise.
+		NEXT_PUBLIC_TURNSTILE_SITE_KEY: z
+			.string()
+			.min(1)
+			.default('1x00000000000000000000AA'),
 	},
 	// Required by @t3-oss/env-nextjs — literal process.env references for static analysis
 	runtimeEnv: {
@@ -59,6 +66,7 @@ export const clientEnv = createEnv({
 		NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:
 			process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
 		NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+		NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
 	},
 	// CI builds skip validation — env vars may not be present during type-checking
 	skipValidation: process.env.CI === 'true',

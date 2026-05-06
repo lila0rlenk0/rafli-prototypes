@@ -34,6 +34,12 @@ export const AUTH_ERROR_CODES = {
 	PASSWORD_NOT_SET: 'auth:password:not-set',
 	/** Current password is incorrect (change-password flow) */
 	PASSWORD_INVALID: 'auth:password:invalid',
+
+	// Captcha errors (Better Auth captcha plugin → Cloudflare Turnstile)
+	/** Token rejected by Cloudflare siteverify — challenge failed or token reused */
+	CAPTCHA_FAILED: 'auth:captcha:failed',
+	/** Request reached the captcha plugin without an `x-captcha-response` header */
+	CAPTCHA_MISSING: 'auth:captcha:missing',
 } as const;
 
 export type AuthErrorCode =

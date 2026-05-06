@@ -112,8 +112,11 @@ const SIMPLE_CODE_MAP: Record<string, string> = {
 	permission_denied: 'forbidden',
 	not_found: 'not_found',
 	invalid_argument: 'validation_error',
-	// better-auth plugin codes
+	// better-auth plugin codes — uppercase shorthand the plugins return verbatim
+	// in `data.code`. Routed to canonical `auth:*` codes so domain mappers route them.
 	PASSWORD_COMPROMISED: 'auth:password:compromised',
+	VERIFICATION_FAILED: 'auth:captcha:failed',
+	MISSING_RESPONSE: 'auth:captcha:missing',
 };
 
 /**

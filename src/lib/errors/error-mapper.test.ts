@@ -131,6 +131,20 @@ describe('mapAuthError', () => {
 			const error = makeAxiosError({ code: 'PASSWORD_COMPROMISED' });
 			expect(mapAuthError(error)).toBe('auth:password:compromised');
 		});
+
+		// Better Auth captcha plugin emits these as bare uppercase codes in
+		// `data.code`. Without the SIMPLE_CODE_MAP entry they collapse into the
+		// 400/403 status fallbacks (validation_error / forbidden) and the user
+		// sees a generic message instead of the actionable "retry verification".
+		test('maps "VERIFICATION_FAILED" to auth:captcha:failed', () => {
+			const error = makeAxiosError({ code: 'VERIFICATION_FAILED' }, 403);
+			expect(mapAuthError(error)).toBe('auth:captcha:failed');
+		});
+
+		test('maps "MISSING_RESPONSE" to auth:captcha:missing', () => {
+			const error = makeAxiosError({ code: 'MISSING_RESPONSE' }, 400);
+			expect(mapAuthError(error)).toBe('auth:captcha:missing');
+		});
 	});
 
 	describe('common error fallbacks', () => {

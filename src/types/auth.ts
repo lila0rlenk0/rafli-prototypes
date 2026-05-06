@@ -35,6 +35,16 @@ export const authSessionSchema = z.object({
 });
 
 /**
+ * Cloudflare Turnstile token shape — single-use, ~5 min lifespan, issued by the
+ * widget callback. Routed to the backend as the `x-captcha-response` header so
+ * the Better Auth captcha plugin can verify it before any auth handler runs.
+ *
+ * Validation boundary: client-side — `min(1)` rejects empty tokens at the BFF
+ * before a network call burns the captcha plugin's "MISSING_RESPONSE" response.
+ */
+const captchaTokenSchema = z.string().min(1);
+
+/**
  * Sign-in form input.
  *
  * Validation boundary: client-side — validated in the sign-in form
@@ -43,6 +53,7 @@ export const authSessionSchema = z.object({
 export const signInInputSchema = z.object({
 	email: z.email(),
 	password: z.string().min(1),
+	captchaToken: captchaTokenSchema,
 });
 
 /**
@@ -57,6 +68,21 @@ export const signUpInputSchema = z.object({
 	/** 12-char minimum — platform password policy, also enforced by backend */
 	password: z.string().min(12),
 	name: z.string().min(1),
+	captchaToken: captchaTokenSchema,
+});
+
+/**
+ * Magic-link sign-in input.
+ *
+ * Validation boundary: client-side — validated in the magic-link email step
+ * before calling the browser-side service. Backend's captcha plugin guards
+ * `/sign-in/magic-link` because it auto-creates accounts on unknown emails,
+ * making it a signup vector regardless of its path name.
+ */
+export const magicLinkInputSchema = z.object({
+	email: z.email(),
+	callbackURL: z.url(),
+	captchaToken: captchaTokenSchema,
 });
 
 export const socialProviderSchema = z.enum([SOCIAL_PROVIDERS.GOOGLE]);
@@ -89,6 +115,7 @@ export const socialSignInResponseSchema = z.object({
 export const requestPasswordResetInputSchema = z.object({
 	email: z.email(),
 	redirectTo: z.string().optional(),
+	captchaToken: captchaTokenSchema,
 });
 
 /**
@@ -121,6 +148,7 @@ export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthSession = z.infer<typeof authSessionSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;
 export type SignUpInput = z.infer<typeof signUpInputSchema>;
+export type MagicLinkInput = z.infer<typeof magicLinkInputSchema>;
 export type SocialProvider = z.infer<typeof socialProviderSchema>;
 export type SocialSignInInput = z.infer<typeof socialSignInInputSchema>;
 export type SocialSignInResponse = z.infer<typeof socialSignInResponseSchema>;

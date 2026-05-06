@@ -19,7 +19,8 @@ import { track } from '@/lib/analytics/mixpanel-client';
 import { browserClient } from '@/lib/api/browser-client';
 import { failure, mapAuthError, success } from '@/lib/errors';
 import { captureServiceError } from '@/lib/sentry/capture';
-import type { AuthErrorCode } from '@/types/errors';
+import { magicLinkInputSchema, type MagicLinkInput } from '@/types/auth';
+import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
 
 type SendMagicLinkResponse = ServiceResponse<void, AuthErrorCode>;
@@ -27,27 +28,36 @@ type SendMagicLinkResponse = ServiceResponse<void, AuthErrorCode>;
 /**
  * Sends a magic link email for passwordless sign-in.
  *
- * @param email - User's email address
- * @param callbackURL - URL to redirect to after email verification
+ * @param input - Email, post-verification callback URL, and Turnstile captcha token
  * @returns ServiceResponse with void on success, AuthErrorCode on failure
  */
 export async function sendMagicLink(
-	email: string,
-	callbackURL: string,
+	input: MagicLinkInput,
 ): Promise<SendMagicLinkResponse> {
 	try {
-		// Step 1: Fire-and-forget intent tracking — captures drop-off before email delivery
+		// Step 1: Validate — browser-side action exposed to a public form, so the
+		// schema is the trust boundary. min(1) on captchaToken catches the "user
+		// submitted before widget issued a token" race before a network call.
+		const validated = magicLinkInputSchema.safeParse(input);
+		if (!validated.success) {
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+
+		// Step 2: Fire-and-forget intent tracking — captures drop-off before email delivery
 		track(AUTH_EVENTS.SIGN_IN_STARTED, { method: 'magic_link' });
 
-		// Step 2: Request magic link email from backend (browser client, not server action)
-		await browserClient.post('/auth/sign-in/magic-link', {
-			email,
-			callbackURL,
+		// Step 3: Request magic link email from backend.
+		// Captcha token travels in the `x-captcha-response` header — Better Auth's
+		// captcha plugin reads it from the header (not body) before any auth
+		// handler runs, so it must be stripped from the JSON payload.
+		const { captchaToken, ...payload } = validated.data;
+		await browserClient.post('/auth/sign-in/magic-link', payload, {
+			headers: { 'x-captcha-response': captchaToken },
 		});
 
 		return success(undefined);
 	} catch (error) {
-		// Step 3: Map and capture — auth is a critical service
+		// Step 4: Map and capture — auth is a critical service
 		const errorCode = mapAuthError(error);
 		captureServiceError(error, errorCode, {
 			service: 'auth',

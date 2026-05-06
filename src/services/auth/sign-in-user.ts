@@ -28,11 +28,14 @@ export async function signInUser(
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
-		// Step 2: Authenticate against backend (public endpoint)
-		const response = await baseClient.post(
-			'/auth/sign-in/email',
-			validationResult.data,
-		);
+		// Step 2: Authenticate against backend (public endpoint).
+		// Captcha token travels in the `x-captcha-response` header — Better Auth's
+		// captcha plugin reads it from the header (not body) before any auth
+		// handler runs, so it must be stripped from the JSON payload.
+		const { captchaToken, ...credentials } = validationResult.data;
+		const response = await baseClient.post('/auth/sign-in/email', credentials, {
+			headers: { 'x-captcha-response': captchaToken },
+		});
 
 		const { token, user } = response.data;
 

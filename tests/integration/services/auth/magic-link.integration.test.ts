@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 
+import { AUTH_ERROR_CODES } from '@/types/errors/auth-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
 import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
@@ -23,25 +24,65 @@ mock.module('@/lib/analytics/mixpanel-client', () => ({
 
 const { sendMagicLink } = await import('@/services/auth/magic-link');
 
+const VALID_INPUT = {
+	email: 'test@example.com',
+	callbackURL: 'https://app.test/auth/callback',
+	captchaToken: 'cf-turnstile-token-abc',
+};
+
 describe('sendMagicLink', () => {
 	test('returns success on valid request', async () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse({}));
 
-		const result = await sendMagicLink(
-			'test@example.com',
-			'https://app.test/auth/callback',
-		);
+		const result = await sendMagicLink(VALID_INPUT);
 
 		expect(result.success).toBe(true);
+	});
+
+	test('forwards captcha token via x-captcha-response header, omits from body', async () => {
+		mockPost.mockResolvedValueOnce(mockAxiosResponse({}));
+
+		await sendMagicLink(VALID_INPUT);
+
+		expect(mockPost).toHaveBeenCalledWith(
+			'/auth/sign-in/magic-link',
+			{ email: VALID_INPUT.email, callbackURL: VALID_INPUT.callbackURL },
+			{ headers: { 'x-captcha-response': VALID_INPUT.captchaToken } },
+		);
+	});
+
+	test('returns VALIDATION_ERROR when captcha token is empty', async () => {
+		const result = await sendMagicLink({ ...VALID_INPUT, captchaToken: '' });
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+	});
+
+	test('maps Better Auth VERIFICATION_FAILED → auth:captcha:failed', async () => {
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 403,
+				data: {
+					message: 'Captcha verification failed',
+					code: 'VERIFICATION_FAILED',
+				},
+			}),
+		);
+
+		const result = await sendMagicLink(VALID_INPUT);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_FAILED);
+		}
 	});
 
 	test('maps ERR_NETWORK to network_error', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ERR_NETWORK' }));
 
-		const result = await sendMagicLink(
-			'test@example.com',
-			'https://app.test/auth/callback',
-		);
+		const result = await sendMagicLink(VALID_INPUT);
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -52,10 +93,7 @@ describe('sendMagicLink', () => {
 	test('maps ECONNABORTED to timeout_error', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ECONNABORTED' }));
 
-		const result = await sendMagicLink(
-			'test@example.com',
-			'https://app.test/auth/callback',
-		);
+		const result = await sendMagicLink(VALID_INPUT);
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -66,10 +104,7 @@ describe('sendMagicLink', () => {
 	test('maps 500 to internal_server_error', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
 
-		const result = await sendMagicLink(
-			'test@example.com',
-			'https://app.test/auth/callback',
-		);
+		const result = await sendMagicLink(VALID_INPUT);
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -81,10 +116,7 @@ describe('sendMagicLink', () => {
 		const axiosError = mockAxiosError({ status: 500 });
 		mockPost.mockRejectedValueOnce(axiosError);
 
-		await sendMagicLink(
-			'test@example.com',
-			'https://app.test/auth/callback',
-		);
+		await sendMagicLink(VALID_INPUT);
 
 		expect(mockCaptureServiceError).toHaveBeenCalledWith(
 			axiosError,

@@ -30,11 +30,14 @@ export async function registerUser(
 			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
-		// Step 2: Create user account on backend (public endpoint, no auth required)
-		const response = await baseClient.post(
-			'/auth/sign-up/email',
-			validationResult.data,
-		);
+		// Step 2: Create user account on backend (public endpoint, no auth required).
+		// Captcha token travels in the `x-captcha-response` header — Better Auth's
+		// captcha plugin reads it from the header (not body) before any auth
+		// handler runs, so it must be stripped from the JSON payload.
+		const { captchaToken, ...credentials } = validationResult.data;
+		const response = await baseClient.post('/auth/sign-up/email', credentials, {
+			headers: { 'x-captcha-response': captchaToken },
+		});
 
 		// Step 3: Guard — backend must return a user object on success
 		if (!response.data.user) {

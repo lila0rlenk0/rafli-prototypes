@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 
+import { AUTH_ERROR_CODES } from '@/types/errors/auth-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
 import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
@@ -22,10 +23,14 @@ mock.module('@/lib/analytics/mixpanel-server', () => ({
 	trackAfter: mock(),
 }));
 
-const { requestPasswordReset } =
-	await import('@/services/auth/request-password-reset');
+const { requestPasswordReset } = await import(
+	'@/services/auth/request-password-reset'
+);
 
-const VALID_INPUT = { email: 'test@example.com' };
+const VALID_INPUT = {
+	email: 'test@example.com',
+	captchaToken: 'cf-turnstile-token-abc',
+};
 
 describe('requestPasswordReset', () => {
 	test('returns success on valid request', async () => {
@@ -34,6 +39,18 @@ describe('requestPasswordReset', () => {
 		const result = await requestPasswordReset(VALID_INPUT);
 
 		expect(result.success).toBe(true);
+	});
+
+	test('forwards captcha token via x-captcha-response header, omits from body', async () => {
+		mockPost.mockResolvedValueOnce(mockAxiosResponse({}));
+
+		await requestPasswordReset(VALID_INPUT);
+
+		expect(mockPost).toHaveBeenCalledWith(
+			'/auth/forget-password',
+			{ email: VALID_INPUT.email },
+			{ headers: { 'x-captcha-response': VALID_INPUT.captchaToken } },
+		);
 	});
 
 	test('returns success on 404 — prevents user enumeration', async () => {
@@ -51,6 +68,28 @@ describe('requestPasswordReset', () => {
 		const result = await requestPasswordReset(VALID_INPUT);
 
 		expect(result.success).toBe(true);
+	});
+
+	test('surfaces auth:captcha:failed (user must retry the challenge)', async () => {
+		// Captcha rejections must NOT be enumeration-suppressed — user has no
+		// way to retry without an actionable error message. A failed challenge
+		// also doesn't leak account existence (it's pre-account-lookup).
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 403,
+				data: {
+					message: 'Captcha verification failed',
+					code: 'VERIFICATION_FAILED',
+				},
+			}),
+		);
+
+		const result = await requestPasswordReset(VALID_INPUT);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_FAILED);
+		}
 	});
 
 	test('surfaces network_error (infrastructure failure)', async () => {
@@ -129,13 +168,21 @@ describe('requestPasswordReset', () => {
 
 		await requestPasswordReset(tampered);
 
-		expect(mockPost).toHaveBeenCalledWith('/auth/forget-password', VALID_INPUT);
+		// Body excludes the captchaToken (carried in header) AND the tampered fields
+		expect(mockPost).toHaveBeenCalledWith(
+			'/auth/forget-password',
+			{ email: VALID_INPUT.email },
+			{ headers: { 'x-captcha-response': VALID_INPUT.captchaToken } },
+		);
 	});
 
 	test('rejects malformed email without hitting backend', async () => {
 		mockPost.mockReset();
 
-		const result = await requestPasswordReset({ email: 'not-an-email' });
+		const result = await requestPasswordReset({
+			email: 'not-an-email',
+			captchaToken: VALID_INPUT.captchaToken,
+		});
 
 		// Still success: enumeration-safe contract — but NO outbound call.
 		expect(result.success).toBe(true);

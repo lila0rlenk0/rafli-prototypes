@@ -28,11 +28,12 @@ mock.module('@/lib/utils/run-after', () => ({
 
 const { registerUser } = await import('@/services/auth/register-user');
 
-/** Valid input matching signUpInputSchema (min 12 char password) */
+/** Valid input matching signUpInputSchema (min 12 char password + captcha token) */
 const VALID_INPUT = {
 	email: 'new@example.com',
 	password: 'securepass12!',
 	name: 'New User',
+	captchaToken: 'cf-turnstile-token-abc',
 };
 
 describe('registerUser', () => {
@@ -46,17 +47,64 @@ describe('registerUser', () => {
 		expect(result.success).toBe(true);
 	});
 
+	test('forwards captcha token via x-captcha-response header, omits from body', async () => {
+		mockPost.mockResolvedValueOnce(
+			mockAxiosResponse({ user: { id: 'user-1' } }),
+		);
+
+		await registerUser(VALID_INPUT);
+
+		expect(mockPost).toHaveBeenCalledWith(
+			'/auth/sign-up/email',
+			{
+				email: VALID_INPUT.email,
+				password: VALID_INPUT.password,
+				name: VALID_INPUT.name,
+			},
+			{ headers: { 'x-captcha-response': VALID_INPUT.captchaToken } },
+		);
+	});
+
 	test('returns VALIDATION_ERROR on invalid input', async () => {
 		// Password too short — signUpInputSchema requires min(12)
 		const result = await registerUser({
 			email: 'bad',
 			password: 'short',
 			name: '',
+			captchaToken: VALID_INPUT.captchaToken,
 		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+	});
+
+	test('returns VALIDATION_ERROR when captcha token is empty', async () => {
+		const result = await registerUser({ ...VALID_INPUT, captchaToken: '' });
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+	});
+
+	test('maps Better Auth VERIFICATION_FAILED → auth:captcha:failed', async () => {
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 403,
+				data: {
+					message: 'Captcha verification failed',
+					code: 'VERIFICATION_FAILED',
+				},
+			}),
+		);
+
+		const result = await registerUser(VALID_INPUT);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_FAILED);
 		}
 	});
 

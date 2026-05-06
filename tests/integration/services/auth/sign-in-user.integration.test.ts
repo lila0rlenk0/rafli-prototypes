@@ -42,8 +42,12 @@ mock.module('@/lib/utils/run-after', () => ({
 // Import AFTER mocking
 const { signInUser } = await import('@/services/auth/sign-in-user');
 
-/** Valid credentials matching signInInputSchema */
-const VALID_INPUT = { email: 'test@example.com', password: 'password123' };
+/** Valid credentials matching signInInputSchema (includes Turnstile token) */
+const VALID_INPUT = {
+	email: 'test@example.com',
+	password: 'password123',
+	captchaToken: 'cf-turnstile-token-abc',
+};
 
 /** Minimal valid backend response for sign-in */
 const VALID_RESPONSE = {
@@ -60,13 +64,81 @@ describe('signInUser', () => {
 		expect(result.success).toBe(true);
 	});
 
+	test('forwards captcha token via x-captcha-response header, omits from body', async () => {
+		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
+
+		await signInUser(VALID_INPUT);
+
+		// Header carries the token; body must NOT include captchaToken — Better
+		// Auth's captcha plugin reads strictly from the header, and any extra
+		// field could surface in backend strict-input validation later.
+		expect(mockPost).toHaveBeenCalledWith(
+			'/auth/sign-in/email',
+			{ email: VALID_INPUT.email, password: VALID_INPUT.password },
+			{ headers: { 'x-captcha-response': VALID_INPUT.captchaToken } },
+		);
+	});
+
 	test('returns VALIDATION_ERROR on invalid input', async () => {
 		// Empty password fails signInInputSchema min(1)
-		const result = await signInUser({ email: 'bad', password: '' });
+		const result = await signInUser({
+			email: 'bad',
+			password: '',
+			captchaToken: VALID_INPUT.captchaToken,
+		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+	});
+
+	test('returns VALIDATION_ERROR when captcha token is empty', async () => {
+		// captchaToken is min(1) — empty string is rejected at the BFF before
+		// burning a round-trip on Better Auth's MISSING_RESPONSE response.
+		const result = await signInUser({ ...VALID_INPUT, captchaToken: '' });
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
+		}
+	});
+
+	test('maps Better Auth VERIFICATION_FAILED → auth:captcha:failed', async () => {
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 403,
+				data: {
+					message: 'Captcha verification failed',
+					code: 'VERIFICATION_FAILED',
+				},
+			}),
+		);
+
+		const result = await signInUser(VALID_INPUT);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_FAILED);
+		}
+	});
+
+	test('maps Better Auth MISSING_RESPONSE → auth:captcha:missing', async () => {
+		mockPost.mockRejectedValueOnce(
+			mockAxiosError({
+				status: 400,
+				data: {
+					message: 'Missing CAPTCHA response',
+					code: 'MISSING_RESPONSE',
+				},
+			}),
+		);
+
+		const result = await signInUser(VALID_INPUT);
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(AUTH_ERROR_CODES.CAPTCHA_MISSING);
 		}
 	});
 

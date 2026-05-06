@@ -7,6 +7,10 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { LogoIcon } from '@/assets/logo-icon';
+import {
+	TurnstileWidget,
+	type TurnstileWidgetHandle,
+} from '@/components/auth/turnstile/turnstile-widget';
 import { Button } from '@/components/ui/button';
 import {
 	Field,
@@ -18,7 +22,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/class-names';
 import { requestPasswordReset } from '@/services/auth/request-password-reset';
-import { COMMON_ERROR_CODES, type AuthErrorCode } from '@/types/errors';
+import {
+	AUTH_ERROR_CODES,
+	COMMON_ERROR_CODES,
+	type AuthErrorCode,
+} from '@/types/errors';
 
 /** Email-only schema — no password needed for forgot-password flow */
 const formSchema = z.object({
@@ -29,11 +37,19 @@ type FormType = z.infer<typeof formSchema>;
 
 /**
  * Maps infrastructure error codes to user-friendly messages.
- * Only infrastructure errors reach here — the service layer swallows
- * account-existence signals to prevent email enumeration.
+ *
+ * Only infrastructure errors and captcha failures reach here — the service
+ * layer swallows account-existence signals to prevent email enumeration. The
+ * captcha cases must surface so the user can retry the challenge; collapsing
+ * them into the generic fallback would leave them stuck with no actionable
+ * message after a token expires or fails verification.
  */
 function getErrorMessage(errorCode: AuthErrorCode): string {
 	switch (errorCode) {
+		case AUTH_ERROR_CODES.CAPTCHA_FAILED:
+			return 'Verification failed. Please try again.';
+		case AUTH_ERROR_CODES.CAPTCHA_MISSING:
+			return 'Please complete the verification challenge.';
 		case COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED:
 			return 'Too many attempts. Please wait a moment.';
 		case COMMON_ERROR_CODES.NETWORK_ERROR:
@@ -72,20 +88,42 @@ export function ForgotPasswordForm({
 	});
 	const [isPending, startTransition] = useTransition();
 	const [isSuccess, setIsSuccess] = useState(false);
+	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+	// Callback ref over `useRef` — react-hooks/refs forbids reading `.current`
+	// from a function passed to `handleSubmit`.
+	const [turnstile, setTurnstile] = useState<TurnstileWidgetHandle | null>(
+		null,
+	);
 
 	/** Calls server action to request password reset email */
 	async function handleRequestReset(data: FormType) {
+		// Submit button is disabled until the widget issues a token, so this
+		// guard only fires if a token expired between paint and click.
+		if (!captchaToken) {
+			setError('root', {
+				message: getErrorMessage(AUTH_ERROR_CODES.CAPTCHA_MISSING),
+			});
+			return;
+		}
+		const submittedToken = captchaToken;
+
 		startTransition(async () => {
 			// Step 1: Request reset — redirectTo tells backend where the reset link should point
 			const result = await requestPasswordReset({
 				email: data.email,
 				redirectTo: `${window.location.origin}/reset-password`,
+				captchaToken: submittedToken,
 			});
 
-			// Step 2: Only infrastructure errors surface (rate limit, network, timeout)
+			// Step 2: Only infrastructure / captcha errors surface (rate limit,
+			// network, timeout, captcha) — account-existence errors are swallowed
+			// to prevent email enumeration.
 			if (!result.success) {
 				const message = getErrorMessage(result.error);
 				setError('root', { message });
+				// Single-use token burned on every backend response; reissue for retry.
+				turnstile?.reset();
+				setCaptchaToken(null);
 				return;
 			}
 
@@ -157,11 +195,18 @@ export function ForgotPasswordForm({
 					/>
 					<FieldError errors={[errors.email]} />
 				</Field>
+				<TurnstileWidget
+					ref={setTurnstile}
+					onToken={setCaptchaToken}
+					onExpire={() => setCaptchaToken(null)}
+					onError={() => setCaptchaToken(null)}
+					className="mt-2 flex justify-center"
+				/>
 				<FieldError errors={[errors.root]} />
 				<Field className="mt-4">
 					<Button
 						type="submit"
-						disabled={isPending}
+						disabled={isPending || !captchaToken}
 						className="font-clash-display px-6 py-4 text-lg font-semibold"
 					>
 						{isPending ? 'Sending...' : 'Send Reset Link'}

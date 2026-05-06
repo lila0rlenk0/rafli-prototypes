@@ -14,6 +14,10 @@ import {
 	passwordSignInFormSchema,
 	type PasswordSignInFormValues,
 } from '@/components/auth/sign-in/schema';
+import {
+	TurnstileWidget,
+	type TurnstileWidgetHandle,
+} from '@/components/auth/turnstile/turnstile-widget';
 import { Button } from '@/components/ui/button';
 import {
 	Field,
@@ -25,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { cn } from '@/lib/class-names';
 import { signInUser } from '@/services/auth/sign-in-user';
+import { AUTH_ERROR_CODES } from '@/types/errors';
 
 export interface PasswordSignInFormProps extends ComponentProps<'form'> {
 	returnTo: string;
@@ -55,6 +60,13 @@ export function PasswordSignInForm({
 	});
 	const [isPending, startTransition] = useTransition();
 	const [hasLoginError, setHasLoginError] = useState(false);
+	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+	// Callback ref over `useRef` — react-hooks/refs forbids reading `.current`
+	// from a function passed to `handleSubmit`. State turns the access into a
+	// normal closure read.
+	const [turnstile, setTurnstile] = useState<TurnstileWidgetHandle | null>(
+		null,
+	);
 	const router = useRouter();
 
 	/** Authenticates with email/password via server action */
@@ -62,12 +74,29 @@ export function PasswordSignInForm({
 		clearErrors('root');
 		setHasLoginError(false);
 
+		// Submit button is disabled until the widget issues a token, so this
+		// guard only fires if a token expired between paint and click.
+		if (!captchaToken) {
+			setError('root', {
+				message: getSignInErrorMessage(AUTH_ERROR_CODES.CAPTCHA_MISSING),
+			});
+			return;
+		}
+		const submittedToken = captchaToken;
+
 		startTransition(async () => {
-			const result = await signInUser(data);
+			const result = await signInUser({
+				...data,
+				captchaToken: submittedToken,
+			});
 
 			if (!result.success) {
 				setError('root', { message: getSignInErrorMessage(result.error) });
 				setHasLoginError(true);
+				// Captcha tokens are single-use — Cloudflare burns the token even on
+				// backend rejections (invalid credentials, etc.), so always reset.
+				turnstile?.reset();
+				setCaptchaToken(null);
 				return;
 			}
 
@@ -134,6 +163,13 @@ export function PasswordSignInForm({
 				>
 					Login with a magic link
 				</button>
+				<TurnstileWidget
+					ref={setTurnstile}
+					onToken={setCaptchaToken}
+					onExpire={() => setCaptchaToken(null)}
+					onError={() => setCaptchaToken(null)}
+					className="mt-2 flex justify-center"
+				/>
 				<FieldError errors={[errors.root]} />
 				{socialError ? (
 					<p className="text-destructive text-sm">{socialError}</p>
@@ -152,7 +188,7 @@ export function PasswordSignInForm({
 				<Field className="mt-4">
 					<Button
 						type="submit"
-						disabled={isDisabled}
+						disabled={isDisabled || !captchaToken}
 						className="font-clash-display px-6 py-4 text-lg font-semibold"
 					>
 						{isPending ? 'Signing in...' : 'Sign In'}

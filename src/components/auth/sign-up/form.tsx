@@ -14,6 +14,10 @@ import {
 } from '@/components/auth/sign-up/credential-fields';
 import { getSignUpErrorMessage } from '@/components/auth/sign-up/error-messages';
 import { SignUpSocialActions } from '@/components/auth/sign-up/social-actions';
+import {
+	TurnstileWidget,
+	type TurnstileWidgetHandle,
+} from '@/components/auth/turnstile/turnstile-widget';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup } from '@/components/ui/field';
 import { buildOAuthCallbackUrl } from '@/lib/auth/build-oauth-callback-url';
@@ -21,6 +25,7 @@ import { cn } from '@/lib/class-names';
 import { validateReturnTo } from '@/lib/utils/routing/validate-return-to';
 import { registerUser } from '@/services/auth/register-user';
 import { initiateSocialSignIn } from '@/services/auth/social-sign-in';
+import { AUTH_ERROR_CODES } from '@/types/errors';
 
 const formSchema = z.object({
 	name: z.string().min(3, 'Name must be at least 3 characters').max(50),
@@ -55,6 +60,14 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 	});
 	const [isPending, startTransition] = useTransition();
 	const [isSocialPending, setIsSocialPending] = useState(false);
+	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+	// Callback ref instead of `useRef` — react-hooks/refs forbids reading
+	// `.current` from a function passed to `handleSubmit` (the linter cannot
+	// prove the function isn't invoked during render). Storing the imperative
+	// handle as state turns the access into a normal closure read.
+	const [turnstile, setTurnstile] = useState<TurnstileWidgetHandle | null>(
+		null,
+	);
 	const router = useRouter();
 	// useMemo: avoid re-running validateReturnTo on every render — searchParams
 	// only changes on URL navigation, so this effectively caches the validated path.
@@ -64,11 +77,30 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 	);
 
 	function handleSignUp(data: SignUpFields) {
+		// Submit button is disabled until the widget issues a token, so this
+		// guard only fires if a token expired between paint and click. Treating
+		// it as a missing-captcha keeps the message consistent with the backend.
+		if (!captchaToken) {
+			setError('root', {
+				message: getSignUpErrorMessage(AUTH_ERROR_CODES.CAPTCHA_MISSING),
+			});
+			return;
+		}
+		const submittedToken = captchaToken;
+
 		startTransition(async () => {
-			const result = await registerUser(data);
+			const result = await registerUser({
+				...data,
+				captchaToken: submittedToken,
+			});
 
 			if (!result.success) {
 				setError('root', { message: getSignUpErrorMessage(result.error) });
+				// Captcha tokens are single-use — Cloudflare burns the token even
+				// on backend rejections (validation, password compromised, etc.),
+				// so we always reset to issue a fresh one for the next attempt.
+				turnstile?.reset();
+				setCaptchaToken(null);
 				return;
 			}
 
@@ -117,11 +149,18 @@ export function SignUpForm({ className, ...props }: ComponentProps<'form'>) {
 					</p>
 				</div>
 				<SignUpCredentialFields register={register} errors={errors} />
+				<TurnstileWidget
+					ref={setTurnstile}
+					onToken={setCaptchaToken}
+					onExpire={() => setCaptchaToken(null)}
+					onError={() => setCaptchaToken(null)}
+					className="mt-2 flex justify-center"
+				/>
 				<FieldError errors={[errors.root]} />
 				<Field className="mt-4">
 					<Button
 						type="submit"
-						disabled={isPending}
+						disabled={isPending || !captchaToken}
 						className="font-clash-display px-6 py-4 text-lg font-semibold"
 					>
 						{isPending ? 'Creating account...' : 'Sign Up'}

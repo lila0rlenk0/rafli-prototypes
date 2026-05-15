@@ -149,7 +149,8 @@ interface CreditPurchaseCardProps {
  * is enough to drive the disabled / loading UI.
  *
  * Post-payment flow: Fanbasis captures the first charge → user redirects
- * to `successUrl` (server-set to `/credits-pending`) → backend webhook
+ * to `successUrl` (server-set to the plan-specific
+ * `/subscription-pending-{basic|starter|pro}` path) → backend webhook
  * either enrols the existing user directly or buffers a pending
  * subscription grant + sends a magic-link email. Magic-link verify drains
  * the pending row, creates the `user_subscriptions` row, and grants the
@@ -212,7 +213,8 @@ export function CreditPurchaseCard({ plan }: CreditPurchaseCardProps) {
 			// Full-page navigation by design — `router.push` would keep the
 			// stale RSC payload that ran while the user was unauthenticated.
 			// The redirect lands the buyer on Fanbasis's hosted payment page;
-			// post-payment they bounce back to `successUrl` (`/credits-pending`)
+			// post-payment they bounce back to the plan-specific
+			// `successUrl` (`/subscription-pending-{basic|starter|pro}`)
 			// configured server-side.
 			window.location.assign(result.data.checkoutUrl);
 		});

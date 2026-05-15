@@ -498,7 +498,7 @@
 
 	/* Navbar gutter — 48px at `sm:` + on marketing surfaces, matches
 	   DESIGN.md navbar-padding-x-desktop (48px). Subscribe and
-	   credits-claimed page shells both ride this token. */
+	   subscription-success/pending page shells both ride this token. */
 	--spacing-navbar-pad: 48px;
 
 	/* Hero `$11` pill — Figma pins this chip to fixed dimensions,

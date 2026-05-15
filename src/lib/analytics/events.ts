@@ -141,8 +141,9 @@ export const SUBSCRIPTION_EVENTS = {
  * Tracked server-side because the entire flow is unauthenticated until the
  * magic-link callback fires — so every step before `CLAIMED` is attributed
  * to an anonymous distinct_id plus the submitted email as a property. Once
- * the session cookie lands on `/credits-claimed`, `CLAIMED` ties the prior
- * anonymous events to the real user via Mixpanel's identity merging.
+ * the session cookie lands on `/subscription-success-{basic|starter|pro}`,
+ * `CLAIMED` ties the prior anonymous events to the real user via Mixpanel's
+ * identity merging.
  *
  * Kept in a dedicated group (not folded into `PURCHASE_EVENTS`) because
  * those funnel metrics power the authenticated checkout dashboard; mixing
@@ -164,7 +165,8 @@ export const PUBLIC_CREDIT_EVENTS = {
 	CHECKOUT_FAILED: 'Public Credit Checkout Failed',
 	/**
 	 * Magic-link callback confirmed — user is signed in and has credits.
-	 * Fires once per successful landing on `/credits-claimed`.
+	 * Fires once per successful landing on the plan-specific
+	 * `/subscription-success-{basic|starter|pro}` page.
 	 */
 	CLAIMED: 'Public Credit Claimed',
 } as const;

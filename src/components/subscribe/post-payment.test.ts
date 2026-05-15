@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 
-import { firstSearchParam, parsePendingCreditEmail } from './page';
+import {
+	firstSearchParam,
+	parsePendingSubscriptionEmail,
+	shouldTrackPublicSubscriptionClaim,
+} from './post-payment';
 
 describe('firstSearchParam', () => {
 	test('returns null when the value is undefined', () => {
@@ -27,12 +31,12 @@ describe('firstSearchParam', () => {
 	});
 });
 
-describe('parsePendingCreditEmail', () => {
+describe('parsePendingSubscriptionEmail', () => {
 	test('accepts a plausibly-shaped email and returns it trimmed', () => {
 		// Leading/trailing whitespace can sneak in via copy-paste flows on
 		// the Fanbasis hosted page. Trimming here keeps the displayed copy
 		// clean without depending on Fanbasis to normalise.
-		expect(parsePendingCreditEmail('  jose@example.com  ')).toBe(
+		expect(parsePendingSubscriptionEmail('  jose@example.com  ')).toBe(
 			'jose@example.com',
 		);
 	});
@@ -42,21 +46,21 @@ describe('parsePendingCreditEmail', () => {
 		// `searchParams` already URL-decodes, so we receive a literal `+`,
 		// not `%2B`. Regression-guarding because a naive shape check that
 		// rejected `+` would break a real buyer cohort.
-		expect(parsePendingCreditEmail('jose.chifflet+1@modemobile.com')).toBe(
-			'jose.chifflet+1@modemobile.com',
-		);
+		expect(
+			parsePendingSubscriptionEmail('jose.chifflet+1@modemobile.com'),
+		).toBe('jose.chifflet+1@modemobile.com');
 	});
 
 	test('rejects values missing an @ — falls back to generic copy', () => {
-		expect(parsePendingCreditEmail('not-an-email')).toBeNull();
+		expect(parsePendingSubscriptionEmail('not-an-email')).toBeNull();
 	});
 
 	test('rejects values missing a TLD', () => {
 		// `user@host` is technically a valid SMTP mailbox on a local network,
-		// but for the public-credit funnel we only ever issue links to
+		// but for the public-subscription funnel we only ever issue links to
 		// public-DNS addresses. Showing such a value would look broken;
 		// generic copy is better.
-		expect(parsePendingCreditEmail('jose@example')).toBeNull();
+		expect(parsePendingSubscriptionEmail('jose@example')).toBeNull();
 	});
 
 	test('rejects oversize values beyond the RFC 5321 cap', () => {
@@ -65,17 +69,35 @@ describe('parsePendingCreditEmail', () => {
 		// wild — this guards the page against a hand-crafted URL that
 		// could blow out the card layout.
 		const oversize = `${'a'.repeat(250)}@a.co`;
-		expect(parsePendingCreditEmail(oversize)).toBeNull();
+		expect(parsePendingSubscriptionEmail(oversize)).toBeNull();
 	});
 
 	test('returns null when the param is missing', () => {
 		// Happy-path safety net: if Fanbasis ever stops echoing `email` on
 		// the success redirect, the page degrades to generic copy instead
 		// of crashing or showing `undefined`.
-		expect(parsePendingCreditEmail(undefined)).toBeNull();
+		expect(parsePendingSubscriptionEmail(undefined)).toBeNull();
 	});
 
 	test('returns null for an empty string', () => {
-		expect(parsePendingCreditEmail('')).toBeNull();
+		expect(parsePendingSubscriptionEmail('')).toBeNull();
+	});
+});
+
+describe('shouldTrackPublicSubscriptionClaim', () => {
+	test('does not track when no session resolved', () => {
+		expect(
+			shouldTrackPublicSubscriptionClaim({
+				userId: undefined,
+			}),
+		).toBe(false);
+	});
+
+	test('tracks when a session resolves with a user id', () => {
+		expect(
+			shouldTrackPublicSubscriptionClaim({
+				userId: 'user-1',
+			}),
+		).toBe(true);
 	});
 });

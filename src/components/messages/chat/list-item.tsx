@@ -104,7 +104,7 @@ function ChatListItemImpl({
 					</span>
 					{unread > 0 ? (
 						<span
-							className="bg-primary text-primary-foreground text-2xs inline-flex size-5 shrink-0 items-center justify-center rounded-full px-1.5 font-semibold"
+							className="bg-brand-dark text-on-dark text-2xs inline-flex size-5 shrink-0 items-center justify-center rounded-full px-1.5 font-semibold"
 							aria-label={`${unread} unread`}
 						>
 							{unread > 9 ? '9+' : unread}

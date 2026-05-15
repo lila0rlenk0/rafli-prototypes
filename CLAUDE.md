@@ -11,7 +11,6 @@ Next.js App Router, React, TypeScript, Tailwind CSS v4 (CSS-first in `globals.cs
 - `bun run dev` — dev server
 - `bun run format && bun run lint && bun run test` — required after every change
 - `bun run build` — production build
-- `bun run test:e2e` — Playwright E2E
 
 ## Architecture
 
@@ -30,7 +29,6 @@ src/
 tests/
   integration/   — server action integration tests (mock.module)
   helpers/       — shared mock utilities
-e2e/             — Playwright E2E tests
 ```
 
 ## Rules
@@ -60,7 +58,7 @@ Direct paths (`@/components/ui/button`). Barrels only for cohesive modules (`@/l
 
 ## Testing
 
-Three tiers: unit (co-located `*.test.ts` in `src/`), integration (`tests/integration/`, uses `mock.module()`), E2E (`e2e/*.spec.ts`, Playwright). See `.claude/rules/testing.md` for full conventions.
+Two tiers: unit (co-located `*.test.ts` in `src/`), integration (`tests/integration/`, uses `mock.module()`). See `.claude/rules/testing.md` for full conventions.
 
 ## Next.js
 

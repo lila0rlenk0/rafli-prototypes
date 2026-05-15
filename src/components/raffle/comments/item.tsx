@@ -166,6 +166,7 @@ export function CommentItem({
 						raffleId={raffleId}
 						commentId={comment.id}
 						replyCount={comment.replyCount}
+						previewReplies={comment.previewReplies ?? []}
 						isAuthenticated={isAuthenticated}
 						isOwner={isOwner}
 						currentUserId={currentUserId}

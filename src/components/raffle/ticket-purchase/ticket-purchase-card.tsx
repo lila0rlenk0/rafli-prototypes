@@ -1,11 +1,14 @@
 'use client';
 
 import { Separator } from '@/components/ui/separator';
+import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 import type { RaffleSubscriptionContext } from '@/types/subscription';
 
 import { BuyCtaStack } from './buy-cta-stack';
+import { EntriesConfirmedModal } from './entries-confirmed-modal';
 import { getClosingSoonWarning } from './ticket-purchase-present';
+import { PaymentMethodModal } from './payment-method-modal';
 import { PriceBreakdown } from './price-breakdown';
 import { PromoApplyBlock } from './promo-apply-block';
 import { QuantityControls } from './quantity-controls';
@@ -45,12 +48,19 @@ interface TicketPurchaseCardProps {
 
 /**
  * Orchestrates the ticket purchase flow: quantity selection, promo codes,
- * price breakdown, and buy CTAs. The heavy lifting (store reads, derived
- * math, handlers) lives in `useTicketPurchase`; this component only
- * composes the four presentational surfaces.
+ * price breakdown, compliance gating, and modal hosting. The heavy lifting
+ * (store reads, derived math, handlers) lives in `useTicketPurchase`; this
+ * component composes the four presentational surfaces and owns the single
+ * picker / entries-confirmed modal instances.
+ *
+ * Single modal host: both the desktop in-card trigger and the mobile sticky
+ * CTA flip `isPaymentMethodModalOpen` in the shared store, so we render
+ * one `PaymentMethodModal` here that both surfaces drive. This keeps tender
+ * state, quiz gating, and the post-purchase handoff in one place instead of
+ * duplicated per surface.
  *
  * @param props - Raffle identifiers, pricing, auth state, compliance copy
- * @returns Full purchase card (quantity + promo + price + CTA stack)
+ * @returns Full purchase card (quantity + promo + price + CTA stack + modals)
  */
 export function TicketPurchaseCard({
 	raffleId,
@@ -90,6 +100,25 @@ export function TicketPurchaseCard({
 		availableCredits,
 		subscription,
 	});
+
+	// Shared modal state — the desktop in-card "One Time Purchase" button
+	// and the mobile sticky CTA both flip these flags via the store, so a
+	// single modal instance services both surfaces.
+	const isPaymentMethodModalOpen = useTicketQuantityStore(
+		state => state.isPaymentMethodModalOpen,
+	);
+	const setPaymentMethodModalOpen = useTicketQuantityStore(
+		state => state.setPaymentMethodModalOpen,
+	);
+	const isEntriesConfirmedModalOpen = useTicketQuantityStore(
+		state => state.isEntriesConfirmedModalOpen,
+	);
+	const setEntriesConfirmedModalOpen = useTicketQuantityStore(
+		state => state.setEntriesConfirmedModalOpen,
+	);
+	const handlePurchaseSettled = useTicketQuantityStore(
+		state => state.handlePurchaseSettled,
+	);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -141,24 +170,47 @@ export function TicketPurchaseCard({
 
 			<BuyCtaStack
 				raffleId={raffleId}
+				isAuthenticated={isAuthenticated}
+				isFree={isFree}
+				disabled={disabled}
+				ticketQuantity={ticketQuantity}
+				appliedPromo={appliedPromo}
+				clearPromo={clearPromo}
+				raffleTitle={raffleTitle}
+			/>
+
+			{/* Single modal host for both desktop card + mobile sticky triggers.
+			    The picker mounts unconditionally (gated by the open flag) so
+			    `setPaymentMethodModalOpen(true)` from either surface always finds
+			    a target. */}
+			<PaymentMethodModal
+				open={isPaymentMethodModalOpen}
+				onOpenChange={setPaymentMethodModalOpen}
+				raffleId={raffleId}
 				publicSlug={publicSlug}
 				endAt={endAt}
 				currency={currency}
 				disabled={disabled}
 				questionId={questionId}
-				isAuthenticated={isAuthenticated}
-				isFree={isFree}
 				total={orderTotal.total}
 				ticketQuantity={ticketQuantity}
 				appliedPromo={appliedPromo}
 				clearPromo={clearPromo}
-				raffleTitle={raffleTitle}
 				cryptoOptions={cryptoOptions}
 				hasSelectableCryptoPaymentOption={hasSelectableCryptoPaymentOption}
 				showCreditsOption={showCreditsOption}
 				availableCredits={availableCredits}
 				myTicketsTotal={myTicketsTotal}
 				userId={userId}
+				raffleTitle={raffleTitle}
+				onPurchaseSettled={handlePurchaseSettled}
+			/>
+
+			<EntriesConfirmedModal
+				open={isEntriesConfirmedModalOpen}
+				onOpenChange={setEntriesConfirmedModalOpen}
+				publicSlug={publicSlug}
+				raffleTitle={raffleTitle}
 			/>
 		</div>
 	);

@@ -3,7 +3,7 @@
 import { runAfter } from '@/lib/utils/run-after';
 import { ZodError, z } from 'zod';
 
-import { authenticatedClient } from '@/lib/api/client';
+import { authenticatedClient, createRequest } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { revalidateRaffleDetail } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
@@ -69,7 +69,16 @@ export async function verifyXShare(
 	raffleId: string,
 ): Promise<ServiceResponse<VerifyXShareResponse, XShareVerifyErrorCode>> {
 	try {
-		const response = await authenticatedClient.post(
+		// Tighter-than-default 12s timeout — this endpoint fans out to X's
+		// recent-search API on the backend, the slowest external dependency in
+		// the verify path. The default 20s axios cap leaves only 10s of headroom
+		// under Vercel's 30s edge limit; on cold starts that headroom evaporates
+		// and the page returns an unhandled 504 instead of a typed failure.
+		// Capping at 12s surfaces transient hangs as `timeout_error` (mapped from
+		// ECONNABORTED by the base error mapper) so the UI can render a
+		// "try again" CTA well before the edge cap fires.
+		const client = createRequest(authenticatedClient, 12_000);
+		const response = await client.post(
 			`/raffles/${pathParam(raffleId)}/verify-x-share`,
 		);
 

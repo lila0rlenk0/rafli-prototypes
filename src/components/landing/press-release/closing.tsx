@@ -11,6 +11,8 @@ import {
 /**
  * Closing half — the "Looking Ahead" manifesto and the press-contact
  * card. Kept together so the pitch-to-contact handoff stays continuous.
+ *
+ * @returns Press-release closing section and contact card.
  */
 export function PressArticleClosing() {
 	return (
@@ -48,9 +50,9 @@ export function PressArticleClosing() {
 			</ScrollReveal>
 
 			<ScrollReveal>
-				<section className="rounded-2xl bg-neutral-100 px-6 py-9 sm:px-10">
+				<section className="bg-paper-100 rounded-2xl px-6 py-9 sm:px-10">
 					<SectionLabel>Press Contact</SectionLabel>
-					<h3 className="font-clash-display text-body-md text-foreground mb-3.5 font-bold tracking-[-0.5px]">
+					<h3 className="font-clash-display text-body-md text-foreground tracking-display-sm mb-3.5 font-bold">
 						Media Inquiries
 					</h3>
 					<p className="text-foreground/80 mb-4.5 font-light">
@@ -69,7 +71,7 @@ export function PressArticleClosing() {
 						</strong>{' '}
 						[Insert handles]
 					</p>
-					<p className="text-mini mt-2.5 text-neutral-400">
+					<p className="text-mini text-ink-400 mt-2.5">
 						Rafli is a subsidiary of EARN&apos;M Foundation. © 2026 Rafli — All
 						rights reserved.
 					</p>

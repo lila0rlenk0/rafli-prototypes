@@ -3,6 +3,12 @@ import type { Raffle } from '@/types/raffle';
 
 interface PrizeSectionProps {
 	readonly raffles: readonly Raffle[];
+	/**
+	 * Number of tickets the plan's cycle funds. Renders in the section
+	 * caption — Basic: 10, Starter: 25, Pro: 100 — so the marketing copy
+	 * matches the tier the visitor is enrolling into.
+	 */
+	readonly ticketsPerCycle: number;
 }
 
 /**
@@ -18,10 +24,12 @@ interface PrizeSectionProps {
  * @param raffles - Live raffles to display. Passed as a prop rather
  *   than fetched inside the section — the page is the only fetch
  *   site (architecture.md: "pages fetch, domain components render").
+ * @param ticketsPerCycle - Per-plan ticket count rendered in the
+ *   caption beneath the heading.
  * @returns Rotated "WIN RIGHT NOW" badge, heading, and raffle grid,
  *   or `null` when no raffles are available
  */
-export function PrizeSection({ raffles }: PrizeSectionProps) {
+export function PrizeSection({ raffles, ticketsPerCycle }: PrizeSectionProps) {
 	if (raffles.length === 0) return null;
 
 	return (
@@ -38,7 +46,7 @@ export function PrizeSection({ raffles }: PrizeSectionProps) {
 					What you can enter today
 				</h2>
 				<p className="text-body-sm text-ink-alpha">
-					Your 10 tickets work on any of these live raffles.
+					Your {ticketsPerCycle} tickets work on any of these live raffles.
 				</p>
 			</div>
 

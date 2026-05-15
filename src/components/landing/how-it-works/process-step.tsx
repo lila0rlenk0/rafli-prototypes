@@ -24,7 +24,7 @@ export function ProcessStep({
 	return (
 		<li className="bg-card rounded-xl border p-5">
 			<div className="flex gap-4">
-				<span className="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+				<span className="bg-brand-dark text-on-dark flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold">
 					{number}
 				</span>
 				<div className="min-w-0 flex-1">

@@ -15,6 +15,7 @@ import {
 	PaymentHistorySection,
 	PersonalInformationSection,
 	SecuritySection,
+	SubscriptionSection,
 	VerificationSection,
 } from '@/components/profile/sections';
 
@@ -36,6 +37,14 @@ const SIDEBAR_ITEMS = [
 	{
 		label: 'Credits',
 		sectionId: 'credits',
+	},
+	// Subscription is its own section now (split from credits) — Cancel,
+	// change-plan, and payment-method management all live here per the
+	// pricing/profile IA split. Anchor matches the `#subscription` deep
+	// link on the pricing card's "Manage from profile" CTA.
+	{
+		label: 'Subscription',
+		sectionId: 'subscription',
 	},
 	{
 		label: 'Verification',
@@ -150,11 +159,22 @@ export default async function ProfilePage() {
 					    most often. */}
 					<CreditsSection />
 
+					{/* Subscription — single owner of cancel + change-plan +
+					    payment-method management. Renders empty-state CTA to
+					    /pricing for guests / churned users. Anchored to
+					    `#subscription` via the wrapper id inside the card. */}
+					<SubscriptionSection />
+
 					{/* Verification */}
 					<VerificationSection />
 
-					{/* Security */}
-					<SecuritySection />
+					{/* Security — branches Set vs Change Password on `hasPassword`.
+					    `?? true` is the safer fallback when the /me fetch failed:
+					    rendering Change-Password rejects a no-password user's click
+					    with a mapped toast, whereas the opposite (Set-Password to a
+					    user who already has one) would let them clobber their
+					    existing password without proving ownership. */}
+					<SecuritySection hasPassword={userProfile?.hasPassword ?? true} />
 
 					{/* Email Preferences */}
 					<EmailPreferencesSection />

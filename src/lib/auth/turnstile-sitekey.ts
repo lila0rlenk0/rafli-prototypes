@@ -25,7 +25,10 @@ export const CLOUDFLARE_TEST_SITEKEY = '1x00000000000000000000AA';
  * deployed environment (e.g. `'preview'`, `'canary'`) only requires extending
  * this set — the guard below is the single source of truth.
  */
-const SITEKEY_REQUIRED_ENVS: ReadonlySet<string> = new Set(['production', 'staging']);
+const SITEKEY_REQUIRED_ENVS: ReadonlySet<string> = new Set([
+	'production',
+	'staging',
+]);
 
 /**
  * Asserts the configured Turnstile sitekey is safe for the given app
@@ -41,5 +44,7 @@ export function isProductionSafeTurnstileKey(
 	key: string,
 	appEnv: string,
 ): boolean {
-	return !(SITEKEY_REQUIRED_ENVS.has(appEnv) && key === CLOUDFLARE_TEST_SITEKEY);
+	return !(
+		SITEKEY_REQUIRED_ENVS.has(appEnv) && key === CLOUDFLARE_TEST_SITEKEY
+	);
 }

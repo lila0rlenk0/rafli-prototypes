@@ -26,9 +26,12 @@ interface PageProps {
 export default async function CreateUpdatePage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
+	// `authed: true` — host-only manage page; the authenticated payload is the
+	// correct lens here, and bypasses the slug-scoped public cache so the host
+	// always sees their latest mutations.
 	const [session, raffleResult] = await Promise.all([
 		getSession(),
-		getRaffle(publicSlug),
+		getRaffle(publicSlug, { authed: true }),
 	]);
 
 	if (!session?.user?.id) {

@@ -1,11 +1,16 @@
 import { Button } from '@/components/ui/button';
 
-import { CREDIT_PAYOUT_USD, SUBSCRIBE_HERO_ANCHOR_ID } from './offer';
+import { SUBSCRIBE_HERO_ANCHOR_ID } from './offer';
+import type { SubscribePlan } from './plans';
+
+interface CtaSectionProps {
+	readonly plan: SubscribePlan;
+}
 
 /**
  * Final CTA panel at the bottom of the subscribe page.
  *
- * Mirrors the hero's yellow $11 pill — the page opens with the
+ * Mirrors the hero's yellow payout pill — the page opens with the
  * promise and closes by re-asking the visitor to act on it. Instead
  * of linking off to a separate sign-up route (the pre-Fanbasis
  * flow), this CTA scrolls back to the hero form so the visitor can
@@ -20,10 +25,12 @@ import { CREDIT_PAYOUT_USD, SUBSCRIBE_HERO_ANCHOR_ID } from './offer';
  * 35/36 target via `text-headline-lg` with 1% letter-spacing; the
  * shorter copy doesn't need the full display weight on a closing CTA.
  *
+ * @param plan - Plan config — supplies the payout figure echoed in the
+ *   body copy so the closer matches the hero's headline amount.
  * @returns Yellow panel with heading, description, CTA anchor, and
  *   disclaimer copy
  */
-export function CtaSection() {
+export function CtaSection({ plan }: CtaSectionProps) {
 	return (
 		<section className="pb-16 md:pb-20">
 			<div className="bg-brand-yellow border-ink-900 flex flex-col items-center gap-4 rounded-3xl border px-6 py-12 md:px-14 md:py-16">
@@ -31,8 +38,8 @@ export function CtaSection() {
 					Ready to enter?
 				</h2>
 				<p className="text-body-md text-ink-alpha max-w-3xl text-center font-medium">
-					Get your ${CREDIT_PAYOUT_USD} in credits now and use them on any
-					active raffle above.
+					Get your ${plan.payoutUsd} in credits now and use them on any active
+					raffle above.
 				</p>
 				<Button
 					asChild
@@ -44,7 +51,7 @@ export function CtaSection() {
 					</a>
 				</Button>
 				<p className="text-label-sm text-ink-500 max-w-3xl text-center">
-					One-time charge · No subscription · Instant credits
+					Cancel anytime · Monthly credits · No commitment
 				</p>
 			</div>
 		</section>

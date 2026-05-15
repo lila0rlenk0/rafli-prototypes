@@ -17,9 +17,9 @@ import {
 import { CryptoBuyButtonVisual } from './visual';
 import { useCryptoPurchaseSync } from './use-purchase-sync';
 import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
+import type { TenderRowVariant } from '@/components/payment/tender-row';
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
-import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import type { RaffleCryptoOptions } from '@/types/raffle';
 
 import { getCryptoBuyButtonUiState } from './state';
@@ -49,6 +49,13 @@ function getHasMountedServer(): boolean {
 	return false;
 }
 
+function blurFocusedElementBeforeWalletModal(): void {
+	const activeElement = document.activeElement;
+	if (activeElement instanceof HTMLElement) {
+		activeElement.blur();
+	}
+}
+
 interface CryptoBuyButtonProps {
 	raffleId: string;
 	endAt: string;
@@ -62,10 +69,15 @@ interface CryptoBuyButtonProps {
 	/** Current server-rendered ticket total — baseline for post-payment sync */
 	myTicketsTotal: number;
 	userId?: string | null;
-	/** Order total in fiat (after promo discount) — shown in CTA label */
-	total: number;
-	/** ISO currency code for total formatting (e.g. "USD") */
-	currency: string;
+	/** Picker slot variant — controls fill/outline + icon-chip contrast */
+	variant?: TenderRowVariant;
+	/**
+	 * Fires on row tap before any modal opens — lets the picker reveal the
+	 * inline chain breakdown so the user keeps that context after the
+	 * wallet/checkout modal closes. Side-effect only; does not gate or
+	 * replace the existing checkout flow.
+	 */
+	onSelect?: () => void;
 }
 
 /**
@@ -90,8 +102,8 @@ export function CryptoBuyButton({
 	cryptoOptions,
 	myTicketsTotal,
 	userId,
-	total,
-	currency,
+	variant = 'unselected',
+	onSelect,
 }: CryptoBuyButtonProps) {
 	const { open: openAppKit } = useAppKit();
 	const { isConnected: appKitIsConnected, status: walletStatus } =
@@ -118,15 +130,6 @@ export function CryptoBuyButton({
 	const isConnected = hasMounted && appKitIsConnected;
 	const canConnect = hasMounted && isAppKitReady;
 	const isConnecting = hasMounted && walletStatus === 'connecting';
-
-	// Access Pass acknowledgment — the state machine maps this into a
-	// distinct 'needs-acknowledgment' variant so the user sees an
-	// actionable label ("Acknowledge terms to continue") instead of a
-	// silent disabled button. Shared across desktop card + mobile sticky
-	// CTA via the store.
-	const isAccessPassAcknowledged = useTicketQuantityStore(
-		state => state.isAccessPassAcknowledged,
-	);
 
 	const [showQuestionModal, setShowQuestionModal] = useState(false);
 	const [showCryptoModal, setShowCryptoModal] = useState(false);
@@ -176,6 +179,10 @@ export function CryptoBuyButton({
 		if (!canConnect) return;
 		if (!isConnected) {
 			pendingConnectRef.current = true;
+			// Reown marks the existing app tree aria-hidden while its wallet modal
+			// owns focus. Move focus off the payment row first so the browser does
+			// not detect a focused descendant inside an aria-hidden Radix dialog.
+			blurFocusedElementBeforeWalletModal();
 			void openAppKit({ view: 'Connect' });
 			return;
 		}
@@ -183,6 +190,11 @@ export function CryptoBuyButton({
 	}
 
 	function handleClick() {
+		// Notify the picker so it can reveal the inline chain breakdown.
+		// Fires for every click (including reopen-while-confirming) so the
+		// expansion persists across modal dismissals.
+		onSelect?.();
+
 		// Reopen the modal to show confirmation progress — no new order needed.
 		if (isConfirming) {
 			setShowCryptoModal(true);
@@ -226,9 +238,6 @@ export function CryptoBuyButton({
 		isConnected,
 		canOpenConnectModal: canConnect,
 		disabled,
-		isAccessPassAcknowledged,
-		total,
-		currency,
 	});
 
 	return (
@@ -236,7 +245,9 @@ export function CryptoBuyButton({
 			<CryptoBuyButtonVisual
 				state={buttonState}
 				isConnecting={isConnecting}
+				isWalletConnected={isConnected}
 				onClick={handleClick}
+				variant={variant}
 			/>
 
 			{questionId ? (

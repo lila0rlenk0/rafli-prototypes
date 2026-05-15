@@ -2,10 +2,12 @@
 
 import { StickyCtaVariants } from './sticky-cta/variants';
 import { useStickyState } from './sticky-cta/use-sticky-state';
-import type { XShareConfig } from './x-share/use-share';
 import type { RaffleSubscriptionContext } from '@/types/subscription';
 
-interface StickyBuyTicketsCtaProps extends XShareConfig {
+interface StickyBuyTicketsCtaProps {
+	/** Raffle id — forwarded into the free-tickets claim path the variant
+	 * may invoke when the user has a free-tickets promo applied. */
+	raffleId: string;
 	/** Unauthenticated users get plain share — can't attribute tickets without an account */
 	isAuthenticated: boolean;
 	/** Cap for bundle quick-picks. 0 = unlimited participants. */
@@ -26,7 +28,7 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
  * Thin shell — composes three focused pieces:
  *  1. `useStickyVisibility` decides whether the sticky should render.
  *  2. `useStickyState` derives a discriminated-union variant from the
- *     current auth + host + raffle state, wiring Stripe + X-share.
+ *     current auth + host + raffle state, wiring the picker handoff.
  *  3. `StickyCtaVariants` dispatches the variant JSX.
  *
  * Variants (priority order):
@@ -41,7 +43,12 @@ interface StickyBuyTicketsCtaProps extends XShareConfig {
  * Hidden on desktop (`lg:hidden` inside the variant shell) where the
  * sidebar checkout is always alongside content.
  *
- * @param props - Raffle identifiers + auth + price + availability.
+ * Previously accepted the full `XShareConfig` (raffleId, title, publicSlug,
+ * xShareEnabled, xShareClaimStatus, questionId, myTicketsTotal) but only
+ * `raffleId` survived the picker refactor — the X-share flow now lives
+ * inside the picker / confirmation modals, not the sticky bar.
+ *
+ * @param props - Raffle id + auth + price + availability.
  * @returns The sticky bar JSX, or `null` when the host branch is active.
  */
 export function StickyBuyTicketsCta(
@@ -49,11 +56,6 @@ export function StickyBuyTicketsCta(
 ): React.JSX.Element | null {
 	const state = useStickyState({
 		raffleId: props.raffleId,
-		title: props.title,
-		publicSlug: props.publicSlug,
-		xShareEnabled: props.xShareEnabled,
-		xShareClaimStatus: props.xShareClaimStatus,
-		questionId: props.questionId,
 		isAuthenticated: props.isAuthenticated,
 		availableTickets: props.availableTickets,
 		disabled: props.disabled ?? false,

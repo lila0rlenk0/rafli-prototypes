@@ -2,11 +2,14 @@
 
 import type { ReactNode } from 'react';
 
+import { cn } from '@/lib/class-names';
 import { cdnUrl } from '@/lib/utils/cdn';
 
 /**
  * Green uppercase label that anchors each section heading. Kept in its
  * own component so copy edits to the badge style touch one file.
+ *
+ * @returns Small uppercase section label.
  */
 export function SectionLabel({ children }: { children: ReactNode }) {
 	return (
@@ -24,6 +27,8 @@ interface PullQuoteProps {
 /**
  * Pull-quote block used twice in the article — decorative oversized
  * quotation mark on dark background, attribution in cream green.
+ *
+ * @returns Dark editorial quote panel.
  */
 export function PullQuote({ quote, attribution }: PullQuoteProps) {
 	return (
@@ -31,7 +36,7 @@ export function PullQuote({ quote, attribution }: PullQuoteProps) {
 			<span className="font-clash-display text-brand-mint/15 text-160/none pointer-events-none absolute -top-5 left-7 select-none">
 				&ldquo;
 			</span>
-			<p className="font-clash-display text-display-fluid-md/dense tracking-display-sm relative z-10 font-bold text-white">
+			<p className="font-clash-display text-display-fluid-md/dense tracking-display-sm text-on-dark relative z-(--z-content) font-bold">
 				{quote}
 			</p>
 			<span className="text-brand-mint text-mini mt-3.5 block font-light">
@@ -64,13 +69,15 @@ function getColorClass(color: FeatureColor): string {
 		case 'green':
 			return 'bg-brand-mint';
 		case 'gray':
-			return 'bg-neutral-100';
+			return 'bg-paper-100';
 	}
 }
 
 /**
  * Feature card with numbered heading and colored background — four are
  * rendered in the "Solution" grid.
+ *
+ * @returns Colored feature card with numeric label and copy.
  */
 export function FeatureCard({
 	num,
@@ -79,14 +86,14 @@ export function FeatureCard({
 	color,
 }: FeatureCardProps) {
 	return (
-		<div className={`rounded-2xl px-7 py-7.5 ${getColorClass(color)}`}>
-			<div className="font-clash-display text-mini tracking-caps-2 mb-2.5 font-bold text-black/30">
+		<div className={cn('rounded-2xl px-7 py-7.5', getColorClass(color))}>
+			<div className="font-clash-display text-mini tracking-caps-2 text-brand-dark/30 mb-2.5 font-bold">
 				{num}
 			</div>
-			<h4 className="font-clash-display mb-2 text-lg font-bold tracking-[-0.3px]">
+			<h4 className="font-clash-display tracking-display-xs mb-2 text-lg font-bold">
 				{title}
 			</h4>
-			<p className="text-sm/relaxed text-black/60">{description}</p>
+			<p className="text-brand-dark/60 text-sm/relaxed">{description}</p>
 		</div>
 	);
 }
@@ -99,10 +106,12 @@ interface StepItemProps {
 /**
  * Numbered step item with a pill badge — five are rendered in the
  * "How It Works" section.
+ *
+ * @returns Numbered article step item.
  */
 export function StepItem({ number, children }: StepItemProps) {
 	return (
-		<div className="flex items-start gap-4.5 rounded-xl bg-neutral-100 px-5 py-4.5">
+		<div className="bg-paper-100 flex items-start gap-4.5 rounded-xl px-5 py-4.5">
 			<div className="bg-brand-dark text-brand-mint font-clash-display text-label grid size-8.5 shrink-0 place-items-center rounded-xl font-extrabold">
 				{number}
 			</div>

@@ -1,44 +1,27 @@
-import { getEnrolledRaffles } from '@/services/raffle/get-enrolled-raffles';
 import { getMySubscription } from '@/services/subscription/get-my-subscription';
-import { RAFFLE_STATUS } from '@/types/raffle';
 
 interface AuthenticatedBrowseSummary {
-	readonly enrolledIds: ReadonlySet<string>;
 	readonly hasSubscription: boolean;
 }
 
 /**
- * Guest-path summary — module-scoped so callers can pass it into
- * `Promise.all` without allocating a fresh `Set` per request. Treat as
- * read-only; mutating leaks across requests in a server runtime.
- */
-export const EMPTY_BROWSE_SUMMARY: AuthenticatedBrowseSummary = {
-	enrolledIds: new Set<string>(),
-	hasSubscription: false,
-};
-
-/**
- * Live enrollments (max 100) and subscription; subscription errors are
- * fail-open (show upsell).
+ * Subscription-only summary for the streamed subscribe-promo rail.
  *
- * @returns Set of enrolled raffle ids and a `hasSubscription` flag for the
- *   current viewer. Empty set + `false` on a fetch failure.
+ * `enrolledIds` was removed when the role badge moved off the up-front
+ * paint path; rehydration via React Query is the future enhancement, so
+ * fetching the enrolled list here would be speculative work.
+ *
+ * @returns `hasSubscription` flag for the current viewer; `false` on a
+ *   fetch failure (fail-open — show upsell rather than hide it).
  */
 export async function loadAuthenticatedBrowseSummary(): Promise<AuthenticatedBrowseSummary> {
-	const [enrolledResponse, subscriptionResponse] = await Promise.all([
-		getEnrolledRaffles({ status: RAFFLE_STATUS.LIVE, limit: 100 }),
-		getMySubscription(),
-	]);
-
-	const enrolledIds = new Set<string>();
-	if (enrolledResponse.success) {
-		for (const r of enrolledResponse.data.raffles) {
-			enrolledIds.add(r.id);
-		}
-	}
-
+	// `getMySubscription` returns the wrapper `{ subscription, capabilities,
+	// lockedProvider }`; for the upsell-rail gate we only care whether the
+	// embedded entity exists (a churned user with `subscription: null` should
+	// see the promo, even though their `capabilities` / `lockedProvider` may
+	// be non-null from prior history).
+	const subscriptionResult = await getMySubscription();
 	const hasSubscription =
-		subscriptionResponse.success && subscriptionResponse.data !== null;
-
-	return { enrolledIds, hasSubscription };
+		subscriptionResult.success && subscriptionResult.data.subscription !== null;
+	return { hasSubscription };
 }

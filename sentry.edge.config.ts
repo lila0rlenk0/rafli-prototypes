@@ -27,6 +27,18 @@ Sentry.init({
 
 	// Drops expected business errors, samples network errors, filters browser noise
 	beforeSend: filterEvent,
+
+	// Vercel-edge runtime gates `requestDataIntegration` behind `sendDefaultPii`
+	// (see @sentry/vercel-edge index.js:5189). Without it, `event.request` is
+	// `undefined` on edge and `attachVercelIdTag` silently no-ops. Register
+	// the integration explicitly with `include.ip: false` so request headers
+	// (including `x-vercel-id`) are captured WITHOUT enabling client IP
+	// collection. The Node runtime auto-includes this integration; this line
+	// brings the edge runtime to parity.
+	integrations: defaults => [
+		...defaults,
+		Sentry.requestDataIntegration({ include: { ip: false } }),
+	],
 });
 
 Sentry.getGlobalScope().addEventProcessor(attachVercelIdTag);

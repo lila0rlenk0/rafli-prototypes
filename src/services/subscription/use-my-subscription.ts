@@ -1,13 +1,26 @@
 'use client';
 
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import {
+	useQueryClient,
+	useQuery,
+	type UseQueryOptions,
+} from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 import { serviceError, type ServiceError } from '@/lib/query/errors';
 import type { SubscriptionErrorCode } from '@/types/errors';
-import type { MySubscription } from '@/types/subscription';
+import type { MySubscriptionResponse } from '@/types/subscription';
 
 import { getMySubscription } from './get-my-subscription';
+
+// Only `refetchInterval` is exposed today — the post-Stripe-checkout dialog
+// polls until the webhook lands. Widen this Pick if other consumers need
+// further knobs; the cap exists so callers can't override the queryKey/queryFn
+// and split the cache.
+type MySubscriptionOptions = Pick<
+	UseQueryOptions<MySubscriptionResponse, ServiceError<SubscriptionErrorCode>>,
+	'refetchInterval'
+>;
 
 /** Query key prefix — invalidate with `['subscription']` to refresh every related query. */
 function mySubscriptionKey() {
@@ -40,22 +53,33 @@ export function useInvalidateMySubscription(): () => Promise<void> {
 }
 
 /**
- * Query hook for the authenticated user's current subscription.
+ * Query hook for the authenticated user's current subscription envelope.
  *
  * Unlike `useCreditBalance`, this one sticks with the project-wide defaults
  * (`staleTime: Infinity`, `refetchOnWindowFocus: false`). The tier badge is
  * purely informational — it doesn't gate a payment, so a slightly stale value
  * is acceptable in exchange for one fewer focus-refetch per tab switch.
  *
- * @returns React Query result. `data` is `null` when the user has no subscription.
+ * Cache shape mirrors the server action: `MySubscriptionResponse` —
+ * `{ subscription, capabilities, lockedProvider }` — never `null` at the
+ * envelope level (the wrapper is always populated; only `data.subscription`
+ * can be `null` when the user has no active subscription). React Query layers
+ * an `undefined` over the cache shape while the query is in flight, so
+ * consumers should read `data?.subscription`, `data?.capabilities`, and
+ * `data?.lockedProvider` to handle both states.
+ *
+ * @returns React Query result. `data.subscription` is `null` when the user
+ *   has no subscription; `data.capabilities` is non-null whenever the user
+ *   has subscription history (used to gate self-serve management UI).
  */
-export function useMySubscription() {
-	return useQuery<MySubscription | null, ServiceError<SubscriptionErrorCode>>({
+export function useMySubscription(options?: MySubscriptionOptions) {
+	return useQuery<MySubscriptionResponse, ServiceError<SubscriptionErrorCode>>({
 		queryKey: mySubscriptionKey(),
 		queryFn: async function fetchMySubscription() {
 			const result = await getMySubscription();
 			if (!result.success) throw serviceError(result.error);
 			return result.data;
 		},
+		refetchInterval: options?.refetchInterval,
 	});
 }

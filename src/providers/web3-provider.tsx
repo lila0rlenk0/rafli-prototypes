@@ -23,10 +23,14 @@ interface Web3ProviderProps {
 	readonly wagmiCookie: string | null;
 }
 
-// Canonical public URL — used verbatim in AppKit modal metadata so wallets show
-// a stable "requested by" origin regardless of which preview/prod host served
-// the page. Matches `metadataBase` in `src/app/layout.tsx`.
-const DAPP_URL = 'https://www.rafli.win';
+// Reown validates metadata.url against the live page origin. Use the browser
+// origin when available so local/staging/preview builds do not warn or hand
+// wallets a mismatched domain; keep the production origin as the SSR/build-time
+// fallback for non-browser evaluation.
+const DAPP_URL =
+	typeof window === 'undefined'
+		? 'https://www.rafli.win'
+		: window.location.origin;
 
 /**
  * Curated wallets shown on the AppKit modal's main view, in priority order.
@@ -83,12 +87,11 @@ if (wagmiAdapter && projectId) {
 			icons: [`${DAPP_URL}/web-app-manifest-512x512.png`],
 		},
 		featuredWalletIds: [...FEATURED_WALLET_IDS],
-		// Minimal modal — wallet connection only. Every disabled feature would
-		// otherwise pull extra chunks and surface UI we don't integrate.
+		// Keep only local feature flags that Reown still honours client-side.
+		// Swaps/onramp are controlled by the project dashboard once remote
+		// config loads; setting them here only produces a runtime warning.
 		features: {
 			analytics: false,
-			swaps: false,
-			onramp: false,
 			send: false,
 		},
 	});

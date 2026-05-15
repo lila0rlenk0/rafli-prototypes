@@ -49,6 +49,17 @@ const mockCaptureContractDrift = mock();
 mock.module('@/lib/api/client', () => ({
 	baseClient: { get: mock(), post: mock() },
 	authenticatedClient: { get: mock(), post: mockPost },
+	// Mirror the real `createRequest` shape: a thin wrapper that forwards to
+	// the underlying client and folds the custom timeout into the request
+	// config. Forwarding to `client.post` keeps `mockPost` as the single
+	// observation point so call-signature assertions still work.
+	createRequest: (client: { post: typeof mockPost }, timeout?: number) => ({
+		post: (url: string, data?: unknown, config?: Record<string, unknown>) =>
+			client.post(url, data, {
+				...config,
+				timeout: timeout ?? config?.timeout,
+			}),
+	}),
 }));
 mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mockCaptureContractDrift,
@@ -98,8 +109,14 @@ describe('verifyXShare', () => {
 			if (result.success && result.data.status === 'verified') {
 				expect(result.data.ticketsGranted).toBe(1);
 			}
+			// `createRequest(client, 12_000)` wraps `post(url)` into
+			// `client.post(url, undefined, { timeout: 12_000 })` — the action
+			// uses the tighter timeout to keep slow X recent-search lookups
+			// from climbing into Vercel's 30s edge cap.
 			expect(mockPost).toHaveBeenCalledWith(
 				`/raffles/${RAFFLE_ID}/verify-x-share`,
+				undefined,
+				{ timeout: 12_000 },
 			);
 			// Verified tickets change server-rendered state — cache must be flushed
 			expect(mockRunAfter).toHaveBeenCalledTimes(1);

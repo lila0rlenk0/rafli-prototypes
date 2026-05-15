@@ -42,8 +42,6 @@ interface LaunchCountdownProps {
 	windowMs: number;
 	/** Anchor the primary CTA scrolls to (defaults to the plan cards). */
 	ctaHref?: string;
-	/** Secondary link target for the "want to start smaller?" escape hatch. */
-	secondaryHref?: string;
 }
 
 /**
@@ -59,13 +57,11 @@ interface LaunchCountdownProps {
  *
  * @param windowMs - Length of the rolling window (typically 2 days).
  * @param ctaHref - Defaults to `#plans` so the primary CTA scrolls to the cards.
- * @param secondaryHref - Escape hatch ("Want to start smaller?") — defaults to /browse.
  * @returns Yellow countdown banner with HH:MM:SS ticker and CTA.
  */
 export function LaunchCountdown({
 	windowMs,
 	ctaHref = '#plans',
-	secondaryHref = '/browse',
 }: LaunchCountdownProps) {
 	// Gated on hydration via the shared `useHasMounted` hook — keeps SSR
 	// HTML identical across both renders, then arms the ticker in a
@@ -176,12 +172,6 @@ export function LaunchCountdown({
 				>
 					<Link href={ctaHref}>Choose your subscription and claim now</Link>
 				</Button>
-				<Link
-					href={secondaryHref}
-					className="focus-visible:ring-ring/50 rounded-sm text-sm font-medium underline underline-offset-4 hover:no-underline focus-visible:ring-3 focus-visible:outline-none"
-				>
-					Want to start smaller?
-				</Link>
 			</div>
 		</section>
 	);

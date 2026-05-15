@@ -92,7 +92,7 @@ export function FeaturedRaffleCard({
 					</div>
 					<p className="text-ink-500 text-sm">
 						{raffle.participantsCount} participants &middot; ${getTicketPrice()}
-						/ticket &middot; {getTimeRemaining()}
+						/entry &middot; {getTimeRemaining()}
 					</p>
 				</div>
 				<div className="bg-brand-dark mt-auto flex w-full items-center justify-center rounded-full px-6 py-4">

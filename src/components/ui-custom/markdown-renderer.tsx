@@ -2,6 +2,7 @@ import { cn } from '@/lib/class-names';
 import React from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
 
 type MarkdownRendererProps = {
 	content: string;
@@ -128,9 +129,16 @@ export function MarkdownRenderer({
 		hr: () => <hr className="my-6 border-t border-gray-200" />,
 	};
 
+	// remarkBreaks turns single `\n` into `<br>`. The Lexical editor visually renders
+	// each ParagraphNode as a separate block but exports them with a single newline
+	// between blocks, so default CommonMark (single `\n` → space) collapses paragraphs
+	// in the public view. Soft-break parity keeps the rendered output aligned with what
+	// the host sees in the editor.
 	return (
 		<div className={cn('prose prose-sm max-w-none', className)}>
-			<ReactMarkdown components={components}>{content}</ReactMarkdown>
+			<ReactMarkdown components={components} remarkPlugins={[remarkBreaks]}>
+				{content}
+			</ReactMarkdown>
 		</div>
 	);
 }

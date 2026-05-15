@@ -3,15 +3,15 @@ import Link from 'next/link';
 
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { NoPurchaseNecessaryFootnote } from '@/components/compliance/no-purchase-necessary-footnote';
+import { BasicPlanCard } from '@/components/pricing/basic-plan-card';
+import { BasicPlanCollapsible } from '@/components/pricing/basic-plan-collapsible';
 import { LaunchCountdown } from '@/components/pricing/countdown/launch-countdown';
 import { PlanCard } from '@/components/pricing/plan-card';
 import { PricingFaq } from '@/components/pricing/faq';
-import { CancelSubscriptionCard } from '@/components/pricing/subscribe/cancel-subscription-card';
 import { SubscribeResumeTrigger } from '@/components/pricing/subscribe/subscribe-resume-trigger';
 import { SubscriptionCancelToast } from '@/components/pricing/subscribe/subscription-cancel-toast';
 import { SubscriptionSuccessDialog } from '@/components/pricing/subscribe/subscription-success-dialog';
 import { Button } from '@/components/ui/button';
-import { LAUNCH_PRICING_WINDOW_MS } from '@/lib/feature-flags';
 import { getSession } from '@/lib/auth/session';
 import { getMySubscription } from '@/services/subscription/get-my-subscription';
 import { getPlans } from '@/services/subscription/get-plans';
@@ -34,6 +34,11 @@ const HERO_STATS: readonly { bold: string; suffix: string }[] = [
 	{ bold: '$1,000,000+', suffix: 'in prizes distributed' },
 	{ bold: '+100,000', suffix: 'active participants' },
 ];
+
+// Rolling launch-pricing countdown window. Anchored to the unix epoch so
+// every client sees the same deadline at the same instant; once the timer
+// hits 00:00:00 the deadline rolls forward by another window and ticks on.
+const LAUNCH_PRICING_WINDOW_MS = 2 * 24 * 60 * 60 * 1_000;
 
 /**
  * Bug-icon error card mirroring `/browse`'s failure state — renders when
@@ -143,8 +148,21 @@ export default async function PricingPage() {
 	// Step 3: Tolerate `/subscriptions/me` failures — a transient outage
 	// should degrade to "no current plan highlight" rather than take down
 	// the page. Sentry already captured the error in the service.
-	const currentSubscription =
-		currentSubResult && currentSubResult.success ? currentSubResult.data : null;
+	//
+	// `getMySubscription` returns the full wrapper `{ subscription,
+	// capabilities, lockedProvider }`. Pricing is acquisition-only since the
+	// IA split, so we only consume `subscription` (current-plan badge +
+	// deflect-to-profile gate) and `lockedProvider` (subscribe-action provider
+	// rail for first-time / re-subscribe flows). `capabilities` is no longer
+	// read here — every management surface that needed it (cancel, change
+	// plan, payment method) has moved onto `/profile#subscription`.
+	const {
+		subscription: currentSubscription,
+		lockedProvider: currentLockedProvider,
+	} =
+		currentSubResult && currentSubResult.success
+			? currentSubResult.data
+			: { subscription: null, lockedProvider: null };
 
 	if (!plansResult.success) return <PricingErrorState />;
 
@@ -155,12 +173,35 @@ export default async function PricingPage() {
 		(a, b) => a.metadata.sortOrder - b.metadata.sortOrder,
 	);
 
-	// Compile-time gate: null means launch pricing is off and the banner
-	// stays hidden. The constant is a literal in `feature-flags.ts`, so no
-	// runtime validation is needed — a malformed value would be a code-time
-	// bug, not a deploy-time one.
-	const countdownWindowMs = LAUNCH_PRICING_WINDOW_MS;
+	// Step 5: Split the Basic tier off the main grid. The Basic plan sits
+	// behind a "Want to start smaller?" collapsible below the upper grid
+	// rather than as a third card alongside Starter/Pro — the upper grid
+	// stays focused on the value tiers and the smaller alternative is
+	// opt-in instead of competing for first attention. Match by name
+	// because the backend's plan metadata has no dedicated "basic-tier"
+	// flag (see `subscriptionPlanMetadataSchema`); when Ops introduces a
+	// fourth tier this lookup needs to graduate to a metadata field.
+	const basicPlan = plans.find(plan => plan.name === 'Basic') ?? null;
+	const featuredPlans = basicPlan
+		? plans.filter(plan => plan.id !== basicPlan.id)
+		: plans;
+
 	const currentPlanId = currentSubscription?.plan.id ?? null;
+	// Open the collapsible by default when the viewer is already on Basic —
+	// keeping it collapsed would force a subscriber to hunt for their own
+	// plan + manage CTA behind an opt-in trigger.
+	const isBasicCurrent = basicPlan !== null && basicPlan.id === currentPlanId;
+
+	// Flatten `plans` into a `planId → availableProviders` map so the resume
+	// trigger can resolve the provider for `?plan=<id>` without re-fetching
+	// the catalogue client-side. A stale ?plan= id that Ops has since
+	// deactivated will miss the lookup and surface as `unavailable` in the
+	// decision helper — the trigger toasts + scrubs instead of dispatching a
+	// guaranteed-to-fail `plan-not-found` to the BE.
+	const planProvidersById: Record<
+		string,
+		(typeof plans)[number]['availableProviders']
+	> = Object.fromEntries(plans.map(plan => [plan.id, plan.availableProviders]));
 
 	return (
 		<div className="max-w-copy mx-auto flex w-full flex-col gap-10 px-4 py-8 sm:gap-14 sm:py-12">
@@ -170,11 +211,18 @@ export default async function PricingPage() {
 			    value so neither races the other's URL scrub. */}
 			<SubscriptionSuccessDialog subscription={currentSubscription} />
 			<SubscriptionCancelToast />
-			{/* Auto-resume the Stripe handoff when the user lands here via
-			    `/pricing?plan=<id>` after the unauth click round-tripped
-			    through sign-in. Null render; side-effect only. Guests skip
-			    the dispatch to avoid an infinite sign-in bounce. */}
-			<SubscribeResumeTrigger isAuthenticated={isAuthenticated} />
+			{/* Auto-resume the hosted-checkout handoff when the user lands
+			    here via `/pricing?plan=<id>` after the unauth click
+			    round-tripped through sign-in. Null render; side-effect only.
+			    Guests skip the dispatch to avoid an infinite sign-in bounce.
+			    `lockedProvider` flows through so the resume dispatch targets
+			    the viewer's locked rail; new buyers fall back to Stripe
+			    inside the trigger. */}
+			<SubscribeResumeTrigger
+				isAuthenticated={isAuthenticated}
+				lockedProvider={currentLockedProvider}
+				planProvidersById={planProvidersById}
+			/>
 
 			{/* Back link — Figma specs a heavier, larger affordance (22px SemiBold,
 			    24px icon) than the small inline link used on the order detail page.
@@ -208,7 +256,7 @@ export default async function PricingPage() {
 				aria-label="Subscription plans"
 				className="grid gap-6 lg:grid-cols-2 lg:gap-8"
 			>
-				{plans.map(plan => (
+				{featuredPlans.map(plan => (
 					<PlanCard
 						key={plan.id}
 						plan={plan}
@@ -218,35 +266,40 @@ export default async function PricingPage() {
 						// (cancelled-but-still-active, past-due) here; those belong
 						// on the profile management page.
 						isCurrent={plan.id === currentPlanId}
+						// Pass the full active subscription so non-current cards
+						// can deflect to `/profile#subscription` when the viewer is
+						// already subscribed to a DIFFERENT plan. Pricing is
+						// acquisition-only since the IA split; in-place plan
+						// changes happen on the profile management surface.
+						currentSubscription={currentSubscription}
+						lockedProvider={currentLockedProvider}
 					/>
 				))}
 			</section>
 
-			{/* Launch countdown — gated server-side: env unset or deadline past
-			    means no banner ever reaches the client. */}
-			{countdownWindowMs !== null ? (
-				<LaunchCountdown windowMs={countdownWindowMs} />
+			{/* "Want to start smaller?" collapsible — surfaces the Basic tier
+			    on demand. Renders only when the backend ships a Basic plan so
+			    a missing-tier deploy fails closed (no stranded trigger with
+			    nothing to reveal). The card itself is a Server Component
+			    passed as `children` so the plan payload doesn't round-trip
+			    through the client boundary. */}
+			{basicPlan !== null ? (
+				<BasicPlanCollapsible defaultOpen={isBasicCurrent}>
+					<BasicPlanCard
+						plan={basicPlan}
+						isAuthenticated={isAuthenticated}
+						isCurrent={isBasicCurrent}
+						currentSubscription={currentSubscription}
+						lockedProvider={currentLockedProvider}
+					/>
+				</BasicPlanCollapsible>
 			) : null}
+
+			{/* Launch countdown — rolling window anchored to the unix epoch
+			    so every client sees the same deadline at the same instant. */}
+			<LaunchCountdown windowMs={LAUNCH_PRICING_WINDOW_MS} />
 
 			<PricingFaq />
-
-			{/* Cancel-subscription card — pinned as the very last component
-			    per Figma. Sits below the FAQ because cancellation is the
-			    bottom-of-page de-escalation surface: a subscriber who has
-			    scrolled past the FAQ and still wants out gets the affordance
-			    here, not in the upgrade-focused upper page region.
-			    Visibility gate: only when the viewer holds an active
-			    subscription that hasn't been cancelled yet. The explicit
-			    `cancelledAt === null` gate is needed because a
-			    cancel-pending subscription stays at `status: 'active'` until
-			    `currentPeriodEnd`; checking status alone would let users
-			    reach the cancel CTA on a subscription that's already on its
-			    way out, which the backend would reject as `not-active`. */}
-			{currentSubscription !== null &&
-			currentSubscription.status === 'active' &&
-			currentSubscription.cancelledAt === null ? (
-				<CancelSubscriptionCard subscription={currentSubscription} />
-			) : null}
 		</div>
 	);
 }

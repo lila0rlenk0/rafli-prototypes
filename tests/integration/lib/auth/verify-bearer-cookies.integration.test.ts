@@ -26,6 +26,7 @@ const ME_OK = {
 	username: null,
 	image: null,
 	bio: null,
+	hasPassword: true,
 	createdAt: '2020-01-01T00:00:00.000Z',
 	updatedAt: '2020-01-01T00:00:00.000Z',
 	permissions: [] as string[],

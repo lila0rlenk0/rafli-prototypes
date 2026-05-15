@@ -1,26 +1,19 @@
 /**
- * Subscribe-page offer constants.
- *
- * Hoisted into a single module so hero / credit-purchase-card /
- * cta-section all read the same figures. When the pricing service lands
- * a real "$10 credit purchase" SKU, swap these literals for the service
- * call result and the three surfaces pick it up without further edits.
+ * Subscribe-page shared module — surface-level constants that don't vary
+ * per plan. Per-plan figures (charge, payout, badge text) live in
+ * `./plans.ts`; this module owns identifiers shared across every tier so
+ * the in-page CTA anchor and post-payment landing path stay in one spot.
  */
-
-/** Amount the visitor pays (USD). Appears in hero + credit card + CTA copy. */
-export const CREDIT_CHARGE_USD = 10;
-
-/** Credit balance awarded after the charge (USD). The "+$1 bonus" hook. */
-export const CREDIT_PAYOUT_USD = 11;
 
 /**
  * Better-Auth magic-link callback — "credits claimed!" confirmation page.
  *
- * The embedded Fanbasis SDK fires `checkout:success` after a charge
- * captures, and `credit-purchase-card.tsx` navigates the same tab to this path.
- * Once the backend webhook is reconnected, the magic-link email lands
- * here too (with `?session=<id>`); for now it is a "payment captured"
- * confirmation only — credits are not yet provisioned in this mode.
+ * Fanbasis appends nothing on its hosted-page redirect, so this path is
+ * configured server-side as the `success_url` on the checkout session and
+ * Fanbasis bounces the buyer back here after a successful charge. Once the
+ * backend webhook is reconnected, the magic-link email lands here too —
+ * for now it renders a "payment captured / awaiting magic link"
+ * confirmation only.
  */
 export const CREDITS_CLAIMED_PATH = '/credits-claimed';
 

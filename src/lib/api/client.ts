@@ -149,6 +149,50 @@ baseClient.interceptors.request.use(
 );
 
 /**
+ * Cached client — for use inside `'use cache'` server actions.
+ *
+ * Next 16 forbids `headers()`/`cookies()` inside cache scopes. The docs
+ * prescribe one canonical fix: read the per-request value outside the cache
+ * and pass it as a function argument. They explicitly note "the specific
+ * value will now be part of the cache key through its arguments."
+ *
+ * That pattern is wrong here. Threading the client IP through as an argument
+ * would fragment the cache key per IP — a public list cached for thousands
+ * of visitors would degenerate into one entry per visitor, defeating the
+ * cache. The docs don't acknowledge this tradeoff for high-cardinality
+ * per-request data.
+ *
+ * The pragmatic resolution: this client omits the X-Client-IP injection
+ * entirely. Cached responses are shared across users, so per-request IP has
+ * no semantic meaning at the cache layer. On a cache miss, the backend
+ * receives the request without X-Client-IP and falls back to the connection
+ * IP — which is also acceptable: cached endpoints are public reads where
+ * per-user IP audit isn't meaningful.
+ *
+ * Use this in any server action that declares `'use cache'`. For uncached
+ * endpoints, prefer `baseClient` so the backend gets the real client IP.
+ *
+ * @see https://nextjs.org/docs/messages/next-request-in-use-cache
+ * @see https://nextjs.org/docs/app/api-reference/directives/use-cache
+ */
+const cachedBaseClient: AxiosInstance = axios.create({
+	baseURL: API_BASE_URL,
+	timeout: API_TIMEOUTS.DEFAULT,
+	headers: {
+		'Content-Type': 'application/json',
+	},
+});
+
+/** Request interceptor: S2S secret only — no `headers()` read */
+cachedBaseClient.interceptors.request.use(
+	config => {
+		config.headers['X-S2S-Secret'] = env.S2S_SECRET;
+		return config;
+	},
+	error => Promise.reject(error),
+);
+
+/**
  * Authenticated client
  * Used for endpoints that require Bearer token
  * The interceptor automatically injects the authentication token
@@ -222,6 +266,7 @@ authenticatedClient.interceptors.request.use(
 
 // Attach retry interceptors (must be after request interceptors)
 addRetryInterceptor(baseClient);
+addRetryInterceptor(cachedBaseClient);
 addRetryInterceptor(authenticatedClient);
 
 /**
@@ -292,4 +337,10 @@ function createRequest(client: AxiosInstance, timeout?: number) {
 	};
 }
 
-export { authenticatedClient, baseClient, createRequest, getClientIp };
+export {
+	authenticatedClient,
+	baseClient,
+	cachedBaseClient,
+	createRequest,
+	getClientIp,
+};

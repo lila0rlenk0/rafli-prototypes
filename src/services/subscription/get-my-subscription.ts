@@ -15,24 +15,43 @@ import {
 } from '@/types/errors';
 import {
 	mySubscriptionResponseSchema,
-	type MySubscription,
+	type MySubscriptionResponse,
 } from '@/types/subscription';
 import type { ServiceResponse } from '@/types/service-response';
 
 /**
- * Fetches the authenticated user's current subscription from the backend.
+ * Fetches the authenticated user's current subscription envelope from the backend.
  *
  * Endpoint: `GET /me/subscription` (auth required). The backend always
- * returns 200 with `{ subscription: null }` for users who never subscribed
- * or whose subscription has fully expired, so the no-subscription state
- * is a successful response with a null payload rather than a 404. Every
- * failure path (401, 500, network, contract drift) returns `failure(...)`
- * and is captured for observability.
+ * returns 200 with `{ subscription, capabilities, lockedProvider }` even for
+ * users who never subscribed or whose subscription has fully expired (in
+ * which case `subscription` and `capabilities` are both null). The
+ * no-subscription state is therefore signalled by `data.subscription === null`
+ * inside the wrapper, never by a 404 or a `null` ServiceResponse payload.
  *
- * @returns ServiceResponse wrapping the subscription (or null) on success.
+ * Why we return the full wrapper instead of unwrapping to `MySubscription | null`:
+ * `capabilities` is the FE's source of truth for management-UI gating
+ * (`hasSelfServePortal`, `canCancel`, `canChangePlan`, `canUpdatePaymentMethod`)
+ * and `lockedProvider` pins the re-subscribe checkout to whichever provider
+ * the user originally bought through. Both live alongside the subscription
+ * entity rather than inside it because they exist even when the subscription
+ * is null (e.g. a churned user who can still see their original provider
+ * surface up-stream for re-subscription). Unwrapping to just the entity was
+ * a holdover from when the response was a bare `MySubscription | null` — it
+ * silently dropped the gate signals and forced every consumer to default to
+ * the legacy Stripe path. Threading the wrapper end-to-end lets components
+ * branch on `capabilities?.hasSelfServePortal ?? true` and reach the Fanbasis
+ * cancel-dialog branch when the backend says so.
+ *
+ * Every failure path (401, 500, network, contract drift) returns
+ * `failure(...)` and is captured for observability.
+ *
+ * @returns ServiceResponse wrapping the full envelope on success — read
+ *   `data.subscription` for the entity, `data.capabilities` for the gate
+ *   matrix, and `data.lockedProvider` for the re-subscribe provider lock.
  */
 export async function getMySubscription(): Promise<
-	ServiceResponse<MySubscription | null, SubscriptionErrorCode>
+	ServiceResponse<MySubscriptionResponse, SubscriptionErrorCode>
 > {
 	try {
 		// Step 1: Hit the backend. `QUERY` timeout is tuned for cold-start
@@ -41,13 +60,15 @@ export async function getMySubscription(): Promise<
 			timeout: API_TIMEOUTS.QUERY,
 		});
 
-		// Step 2: Parse the wire envelope, then unwrap. The wrapper shape is
-		// `{ subscription: T | null }` — keeping the parse on the envelope
-		// (rather than partially on `response.data.subscription`) means a
-		// renamed wrapper key surfaces as contract drift instead of silently
-		// reading `undefined`.
+		// Step 2: Parse the wire envelope and forward it as-is. The wrapper
+		// shape is `{ subscription, capabilities, lockedProvider }`; we keep
+		// the parse on the envelope (rather than partially on the embedded
+		// entity) so a renamed wrapper key surfaces as contract drift instead
+		// of silently reading `undefined`. We deliberately do NOT unwrap to
+		// `parsed.subscription` — see the JSDoc for why capabilities and
+		// lockedProvider need to reach consumers alongside the entity.
 		const parsed = mySubscriptionResponseSchema.parse(response.data);
-		return success(parsed.subscription);
+		return success(parsed);
 	} catch (error) {
 		// Step 3: Contract drift — response shape changed. Fingerprinted as
 		// a single Sentry issue per deploy regression (see captureContractDrift).

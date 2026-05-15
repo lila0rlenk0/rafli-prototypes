@@ -34,6 +34,19 @@ export const CACHE_TAGS = {
 } as const;
 
 /**
+ * Builds the cache tag for a single raffle detail entry. Centralized so the
+ * writer (`'use cache'` in `getRaffle`) and the invalidator
+ * (`revalidateRaffleDetail`) share one source of truth — drift between the
+ * two strings would silently break revalidation.
+ *
+ * @param key - The raffle id or public slug
+ * @returns Cache tag string
+ */
+export function raffleDetailTag(key: string): string {
+	return `${CACHE_TAGS.RAFFLE_DETAIL}-${key}`;
+}
+
+/**
  * Cache revalidation times in seconds
  * Defines how long the cache is considered valid before being updated
  */

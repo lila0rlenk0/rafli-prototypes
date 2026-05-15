@@ -83,4 +83,22 @@ describe('getProxyRedirectPath', () => {
 
 		expect(redirectPath).toBeNull();
 	});
+
+	test('lets every visitor view the /subscribe-* tier landings', () => {
+		// Marketing landings are public for everyone: anonymous buyers go
+		// through the email-capture funnel, signed-in members preview the
+		// tier copy before bouncing into /pricing themselves.
+		for (const pathname of [
+			'/subscribe-basic',
+			'/subscribe-starter',
+			'/subscribe-pro',
+		]) {
+			expect(
+				getProxyRedirectPath({ pathname, hasValidToken: false }),
+			).toBeNull();
+			expect(
+				getProxyRedirectPath({ pathname, hasValidToken: true }),
+			).toBeNull();
+		}
+	});
 });

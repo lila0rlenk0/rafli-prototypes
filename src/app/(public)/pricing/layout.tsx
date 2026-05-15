@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 
 import { MarqueeBanner } from '@/components/browse/marquee-banner';
@@ -8,7 +7,6 @@ import { PublicNavbar } from '@/components/ui-custom/public-navbar';
 import { ScreenLoader } from '@/components/ui-custom/screen-loader';
 import { env } from '@/env/server';
 import { getSession } from '@/lib/auth/session';
-import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { parsePermissions } from '@/lib/permissions';
 import { RealtimeProviders } from '@/providers/realtime-providers';
 import { UserStoreProvider } from '@/providers/user-store-provider';
@@ -124,12 +122,6 @@ async function PricingLayoutContent({ children }: PricingLayoutProps) {
  * creating a scroll container (the way `overflow-x-hidden` would).
  */
 export default function PricingLayout({ children }: PricingLayoutProps) {
-	// `notFound()` (not `redirect`) so external probes can't tell whether
-	// pricing is hidden behind a flag or simply doesn't exist yet — same
-	// opacity strategy as the `/subscribe` and `/messages` gates. Lives
-	// in the layout so any nested route under `/pricing/*` inherits it.
-	if (!FEATURE_FLAGS.PRICING_PAGE_ENABLED) notFound();
-
 	return (
 		<main className="relative isolate min-h-dvh overflow-x-clip">
 			<PricingHeroDecor />

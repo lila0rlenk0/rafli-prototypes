@@ -118,10 +118,11 @@ export const PURCHASE_EVENTS = {
 
 /**
  * Subscription events
- * Tracked server-side — covers the /subscriptions/subscribe mutation lifecycle.
- * `CHECKOUT_REDIRECTED` fires once Stripe returns a checkout URL (user is
- * about to leave the app); `FAILED` fires on any failure path and carries
- * `error_code` + `plan_id` for funnel analysis.
+ * Tracked server-side — covers the `POST /subscriptions` mutation lifecycle.
+ * `CHECKOUT_REDIRECTED` fires once the dispatcher returns a hosted checkout
+ * URL (user is about to leave the app) and carries the resolved `provider`;
+ * `FAILED` fires on any failure path and carries `error_code` + `plan_id` +
+ * `provider` for funnel analysis.
  */
 export const SUBSCRIPTION_EVENTS = {
 	/** Server returned Stripe Checkout URL — user about to redirect */
@@ -149,7 +150,8 @@ export const SUBSCRIPTION_EVENTS = {
  */
 export const PUBLIC_CREDIT_EVENTS = {
 	/**
-	 * Fanbasis embedded session minted; the iframe is about to render.
+	 * Fanbasis hosted-redirect session minted; FE is about to navigate the
+	 * buyer to the upstream payment page.
 	 *
 	 * No `fanbasis_session_id` is forwarded — the backend's secret-mint
 	 * contract intentionally exposes no session id to the FE (see

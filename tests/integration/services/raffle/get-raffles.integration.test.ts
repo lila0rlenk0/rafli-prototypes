@@ -51,8 +51,15 @@ const VALID_LIST_RESPONSE = {
 const mockGet = mock();
 
 mock.module('@/lib/api/client', () => ({
-	baseClient: { get: mockGet },
+	baseClient: { get: mock() },
+	cachedBaseClient: { get: mockGet },
 	authenticatedClient: { get: mock(), post: mock() },
+}));
+mock.module('next/cache', () => ({
+	cacheLife: mock(),
+	cacheTag: mock(),
+	revalidateTag: mock(),
+	revalidatePath: mock(),
 }));
 mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),

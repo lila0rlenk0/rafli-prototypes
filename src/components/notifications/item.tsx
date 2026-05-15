@@ -68,7 +68,7 @@ export function NotificationItem({
 				</p>
 			</div>
 			{!notification.read ? (
-				<div className="bg-primary mt-2 size-2 shrink-0 rounded-full" />
+				<div className="bg-brand-dark mt-2 size-2 shrink-0 rounded-full" />
 			) : null}
 		</button>
 	);

@@ -1,6 +1,18 @@
 import { Check } from 'lucide-react';
 import Image from 'next/image';
 
+/**
+ * Single bullet inside a benefit card. Shape mirrors the backend's
+ * `PlanFeatureDto` (`raffles-core-backend/src/payments/dto/subscription.dto.ts`)
+ * so the FE can swap to a dynamic fetch from `GET /subscriptions/plans`
+ * without re-shaping the data on the way in. `tag` is the highlight
+ * chip (NEW / LIMITED OFFER / Only PROs) — `null` means no chip renders.
+ */
+export interface BenefitItem {
+	readonly text: string;
+	readonly tag: string | null;
+}
+
 export interface Benefit {
 	/**
 	 * Absolute CDN URL for the illustration (WebP). Constructed via
@@ -11,11 +23,11 @@ export interface Benefit {
 	readonly image: string;
 	readonly title: string;
 	/**
-	 * Bullet-list copy. Two or three lines per Figma — more overflows
+	 * Bullet-list copy. One to three lines per Figma — more overflows
 	 * the 544px fixed card height, fewer leaves the card feeling empty
 	 * against its siblings.
 	 */
-	readonly items: readonly string[];
+	readonly items: readonly BenefitItem[];
 }
 
 interface BenefitCardProps {
@@ -47,7 +59,7 @@ export function BenefitCard({ benefit }: BenefitCardProps) {
 	const { image, title, items } = benefit;
 
 	return (
-		<div className="bg-brand-mint border-ink-900 flex h-full w-full max-w-sm flex-col items-center gap-(--spacing-subscribe-benefit-card-gap) rounded-(--radius-subscribe-benefit-card) border px-6 pt-(--spacing-subscribe-benefit-card-pt) pb-(--spacing-subscribe-benefit-card-pb) xl:h-(--spacing-subscribe-benefit-card-h) xl:w-(--spacing-subscribe-benefit-card-w) xl:max-w-none">
+		<div className="bg-brand-mint border-ink-900 flex h-full w-full max-w-sm flex-col items-center gap-(--spacing-subscribe-benefit-card-gap) rounded-(--radius-subscribe-benefit-card) border px-6 pt-(--spacing-subscribe-benefit-card-pt) pb-(--spacing-subscribe-benefit-card-pb) xl:min-h-(--spacing-subscribe-benefit-card-h) xl:w-(--spacing-subscribe-benefit-card-w) xl:max-w-none">
 			<div className="relative size-(--spacing-subscribe-benefit-image) shrink-0 p-2.5">
 				<Image
 					src={image}
@@ -64,9 +76,9 @@ export function BenefitCard({ benefit }: BenefitCardProps) {
 
 			<ul className="flex w-full flex-col gap-(--spacing-subscribe-benefit-list-gap)">
 				{items.map(item => (
-					<li key={item} className="flex items-center gap-3">
+					<li key={item.text} className="flex items-start gap-3">
 						<span
-							className="bg-ink-900 flex size-6 shrink-0 items-center justify-center rounded-lg"
+							className="bg-ink-900 mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg"
 							aria-hidden
 						>
 							<Check
@@ -75,12 +87,32 @@ export function BenefitCard({ benefit }: BenefitCardProps) {
 								aria-hidden
 							/>
 						</span>
-						<span className="text-body-sm text-ink-alpha font-medium">
-							{item}
+						<span className="text-body-sm text-ink-alpha flex flex-wrap items-center gap-1.5 font-medium">
+							{item.tag === null ? null : <BenefitTag label={item.tag} />}
+							<span>{item.text}</span>
 						</span>
 					</li>
 				))}
 			</ul>
 		</div>
+	);
+}
+
+interface BenefitTagProps {
+	readonly label: string;
+}
+
+/**
+ * Highlight chip rendered before a benefit bullet (NEW / LIMITED OFFER /
+ * Only PROs). Matches the backend's `PlanFeatureDto.tag` field — chip
+ * styling is intentionally neutral (brand-dark fill, yellow ink) so the
+ * three tag variants share one visual language and a future fourth tag
+ * drops in without a color-mapping table.
+ */
+function BenefitTag({ label }: BenefitTagProps) {
+	return (
+		<span className="bg-ink-900 text-brand-yellow tracking-caps-2 text-3xs rounded-sm px-1.5 py-0.5 font-semibold whitespace-nowrap uppercase">
+			{label}
+		</span>
 	);
 }

@@ -50,7 +50,9 @@ export default async function TicketIdsPage({
 	}
 
 	// Step 3: Fetch raffle — need raffle.id for ticket codes query.
-	const response = await getRaffle(publicSlug);
+	// `authed: true` because this route is auth-gated above (Step 2) and the
+	// authenticated payload exposes user-scoped fields downstream might need.
+	const response = await getRaffle(publicSlug, { authed: true });
 
 	if (!response.success) {
 		notFound();

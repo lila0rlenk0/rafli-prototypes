@@ -22,8 +22,7 @@ if [[ "$FILE_PATH" != */src/app/* ]] && \
    [[ "$FILE_PATH" != */src/store/* ]] && \
    [[ "$FILE_PATH" != */src/types/* ]] && \
    [[ "$FILE_PATH" != */src/env/* ]] && \
-   [[ "$FILE_PATH" != */tests/* ]] && \
-   [[ "$FILE_PATH" != */e2e/* ]]; then
+   [[ "$FILE_PATH" != */tests/* ]]; then
   exit 0
 fi
 

@@ -204,29 +204,29 @@ function RaffleLeftColumnFaq() {
 
 				<AccordionItem value="partial-fulfillment" className="border-none">
 					<AccordionTrigger className="rounded-2xl bg-sky-100 px-4 py-3 text-base font-semibold hover:no-underline lg:px-6 lg:py-4 lg:text-lg">
-						What if minimum participants aren&apos;t reached?
+						What if a sweepstakes doesn&apos;t reach its minimums?
 					</AccordionTrigger>
 					<AccordionContent className="text-muted-foreground flex flex-col gap-3 px-4 pt-4 text-justify text-sm hyphens-auto">
 						<p>
-							Every sweepstakes sets a minimum number of participants. If the
-							sweepstakes ends before reaching that minimum, it concludes under{' '}
+							A sweepstakes can set two minimums — a minimum number of unique
+							participants and/or a minimum number of entries sold. If it ends
+							before either threshold is met, it concludes under{' '}
 							<strong>Partial Participation</strong>.
 						</p>
 						<p>
-							When this happens, winners are still selected using the same
-							provably fair process (VRF). However, instead of receiving the
-							declared physical prize, winners receive a{' '}
-							<strong>cash distribution</strong> from the revenue.
+							Winners are still selected using the same provably fair process
+							(VRF). Instead of the declared prize, each winner receives a share
+							of the revenue as <strong>Rafli credits</strong>, added straight
+							to their Rafli balance and usable on any future sweepstakes.
 						</p>
 						<p>
-							The revenue is automatically split: the platform takes a small fee
-							and the remainder is distributed equally among all winners. No
-							host involvement is needed — the distribution happens
-							automatically.
+							The split is automatic: the platform keeps a 1% fee and the
+							remaining 99% is divided equally among the winners. No host
+							involvement is needed.
 						</p>
 						<p>
 							You can always check the sweepstakes details to see the current
-							number of participants versus the minimum required before
+							participants and entries against the minimums required before
 							entering.
 						</p>
 					</AccordionContent>

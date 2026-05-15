@@ -37,9 +37,11 @@ interface TurnstileRenderOptions {
 	/**
 	 * Optional customer data echoed by siteverify (`response.cdata`). Backend
 	 * asserts equality when `expectedCdata` is configured per endpoint. Use a
-	 * stable scope tag (e.g. `'fanbasis-public-credit:v1'`) for surfaces that
+	 * stable scope tag (e.g. `'fanbasis-public-credit-v1'`) for surfaces that
 	 * cannot bind a per-user identifier at render time — the value is opaque
-	 * to Cloudflare and is purely a frontend↔backend contract.
+	 * to Cloudflare and is purely a frontend↔backend contract. Cloudflare
+	 * restricts the cdata charset to `^[a-zA-Z0-9_-]*$` (no colons, no dots)
+	 * — use hyphens to separate scope from version.
 	 */
 	cData?: string;
 	callback: (token: string) => void;
@@ -198,10 +200,93 @@ export function TurnstileWidget({
 		[],
 	);
 
-	// mount: third-party widget cleanup — `turnstile.remove` releases DOM nodes
-	// and event listeners the script attached when the form unmounts.
+	// Ref bridge so `<Script onReady>` (a stable prop binding required by
+	// next/script's effect dep array) can dispatch into a render closure that
+	// only exists for the lifetime of the mount effect. The effect captures
+	// props once at mount time and assigns the closure here; the cleanup
+	// nullifies it so any late `onReady` fired after unmount is a no-op.
+	const renderRef = useRef<() => void>(() => {});
+
+	// Latest-ref pattern for Cloudflare's per-event callbacks. Parents pass
+	// inline arrow functions (`onExpire={() => setToken(null)}`), so the
+	// identities change on every parent render. Re-running the mount effect
+	// on each change would tear down + re-render the widget continuously, so
+	// we capture props once at mount and route every callback through this
+	// ref. Cloudflare's `turnstile.render()` locks in the callbacks at render
+	// time anyway — re-running would not propagate new identities to the
+	// already-rendered widget.
+	const callbacksRef = useRef({ action, cData, onToken, onExpire, onError });
+	// post-render: sync the ref to the latest props. No deps so it runs on
+	// every commit — cheap (single object allocation) and keeps Cloudflare's
+	// callback closures pointing at the freshest setter / handler identities.
 	useEffect(() => {
+		callbacksRef.current = { action, cData, onToken, onExpire, onError };
+	});
+
+	// mount: drive the render from useEffect rather than relying solely on
+	// `<Script>`'s `onReady`. next/script's `onReady` fires reliably on the
+	// FIRST script load (via the `<script>` tag's `onload` event), but on
+	// REMOUNT — when the script is already in next/script's `LoadCache` —
+	// the synchronous useEffect path in `Script` did not reliably trigger a
+	// fresh render after a sibling widget's `turnstile.remove()` had just
+	// torn down. Symptom before this fix: switching from the magic-link form
+	// to the password form left an empty captcha slot. Calling `render()`
+	// here covers the remount case directly (Cloudflare's API is already on
+	// `window.turnstile`); the guard returns early on cold load, and the
+	// `<Script>` `onReady` path below dispatches through `renderRef` once
+	// the script finishes loading.
+	useEffect(() => {
+		function render() {
+			if (!containerRef.current || !window.turnstile || widgetIdRef.current) {
+				return;
+			}
+			widgetIdRef.current = window.turnstile.render(containerRef.current, {
+				sitekey: clientEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+				action: callbacksRef.current.action,
+				cData: callbacksRef.current.cData,
+				callback: token => {
+					// Successful issue — wipe any prior error banner so it does
+					// not stick around after Cloudflare quietly recovers (retry).
+					setErrorMessage(null);
+					callbacksRef.current.onToken(token);
+				},
+				'error-callback': errorCode => {
+					setErrorMessage(getTurnstileClientErrorMessage(errorCode));
+					callbacksRef.current.onError?.(errorCode);
+					// Tell Turnstile we own the error UI — suppresses its overlay.
+					return true;
+				},
+				'expired-callback': () => callbacksRef.current.onExpire?.(),
+				'timeout-callback': () => {
+					// Interactive challenge timed out. `refresh-expired: auto`
+					// does not cover this case — user has to re-engage manually.
+					setErrorMessage(
+						'Verification timed out. Please complete the check above.',
+					);
+				},
+				'unsupported-callback': () => {
+					setErrorMessage(
+						'Your browser does not support this verification. Please update or try another browser.',
+					);
+					callbacksRef.current.onError?.('unsupported');
+					return true;
+				},
+				theme: 'auto',
+				size: 'flexible',
+				// `auto` lets Cloudflare silently re-issue an expired token in
+				// place. `expired-callback` still fires so the parent can
+				// re-prime its `captchaToken` state once the new token arrives.
+				'refresh-expired': 'auto',
+				retry: 'auto',
+				'retry-interval': RETRY_INTERVAL_MS,
+			});
+		}
+
+		renderRef.current = render;
+		render();
+
 		return () => {
+			renderRef.current = () => {};
 			if (widgetIdRef.current) {
 				window.turnstile?.remove(widgetIdRef.current);
 				widgetIdRef.current = null;
@@ -209,54 +294,11 @@ export function TurnstileWidget({
 		};
 	}, []);
 
-	// `onReady` fires on first script load AND on every subsequent component
-	// mount where the script is already cached, so each form remount renders a
-	// fresh widget. Guard against double-render in case React StrictMode or
-	// next/script invokes the callback twice.
+	// Stable shim for `<Script onReady>`. Dispatches into the current mount
+	// effect's render closure via `renderRef` so the script's load event
+	// triggers the same code path as the mount-time direct call.
 	function handleScriptReady() {
-		if (!containerRef.current || !window.turnstile || widgetIdRef.current) {
-			return;
-		}
-		widgetIdRef.current = window.turnstile.render(containerRef.current, {
-			sitekey: clientEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-			action,
-			cData,
-			callback: token => {
-				// Successful issue — wipe any prior error banner so it does not
-				// stick around after Cloudflare quietly recovers (e.g. retry).
-				setErrorMessage(null);
-				onToken(token);
-			},
-			'error-callback': errorCode => {
-				setErrorMessage(getTurnstileClientErrorMessage(errorCode));
-				onError?.(errorCode);
-				// Tell Turnstile we own the error UI — suppresses its overlay.
-				return true;
-			},
-			'expired-callback': () => onExpire?.(),
-			'timeout-callback': () => {
-				// Interactive challenge timed out. `refresh-expired: auto` does
-				// not cover this case — the user has to re-engage manually.
-				setErrorMessage(
-					'Verification timed out. Please complete the check above.',
-				);
-			},
-			'unsupported-callback': () => {
-				setErrorMessage(
-					'Your browser does not support this verification. Please update or try another browser.',
-				);
-				onError?.('unsupported');
-				return true;
-			},
-			theme: 'auto',
-			size: 'flexible',
-			// `auto` lets Cloudflare silently re-issue an expired token in-place.
-			// `expired-callback` still fires so the parent can re-prime its
-			// `captchaToken` state once the new token arrives via `callback`.
-			'refresh-expired': 'auto',
-			retry: 'auto',
-			'retry-interval': RETRY_INTERVAL_MS,
-		});
+		renderRef.current();
 	}
 
 	return (

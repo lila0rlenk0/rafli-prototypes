@@ -11,10 +11,18 @@ import { toast } from 'sonner';
 import { getSubscribeErrorMessage } from '@/components/pricing/subscribe/error-messages';
 import { Button } from '@/components/ui/button';
 import { subscribeToPlan } from '@/services/subscription/subscribe-to-plan';
+import type { SubscriptionProvider } from '@/types/subscription';
 
 interface SubscribeButtonProps {
 	/** Plan to subscribe to. Validated server-side too — this is best-effort. */
 	planId: string;
+	/**
+	 * Provider rail this checkout should run on (Stripe vs Fanbasis). The
+	 * caller threads this from the page-level `lockedProvider` so a returning
+	 * subscriber stays on the rail their billing history already lives on;
+	 * first-time buyers fall back to the page-level Stripe default.
+	 */
+	provider: SubscriptionProvider;
 	/** Button label — "Get Starter", "Get Pro", etc. */
 	label: string;
 	/** Whether the current viewer has an active session. Gates the action. */
@@ -39,6 +47,7 @@ interface SubscribeButtonProps {
  */
 export function SubscribeButton({
 	planId,
+	provider,
 	label,
 	isAuthenticated,
 	variant = 'primary',
@@ -64,7 +73,7 @@ export function SubscribeButton({
 		}
 
 		startTransition(async () => {
-			const result = await subscribeToPlan({ planId });
+			const result = await subscribeToPlan({ planId, provider });
 
 			if (!result.success) {
 				toast.error(getSubscribeErrorMessage(result.error));

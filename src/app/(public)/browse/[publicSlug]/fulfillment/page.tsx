@@ -28,9 +28,11 @@ export default async function FulfillmentPage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
 	// Step 1: Fetch session and raffle in parallel — neither depends on the other.
+	// `authed: true` — fulfillment is a host-only post-conclusion surface; using
+	// the authenticated client matches the intent and avoids the public cache.
 	const [session, raffleResult] = await Promise.all([
 		getSession(),
-		getRaffle(publicSlug),
+		getRaffle(publicSlug, { authed: true }),
 	]);
 
 	// Guard: require authentication

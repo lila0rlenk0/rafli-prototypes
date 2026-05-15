@@ -1,7 +1,6 @@
 import { Star } from 'lucide-react';
 import Link from 'next/link';
 
-import { ManageSubscriptionPillButton } from '@/components/profile/manage-subscription-pill-button';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { getCreditBalance } from '@/services/payment/get-credit-balance';
@@ -63,9 +62,15 @@ export async function CreditsSection() {
 	// subscription" so the banner still shows — better to over-promote the
 	// upsell on a transient outage than to hide it on an active user (the
 	// CTA target itself is no-op for already-subscribed visitors).
-	const subscription = subscriptionResult.success
+	//
+	// Subscription management surfaces (cancel, change plan, payment method,
+	// scheduled-change banner) live on the dedicated `CurrentPlanCard` section
+	// rendered alongside this one — this section only needs the entitled flag
+	// + plan label for the "My Sub" cell and the upsell-banner visibility gate.
+	const subscriptionWrapper = subscriptionResult.success
 		? subscriptionResult.data
 		: null;
+	const subscription = subscriptionWrapper?.subscription ?? null;
 	const hasEntitlement =
 		subscription !== null &&
 		ENTITLED_SUBSCRIPTION_STATUSES.has(subscription.status);
@@ -94,7 +99,6 @@ export async function CreditsSection() {
 							</Button>
 						</Link>
 					) : null}
-					{hasEntitlement ? <ManageSubscriptionPillButton /> : null}
 				</div>
 			</div>
 

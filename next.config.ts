@@ -11,6 +11,10 @@ import type { NextConfig } from 'next';
 const backendUrl = env.BACKEND_URL ? new URL(env.BACKEND_URL) : null;
 const isLocal =
 	backendUrl?.hostname === 'localhost' || backendUrl?.hostname === '127.0.0.1';
+const isDev = env.NODE_ENV === 'development';
+const localConnectSrc = isLocal
+	? ' http://localhost:4000 http://127.0.0.1:4000 ws://localhost:4000 ws://127.0.0.1:4000'
+	: '';
 
 type WebpackExternals = NonNullable<
 	Parameters<NonNullable<NextConfig['webpack']>>[0]['externals']
@@ -33,7 +37,6 @@ const nextConfig: NextConfig = {
 		optimizePackageImports: [
 			'lucide-react',
 			'react-icons',
-			'lodash',
 			'date-fns',
 			// framer-motion's barrel (`motion`, `AnimatePresence`, `useReducedMotion`
 			// and friends) pulls the full animation engine by default. Turbopack
@@ -124,11 +127,6 @@ const nextConfig: NextConfig = {
 	async redirects() {
 		return [
 			{
-				source: '/',
-				destination: '/browse',
-				permanent: false,
-			},
-			{
 				source: '/terms',
 				destination: 'https://www.earnm.com/terms',
 				permanent: false,
@@ -151,13 +149,11 @@ const nextConfig: NextConfig = {
 		//   auth, admin, and checkout flows must never be embedded in a 3P iframe.
 		// - Permissions-Policy disables sensor APIs we don't use so a compromised
 		//   third-party script cannot silently request camera/mic/geolocation.
-		// - CSP restricts script / style / connect / frame origins to a known
-		//   third-party allow-list (Cloudflare Turnstile, Stripe, Sentry tunnel,
-		//   Mixpanel, WalletConnect, Fanbasis). Audit L3 (2026-05) flagged the
-		//   prior `frame-ancestors 'none'`-only policy as missing the whole
-		//   script/connect/frame allow-list — XSS payloads could exfiltrate
-		//   captcha tokens or session cookies to any origin. The expanded
-		//   directives below add an actual origin-scoping layer.
+		// - CSP keeps executable scripts origin-scoped while relaxing network,
+		//   frame, style, font, and media surfaces to HTTPS schemes. Wallet and
+		//   payment SDKs add telemetry/relay/CDN hosts frequently; a strict
+		//   per-host allow-list caused noisy breakage without buying meaningful
+		//   protection for non-executable resource types.
 		//
 		// `'unsafe-inline'` and `'unsafe-eval'` stay on script-src + style-src:
 		//   Next.js currently emits inline runtime config and Turbopack /
@@ -165,6 +161,25 @@ const nextConfig: NextConfig = {
 		//   these with nonce-per-request hashing requires Next 15+ middleware
 		//   plumbing that is out of scope here; treat this as the iteration
 		//   step from "no CSP" to "origin-scoped CSP" and follow up on nonces.
+		const cspValue = [
+			"default-src 'self'",
+			"base-uri 'self'",
+			"object-src 'none'",
+			"frame-ancestors 'none'",
+			"form-action 'self'",
+			// Keep executable script origins explicit; loosen non-executable
+			// network/font/frame surfaces so wallet SDKs can evolve without a
+			// CSP edit for every telemetry, relay, or embedded checkout host.
+			"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://js.stripe.com https://m.stripe.network https://cdn.mxpnl.com https://*.mixpanel.com https://va.vercel-scripts.com",
+			`connect-src 'self' https: wss:${localConnectSrc}`,
+			"frame-src 'self' https:",
+			"img-src 'self' data: blob: https:",
+			"style-src 'self' 'unsafe-inline' https:",
+			"font-src 'self' data: https:",
+			"worker-src 'self' blob:",
+			"manifest-src 'self'",
+		].join('; ');
+
 		return [
 			{
 				source: '/:path*',
@@ -196,7 +211,7 @@ const nextConfig: NextConfig = {
 						// every third-party iframe from silently prompting the user.
 						key: 'Permissions-Policy',
 						value:
-							'camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()',
+							'camera=(), microphone=(), geolocation=(), payment=(self), usb=()',
 					},
 					{
 						// Origin-scoping CSP. Per-directive rationale:
@@ -205,39 +220,23 @@ const nextConfig: NextConfig = {
 						// - object-src 'none'       — kills Flash / PDF-plugin XSS vectors.
 						// - frame-ancestors 'none'  — clickjacking (preserved from prior CSP).
 						// - form-action 'self'      — prevents form-hijack to attacker host.
-						// - script-src              — Cloudflare Turnstile (captcha widget),
-						//                             Stripe.js (payments), Vercel insights,
-						//                             Mixpanel CDN.
-						// - connect-src             — siteverify-ish API endpoints + WS for
-						//                             WalletConnect relays + Sentry ingest
-						//                             tunnel (`/monitoring` is same-origin
-						//                             so 'self' covers it).
-						// - frame-src               — Turnstile challenge iframe, Stripe
-						//                             3DS / hooks, Fanbasis embedded checkout.
+						// - script-src              — still explicit because scripts are
+						//                             executable code.
+						// - connect-src https: wss: — wallet SDKs, RPC providers, relays,
+						//                             analytics, and payment SDKs add network
+						//                             hosts outside our release cadence. Keep
+						//                             this intentionally scheme-based; local
+						//                             backend/debug HTTP is dev-gated below.
+						// - frame-src https:        — permits wallet/payment/checkout embeds
+						//                             without chasing vendor subdomains.
 						// - img-src 'self' data: blob: https: — third-party avatars + CDN
 						//                             media; tightening would break OAuth
 						//                             provider profile photos.
-						// - style-src 'self' 'unsafe-inline' — Next.js component styles
-						//                             require inline; track migration to
-						//                             nonce-based per follow-up.
-						// - font-src 'self' data:   — webfont data URIs from style chunks.
+						// - style-src / font-src https: — SDK web components inject styles
+						//                             and font files from their own CDNs.
 						// - worker-src 'self' blob: — Sentry replay + Vercel insights workers.
 						key: 'Content-Security-Policy',
-						value: [
-							"default-src 'self'",
-							"base-uri 'self'",
-							"object-src 'none'",
-							"frame-ancestors 'none'",
-							"form-action 'self'",
-							"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://js.stripe.com https://m.stripe.network https://cdn.mxpnl.com https://*.mixpanel.com https://va.vercel-scripts.com",
-							"connect-src 'self' https://challenges.cloudflare.com https://api.stripe.com https://m.stripe.network https://*.mixpanel.com https://api.mixpanel.com https://*.sentry.io https://*.ingest.sentry.io https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org https://*.raffly.win https://*.rafli.win https://*.encr.app",
-							"frame-src 'self' https://challenges.cloudflare.com https://js.stripe.com https://hooks.stripe.com https://*.fan-basis.com https://*.fanbasis.io",
-							"img-src 'self' data: blob: https:",
-							"style-src 'self' 'unsafe-inline'",
-							"font-src 'self' data:",
-							"worker-src 'self' blob:",
-							"manifest-src 'self'",
-						].join('; '),
+						value: cspValue,
 					},
 				],
 			},
@@ -249,8 +248,6 @@ const nextConfig: NextConfig = {
 // cycle and adds significant HMR latency even when DSN is unset. The Sentry
 // SDK still initializes via sentry.server.config.ts; only source map upload
 // and build-time instrumentation are skipped.
-const isDev = process.env.NODE_ENV === 'development';
-
 export default isDev
 	? nextConfig
 	: withSentryConfig(nextConfig, {

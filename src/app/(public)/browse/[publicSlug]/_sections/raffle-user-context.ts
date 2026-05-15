@@ -130,10 +130,13 @@ export async function buildUserContext(
 function resolveSubscriptionContext(
 	result: Awaited<ReturnType<typeof getMySubscription>>,
 ): RaffleSubscriptionContext {
-	if (!result.success || result.data === null) {
+	// Wrapper shape: a successful response always has `data` populated, but
+	// `data.subscription` is null for users who never subscribed or whose
+	// subscription has fully expired — both collapse to the inactive sentinel.
+	if (!result.success || result.data.subscription === null) {
 		return INACTIVE_SUBSCRIPTION_CONTEXT;
 	}
-	const sub = result.data;
+	const sub = result.data.subscription;
 	if (!ACTIVE_BENEFIT_STATUSES.includes(sub.status)) {
 		return INACTIVE_SUBSCRIPTION_CONTEXT;
 	}

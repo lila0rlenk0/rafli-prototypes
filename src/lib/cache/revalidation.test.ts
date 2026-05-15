@@ -38,6 +38,17 @@ describe('revalidatePath (explicit page type for cache invalidation)', () => {
 		expect(mockRevalidateTag).toHaveBeenCalled();
 	});
 
+	test('revalidateRaffleDetail also clears slug-tag when slug provided', () => {
+		// `getRaffle` tags cached entries with both id and slug; a mutation that
+		// knows the slug must clear both so the next read repopulates fresh.
+		revalidateRaffleDetail('rid', 'my-slug');
+		expect(mockRevalidateTag).toHaveBeenCalledWith('raffle-detail-rid', 'max');
+		expect(mockRevalidateTag).toHaveBeenCalledWith(
+			'raffle-detail-my-slug',
+			'max',
+		);
+	});
+
 	test('revalidateWinningPaths passes page for each path', () => {
 		revalidateWinningPaths('my-slug');
 		expect(mockRevalidatePath).toHaveBeenCalledWith('/my-raffles', 'page');

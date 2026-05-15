@@ -142,6 +142,15 @@ export const BROWSER_NOISE_PATTERNS: readonly string[] = [
 	// RAFLI-21, RAFLI-22.
 	'Connection closed.',
 
+	// Next.js streaming metadata boundary (`<__next_metadata_boundary__>`)
+	// hydration mismatch under React 19 streaming. Page returns 200 and
+	// React falls back to a fresh client render — no user-visible break.
+	// The "Expected the resume to render" prefix is unique to this
+	// streaming-resume mismatch; genuine hydration bugs use
+	// "Hydration failed because..." instead, so the substring won't
+	// collide with real defects.
+	'Expected the resume to render',
+
 	// Reown AppKit / WalletConnect call Telegram's `postEvent` bridge to
 	// detect whether the page is running inside a Telegram Mini App. Outside
 	// of Telegram the bridge responds with `Method not found`, which the

@@ -1,39 +1,37 @@
 'use client';
 
-import { Loader2Icon } from 'lucide-react';
+import { RectangleHorizontal } from 'lucide-react';
 
+import {
+	TenderRow,
+	type TenderRowVariant,
+} from '@/components/payment/tender-row';
 import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
-import { buildPrimaryCtaLabel } from '@/components/raffle/ticket-purchase/cta-label';
-import { Button } from '@/components/ui/button';
 import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
-import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
-import { PROMO_CODE_TYPE } from '@/types/promo-code';
 
 /**
  * Props for BuyButton.
  *
- * Why so few props now: ticket quantity, applied promo, and the promo
- * invalidation callback all live in the shared `TicketQuantityStore`.
- * The component reads them via the `useStripeCheckout` hook so it doesn't
- * need to receive them via prop drilling from `TicketPurchaseCard`.
+ * `variant` lets the picker promote Card to the recommended-action slot
+ * (filled brand-dark) when Credits aren't selectable for this user, so
+ * the picker always has exactly one filled tender no matter the state.
  */
 interface BuyButtonProps {
 	raffleId: string;
 	publicSlug: string;
 	disabled?: boolean;
 	questionId?: string | null;
-	/** Order total in major currency units (after promo discount) */
+	/** Order total in major currency units — drives the `expectedTotal` guard
+	 *  inside `useStripeCheckout`. */
 	total: number;
-	/** ISO currency code for total formatting (e.g. "USD") */
-	currency: string;
+	/** Picker slot variant — controls fill/outline + icon-chip contrast */
+	variant?: TenderRowVariant;
 }
 
 /**
- * Desktop in-card primary CTA for the Stripe checkout flow. On mobile this
- * button is hidden by `TicketPurchaseCard` (`hidden lg:block` wrapper); the
- * `StickyBuyTicketsCta` at the bottom of the viewport renders the mobile
- * equivalent and drives the same `useStripeCheckout` hook so both paths
- * share order construction, quiz gating, and promo handling.
+ * Card-tender row rendered inside `PaymentMethodModal`. The picker only
+ * opens for paid orders — free-tickets promos short-circuit upstream into
+ * `useClaimFreeTickets` — so this row is always the paid Stripe tender.
  */
 export function BuyButton({
 	raffleId,
@@ -41,23 +39,8 @@ export function BuyButton({
 	disabled = false,
 	questionId,
 	total,
-	currency,
+	variant = 'unselected',
 }: BuyButtonProps) {
-	// Free-tickets state drives the button label — read straight from the store
-	// so the label flips the moment a free-tickets promo is applied/cleared,
-	// without an extra prop hop from `TicketPurchaseCard`.
-	const appliedPromo = useTicketQuantityStore(state => state.appliedPromo);
-	const isFreeTickets = appliedPromo?.type === PROMO_CODE_TYPE.FREE_TICKETS;
-
-	// Access Pass acknowledgment gates the paid path only — free-tickets
-	// promos have no consideration so the legal acknowledgment doesn't apply.
-	// Reading from the same store the mobile sticky CTA uses guarantees both
-	// surfaces gate on the same consent flip in the same frame.
-	const isAcknowledged = useTicketQuantityStore(
-		state => state.isAccessPassAcknowledged,
-	);
-	const isGatedByAcknowledgment = !isFreeTickets && !isAcknowledged;
-
 	const {
 		isLoading,
 		showQuestionModal,
@@ -72,34 +55,20 @@ export function BuyButton({
 		expectedTotal: total,
 	});
 
-	const buttonLabel = buildPrimaryCtaLabel({
-		isCheckoutLoading: isLoading,
-		isFreeTicketsPromo: isFreeTickets,
-		total,
-		currency,
-	});
-
 	return (
 		<>
-			{/* No id="checkout-action" — the mobile sticky CTA owns that id now
-			    that the click-through pattern is gone. Desktop uses this button
-			    directly via its own click handler; e2e tests for the desktop flow
-			    locate it by role/label, not id. */}
-			<Button
+			{/* Access Pass acknowledgment is gated upstream on the "One Time
+			    Purchase" trigger — by the time this row renders inside the open
+			    picker, the user has already passed the consent check. */}
+			<TenderRow
+				variant={variant}
+				icon={<RectangleHorizontal className="size-4" aria-hidden />}
+				label="Card"
+				badge="Instant"
+				isLoading={isLoading}
+				disabled={disabled}
 				onClick={initiate}
-				disabled={isLoading || disabled || isGatedByAcknowledgment}
-				title={
-					isGatedByAcknowledgment
-						? 'Please acknowledge the terms above to continue'
-						: undefined
-				}
-				className="h-12 w-full cursor-pointer"
-			>
-				{isLoading ? (
-					<Loader2Icon className="mr-2 size-4 animate-spin" />
-				) : null}
-				<p className="font-semibold">{buttonLabel}</p>
-			</Button>
+			/>
 
 			{questionId ? (
 				<RaffleQuestionModal

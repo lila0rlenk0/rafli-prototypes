@@ -54,6 +54,10 @@ const DEFAULT_INTEGRATION_ME: MeResponse = {
 	username: null,
 	image: null,
 	bio: null,
+	// Default to `true` so integration tests that aren't exercising the
+	// set-password branch land on the change-password code path (matches
+	// the production majority — most users sign up with a password).
+	hasPassword: true,
 	createdAt: '2020-01-01T00:00:00.000Z',
 	updatedAt: '2020-01-01T00:00:00.000Z',
 	permissions: [],

@@ -16,6 +16,7 @@ const VALID_ME_RESPONSE = {
 	image: 'https://cdn.example.com/avatars/user-1.jpg',
 	bio: 'Hello world',
 	permissions: ['host'],
+	hasPassword: true,
 	createdAt: '2026-01-01T00:00:00Z',
 	updatedAt: '2026-01-15T00:00:00Z',
 };

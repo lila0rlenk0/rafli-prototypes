@@ -115,10 +115,12 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 export default async function EditRafflePage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
-	// Parallel fetch — session and raffle are independent
+	// Parallel fetch — session and raffle are independent.
+	// `authed: true` — host-only edit flow; the authenticated payload guarantees
+	// the host sees their own draft state, never a cached public snapshot.
 	const [session, raffleResult] = await Promise.all([
 		getSession(),
-		getRaffle(publicSlug),
+		getRaffle(publicSlug, { authed: true }),
 	]);
 
 	if (!session?.user?.id) {

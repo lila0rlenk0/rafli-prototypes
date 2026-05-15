@@ -1,19 +1,21 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { Loader2Icon } from 'lucide-react';
+import { Contrast } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import {
+	TenderRow,
+	type TenderRowVariant,
+} from '@/components/payment/tender-row';
 import { RaffleQuestionModal } from '@/components/raffle/question-modal/question-modal';
-import { Button } from '@/components/ui/button';
 import { PURCHASE_EVENTS } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/mixpanel-client';
 import { buildCheckoutOrder } from '@/lib/checkout/build-checkout-order';
 import { getPaymentErrorMessage } from '@/lib/checkout/error-messages';
 import { formatCurrency } from '@/lib/utils/format/format-currency';
-import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import { abandonOrder } from '@/services/payment/abandon-order';
 import { creditBalanceKey } from '@/services/payment/use-credit-balance';
 import { payWithCredits } from '@/services/payment/pay-with-credits';
@@ -34,6 +36,18 @@ interface CreditsBuyButtonProps {
 	orderTotal: number;
 	/** Currency code for display (e.g. "USD") */
 	currency: string;
+	/** Picker slot variant — `selected` when the picker is promoting Credits
+	 *  as the default-action tender (sufficient balance), `unselected`
+	 *  otherwise. */
+	variant?: TenderRowVariant;
+	/**
+	 * Called after the credits payment settles (success or $0 auto-complete).
+	 * The desktop picker uses this to swap itself out for the entries-confirmed
+	 * modal so the user gets a single, consistent confirmation surface instead
+	 * of a fleeting toast. When omitted, the legacy toast UX is preserved
+	 * (mobile inline rendering relies on this fallback).
+	 */
+	onSuccess?: () => void;
 }
 
 /**
@@ -45,8 +59,11 @@ interface CreditsBuyButtonProps {
  * 3. Pays instantly using POST /payments/credits/pay
  * 4. Refreshes page on success — no modal, no redirect, no polling
  *
- * Only shown when user has credits. Disabled with tooltip when balance
- * is insufficient to cover the order total.
+ * Renders as a `TenderRow` inside the payment picker. The row's
+ * description surfaces the live credit balance so the user can compare
+ * it against the picker's Total at a glance without opening a tooltip.
+ * Insufficient-balance state stays operable (the row disables itself)
+ * but the tooltip and description stay informative.
  */
 export function CreditsBuyButton({
 	raffleId,
@@ -58,6 +75,8 @@ export function CreditsBuyButton({
 	availableCredits,
 	orderTotal,
 	currency,
+	variant = 'unselected',
+	onSuccess,
 }: CreditsBuyButtonProps) {
 	const router = useRouter();
 	const queryClient = useQueryClient();
@@ -66,18 +85,8 @@ export function CreditsBuyButton({
 	// Synchronous single-flight guard — mirrors BuyButton pattern
 	const checkoutInFlight = useRef(false);
 
-	// Access Pass acknowledgment gate — credit-paid checkout still exchanges
-	// consideration for entries, so the same legal gate as the Stripe flow
-	// applies. Only the $0 free-tickets path ignores this flag.
-	const isAcknowledged = useTicketQuantityStore(
-		state => state.isAccessPassAcknowledged,
-	);
-
 	const balance = parseFloat(availableCredits);
 	const hasSufficientBalance = balance >= orderTotal;
-	// Free-tickets promos arrive as $0 orders — they don't consume credits
-	// and carry no consideration, so acknowledgment doesn't apply there.
-	const isGatedByAcknowledgment = orderTotal > 0 && !isAcknowledged;
 
 	/**
 	 * Handles the buy button click.
@@ -143,8 +152,14 @@ export function CreditsBuyButton({
 			// Null means error — already toasted by buildCheckoutOrder
 			if (!result) return;
 
-			// $0 order after promo — backend auto-completed, just refresh
+			// $0 order after promo — backend auto-completed, just refresh.
+			// `onSuccess` (when provided) hands off to the entries-confirmed
+			// modal in the desktop picker; without it, the toast/refresh
+			// fallback below is the only feedback surface.
 			if (result.isFullyDiscounted) {
+				if (onSuccess) {
+					onSuccess();
+				}
 				router.refresh();
 				return;
 			}
@@ -169,7 +184,14 @@ export function CreditsBuyButton({
 
 			// Step 4: Success — refresh to show updated tickets and balance.
 			// Balance invalidation happens in finally block for all paths.
-			toast.success('Payment successful! Your entries are confirmed.');
+			// When `onSuccess` is wired (desktop picker), the entries-confirmed
+			// modal owns the celebration moment so the toast would be a
+			// duplicate; mobile inline still surfaces it.
+			if (onSuccess) {
+				onSuccess();
+			} else {
+				toast.success('Payment successful! Your entries are confirmed.');
+			}
 			router.refresh();
 		} catch (error) {
 			console.error('Unexpected error during credit checkout:', error);
@@ -184,49 +206,36 @@ export function CreditsBuyButton({
 	}
 
 	/**
-	 * CTA label — canonical tender copy. The balance / order amount stays in
-	 * the disabled tooltip and purchase summary so the primary action text
-	 * remains one of the approved one-time-purchase labels.
-	 */
-	function getButtonText(): string {
-		if (isLoading) return 'Processing...';
-		return `One Time Purchase with Credits ${formatCurrency(orderTotal, currency)}`;
-	}
-
-	/**
-	 * Gets tooltip text for disabled states — precedence:
-	 * acknowledgment gate > insufficient balance > no tooltip. Precedence
-	 * matters because the acknowledgment is the user-actionable fix the
-	 * user can resolve on this page, while balance requires a top-up flow.
+	 * Tooltip copy for the insufficient-balance disabled state. The Access
+	 * Pass acknowledgment gate lives upstream on the trigger that opens
+	 * the picker, so by the time this row renders the consent step has
+	 * already been resolved — only the balance shortfall remains.
 	 */
 	function getTooltipText(): string | undefined {
-		if (isGatedByAcknowledgment) {
-			return 'Please acknowledge the terms above to continue';
-		}
 		if (!hasSufficientBalance) {
 			return `Insufficient credits (${formatCurrency(balance, currency)} available, ${formatCurrency(orderTotal, currency)} needed)`;
 		}
 		return undefined;
 	}
 
+	// Description surfaces the live balance — the picker's Total row prints
+	// the order amount once at the top, so per-tender descriptions stay
+	// orthogonal (balance here, wallet status on crypto, etc.).
+	const description = `Balance ${formatCurrency(balance, currency)}`;
+
 	return (
 		<>
-			<Button
-				onClick={handleBuyClick}
-				disabled={
-					isLoading ||
-					disabled ||
-					!hasSufficientBalance ||
-					isGatedByAcknowledgment
-				}
+			<TenderRow
+				variant={variant}
+				icon={<Contrast className="size-4" aria-hidden />}
+				label="Credits"
+				badge="Instant"
+				description={description}
+				isLoading={isLoading}
+				disabled={disabled || !hasSufficientBalance}
 				title={getTooltipText()}
-				className="border-brand-mint bg-brand-mint hover:bg-mint-300 h-12 w-full cursor-pointer border-2 text-black hover:text-black"
-			>
-				{isLoading ? (
-					<Loader2Icon className="mr-2 size-4 animate-spin" />
-				) : null}
-				<p className="font-semibold">{getButtonText()}</p>
-			</Button>
+				onClick={handleBuyClick}
+			/>
 
 			{questionId ? (
 				<RaffleQuestionModal

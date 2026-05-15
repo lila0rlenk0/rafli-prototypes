@@ -8,6 +8,7 @@ import {
 	type CommentErrorCode,
 	COMMON_ERROR_CODES,
 	type FanbasisPublicCreditErrorCode,
+	type FanbasisPublicSubscriptionErrorCode,
 	type HostErrorCode,
 	type KycSubmissionErrorCode,
 	type NotificationErrorCode,
@@ -337,6 +338,34 @@ export const mapFanbasisPublicCreditError =
 	]);
 
 /**
+ * Maps Fanbasis public-subscription checkout errors to
+ * FanbasisPublicSubscriptionErrorCode.
+ *
+ * Accepts `payments:fanbasis:`, `payments:subscription:`, and `global:` —
+ * the public-subscription endpoint legitimately raises both Fanbasis-side
+ * URNs (rate-limited, checkout-failed enumeration shield) and the two
+ * subscription-domain URNs the catalog lookup can produce (`plan-not-found`,
+ * `provider-not-supported`).
+ *
+ * Why not reuse `mapFanbasisPublicCreditError`: the credit mapper rejects
+ * `payments:subscription:*` and would collapse `plan-not-found` /
+ * `provider-not-supported` into the network/HTTP fallback, masking the
+ * real backend signal.
+ *
+ * Why not reuse `mapSubscriptionError`: that mapper accepts the whole
+ * `payments:subscription:*` namespace (including logged-in-only codes like
+ * `already-subscribed`, `no-customer`) which the unauthenticated funnel
+ * cannot produce — keeping the union narrow here means a contract change
+ * in the logged-in surface can't silently widen the public toast map.
+ */
+export const mapFanbasisPublicSubscriptionError =
+	createDomainErrorMapper<FanbasisPublicSubscriptionErrorCode>([
+		'payments:fanbasis:',
+		'payments:subscription:',
+		'global:',
+	]);
+
+/**
  * Maps ticket errors to TicketErrorCode.
  * Accepts `core:*` and `global:*` prefixes.
  */
@@ -454,14 +483,25 @@ export const mapPromoCodeError = createDomainErrorMapper<PromoCodeErrorCode>([
 
 /**
  * Maps subscription errors to SubscriptionErrorCode.
- * Accepts `payments:subscription:*` and `global:*` prefixes — the subscription
- * domain is nested under the payments service on the backend, but the pricing
- * page never surfaces non-subscription payments errors, so we deliberately do
- * NOT open this up to the whole `payments:*` namespace.
+ *
+ * Accepts `payments:subscription:*`, `payments:fanbasis:*`, and `global:*`
+ * prefixes. The subscription domain is nested under the payments service on
+ * the backend, but the pricing page never surfaces non-subscription payments
+ * errors, so we deliberately do NOT open this up to the whole `payments:*`
+ * namespace.
+ *
+ * `payments:fanbasis:` is allowlisted because `DELETE /subscriptions/:id`
+ * is provider-agnostic — when the user's lock points at Fanbasis, the
+ * backend delegates the DELETE to Fanbasis and a provider-side fault
+ * legitimately surfaces as `payments:fanbasis:cancel-failed` through this
+ * mapper. The narrow `payments:fanbasis:` prefix (rather than the broad
+ * `payments:`) keeps unrelated Stripe/crypto URNs from leaking into
+ * subscription toasts.
  */
 export const mapSubscriptionError =
 	createDomainErrorMapper<SubscriptionErrorCode>([
 		'payments:subscription:',
+		'payments:fanbasis:',
 		'global:',
 	]);
 

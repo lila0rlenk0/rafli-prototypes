@@ -32,8 +32,14 @@ export const commentAuthorSchema = z.object({
  *
  * Validation boundary: server-side — parsed in comment-fetching server actions.
  * `userVote` is null for unauthenticated requests (public endpoint).
+ *
+ * Defined in two layers because `previewReplies` references the same shape as
+ * the parent — recursive z.object would self-reference at definition time.
+ * Single-level nesting is enforced by the backend: replies inside
+ * `previewReplies` never carry their own `previewReplies` field, so the inner
+ * type can drop it and we keep schemas non-recursive.
  */
-export const commentSchema = z.object({
+const commentBaseShape = {
 	id: z.string(),
 	author: commentAuthorSchema,
 	// Nullable: backend returns `null` for soft-deleted comments (see `isDeleted`).
@@ -49,6 +55,16 @@ export const commentSchema = z.object({
 	replyCount: z.number(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
+};
+
+const commentReplySchema = z.object(commentBaseShape);
+
+export const commentSchema = z.object({
+	...commentBaseShape,
+	// Earliest non-deleted reply preloaded by the backend so the UI can render
+	// the first reply without a follow-up request to the replies endpoint.
+	// Optional — omitted when the parent has no live replies.
+	previewReplies: z.array(commentReplySchema).optional(),
 });
 
 /** Page-based pagination (not offset-based like updates) */

@@ -1,4 +1,3 @@
-import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { NOTIFICATION_TYPE, type Notification } from '@/types/notification';
 
 /**
@@ -69,10 +68,8 @@ function buildRafflePath(
 export function getNavigationPath(notification: Notification): string | null {
 	const { type, metadata } = notification;
 
-	// Chat messages land in the dedicated /messages inbox. Guarded by the
-	// feature flag so the flag-off path keeps today's no-op behaviour (the
-	// chat notification stays visible in the bell but doesn't navigate).
-	if (FEATURE_FLAGS.CHAT_ENABLED && type === NOTIFICATION_TYPE.CHAT_MESSAGE) {
+	// Chat messages land in the dedicated /messages inbox.
+	if (type === NOTIFICATION_TYPE.CHAT_MESSAGE) {
 		const conversationId = metadata?.conversationId;
 		return conversationId ? `/messages/${conversationId}` : null;
 	}

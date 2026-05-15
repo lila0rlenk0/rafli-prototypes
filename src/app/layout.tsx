@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import Script from 'next/script';
 import { Suspense } from 'react';
 
 import { Toaster } from '@/components/ui/sonner';
@@ -17,6 +18,13 @@ const clashDisplay = localFont({
 	weight: '100 900',
 	display: 'swap',
 });
+
+const LIT_DEV_MODE_WARNING =
+	'Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.';
+const suppressLitDevModeWarningScript = `
+globalThis.litIssuedWarnings ??= new Set();
+globalThis.litIssuedWarnings.add(${JSON.stringify(LIT_DEV_MODE_WARNING)});
+`;
 
 export const metadata: Metadata = {
 	metadataBase: new URL('https://www.rafli.win'),
@@ -98,6 +106,15 @@ export default function RootLayout({
 				suppressHydrationWarning
 				className={`${GeistSans.variable} ${GeistMono.variable} ${clashDisplay.variable} font-sans antialiased`}
 			>
+				{/* Reown AppKit bundles Lit. Local Next dev loads Lit's dev build,
+				    which emits this production-safety warning before AppKit renders.
+				    Production bundles do not emit it; this only keeps local console
+				    audits focused on actionable app issues. */}
+				<Script
+					id="suppress-lit-dev-mode-warning"
+					strategy="beforeInteractive"
+					dangerouslySetInnerHTML={{ __html: suppressLitDevModeWarningScript }}
+				/>
 				<Suspense fallback={null}>
 					<ProvidersClient>
 						{children}

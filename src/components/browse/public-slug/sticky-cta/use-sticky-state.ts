@@ -2,16 +2,16 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 
-import { buildPrimaryCtaLabel } from '@/components/raffle/ticket-purchase/cta-label';
 import { calculateOrderTotal } from '@/lib/checkout/calculate-order-total';
-import { useStripeCheckout } from '@/lib/checkout/use-stripe-checkout';
+import { formatCurrency } from '@/lib/utils/format/format-currency';
 import { useTicketQuantityStore } from '@/providers/ticket-quantity-store-provider';
 import type { ValidatedPromoCode } from '@/types/promo-code';
 import type { RaffleSubscriptionContext } from '@/types/subscription';
 
-import { type XShareConfig, useXShare } from '../x-share/use-share';
-
-interface StickyStateInputs extends XShareConfig {
+interface StickyStateInputs {
+	/** Raffle id forwarded to the free-tickets claim flow — backend keys the
+	 * $0 order off it just like the paid flow. */
+	raffleId: string;
 	isAuthenticated: boolean;
 	disabled: boolean;
 	availableTickets: number;
@@ -38,20 +38,32 @@ interface PurchasableState {
 	kind: 'purchasable';
 	signInUrl: null;
 	bundles: BundleControls;
-	/** Primary CTA label — one of the canonical AMOE/card checkout labels. */
+	/** Primary CTA label — "One time purchase $X" or "AMOE - Free Entries". */
 	primaryCtaLabel: string;
 	primaryCtaTitle: string | undefined;
 	isPrimaryCtaDisabled: boolean;
-	isCheckoutLoading: boolean;
-	initiateCheckout: () => void;
-	showQuestionModal: boolean;
-	setShowQuestionModal: (open: boolean) => void;
-	handleCheckoutCorrectAnswer: () => void;
-	questionId: string | null | undefined;
-	raffleId: string;
+	/** Discriminator the variant renderer uses to wire the right onClick:
+	 *  paid orders open the picker, free-tickets call `claim` directly. */
 	isFreeTicketsPromo: boolean;
-	xShare: ReturnType<typeof useXShare>;
-	xShareEnabled: boolean;
+	/**
+	 * Live acknowledgment flag. The sticky CTA can't itself render the
+	 * checkbox (it lives in the scrolling card upstream), so the variant
+	 * dispatcher uses this to decide whether to open the picker or call
+	 * `requestAcknowledgment` to scroll the user back to the checkbox.
+	 */
+	isAccessPassAcknowledged: boolean;
+	/** Opens the shared payment-method picker hosted in `TicketPurchaseCard`. */
+	openPaymentMethodPicker: () => void;
+	/** Surfaces the inline error + scrolls the checkbox into view. Invoked
+	 *  by the variant when the user taps the paid CTA without ticking the
+	 *  Access Pass acknowledgment. */
+	requestAcknowledgment: () => void;
+	/** Inputs the variant forwards to `useClaimFreeTickets` for the $0 path. */
+	freeTicketsClaim: {
+		readonly raffleId: string;
+		readonly ticketQuantity: number;
+		readonly promoCode: string | undefined;
+	};
 }
 
 interface UnauthState {
@@ -77,7 +89,9 @@ interface StoreSnapshot {
 	quantity: number;
 	incrementBy: (size: number, cap: number) => void;
 	appliedPromo: ValidatedPromoCode | null;
+	openPaymentMethodPicker: () => void;
 	isAccessPassAcknowledged: boolean;
+	requestAcknowledgment: () => void;
 }
 
 /**
@@ -85,44 +99,64 @@ interface StoreSnapshot {
  * Subscribing here (not in the main hook) keeps `useStickyState`
  * under the 60-line cap.
  *
+ * The CTA stays tappable regardless of acknowledgment — when missing,
+ * the variant dispatcher calls `requestAcknowledgment` instead of
+ * opening the picker, scrolling the checkbox into view and flagging the
+ * inline error. Per-tender gating inside the picker is gone (the
+ * upstream trigger now owns the consent step).
+ *
  * @returns Selected slices of the shared ticket-quantity store.
  */
 function useQuantityStoreSlices(): StoreSnapshot {
 	const quantity = useTicketQuantityStore(state => state.quantity);
 	const incrementBy = useTicketQuantityStore(state => state.incrementBy);
 	const appliedPromo = useTicketQuantityStore(state => state.appliedPromo);
-	// Access Pass acknowledgment gates the paid sticky CTA — mirrors the
-	// desktop BuyButton gate. Free-tickets promos bypass (no consideration).
+	const setPaymentMethodModalOpen = useTicketQuantityStore(
+		state => state.setPaymentMethodModalOpen,
+	);
 	const isAccessPassAcknowledged = useTicketQuantityStore(
 		state => state.isAccessPassAcknowledged,
 	);
-	return { quantity, incrementBy, appliedPromo, isAccessPassAcknowledged };
+	const requestAcknowledgment = useTicketQuantityStore(
+		state => state.requestAcknowledgment,
+	);
+	return {
+		quantity,
+		incrementBy,
+		appliedPromo,
+		// Pre-bind the `true` argument so the variant renderer can pass it as
+		// a stable `() => void` to onClick without re-wrapping each render.
+		openPaymentMethodPicker: () => setPaymentMethodModalOpen(true),
+		isAccessPassAcknowledged,
+		requestAcknowledgment,
+	};
 }
 
 interface PurchasablePayloadParams {
 	inputs: StickyStateInputs;
 	store: StoreSnapshot;
-	checkout: ReturnType<typeof useStripeCheckout>;
-	xShare: ReturnType<typeof useXShare>;
-	/** Pre-computed by the hook so checkout-init + render share one math pass. */
+	/** Pre-computed by the hook so render + future checks share one math pass. */
 	orderTotal: ReturnType<typeof calculateOrderTotal>;
 }
 
 /**
  * Builds the purchasable variant payload from the already-resolved
- * hook results. Pure data-shaping — no React calls — so it stays out
+ * store reads. Pure data-shaping — no React calls — so it stays out
  * of `useStickyState`'s cap.
  */
 function buildPurchasableState(
 	params: PurchasablePayloadParams,
 ): PurchasableState {
-	const { inputs, store, checkout, xShare, orderTotal } = params;
+	const { inputs, store, orderTotal } = params;
 	const { total, isFreeTicketsPromo } = orderTotal;
 	// 0 means unlimited participants — bundle clicks skip the clamp.
 	const isUnlimited = inputs.availableTickets === 0;
-	const isPrimaryCtaDisabled =
-		checkout.isLoading ||
-		(!isFreeTicketsPromo && !store.isAccessPassAcknowledged);
+	// Label mirrors the Figma "One time purchase $X" exactly — the per-tender
+	// "with Card / with Credits / with Crypto" copy lives on the buttons
+	// inside the picker, not on the trigger.
+	const primaryCtaLabel = isFreeTicketsPromo
+		? 'AMOE - Free Entries'
+		: `One time purchase ${formatCurrency(total, inputs.currency)}`;
 	return {
 		kind: 'purchasable',
 		signInUrl: null,
@@ -134,34 +168,32 @@ function buildPurchasableState(
 			disabled: !isUnlimited && store.quantity >= inputs.availableTickets,
 			hidden: isFreeTicketsPromo,
 		},
-		primaryCtaLabel: buildPrimaryCtaLabel({
-			isCheckoutLoading: checkout.isLoading,
-			isFreeTicketsPromo,
-			total,
-			currency: inputs.currency,
-		}),
-		primaryCtaTitle:
-			isPrimaryCtaDisabled && !checkout.isLoading && !isFreeTicketsPromo
-				? 'Please acknowledge the terms above to continue'
-				: undefined,
-		isPrimaryCtaDisabled,
-		isCheckoutLoading: checkout.isLoading,
-		initiateCheckout: checkout.initiate,
-		showQuestionModal: checkout.showQuestionModal,
-		setShowQuestionModal: checkout.setShowQuestionModal,
-		handleCheckoutCorrectAnswer: checkout.handleCorrectAnswer,
-		questionId: inputs.questionId,
-		raffleId: inputs.raffleId,
+		primaryCtaLabel,
+		// CTA stays tappable — when acknowledgment is missing the variant
+		// calls `requestAcknowledgment` instead of opening the picker, which
+		// scrolls the user back to the checkbox and surfaces the inline
+		// form error. Disabling here would hide the path to the fix.
+		primaryCtaTitle: undefined,
+		isPrimaryCtaDisabled: false,
 		isFreeTicketsPromo,
-		xShare,
-		xShareEnabled: inputs.xShareEnabled,
+		isAccessPassAcknowledged: store.isAccessPassAcknowledged,
+		openPaymentMethodPicker: store.openPaymentMethodPicker,
+		requestAcknowledgment: store.requestAcknowledgment,
+		freeTicketsClaim: {
+			raffleId: inputs.raffleId,
+			ticketQuantity: store.quantity,
+			promoCode: store.appliedPromo?.code,
+		},
 	};
 }
 
 /**
  * Derives which sticky variant to render from auth + host + raffle
- * state. Owns the Stripe-checkout + X-share wiring for the purchasable
- * branch — the renderer stays declarative.
+ * state. The sticky no longer drives Stripe directly — it opens the
+ * shared payment-method picker which owns all tender-specific wiring
+ * (Stripe + credits + crypto + quiz gating). On free-tickets promos
+ * the picker is bypassed; the variant renderer invokes the claim hook
+ * directly using the `freeTicketsClaim` payload exposed here.
  *
  * @param inputs - Auth flag + disabled (host) flag + raffle identifiers.
  * @returns Discriminated union carrying everything the variant renderer needs.
@@ -172,30 +204,11 @@ export function useStickyState(inputs: StickyStateInputs): StickyVariantState {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const store = useQuantityStoreSlices();
-	// Pre-compute the displayed total once so `useStripeCheckout` can verify
-	// BE charges match what the user agreed to. Same math the variant renderer
-	// uses below — extracted to share the result without recomputing.
 	const orderTotal = calculateOrderTotal({
 		price: inputs.price,
 		quantity: store.quantity,
 		appliedPromo: store.appliedPromo,
 		subscription: inputs.subscription,
-	});
-	const checkout = useStripeCheckout({
-		raffleId: inputs.raffleId,
-		publicSlug: inputs.publicSlug,
-		questionId: inputs.questionId,
-		disabled: inputs.disabled,
-		expectedTotal: orderTotal.total,
-	});
-	const xShare = useXShare({
-		raffleId: inputs.raffleId,
-		title: inputs.title,
-		publicSlug: inputs.publicSlug,
-		// Unauth users always get plain share — tokenized flow requires auth.
-		xShareEnabled: inputs.isAuthenticated && inputs.xShareEnabled,
-		xShareClaimStatus: inputs.xShareClaimStatus,
-		questionId: inputs.questionId,
 	});
 
 	if (!inputs.isAuthenticated) {
@@ -209,5 +222,17 @@ export function useStickyState(inputs: StickyStateInputs): StickyVariantState {
 		};
 	}
 	if (inputs.disabled) return { kind: 'host-disabled' };
-	return buildPurchasableState({ inputs, store, checkout, xShare, orderTotal });
+	return buildPurchasableState({ inputs, store, orderTotal });
+}
+
+/**
+ * Mirrors the `StoreSnapshot.clearPromo` field for callers that want to
+ * forward it into `useClaimFreeTickets` — the hook needs the same promo
+ * invalidation callback the inline checkout flows use.
+ *
+ * Hoisted to a separate hook so the sticky variant renderer can read it
+ * without re-subscribing the whole `StoreSnapshot` cluster.
+ */
+export function useStickyClearPromo(): () => void {
+	return useTicketQuantityStore(state => state.clearPromo);
 }

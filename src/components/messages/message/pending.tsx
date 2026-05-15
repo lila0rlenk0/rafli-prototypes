@@ -37,7 +37,7 @@ export function PendingBubble({ entry, viewerName }: PendingBubbleProps) {
 					className={cn(
 						// See component JSDoc — match MessageBubble's whitespace
 						// handling so the ack-swap doesn't reflow the bubble.
-						'bg-primary text-primary-foreground w-fit rounded-2xl px-3 py-2 text-sm break-words whitespace-pre-wrap',
+						'bg-brand-dark text-on-dark w-fit rounded-2xl px-3 py-2 text-sm break-words whitespace-pre-wrap',
 						failed && 'opacity-70',
 					)}
 				>

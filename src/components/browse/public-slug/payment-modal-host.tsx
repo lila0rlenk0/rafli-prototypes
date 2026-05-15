@@ -18,6 +18,10 @@ const PaymentStatusModal = dynamic(
 interface PaymentModalHostProps {
 	publicSlug: string;
 	searchParams: Promise<{ session_id?: string }>;
+	/** Raffle title — forwarded to the paid status modal so the share copy
+	 * names the specific sweepstakes, matching the in-page entries-confirmed
+	 * modal's titled tweet text. */
+	raffleTitle: string;
 }
 
 /**
@@ -30,6 +34,7 @@ interface PaymentModalHostProps {
 export function PaymentModalHost({
 	publicSlug,
 	searchParams,
+	raffleTitle,
 }: PaymentModalHostProps) {
 	const router = useRouter();
 	const params = use(searchParams);
@@ -78,6 +83,7 @@ export function PaymentModalHost({
 		<PaymentStatusModal
 			key={displayId}
 			publicSlug={publicSlug}
+			raffleTitle={raffleTitle}
 			stripeSessionId={displayId}
 			open={isModalOpen}
 			onOpenChange={handleOpenChange}

@@ -42,18 +42,23 @@ const VALID_RAFFLE: Raffle = {
 // Mock the API client module before importing the server action
 const mockGet = mock();
 const mockAuthenticatedGet = mock();
-const mockGetSession = mock(() => Promise.resolve(null));
 
 mock.module('@/lib/api/client', () => ({
-	baseClient: { get: mockGet },
+	baseClient: { get: mock() },
+	cachedBaseClient: { get: mockGet },
 	authenticatedClient: { get: mockAuthenticatedGet, post: mock() },
-}));
-mock.module('@/lib/auth/session', () => ({
-	getSession: mockGetSession,
 }));
 mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),
 	captureServiceError: mock(),
+}));
+// `'use cache'` and `cacheLife` / `cacheTag` are no-ops outside the Next runtime.
+// Mock the full module so the cached path is exercisable in plain Bun tests.
+mock.module('next/cache', () => ({
+	cacheLife: mock(),
+	cacheTag: mock(),
+	revalidateTag: mock(),
+	revalidatePath: mock(),
 }));
 
 // Import AFTER mocking
@@ -74,11 +79,10 @@ describe('getRaffle', () => {
 			}
 		});
 
-		test('uses authenticated client only after session validation succeeds', async () => {
-			// Public raffle pages should enrich user-specific fields (like
-			// xShareClaim) only after `getSession()` confirms the cookie is valid.
-			// A stale raw token must not force authenticated fetches, but a verified
-			// session should opt into the richer backend response.
+		test('uses authenticated client when caller opts in via { authed: true }', async () => {
+			// `getRaffle` no longer reads cookies — the caller decides which client
+			// to use. `{ authed: true }` enriches the response with user-scoped
+			// fields (e.g. xShareClaim) and bypasses the public `'use cache'` path.
 			mockGet.mockClear();
 			mockAuthenticatedGet.mockResolvedValueOnce(
 				mockAxiosResponse({
@@ -91,9 +95,8 @@ describe('getRaffle', () => {
 					},
 				}),
 			);
-			mockGetSession.mockResolvedValueOnce({ user: { id: 'user-1' } });
 
-			const result = await getRaffle('test-raffle');
+			const result = await getRaffle('test-raffle', { authed: true });
 
 			expect(result.success).toBe(true);
 			expect(mockAuthenticatedGet).toHaveBeenCalledWith('/raffles/test-raffle');

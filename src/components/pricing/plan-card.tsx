@@ -1,10 +1,15 @@
 import { Check } from 'lucide-react';
+import Link from 'next/link';
 
 import { cn } from '@/lib/class-names';
-import type { SubscriptionPlan } from '@/types/subscription';
+import {
+	type MySubscription,
+	type SubscriptionPlan,
+	type SubscriptionProvider,
+} from '@/types/subscription';
 
 import { formatPrice } from './format-price';
-import { ManageSubscriptionButton } from '@/components/pricing/subscribe/manage-subscription-button';
+import { pickSubscribeProvider } from '@/components/pricing/subscribe/pick-subscribe-provider';
 import { SubscribeButton } from '@/components/pricing/subscribe/subscribe-button';
 
 interface PlanCardProps {
@@ -23,6 +28,25 @@ interface PlanCardProps {
 	 * identical; the nuance belongs on the profile management page, not here.
 	 */
 	isCurrent?: boolean;
+	/**
+	 * Active subscription owned by the viewer. When non-null and `isCurrent`
+	 * is false (i.e. viewer is subscribed to a DIFFERENT plan), the CTA slot
+	 * renders a "Manage from profile" link instead of the subscribe CTA —
+	 * subscription management has moved off the pricing page entirely, so
+	 * any subscribed visitor on a non-current card is deflected to
+	 * `/profile#subscription`. Null when the viewer has no active
+	 * subscription; subscribe CTA renders normally on every card in that case.
+	 */
+	currentSubscription?: MySubscription | null;
+	/**
+	 * Provider rail the subscribe CTA should target. Threaded from the
+	 * pricing page's `lockedProvider` (read off `GET /me/subscription`) so a
+	 * returning subscriber stays on the rail their billing history already
+	 * lives on. Null on first-time buyers (no history yet) — the page
+	 * defaults to Stripe in that case before passing the value down, so by
+	 * the time it reaches this component the value is always defined.
+	 */
+	lockedProvider: SubscriptionProvider | null;
 }
 
 /**
@@ -170,6 +194,134 @@ function resolveHeaderPill(options: {
 }
 
 /**
+ * Static "Your current plan" pill + "Manage from profile" deflect link.
+ * Extracted so the parent CTA slot stays free of nested ternaries (ESLint
+ * `no-nested-ternary` enforced project-wide).
+ */
+function CurrentPlanCallout() {
+	return (
+		<div className="flex flex-col gap-3">
+			<div className="border-green-vivid inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border-2 bg-white text-sm font-semibold text-black">
+				<Check
+					aria-hidden
+					className="text-green-vivid size-4"
+					strokeWidth={3}
+				/>
+				Your current plan
+			</div>
+			<Link
+				href="/profile#subscription"
+				className="text-foreground focus-visible:ring-ring/50 mx-auto inline-flex items-center gap-2 rounded-sm text-sm font-medium underline underline-offset-4 outline-none hover:no-underline focus-visible:ring-3"
+			>
+				Manage from profile
+			</Link>
+		</div>
+	);
+}
+
+/**
+ * Deflect link rendered when the viewer is subscribed to a DIFFERENT plan
+ * — pricing is acquisition-only, so the CTA routes to the profile manage
+ * surface instead of firing a subscribe action the BE would reject as
+ * `already-subscribed`. Extracted for `no-nested-ternary` and reused by
+ * `BasicPlanCard` via the same pattern.
+ */
+function ManageFromProfileLink() {
+	return (
+		<Link
+			href="/profile#subscription"
+			className="border-input bg-muted text-foreground hover:bg-foreground hover:text-background focus-visible:ring-ring/50 inline-flex h-12 w-full items-center justify-center rounded-md border text-sm font-semibold transition-colors outline-none focus-visible:ring-3"
+		>
+			Manage from profile
+		</Link>
+	);
+}
+
+/**
+ * Resolves the CTA slot for a plan card without nesting ternaries — see
+ * `resolveHeaderPill` for the same flat-branching pattern this mirrors.
+ *
+ * Precedence: current-plan callout → "Manage from profile" deflect →
+ * subscribe slot. The deflect wins for non-current cards when the viewer
+ * already holds an active subscription on a different plan; otherwise the
+ * subscribe CTA runs through `pickSubscribeProvider` like before.
+ */
+function PlanCardCTA(options: {
+	plan: SubscriptionPlan;
+	isAuthenticated: boolean;
+	isCurrent: boolean;
+	hasOtherActiveSubscription: boolean;
+	lockedProvider: SubscriptionProvider | null;
+	highlighted: boolean;
+}) {
+	const {
+		plan,
+		isAuthenticated,
+		isCurrent,
+		hasOtherActiveSubscription,
+		lockedProvider,
+		highlighted,
+	} = options;
+	if (isCurrent) return <CurrentPlanCallout />;
+	if (hasOtherActiveSubscription) return <ManageFromProfileLink />;
+	return (
+		<SubscribeSlot
+			plan={plan}
+			isAuthenticated={isAuthenticated}
+			lockedProvider={lockedProvider}
+			highlighted={highlighted}
+		/>
+	);
+}
+
+/**
+ * Subscribe CTA slot rendered when the viewer is not already on the plan.
+ *
+ * Resolves the subscribe rail per plan via `pickSubscribeProvider`, which
+ * intersects the plan's BE-derived `availableProviders` with the viewer's
+ * `lockedProvider`:
+ * - Returns a provider → renders `<SubscribeButton>` targeting that rail.
+ * - Returns `null` → renders a static informational pill because the plan
+ *   is not offered on the viewer's locked rail; starting a checkout would
+ *   trigger `payments:subscription:provider-locked` BE-side.
+ *
+ * Extracted from `PlanCard` to keep the parent inside the
+ * `max-lines-per-function` budget — the unavailable branch + provider
+ * resolution would push `PlanCard` past 150 SLOC inline.
+ *
+ * @returns Provider-specific subscribe CTA, or a "not on your billing
+ *   provider" informational pill when the plan and lock don't intersect.
+ */
+function SubscribeSlot(options: {
+	plan: SubscriptionPlan;
+	isAuthenticated: boolean;
+	lockedProvider: SubscriptionProvider | null;
+	highlighted: boolean;
+}) {
+	const { plan, isAuthenticated, lockedProvider, highlighted } = options;
+	const provider = pickSubscribeProvider({
+		availableProviders: plan.availableProviders,
+		lockedProvider,
+	});
+	if (provider === null) {
+		return (
+			<div className="border-input bg-muted text-foreground inline-flex h-12 w-full items-center justify-center rounded-md border text-sm font-medium">
+				Not on your billing provider
+			</div>
+		);
+	}
+	return (
+		<SubscribeButton
+			planId={plan.id}
+			provider={provider}
+			label={`Get ${plan.name}`}
+			isAuthenticated={isAuthenticated}
+			variant={highlighted ? 'primary' : 'secondary'}
+		/>
+	);
+}
+
+/**
  * Single plan card — renders price, tagline, feature list, and the CTA
  * that kicks off Stripe Checkout.
  *
@@ -189,6 +341,8 @@ export function PlanCard({
 	plan,
 	isAuthenticated,
 	isCurrent = false,
+	currentSubscription = null,
+	lockedProvider,
 }: PlanCardProps) {
 	const highlighted = plan.metadata.isHighlighted;
 	const headerPill = resolveHeaderPill({
@@ -196,6 +350,11 @@ export function PlanCard({
 		highlightLabel: plan.metadata.highlightLabel,
 	});
 	const check = checkClasses({ isHighlighted: highlighted });
+	// "Subscribed but on a different plan" — render a deflect link to the
+	// profile subscription card instead of the subscribe CTA. The pricing
+	// page is acquisition-only since the IA split; in-place plan changes
+	// now live on `/profile#subscription`.
+	const hasOtherActiveSubscription = !isCurrent && currentSubscription !== null;
 
 	return (
 		<article
@@ -310,50 +469,14 @@ export function PlanCard({
 			</ul>
 
 			<div className="mt-auto">
-				{isCurrent ? (
-					// Current-plan affordance — disabled-looking pill + a separate
-					// "Manage" link below. We intentionally don't render a disabled
-					// <button> for the primary affordance because a disabled button
-					// in a CTA slot reads as a form validation failure; a static
-					// pill + secondary link says "you're here, here's what to do
-					// instead" without miscommunicating state.
-					<div className="flex flex-col gap-3">
-						<div
-							// Non-interactive pill (deliberately not a disabled `<Button>`
-							// — disabled in a CTA slot reads as a form validation failure).
-							// No ARIA on the pill itself: the parent `<article>` already
-							// carries `aria-current="true"` + `aria-labelledby` pointing at
-							// the plan name, so AT users hear "current, [plan name]" when
-							// they enter the article. Adding `role="status"` here would
-							// create a redundant live region for static state.
-							className="border-green-vivid inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border-2 bg-white text-sm font-semibold text-black"
-						>
-							<Check
-								aria-hidden
-								className="text-green-vivid size-4"
-								strokeWidth={3}
-							/>
-							Your current plan
-						</div>
-						{/* Stripe-hosted Customer Portal — server action mints a
-						    short-lived URL, the client redirects. Stripe owns the
-						    cancel / plan-switch / payment-method / invoice UX so we
-						    stay out of PCI scope and inherit feature parity for free.
-						    Returning to `/pricing` (set server-side) re-renders the
-						    current-plan card with the user's updated state. */}
-						<ManageSubscriptionButton />
-					</div>
-				) : (
-					<SubscribeButton
-						planId={plan.id}
-						label={`Get ${plan.name}`}
-						isAuthenticated={isAuthenticated}
-						// Highlighted plan gets the filled primary CTA to direct the eye;
-						// non-highlighted plans use the outline variant as a quiet
-						// secondary action.
-						variant={highlighted ? 'primary' : 'secondary'}
-					/>
-				)}
+				<PlanCardCTA
+					plan={plan}
+					isAuthenticated={isAuthenticated}
+					isCurrent={isCurrent}
+					hasOtherActiveSubscription={hasOtherActiveSubscription}
+					lockedProvider={lockedProvider}
+					highlighted={highlighted}
+				/>
 			</div>
 		</article>
 	);

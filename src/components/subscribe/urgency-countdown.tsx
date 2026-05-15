@@ -15,8 +15,6 @@ import {
 } from '@/components/pricing/countdown/format-countdown';
 import { useHasMounted } from '@/lib/hooks/use-has-mounted';
 
-import { CREDIT_PAYOUT_USD } from './offer';
-
 // 15-minute promotional urgency window anchored to the visitor's
 // mount time. Marketing pressure cue, not a backend-enforced deadline
 // — when the real launch deadline lands, replace the
@@ -33,6 +31,10 @@ const PLACEHOLDER_PARTS: CountdownParts = {
 	expired: false,
 };
 
+interface UrgencyCountdownProps {
+	readonly payoutUsd: number;
+}
+
 /**
  * "LIMITED OFFER" strip with an `HH:MM:SS` countdown pinned beneath
  * the hero.
@@ -42,9 +44,11 @@ const PLACEHOLDER_PARTS: CountdownParts = {
  * above/below the 39px timer row → 68px overall, within 2px of the
  * 70px Figma frame with no perceptual gap.
  *
+ * @param payoutUsd - Credit payout figure echoed in the trailing
+ *   "to claim your $N in raffle credits" caption
  * @returns Yellow full-bleed banner with timer boxes and promo caption
  */
-export function UrgencyCountdown() {
+export function UrgencyCountdown({ payoutUsd }: UrgencyCountdownProps) {
 	// SSR + first client render both see `false`, so hydration matches
 	// byte-for-byte and the placeholder `--:--:--` ships. The real ticker
 	// arms in a follow-up commit once React flips the flag.
@@ -119,7 +123,7 @@ export function UrgencyCountdown() {
 				    0.3px tracking (= 0.025em at 12px). `tracking-wide`
 				    resolves to 0.025em, an exact match. */}
 				<span className="text-navy text-label-sm font-semibold tracking-wide">
-					to claim your ${CREDIT_PAYOUT_USD} in raffle credits
+					to claim your ${payoutUsd} in raffle credits
 				</span>
 			</div>
 		</section>

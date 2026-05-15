@@ -29,6 +29,9 @@ const VALID_PLAN = {
 	monthlyPriceAmount: '25.0000',
 	creditAmount: '25.0000',
 	discountPercent: 15,
+	// `availableProviders` mirrors the BE plans-query derivation — non-empty
+	// list of rails the plan is subscribable on. Schema rejects empty arrays.
+	availableProviders: ['stripe', 'fanbasis'],
 	metadata: {
 		badgeText: '15% OFF',
 		highlightLabel: null,

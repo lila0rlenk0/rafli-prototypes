@@ -12,7 +12,6 @@ import { ModeSwitchToggle } from '@/components/mode/switch-toggle';
 import { NotificationBell } from '@/components/notifications/bell';
 import { Button } from '@/components/ui/button';
 import { SubscriptionPill } from '@/components/ui-custom/subscription-pill';
-import { FEATURE_FLAGS } from '@/lib/feature-flags';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 
@@ -215,15 +214,13 @@ export function PublicNavbar({
 									>
 										My Sweepstakes
 									</Link>
-									{FEATURE_FLAGS.CHAT_ENABLED ? (
-										<Link
-											href="/messages"
-											className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
-											onClick={closeMenu}
-										>
-											Messages
-										</Link>
-									) : null}
+									<Link
+										href="/messages"
+										className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"
+										onClick={closeMenu}
+									>
+										Messages
+									</Link>
 									<Link
 										href="/profile/notifications"
 										className="font-clash-display text-4xl font-semibold tracking-[0.18px] text-black"

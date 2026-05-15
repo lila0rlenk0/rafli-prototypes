@@ -34,6 +34,14 @@ export const AUTH_ERROR_CODES = {
 	PASSWORD_NOT_SET: 'auth:password:not-set',
 	/** Current password is incorrect (change-password flow) */
 	PASSWORD_INVALID: 'auth:password:invalid',
+	/**
+	 * Set-password rejected because the credential account already has a
+	 * non-null password (BE: `auth:password:already-set`). Surfaced when a
+	 * user with a password somehow reaches the set-password endpoint —
+	 * the UI should switch them to change-password instead, since their
+	 * `hasPassword` flag must be stale.
+	 */
+	PASSWORD_ALREADY_SET: 'auth:password:already-set',
 
 	// Captcha errors (Cloudflare Turnstile siteverify, enforced at Encore boundary)
 	/** Token rejected by Cloudflare siteverify — challenge failed or token reused */

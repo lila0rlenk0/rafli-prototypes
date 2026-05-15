@@ -38,10 +38,12 @@ function isManageableStatus(status: string): boolean {
 export default async function PromoCodesPage({ params }: PageProps) {
 	const { publicSlug } = await params;
 
-	// Parallel fetch — session and raffle are independent
+	// Parallel fetch — session and raffle are independent.
+	// `authed: true` — host-only manage page; bypass the public cache so promo
+	// code edits made elsewhere reflect immediately for the host.
 	const [session, raffleResult] = await Promise.all([
 		getSession(),
-		getRaffle(publicSlug),
+		getRaffle(publicSlug, { authed: true }),
 	]);
 
 	if (!session?.user?.id) {

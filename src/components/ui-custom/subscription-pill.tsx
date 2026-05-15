@@ -55,7 +55,7 @@ import { getSubscriptionPillState } from './subscription-pill.helpers';
  *          state is unknown.
  */
 export function SubscriptionPill() {
-	const { data: subscription, isLoading: isLoadingSubscription } =
+	const { data: subscriptionResponse, isLoading: isLoadingSubscription } =
 		useMySubscription();
 	const { data: credit } = useCreditBalance();
 
@@ -64,7 +64,14 @@ export function SubscriptionPill() {
 	// suggest they need to "Subscribe" again.
 	if (isLoadingSubscription) return null;
 
-	const state = getSubscriptionPillState(subscription, credit?.availableAmount);
+	// Wrapper exposes `{ subscription, capabilities, lockedProvider }`; the pill
+	// only cares about the embedded entity for tier-vs-CTA display, so we
+	// drill into `subscription` here. Capabilities/lockedProvider live on the
+	// management surfaces (plan card, profile pill button), not the navbar pill.
+	const state = getSubscriptionPillState(
+		subscriptionResponse?.subscription,
+		credit?.availableAmount,
+	);
 
 	// Subscribers go to /profile to manage; guests go to /pricing to convert.
 	// The single-link decision (see component JSDoc) means the CTA semantic

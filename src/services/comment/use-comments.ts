@@ -9,7 +9,7 @@ import { getComments } from './get-comments';
 import { getMyComments } from './get-my-comments';
 
 /** Default page size for comment pagination */
-const COMMENTS_PAGE_SIZE = 10;
+const COMMENTS_PAGE_SIZE = 20;
 
 /** Query key for top-level comments */
 export function commentsKey(raffleId: string, sort: CommentSort) {

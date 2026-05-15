@@ -14,7 +14,6 @@ import { useStore } from 'zustand';
 import { clientEnv } from '@/env/client';
 import { dispatchChatEvent } from '@/lib/chat/event-dispatch';
 import { ChatStream } from '@/lib/chat/stream';
-import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { createChatStore, type ChatStore } from '@/store/chat-store';
 import type { ChatErrorCode } from '@/types/errors';
 import type { ChatWsTokenResponse, UnreadSummaryResponse } from '@/types/chat';
@@ -140,12 +139,7 @@ export function ChatStoreProvider({
 	}));
 
 	// Mount: open the WS stream, hydrate initial unread count, tear down on unmount.
-	// Guarded by FEATURE_FLAGS.CHAT_ENABLED so turning off the flag stops
-	// the WebSocket entirely — no wasted tokens or requests during the
-	// rollout window.
 	useEffect(() => {
-		if (!FEATURE_FLAGS.CHAT_ENABLED) return;
-
 		let disposed = false;
 		const typingTimers = typingTimersRef.current;
 

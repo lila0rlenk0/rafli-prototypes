@@ -4,26 +4,20 @@ import Link from 'next/link';
 import type { CSSProperties } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/class-names';
 import type { Raffle } from '@/types/raffle';
-
-/** User's relationship to a raffle */
-export type RaffleRole = 'host' | 'participant';
 
 interface PublicRaffleCardProps {
 	raffle: Raffle;
-	role?: RaffleRole;
 }
 
 /**
  * PublicRaffleCard Component
  *
- * Redesigned raffle card for the browse page grid.
- * Features a cover image header, title with optional role badge,
- * host info with verified badge, price/time row, progress bar,
- * and an outlined Details button. Hover shows 1px black border.
+ * Redesigned raffle card for the browse page grid. Cover image header, title,
+ * host info with verified badge, price/time row, progress bar, and an outlined
+ * Details button. Hover shows 1px black border.
  */
-export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
+export function PublicRaffleCard({ raffle }: PublicRaffleCardProps) {
 	const isUnlimited = raffle.maxParticipants === 0;
 	const progress = isUnlimited
 		? 0
@@ -32,20 +26,6 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 	// can't bind to that, so pass the width through a named style object.
 	const progressFillStyle: CSSProperties = { width: `${progress}%` };
 	const hostName = raffle.host?.name ?? raffle.host?.username ?? 'Unknown';
-
-	function getRoleTag(): { label: string; className: string } | null {
-		if (!role) return null;
-		if (role === 'host') {
-			return {
-				label: 'Host',
-				className: 'bg-role-host-bg text-role-host-fg',
-			};
-		}
-		return {
-			label: 'Participant',
-			className: 'bg-brand-mint text-role-participant-fg',
-		};
-	}
 
 	function getTicketPrice(): string {
 		return Number(raffle.ticketPriceAmount).toLocaleString('en-US', {
@@ -64,8 +44,6 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 		if (diffDays === 1) return '1 day left';
 		return `${diffDays} days left`;
 	}
-
-	const roleTag = getRoleTag();
 
 	return (
 		<div
@@ -89,27 +67,6 @@ export function PublicRaffleCard({ raffle, role }: PublicRaffleCardProps) {
 						<span className="text-sm text-gray-400">No image</span>
 					</div>
 				)}
-				{/* Role tag — absolute overlay pinned to the image top-right. Lifted
-				    out of the title row so the Details button aligns across cards
-				    regardless of whether the title wraps to one or two lines.
-				    `z-10` clears it above the image fill; it sits below the Link's
-				    after:inset-0 overlay (z-auto) so clicks still route to details. */}
-				{roleTag ? (
-					<span
-						className={cn(
-							// absolute overlay pinned to image top-right; sizing tokens
-							// (h/px/py/text/tracking) match the pre-move inline badge
-							// so visual weight is preserved after lifting the tag out
-							// of the title row. `z-10` clears the image fill; sits
-							// below Link's after:inset-0 overlay (z-auto) so the whole
-							// card remains clickable through the badge.
-							'text-mini tracking-micro-5 absolute top-2 right-2 z-10 inline-flex h-4.75 shrink-0 items-center justify-center rounded-lg px-6 py-1.5 font-semibold shadow-sm',
-							roleTag.className,
-						)}
-					>
-						{roleTag.label}
-					</span>
-				) : null}
 			</div>
 
 			{/* Card Body — tightened to 16px padding so card density matches the

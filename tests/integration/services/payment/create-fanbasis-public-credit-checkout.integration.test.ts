@@ -11,8 +11,8 @@ import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 // The action posts to our backend (`/payments/fanbasis/public-credit-checkout`)
 // via `baseClient`, so the mock target is the shared API client. The backend
 // brokers the Fanbasis API key on the server-side; the FE never holds it.
-// Body is empty by design — the embedded Fanbasis iframe collects email +
-// card + terms internally, so the action sends `{}`.
+// Body carries the magic-link recipient email; card details are still
+// collected on Fanbasis's hosted page after the FE redirects to `checkoutUrl`.
 
 const mockPost = mock();
 const mockCaptureServiceError = mock();
@@ -62,24 +62,24 @@ const { createFanbasisPublicCreditCheckout } = await import(
 // =============================================================================
 
 /**
- * Backend response shape after the broker mints the Fanbasis embedded
+ * Backend response shape after the broker mints the Fanbasis hosted-redirect
  * session. Mirrors `FanbasisPublicCreditCheckoutResponseDto` in the
- * raffles-core-backend repo — only the four fields the embedded SDK
- * needs to mount `<CheckoutProvider>`. No `id`, `expiresAt`, or
- * correlation surface on the wire (those are server-internal).
+ * raffles-core-backend repo — single field: `checkoutUrl` is the upstream
+ * `payment_link` the FE redirects the buyer to. No session id, no
+ * `expiresAt`, no correlation surface on the wire (those are server-internal).
  */
 const VALID_BACKEND_RESPONSE = {
-	checkoutSessionSecret: 'cs_live_01HXYZsecretvalue',
-	creatorId: 'mode-mobile',
-	environment: 'sandbox' as const,
-	productId: 'ZVABE',
+	checkoutUrl: 'https://www.fanbasis.com/agency-checkout/handle/NLxj6',
 };
 
 describe('createFanbasisPublicCreditCheckout', () => {
-	test('forwards the embed config on happy path', async () => {
+	test('forwards the hosted-redirect URL on happy path', async () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_BACKEND_RESPONSE));
 
-		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
+		const result = await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'buyer@example.com',
+		});
 
 		expect(result.success).toBe(true);
 		if (result.success) {
@@ -87,15 +87,19 @@ describe('createFanbasisPublicCreditCheckout', () => {
 		}
 	});
 
-	test('posts an empty body to the backend', async () => {
-		// Email + card + terms acceptance live inside the embedded Fanbasis
-		// iframe — the session-mint endpoint receives no client-supplied
-		// data. This guard makes a regression that smuggles a payload
-		// (e.g. revives the old `email` field) impossible to ship silently.
+	test('forwards the email in the request body', async () => {
+		// The backend uses this email as the magic-link recipient (passed
+		// to Fanbasis as session metadata, echoed back on the webhook).
+		// Locking the contract here prevents a regression that drops the
+		// email or smuggles extra fields (e.g. `name`, `password`) into
+		// the public, unauthenticated session-mint endpoint.
 		mockPost.mockClear();
 		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_BACKEND_RESPONSE));
 
-		await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
+		await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'buyer@example.com',
+		});
 
 		// Bun types `mock.calls` as `[][]`; widen via `unknown` to read the
 		// recorded `(url, body, config)` tuple without `as never`.
@@ -104,18 +108,41 @@ describe('createFanbasisPublicCreditCheckout', () => {
 		>;
 		const [url, body] = calls[0];
 		expect(url).toBe('/payments/fanbasis/public-credit-checkout');
-		expect(body).toEqual({});
+		expect(body).toEqual({ email: 'buyer@example.com' });
+	});
+
+	test('rejects malformed email before hitting the backend', async () => {
+		// Server-side revalidation backs the FE form's Zod gate — a tampered
+		// or non-form caller passing `email: "not-an-email"` short-circuits
+		// to FETCH_FAILED without burning a backend round-trip.
+		mockPost.mockClear();
+
+		const result = await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'not-an-email',
+		});
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error).toBe(
+				FANBASIS_PUBLIC_CREDIT_ERROR_CODES.FETCH_FAILED,
+			);
+		}
+		expect(mockPost).not.toHaveBeenCalled();
 	});
 
 	test('does not include email in failure analytics', async () => {
-		// Pre-iframe-submit, the FE has no email to attribute the funnel
-		// failure to — guarding here keeps a future regression that adds
-		// `email: payload.email` (e.g. copying from a sibling action) from
-		// silently leaking unvalidated user input to Mixpanel.
+		// Email is captured pre-redirect as the magic-link target, but the
+		// funnel-failure event must never carry it — Mixpanel error props
+		// surface in dashboards / alerts, and a leaked PII column there
+		// would survive long after the user closed the tab.
 		mockTrackAfter.mockClear();
 		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
 
-		await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
+		await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'buyer@example.com',
+		});
 
 		expect(mockTrackAfter).toHaveBeenCalled();
 		const calls = mockTrackAfter.mock.calls as unknown as ReadonlyArray<
@@ -134,7 +161,10 @@ describe('createFanbasisPublicCreditCheckout', () => {
 		);
 		mockCaptureContractDrift.mockReset();
 
-		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
+		const result = await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'buyer@example.com',
+		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -155,7 +185,10 @@ describe('createFanbasisPublicCreditCheckout', () => {
 			}),
 		);
 
-		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
+		const result = await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'buyer@example.com',
+		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -167,8 +200,8 @@ describe('createFanbasisPublicCreditCheckout', () => {
 
 	test('maps checkout-failed URN to CHECKOUT_FAILED', async () => {
 		// Backend's `unavailable` for transient upstream issues (5xx,
-		// network, timeout, contract drift). FE shows retry copy; the
-		// iframe stays mounted.
+		// network, timeout, contract drift). FE shows retry copy and
+		// keeps the user on /subscribe; no redirect fires.
 		mockPost.mockRejectedValueOnce(
 			mockAxiosError({
 				status: 503,
@@ -178,7 +211,10 @@ describe('createFanbasisPublicCreditCheckout', () => {
 			}),
 		);
 
-		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
+		const result = await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'buyer@example.com',
+		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -192,7 +228,10 @@ describe('createFanbasisPublicCreditCheckout', () => {
 		mockCaptureServiceError.mockReset();
 		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
 
-		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
+		const result = await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'buyer@example.com',
+		});
 
 		expect(result.success).toBe(false);
 		expect(mockCaptureServiceError).toHaveBeenCalled();
@@ -201,7 +240,10 @@ describe('createFanbasisPublicCreditCheckout', () => {
 	test('maps network error through CommonErrorCode fallback', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ERR_NETWORK' }));
 
-		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
+		const result = await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'buyer@example.com',
+		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -212,7 +254,10 @@ describe('createFanbasisPublicCreditCheckout', () => {
 	test('maps timeout through CommonErrorCode fallback', async () => {
 		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ECONNABORTED' }));
 
-		const result = await createFanbasisPublicCreditCheckout({ captchaToken: 'test-captcha-token' });
+		const result = await createFanbasisPublicCreditCheckout({
+			captchaToken: 'test-captcha-token',
+			email: 'buyer@example.com',
+		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {

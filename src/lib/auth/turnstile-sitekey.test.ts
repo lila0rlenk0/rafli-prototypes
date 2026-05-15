@@ -53,9 +53,9 @@ describe('isProductionSafeTurnstileKey', () => {
 		});
 
 		test('staging + real key → safe', () => {
-			expect(
-				isProductionSafeTurnstileKey('0x1real-prod-key', 'staging'),
-			).toBe(true);
+			expect(isProductionSafeTurnstileKey('0x1real-prod-key', 'staging')).toBe(
+				true,
+			);
 		});
 
 		test('development + real key → safe', () => {

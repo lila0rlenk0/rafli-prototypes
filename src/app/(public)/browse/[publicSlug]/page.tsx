@@ -41,26 +41,30 @@ export const maxDuration = 30;
 
 export default async function RafflePage({ params, searchParams }: PageProps) {
 	const { publicSlug } = await params;
-	// Parallelize the raffle fetch + session decode — they're fully independent.
-	// Without Promise.all the user fetch would wait on `loadRafflePage`'s round-trip
-	// even though it only reads cookies + verifies a JWT.
-	const [result, user] = await Promise.all([
-		loadRafflePage(publicSlug),
-		getCurrentUser(),
+	// Resolve user first — both downstream calls only need the `authed` flag,
+	// not the full user object, so we decode the JWT once and fan out.
+	// `getCurrentUser` is React.cache-wrapped, so layouts and async slots that
+	// re-call it within this request share the same in-flight decode.
+	const user = await getCurrentUser();
+	const authed = user !== null;
+	// Parallel batch: `loadRafflePage` and `getRaffleSubscriptionContext` are
+	// independent backend calls that both branch on `authed` only — no shared
+	// inputs beyond that flag, so they can overlap on the wire.
+	// `getRaffleSubscriptionContext` short-circuits to `INACTIVE_SUBSCRIPTION_CONTEXT`
+	// for guests (see raffle-user-context.ts), so the parallel call costs nothing
+	// extra on the unauthenticated path — no network trip is issued.
+	// React.cache still dedupes against the later `buildUserContext` call inside
+	// `RaffleRightColumnAsync`, so authenticated users still hit a single
+	// subscription fetch per request despite the surface-level concurrency.
+	const [result, subscription] = await Promise.all([
+		loadRafflePage(publicSlug, { authed }),
+		getRaffleSubscriptionContext(authed),
 	]);
 
 	if (result.status === 'not-found') notFound();
 	if (result.status === 'error') return <RafflePageError />;
 
 	const { raffle, categories } = result.data;
-	// Subscription context drives the subscriber-aware ticket math on both the
-	// inline `TicketPurchaseCard` and the page-level `StickyBuyTicketsCta`.
-	// `getRaffleSubscriptionContext` is React.cache-deduped so this call shares
-	// the same in-flight fetch as `buildUserContext` inside `RaffleRightColumnAsync`
-	// — single network round-trip per request, no divergence between the two surfaces.
-	// Sequenced after the parallel block because it needs `user !== null` to skip
-	// the BE call entirely for guests.
-	const subscription = await getRaffleSubscriptionContext(user !== null);
 	const view = deriveRaffleViewState({
 		read: result.data,
 		currentUserId: user?.id ?? null,
@@ -136,6 +140,7 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 											raffle={raffle}
 											publicSlug={publicSlug}
 											view={view}
+											xShareConfig={xShareConfig}
 										/>
 									</Suspense>
 								) : null
@@ -168,10 +173,11 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 					<PaymentModalHost
 						publicSlug={publicSlug}
 						searchParams={searchParams}
+						raffleTitle={raffle.title}
 					/>
 					{view.showActiveCard ? (
 						<StickyBuyTicketsCta
-							{...xShareConfig}
+							raffleId={xShareConfig.raffleId}
 							isAuthenticated={user !== null}
 							availableTickets={view.availableTickets}
 							disabled={view.showEditButton || view.disablePurchase}

@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 
 import { FulfillmentTimeline } from '@/components/fulfillment/timeline';
 import { HostFulfillmentCard } from '@/components/fulfillment/host-card';
+import { CreditPayoutCard } from '@/components/raffle/cards/credit-payout-card';
 import { PrizeBreakdownCard } from '@/components/raffle/cards/prize-breakdown-card';
 import { RaffleCancelledCard } from '@/components/raffle/cards/cancelled-card';
 import { RaffleCountdown } from '@/components/raffle/countdown/countdown';
@@ -18,6 +19,7 @@ import { ReportRaffleButton } from '@/components/browse/public-slug/report-raffl
 import { ShareOnXButton } from '@/components/browse/public-slug/share-on-x-button';
 import { SubscribeUpsellCard } from '@/components/pricing/subscribe/subscribe-upsell-card';
 import { getCurrentUser } from '@/lib/auth/session';
+import { isPartialParticipation } from '@/lib/utils/raffle/partial-participation';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import type { Raffle } from '@/types/raffle';
 import type { XShareConfig } from '@/components/browse/public-slug/x-share/use-share';
@@ -60,6 +62,15 @@ export async function RaffleRightColumnAsync({
 		shouldFetchKycStatus: view.shouldFetchKycStatus,
 	});
 
+	// Non-winner / non-host viewers of a partial-participation raffle see the
+	// CreditPayoutCard at the parent level — WinnerBlock/HostFulfillmentBlock
+	// already embed their own copy with role-specific footer copy.
+	const didUserWin = ctx.myWinning !== null;
+	const showCreditPayoutForOther =
+		isPartialParticipation(raffle) &&
+		view.isConcluded &&
+		!didUserWin &&
+		!view.isOwner;
 	return (
 		<>
 			<TerminalCards
@@ -68,6 +79,9 @@ export async function RaffleRightColumnAsync({
 				view={view}
 				ctx={ctx}
 			/>
+			{showCreditPayoutForOther ? (
+				<CreditPayoutCard raffle={raffle} viewer="other" />
+			) : null}
 			{view.showActiveCard ? (
 				<ActiveCard
 					raffle={raffle}
@@ -185,6 +199,10 @@ function WinnerBlock({ raffle, publicSlug, view, ctx }: CardsProps) {
 					?.ticketCode ?? null)
 			: null;
 	if (!ctx.myWinning) return null;
+	// Partial-participation raffles paid out as credits — the credit card
+	// replaces the prize breakdown so the winner doesn't read a prize-value
+	// figure that doesn't match the credits they actually received.
+	const isCreditPayout = isPartialParticipation(raffle);
 	return (
 		<>
 			<RaffleWonCard
@@ -192,7 +210,11 @@ function WinnerBlock({ raffle, publicSlug, view, ctx }: CardsProps) {
 				userAvatar={ctx.myUserAvatarUrl}
 				ticketCode={myWinningTicketCode}
 			/>
-			<PrizeBreakdownCard raffle={raffle} />
+			{isCreditPayout ? (
+				<CreditPayoutCard raffle={raffle} viewer="winner" />
+			) : (
+				<PrizeBreakdownCard raffle={raffle} />
+			)}
 			<FulfillmentTimeline
 				winning={ctx.myWinning}
 				isHost={view.isOwner}
@@ -207,13 +229,21 @@ function WinnerBlock({ raffle, publicSlug, view, ctx }: CardsProps) {
 
 /** Host-side post-draw composition — fulfillment CTA + revenue + ticket list. */
 function HostFulfillmentBlock({ raffle, publicSlug, ctx }: CardsProps) {
+	// Partial-participation: the host kept no earnings (revenue went to
+	// winners as credits). Surface the credit-payout breakdown in place of the
+	// host-earnings card so the figures don't contradict each other.
+	const isCreditPayout = isPartialParticipation(raffle);
 	return (
 		<>
 			<HostFulfillmentCard
 				publicSlug={publicSlug}
 				winnersCount={raffle.winners?.length ?? 0}
 			/>
-			<RevenueBreakdownCard raffle={raffle} />
+			{isCreditPayout ? (
+				<CreditPayoutCard raffle={raffle} viewer="host" />
+			) : (
+				<RevenueBreakdownCard raffle={raffle} />
+			)}
 			<RaffleInfoCard
 				raffle={raffle}
 				myTicketCodes={ctx.myTicketCodes}
@@ -367,22 +397,38 @@ interface MobilePurchaseAsyncProps {
 	raffle: Raffle;
 	publicSlug: string;
 	view: RaffleViewState;
+	/**
+	 * Same X-share config the desktop ActiveCard receives — forwarded here so
+	 * the AMOE / "Share on X" button renders inline on mobile too, in the
+	 * scrollable page (not the sticky bar). The previous Figma pass intentionally
+	 * dropped AMOE from the mobile surface; the current direction restores it
+	 * so both breakpoints expose the free-entry path at the same hierarchy.
+	 */
+	xShareConfig: XShareConfig;
 }
 
 /**
  * Mobile-only purchase card inside the left column hero. Mirrors the desktop
  * active card but stacks the KYC-if-you-win notice below so the CTA stays
  * in reach on narrow viewports.
+ *
+ * Renders the AMOE / X-share button after the purchase card so mobile carries
+ * the same regulatory free-entry CTA the desktop sidebar shows — matches the
+ * `showShareOnX` gate used by `ActiveCard` to keep the surface decisions
+ * aligned across breakpoints.
  */
 export async function RaffleMobilePurchaseAsync({
 	raffle,
 	publicSlug,
 	view,
+	xShareConfig,
 }: MobilePurchaseAsyncProps) {
 	const user = await getCurrentUser();
 	const ctx = await buildUserContext(raffle, user, {
 		shouldFetchKycStatus: view.shouldFetchKycStatus,
 	});
+	const isPurchaseBlocked = view.showEditButton || view.disablePurchase;
+	const showShareOnX = ctx.isAuthenticated && !isPurchaseBlocked;
 	return (
 		<div className="lg:hidden">
 			<RaffleExpiredGate endAt={raffle.endAt}>
@@ -407,6 +453,9 @@ export async function RaffleMobilePurchaseAsync({
 						You&apos;ll only need KYC if you win
 					</p>
 				</div>
+			) : null}
+			{showShareOnX ? (
+				<ShareOnXButton {...xShareConfig} myTicketsTotal={ctx.myTicketsTotal} />
 			) : null}
 		</div>
 	);

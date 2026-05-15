@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 
-import { ManageSubscriptionButton } from '@/components/pricing/subscribe/manage-subscription-button';
 import { Button } from '@/components/ui/button';
 import {
 	Dialog,
@@ -15,8 +14,18 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/class-names';
-import { useInvalidateMySubscription } from '@/services/subscription/use-my-subscription';
-import type { MySubscription, SubscriptionPlan } from '@/types/subscription';
+import {
+	useInvalidateMySubscription,
+	useMySubscription,
+} from '@/services/subscription/use-my-subscription';
+import type { MySubscription } from '@/types/subscription';
+
+// Webhook usually lands sub-second; polling at 1.5s keeps the dialog quiet
+// while still flipping to the enrolled body before the user reaches for the
+// manual button. Capped at 15s — beyond that we fall back to "Check status"
+// rather than spinning forever (the genuinely-stuck-webhook escape hatch).
+const POLL_INTERVAL_MS = 1_500;
+const MAX_POLL_DURATION_MS = 15_000;
 
 // Mobile-first cap on the benefits list — taller stacks push the dialog
 // past the viewport on small screens. Plan can ship more features; only
@@ -107,7 +116,7 @@ export function SubscriptionSuccessDialog({
 				className="bg-brand-mint max-w-card-xs border-brand-dark sm:rounded-3xl sm:border-2"
 			>
 				{subscription ? (
-					<EnrolledBody plan={subscription.plan} />
+					<EnrolledBody subscription={subscription} />
 				) : (
 					<FinalizingBody
 						onRefresh={handleRefresh}
@@ -120,10 +129,11 @@ export function SubscriptionSuccessDialog({
 }
 
 interface EnrolledBodyProps {
-	readonly plan: SubscriptionPlan;
+	readonly subscription: MySubscription;
 }
 
-function EnrolledBody({ plan }: EnrolledBodyProps) {
+function EnrolledBody({ subscription }: EnrolledBodyProps) {
+	const { plan } = subscription;
 	const { name, metadata } = plan;
 	const features = metadata.features.slice(0, MAX_DIALOG_BENEFITS);
 
@@ -170,7 +180,17 @@ function EnrolledBody({ plan }: EnrolledBodyProps) {
 					    you just bought" path is the browse grid. */}
 					<Link href="/browse">Start winning</Link>
 				</Button>
-				<ManageSubscriptionButton />
+				{/* Subscription management (cancel, change plan, payment
+				    method) lives on `/profile#subscription` since the IA split.
+				    The success dialog renders only an underlined deflect link
+				    so post-checkout users see the management surface in one
+				    click without the dialog owning a portal-redirect path. */}
+				<Link
+					href="/profile#subscription"
+					className="text-foreground focus-visible:ring-ring/50 mx-auto inline-flex items-center gap-2 rounded-sm text-sm font-medium underline underline-offset-4 outline-none hover:no-underline focus-visible:ring-3"
+				>
+					Manage subscription
+				</Link>
 			</div>
 		</div>
 	);
@@ -214,10 +234,47 @@ interface FinalizingBodyProps {
 }
 
 /**
- * Webhook-still-in-flight fallback. An explicit "Check status" beats a
- * silent spinner that never resolves on a genuinely failed webhook.
+ * Webhook-still-in-flight fallback. Polls `/me/subscription` on a tight
+ * interval and triggers `router.refresh()` the moment the subscription
+ * lands — flips the dialog to the enrolled body without a click. Bounded
+ * by `MAX_POLL_DURATION_MS`; once that elapses the user still has the
+ * explicit "Check status" button as the genuinely-stuck-webhook escape.
  */
 function FinalizingBody({ onRefresh, isRefreshing }: FinalizingBodyProps) {
+	const router = useRouter();
+	// Anchor the deadline to mount — `Date.now()` in the ref initializer would
+	// fail React's purity rule, and inlining it in the predicate would
+	// re-anchor on every poll tick and never expire. Set once in a mount
+	// effect; the predicate reads the snapshot.
+	const startedAtRef = useRef<number | null>(null);
+	useEffect(function anchorPollDeadline() {
+		startedAtRef.current = Date.now();
+	}, []);
+	const { data } = useMySubscription({
+		refetchInterval: function pollUntilWebhookLands(query) {
+			const subscriptionLanded = !!query.state.data?.subscription;
+			const startedAt = startedAtRef.current;
+			const exceededTimeout =
+				startedAt !== null && Date.now() - startedAt >= MAX_POLL_DURATION_MS;
+			return subscriptionLanded || exceededTimeout ? false : POLL_INTERVAL_MS;
+		},
+	});
+
+	// Extracted for exhaustive-deps — the linter rejects optional chains in deps.
+	const polledSubscription = data?.subscription;
+	useEffect(
+		// `router.refresh()` re-runs the RSC, repopulating the dialog's
+		// `subscription` prop and the page-level "current plan" treatment in
+		// one shot. The client component tree (including the open Dialog)
+		// persists across refresh, so the user sees the swap to EnrolledBody
+		// without any flicker or focus loss.
+		function flipOnWebhookLanding() {
+			if (!polledSubscription) return;
+			router.refresh();
+		},
+		[polledSubscription, router],
+	);
+
 	return (
 		<div className="flex flex-col gap-6 pt-2 sm:pt-4">
 			<DialogHeader className="gap-3 text-left">

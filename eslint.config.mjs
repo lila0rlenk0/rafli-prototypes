@@ -18,9 +18,12 @@ const eslintConfig = defineConfig([
 		'out/**',
 		'build/**',
 		'next-env.d.ts',
-		'playwright-report/**',
-		'test-results/**',
 		'.claude/worktrees/**',
+		// -- vendored skill scripts (impeccable + future skills) are 3rd-party
+		// tooling, including a minified UMD bundle (`modern-screenshot.umd.js`)
+		// that trips `no-unused-expressions` ~80 times per run. Not project
+		// code, not edited by us — out of scope for repo lint policy.
+		'.agents/**',
 	]),
 
 	{
@@ -269,10 +272,9 @@ const eslintConfig = defineConfig([
 	},
 
 	// -- config files at the repo root are consumed by tools that require
-	// a default export (Playwright reads `export default`; the Next config
-	// chain does too).
+	// a default export (the Next config chain reads `export default`).
 	{
-		files: ['playwright.config.ts', '*.config.ts', 'sentry.*.config.ts'],
+		files: ['*.config.ts', 'sentry.*.config.ts'],
 		rules: {
 			'local/no-default-export': 'off',
 		},
@@ -285,7 +287,6 @@ const eslintConfig = defineConfig([
 		files: [
 			'src/**/*.test.{ts,tsx}',
 			'tests/**/*.ts',
-			'e2e/**/*.ts',
 		],
 		plugins: { local: localPlugin },
 		rules: {
@@ -297,13 +298,12 @@ const eslintConfig = defineConfig([
 			// patterns. we trust the test author's setup; the guarantee is
 			// scoped to that test, not the runtime contract.
 			'@typescript-eslint/no-non-null-assertion': 'off',
-			// -- testing.md + e2e hygiene: explicit assertions only, no
-			// parked / narrowed runs, no arbitrary sleeps
+			// -- testing.md hygiene: explicit assertions only, no parked /
+			// narrowed runs, no arbitrary sleeps
 			'local/no-snapshot-tests': 'error',
 			'local/no-test-only-or-skip': 'error',
 			'local/no-wait-for-timeout': 'error',
-			// -- integration/e2e: deep `result.data.*` chains are mechanical asserts;
-			// boolean params in Playwright helpers are not public API.
+			// -- integration: deep `result.data.*` chains are mechanical asserts.
 			'local/no-train-wreck': 'off',
 			'local/no-flag-argument': 'off',
 		},

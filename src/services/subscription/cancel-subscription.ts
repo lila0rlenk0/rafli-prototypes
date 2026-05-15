@@ -28,17 +28,17 @@ import type { ServiceResponse } from '@/types/service-response';
 /**
  * Cancels the authenticated user's subscription at end of billing period.
  *
- * Endpoint: `POST /subscriptions/cancel` (auth required). Backend performs a
- * cancel-at-period-end — benefits continue until `expiresAt`, at which point
- * the lifecycle reconcile cron flips the row to `expired`. Reverses cleanly
- * if the user re-subscribes inside the grace window via the standard
- * subscribe flow.
+ * Endpoint: `DELETE /subscriptions/:id` (auth required). Backend performs a
+ * cancel-at-period-end on whichever provider owns the row — the user keeps
+ * benefits until `expiresAt`, at which point the lifecycle reconcile cron
+ * flips the row to `expired`. Reverses cleanly if the user re-subscribes
+ * inside the grace window via the standard subscribe flow.
  *
  * Side effects: invalidates RSC caches for `/pricing` and `/profile` so the
  * cancel-card visibility gate, "My Sub" cell, and mint upsell banner all
  * reflect the new state on the next read.
  *
- * @param payload - `{ subscriptionId }` — validated locally before the network hop.
+ * @param payload - `{ subscriptionId }` — validated locally before the URL is built.
  * @returns ServiceResponse with `{ expiresAt, status }` on success.
  */
 export async function cancelSubscription(
@@ -52,6 +52,8 @@ export async function cancelSubscription(
 		// Step 1: Validate payload locally — short-circuit malformed UUIDs (e.g. a
 		// stale cached page) before the network round-trip. NOT_FOUND is the
 		// honest code: a non-UUID will never resolve to a real subscription.
+		// Doubly important here because the id is interpolated into the request
+		// URL — a tampered value should never leave the action.
 		const validation = cancelSubscriptionPayloadSchema.safeParse(payload);
 		if (!validation.success) {
 			return failure(SUBSCRIPTION_ERROR_CODES.NOT_FOUND);
@@ -60,9 +62,11 @@ export async function cancelSubscription(
 		// Step 2: Hit the backend. Ownership and lifecycle gating (must be
 		// active, not already cancelled) live server-side — surfaced here as
 		// `payments:subscription:not-active` / `not-found` codes.
-		const response = await authenticatedClient.post(
-			'/subscriptions/cancel',
-			{ subscriptionId: validation.data.subscriptionId },
+		// `encodeURIComponent` is belt-and-braces — the local UUID validation
+		// already rejects anything outside `[0-9a-f-]`, but we keep the encode
+		// so the rule "never interpolate raw values into URLs" reads cleanly.
+		const response = await authenticatedClient.delete(
+			`/subscriptions/${encodeURIComponent(validation.data.subscriptionId)}`,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 

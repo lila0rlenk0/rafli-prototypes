@@ -24,7 +24,8 @@ const VALID_GALLERY_RESPONSE = {
 const mockGet = mock();
 
 mock.module('@/lib/api/client', () => ({
-	baseClient: { get: mockGet },
+	baseClient: { get: mock() },
+	cachedBaseClient: { get: mockGet },
 	authenticatedClient: { get: mock(), post: mock() },
 }));
 mock.module('@/lib/sentry/capture', () => ({

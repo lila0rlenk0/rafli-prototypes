@@ -38,7 +38,6 @@ src/
   env/                  @t3-oss/env-nextjs schemas
   proxy.ts              middleware — redirects only, no auth logic
 tests/integration/      server action integration tests
-e2e/                    Playwright specs
 ```
 
 ## Dependency direction

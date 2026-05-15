@@ -27,7 +27,14 @@ const captureContractDriftMock = mock();
 
 mock.module('@/lib/api/client', () => ({
 	authenticatedClient: { get: mock(), post: mock() },
-	baseClient: { get: mockGet },
+	baseClient: { get: mock() },
+	cachedBaseClient: { get: mockGet },
+}));
+mock.module('next/cache', () => ({
+	cacheLife: mock(),
+	cacheTag: mock(),
+	revalidateTag: mock(),
+	revalidatePath: mock(),
 }));
 mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: captureContractDriftMock,

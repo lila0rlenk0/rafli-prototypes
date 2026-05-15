@@ -4,7 +4,7 @@ import { SUBSCRIPTION_ERROR_CODES } from '@/types/errors/subscription-errors';
 
 import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
 
-const mockPost = mock();
+const mockDelete = mock();
 const mockCaptureServiceError = mock();
 const mockCaptureContractDrift = mock();
 const mockTrackAfter = mock();
@@ -13,7 +13,10 @@ const mockRevalidateMySubscription = mock();
 mock.module('server-only', () => ({}));
 
 mock.module('@/lib/api/client', () => ({
-	authenticatedClient: { get: mock(), post: mockPost },
+	// `post` stays mocked even though `cancelSubscription` no longer hits it —
+	// `mock.module()` is process-wide, so omitting `post` would null the
+	// authenticatedClient.post that sibling actions read on the same module.
+	authenticatedClient: { get: mock(), post: mock(), delete: mockDelete },
 	baseClient: { get: mock() },
 }));
 
@@ -67,7 +70,7 @@ const VALID_RESPONSE = {
 
 describe('cancelSubscription', () => {
 	test('returns expiresAt + status on success', async () => {
-		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
+		mockDelete.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
 
 		const result = await cancelSubscription(VALID_PAYLOAD);
 
@@ -78,19 +81,26 @@ describe('cancelSubscription', () => {
 		}
 	});
 
-	test('forwards subscriptionId to backend', async () => {
-		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
+	test('issues DELETE with subscriptionId on the path, no body', async () => {
+		mockDelete.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
 
 		await cancelSubscription(VALID_PAYLOAD);
 
-		const [path, body] = mockPost.mock.calls[mockPost.mock.calls.length - 1] ?? [];
-		expect(path).toBe('/subscriptions/cancel');
-		expect(body).toEqual({ subscriptionId: VALID_SUBSCRIPTION_ID });
+		const lastCall = mockDelete.mock.calls[mockDelete.mock.calls.length - 1];
+		const [path, config] = lastCall ?? [];
+		// Subscription id is encoded into the URL — the action calls
+		// `encodeURIComponent` even though the local UUID validation already
+		// rejects anything outside `[0-9a-f-]`, so the rule "never interpolate
+		// raw values into URLs" reads cleanly at the call site.
+		expect(path).toBe(`/subscriptions/${VALID_SUBSCRIPTION_ID}`);
+		// Axios `delete(url, config?)` — no body argument; the config is
+		// passed in slot 2 and only carries the per-call timeout override.
+		expect(config).toBeDefined();
 	});
 
 	test('invokes revalidateMySubscription on success', async () => {
 		mockRevalidateMySubscription.mockReset();
-		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
+		mockDelete.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
 
 		await cancelSubscription(VALID_PAYLOAD);
 
@@ -99,7 +109,7 @@ describe('cancelSubscription', () => {
 
 	test('returns NOT_FOUND when subscriptionId is not a UUID', async () => {
 		// Bad UUID — safeParse fails, no network call made.
-		mockPost.mockReset();
+		mockDelete.mockReset();
 
 		const result = await cancelSubscription({ subscriptionId: 'not-a-uuid' });
 
@@ -107,12 +117,12 @@ describe('cancelSubscription', () => {
 		if (!result.success) {
 			expect(result.error).toBe(SUBSCRIPTION_ERROR_CODES.NOT_FOUND);
 		}
-		expect(mockPost).not.toHaveBeenCalled();
+		expect(mockDelete).not.toHaveBeenCalled();
 	});
 
 	test('returns FETCH_FAILED on response shape drift', async () => {
 		mockCaptureContractDrift.mockReset();
-		mockPost.mockResolvedValueOnce(
+		mockDelete.mockResolvedValueOnce(
 			mockAxiosResponse({ wrongField: 'whatever' }),
 		);
 
@@ -126,7 +136,7 @@ describe('cancelSubscription', () => {
 	});
 
 	test('maps not-found from RFC 7807 response', async () => {
-		mockPost.mockRejectedValueOnce(
+		mockDelete.mockRejectedValueOnce(
 			mockAxiosError({
 				status: 404,
 				data: {
@@ -144,7 +154,7 @@ describe('cancelSubscription', () => {
 	});
 
 	test('maps not-active from RFC 7807 response', async () => {
-		mockPost.mockRejectedValueOnce(
+		mockDelete.mockRejectedValueOnce(
 			mockAxiosError({
 				status: 409,
 				data: {
@@ -162,7 +172,7 @@ describe('cancelSubscription', () => {
 	});
 
 	test('maps unauthenticated to global:auth:unauthenticated', async () => {
-		mockPost.mockRejectedValueOnce(
+		mockDelete.mockRejectedValueOnce(
 			mockAxiosError({
 				status: 401,
 				data: { code: 'unauthenticated' },
@@ -179,7 +189,7 @@ describe('cancelSubscription', () => {
 
 	test('captures service error on HTTP 500', async () => {
 		mockCaptureServiceError.mockReset();
-		mockPost.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
+		mockDelete.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
 
 		const result = await cancelSubscription(VALID_PAYLOAD);
 
@@ -188,7 +198,7 @@ describe('cancelSubscription', () => {
 	});
 
 	test('maps network error', async () => {
-		mockPost.mockRejectedValueOnce(mockAxiosError({ code: 'ERR_NETWORK' }));
+		mockDelete.mockRejectedValueOnce(mockAxiosError({ code: 'ERR_NETWORK' }));
 
 		const result = await cancelSubscription(VALID_PAYLOAD);
 

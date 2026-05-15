@@ -169,14 +169,36 @@ export const EXPECTED_ERROR_CODES = new Set<string>([
 	'payments:subscription:not-found',
 	'payments:subscription:not-active',
 	'payments:subscription:enrollment-conflict',
+	// Provider-lock guard — tampered request, never organic; FE gates the CTA, this is the safety net.
+	'payments:subscription:provider-locked',
+	// Target plan not subscribable on the user's locked rail — same shape as
+	// `provider-locked`: FE's `pickSubscribeProvider` gate should prevent the
+	// click, so reaching here means a stale catalogue or a tampered request.
+	// Not a defect.
+	'payments:subscription:provider-not-supported',
 	// Portal — user has no Stripe customer; expected for never-subscribed
 	// accounts that somehow reach the manage flow. UI deflects to /pricing.
 	'payments:subscription:no-customer',
+	// Change-plan + scheduled-change race codes. All four are organic user
+	// states — clicked stale UI, double-tabbed, raced phase[1] auto-apply,
+	// CAS race between two requests. The FE has direct UI handling for each
+	// (refetch + targeted copy), so Sentry stays out of the loop on quota.
+	'payments:subscription:pending-change-exists',
+	'payments:subscription:pending-change-already-applied',
+	'payments:subscription:no-pending-change',
+	'payments:subscription:invalid-plan-change',
+	'payments:subscription:plan-change-conflict',
 
-	// Fanbasis public-credit — the embedded session-mint endpoint is
-	// unauthenticated and has no buyer-supplied payload. `rate-limited`
-	// covers Fanbasis 429s; `checkout-failed` is the upstream/config drift
-	// bucket. Neither should burn Sentry quota.
+	// Fanbasis — the public-credit checkout endpoint is unauthenticated and
+	// BE deliberately collapses three cases onto the same `checkout-failed`
+	// URN: genuine upstream failure, existing-email account-enumeration
+	// shield, and per-IP daily-cap exhaustion (see BE commit `dff5424f`).
+	// The first two are organic user actions the FE can't tell apart, so
+	// `checkout-failed` stays expected — real upstream outages surface via
+	// BE logs and Fanbasis-side alerting, not Sentry. `rate-limited` is the
+	// authenticated-surface 429 bucket; users retry on the same form.
+	// `cancel-failed` is left OUT — that one is unambiguously an upstream
+	// API rejection on a logged-in cancel flow and on-call should see it.
 	'payments:fanbasis:checkout-failed',
 	'payments:fanbasis:rate-limited',
 

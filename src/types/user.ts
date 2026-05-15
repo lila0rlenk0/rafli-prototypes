@@ -15,6 +15,15 @@ export const meResponseSchema = z.object({
 	image: z.string().nullable(),
 	bio: z.string().nullable(),
 	permissions: z.array(z.string()).optional(),
+	/**
+	 * `true` once the user has a non-null password on their credential
+	 * account. Drives the Security UI branch — users without a password
+	 * (social login / magic-link signups) see a "Set a password" form
+	 * (POST /auth/set-password); users with one see "Change password"
+	 * (POST /auth/change-password, which requires `currentPassword`).
+	 * Mirrors `MeResponseDto.hasPassword` on the BE.
+	 */
+	hasPassword: z.boolean(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });

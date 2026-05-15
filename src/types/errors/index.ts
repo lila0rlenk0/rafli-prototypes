@@ -11,6 +11,10 @@ export {
 	FANBASIS_PUBLIC_CREDIT_ERROR_CODES,
 	type FanbasisPublicCreditErrorCode,
 } from './fanbasis-public-credit-errors';
+export {
+	FANBASIS_PUBLIC_SUBSCRIPTION_ERROR_CODES,
+	type FanbasisPublicSubscriptionErrorCode,
+} from './fanbasis-public-subscription-errors';
 export { HOST_ERROR_CODES, type HostErrorCode } from './host-errors';
 export {
 	KYC_SUBMISSION_ERROR_CODES,

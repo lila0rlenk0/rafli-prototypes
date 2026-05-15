@@ -6,6 +6,7 @@ export {
 	mapCheckoutOrderError,
 	mapCommentError,
 	mapFanbasisPublicCreditError,
+	mapFanbasisPublicSubscriptionError,
 	mapHostError,
 	mapKycSubmissionError,
 	mapNotificationError,

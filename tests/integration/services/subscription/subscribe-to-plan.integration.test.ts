@@ -50,13 +50,25 @@ const { subscribeToPlan } = await import(
 );
 
 const VALID_PLAN_ID = '01929e55-9b1a-7c32-8ae0-0123456789ab';
-const VALID_PAYLOAD = { planId: VALID_PLAN_ID };
+const VALID_PAYLOAD = {
+	planId: VALID_PLAN_ID,
+	provider: 'stripe' as const,
+};
+const VALID_FANBASIS_PAYLOAD = {
+	planId: VALID_PLAN_ID,
+	provider: 'fanbasis' as const,
+};
 const VALID_RESPONSE = {
 	checkoutUrl: 'https://checkout.stripe.com/pay/cs_test_sub',
+	provider: 'stripe' as const,
+};
+const VALID_FANBASIS_RESPONSE = {
+	checkoutUrl: 'https://app.fanbasis.com/checkout/abc',
+	provider: 'fanbasis' as const,
 };
 
 describe('subscribeToPlan', () => {
-	test('returns Stripe checkout URL on success', async () => {
+	test('returns checkoutUrl + provider on success', async () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
 
 		const result = await subscribeToPlan(VALID_PAYLOAD);
@@ -64,25 +76,50 @@ describe('subscribeToPlan', () => {
 		expect(result.success).toBe(true);
 		if (result.success) {
 			expect(result.data.checkoutUrl).toBe(VALID_RESPONSE.checkoutUrl);
+			expect(result.data.provider).toBe('stripe');
 		}
 	});
 
-	test('builds canonical success/cancel URLs under APP_URL', async () => {
+	test('hits POST /subscriptions with provider, planId, and Stripe redirects', async () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_RESPONSE));
 
 		await subscribeToPlan(VALID_PAYLOAD);
 
-		const [, body] = mockPost.mock.calls[mockPost.mock.calls.length - 1] ?? [];
+		const [path, body] =
+			mockPost.mock.calls[mockPost.mock.calls.length - 1] ?? [];
+		expect(path).toBe('/subscriptions');
+		// Stripe path always carries `cancelUrl` — the dispatcher rejects
+		// Stripe-without-cancelUrl with `payments:subscription:checkout-failed`.
 		expect(body).toEqual({
+			provider: 'stripe',
 			planId: VALID_PLAN_ID,
 			successUrl: 'https://raffly.test/pricing?status=success',
 			cancelUrl: 'https://raffly.test/pricing?status=cancel',
 		});
 	});
 
+	test('omits cancelUrl on the Fanbasis path', async () => {
+		mockPost.mockResolvedValueOnce(mockAxiosResponse(VALID_FANBASIS_RESPONSE));
+
+		await subscribeToPlan(VALID_FANBASIS_PAYLOAD);
+
+		const [, body] = mockPost.mock.calls[mockPost.mock.calls.length - 1] ?? [];
+		// Fanbasis hosted checkout has no cancel hook (the buyer aborts by
+		// closing the tab), so the dispatcher silently ignores the field —
+		// we omit it on the wire to keep the request explicit.
+		expect(body).toEqual({
+			provider: 'fanbasis',
+			planId: VALID_PLAN_ID,
+			successUrl: 'https://raffly.test/pricing?status=success',
+		});
+	});
+
 	test('returns PLAN_NOT_FOUND when payload fails local validation', async () => {
 		// Bad UUID — safeParse fails, no network call made.
-		const result = await subscribeToPlan({ planId: 'not-a-uuid' });
+		const result = await subscribeToPlan({
+			planId: 'not-a-uuid',
+			provider: 'stripe',
+		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {

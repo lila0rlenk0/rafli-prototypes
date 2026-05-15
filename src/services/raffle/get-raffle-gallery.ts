@@ -3,7 +3,7 @@
 import { cacheLife } from 'next/cache';
 import { ZodError } from 'zod';
 
-import { baseClient } from '@/lib/api/client';
+import { cachedBaseClient } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
@@ -35,7 +35,7 @@ export async function getRaffleGallery(
 
 	try {
 		// Step 1: Fetch gallery images — pagination supported, current UI shows first 3
-		const response = await baseClient.get(
+		const response = await cachedBaseClient.get(
 			`/raffles/${pathParam(raffleId)}/gallery`,
 			{
 				params: {
@@ -54,6 +54,10 @@ export async function getRaffleGallery(
 
 		return success(validatedData);
 	} catch (error) {
+		// Failures cache briefly so a recovered backend isn't masked by a
+		// stale error for the full success window.
+		cacheLife({ stale: 0, revalidate: 5, expire: 30 });
+
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'get-raffle-gallery');
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);

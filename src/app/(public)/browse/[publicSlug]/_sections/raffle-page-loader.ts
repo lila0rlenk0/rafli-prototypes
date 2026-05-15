@@ -22,9 +22,12 @@ export type LoadRafflePageResult =
 
 export async function loadRafflePage(
 	publicSlug: string,
+	options: { authed: boolean },
 ): Promise<LoadRafflePageResult> {
+	// `authed` selects between the cached public path (guests) and the
+	// session-enriched authenticated path (signed-in users get `xShareClaim`).
 	const [raffleResponse, categoriesResponse] = await Promise.all([
-		getRaffle(publicSlug),
+		getRaffle(publicSlug, { authed: options.authed }),
 		getCategories(),
 	]);
 

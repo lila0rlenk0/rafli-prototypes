@@ -33,15 +33,53 @@ export interface TicketQuantityStoreState {
 	 */
 	readonly promoResetVersion: number;
 	/**
-	 * Access Pass acknowledgment — required before any paid buy CTA is
-	 * clickable. Legal framing: the user is purchasing platform access that
-	 * includes bonus raffle entries, NOT a raffle ticket. The checkbox
-	 * captures explicit intent before checkout and must be scoped per-raffle
-	 * page mount (store is created fresh each time the provider mounts), so
-	 * every raffle visit surfaces the disclaimer again — a transient consent
-	 * that does not carry across sessions or raffles.
+	 * Access Pass acknowledgment — required before paid checkout can open
+	 * the payment-method picker. Legal framing: the user is purchasing
+	 * platform access that includes bonus raffle entries, NOT a raffle
+	 * ticket. The checkbox captures explicit intent before checkout and is
+	 * scoped per-raffle page mount (store is created fresh each time the
+	 * provider mounts), so every raffle visit surfaces the disclaimer again
+	 * — a transient consent that does not carry across sessions or raffles.
+	 *
+	 * Gate moved upstream to the "One Time Purchase" trigger: the tender
+	 * buttons inside the picker no longer self-disable on this flag — once
+	 * the picker is open, the user has already passed the consent check.
 	 */
 	readonly isAccessPassAcknowledged: boolean;
+	/**
+	 * Whether to surface the inline form-style error under the
+	 * acknowledgment checkbox. Flipped true by the "One Time Purchase"
+	 * trigger when the user attempts checkout without ticking the box,
+	 * cleared automatically the moment they tick it.
+	 */
+	readonly acknowledgmentError: boolean;
+	/**
+	 * Monotonic counter the `AccessPassAcknowledgment` component watches
+	 * to trigger `scrollIntoView` on its wrapper. Mobile users click the
+	 * sticky bottom CTA without seeing the checkbox above; bumping this
+	 * nonce moves the viewport to the checkbox so the user can act on the
+	 * error message we just surfaced. Nonce (not a boolean) because the
+	 * same scroll request can fire twice in a row — the effect needs to
+	 * re-trigger on every bump.
+	 */
+	readonly acknowledgmentScrollNonce: number;
+	/**
+	 * Payment-method picker visibility. Hoisted to the shared store so the
+	 * desktop in-card "One Time Purchase" button and the mobile sticky CTA
+	 * — which live in different React subtrees — can both open the same
+	 * single modal instance hosted by `TicketPurchaseCard`. Without this,
+	 * each surface would need its own modal copy and the post-purchase
+	 * confirmation handoff would have to be duplicated.
+	 */
+	readonly isPaymentMethodModalOpen: boolean;
+	/**
+	 * Entries-confirmed celebration visibility. Picker closes and this
+	 * flips true when a tender path settles synchronously (currently the
+	 * credits flow). Shared with the sticky-driven mobile flow so the
+	 * confirmation modal renders regardless of which surface launched the
+	 * picker.
+	 */
+	readonly isEntriesConfirmedModalOpen: boolean;
 }
 
 export interface TicketQuantityStoreActions {
@@ -51,6 +89,22 @@ export interface TicketQuantityStoreActions {
 	readonly applyPromo: (promo: ValidatedPromoCode) => void;
 	readonly clearPromo: () => void;
 	readonly setAccessPassAcknowledged: (acknowledged: boolean) => void;
+	/**
+	 * Trigger the "tick the acknowledgment" flow: scrolls the checkbox
+	 * into view and surfaces the inline error. Idempotent — re-calling
+	 * just bumps the scroll nonce so the effect re-fires (useful when the
+	 * user keeps tapping the CTA without ticking the box).
+	 */
+	readonly requestAcknowledgment: () => void;
+	readonly setPaymentMethodModalOpen: (open: boolean) => void;
+	readonly setEntriesConfirmedModalOpen: (open: boolean) => void;
+	/**
+	 * Atomic handoff used by tender paths that settle while still on this
+	 * page (credits today). Combining the two flips into one action keeps
+	 * the picker close + confirmation open in the same store update,
+	 * avoiding an intermediate frame where neither modal is open.
+	 */
+	readonly handlePurchaseSettled: () => void;
 }
 
 export type TicketQuantityStore = TicketQuantityStoreState &
@@ -62,6 +116,10 @@ export const defaultInitState: Readonly<TicketQuantityStoreState> = {
 	appliedPromo: null,
 	promoResetVersion: 0,
 	isAccessPassAcknowledged: false,
+	acknowledgmentError: false,
+	acknowledgmentScrollNonce: 0,
+	isPaymentMethodModalOpen: false,
+	isEntriesConfirmedModalOpen: false,
 };
 
 /**
@@ -129,13 +187,40 @@ export function createTicketQuantityStore(
 			}));
 		},
 
-		// Toggle Access Pass acknowledgment from the checkbox rendered inside
-		// `TicketPurchaseCard`. Both the desktop BuyButton and the mobile
-		// StickyBuyTicketsCta subscribe to `isAccessPassAcknowledged` and
-		// disable themselves until this flips to true — single source of truth
-		// for the legal consent gate across breakpoints, no prop drilling.
-		setAccessPassAcknowledged: acknowledged => {
-			set({ isAccessPassAcknowledged: acknowledged });
+		// Ticking clears any stale error — the gate is now satisfied. Both
+		// triggers (desktop card + mobile sticky) read this flag straight
+		// from the store, no prop drilling.
+		setAccessPassAcknowledged: acknowledged =>
+			set(state => ({
+				isAccessPassAcknowledged: acknowledged,
+				acknowledgmentError: acknowledged ? false : state.acknowledgmentError,
+			})),
+
+		// Bump nonce unconditionally so repeated taps re-trigger the
+		// `scrollIntoView` effect — relevant on mobile where the user may
+		// have scrolled away since the prior request.
+		requestAcknowledgment: () =>
+			set(state => ({
+				acknowledgmentError: true,
+				acknowledgmentScrollNonce: state.acknowledgmentScrollNonce + 1,
+			})),
+
+		setPaymentMethodModalOpen: open => {
+			set({ isPaymentMethodModalOpen: open });
+		},
+
+		setEntriesConfirmedModalOpen: open => {
+			set({ isEntriesConfirmedModalOpen: open });
+		},
+
+		// Atomic close-picker + open-confirmation so React commits both flips
+		// in one paint — otherwise a stray frame can show neither modal, which
+		// reads as a "what just happened?" hiccup right after the tender settles.
+		handlePurchaseSettled: () => {
+			set({
+				isPaymentMethodModalOpen: false,
+				isEntriesConfirmedModalOpen: true,
+			});
 		},
 	}));
 }

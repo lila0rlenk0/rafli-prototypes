@@ -31,7 +31,14 @@ export const markReadInputSchema = z.object({
 /** Aliased shared cursor pagination — same shape as `cursorPaginationQuerySchema`. */
 export const chatPaginationQuerySchema = cursorPaginationQuerySchema;
 
-/** Inbox filter chip — backend values in `CONVERSATION_FILTER_VALUES`. */
+/**
+ * Inbox filter chip — the UI only renders `all` and `unread` even though
+ * the BE supports `winners` / `raffles` too. Those scopes were removed
+ * from the sidebar long ago; the FE union stays narrow on purpose so the
+ * `chatListFilterLabel` switch can keep its exhaustive `never` check and
+ * a reintroduced filter forces an explicit UI decision. The list /
+ * counts endpoints silently ignore filter values the FE never sends.
+ */
 export const CONVERSATION_FILTER_VALUES = ['all', 'unread'] as const;
 export type ConversationFilter = (typeof CONVERSATION_FILTER_VALUES)[number];
 
@@ -54,7 +61,14 @@ export const conversationsListQuerySchema = chatPaginationQuerySchema.extend({
 	sort: z.enum(CONVERSATION_SORT_VALUES).optional(),
 });
 
-/** Response shape for `GET /chat/conversations/counts` — filter-chip badges. */
+/**
+ * Response shape for `GET /chat/conversations/counts` — filter-chip badges.
+ *
+ * The BE response carries `winners` / `raffles` counts too; Zod strips them
+ * because the UI doesn't render those chips (see
+ * `CONVERSATION_FILTER_VALUES`). Adding them back here without a chip to
+ * surface them would be dead schema surface.
+ */
 export const conversationCountsResponseSchema = z.object({
 	all: z.number().int().nonnegative(),
 	unread: z.number().int().nonnegative(),

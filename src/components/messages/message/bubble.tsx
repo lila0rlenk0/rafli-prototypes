@@ -103,9 +103,7 @@ function MessageBubbleImpl({
 						// URLs and unbroken tokens from overflowing the 85% bubble
 						// clamp on narrow viewports.
 						'w-fit rounded-2xl px-3 py-2 text-sm break-words whitespace-pre-wrap',
-						isOwn
-							? 'bg-primary text-primary-foreground'
-							: 'bg-muted text-foreground',
+						isOwn ? 'bg-brand-dark text-on-dark' : 'bg-muted text-foreground',
 						isDeleted && 'text-muted-foreground italic',
 					)}
 				>

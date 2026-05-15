@@ -32,9 +32,7 @@ async function ProtectedLayoutContent({ children }: ProtectedLayoutProps) {
 				{/*
 				 * Notification + chat WS providers live here so the navbar can
 				 * render a real-time unread badge on every protected page
-				 * without each route re-establishing the WebSocket. Feature-
-				 * flag gating runs inside `ChatStoreProvider` — when
-				 * `CHAT_ENABLED` is false it skips the WS entirely.
+				 * without each route re-establishing the WebSocket.
 				 */}
 				<RealtimeProviders>
 					<Navbar>{children}</Navbar>

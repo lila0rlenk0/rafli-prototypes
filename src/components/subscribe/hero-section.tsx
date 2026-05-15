@@ -1,10 +1,11 @@
 import { CreditPurchaseCard } from './credit-purchase-card';
 import { HeroDecor } from './hero-decor';
-import {
-	CREDIT_CHARGE_USD,
-	CREDIT_PAYOUT_USD,
-	SUBSCRIBE_HERO_ANCHOR_ID,
-} from './offer';
+import { SUBSCRIBE_HERO_ANCHOR_ID } from './offer';
+import type { SubscribePlan } from './plans';
+
+interface HeroSectionProps {
+	readonly plan: SubscribePlan;
+}
 
 /**
  * Two-column subscribe hero: value-prop stack on the left, credit
@@ -16,15 +17,17 @@ import {
  * screen placement is `hero-decor.tsx` (responsive `sm..xl` offsets) —
  * not duplicated here. The sticky nav (`z-20`) clips the top bleed.
  *
- * Headline is the two-beat Figma pitch: "Pay $10. Get $11 back." with
- * the rotated yellow `$11` pill anchored inline. Body copy is the
+ * Headline is the two-beat Figma pitch: "Pay $N. Get $M back." with
+ * the rotated yellow payout pill anchored inline. Body copy is the
  * three-line value stack marketing signed off on — bold hook, savings
  * figure, risk-free closer.
  *
- * @returns Hero composing eyebrow, headline with $11 pill, body copy,
+ * @param plan - Plan config (charge + payout drive the H1 + pill
+ *   amounts; slug forwarded to the credit purchase card)
+ * @returns Hero composing eyebrow, headline with payout pill, body copy,
  *   stat pills, and the credit purchase card
  */
-export function HeroSection() {
+export function HeroSection({ plan }: HeroSectionProps) {
 	return (
 		<section
 			id={SUBSCRIBE_HERO_ANCHOR_ID}
@@ -88,7 +91,8 @@ export function HeroSection() {
 				    a 1.05 leading so the pill line never overlaps the
 				    tagline. */}
 				<h1 className="font-clash-display text-40/tight text-ink-900 sm:text-display-md/tight xl:text-60/tight font-semibold">
-					Pay ${CREDIT_CHARGE_USD}. Get <PriceBadge /> back.
+					Pay ${plan.chargeUsd}. Get <PriceBadge payoutUsd={plan.payoutUsd} />{' '}
+					back.
 				</h1>
 
 				{/* Tagline — Figma ref is a single `<p>` with 2 spans + an
@@ -105,7 +109,9 @@ export function HeroSection() {
 				    column from mobile through xl. Ink `text-ink-alpha`
 				    matches Figma's `rgba(15,15,15,0.95)`. */}
 				<p className="text-body-lg/5 text-ink-alpha max-w-xl">
-					<span className="font-semibold">Save 10% on every deal.</span>{' '}
+					<span className="font-semibold">
+						Save {plan.savingsPercent}% on every deal.
+					</span>{' '}
 					<span className="font-normal">
 						Over a $1000 in hacks every month.
 						<br className="hidden sm:block" />
@@ -126,17 +132,21 @@ export function HeroSection() {
 				</div>
 			</div>
 
-			<CreditPurchaseCard />
+			<CreditPurchaseCard plan={plan} />
 		</section>
 	);
+}
+
+interface PriceBadgeProps {
+	readonly payoutUsd: number;
 }
 
 /**
  * Inline rotated yellow pill rendering the credit payout figure.
  *
- * Figma spec: 110.37×63.29 pill, 48px Clash Display Semibold `$11`
+ * Figma spec: 110.37×63.29 pill, 48px Clash Display Semibold payout
  * inside — NOT inheriting the 60px H1 size. The smaller pill text
- * creates the intentional size contrast with "Pay $10." beside it,
+ * creates the intentional size contrast with "Pay $N." beside it,
  * and leaves ~76% fill ratio (48/63) so the digit breathes inside
  * the chip rather than pressing the border. Rotation: bg −15°,
  * text −16.06° (delta below perceptual threshold — one class works
@@ -144,10 +154,11 @@ export function HeroSection() {
  * Figma exactly; `text-ink-900` (#121211) is the same apparent ink
  * but sits one step darker.
  *
- * @returns Absolutely-sized yellow rounded chip with centered $11
+ * @param payoutUsd - Credit payout figure rendered inside the pill
+ * @returns Absolutely-sized yellow rounded chip with centered payout
  *   text, both rotated counter-clockwise
  */
-function PriceBadge() {
+function PriceBadge({ payoutUsd }: PriceBadgeProps) {
 	// Pill dimensions and text size are both fixed (tokens + `text-5xl`
 	// = 48px) to match Figma exactly. An earlier em-relative pass let
 	// the pill scale with the H1's 60px size, which pushed the inner
@@ -174,7 +185,7 @@ function PriceBadge() {
 		<span className="relative mx-0.5 inline-block h-(--spacing-subscribe-pill-h) w-(--spacing-subscribe-pill-w) align-middle">
 			<span className="bg-brand-yellow border-ink-900 -rotate-tilt-sm absolute inset-0 rounded-3xl border" />
 			<span className="font-clash-display text-ink-alpha -rotate-tilt-sm absolute inset-0 flex items-center justify-center text-5xl/none font-semibold">
-				${CREDIT_PAYOUT_USD}
+				${payoutUsd}
 			</span>
 		</span>
 	);

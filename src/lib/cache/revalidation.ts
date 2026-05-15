@@ -1,6 +1,6 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 
-import { CACHE_TAGS } from '@/lib/api/constants';
+import { CACHE_TAGS, raffleDetailTag } from '@/lib/api/constants';
 
 /**
  * Revalidates the user's raffles cache.
@@ -14,19 +14,27 @@ export function revalidateMyRaffles(): void {
 }
 
 /**
- * Revalidates the cache of a specific raffle's details
- * Should be called after operations that modify a specific raffle (update, upload)
+ * Revalidates the cache of a specific raffle's details.
+ *
+ * The cached entry in `getRaffle` is tagged with both the id AND the slug; pass
+ * `publicSlug` when in scope so both tags clear together. Id-only callers (e.g.
+ * `verify-x-share`) still work — the cached entry carries the id-tag too.
  *
  * @param raffleId - ID of the raffle to be revalidated
+ * @param publicSlug - Optional public slug of the raffle, when known by the caller
  * @returns void
  */
-export function revalidateRaffleDetail(raffleId: string): void {
-	revalidateTag(`${CACHE_TAGS.RAFFLE_DETAIL}-${raffleId}`, 'max');
+export function revalidateRaffleDetail(
+	raffleId: string,
+	publicSlug?: string,
+): void {
+	revalidateTag(raffleDetailTag(raffleId), 'max');
+	if (publicSlug) revalidateTag(raffleDetailTag(publicSlug), 'max');
 }
 
 /**
  * Revalidates the user's subscription-aware surfaces after a subscribe /
- * cancel / change-plan mutation.
+ * cancel mutation.
  *
  * Path-based — there's no subscription cache tag today (only `MY_RAFFLES`
  * and `RAFFLE_DETAIL` carry tags per `data-fetching.md`), and both routes

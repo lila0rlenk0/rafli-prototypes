@@ -1,43 +1,58 @@
 'use client';
 
-// Client component — mounts the Fanbasis embedded checkout iframe
-// inline. Card-data PCI surface stays with Fanbasis: their iframe owns
-// the email + card + terms inputs; our DOM never touches PAN data.
+// Client component — collects the buyer's email, mints a Fanbasis
+// hosted-redirect SUBSCRIPTION checkout session, and full-page-navigates
+// to the upstream payment page. PCI surface stays with Fanbasis: their
+// hosted page collects card details; our DOM never touches PAN data.
 //
-// The session secret is minted once on mount via the backend broker and
-// passed straight into `<CheckoutProvider>`.
-//
-// Mode caveat: a successful charge here does NOT yet create a logged-in
-// session — the Fanbasis webhook that grants credits + sends the
-// magic-link email is gated by `FEATURE_FLAGS.FANBASIS_MAGIC_LINK_ENABLED`.
-// `/credits-claimed` reads the same flag to render an "awaiting link"
-// state until the backend subscriber lands.
+// Why we capture email here (not just on Fanbasis's hosted page): the
+// magic-link target post-payment must be the email the buyer typed on
+// our surface, not whatever they retype downstream. Sending it through
+// the backend → Fanbasis metadata locks the magic-link recipient + the
+// pending-subscription drain target before the buyer ever sees the card
+// form.
 
-import {
-	AutoCheckout as FanbasisAutoCheckout,
-	CheckoutProvider,
-} from '@fanbasis/checkout-react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { type ComponentProps, useCallback, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import Link from 'next/link';
+import { useState, useTransition } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import {
 	TurnstileWidget,
 	type TurnstileWidgetHandle,
 } from '@/components/auth/turnstile/turnstile-widget';
 import { Button } from '@/components/ui/button';
-import { captureServiceError } from '@/lib/sentry/capture';
-import type { ServiceError } from '@/lib/query/errors';
-import type { FanbasisPublicCreditCheckoutResponse } from '@/services/payment/create-fanbasis-public-credit-checkout';
-import { useFanbasisPublicCreditSession } from '@/lib/hooks/use-fanbasis-public-credit-session';
 import {
-	FANBASIS_PUBLIC_CREDIT_ERROR_CODES,
-	type FanbasisPublicCreditErrorCode,
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldLabel,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { createFanbasisPublicSubscriptionCheckout } from '@/services/payment/create-fanbasis-public-subscription-checkout';
+import {
+	FANBASIS_PUBLIC_SUBSCRIPTION_ERROR_CODES,
+	type FanbasisPublicSubscriptionErrorCode,
 } from '@/types/errors';
 
-import { deriveFanbasisSdkErrorCode } from './fanbasis-error-code';
-import { buildFanbasisCheckoutConfig } from './fanbasis-checkout-config';
-import { CREDITS_CLAIMED_PATH, CREDIT_CHARGE_USD } from './offer';
+import type { SubscribePlan } from './plans';
+
+// =============================================================================
+// FORM SCHEMA
+// =============================================================================
+
+/**
+ * Email-only client schema. Backend revalidates with `z.email()` of its own,
+ * so this is a UX-fast-fail layer — keeps the form from posting a malformed
+ * address that the backend would reject after a round-trip.
+ */
+const creditPurchaseFormSchema = z.object({
+	email: z.email('Enter a valid email address'),
+});
+
+type CreditPurchaseFormValues = z.infer<typeof creditPurchaseFormSchema>;
 
 // =============================================================================
 // ERROR COPY
@@ -45,7 +60,7 @@ import { CREDITS_CLAIMED_PATH, CREDIT_CHARGE_USD } from './offer';
 
 /**
  * Per-code copy for the session-mint failure card. Every
- * `FanbasisPublicCreditErrorCode` must map here so a new backend URN
+ * `FanbasisPublicSubscriptionErrorCode` must map here so a new backend URN
  * surfaces a real toast instead of falling through to the generic
  * `unknown_error` arm — `error-handling.md` mandates the exhaustive
  * switch with `default: never`.
@@ -53,11 +68,20 @@ import { CREDITS_CLAIMED_PATH, CREDIT_CHARGE_USD } from './offer';
  * Module-scoped so the lookup table is allocated once, not per render.
  */
 const SESSION_ERROR_MESSAGES = {
-	[FANBASIS_PUBLIC_CREDIT_ERROR_CODES.CHECKOUT_FAILED]:
+	[FANBASIS_PUBLIC_SUBSCRIPTION_ERROR_CODES.CHECKOUT_FAILED]:
 		"We couldn't reach our payment partner. Please try again in a moment.",
-	[FANBASIS_PUBLIC_CREDIT_ERROR_CODES.RATE_LIMITED]:
+	[FANBASIS_PUBLIC_SUBSCRIPTION_ERROR_CODES.RATE_LIMITED]:
 		'Too many checkout attempts. Please wait a minute and retry.',
-	[FANBASIS_PUBLIC_CREDIT_ERROR_CODES.FETCH_FAILED]:
+	// Plan/provider misconfigurations are ops-side issues (slug retired, or
+	// the Fanbasis product id was never wired up). Buyer-side retry won't
+	// help, but a generic "try again" toast is the right surface — Sentry
+	// captures the URN for the on-call to investigate without exposing the
+	// internal misconfiguration to the buyer.
+	[FANBASIS_PUBLIC_SUBSCRIPTION_ERROR_CODES.PLAN_NOT_FOUND]:
+		"Subscriptions are temporarily unavailable. We've been notified — please try again shortly.",
+	[FANBASIS_PUBLIC_SUBSCRIPTION_ERROR_CODES.PROVIDER_NOT_SUPPORTED]:
+		"Subscriptions are temporarily unavailable. We've been notified — please try again shortly.",
+	[FANBASIS_PUBLIC_SUBSCRIPTION_ERROR_CODES.FETCH_FAILED]:
 		"Something went wrong on our end. We've been notified.",
 	'global:auth:unauthenticated': "We couldn't load checkout. Please try again.",
 	'global:ratelimit:exceeded':
@@ -83,11 +107,13 @@ const SESSION_ERROR_MESSAGES = {
 	service_unavailable:
 		"We couldn't reach our payment partner. Please try again in a moment.",
 	unknown_error: "We couldn't load checkout. Please try again.",
-} as const satisfies Record<FanbasisPublicCreditErrorCode, string>;
+} as const satisfies Record<FanbasisPublicSubscriptionErrorCode, string>;
 
-function sessionErrorMessage(code: FanbasisPublicCreditErrorCode): string {
-	// `mapFanbasisPublicCreditError` intentionally accepts `global:*` backend
-	// codes. If the backend adds a new global URN before the frontend type
+function sessionErrorMessage(
+	code: FanbasisPublicSubscriptionErrorCode,
+): string {
+	// `mapFanbasisPublicSubscriptionError` intentionally accepts `global:*`
+	// backend codes. If the backend adds a new global URN before the FE type
 	// union is updated, avoid rendering a blank alert and fall back to the
 	// generic checkout copy.
 	return (
@@ -100,243 +126,201 @@ function sessionErrorMessage(code: FanbasisPublicCreditErrorCode): string {
 // COMPONENT
 // =============================================================================
 
+interface CreditPurchaseCardProps {
+	readonly plan: SubscribePlan;
+}
+
 /**
- * Credit-purchase card with the Fanbasis embedded SDK.
+ * Subscription enrollment card — email-gated CTA that mints a Fanbasis
+ * hosted-redirect subscription checkout session for the plan supplied
+ * by the route and full-page-navigates to the upstream payment page.
  *
- * Layout matches the Figma "Get your credits now!" mock — three
- * stacked frames inside a single bordered shell:
+ * Layout matches the Figma "Get your credits now!" mock — three stacked
+ * frames inside a single bordered shell:
  *   1. Mint banner (80px) — persistent title.
- *   2. Offer-details band — disclosure copy on a 1px hairline.
- *   3. Iframe slot — `<CheckoutProvider>` + `<AutoCheckout>` once the
- *      session secret is in hand. Loader / error states render in the
- *      same slot so the card frame never reflows.
+ *   2. Form body — email input, two-branch account-flow disclosure,
+ *      optional session error, "Claim My $N Credits" submit, Turnstile
+ *      widget (managed mode, usually invisible).
+ *   3. Offer-details band — disclosure copy on a 1px hairline footer.
  *
- * Session-mint runs through `useFanbasisPublicCreditSession` (a
- * `useQuery` wrapper). React Query handles the fetch lifecycle without
- * a `useEffect`, so the consumer never trips the
- * `react-hooks/set-state-in-effect` rule.
+ * Session-mint runs through `useTransition` (not React Query) because
+ * the result is consumed exactly once: the redirect side-effect fires
+ * and the page unmounts. Caching has no consumer; the `pending` flag
+ * is enough to drive the disabled / loading UI.
  *
- * Post-payment flow: Fanbasis captures the charge → `onSuccess` fires →
- * user lands on `/credits-claimed`. Until the backend webhook subscriber
- * ships (gated by `FEATURE_FLAGS.FANBASIS_MAGIC_LINK_ENABLED`), the
- * landing page renders an "awaiting magic link" intermediate state.
+ * Post-payment flow: Fanbasis captures the first charge → user redirects
+ * to `successUrl` (server-set to `/credits-pending`) → backend webhook
+ * either enrols the existing user directly or buffers a pending
+ * subscription grant + sends a magic-link email. Magic-link verify drains
+ * the pending row, creates the `user_subscriptions` row, and grants the
+ * first cycle's credits. Subsequent monthly charges renew via Fanbasis
+ * and replenish credits on the same cadence.
  *
- * @returns Bordered card with header, offer band, and iframe slot
+ * @param plan - Plan config (slug forwarded to the backend; charge /
+ *   payout drive the disclosure + CTA copy)
+ * @returns Bordered card with header, form body, and offer footer
  */
-export function CreditPurchaseCard() {
+export function CreditPurchaseCard({ plan }: CreditPurchaseCardProps) {
 	// Turnstile gate (audit H1): unauthenticated payment endpoints are the
-	// prime card-testing surface; the backend now requires a verified token
-	// (`fanbasis-checkout` action + `fanbasis-public-credit:v1` cdata) to
-	// mint the session. While the token is null the hook stays idle, which
-	// keeps the iframe from booting against a tokenless request.
+	// prime card-testing surface; the backend requires a verified token
+	// (`fanbasis-checkout` action + `fanbasis-public-subscription-v1` cdata)
+	// to mint the session. CTA stays disabled until the token resolves.
 	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 	// Callback ref instead of `useRef` so retry handlers below can read the
 	// latest imperative handle without the ref-in-closure staleness trap.
 	const [turnstile, setTurnstile] = useState<TurnstileWidgetHandle | null>(
 		null,
 	);
-	const sessionQuery = useFanbasisPublicCreditSession(captchaToken);
+	const [errorCode, setErrorCode] =
+		useState<FanbasisPublicSubscriptionErrorCode | null>(null);
+	const [isPending, startTransition] = useTransition();
 
-	function handleRetry() {
-		// Single-use token — re-issue a fresh challenge before refetching.
-		// `enabled` on the query keys off the new token, so React Query
-		// runs a fresh mint instead of replaying the rejected one.
-		turnstile?.reset();
-		setCaptchaToken(null);
-		void sessionQuery.refetch();
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<CreditPurchaseFormValues>({
+		resolver: zodResolver(creditPurchaseFormSchema),
+		// `onTouched` defers validation until the user leaves the field once,
+		// so the email-format error doesn't flash on first keystroke. After
+		// the first blur, every change re-validates so the error clears
+		// inline once the address becomes valid.
+		mode: 'onTouched',
+	});
+
+	function handleClaim(values: CreditPurchaseFormValues) {
+		// Captcha is gated at the button-disabled level; this guard only
+		// fires if the token expired between paint and submit. Run before
+		// `startTransition` so a guarded path doesn't flash the pending UI.
+		if (captchaToken === null) return;
+		setErrorCode(null);
+		startTransition(async () => {
+			const result = await createFanbasisPublicSubscriptionCheckout({
+				captchaToken,
+				email: values.email,
+				planSlug: plan.slug,
+			});
+			if (!result.success) {
+				// Single-use captcha token — reset on failure so the user
+				// gets a fresh challenge before retrying. Same token would
+				// be rejected by the backend on the next attempt anyway.
+				turnstile?.reset();
+				setCaptchaToken(null);
+				setErrorCode(result.error);
+				return;
+			}
+			// Full-page navigation by design — `router.push` would keep the
+			// stale RSC payload that ran while the user was unauthenticated.
+			// The redirect lands the buyer on Fanbasis's hosted payment page;
+			// post-payment they bounce back to `successUrl` (`/credits-pending`)
+			// configured server-side.
+			window.location.assign(result.data.checkoutUrl);
+		});
 	}
+
+	const isCtaDisabled = captchaToken === null || isPending;
 
 	return (
 		<div className="border-ink-900 w-full max-w-sm self-center overflow-hidden rounded-3xl border bg-white xl:mx-0 xl:w-(--container-credit-card) xl:max-w-none xl:shrink-0 xl:self-start">
 			{/* Mint banner — Figma 80px fixed height. Persistent across
-			    every session state so the visual frame never shifts as
-			    the iframe boots or a retry cycle redraws the slot. */}
+			    every form state so the visual frame never shifts as the
+			    button toggles between idle / pending / error. */}
 			<div className="bg-brand-mint border-ink-900 flex h-(--spacing-subscribe-mint-header) items-center justify-center rounded-t-3xl border-b px-4">
 				<p className="font-clash-display text-headline-md text-navy tracking-micro text-center font-semibold">
 					Get your credits now!
 				</p>
 			</div>
 
-			{/* Offer disclosure — sits BETWEEN the header and the iframe per
-			    Figma. The user reads the "what am I paying for" line before
-			    the payment fields render, which softens the cognitive jump
-			    from marketing copy into a card-entry surface. */}
-			<div className="border-ink-150 border-b px-5 py-3">
-				<p className="text-3xs text-ink-300">
-					Offer details: One-time charge of ${CREDIT_CHARGE_USD}. Credits
-					applied after email verification. Auto-refund if draw minimum not
-					reached.
-				</p>
-			</div>
+			{/* Form body — email + account-flow disclosure, then submit, then
+			    Turnstile (rendered last so the primary action stays the
+			    visual focus). The email is forwarded to the backend so the
+			    post-payment magic-link target is locked to the address typed
+			    here, not whatever the buyer retypes on Fanbasis's hosted
+			    page. */}
+			<form
+				className="flex flex-col gap-3 p-5"
+				onSubmit={handleSubmit(handleClaim)}
+				noValidate
+			>
+				<Field>
+					<FieldLabel htmlFor="credit-purchase-email">
+						Who is receiving your ${plan.chargeUsd} in credits?
+					</FieldLabel>
+					<Input
+						id="credit-purchase-email"
+						type="email"
+						placeholder="your@email.com"
+						autoComplete="email"
+						aria-invalid={Boolean(errors.email)}
+						disabled={isPending}
+						{...register('email')}
+					/>
+					{/* Account-flow disclosure. Surfaced pre-payment so an existing
+					    user routes to /sign-in BEFORE submit — the backend rejects
+					    existing-email checkouts with a generic checkout-failed URN
+					    (enumeration shield), so without this hint a returning user
+					    would hit an opaque error toast with no recovery path. */}
+					<FieldDescription>
+						New to Rafli? We&apos;ll create your account after checkout and
+						email a magic link. Already have an account?{' '}
+						<Link href="/sign-in" className="underline">
+							Sign in
+						</Link>{' '}
+						first.
+					</FieldDescription>
+					<FieldError errors={[errors.email]} />
+				</Field>
 
-			{/* Iframe slot — single column reserves vertical space for the
-			    SDK's internal layout (email + card + submit ≈ 380–420px in
-			    the default Fanbasis composition). The min-height on each
-			    inner state keeps the card from collapsing while the loader
-			    or retry CTA renders.
+				{errorCode === null ? null : (
+					<p role="alert" className="text-body-sm text-ink-700 text-center">
+						{sessionErrorMessage(errorCode)}
+					</p>
+				)}
 
-			    The Turnstile widget renders alongside the checkout slot
-			    rather than gating behind a separate "verify" step — most
-			    visitors never see an interactive challenge (managed mode,
-			    auto-pass) so the user-visible flow stays identical to the
-			    pre-captcha implementation. While the token is unresolved
-			    the loader covers the slot; once the token arrives the
-			    session-mint fires and the iframe takes over. */}
-			<div className="flex flex-col gap-3 p-5">
+				<Button
+					type="submit"
+					size="lg"
+					disabled={isCtaDisabled}
+					className="h-12 font-semibold"
+				>
+					{isPending ? (
+						<Loader2 className="size-4 animate-spin" aria-hidden />
+					) : null}
+					{isPending ? 'Redirecting…' : `Claim My $${plan.payoutUsd} Credits`}
+				</Button>
+
+				{/* Turnstile renders BELOW the submit so the form's primary
+				    action stays the visual focus; most visitors never see an
+				    interactive challenge (managed mode auto-passes), and the
+				    button stays disabled until a token resolves so the
+				    submit flow remains a single click. */}
 				<TurnstileWidget
 					ref={setTurnstile}
 					action="fanbasis-checkout"
-					cData="fanbasis-public-credit:v1"
+					cData="fanbasis-public-subscription-v1"
 					onToken={setCaptchaToken}
 					onExpire={() => setCaptchaToken(null)}
 					onError={() => setCaptchaToken(null)}
 					className="flex justify-center"
 				/>
-				{captchaToken === null || sessionQuery.isPending ? (
-					<CheckoutLoading />
-				) : null}
-				{sessionQuery.isError ? (
-					<CheckoutFailed error={sessionQuery.error} onRetry={handleRetry} />
-				) : null}
-				{captchaToken !== null && sessionQuery.data ? (
-					<EmbeddedCheckout session={sessionQuery.data} />
-				) : null}
+			</form>
+
+			{/* Offer disclosure footer — Figma places it below the form body
+			    (top-[421px] on the 481px frame). Ranks below the CTA in
+			    reading order so the price reveal happens after the buyer has
+			    already committed to the credits offer.
+			    Subscription terms (recurring monthly charge, cancel-anytime,
+			    no refund clause) are spelled out in plain text — implicit
+			    consent on a hosted-checkout flow needs the recurring-billing
+			    disclosure surfaced before the upstream redirect, per FTC
+			    negative-option guidance. */}
+			<div className="border-ink-150 border-t px-5 py-3">
+				<p className="text-3xs text-ink-300">
+					Subscription details: ${plan.chargeUsd}/month, billed monthly until
+					cancelled. ${plan.payoutUsd} in credit value applied each cycle.
+					Cancel anytime from your account.
+				</p>
 			</div>
-		</div>
-	);
-}
-
-// =============================================================================
-// EMBEDDED CHECKOUT
-// =============================================================================
-
-type AutoCheckoutProps = Omit<
-	ComponentProps<typeof FanbasisAutoCheckout>,
-	'autoInit'
-> & {
-	readonly autoOpen?: boolean;
-};
-
-/**
- * Docs-shaped adapter for the currently published Fanbasis React package.
- *
- * Fanbasis docs and README describe `<AutoCheckout autoOpen />`, while
- * `@fanbasis/checkout-react@0.2.7` exposes the same behavior as `autoInit`.
- * Keeping the public call-site on `autoOpen` lets the integration mirror the
- * vendor contract and localizes the package mismatch to this bridge.
- *
- * @param props - Fanbasis AutoCheckout props, using documented `autoOpen`
- * @returns Vendor `<AutoCheckout>` with `autoOpen` mapped to `autoInit`
- */
-function AutoCheckout({ autoOpen = true, ...props }: AutoCheckoutProps) {
-	return <FanbasisAutoCheckout autoInit={autoOpen} {...props} />;
-}
-
-interface EmbeddedCheckoutProps {
-	readonly session: FanbasisPublicCreditCheckoutResponse;
-}
-
-/**
- * Mounts the Fanbasis embedded SDK inline.
- *
- * `CheckoutProvider` owns the `PaymentCheckout` instance + iframe; we
- * pass the session payload as the typed `CheckoutConfig`. `AutoCheckout`
- * handles DOM attachment + lifecycle; we feed it `onSuccess` and
- * `onError` callbacks so we drive page-level navigation.
- *
- * On success: full-page navigate (not router.push) so the post-payment
- * route runs with a fresh RSC fetch — once the magic-link webhook ships,
- * the `getCurrentUser` cache will see the freshly-provisioned session
- * cookie and the route can render the authenticated state.
- *
- * On error: route through `captureServiceError` (canonical Sentry path
- * per `error-handling.md` for payment surfaces) so the issue inherits
- * the deterministic fingerprint and the `EXPECTED_ERROR_CODES` filter,
- * then surface a typed toast. The iframe stays mounted so a transient
- * network blip mid-charge can be retried without re-entering card data.
- *
- * `useCallback` here (and only here) because `<AutoCheckout>` reads the
- * callbacks inside its own effect lifecycle — a fresh reference each
- * render would re-arm those effects and risk re-mounting the iframe.
- */
-function EmbeddedCheckout({ session }: EmbeddedCheckoutProps) {
-	// `useMemo` so the config object reference stays stable across
-	// re-renders. `<CheckoutProvider>` reacts to config changes via
-	// `updateConfig` internally — passing a fresh reference per render
-	// would re-init the iframe and lose any partially-typed card data.
-	// The pure builder keeps the required SDK contract unit-testable
-	// without mounting the third-party iframe.
-	const config = useMemo(() => buildFanbasisCheckoutConfig(session), [session]);
-
-	const handleSuccess = useCallback(() => {
-		// Full-page navigation by design — `router.push` would keep the
-		// stale RSC payload that ran while the user was unauthenticated.
-		window.location.assign(CREDITS_CLAIMED_PATH);
-	}, []);
-
-	const handleError = useCallback((error: unknown) => {
-		captureServiceError(error, deriveFanbasisSdkErrorCode(error), {
-			service: 'payment',
-			action: 'fanbasis-embedded-checkout',
-		});
-		toast.error("We couldn't complete checkout. Please try again.");
-	}, []);
-
-	return (
-		<CheckoutProvider config={config}>
-			<AutoCheckout
-				autoOpen
-				showLoadingState
-				onSuccess={handleSuccess}
-				onError={handleError}
-			/>
-		</CheckoutProvider>
-	);
-}
-
-// =============================================================================
-// LOADING + FAILED STATES
-// =============================================================================
-
-function CheckoutLoading() {
-	return (
-		<div
-			role="status"
-			aria-live="polite"
-			className="flex min-h-72 flex-col items-center justify-center gap-3"
-		>
-			<Loader2 className="text-ink-500 size-6 animate-spin" aria-hidden />
-			<p className="text-body-sm text-ink-500">Loading secure checkout…</p>
-		</div>
-	);
-}
-
-interface CheckoutFailedProps {
-	readonly error: ServiceError<FanbasisPublicCreditErrorCode>;
-	readonly onRetry: () => void;
-}
-
-/**
- * Failure card shown when the session-mint call fails.
- *
- * Copy is derived from the typed `ServiceError.code` so RATE_LIMITED
- * and RATE_LIMITED users get distinct guidance instead of one generic
- * "try again" — `error-handling.md` mandates an exhaustive switch with
- * `default: never`. The `as const satisfies` on
- * `SESSION_ERROR_MESSAGES` is the type-level exhaustiveness check; at
- * runtime the lookup is a single map index.
- */
-function CheckoutFailed({ error, onRetry }: CheckoutFailedProps) {
-	const message = sessionErrorMessage(error.code);
-	return (
-		<div
-			role="alert"
-			className="flex min-h-72 flex-col items-center justify-center gap-3 text-center"
-		>
-			<p className="text-body-sm text-ink-700">{message}</p>
-			<Button type="button" size="lg" onClick={onRetry}>
-				Retry
-			</Button>
 		</div>
 	);
 }

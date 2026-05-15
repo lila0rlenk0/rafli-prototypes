@@ -25,8 +25,11 @@ import type { ServiceResponse } from '@/types/service-response';
  * self-serve cancel, plan switch, payment-method updates, and invoice
  * history.
  *
- * Endpoint: `POST /subscriptions/portal` (auth required). Returns a
- * Stripe-hosted, short-lived URL; the caller redirects the browser to it.
+ * Endpoint: `POST /me/billing-portal-sessions` (auth required). Stripe-only by
+ * design: Fanbasis users have no Stripe customer record so the call returns
+ * `payments:subscription:no-customer`. The FE branches off
+ * `capabilities.hasSelfServePortal` (false on Fanbasis) and renders an in-app
+ * cancel surface for those users instead of calling this action.
  *
  * `returnUrl` is constructed server-side from `APP_URL` rather than accepted
  * from the caller — same open-redirect rationale as `subscribe-to-plan`. The
@@ -58,9 +61,10 @@ export async function createBillingPortal(): Promise<
 		// Step 2: Hit the backend. It looks up the most-recent Stripe customer
 		// for the authenticated user, mints a billingPortal.sessions, and
 		// returns its short-lived URL. 404 `no-customer` when the user never
-		// subscribed (or Stripe deleted the customer record).
+		// subscribed via Stripe (or Stripe deleted the customer record) — this
+		// also covers Fanbasis users by design.
 		const response = await authenticatedClient.post(
-			'/subscriptions/portal',
+			'/me/billing-portal-sessions',
 			{ returnUrl },
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);

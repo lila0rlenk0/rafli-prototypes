@@ -16,12 +16,28 @@ export const CREDIT_REASON = {
 	ADMIN_GRANT: 'admin_grant',
 	CANCELLATION_REFUND: 'cancellation_refund',
 	CHECKOUT_SPEND: 'checkout_spend',
+	// Stripe-issued dispute chargeback — BE clawback inserted as a spend so the
+	// maintain_credit_balance trigger nets it out against the user's available
+	// balance. Shows up on a buyer's ledger when an upstream chargeback fires
+	// after the renewal credits were already granted.
+	DISPUTE_CHARGEBACK: 'dispute_chargeback',
+	// Fanbasis hosted-checkout grant — the public-credit webhook subscriber
+	// inserts this row after the buyer pays for the credit-purchase landing
+	// offer. Idempotency key is the upstream `payment_id`.
+	FANBASIS_PUBLIC_CREDIT: 'fanbasis_public_credit',
 	ORDER_REVERSAL: 'order_reversal',
 	// Credit-grant promo redemption — the BE writes ledger rows with this reason
 	// from `RedeemPromoCodeCommand` after a credit_grant code is redeemed. Without
 	// this entry the credit-history Zod parse rejects post-redeem rows and surfaces
 	// `captureContractDrift` for every newly-issued credit grant.
 	PROMO_REDEMPTION: 'promo_redemption',
+	// Revenue-share payout — granted by the winnings subscriber when a raffle
+	// runs with payoutMode='revenue_share' (threshold misses). One grant per
+	// winning position.
+	RAFFLE_REVENUE_SHARE: 'raffle_revenue_share',
+	// Referral programme grant — issued when a referred user completes the
+	// activation event tracked BE-side.
+	REFERRAL_GRANT: 'referral_grant',
 	SUBSCRIPTION_RENEWAL: 'subscription_renewal',
 } as const;
 
@@ -40,8 +56,12 @@ export const creditReasonSchema = z.enum([
 	CREDIT_REASON.ADMIN_GRANT,
 	CREDIT_REASON.CANCELLATION_REFUND,
 	CREDIT_REASON.CHECKOUT_SPEND,
+	CREDIT_REASON.DISPUTE_CHARGEBACK,
+	CREDIT_REASON.FANBASIS_PUBLIC_CREDIT,
 	CREDIT_REASON.ORDER_REVERSAL,
 	CREDIT_REASON.PROMO_REDEMPTION,
+	CREDIT_REASON.RAFFLE_REVENUE_SHARE,
+	CREDIT_REASON.REFERRAL_GRANT,
 	CREDIT_REASON.SUBSCRIPTION_RENEWAL,
 ]);
 

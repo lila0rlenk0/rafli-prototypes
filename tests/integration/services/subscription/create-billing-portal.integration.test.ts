@@ -62,7 +62,7 @@ describe('createBillingPortal', () => {
 
 		const [path, body] =
 			mockPost.mock.calls[mockPost.mock.calls.length - 1] ?? [];
-		expect(path).toBe('/subscriptions/portal');
+		expect(path).toBe('/me/billing-portal-sessions');
 		expect(body).toEqual({
 			returnUrl: 'https://raffly.test/pricing',
 		});

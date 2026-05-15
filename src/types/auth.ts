@@ -144,6 +144,23 @@ export const changePasswordInputSchema = z.object({
 	newPassword: z.string().min(12),
 });
 
+/**
+ * Set password input (authenticated users without a credential account).
+ *
+ * Used by users created through social login or magic-link who never set a
+ * password — adds password auth on top of their existing OAuth/magic-link
+ * sign-in. Distinct endpoint from `change-password` because there's no
+ * current password to verify; the BE rejects the call with
+ * `auth:password:already-set` if the credential row already has a non-null
+ * password (use change-password instead in that case).
+ *
+ * Validation boundary: client-side — validated in the set-password form.
+ */
+export const setPasswordInputSchema = z.object({
+	/** 12-char minimum — same policy as sign-up. */
+	newPassword: z.string().min(12),
+});
+
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthSession = z.infer<typeof authSessionSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;
@@ -157,3 +174,4 @@ export type RequestPasswordResetInput = z.infer<
 >;
 export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordInputSchema>;
+export type SetPasswordInput = z.infer<typeof setPasswordInputSchema>;

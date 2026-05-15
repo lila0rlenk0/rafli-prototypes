@@ -1,16 +1,7 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
-import { clientEnv } from '@/env/client';
 import { env } from '@/env/server';
-
-// Production-only kill switch. The repo standardizes on `NEXT_PUBLIC_APP_ENV`
-// as the deploy-target discriminator (set per Vercel environment in project
-// settings: Production='production', Preview='staging', Development=
-// 'development'). The funnel only disappears on rafli.win — staging.rafli.win
-// and PR previews keep it reachable for QA.
-const IS_HIDDEN_IN_PRODUCTION = clientEnv.NEXT_PUBLIC_APP_ENV === 'production';
 
 const SUBSCRIBE_TITLE = 'Subscribe Pro — 20% OFF + 25 free entries';
 const SUBSCRIBE_DESCRIPTION =
@@ -63,10 +54,6 @@ interface SubscribeProLayoutProps {
 export default function SubscribeProLayout({
 	children,
 }: SubscribeProLayoutProps) {
-	if (IS_HIDDEN_IN_PRODUCTION) {
-		notFound();
-	}
-
 	return (
 		<main className="bg-background relative min-h-dvh overflow-x-clip">
 			{children}

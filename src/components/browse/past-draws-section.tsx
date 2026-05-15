@@ -1,6 +1,14 @@
 'use client';
 
-import { useCallback, useState, useSyncExternalStore } from 'react';
+import Autoplay from 'embla-carousel-autoplay';
+import { useReducedMotion } from 'framer-motion';
+import {
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+	useSyncExternalStore,
+} from 'react';
 
 import { PastDrawCard } from '@/components/browse/past-draw-card';
 import {
@@ -13,6 +21,11 @@ import {
 } from '@/components/ui/carousel';
 import { cn } from '@/lib/class-names';
 import type { Raffle } from '@/types/raffle';
+
+// Slower than Recent Winners (4s) because each Past Draw card carries
+// more detail (prize, winner, on-chain link) that rewards a longer dwell.
+// 6s lets the eye finish a card before the next snap.
+const AUTOPLAY_DELAY_MS = 6_000;
 
 interface PastDrawsSectionProps {
 	raffles: readonly Raffle[];
@@ -37,6 +50,33 @@ export function PastDrawsSection({ raffles }: PastDrawsSectionProps) {
 	// Holding it in state (rather than a ref) lets the subscription hooks
 	// below re-bind when the API becomes available.
 	const [api, setApi] = useState<CarouselApi>();
+
+	// Plugin instance pinned in a ref so re-renders never hand Embla a
+	// fresh `[Autoplay(...)]` array (that would re-init the carousel and
+	// reset the dot index, which the `useSyncExternalStore` hooks below
+	// are already wired to track).
+	//
+	// `stopOnInteraction: false` — the dot row is the primary nav on this
+	// section, and stopping autoplay permanently after a dot click would
+	// surprise users mid-scan. Pause-then-resume keeps the section feeling
+	// live without fighting deliberate navigation.
+	// `stopOnMouseEnter: true` is the user-requested hover pause.
+	const autoplay = useRef(
+		Autoplay({
+			delay: AUTOPLAY_DELAY_MS,
+			stopOnInteraction: false,
+			stopOnMouseEnter: true,
+		}),
+	);
+
+	// `useReducedMotion` is `null` until after mount; we only act on an
+	// explicit `true`, leaving the plugin's default play state alone for
+	// the `null` / `false` cases so we don't race the plugin's internal
+	// init with a `.play()` call.
+	const reducedMotion = useReducedMotion();
+	useEffect(() => {
+		if (reducedMotion) autoplay.current.stop();
+	}, [reducedMotion]);
 
 	/**
 	 * Embla is an external store. Per the project's react-effects rule,
@@ -96,9 +136,15 @@ export function PastDrawsSection({ raffles }: PastDrawsSectionProps) {
 
 			<Carousel
 				setApi={setApi}
-				/* `align: 'start'` keeps the first card pinned to the left. `loop: false`
-				   matches the "recent winners" strip — past draws aren't infinite. */
-				opts={{ align: 'start', loop: false }}
+				/* `align: 'start'` keeps the first card pinned to the left.
+				   `loop: true` so autoplay doesn't visibly stall on the final
+				   page — without the wrap, the section would dead-end and
+				   the dot row would freeze on the last index until the user
+				   reloads. The dot pagination still renders true page count
+				   from `scrollSnapList()`, which already accounts for the
+				   loop seam. */
+				opts={{ align: 'start', loop: true }}
+				plugins={[autoplay.current]}
 				aria-label="Past draws"
 			>
 				{/* Three-column flex row so arrows flank the carousel viewport without

@@ -1,6 +1,9 @@
 'use client';
 
+import Autoplay from 'embla-carousel-autoplay';
+import { useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 
 import { RecentWinnerCard } from '@/components/browse/recent-winner-card';
 import {
@@ -11,6 +14,12 @@ import {
 	CarouselPrevious,
 } from '@/components/ui/carousel';
 import type { RecentWinner } from '@/types/winning';
+
+// Slide-advance cadence — 4s is the cell-phone-glance attention window
+// for a ticker-style strip. Faster (2-3s) reads as nervous; slower (6s+)
+// loses the "live updates" feel that makes auto-advance worth the
+// motion budget.
+const AUTOPLAY_DELAY_MS = 4_000;
 
 interface RecentWinnersSectionProps {
 	winners: readonly RecentWinner[];
@@ -30,6 +39,33 @@ interface RecentWinnersSectionProps {
  * winners beyond the first two without pushing the page down.
  */
 export function RecentWinnersSection({ winners }: RecentWinnersSectionProps) {
+	// Plugin instance lives in a ref so Embla never sees a new reference on
+	// re-render — passing a fresh `[Autoplay(...)]` array each render would
+	// re-init the carousel and reset the playhead, killing the ticker feel.
+	//
+	// `stopOnInteraction: false` keeps the strip alive after dot/arrow
+	// clicks (autoplay briefly pauses, then resumes) — permanent stop
+	// would feel like the carousel "broke" after a single click.
+	// `stopOnMouseEnter: true` is the user-requested hover pause; the
+	// plugin re-arms automatically on mouse leave.
+	const autoplay = useRef(
+		Autoplay({
+			delay: AUTOPLAY_DELAY_MS,
+			stopOnInteraction: false,
+			stopOnMouseEnter: true,
+		}),
+	);
+
+	// `useReducedMotion` returns `null` during SSR / first paint, then
+	// resolves to the real OS preference after mount. We honour `true`
+	// by stopping the plugin; the `false` / `null` paths leave the
+	// default play state intact so the autoplay starts on its own
+	// (avoids racing the plugin's internal init by calling `.play()`).
+	const reducedMotion = useReducedMotion();
+	useEffect(() => {
+		if (reducedMotion) autoplay.current.stop();
+	}, [reducedMotion]);
+
 	return (
 		<section className="flex flex-col gap-6">
 			<header className="flex items-center justify-between gap-4">
@@ -46,10 +82,14 @@ export function RecentWinnersSection({ winners }: RecentWinnersSectionProps) {
 
 			<Carousel
 				/* `align: 'start'` pins the first slide to the left edge on init so
-				   the section reads left-to-right. `loop: false` — a raffle archive
-				   isn't infinite content, and wrapping back to the first winner
-				   after reaching the end would falsely suggest continuous data. */
-				opts={{ align: 'start', loop: false }}
+				   the section reads left-to-right. `loop: true` — the strip is the
+				   conversion-leaning surface and is meant to feel like a continuous
+				   newsreel of fresh winners; without looping, autoplay halts at the
+				   last slide and the section visibly "dies" until a reload. The
+				   archival count is small enough that wrap-around doesn't suggest
+				   infinite data the way it would on Past Draws. */
+				opts={{ align: 'start', loop: true }}
+				plugins={[autoplay.current]}
 				/* Explicit aria-label — shadcn sets `role="region"` + `aria-roledescription="carousel"`
 				   but leaves labeling to the consumer. Without this, screen readers
 				   announce "carousel" with no context; pairing it with the nearby

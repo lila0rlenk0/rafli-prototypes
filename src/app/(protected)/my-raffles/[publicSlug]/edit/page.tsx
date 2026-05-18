@@ -5,6 +5,7 @@ import type { ComponentProps } from 'react';
 
 import { getSession } from '@/lib/auth/session';
 import { extractCryptoFormFields } from '@/lib/utils/crypto-form';
+import { utcIsoToZonedWallClock } from '@/lib/utils/format/zoned-time-to-utc';
 import { getCategories } from '@/services/raffle/get-categories';
 import { getMyRaffles } from '@/services/raffle/get-my-raffles';
 import { getQuestions } from '@/services/raffle/get-questions';
@@ -54,20 +55,20 @@ interface PageProps {
  * @returns EditFormData with pre-filled values
  */
 function mapRaffleToFormData(raffle: Raffle): EditFormData {
-	// Parse dates from ISO string to YYYY-MM-DD format for DatePicker
-	// and extract HH:mm time portion for time inputs
-	const startDate = raffle.startAt.split('T')[0];
-	const startTime = new Date(raffle.startAt).toLocaleTimeString('en-GB', {
-		hour: '2-digit',
-		minute: '2-digit',
-		hour12: false,
-	});
-	const endDate = raffle.endAt.split('T')[0];
-	const endTime = new Date(raffle.endAt).toLocaleTimeString('en-GB', {
-		hour: '2-digit',
-		minute: '2-digit',
-		hour12: false,
-	});
+	// Extract the wall-clock the host originally saw, not the editor's
+	// browser-local rendering — otherwise computeRaffleDiff produces
+	// phantom startAt/endAt changes whenever the editor's timezone
+	// differs from raffle.timezone. UTC is the fallback for legacy rows
+	// that predate the timezone column.
+	const zone = raffle.timezone || 'UTC';
+	const { date: startDate, time: startTime } = utcIsoToZonedWallClock(
+		raffle.startAt,
+		zone,
+	);
+	const { date: endDate, time: endTime } = utcIsoToZonedWallClock(
+		raffle.endAt,
+		zone,
+	);
 
 	// Use categoryId directly (UUID) instead of converting to slug
 	const category = raffle.categoryId || '';

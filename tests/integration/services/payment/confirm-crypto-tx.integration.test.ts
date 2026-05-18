@@ -42,8 +42,9 @@ describe('confirmCryptoTx', () => {
 		);
 
 		const result = await confirmCryptoTx({
-			sessionId: 'session-1',
-			txHash: '0xabc',
+			sessionId: '01890c80-0000-7000-8000-000000000001',
+			txHash:
+				'0x1111111111111111111111111111111111111111111111111111111111111111',
 			chainId: 1,
 			confirmations: 1,
 		});
@@ -58,8 +59,9 @@ describe('confirmCryptoTx', () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse({ id: 'session-1' }));
 
 		const result = await confirmCryptoTx({
-			sessionId: 'session-1',
-			txHash: '0xabc',
+			sessionId: '01890c80-0000-7000-8000-000000000001',
+			txHash:
+				'0x1111111111111111111111111111111111111111111111111111111111111111',
 			chainId: 1,
 			confirmations: 1,
 		});
@@ -79,8 +81,9 @@ describe('confirmCryptoTx', () => {
 		);
 
 		const result = await confirmCryptoTx({
-			sessionId: 'session-1',
-			txHash: '0xabc',
+			sessionId: '01890c80-0000-7000-8000-000000000001',
+			txHash:
+				'0x1111111111111111111111111111111111111111111111111111111111111111',
 			chainId: 1,
 			confirmations: 1,
 		});

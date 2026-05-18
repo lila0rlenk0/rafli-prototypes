@@ -32,6 +32,21 @@ const bigIntStringSchema = z
 	.string()
 	.refine(isBigIntString, 'Must be a non-negative integer string');
 
+// `0x` prefix + 64 hex chars = 66 chars. Backend uses the same shape
+// (`txHashSchema`); FE matches so malformed pastes fail before the
+// network call instead of producing a generic backend rejection.
+const txHashSchema = z
+	.string()
+	.regex(/^0x[a-fA-F0-9]{64}$/, 'Invalid transaction hash');
+
+// Backend identifies tokens by lowercase registry key (`usdc`, `usdt`,
+// `earnm`). Capped at 20 to mirror the backend `tokenIdSchema` ceiling.
+const tokenIdInputSchema = z
+	.string()
+	.min(1)
+	.max(20)
+	.regex(/^[a-z0-9_-]+$/, 'Token identifiers are lowercase alphanumeric');
+
 /**
  * Verified wallet entity from backend.
  *
@@ -100,11 +115,13 @@ export const cryptoCheckoutSessionSchema = z.object({
 });
 
 /**
- * Schema for submitting a crypto transaction hash
+ * Schema for submitting a crypto transaction hash.
+ * Mirrors backend validation so malformed inputs fail inline instead of
+ * round-tripping for a generic 400.
  */
 export const submitCryptoTxPayloadSchema = z.object({
-	sessionId: z.string().min(1),
-	txHash: z.string().min(1),
+	sessionId: z.uuidv7(),
+	txHash: txHashSchema,
 });
 
 /**
@@ -113,11 +130,11 @@ export const submitCryptoTxPayloadSchema = z.object({
  * allowing backend to finalize immediately instead of waiting for the cron.
  */
 export const confirmCryptoTxPayloadSchema = z.object({
-	sessionId: z.string().min(1),
-	txHash: z.string().min(1),
-	chainId: z.number(),
+	sessionId: z.uuidv7(),
+	txHash: txHashSchema,
+	chainId: z.number().int().positive(),
 	/** Number of on-chain confirmations observed by the frontend */
-	confirmations: z.number().min(1),
+	confirmations: z.number().int().min(1),
 });
 
 export const walletsListResponseSchema = z.object({
@@ -131,11 +148,13 @@ export const walletsListResponseSchema = z.object({
  */
 export const atomicCryptoCheckoutPayloadSchema = z.object({
 	raffleId: z.uuidv7(),
-	ticketQuantity: z.number().int().positive(),
+	// Backend caps an order at 100 tickets; enforce inline so the user
+	// sees a form error instead of a 400 after submitting.
+	ticketQuantity: z.number().int().positive().max(100),
 	promoCode: z.string().optional(),
-	chainId: z.number(),
+	chainId: z.number().int().positive(),
 	walletAddress: evmAddressSchema,
-	token: z.string().min(1),
+	token: tokenIdInputSchema,
 });
 
 /**

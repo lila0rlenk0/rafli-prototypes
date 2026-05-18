@@ -6,7 +6,10 @@ import { toast } from 'sonner';
 import { type z } from 'zod';
 
 import type { CreatePromoCodePayload } from '@/components/promo-code/create/modal';
-import { getRaffleServerError } from '@/components/my-raffles/create/server-errors';
+import {
+	getRaffleServerError,
+	mapFieldIssuesToFormErrors,
+} from '@/components/my-raffles/create/server-errors';
 import { bulkCreatePromoCodes } from '@/services/promo-code/bulk-create-promo-codes';
 import { createRaffle } from '@/services/raffle/create-raffle';
 import { publishRaffle } from '@/services/raffle/publish-raffle';
@@ -55,6 +58,15 @@ function buildCreateRafflePayload(data: RaffleFormData, userTimezone: string) {
 		cryptoChainIds: data.cryptoChainIds,
 		cryptoTokens: data.cryptoTokens,
 		cryptoTokenPricing: data.cryptoTokenPricing,
+		// Advanced raffle config — schema mirrors backend defaults, so
+		// untouched controls forward the backend-equivalent value rather
+		// than relying on the server-side default. Keeps the wire payload
+		// explicit and the audit trail accurate.
+		minTickets: data.minTickets,
+		maxTicketsPerUser: data.maxTicketsPerUser,
+		winnerSelectionMode: data.winnerSelectionMode,
+		enrollmentMode: data.enrollmentMode,
+		xShareTicketsEnabled: data.xShareTicketsEnabled,
 	};
 }
 
@@ -161,6 +173,18 @@ async function runCreateRafflePipeline(
 	);
 
 	if (!result.success) {
+		// Prefer per-field surfacing when the backend shipped Zod issues —
+		// every offending input gets `setError` so the user fixes them
+		// inline instead of guessing from a single toast.
+		if (result.fieldIssues && result.fieldIssues.length > 0) {
+			const formErrors = mapFieldIssuesToFormErrors(result.fieldIssues);
+			for (const [field, message] of formErrors) {
+				ctx.form.setError(field, { message });
+			}
+			ctx.setCurrentStep(1);
+			toast.error('Please fix the highlighted fields and try again.');
+			return;
+		}
 		const { message, field } = getRaffleServerError(result.error);
 		toast.error(message);
 		if (field) {

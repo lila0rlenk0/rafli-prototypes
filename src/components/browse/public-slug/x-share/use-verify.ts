@@ -11,6 +11,7 @@ import {
 	getPendingReviewMessage,
 	getVerifyErrorMessage,
 } from './verify-errors';
+import { getVerifiedToastMessage, type VerifyOutcome } from './verified-toast';
 
 /**
  * Lax-review deferred payload from `verifyXShare`. Mirrors the
@@ -85,20 +86,23 @@ function handleFailure(
  * Handles the verified-success branch — toasts the grant, tracks the
  * success event, and returns control to the caller via `onVerified`.
  */
-function handleVerifiedSuccess(
-	ticketsGranted: number,
-	context: TrackingContext,
-	onVerified: (ticketsGranted: number) => void,
-): void {
+function handleVerifiedSuccess(args: {
+	ticketsGranted: number;
+	outcome: VerifyOutcome | undefined;
+	context: TrackingContext;
+	onVerified: (ticketsGranted: number) => void;
+}): void {
+	const { ticketsGranted, outcome, context, onVerified } = args;
 	track(X_SHARE_EVENTS.VERIFIED, {
 		raffle_id: context.raffleId,
 		raffle_slug: context.publicSlug,
 		tickets_granted: ticketsGranted,
+		// Split blind-fallback grants from provable verifications in analytics so
+		// we can monitor the `not_found_exhausted` share until X's xref handling
+		// is migrated (today the vast majority of grants).
+		verify_outcome: outcome ?? 'unknown',
 	});
-	// Pluralize — grant count is usually 1 but the wording stays robust if
-	// backend ever bumps it for a campaign.
-	const entryWord = ticketsGranted === 1 ? 'Bonus entry' : 'Bonus entries';
-	toast.success(`${entryWord} granted! You're in the sweepstakes now.`);
+	toast.success(getVerifiedToastMessage(ticketsGranted, outcome));
 	onVerified(ticketsGranted);
 }
 
@@ -172,7 +176,12 @@ export function useXVerify(params: UseXVerifyParams): {
 			);
 			return;
 		}
-		handleVerifiedSuccess(result.data.ticketsGranted, context, onVerified);
+		handleVerifiedSuccess({
+			ticketsGranted: result.data.ticketsGranted,
+			outcome: result.data.verifyOutcome,
+			context,
+			onVerified,
+		});
 	}, [
 		onVerified,
 		onVerifyDeferred,

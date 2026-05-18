@@ -87,6 +87,8 @@ export function RaffleInfoCard({
 	const isBelowMinParticipants =
 		raffle.minParticipants > 0 &&
 		raffle.ticketsSoldCount < raffle.minParticipants;
+	const isBelowMinTickets =
+		raffle.minTickets > 0 && raffle.ticketsSoldCount < raffle.minTickets;
 
 	return (
 		<div className="mt-4 rounded-3xl border border-black bg-white px-4 py-6 lg:mt-8 lg:rounded-2xl lg:p-8">
@@ -151,6 +153,26 @@ export function RaffleInfoCard({
 						</h3>
 						<p className="text-sm font-medium">
 							{raffle.minParticipants.toLocaleString()}
+						</p>
+					</div>
+
+					<div className="flex items-center justify-between">
+						<h3 className="text-ink-500 flex items-center gap-1 text-sm font-medium">
+							Min. Entries
+							{isBelowMinTickets ? (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<InfoIcon className="text-ink-500 size-3.5 cursor-help" />
+									</TooltipTrigger>
+									<TooltipContent side="top" className="max-w-56">
+										If the sweepstakes ends below the minimum, winners receive a
+										cash share of the revenue instead of the declared prize.
+									</TooltipContent>
+								</Tooltip>
+							) : null}
+						</h3>
+						<p className="text-sm font-medium">
+							{raffle.minTickets.toLocaleString()}
 						</p>
 					</div>
 

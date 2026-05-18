@@ -7,7 +7,13 @@ import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
-import { failure, mapRaffleError, success } from '@/lib/errors';
+import {
+	extractValidationIssues,
+	failure,
+	mapRaffleError,
+	success,
+} from '@/lib/errors';
+import { zonedTimeToUtcIso } from '@/lib/utils/format/zoned-time-to-utc';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -36,8 +42,8 @@ export async function createRaffle(
 			declaredValueCurrency: 'USD',
 			categoryId: input.category,
 			questionId: input.checkInQuestion,
-			startAt: new Date(input.startDate).toISOString(),
-			endAt: new Date(input.endDate).toISOString(),
+			startAt: zonedTimeToUtcIso(input.startDate, input.timezone),
+			endAt: zonedTimeToUtcIso(input.endDate, input.timezone),
 			ticketPriceAmount: input.pricePerTicket.toString(),
 			ticketPriceCurrency: 'USD',
 			numberOfWinners: input.numberOfWinners,
@@ -52,6 +58,13 @@ export async function createRaffle(
 			cryptoChainIds: input.cryptoChainIds,
 			cryptoTokens: input.cryptoTokens,
 			cryptoTokenPricing: input.cryptoTokenPricing,
+			// Advanced raffle config — forwarded verbatim. Backend re-applies
+			// its defaults if any field arrives undefined.
+			minTickets: input.minTickets,
+			maxTicketsPerUser: input.maxTicketsPerUser,
+			winnerSelectionMode: input.winnerSelectionMode,
+			enrollmentMode: input.enrollmentMode,
+			xShareTicketsEnabled: input.xShareTicketsEnabled,
 		};
 
 		const validationResult = createRafflePayloadSchema.safeParse(payload);
@@ -108,6 +121,8 @@ export async function createRaffle(
 			{ userId },
 		);
 
-		return failure(errorCode);
+		// Surface per-field issues so the form can highlight the offending input
+		// (e.g. `endAt` is in the past) instead of falling back to a generic toast.
+		return failure(errorCode, extractValidationIssues(error));
 	}
 }

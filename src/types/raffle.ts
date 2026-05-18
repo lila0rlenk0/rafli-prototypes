@@ -41,12 +41,16 @@ export type {
 export {
 	createRaffleInputSchema,
 	createRafflePayloadSchema,
+	enrollmentModeSchema,
 	updateRafflePayloadSchema,
+	winnerSelectionModeSchema,
 } from './raffle/payloads';
 export type {
 	CreateRaffleInput,
 	CreateRafflePayload,
+	EnrollmentMode,
 	UpdateRafflePayload,
+	WinnerSelectionMode,
 } from './raffle/payloads';
 
 export {

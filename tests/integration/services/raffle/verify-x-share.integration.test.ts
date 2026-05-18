@@ -122,6 +122,48 @@ describe('verifyXShare', () => {
 			expect(mockRunAfter).toHaveBeenCalledTimes(1);
 			expect(mockRevalidateRaffleDetail).toHaveBeenCalledWith(RAFFLE_ID);
 		});
+
+		test('preserves verifyOutcome enum values through the schema', async () => {
+			// `verifyOutcome` discriminates `found` / `unavailable` / `not_found_exhausted`
+			// — the UI renders honest copy off it (provable verification vs blind-grant
+			// fallback). Lock the parse so a typo'd enum value in the wire schema can't
+			// silently degrade the toast back to neutral wording.
+			resetAllMocks();
+			mockPost.mockResolvedValueOnce(
+				mockAxiosResponse({
+					...VERIFIED_RESPONSE,
+					verifyOutcome: 'not_found_exhausted',
+				}),
+			);
+
+			const result = await verifyXShare(RAFFLE_ID);
+
+			expect(result.success).toBe(true);
+			if (result.success && result.data.status === 'verified') {
+				expect(result.data.verifyOutcome).toBe('not_found_exhausted');
+			}
+		});
+
+		test('rejects an unknown verifyOutcome value as contract drift', async () => {
+			// Unknown enum value = a backend roll-forward introduced a new branch the
+			// UI can't render. Capture the drift to Sentry and bail rather than render
+			// on a value the toast copy doesn't model.
+			resetAllMocks();
+			mockPost.mockResolvedValueOnce(
+				mockAxiosResponse({
+					...VERIFIED_RESPONSE,
+					verifyOutcome: 'mystery_branch',
+				}),
+			);
+
+			const result = await verifyXShare(RAFFLE_ID);
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe(RAFFLE_ERROR_CODES.FETCH_FAILED);
+			}
+			expect(mockCaptureContractDrift).toHaveBeenCalledTimes(1);
+		});
 	});
 
 	describe('success — pending_review (lax-review deferred)', () => {

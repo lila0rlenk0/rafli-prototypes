@@ -3,6 +3,26 @@ import { z } from 'zod';
 import { tokenPricingEntrySchema } from './gallery';
 
 /**
+ * Winner-selection enum. `unique_user` (default) draws one winner per
+ * user; `per_ticket` lets a user holding N tickets win up to N times.
+ * Mirrors backend `winner_selection_mode_enum` — kept here so both
+ * create + update payloads share a single source of truth.
+ */
+export const winnerSelectionModeSchema = z.enum(['unique_user', 'per_ticket']);
+export type WinnerSelectionMode = z.infer<typeof winnerSelectionModeSchema>;
+
+/**
+ * Enrollment mode. `standard` flows through the regular checkout;
+ * `wallet` gates entry to programmatic wallet enrollment (ACP / partner
+ * integrations). Mirrors backend `enrollment_mode_enum`.
+ */
+export const enrollmentModeSchema = z.enum(['standard', 'wallet']);
+export type EnrollmentMode = z.infer<typeof enrollmentModeSchema>;
+
+// Backend caps `maxTicketsPerUser` at 1000 (raffles.dto.ts). 0 = unlimited.
+const MAX_TICKETS_PER_USER_CEILING = 1_000;
+
+/**
  * Client-side form input schema for the multi-step raffle creation wizard.
  *
  * Validation boundary: client-side only — this is the raw form shape.
@@ -26,6 +46,19 @@ export const createRaffleInputSchema = z.object({
 	cryptoChainIds: z.array(z.number()),
 	cryptoTokens: z.array(z.string()),
 	cryptoTokenPricing: z.array(tokenPricingEntrySchema),
+	// Advanced raffle config — all optional so existing callers keep
+	// compiling. Backend applies its own defaults (0 / 'standard' /
+	// 'unique_user' / false) when omitted.
+	minTickets: z.number().int().min(0).optional(),
+	maxTicketsPerUser: z
+		.number()
+		.int()
+		.min(0)
+		.max(MAX_TICKETS_PER_USER_CEILING)
+		.optional(),
+	winnerSelectionMode: winnerSelectionModeSchema.optional(),
+	enrollmentMode: enrollmentModeSchema.optional(),
+	xShareTicketsEnabled: z.boolean().optional(),
 });
 
 /** Reusable crypto input fields shared by create and update payload schemas */
@@ -70,6 +103,19 @@ export const createRafflePayloadSchema = z.object({
 	title: z.string().min(3).max(200),
 	/** Whether X/Twitter share free tickets are enabled (defaults false on backend) */
 	xShareTicketsEnabled: z.boolean().optional(),
+	/** Minimum tickets sold before the draw runs as a full prize draw. 0 = disabled (backend default). */
+	minTickets: z.number().int().min(0).optional(),
+	/** Per-user ticket cap. 0 = unlimited (backend default); backend ceiling is 1000. */
+	maxTicketsPerUser: z
+		.number()
+		.int()
+		.min(0)
+		.max(MAX_TICKETS_PER_USER_CEILING)
+		.optional(),
+	/** Winner selection mode — defaults to `unique_user` server-side. Immutable once raffle leaves draft. */
+	winnerSelectionMode: winnerSelectionModeSchema.optional(),
+	/** Enrollment mode — `wallet` gates entry to programmatic wallet flows. Defaults `standard`. */
+	enrollmentMode: enrollmentModeSchema.optional(),
 	...cryptoPayloadFields,
 });
 
@@ -96,6 +142,19 @@ export const updateRafflePayloadSchema = z.object({
 	featuredCoverUrl: z.string().max(500).optional(),
 	/** Whether X/Twitter share free tickets are enabled */
 	xShareTicketsEnabled: z.boolean().optional(),
+	/** Minimum tickets sold before the draw runs as a full prize draw. */
+	minTickets: z.number().int().min(0).optional(),
+	/** Per-user ticket cap. Backend ceiling is 1000. */
+	maxTicketsPerUser: z
+		.number()
+		.int()
+		.min(0)
+		.max(MAX_TICKETS_PER_USER_CEILING)
+		.optional(),
+	/** Winner selection mode — locked after the raffle leaves draft. */
+	winnerSelectionMode: winnerSelectionModeSchema.optional(),
+	/** Enrollment mode — locked after the raffle leaves draft. */
+	enrollmentMode: enrollmentModeSchema.optional(),
 	...cryptoPayloadFields,
 });
 

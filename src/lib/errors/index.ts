@@ -1,5 +1,6 @@
 export { failure, handleServiceError, success } from './service-result';
 export {
+	extractValidationIssues,
 	mapAdminKycError,
 	mapAuthError,
 	mapChatError,

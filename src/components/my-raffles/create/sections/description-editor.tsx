@@ -1,16 +1,30 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useController, type Control } from 'react-hook-form';
+import {
+	useController,
+	type Control,
+	type FieldValues,
+	type Path,
+} from 'react-hook-form';
 
 import { MarkdownSyncPlugin } from '@/lib/editor/markdown-sync-plugin';
 
-import type { RaffleFormData } from '@/lib/validation/raffle/create-form-schema';
-
-type DescriptionEditorProps = {
-	control: Control<RaffleFormData>;
-	name?: 'description';
-	trigger?: (name: 'description') => Promise<boolean>;
+/**
+ * Generic over the host form so create + edit wizards (which now have
+ * structurally different schemas after the advanced-settings additions)
+ * can both bind their `description` field. RHF's `Control<T>` is
+ * invariant on its type parameter, which is why a previously-untyped
+ * `Control<RaffleFormData>` here would refuse a `Control<EditFormData>`.
+ *
+ * `name` is required — callers pass it explicitly so the path is checked
+ * against `TForm`, rather than being defaulted to a literal that may not
+ * exist on every host schema.
+ */
+type DescriptionEditorProps<TForm extends FieldValues> = {
+	control: Control<TForm>;
+	name: Path<TForm>;
+	trigger?: (name: Path<TForm>) => Promise<boolean>;
 };
 
 // next/dynamic: lazy-load the Lexical editor — it's a heavy client-only bundle
@@ -37,12 +51,12 @@ function EditorSkeleton() {
 	);
 }
 
-export function DescriptionEditor({
+export function DescriptionEditor<TForm extends FieldValues>({
 	control,
-	name = 'description',
+	name,
 	trigger,
-}: DescriptionEditorProps) {
-	const { field, fieldState } = useController({
+}: DescriptionEditorProps<TForm>) {
+	const { field, fieldState } = useController<TForm>({
 		control,
 		name,
 	});
@@ -72,7 +86,7 @@ export function DescriptionEditor({
 					placeholderClassName="text-muted-foreground pointer-events-none absolute top-0 left-0 overflow-hidden px-4 py-3 text-ellipsis select-none"
 				>
 					<MarkdownSyncPlugin
-						markdownValue={field.value || ''}
+						markdownValue={typeof field.value === 'string' ? field.value : ''}
 						onMarkdownChange={handleMarkdownChange}
 					/>
 				</Editor>

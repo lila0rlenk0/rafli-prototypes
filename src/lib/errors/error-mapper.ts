@@ -1,5 +1,7 @@
 import { AxiosError } from 'axios';
 
+import type { ServiceFieldIssue } from '@/types/service-response';
+
 import {
 	type AdminKycErrorCode,
 	type AuthErrorCode,
@@ -45,6 +47,70 @@ import {
 
 // Hoisted RegExp — avoid re-creation on every extractErrorCode call
 const RE_URN_PREFIX = /^urn:raffles:problem:(.+)$/;
+
+/**
+ * Pulls field-level validation issues from a backend RFC 7807 response.
+ *
+ * The backend's `validateRequestSchema` serialises Zod issues into a
+ * `validationIssues` array (`src/shared/validators.ts` in
+ * raffles-core-backend) — outside production. Each entry is
+ * `{ code, message, path }` where `path` is the Zod dotted path string.
+ * Without this extractor every payload rejection collapses to a generic
+ * `validation_error` toast on the frontend, with no way for forms to
+ * highlight the offending field.
+ *
+ * @param error - Caught error (usually AxiosError); other shapes return `undefined`
+ * @returns Array of issues, or `undefined` when the response carried none
+ */
+export function extractValidationIssues(
+	error: unknown,
+): readonly ServiceFieldIssue[] | undefined {
+	if (!(error instanceof AxiosError) || !error.response?.data) return undefined;
+	const raw = (error.response.data as { validationIssues?: unknown })
+		.validationIssues;
+	if (!Array.isArray(raw) || raw.length === 0) return undefined;
+
+	const issues: ServiceFieldIssue[] = [];
+	for (const entry of raw) {
+		const issue = parseIssueEntry(entry);
+		if (issue) issues.push(issue);
+	}
+
+	return issues.length === 0 ? undefined : issues;
+}
+
+/**
+ * Coerces a single raw entry from the backend's `validationIssues` array
+ * into the FE `ServiceFieldIssue` shape. Returns `null` for malformed
+ * entries (missing path/message) so the caller can drop them silently —
+ * a malformed envelope shouldn't sink the whole batch.
+ */
+function parseIssueEntry(entry: unknown): ServiceFieldIssue | null {
+	if (!entry || typeof entry !== 'object') return null;
+	const rec = entry as Record<string, unknown>;
+	const path = normaliseIssuePath(rec.path);
+	const message = typeof rec.message === 'string' ? rec.message : '';
+	if (!path || !message) return null;
+	const code = typeof rec.code === 'string' ? rec.code : undefined;
+	return { path, message, code };
+}
+
+/**
+ * Normalises the `path` field shipped by the backend into a dotted string.
+ * Zod's JSON serialisation produces an array of segments; older backends
+ * may already emit a joined string. We accept both so the FE stays
+ * resilient to either contract.
+ */
+function normaliseIssuePath(path: unknown): string {
+	if (typeof path === 'string') return path;
+	if (!Array.isArray(path)) return '';
+	return path
+		.filter(
+			segment => typeof segment === 'string' || typeof segment === 'number',
+		)
+		.map(String)
+		.join('.');
+}
 
 /**
  * Only treat `message` as a transport for machine codes when it matches a known
@@ -160,12 +226,17 @@ function mapCommonError(
 
 	// Step 2: HTTP status fallbacks. Axios labels most 4xx responses as
 	// `ERR_BAD_REQUEST`, so status must win over code here or 401/403
-	// responses collapse to `validation_error`.
+	// responses collapse to `validation_error`. 429 is mapped explicitly
+	// because backend rate-limit middleware can return the status without
+	// the canonical RFC 7807 `type` URN (e.g. when a CDN/edge layer answers
+	// before Encore); without this branch the user would see a generic
+	// "something went wrong" instead of the rate-limit message.
 	if (error.response) {
 		const { status } = error.response;
 		if (status === 400) return COMMON_ERROR_CODES.VALIDATION_ERROR;
 		if (status === 401) return COMMON_ERROR_CODES.UNAUTHORIZED;
 		if (status === 403) return COMMON_ERROR_CODES.FORBIDDEN;
+		if (status === 429) return COMMON_ERROR_CODES.GLOBAL_RATELIMIT_EXCEEDED;
 		if (status === 500) return COMMON_ERROR_CODES.INTERNAL_SERVER_ERROR;
 		if (status === 503) return COMMON_ERROR_CODES.SERVICE_UNAVAILABLE;
 	}

@@ -29,4 +29,26 @@ export type ServiceSuccess<TData> = {
 export type ServiceFailure<TErrorCode extends string> = {
 	readonly success: false;
 	readonly error: TErrorCode;
+	/**
+	 * Optional field-level issues surfaced by the backend's Zod validator.
+	 * Populated when the request was rejected with `global:validation:invalid-payload`
+	 * (or any backend ProblemDetails that ships a `validationIssues` array).
+	 * Callers can iterate this to drive `setError` on a `react-hook-form` form
+	 * without exposing raw axios errors.
+	 */
+	readonly fieldIssues?: readonly ServiceFieldIssue[];
+};
+
+/**
+ * Single field-level validation issue. Mirrors the backend's
+ * `validationIssues` entry shape from `src/shared/validators.ts`.
+ *
+ * `path` is the Zod-style dotted path (`"endAt"`, `"cryptoTokenPricing.0.price"`)
+ * — convert to form field names at the call site rather than encoding routing
+ * decisions here.
+ */
+export type ServiceFieldIssue = {
+	readonly path: string;
+	readonly message: string;
+	readonly code?: string;
 };

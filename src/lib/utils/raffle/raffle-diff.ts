@@ -8,6 +8,7 @@ import {
 	extractCryptoFormFields,
 	type CryptoFormFields,
 } from '@/lib/utils/crypto-form';
+import { zonedTimeToUtcIso } from '@/lib/utils/format/zoned-time-to-utc';
 
 /**
  * Form data structure for edit form
@@ -79,13 +80,19 @@ function diffScalarFields(input: RaffleDiffInput): UpdateRafflePayload {
 	const { original, current, categoryId, checkInQuestionId } = input;
 	const diff: UpdateRafflePayload = {};
 
-	// Date/time — form stores separately, combine into ISO for comparison
-	const currentStartISO = new Date(
+	// Date/time — form stores wall-clock fragments separately. Interpret
+	// them in the raffle's saved timezone (falling back to UTC) so we
+	// produce the same UTC instant the host intended, independent of the
+	// browser locale that renders the edit screen.
+	const timeZone = original.timezone || 'UTC';
+	const currentStartISO = zonedTimeToUtcIso(
 		`${current.startDate}T${current.startTime || '00:00'}`,
-	).toISOString();
-	const currentEndISO = new Date(
+		timeZone,
+	);
+	const currentEndISO = zonedTimeToUtcIso(
 		`${current.endDate}T${current.endTime || '00:00'}`,
-	).toISOString();
+		timeZone,
+	);
 
 	applyFieldDiff(diff, [
 		{ key: 'title', current: current.title, previous: original.title },

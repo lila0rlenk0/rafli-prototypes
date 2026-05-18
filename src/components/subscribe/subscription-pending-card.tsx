@@ -8,10 +8,15 @@ interface SubscriptionPendingCardProps {
 }
 
 /**
- * "Check your email" card rendered on every `/subscription-pending-*`
- * landing — the surface buyers hit IMMEDIATELY after Fanbasis captures
+ * "Check your email" surface rendered on every `/subscription-pending-*`
+ * landing — the screen buyers hit IMMEDIATELY after Fanbasis captures
  * the first subscription charge, BEFORE the webhook fulfillment runs
  * and BEFORE the Better-Auth magic-link email arrives.
+ *
+ * Card chrome was dropped in favour of a centred, full-bleed mint
+ * canvas (the page shell paints `bg-brand-mint`) — the single decisive
+ * CTA is "go check your inbox," and any extra container chrome competes
+ * with that signal.
  *
  * The email is shown only when we have a confidently parsed value
  * (`parsePendingSubscriptionEmail`) so the buyer can confirm the inbox
@@ -20,48 +25,49 @@ interface SubscriptionPendingCardProps {
  * at undefined", which would erode trust on a page they just paid to
  * land on.
  *
- * Plan-aware copy uses `plan.payoutUsd` so each tier's confirmation
- * surfaces the actual credit value the buyer is about to receive
- * ($11 Basic / $30 Starter / $125 Pro).
+ * Plan-aware copy uses `plan.chargeUsd` (what the buyer just paid) and
+ * `plan.payoutUsd` (the credit face value awarded each cycle) so each
+ * tier's confirmation surfaces the actual numbers the buyer locked in.
  *
- * @param plan - Plan config pinned at the route level — drives the
- *   credit-value mention so the funnel reinforces the tier's offer
+ * @param plan - Plan config pinned at the route level
  * @param email - Trimmed email parsed from `searchParams.email`, or
  *   `null` when missing / malformed
- * @returns Mint confirmation card
+ * @returns Mint full-bleed confirmation screen
  */
 export function SubscriptionPendingCard({
 	plan,
 	email,
 }: SubscriptionPendingCardProps) {
 	return (
-		<div className="border-ink-900 bg-brand-mint flex w-full max-w-xl flex-col items-center gap-5 rounded-3xl border px-8 py-12 text-center sm:px-12">
-			<span className="bg-ink-900 text-on-dark flex size-14 items-center justify-center rounded-2xl">
-				<MailCheck className="size-6" aria-hidden />
-			</span>
+		<div className="flex w-full max-w-2xl flex-col items-center gap-6 text-center">
+			<MailCheck
+				className="text-ink-900 size-16"
+				strokeWidth={2.25}
+				aria-hidden
+			/>
 
-			<h1 className="font-clash-display text-headline-lg text-ink-900 font-semibold">
-				Check your email
+			<h1 className="font-clash-display text-headline-lg text-ink-900 font-semibold sm:text-4xl">
+				One click left — check your email!
 			</h1>
 
-			<p className="text-body-md text-ink-900 font-medium">Payment received.</p>
-
-			<p className="text-body-md text-ink-alpha max-w-md font-medium">
-				We just sent a one-click sign-in link to{' '}
-				{email === null ? (
-					'the email you entered at checkout'
-				) : (
-					// `break-all` keeps long localparts from blowing the card
-					// out of its max-width on narrow viewports.
-					<span className="text-ink-900 font-semibold break-all">{email}</span>
-				)}
-				. Click it to claim your ${plan.payoutUsd} in Rafli credits.
-			</p>
-
-			<p className="text-body-sm text-ink-alpha max-w-md">
-				The link can take a minute to arrive. If you don&apos;t see it, check
-				your spam folder.
-			</p>
+			<div className="text-body-md text-ink-900 flex flex-col gap-1 font-medium">
+				<p>
+					Sign-in link sent to{' '}
+					{email === null ? (
+						'the email you entered at checkout'
+					) : (
+						// `break-all` keeps long localparts from blowing the layout
+						// out of its max-width on narrow viewports.
+						<span className="font-semibold break-all">{email}</span>
+					)}
+					.
+				</p>
+				<p>
+					You&apos;ve got ${plan.chargeUsd} in credits ready (a $
+					{plan.payoutUsd} value). Give it a minute. Check spam if it&apos;s
+					slow.
+				</p>
+			</div>
 		</div>
 	);
 }

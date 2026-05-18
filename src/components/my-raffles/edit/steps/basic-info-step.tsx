@@ -128,7 +128,11 @@ export function BasicInfoStep() {
 				touched={touchedFields.title}
 			/>
 
-			<DescriptionEditor control={form.control} trigger={trigger} />
+			<DescriptionEditor
+				control={form.control}
+				name="description"
+				trigger={trigger}
+			/>
 
 			<div className="grid grid-cols-2 gap-4">
 				<div className="flex flex-col gap-2">

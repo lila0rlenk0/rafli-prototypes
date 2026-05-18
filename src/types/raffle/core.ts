@@ -138,6 +138,8 @@ export const raffleSchema = z.object({
 	numberOfWinners: z.number(),
 	minParticipants: z.number(),
 	maxParticipants: z.number(),
+	/** Threshold floor for total entries sold. 0 = disabled. `.catch(0)` keeps older cached responses parseable. */
+	minTickets: z.number().catch(0),
 	deliveryIncluded: z.boolean(),
 	status: raffleStatusSchema,
 	publicSlugOrCode: z.string(),

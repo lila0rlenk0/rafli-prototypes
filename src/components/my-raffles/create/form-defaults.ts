@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 
 import {
+	ADVANCED_RAFFLE_FORM_DEFAULTS,
 	CRYPTO_FORM_DEFAULTS,
 	type raffleFormSchema,
 } from '@/lib/validation/raffle/create-form-schema';
@@ -32,5 +33,6 @@ export function getRaffleFormDefaults(): RaffleFormData {
 		maxParticipants: 0,
 		checkInQuestion: '',
 		...CRYPTO_FORM_DEFAULTS,
+		...ADVANCED_RAFFLE_FORM_DEFAULTS,
 	};
 }

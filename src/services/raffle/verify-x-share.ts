@@ -25,6 +25,14 @@ import type { ServiceResponse } from '@/types/service-response';
  *    `attemptsRemaining` hits zero, the next call grants blind so honest users hit
  *    by index lag are never permanently locked out.
  *
+ * `verifyOutcome` discriminates the three verified paths so the UI can render honest
+ * copy: `found` was provably verified, `unavailable` was granted because X's API
+ * was down, `not_found_exhausted` was granted blind on the retry-budget fallback
+ * (today the majority — X's t.co rewriter strips `?xref=<token>` so entity validation
+ * rejects every legitimate tweet). It is OMITTED on the idempotent already-verified
+ * republish path, since the persisted outcome belongs to the CAS winner — not this
+ * caller's local lookup.
+ *
  * Wire definition is the source of truth in `src/core/x-shares/dto/x-share.dto.ts` on
  * the backend; keep this schema in lockstep with `VerifyXShareResponseDto`.
  */
@@ -34,6 +42,10 @@ const verifiedResponseSchema = z.object({
 	// Verified always means a ledger grant happened. Reject impossible values
 	// before we refresh RSC into a verified UI state with no usable ticket change.
 	ticketsGranted: z.number().int().positive(),
+	// Optional — see file-level docstring; idempotent replays omit it.
+	verifyOutcome: z
+		.enum(['found', 'not_found_exhausted', 'unavailable'])
+		.optional(),
 });
 
 const pendingReviewResponseSchema = z.object({
@@ -41,6 +53,9 @@ const pendingReviewResponseSchema = z.object({
 	// copy and to know that the next call will fall back to a blind grant when 0.
 	attemptsRemaining: z.number().int().nonnegative(),
 	claimId: z.string(),
+	// Single value today: we can't tell "no tweet" from "X index lag" on a deferred
+	// outcome. Optional and forward-compatible so a future widening doesn't break parse.
+	pendingReason: z.literal('tweet_not_visible').optional(),
 	// Server-enforced cooldown anchor — the next verify call inside this window
 	// rejects with `core:xshare:cooldown`, so the UI honors the same delay.
 	retryAfterSeconds: z.number().int().positive(),

@@ -20,6 +20,8 @@ const BASE_RAFFLE: Raffle = {
 	declaredValueCurrency: 'USD',
 	ticketPriceAmount: '5',
 	ticketPriceCurrency: 'USD',
+	// 10:00 UTC = 06:00 EDT — the form fixture below mirrors that wall-clock
+	// in `America/New_York`, exercising the timezone-aware diff path.
 	startAt: '2026-06-01T10:00:00.000Z',
 	endAt: '2026-06-15T10:00:00.000Z',
 	timezone: 'America/New_York',
@@ -39,16 +41,19 @@ const BASE_RAFFLE: Raffle = {
 	cryptoOptions: null,
 };
 
-// Form data matching the BASE_RAFFLE — no diff expected
+// Form data matching the BASE_RAFFLE — no diff expected.
+// startTime/endTime are 06:00 because 10:00 UTC is 06:00 EDT, which is what
+// the host originally entered in `America/New_York` and what the edit form
+// re-extracts via `utcIsoToZonedWallClock`.
 const BASE_FORM = {
 	title: 'Original Title',
 	description: 'Original description',
 	price: 100,
 	category: 'Electronics',
 	startDate: '2026-06-01',
-	startTime: '10:00',
+	startTime: '06:00',
 	endDate: '2026-06-15',
-	endTime: '10:00',
+	endTime: '06:00',
 	pricePerTicket: 5,
 	numberOfWinners: 1,
 	minParticipants: 10,

@@ -41,8 +41,9 @@ describe('submitCryptoTx', () => {
 		);
 
 		const result = await submitCryptoTx({
-			sessionId: 'session-1',
-			txHash: '0xabc',
+			sessionId: '01890c80-0000-7000-8000-000000000001',
+			txHash:
+				'0x1111111111111111111111111111111111111111111111111111111111111111',
 		});
 
 		expect(result.success).toBe(true);
@@ -55,8 +56,9 @@ describe('submitCryptoTx', () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse({ id: 'session-1' }));
 
 		const result = await submitCryptoTx({
-			sessionId: 'session-1',
-			txHash: '0xabc',
+			sessionId: '01890c80-0000-7000-8000-000000000001',
+			txHash:
+				'0x1111111111111111111111111111111111111111111111111111111111111111',
 		});
 
 		expect(result.success).toBe(false);
@@ -74,8 +76,9 @@ describe('submitCryptoTx', () => {
 		);
 
 		const result = await submitCryptoTx({
-			sessionId: 'session-1',
-			txHash: '0xabc',
+			sessionId: '01890c80-0000-7000-8000-000000000001',
+			txHash:
+				'0x1111111111111111111111111111111111111111111111111111111111111111',
 		});
 
 		expect(result.success).toBe(false);

@@ -8,6 +8,7 @@ import { useTicketsStepDerived } from '@/components/my-raffles/shared/tickets/us
 import { useTicketsStepActions } from '@/components/my-raffles/shared/tickets/use-tickets-step-actions';
 
 import { useMultiStepForm } from '@/components/my-raffles/create/multi-step-form-provider';
+import { AdvancedSettingsSection } from '@/components/my-raffles/create/sections/advanced-settings-section';
 import { CryptoConfigSection } from '@/components/my-raffles/create/sections/crypto-config-section';
 import { PromoCodesSection } from '@/components/my-raffles/create/sections/promo-codes-section';
 
@@ -71,6 +72,13 @@ export function TicketsStep() {
 		setValue('cryptoChainIds', []);
 		setValue('cryptoTokens', []);
 		setValue('cryptoTokenPricing', []);
+		// Reset advanced config to backend-equivalent defaults so the next
+		// submission produces a wire payload matching "fields omitted".
+		setValue('minTickets', 0);
+		setValue('maxTicketsPerUser', 0);
+		setValue('winnerSelectionMode', 'unique_user');
+		setValue('enrollmentMode', 'standard');
+		setValue('xShareTicketsEnabled', false);
 		clearPendingPromoCodes();
 	}
 
@@ -107,6 +115,28 @@ export function TicketsStep() {
 				cryptoTokenPricing={form.watch('cryptoTokenPricing')}
 				onFieldChange={(field, value) =>
 					form.setValue(field, value, { shouldDirty: true })
+				}
+			/>
+			<AdvancedSettingsSection
+				minTickets={form.watch('minTickets')}
+				maxTicketsPerUser={form.watch('maxTicketsPerUser')}
+				winnerSelectionMode={form.watch('winnerSelectionMode')}
+				enrollmentMode={form.watch('enrollmentMode')}
+				xShareTicketsEnabled={form.watch('xShareTicketsEnabled')}
+				onMinTicketsChange={value =>
+					form.setValue('minTickets', value, { shouldDirty: true })
+				}
+				onMaxTicketsPerUserChange={value =>
+					form.setValue('maxTicketsPerUser', value, { shouldDirty: true })
+				}
+				onWinnerSelectionModeChange={value =>
+					form.setValue('winnerSelectionMode', value, { shouldDirty: true })
+				}
+				onEnrollmentModeChange={value =>
+					form.setValue('enrollmentMode', value, { shouldDirty: true })
+				}
+				onXShareTicketsEnabledChange={value =>
+					form.setValue('xShareTicketsEnabled', value, { shouldDirty: true })
 				}
 			/>
 			<PromoCodesSection />

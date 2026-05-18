@@ -5,7 +5,11 @@ import {
 	MAX_FILE_SIZE,
 	raffleImageFileSchema,
 } from '@/lib/validation/raffle/form-file-schema';
-import { tokenPricingEntrySchema } from '@/types/raffle';
+import {
+	enrollmentModeSchema,
+	tokenPricingEntrySchema,
+	winnerSelectionModeSchema,
+} from '@/types/raffle';
 
 export { MAX_FILE_SIZE };
 
@@ -30,6 +34,36 @@ export const CRYPTO_FORM_DEFAULTS = {
 	cryptoChainIds: [] as number[],
 	cryptoTokens: [] as string[],
 	cryptoTokenPricing: [] as { tokenId: string; price: string }[],
+};
+
+/**
+ * Advanced raffle config shared by create + edit forms.
+ *
+ * - `minTickets`: 0 disables the minimum-ticket gate (backend default).
+ * - `maxTicketsPerUser`: 0 = unlimited; backend caps at 1000.
+ * - `winnerSelectionMode`: `unique_user` (default) vs `per_ticket`.
+ * - `enrollmentMode`: `standard` (default) vs `wallet`.
+ * - `xShareTicketsEnabled`: opt-in to the X share free-entry promo.
+ *
+ * `winnerSelectionMode` and `enrollmentMode` are immutable past draft on
+ * the backend, but live in both schemas because the edit form needs to
+ * surface the value (read-only) and the create form needs to set it.
+ */
+export const advancedRaffleFormFields = {
+	minTickets: z.number().int().min(0),
+	maxTicketsPerUser: z.number().int().min(0).max(1_000),
+	winnerSelectionMode: winnerSelectionModeSchema,
+	enrollmentMode: enrollmentModeSchema,
+	xShareTicketsEnabled: z.boolean(),
+};
+
+/** Backend-matching defaults for the advanced raffle config block. */
+export const ADVANCED_RAFFLE_FORM_DEFAULTS = {
+	minTickets: 0,
+	maxTicketsPerUser: 0,
+	winnerSelectionMode: 'unique_user' as const,
+	enrollmentMode: 'standard' as const,
+	xShareTicketsEnabled: false,
 };
 
 export const raffleFormSchema = z
@@ -108,6 +142,11 @@ export const raffleFormSchema = z
 
 		// Step 2: Crypto payment config
 		...cryptoFormFields,
+
+		// Step 2: Advanced raffle config (min/max ticket caps, winner mode,
+		// enrollment mode, X-share toggle). Mirrors backend defaults so an
+		// untouched form submits the same payload the backend would synthesise.
+		...advancedRaffleFormFields,
 	})
 	.refine(
 		data => {
@@ -217,6 +256,13 @@ export const raffleDraftSchema = z.object({
 	cryptoChainIds: z.array(z.number()),
 	cryptoTokens: z.array(z.string()),
 	cryptoTokenPricing: z.array(tokenPricingEntrySchema),
+	// Advanced raffle config — optional so older drafts (without these
+	// fields) still rehydrate; defaults are applied at form mount.
+	minTickets: z.number().int().min(0).optional(),
+	maxTicketsPerUser: z.number().int().min(0).max(1_000).optional(),
+	winnerSelectionMode: winnerSelectionModeSchema.optional(),
+	enrollmentMode: enrollmentModeSchema.optional(),
+	xShareTicketsEnabled: z.boolean().optional(),
 	savedAt: z.string(),
 	currentStep: z.number(),
 });

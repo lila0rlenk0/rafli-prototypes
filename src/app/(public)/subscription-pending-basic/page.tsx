@@ -74,7 +74,7 @@ export default async function SubscriptionPendingBasicPage({
 		// same min-height math, same overflow guard so any future
 		// full-bleed bleed doesn't spawn a horizontal scroll container
 		// on mobile Safari.
-		<main className="bg-background relative min-h-dvh overflow-x-clip">
+		<main className="bg-brand-mint relative min-h-dvh overflow-x-clip">
 			<SubscribeNavbar>
 				<section className="flex min-h-(--spacing-page-dvh) flex-col items-center justify-center py-16">
 					<SubscriptionPendingCard plan={PLAN} email={email} />

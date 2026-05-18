@@ -40,11 +40,12 @@ interface VerifyCellProps {
 
 /**
  * Maps backend source values to user-friendly labels.
- * Backend sources: 'purchase', 'promo', 'x_share', 'wallet', 'partner:{id}'.
+ * Backend sources: 'purchase', 'promo', 'subscription', 'x_share', 'wallet', 'partner:{id}'.
  */
 function getSourceLabel(source: string): string {
 	if (source === 'purchase') return 'Purchased';
 	if (source === 'promo') return 'Promo code';
+	if (source === 'subscription') return 'Subscription perk';
 	if (source === 'x_share') return 'Shared on X';
 	if (source === 'wallet') return 'Crypto payment';
 	// Partner sources use 'partner:{configId}' format — strip the ID for display

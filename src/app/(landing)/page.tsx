@@ -13,6 +13,7 @@ import { LandingNavbar } from '@/components/landing/landing-navbar';
 import { LiveRafflesSection } from '@/components/landing/live-raffles-section';
 import { SocialProofFaqSection } from '@/components/landing/social-proof-faq-section';
 import { PublicRaffleCard } from '@/components/raffle/cards/public-card';
+import { Separator } from '@/components/ui/separator';
 import { getFeaturedRaffles } from '@/services/raffle/get-featured-raffles';
 import { getRaffles } from '@/services/raffle/get-raffles';
 import { getRecentWinners } from '@/services/winning/get-recent-winners';
@@ -57,10 +58,10 @@ function renderFeaturedBand(featuredRaffles: readonly Raffle[]) {
 
 /**
  * Streamed recent-winners strip. Wrapped in `<Suspense>` by the page so a
- * slow `getRecentWinners()` cannot delay first paint of the hero, featured
- * band, or live grid above. Same defensive shape /browse uses — returns null
- * on empty / failed responses since winners are decorative social proof, not
- * essential page content.
+ * slow `getRecentWinners()` cannot delay first paint of the hero above.
+ * Same defensive shape /browse uses — returns null on empty / failed
+ * responses since winners are decorative social proof, not essential page
+ * content.
  *
  * @returns Recent winners carousel, or null when there are no winners
  */
@@ -111,8 +112,8 @@ async function PastDrawsAsync() {
  * the critical batch.
  *
  * Section order (mirrors the inspiration handoff):
- *   LandingNavbar > MarqueeBanner > LandingHero > FeaturedBand >
- *   LiveRafflesSection > HowItWorks > RecentWinners (streamed) >
+ *   LandingNavbar > MarqueeBanner > LandingHero > RecentWinners (streamed) >
+ *   Separator > FeaturedBand > LiveRafflesSection > HowItWorks >
  *   PastDraws (streamed) > SocialProofFAQ > CTA > Footer.
  *
  * @returns Full landing page with live data + marketing sections composed
@@ -150,6 +151,12 @@ export default async function LandingPage() {
 						totalPrizeValue={totalPrizeValue}
 					/>
 
+					<Suspense fallback={null}>
+						<RecentWinnersAsync />
+					</Suspense>
+
+					<Separator />
+
 					{renderFeaturedBand(featuredRaffles)}
 
 					{liveRaffles.length > 0 ? (
@@ -165,9 +172,6 @@ export default async function LandingPage() {
 			<HowItWorksSection />
 
 			<section className="max-w-hero mx-auto flex flex-col gap-10 px-4 py-10 sm:gap-16 sm:px-12 sm:py-16">
-				<Suspense fallback={null}>
-					<RecentWinnersAsync />
-				</Suspense>
 				<Suspense fallback={null}>
 					<PastDrawsAsync />
 				</Suspense>

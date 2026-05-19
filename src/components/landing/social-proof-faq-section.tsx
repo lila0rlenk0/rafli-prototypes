@@ -7,22 +7,14 @@ import {
 	AccordionTrigger,
 } from '@/components/ui/accordion';
 import { cn } from '@/lib/class-names';
-
-// Public Trustpilot profile for the app.earnm.com business unit. The Rafli
-// brand inherits this trust signal from EARN'M (Rafli is an EARN'M Foundation
-// subsidiary — see CLAUDE.md). Deep-linked from the trust panel CTA.
-const TRUSTPILOT_PROFILE_URL =
-	'https://www.trustpilot.com/review/app.earnm.com';
-
-// Trust signal copy. Numbers are hand-maintained — the official Trustpilot
-// API requires the Plus plan ($319/mo) for live access, and the JS TrustBox
-// widget is routinely blocked by adblockers, so a static styled panel was
-// the most reliable surface that still hits the brand bar. Refresh these
-// values when EARN'M renegotiates the plan tier or quarterly when reviewing
-// marketing collateral.
-const TRUSTPILOT_RATING = 4.6;
-const TRUSTPILOT_REVIEW_COUNT = 449;
-const TRUSTPILOT_RATING_LABEL = 'Rated Excellent';
+import {
+	TRUSTPILOT_PROFILE_URL,
+	TRUSTPILOT_RATING,
+	TRUSTPILOT_RATING_LABEL,
+	TRUSTPILOT_REVIEW_COUNT,
+	TRUSTPILOT_REVIEWS,
+	type TrustpilotReview,
+} from '@/lib/trustpilot';
 
 interface Faq {
 	readonly id: string;
@@ -74,19 +66,21 @@ const FAQS: readonly Faq[] = [
  * Combined "Trusted by community" social proof + FAQ section.
  *
  * Server Component shell. The Accordion primitive carries its own client
- * boundary internally; the Trustpilot panel is static markup so the section
- * ships in the initial HTML and contributes to SEO.
+ * boundary internally; the Trustpilot panel + review grid are static markup
+ * so the section ships in the initial HTML and contributes to SEO.
  *
- * Layout: lg+ two equal columns, stacked below.
+ * Layout: `lg+` two equal columns. Left column stacks the green Trustpilot
+ * trust panel on top of a 2-up review grid; right column hosts the FAQ
+ * accordion.
  *
- * Why the static panel instead of TrustBox / Business API: TrustBox iframes
+ * Why a static panel instead of TrustBox / Business API: TrustBox iframes
  * are routinely blocked by adblockers (leaving the bare `<a>Trustpilot</a>`
  * placeholder visible), and the Business API requires the Plus plan EARN'M
- * is not on. A hand-styled panel with the live trust signal copy + a
- * prominent deep-link to the public profile reads cleanly in every loading
- * state and still funnels curious visitors to the verifiable reviews list.
+ * is not on. A hand-styled panel + curated review cards renders cleanly in
+ * every loading state and still funnels curious visitors to the verifiable
+ * profile.
  *
- * @returns Full-width section with Trustpilot trust panel + FAQ accordion
+ * @returns Full-width section with Trustpilot panel + review grid + FAQ
  */
 export function SocialProofFaqSection() {
 	return (
@@ -96,14 +90,27 @@ export function SocialProofFaqSection() {
 		>
 			<div className="max-w-wide mx-auto px-6 py-20 lg:px-27 lg:py-24">
 				<h2 className="font-clash-display text-brand-dark text-headline-lg lg:text-60 mb-12 text-center font-semibold lg:mb-16">
-					Trusted by community.
+					Trusted by community!
 				</h2>
-				<div className="grid items-stretch gap-6 lg:grid-cols-2">
-					<TrustpilotPanel />
+				<div className="grid items-start gap-6 lg:grid-cols-2">
+					<TrustpilotColumn />
 					<FaqColumn />
 				</div>
 			</div>
 		</section>
+	);
+}
+
+function TrustpilotColumn() {
+	return (
+		<div className="flex flex-col gap-4">
+			<TrustpilotPanel />
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				{TRUSTPILOT_REVIEWS.map(review => (
+					<ReviewCard key={review.id} review={review} />
+				))}
+			</div>
+		</div>
 	);
 }
 
@@ -114,59 +121,102 @@ function TrustpilotPanel() {
 			target="_blank"
 			rel="noopener noreferrer"
 			aria-label={`${TRUSTPILOT_RATING} out of 5 on Trustpilot · ${TRUSTPILOT_REVIEW_COUNT} reviews — read all on Trustpilot`}
-			className="bg-card border-border hover:border-brand-dark group flex h-full flex-col items-center justify-center gap-6 rounded-2xl border p-8 text-center transition-colors duration-150"
+			className="bg-trustpilot text-on-dark group flex flex-col gap-3 rounded-2xl p-6 transition-opacity hover:opacity-95"
 		>
-			<div className="bg-trustpilot text-on-dark inline-flex items-center gap-2 rounded-xl px-4 py-2">
+			<div className="inline-flex items-center gap-1.5">
 				<Star
 					aria-hidden="true"
-					className="size-5"
+					className="size-4"
 					fill="currentColor"
 					strokeWidth={0}
 				/>
-				<span className="text-body-md font-bold">Trustpilot</span>
+				<span className="text-sm font-bold">Trustpilot</span>
 			</div>
 
-			<div className="font-clash-display text-brand-dark text-6xl/none font-semibold">
+			<div className="font-clash-display text-5xl/none font-semibold">
 				{TRUSTPILOT_RATING.toFixed(1)}
 			</div>
 
-			<TrustpilotStarsRow rating={TRUSTPILOT_RATING} />
+			<PanelStarsRow rating={TRUSTPILOT_RATING} />
 
-			<p className="text-ink-500 text-body-md">
+			<p className="text-xs opacity-90">
 				{TRUSTPILOT_RATING_LABEL} · {TRUSTPILOT_REVIEW_COUNT} reviews
 			</p>
 
-			<span className="text-brand-dark inline-flex items-center gap-1 text-sm font-semibold underline-offset-4 group-hover:underline">
+			<span className="inline-flex items-center gap-1 text-xs font-medium underline underline-offset-2">
 				Read all reviews
-				<ArrowUpRight aria-hidden="true" className="size-4" />
+				<ArrowUpRight aria-hidden="true" className="size-3" />
 			</span>
 		</a>
 	);
 }
 
-interface TrustpilotStarsRowProps {
+interface PanelStarsRowProps {
 	readonly rating: number;
 }
 
-// Trustpilot's stars render as filled white stars on a green square — the
-// visual signature consumers recognise on the live profile. We mirror that
-// glyph here so the panel reads as Trustpilot-native at a glance.
-function TrustpilotStarsRow({ rating }: TrustpilotStarsRowProps) {
+// Plain white stars on the green panel — the box-with-overlay treatment
+// the review cards use would disappear against the same Trustpilot green,
+// so the panel renders the stars as solid glyphs with dim opacity on the
+// fractional/unfilled slot.
+function PanelStarsRow({ rating }: PanelStarsRowProps) {
 	const filled = Math.round(rating);
 	return (
-		<div aria-hidden="true" className="flex gap-1">
+		<div aria-hidden="true" className="flex gap-0.5">
+			{[1, 2, 3, 4, 5].map(position => (
+				<Star
+					key={position}
+					className={cn(
+						'size-4',
+						position <= filled ? 'opacity-100' : 'opacity-40',
+					)}
+					fill="currentColor"
+					strokeWidth={0}
+				/>
+			))}
+		</div>
+	);
+}
+
+interface ReviewCardProps {
+	readonly review: TrustpilotReview;
+}
+
+function ReviewCard({ review }: ReviewCardProps) {
+	return (
+		<article className="bg-card border-border flex flex-col gap-3 rounded-2xl border p-5">
+			<CardStarsRow rating={review.stars} />
+			<h3 className="text-ink-900 text-sm font-semibold">{review.title}</h3>
+			<p className="text-ink-500 flex-1 text-xs/relaxed">{review.quote}</p>
+			<p className="text-ink-400 mt-auto text-xs">
+				{review.authorName} · {review.country}
+			</p>
+		</article>
+	);
+}
+
+interface CardStarsRowProps {
+	readonly rating: TrustpilotReview['stars'];
+}
+
+// Green squares with a white star overlay — Trustpilot's signature card
+// glyph. Dimmed positions use `bg-border` so the unfilled state reads as
+// "off" without introducing a fourth neutral token.
+function CardStarsRow({ rating }: CardStarsRowProps) {
+	return (
+		<div aria-label={`${rating} out of 5 stars`} className="flex gap-0.5">
 			{[1, 2, 3, 4, 5].map(position => {
-				const isFilled = position <= filled;
+				const isFilled = position <= rating;
 				return (
 					<div
 						key={position}
 						className={cn(
-							'flex size-7 items-center justify-center rounded',
+							'flex size-5 items-center justify-center rounded-xs',
 							isFilled ? 'bg-trustpilot' : 'bg-border',
 						)}
 					>
 						<Star
-							className="text-on-dark size-4"
+							className="text-on-dark size-3"
 							fill="currentColor"
 							strokeWidth={0}
 						/>

@@ -1,11 +1,16 @@
 'use client';
 
-import { Menu, X } from 'lucide-react';
+import { Menu, Star, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { Logo } from '@/assets/logo';
 import { Button } from '@/components/ui/button';
+import {
+	TRUSTPILOT_PROFILE_URL,
+	TRUSTPILOT_RATING,
+	TRUSTPILOT_REVIEW_COUNT,
+} from '@/lib/trustpilot';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 
@@ -64,7 +69,7 @@ export function LandingNavbar() {
 	return (
 		<>
 			<nav className="bg-background border-brand-dark sticky top-0 z-(--z-sticky-hi) w-full border-b">
-				<div className="max-w-hero mx-auto flex h-14 w-full items-center gap-6 px-4 sm:h-16 sm:px-12">
+				<div className="max-w-hero mx-auto flex h-14 w-full items-center gap-5 px-4 sm:h-16 sm:px-12">
 					<Link href="/" aria-label="Rafli home" className="flex-shrink-0">
 						<Logo className="h-5 w-auto sm:h-6" />
 					</Link>
@@ -82,6 +87,7 @@ export function LandingNavbar() {
 					</div>
 
 					<div className="hidden flex-shrink-0 items-center gap-2 md:ml-auto md:flex">
+						<TrustpilotBadge />
 						<Button
 							asChild
 							variant="outline"
@@ -170,5 +176,47 @@ export function LandingNavbar() {
 				</div>
 			) : null}
 		</>
+	);
+}
+
+/**
+ * Compact Trustpilot trust signal that lives in the right-side nav cluster.
+ *
+ * Hidden below `lg:` because the four-element CTA cluster
+ * (badge + outline button + filled button) overflows the row on tablet-class
+ * widths. Layout follows the official Trustpilot micro-widget: five green
+ * stars, rating, vertical rule, then the "Trust★pilot" wordmark — visitors
+ * recognise the glyph at a glance before they commit to a sign-up click.
+ *
+ * @returns Anchor wrapping stars + rating + vertical rule + wordmark
+ */
+function TrustpilotBadge() {
+	return (
+		<a
+			href={TRUSTPILOT_PROFILE_URL}
+			target="_blank"
+			rel="noopener noreferrer"
+			aria-label={`${TRUSTPILOT_RATING} out of 5 on Trustpilot — ${TRUSTPILOT_REVIEW_COUNT} reviews`}
+			className="bg-secondary hidden h-9 items-center gap-2 rounded-full px-3 transition-opacity hover:opacity-80 lg:inline-flex"
+		>
+			<span aria-hidden="true" className="flex gap-0.5">
+				{[1, 2, 3, 4, 5].map(position => (
+					<Star
+						key={position}
+						className="text-trustpilot size-4"
+						fill="currentColor"
+						strokeWidth={0}
+					/>
+				))}
+			</span>
+			<span className="text-ink-900 text-sm font-bold">
+				{TRUSTPILOT_RATING.toFixed(1)}
+			</span>
+			<span aria-hidden="true" className="bg-ink-300 h-4 w-px" />
+			<span className="text-sm font-bold">
+				<span className="text-ink-900">Trust</span>
+				<span className="text-trustpilot">pilot</span>
+			</span>
+		</a>
 	);
 }

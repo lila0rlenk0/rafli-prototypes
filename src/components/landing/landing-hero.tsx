@@ -45,7 +45,7 @@ export function LandingHero({
 	];
 
 	return (
-		<section className="flex flex-col gap-8 pt-2 pb-10 sm:gap-10 sm:pt-4 sm:pb-16">
+		<section className="flex flex-col gap-8 pt-2 sm:gap-10 sm:pt-4">
 			<div className="flex flex-col gap-5">
 				<p className="text-ink-alpha text-sm font-medium sm:text-base">
 					Real prizes. Verified draws. Enter in seconds.
@@ -69,7 +69,7 @@ export function LandingHero({
 				<h1 className="font-clash-display text-ink-900 text-40 sm:text-display-md/none lg:text-display-lg tracking-micro-8 max-w-screen-md font-semibold sm:tracking-normal">
 					Win real prizes.
 					<br />
-					Every draw verified.
+					<span className="whitespace-nowrap">Every Draw Verified</span>
 				</h1>
 
 				<p className="text-ink-500 max-w-prose text-base font-medium sm:text-lg">

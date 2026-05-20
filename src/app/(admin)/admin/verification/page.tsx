@@ -30,13 +30,20 @@ const DEFAULT_LIMIT = 20;
 const getCachedSubmissions = cache(async function fetchAdminSubmissions(
 	cacheKey: string,
 ) {
-	const query = JSON.parse(cacheKey) as {
+	const parsed = JSON.parse(cacheKey) as {
 		page: number;
 		limit: number;
-		status: AdminKycQuery['status'];
-		type: AdminKycQuery['type'];
+		status: AdminKycQuery['status'] | 'all';
+		type: AdminKycQuery['type'] | 'all';
 	};
-	return getAdminSubmissions(query);
+	// `'all'` is a cache-key sentinel (see buildDataKey) — strip it before
+	// the wire call so the backend doesn't receive an invalid enum value.
+	return getAdminSubmissions({
+		page: parsed.page,
+		limit: parsed.limit,
+		status: parsed.status === 'all' ? undefined : parsed.status,
+		type: parsed.type === 'all' ? undefined : parsed.type,
+	});
 });
 
 /**

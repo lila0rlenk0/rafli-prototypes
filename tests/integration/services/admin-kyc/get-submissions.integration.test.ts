@@ -133,16 +133,43 @@ describe('getAdminSubmissions', () => {
 			}
 		});
 
-		test('passes query params to the API', async () => {
+		test('translates page to offset before hitting the API', async () => {
 			mockGetSession.mockResolvedValueOnce(adminSession());
 			mockGet.mockResolvedValueOnce(mockAxiosResponse(VALID_LIST_RESPONSE));
 
 			await getAdminSubmissions({ page: 2, limit: 10, status: 'pending' });
 
+			// Backend uses offset-based pagination; page 2 with limit 10 → offset 10.
+			// Regression guard for the bug where `page` was forwarded unchanged and
+			// the backend ignored it, returning the first page on every navigation.
 			expect(mockGet).toHaveBeenCalledWith(
 				'/admin/verification',
 				expect.objectContaining({
-					params: { page: 2, limit: 10, status: 'pending' },
+					params: {
+						limit: 10,
+						offset: 10,
+						status: 'pending',
+						type: undefined,
+					},
+				}),
+			);
+		});
+
+		test('defaults to offset 0 when no page is supplied', async () => {
+			mockGetSession.mockResolvedValueOnce(adminSession());
+			mockGet.mockResolvedValueOnce(mockAxiosResponse(VALID_LIST_RESPONSE));
+
+			await getAdminSubmissions();
+
+			expect(mockGet).toHaveBeenCalledWith(
+				'/admin/verification',
+				expect.objectContaining({
+					params: {
+						limit: 20,
+						offset: 0,
+						status: undefined,
+						type: undefined,
+					},
 				}),
 			);
 		});

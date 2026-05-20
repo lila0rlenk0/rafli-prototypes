@@ -39,19 +39,11 @@ export async function getAdminSubmissions(
 		}
 
 		// Step 2: Fetch paginated submissions with optional status/type filters.
-		// Backend uses offset-based pagination (matching notifications, promo-codes,
-		// updates). Translate the caller-facing `page` into the wire `offset` here
-		// so callers can keep thinking in 1-indexed pages.
-		const limit = query?.limit ?? 20;
-		const page = query?.page ?? 1;
-		const offset = (page - 1) * limit;
+		// Backend contract: page-based pagination via `?page=N&limit=M`. Status and
+		// type are strict enums on the backend — passing the literal `'all'` would
+		// fail validation, so callers must omit them when no filter is selected.
 		const response = await authenticatedClient.get('/admin/verification', {
-			params: {
-				limit,
-				offset,
-				status: query?.status,
-				type: query?.type,
-			},
+			params: query,
 			timeout: API_TIMEOUTS.QUERY,
 		});
 

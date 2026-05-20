@@ -30,20 +30,7 @@ const DEFAULT_LIMIT = 20;
 const getCachedSubmissions = cache(async function fetchAdminSubmissions(
 	cacheKey: string,
 ) {
-	const parsed = JSON.parse(cacheKey) as {
-		page: number;
-		limit: number;
-		status: AdminKycQuery['status'] | 'all';
-		type: AdminKycQuery['type'] | 'all';
-	};
-	// `'all'` is a cache-key sentinel (see buildDataKey) — strip it before
-	// the wire call so the backend doesn't receive an invalid enum value.
-	return getAdminSubmissions({
-		page: parsed.page,
-		limit: parsed.limit,
-		status: parsed.status === 'all' ? undefined : parsed.status,
-		type: parsed.type === 'all' ? undefined : parsed.type,
-	});
+	return getAdminSubmissions(JSON.parse(cacheKey) as AdminKycQuery);
 });
 
 /**
@@ -56,13 +43,19 @@ const getCachedSubmissions = cache(async function fetchAdminSubmissions(
  * triggering a new server fetch for the current URL. The same key is
  * the cache argument for `getCachedSubmissions`, so Count + Data share
  * a single backend hit per render.
+ *
+ * Undefined fields are dropped by `JSON.stringify` — the backend's
+ * status/type schemas are strict enums (`pending|approved|rejected`,
+ * `kyb_individual|kyb_company|kyc_winner`) and reject any sentinel
+ * value like `'all'` with a 400. Omission is the correct wire shape
+ * when no filter is selected.
  */
 function buildDataKey(query: AdminKycQuery): string {
 	return JSON.stringify({
 		page: query.page ?? DEFAULT_PAGE,
 		limit: query.limit ?? DEFAULT_LIMIT,
-		status: query.status ?? 'all',
-		type: query.type ?? 'all',
+		status: query.status,
+		type: query.type,
 	});
 }
 

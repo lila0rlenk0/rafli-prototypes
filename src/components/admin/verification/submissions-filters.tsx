@@ -45,11 +45,11 @@ export function SubmissionsFilters() {
 	 * Updates a single search param, clears page — prevents landing on empty pages
 	 * when the filtered result count is lower than the current offset.
 	 *
-	 * The server page re-renders via its Suspense-key strategy — see
-	 * `src/app/(admin)/admin/verification/page.tsx`. No `router.refresh()`
-	 * needed here; calling it after push races the in-flight navigation
-	 * and can fire against the outgoing URL's cache entry instead of the
-	 * target one.
+	 * The server page re-fetches via Suspense-wrapped data sections that
+	 * read searchParams inside — see `src/app/(admin)/admin/verification/page.tsx`.
+	 * No `router.refresh()` needed here; calling it after push races the in-flight
+	 * navigation and can fire against the outgoing URL's cache entry instead of
+	 * the target one.
 	 */
 	function updateParam(key: string, value: string) {
 		const params = new URLSearchParams(searchParams.toString());

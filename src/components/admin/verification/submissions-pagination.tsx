@@ -39,11 +39,11 @@ export function SubmissionsPagination({ total }: SubmissionsPaginationProps) {
 	 * Navigates to a specific page by updating the URL search param.
 	 * Preserves existing filter params (status, type).
 	 *
-	 * The server page re-renders via its Suspense-key strategy — see
-	 * `src/app/(admin)/admin/verification/page.tsx`. No `router.refresh()`
-	 * needed here; calling it after push races the in-flight navigation
-	 * and can fire against the outgoing URL's cache entry instead of the
-	 * target one.
+	 * The server page re-fetches via Suspense-wrapped data sections that
+	 * read searchParams inside — see `src/app/(admin)/admin/verification/page.tsx`.
+	 * No `router.refresh()` needed here; calling it after push races the in-flight
+	 * navigation and can fire against the outgoing URL's cache entry instead of
+	 * the target one.
 	 */
 	function goToPage(page: number) {
 		const params = new URLSearchParams(searchParams.toString());

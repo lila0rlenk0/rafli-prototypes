@@ -24,8 +24,7 @@ const DEFAULT_LIMIT = 20;
  * and `SubmissionsData` can call it without hitting the backend twice.
  * Keyed on a single primitive string — React.cache compares arguments
  * with `Object.is`, so two object literals with matching fields would
- * miss the cache. Collapsing all filters into one string avoids that
- * and keeps the signature inside the 3-param limit (code-style.md).
+ * miss the cache.
  */
 const getCachedSubmissions = cache(async function fetchAdminSubmissions(
 	cacheKey: string,
@@ -34,23 +33,22 @@ const getCachedSubmissions = cache(async function fetchAdminSubmissions(
 });
 
 /**
- * Serializes the fetch-driving params into a stable Suspense + cache key.
- *
- * Under Next 16 `cacheComponents: true`, React `<Activity>` preserves
- * prior route renders across same-pathname navigations. Without a key
- * change, the data subtree would keep its stale render when filters or
- * page change. A fresh key forces React to remount the Suspense child,
- * triggering a new server fetch for the current URL. The same key is
- * the cache argument for `getCachedSubmissions`, so Count + Data share
- * a single backend hit per render.
- *
- * Undefined fields are dropped by `JSON.stringify` — the backend's
- * status/type schemas are strict enums (`pending|approved|rejected`,
- * `kyb_individual|kyb_company|kyc_winner`) and reject any sentinel
- * value like `'all'` with a 400. Omission is the correct wire shape
- * when no filter is selected.
+ * Awaits the searchParams Promise and serialises the parsed query into
+ * a stable cache key. Undefined fields are dropped by `JSON.stringify`
+ * — backend status/type schemas are strict enums and reject sentinel
+ * values, so omission is the correct wire shape when no filter is set.
  */
-function buildDataKey(query: AdminKycQuery): string {
+async function buildCacheKey(
+	searchParamsPromise: VerificationListPageProps['searchParams'],
+): Promise<string> {
+	const params = await searchParamsPromise;
+	const queryResult = adminKycQuerySchema.safeParse({
+		page: params.page,
+		limit: params.limit,
+		status: params.status,
+		type: params.type,
+	});
+	const query = queryResult.success ? queryResult.data : {};
 	return JSON.stringify({
 		page: query.page ?? DEFAULT_PAGE,
 		limit: query.limit ?? DEFAULT_LIMIT,
@@ -62,30 +60,22 @@ function buildDataKey(query: AdminKycQuery): string {
 /**
  * Admin Verification List Page (Server Component)
  *
- * Parses search params with Zod, then hands the parsed query to two
- * Suspense-wrapped async children keyed by the serialized params —
- * remount on any filter/page change guarantees a fresh server fetch
- * under cacheComponents. Filters live outside Suspense so the dropdowns
- * don't flash back to a fallback while data reloads.
+ * The searchParams Promise is forwarded into Suspense-wrapped async
+ * children rather than awaited at the page root. Under Next 16
+ * `cacheComponents: true` the page segment's state key strips search
+ * params (see `layout-router.js`), so an outer-level `await searchParams`
+ * leaves the page shell — including any computed Suspense key — eligible
+ * for Activity reuse across filter/page navigations, freezing the table
+ * on stale rows. Reading searchParams inside a Suspense child is the
+ * prescribed cacheComponents pattern and guarantees a fresh server fetch
+ * for every URL. Filters stay outside Suspense so the dropdowns don't
+ * flash back to a fallback while data reloads.
  *
  * @returns Page with heading, filters, total counter, table, pagination
  */
-export default async function VerificationListPage({
+export default function VerificationListPage({
 	searchParams,
 }: VerificationListPageProps) {
-	const params = await searchParams;
-
-	// Invalid param values are silently ignored — Zod strips unknowns
-	const queryResult = adminKycQuerySchema.safeParse({
-		page: params.page,
-		limit: params.limit,
-		status: params.status,
-		type: params.type,
-	});
-	const query = queryResult.success ? queryResult.data : {};
-
-	const dataKey = buildDataKey(query);
-
 	return (
 		<div className="flex flex-col gap-6">
 			<h1 className="font-clash-display text-3xl font-semibold text-black">
@@ -94,20 +84,14 @@ export default async function VerificationListPage({
 
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<SubmissionsFilters />
-				<Suspense
-					key={`count-${dataKey}`}
-					fallback={<Skeleton className="h-5 w-28" />}
-				>
-					<SubmissionsCount cacheKey={dataKey} />
+				<Suspense fallback={<Skeleton className="h-5 w-28" />}>
+					<SubmissionsCount searchParamsPromise={searchParams} />
 				</Suspense>
 			</div>
 
 			<div className="rounded-2xl bg-white p-6">
-				<Suspense
-					key={`data-${dataKey}`}
-					fallback={<SubmissionsSectionSkeleton />}
-				>
-					<SubmissionsData cacheKey={dataKey} />
+				<Suspense fallback={<SubmissionsSectionSkeleton />}>
+					<SubmissionsData searchParamsPromise={searchParams} />
 				</Suspense>
 			</div>
 		</div>
@@ -115,14 +99,17 @@ export default async function VerificationListPage({
 }
 
 interface SubmissionsSectionProps {
-	cacheKey: string;
+	searchParamsPromise: VerificationListPageProps['searchParams'];
 }
 
 /**
  * Async server component that renders the total-count label.
  * Shares fetched data with SubmissionsData via the React.cache wrapper.
  */
-async function SubmissionsCount({ cacheKey }: SubmissionsSectionProps) {
+async function SubmissionsCount({
+	searchParamsPromise,
+}: SubmissionsSectionProps) {
+	const cacheKey = await buildCacheKey(searchParamsPromise);
 	const result = await getCachedSubmissions(cacheKey);
 	const total = result.success ? result.data.total : 0;
 
@@ -137,7 +124,10 @@ async function SubmissionsCount({ cacheKey }: SubmissionsSectionProps) {
  * Async server component that renders the table and pagination.
  * Shares fetched data with SubmissionsCount via the React.cache wrapper.
  */
-async function SubmissionsData({ cacheKey }: SubmissionsSectionProps) {
+async function SubmissionsData({
+	searchParamsPromise,
+}: SubmissionsSectionProps) {
+	const cacheKey = await buildCacheKey(searchParamsPromise);
 	const result = await getCachedSubmissions(cacheKey);
 	const submissions = result.success ? result.data.submissions : [];
 	const total = result.success ? result.data.total : 0;

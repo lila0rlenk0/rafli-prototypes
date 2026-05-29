@@ -186,6 +186,11 @@ const nextConfig: NextConfig = {
 			`connect-src 'self' https: wss:${localConnectSrc}`,
 			"frame-src 'self' https:",
 			"img-src 'self' data: blob: https:",
+			// Gallery clips stream cross-origin from the media CDN via
+			// <video><source>. With no media-src, browsers fall back to
+			// default-src 'self' and block every video. Scheme-based to mirror
+			// img-src — the CDN bucket host rotates per Encore deploy.
+			"media-src 'self' blob: https:",
 			"style-src 'self' 'unsafe-inline' https:",
 			"font-src 'self' data: https:",
 			"worker-src 'self' blob:",

@@ -72,7 +72,9 @@ export function MarkdownRenderer({
 		),
 		// Lists - matching editor-theme.ts list styles
 		ul: ({ children }: { children?: React.ReactNode }) => (
-			<ul className="m-0 mb-4 ml-6 list-outside p-0 [&>li]:mt-2">{children}</ul>
+			<ul className="m-0 mb-4 ml-6 list-outside list-disc p-0 [&>li]:mt-2">
+				{children}
+			</ul>
 		),
 		ol: ({ children }: { children?: React.ReactNode }) => (
 			<ol className="m-0 mb-4 ml-6 list-decimal p-0 [&>li]:mt-2">{children}</ol>

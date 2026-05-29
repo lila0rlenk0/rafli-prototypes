@@ -12,6 +12,7 @@ import { getQuestions } from '@/services/raffle/get-questions';
 import { getRaffle } from '@/services/raffle/get-raffle';
 import { getRaffleCover } from '@/services/raffle/get-raffle-cover';
 import { getRaffleGallery } from '@/services/raffle/get-raffle-gallery';
+import { ADVANCED_RAFFLE_FORM_DEFAULTS } from '@/lib/validation/raffle/create-form-schema';
 import type { EditFormData } from '@/lib/validation/raffle/edit-form-schema';
 import { RAFFLE_STATUS, type Raffle } from '@/types/raffle';
 import { EditFormProvider } from '@/components/my-raffles/edit/form-provider';
@@ -99,6 +100,22 @@ function mapRaffleToFormData(raffle: Raffle): EditFormData {
 		maxParticipants: raffle.maxParticipants,
 		checkInQuestion,
 		...crypto,
+		// Advanced config — hydrate from the raffle where the backend returns
+		// it, falling back to backend-equivalent defaults. The diff compares
+		// against the same baseline, so an untouched form yields no phantom
+		// update (and never clobbers a draft's saved winner/enrollment mode).
+		minTickets: raffle.minTickets,
+		maxTicketsPerUser:
+			raffle.maxTicketsPerUser ??
+			ADVANCED_RAFFLE_FORM_DEFAULTS.maxTicketsPerUser,
+		winnerSelectionMode:
+			raffle.winnerSelectionMode ??
+			ADVANCED_RAFFLE_FORM_DEFAULTS.winnerSelectionMode,
+		enrollmentMode:
+			raffle.enrollmentMode ?? ADVANCED_RAFFLE_FORM_DEFAULTS.enrollmentMode,
+		xShareTicketsEnabled:
+			raffle.xShareTicketsEnabled ??
+			ADVANCED_RAFFLE_FORM_DEFAULTS.xShareTicketsEnabled,
 	};
 }
 

@@ -1,7 +1,9 @@
 import type {
+	EnrollmentMode,
 	Raffle,
 	TokenPricingEntry,
 	UpdateRafflePayload,
+	WinnerSelectionMode,
 } from '@/types/raffle';
 
 import {
@@ -9,6 +11,7 @@ import {
 	type CryptoFormFields,
 } from '@/lib/utils/crypto-form';
 import { zonedTimeToUtcIso } from '@/lib/utils/format/zoned-time-to-utc';
+import { ADVANCED_RAFFLE_FORM_DEFAULTS } from '@/lib/validation/raffle/create-form-schema';
 
 /**
  * Form data structure for edit form
@@ -32,6 +35,12 @@ interface EditFormData {
 	cryptoChainIds: number[];
 	cryptoTokens: string[];
 	cryptoTokenPricing: TokenPricingEntry[];
+	// Advanced config
+	minTickets: number;
+	maxTicketsPerUser: number;
+	winnerSelectionMode: WinnerSelectionMode;
+	enrollmentMode: EnrollmentMode;
+	xShareTicketsEnabled: boolean;
 }
 
 /**
@@ -182,6 +191,51 @@ function diffCryptoFields(
 }
 
 /**
+ * Diffs advanced raffle config (ticket caps, winner/enrollment modes,
+ * X-share toggle). The backend omits `maxTicketsPerUser` / `winnerSelectionMode`
+ * / `enrollmentMode` from older cached raffle responses, so the previous value
+ * falls back to the same backend-equivalent default the edit form hydrates
+ * with — keeping an untouched form from emitting a phantom diff.
+ */
+function diffAdvancedFields(
+	current: EditFormData,
+	original: Raffle,
+): UpdateRafflePayload {
+	const diff: UpdateRafflePayload = {};
+	const defaults = ADVANCED_RAFFLE_FORM_DEFAULTS;
+
+	applyFieldDiff(diff, [
+		{
+			key: 'minTickets',
+			current: current.minTickets,
+			previous: original.minTickets,
+		},
+		{
+			key: 'maxTicketsPerUser',
+			current: current.maxTicketsPerUser,
+			previous: original.maxTicketsPerUser ?? defaults.maxTicketsPerUser,
+		},
+		{
+			key: 'winnerSelectionMode',
+			current: current.winnerSelectionMode,
+			previous: original.winnerSelectionMode ?? defaults.winnerSelectionMode,
+		},
+		{
+			key: 'enrollmentMode',
+			current: current.enrollmentMode,
+			previous: original.enrollmentMode ?? defaults.enrollmentMode,
+		},
+		{
+			key: 'xShareTicketsEnabled',
+			current: current.xShareTicketsEnabled,
+			previous: original.xShareTicketsEnabled ?? defaults.xShareTicketsEnabled,
+		},
+	]);
+
+	return diff;
+}
+
+/**
  * Computes the diff between original raffle data and current form data.
  * Returns only the fields that have changed for partial update.
  *
@@ -196,7 +250,10 @@ export function computeRaffleDiff(input: RaffleDiffInput): UpdateRafflePayload {
 	const originalCrypto = extractCryptoFormFields(input.original.cryptoOptions);
 	const cryptoDiff = diffCryptoFields(input.current, originalCrypto);
 
-	return { ...scalarDiff, ...cryptoDiff };
+	// Step 3: Diff advanced config (ticket caps, modes, X-share toggle).
+	const advancedDiff = diffAdvancedFields(input.current, input.original);
+
+	return { ...scalarDiff, ...cryptoDiff, ...advancedDiff };
 }
 
 /**

@@ -64,6 +64,13 @@ const BASE_FORM = {
 	cryptoChainIds: [] as number[],
 	cryptoTokens: [] as string[],
 	cryptoTokenPricing: [] as { tokenId: string; price: string }[],
+	// Advanced config — matches the backend-equivalent defaults the edit form
+	// hydrates when the raffle omits these fields, so no diff is expected.
+	minTickets: 0,
+	maxTicketsPerUser: 0,
+	winnerSelectionMode: 'unique_user' as const,
+	enrollmentMode: 'standard' as const,
+	xShareTicketsEnabled: false,
 };
 
 describe('computeRaffleDiff', () => {
@@ -317,6 +324,89 @@ describe('computeRaffleDiff', () => {
 				checkInQuestionId: 'q-1',
 			});
 			expect(diff.cryptoChainIds).toBeUndefined();
+		});
+	});
+
+	describe('advanced fields', () => {
+		test('detects minTickets change', () => {
+			const form = { ...BASE_FORM, minTickets: 50 };
+			const diff = computeRaffleDiff({
+				original: BASE_RAFFLE,
+				current: form,
+				categoryId: 'cat-1',
+				checkInQuestionId: 'q-1',
+			});
+			expect(diff.minTickets).toBe(50);
+		});
+
+		test('detects maxTicketsPerUser change', () => {
+			const form = { ...BASE_FORM, maxTicketsPerUser: 10 };
+			const diff = computeRaffleDiff({
+				original: BASE_RAFFLE,
+				current: form,
+				categoryId: 'cat-1',
+				checkInQuestionId: 'q-1',
+			});
+			expect(diff.maxTicketsPerUser).toBe(10);
+		});
+
+		test('detects winnerSelectionMode change', () => {
+			const form = { ...BASE_FORM, winnerSelectionMode: 'per_ticket' as const };
+			const diff = computeRaffleDiff({
+				original: BASE_RAFFLE,
+				current: form,
+				categoryId: 'cat-1',
+				checkInQuestionId: 'q-1',
+			});
+			expect(diff.winnerSelectionMode).toBe('per_ticket');
+		});
+
+		test('detects enrollmentMode change', () => {
+			const form = { ...BASE_FORM, enrollmentMode: 'wallet' as const };
+			const diff = computeRaffleDiff({
+				original: BASE_RAFFLE,
+				current: form,
+				categoryId: 'cat-1',
+				checkInQuestionId: 'q-1',
+			});
+			expect(diff.enrollmentMode).toBe('wallet');
+		});
+
+		test('detects xShareTicketsEnabled toggle on', () => {
+			const form = { ...BASE_FORM, xShareTicketsEnabled: true };
+			const diff = computeRaffleDiff({
+				original: BASE_RAFFLE,
+				current: form,
+				categoryId: 'cat-1',
+				checkInQuestionId: 'q-1',
+			});
+			expect(diff.xShareTicketsEnabled).toBe(true);
+		});
+
+		// Guards against clobbering: a draft created with non-default advanced
+		// settings must not diff when the form mirrors the saved values.
+		test('no diff when form mirrors saved non-default advanced values', () => {
+			const raffle: Raffle = {
+				...BASE_RAFFLE,
+				maxTicketsPerUser: 10,
+				winnerSelectionMode: 'per_ticket',
+				enrollmentMode: 'wallet',
+				xShareTicketsEnabled: true,
+			};
+			const form = {
+				...BASE_FORM,
+				maxTicketsPerUser: 10,
+				winnerSelectionMode: 'per_ticket' as const,
+				enrollmentMode: 'wallet' as const,
+				xShareTicketsEnabled: true,
+			};
+			const diff = computeRaffleDiff({
+				original: raffle,
+				current: form,
+				categoryId: 'cat-1',
+				checkInQuestionId: 'q-1',
+			});
+			expect(diff).toEqual({});
 		});
 	});
 

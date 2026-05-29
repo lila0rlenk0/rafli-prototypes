@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { enrollmentModeSchema, winnerSelectionModeSchema } from './payloads';
+
 // ==========================================
 // Constants
 // ==========================================
@@ -140,6 +142,14 @@ export const raffleSchema = z.object({
 	maxParticipants: z.number(),
 	/** Threshold floor for total entries sold. 0 = disabled. `.catch(0)` keeps older cached responses parseable. */
 	minTickets: z.number().catch(0),
+	/** Per-user ticket cap. 0 = unlimited; backend ceiling is 1000. Optional + `.catch(0)` keeps older cached responses parseable. */
+	maxTicketsPerUser: z.number().optional().catch(0),
+	/** Winner selection mode — `unique_user` default. Immutable once the raffle leaves draft; the edit form surfaces it while still draft. */
+	winnerSelectionMode: winnerSelectionModeSchema
+		.optional()
+		.catch('unique_user'),
+	/** Enrollment mode — `standard` default; `wallet` gates programmatic enrollment. Immutable once the raffle leaves draft. */
+	enrollmentMode: enrollmentModeSchema.optional().catch('standard'),
 	deliveryIncluded: z.boolean(),
 	status: raffleStatusSchema,
 	publicSlugOrCode: z.string(),

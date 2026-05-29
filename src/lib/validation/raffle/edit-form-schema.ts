@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 import { stripMarkdown } from '@/lib/utils/format/strip-markdown';
-import { cryptoFormFields } from '@/lib/validation/raffle/create-form-schema';
+import {
+	advancedRaffleFormFields,
+	cryptoFormFields,
+} from '@/lib/validation/raffle/create-form-schema';
 import {
 	MAX_FILE_SIZE,
 	raffleImageFileSchema,
@@ -102,6 +105,11 @@ export const editFormSchema = z
 
 		// Step 2: Crypto payment config
 		...cryptoFormFields,
+
+		// Step 2: Advanced raffle config (min/max ticket caps, winner mode,
+		// enrollment mode, X-share toggle). Editable while draft; hydrated
+		// from the raffle so an untouched form produces no diff.
+		...advancedRaffleFormFields,
 	})
 	.refine(
 		data => {

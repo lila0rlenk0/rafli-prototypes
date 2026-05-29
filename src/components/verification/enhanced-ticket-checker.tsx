@@ -12,7 +12,9 @@ import { useState } from 'react';
 
 import { MerkleProofDisplay } from '@/components/verification/merkle-proof-display';
 import { cn } from '@/lib/class-names';
+import { formatWinnerPosition } from '@/lib/utils/raffle/winner-position';
 import { getMerkleProof } from '@/services/verification/get-merkle-proof';
+import { getRaffleVerification } from '@/services/verification/get-raffle-verification';
 import { verifyTicket } from '@/services/verification/verify-ticket';
 import { VERIFICATION_ERROR_CODES } from '@/types/errors/verification-errors';
 import type { VerificationErrorCode } from '@/types/errors/verification-errors';
@@ -21,6 +23,8 @@ import type { MerkleProof, TicketVerification } from '@/types/verification';
 interface VerificationResult {
 	ticket: TicketVerification;
 	proof: MerkleProof | null;
+	/** Total winners drawn — drives 1-based / suppressed position display. */
+	totalWinners: number | null;
 }
 
 type ResultState =
@@ -89,17 +93,24 @@ export function EnhancedTicketChecker({
 		}
 
 		const ticket = ticketResponse.data;
-		let proof: MerkleProof | null = null;
 
-		const proofResponse = await getMerkleProof(
-			ticket.raffleId,
-			ticket.ticketId,
-		);
-		if (proofResponse.success) {
-			proof = proofResponse.data;
+		// Winner rows show a 1-based position, but single-winner raffles have no
+		// ranking — fetch the winner count (only when this entry won) alongside
+		// the proof so the position label can be suppressed for solo winners.
+		const [proofResponse, raffleResponse] = await Promise.all([
+			getMerkleProof(ticket.raffleId, ticket.ticketId),
+			ticket.isWinner
+				? getRaffleVerification(ticket.raffleId)
+				: Promise.resolve(null),
+		]);
+
+		const proof = proofResponse.success ? proofResponse.data : null;
+		let totalWinners: number | null = null;
+		if (raffleResponse && raffleResponse.success) {
+			totalWinners = raffleResponse.data.winners.length;
 		}
 
-		setResult({ type: 'success', data: { ticket, proof } });
+		setResult({ type: 'success', data: { ticket, proof, totalWinners } });
 		setLoading(false);
 	}
 
@@ -200,6 +211,17 @@ interface VerificationSuccessProps {
 function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 	const { ticket, proof } = data;
 
+	// 1-based position, suppressed for solo winners; "Winning entry" when the
+	// position is suppressed or the winner count could not be loaded.
+	function getWinnerLabel() {
+		return (
+			formatWinnerPosition(
+				ticket.winnerPosition ?? 0,
+				data.totalWinners ?? 0,
+			) ?? 'Winning entry'
+		);
+	}
+
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="flex items-center gap-2 text-green-600">
@@ -245,7 +267,7 @@ function VerificationSuccess({ data, onReset }: VerificationSuccessProps) {
 						label="Winner"
 						value={
 							<span className="flex items-center gap-1 text-amber-600">
-								{`Position #${(ticket.winnerPosition ?? 0) + 1}`}
+								{getWinnerLabel()}
 							</span>
 						}
 					/>

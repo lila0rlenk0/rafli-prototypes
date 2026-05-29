@@ -12,6 +12,7 @@ import {
 } from '@/components/verification/story/ticket-verification-story-presentation';
 import type { TicketVerificationStoryPayload } from '@/components/verification/story/ticket-verification-story-model';
 import { getIpfsUrl } from '@/lib/verification/links';
+import { formatWinnerPosition } from '@/lib/utils/raffle/winner-position';
 import type {
 	MerkleProof,
 	RaffleVerificationPayload,
@@ -215,12 +216,13 @@ function DrawResultStep({ ticket, drawFormula, raffle }: DrawResultStepProps) {
 
 	// This entry IS the winner — show congratulations + their formula
 	if (ticket.isWinner) {
+		const positionLabel = formatWinnerPosition(
+			ticket.winnerPosition ?? 0,
+			raffle?.winners.length ?? 0,
+		);
+		const title = positionLabel ? `Winner — ${positionLabel}` : 'Winner';
 		return (
-			<StoryStep
-				number={3}
-				title={`Winner — Position #${(ticket.winnerPosition ?? 0) + 1}`}
-				status="success"
-			>
+			<StoryStep number={3} title={title} status="success">
 				<div className="flex flex-col gap-3">
 					<p className="font-medium text-green-700">
 						Your entry was selected by the random number.

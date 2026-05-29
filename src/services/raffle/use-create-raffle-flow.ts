@@ -10,6 +10,7 @@ import {
 	getRaffleServerError,
 	mapFieldIssuesToFormErrors,
 } from '@/components/my-raffles/create/server-errors';
+import { traceCreateRaffle } from '@/lib/sentry/breadcrumb';
 import { bulkCreatePromoCodes } from '@/services/promo-code/bulk-create-promo-codes';
 import { createRaffle } from '@/services/raffle/create-raffle';
 import { publishRaffle } from '@/services/raffle/publish-raffle';
@@ -86,6 +87,11 @@ async function uploadRaffleMedia(
 	let coverUploaded = false;
 	const coverResult = await uploadCover(raffleId, coverImage[0]);
 	if (!coverResult.success) {
+		traceCreateRaffle(
+			'pipeline: cover upload failed',
+			{ raffleId, errorCode: coverResult.error },
+			'warning',
+		);
 		console.error('Cover upload failed:', coverResult.error);
 		toast.error('Sweepstakes created but cover upload failed.');
 	} else {
@@ -98,6 +104,11 @@ async function uploadRaffleMedia(
 			coverImage.slice(1),
 		);
 		if (!galleryResult.success) {
+			traceCreateRaffle(
+				'pipeline: gallery upload failed',
+				{ raffleId, errorCode: galleryResult.error },
+				'warning',
+			);
 			console.error('Gallery upload failed:', galleryResult.error);
 			toast.error('Sweepstakes created but gallery upload failed.');
 		}
@@ -124,6 +135,11 @@ async function persistPendingPromoCodes(
 		}
 	}
 	if (failedCount > 0) {
+		traceCreateRaffle(
+			'pipeline: promo code batches failed',
+			{ raffleId, failedCount, total: pendingPromoCodes.length },
+			'warning',
+		);
 		toast.error(
 			`${failedCount} promo code batch${failedCount > 1 ? 'es' : ''} failed to create`,
 		);
@@ -146,6 +162,11 @@ async function maybeAutoPublish(
 	if (new Date(startDate) > new Date()) return;
 	const publishResult = await publishRaffle(raffleId);
 	if (!publishResult.success) {
+		traceCreateRaffle(
+			'pipeline: auto-publish failed',
+			{ raffleId, errorCode: publishResult.error },
+			'warning',
+		);
 		console.error('Auto-publish failed:', publishResult.error);
 		toast.warning(
 			'Sweepstakes created as draft. Please go live manually from your dashboard.',
@@ -163,9 +184,20 @@ async function runCreateRafflePipeline(
 	},
 ): Promise<void> {
 	if (!data.checkInQuestion) {
+		traceCreateRaffle(
+			'pipeline: aborted, no check-in question selected',
+			undefined,
+			'warning',
+		);
 		toast.error('Please select a check-in question');
 		return;
 	}
+
+	traceCreateRaffle('pipeline: creating raffle record', {
+		hasCover: Boolean(data.coverImage?.length),
+		pendingPromoBatches: ctx.pendingPromoCodes.length,
+		acceptsCrypto: data.acceptsCrypto,
+	});
 
 	const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	const result = await createRaffle(
@@ -173,6 +205,11 @@ async function runCreateRafflePipeline(
 	);
 
 	if (!result.success) {
+		traceCreateRaffle(
+			'pipeline: createRaffle returned failure',
+			{ errorCode: result.error, fieldIssues: result.fieldIssues?.length ?? 0 },
+			'error',
+		);
 		// Prefer per-field surfacing when the backend shipped Zod issues —
 		// every offending input gets `setError` so the user fixes them
 		// inline instead of guessing from a single toast.
@@ -195,10 +232,12 @@ async function runCreateRafflePipeline(
 	}
 
 	const raffleId = result.data.id;
+	traceCreateRaffle('pipeline: raffle record created', { raffleId });
 	const coverUploaded = await uploadRaffleMedia(raffleId, data.coverImage);
 	await persistPendingPromoCodes(raffleId, ctx.pendingPromoCodes);
 	await maybeAutoPublish(raffleId, data.startDate, { coverUploaded });
 
+	traceCreateRaffle('pipeline: completed', { raffleId, coverUploaded });
 	ctx.onCreated({
 		publicSlug: result.data.publicSlugOrCode,
 		raffleStartDate: data.startDate,
@@ -232,6 +271,7 @@ export function useCreateRaffleFlow({
 					setCurrentStep,
 				});
 			} catch (error) {
+				traceCreateRaffle('pipeline: unexpected error', undefined, 'error');
 				console.error('Create raffle error:', error);
 				toast.error('Something went wrong. Please try again');
 			} finally {

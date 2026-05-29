@@ -9,7 +9,12 @@ import {
 	useState,
 	type ReactNode,
 } from 'react';
-import { useForm, useWatch, type UseFormReturn } from 'react-hook-form';
+import {
+	useForm,
+	useWatch,
+	type FieldErrors,
+	type UseFormReturn,
+} from 'react-hook-form';
 import { toast } from 'sonner';
 import { type z } from 'zod';
 
@@ -43,6 +48,7 @@ interface MultiStepFormContextType {
 	isFirstStep: boolean;
 	isLastStep: boolean;
 	onSubmit: (data: RaffleFormData) => void;
+	onInvalid: (errors: FieldErrors<RaffleFormData>) => void;
 	isCreating: boolean;
 	isRaffleCreated: boolean;
 	userName: string;
@@ -226,6 +232,7 @@ export function MultiStepFormProvider({
 
 	const {
 		handleSubmit,
+		handleInvalid,
 		isCreating,
 		createdRaffle,
 		setCreatedRaffle,
@@ -254,6 +261,7 @@ export function MultiStepFormProvider({
 				isFirstStep,
 				isLastStep,
 				onSubmit: handleSubmit,
+				onInvalid: handleInvalid,
 				isCreating,
 				isRaffleCreated: createdRaffle !== null,
 				userName,

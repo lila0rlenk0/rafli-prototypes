@@ -5,13 +5,19 @@ import { useMultiStepForm } from './multi-step-form-provider';
 import { STEPS } from './steps';
 
 export function FormStepComponent() {
-	const { currentStep: stepIndex, form, onSubmit } = useMultiStepForm();
+	const {
+		currentStep: stepIndex,
+		form,
+		onSubmit,
+		onInvalid,
+	} = useMultiStepForm();
 	return (
 		<FormStep
 			steps={STEPS}
 			stepIndex={stepIndex}
 			form={form}
 			onSubmit={onSubmit}
+			onInvalid={onInvalid}
 		/>
 	);
 }

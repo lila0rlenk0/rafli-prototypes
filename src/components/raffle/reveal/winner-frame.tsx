@@ -9,6 +9,7 @@ import {
 } from '@/components/raffle/motion-classes';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/class-names';
+import { formatWinnerPosition } from '@/lib/utils/raffle/winner-position';
 import type { Raffle } from '@/types/raffle';
 import type { Winning } from '@/types/winning';
 
@@ -40,15 +41,20 @@ export function WinnerFrame({
 	isCreditPayout,
 	onClose,
 }: WinnerFrameProps) {
-	const position = myWinning?.position ?? null;
 	const subtitle = isCreditPayout
 		? 'Your Rafli credit payout is ready to view below.'
 		: 'Congrats! Claim your prize from the panel below.';
+	// Backend `position` is 0-indexed and is omitted entirely for single-winner
+	// draws — there is no ranking to show when there is only one winner.
 	const positionLabel =
-		position !== null
-			? `Position #${position}`
+		myWinning !== null
+			? formatWinnerPosition(myWinning.position, raffle.numberOfWinners)
+			: null;
+	const metaParts = [positionLabel, myUserName].filter(Boolean);
+	const meta =
+		metaParts.length > 0
+			? metaParts.join(' · ')
 			: 'Welcome to the winners circle';
-	const meta = myUserName ? `${positionLabel} · ${myUserName}` : positionLabel;
 	return (
 		<div
 			className={cn(

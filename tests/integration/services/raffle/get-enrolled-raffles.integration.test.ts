@@ -63,8 +63,8 @@ mock.module('@/lib/auth/session', () => ({
 }));
 
 mock.module('@/lib/api/client', () => ({
-	baseClient: { get: mockGet, post: mock() },
-	cachedBaseClient: { get: mock() },
+	baseClient: { get: mock(), post: mock() },
+	cachedBaseClient: { get: mockGet, post: mock() },
 	authenticatedClient: { get: mock(), post: mock() },
 }));
 

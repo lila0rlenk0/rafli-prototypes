@@ -3,12 +3,15 @@
 import { cacheLife, cacheTag } from 'next/cache';
 import { ZodError } from 'zod';
 
-import { baseClient } from '@/lib/api/client';
+import { cachedBaseClient } from '@/lib/api/client';
 import { CACHE_TAGS } from '@/lib/api/constants';
 import { buildQueryParamsWithStatus } from '@/lib/api/query-params';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapRaffleError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import {
+	captureContractDrift,
+	captureServiceError,
+} from '@/lib/sentry/capture';
 import {
 	COMMON_ERROR_CODES,
 	RAFFLE_ERROR_CODES,
@@ -44,7 +47,7 @@ async function getEnrolledRafflesCached(
 	cacheTag(CACHE_TAGS.MY_RAFFLES, `${CACHE_TAGS.MY_RAFFLES}-${userId}`);
 
 	try {
-		const response = await baseClient.get('/me/enrolled-raffles', {
+		const response = await cachedBaseClient.get('/me/enrolled-raffles', {
 			params: buildQueryParamsWithStatus(query),
 			headers: { Authorization: `Bearer ${token}` },
 		});
@@ -63,7 +66,16 @@ async function getEnrolledRafflesCached(
 			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
 		}
 
-		return failure(mapRaffleError(error));
+		// Non-Zod failures (timeout, 5xx, network) returned dark until now —
+		// capture so the real backend cause surfaces. Expected codes
+		// (unauthorized/forbidden) are dropped by `shouldCaptureServiceError`;
+		// timeout/network sampled 10% via `beforeSend`.
+		const errorCode = mapRaffleError(error);
+		captureServiceError(error, errorCode, {
+			service: 'raffle',
+			action: 'get-enrolled-raffles',
+		});
+		return failure(errorCode);
 	}
 }
 

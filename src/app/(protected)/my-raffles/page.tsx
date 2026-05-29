@@ -88,10 +88,10 @@ export default async function MyRafflesPage({ searchParams }: PageProps) {
 				</hgroup>
 
 				<Link
-					href="/raffles"
+					href="/browse"
 					className="rounded-full border border-black px-12 py-3 text-sm font-semibold text-black transition-colors"
 				>
-					Raffles
+					Sweepstakes
 				</Link>
 			</div>
 		);

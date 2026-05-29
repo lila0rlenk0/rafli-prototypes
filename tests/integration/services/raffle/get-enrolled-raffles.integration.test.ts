@@ -25,6 +25,7 @@ const VALID_ENROLLED_RAFFLE: Raffle & { myTicketCount: number } = {
 	numberOfWinners: 1,
 	minParticipants: 10,
 	maxParticipants: 1_000,
+	minTickets: 0,
 	deliveryIncluded: false,
 	status: 'live',
 	publicSlugOrCode: 'enrolled-raffle',

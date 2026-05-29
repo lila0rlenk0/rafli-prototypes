@@ -1,8 +1,6 @@
 // Pure data, types, constants, and helper functions for the reveal experience.
 // No JSX, no browser APIs, no 'use client' — safe to import from any layer.
 
-import { generateUsername } from 'unique-username-generator';
-
 import { RAFFLE_STATUS, type Raffle, type RaffleWinner } from '@/types/raffle';
 import type { Winning } from '@/types/winning';
 
@@ -102,17 +100,17 @@ export function deriveOutcome({
  * ring. Each call re-rolls — server-rendered surfaces (`RaffleDrawCard`)
  * therefore show different handles on every request, and the dialog body
  * picks a new sample on each replay mount. Labels are unique within a
- * sample so the ring never repeats a handle in one orbit. Uses the same
- * `unique-username-generator` package as the auth backend, so the orbit
- * handles read in the same visual register as real auto-provisioned user
- * names. Visual stability across re-renders is handled by `OrbitalCards`
+ * sample so the ring never repeats a handle in one orbit. Handles are drawn
+ * from a fixed pool curated in the adjective+noun+digits register the auth
+ * backend uses for auto-provisioned names, so the ring reads like real
+ * entrants. Visual stability across re-renders is handled by `OrbitalCards`
  * locking the initial sample in component state — the sample only ever
  * changes on mount.
  *
  * @returns Array of exactly PARTICIPANT_SAMPLE_SIZE participants.
  */
 export function buildParticipantSample(): OrbitalParticipant[] {
-	const handles = generateUniqueHandles(PARTICIPANT_SAMPLE_SIZE);
+	const handles = sampleHandles(PARTICIPANT_SAMPLE_SIZE);
 	return handles.map(function toParticipant(label, index): OrbitalParticipant {
 		const ticketIndex = Math.floor(Math.random() * PLACEHOLDER_TICKETS.length);
 		return {
@@ -123,24 +121,45 @@ export function buildParticipantSample(): OrbitalParticipant[] {
 	});
 }
 
-// 3 random digits + adjective + noun mirrors the auth backend's
-// `generateUsername('', 3)` call so orbit handles read in the same visual
-// register as real auto-provisioned user names.
-const USERNAME_DIGITS = 3;
-// Retry budget for the dedup loop — the underlying noun/adjective space
-// is large enough that 7 unique picks land well inside this ceiling; the
-// cap exists purely so a pathological collision streak can't hang the
-// server-render path.
-const HANDLE_DEDUP_MAX_ATTEMPTS = 100;
+// Curated decorative handles for the orbit ring — adjective+noun+digits, the
+// register the auth backend's auto-provisioned names use, so the ring reads
+// like real entrants. A fixed pool (vs a CSPRNG-backed username generator)
+// keeps the Server Component render path and dialog mount cheap; these names
+// are cosmetic and never identify a real user. Pool size ≫ PARTICIPANT_SAMPLE_SIZE
+// yields C(20,7) ≈ 77k distinct rings, so repeats across requests go unnoticed.
+const ORBIT_HANDLE_POOL = [
+	'cleverotter214',
+	'mellowfalcon837',
+	'brightmeadow162',
+	'quietharbor548',
+	'cosmicpanther319',
+	'nobleember705',
+	'swiftlagoon483',
+	'gentlecanyon276',
+	'vividmarble691',
+	'lunarthicket058',
+	'dapperwillow423',
+	'plushboulder867',
+	'snugglacier194',
+	'merrythistle736',
+	'gallantbrook502',
+	'jollypebble948',
+	'sereneorchid385',
+	'wittytundra617',
+	'humblegrove240',
+	'zealouspine573',
+] as const;
 
-function generateUniqueHandles(count: number): string[] {
-	const picks = new Set<string>();
-	let attempts = 0;
-	while (picks.size < count && attempts < HANDLE_DEDUP_MAX_ATTEMPTS) {
-		picks.add(generateUsername('', USERNAME_DIGITS));
-		attempts += 1;
+// Partial Fisher-Yates — picks `count` handles without replacement so the ring
+// never repeats a label in one orbit. O(count); `Math.random` suffices for
+// purely decorative selection, matching the ticket-count roll above.
+function sampleHandles(count: number): string[] {
+	const pool = [...ORBIT_HANDLE_POOL];
+	for (let i = 0; i < count; i += 1) {
+		const swap = i + Math.floor(Math.random() * (pool.length - i));
+		[pool[i], pool[swap]] = [pool[swap], pool[i]];
 	}
-	return Array.from(picks);
+	return pool.slice(0, count);
 }
 
 /**

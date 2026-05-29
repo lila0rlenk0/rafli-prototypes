@@ -25,6 +25,7 @@ function makeRaffle(
 		numberOfWinners: 1,
 		minParticipants: 0,
 		maxParticipants: 100,
+		minTickets: 0,
 		deliveryIncluded: false,
 		status: RAFFLE_STATUS.DRAFT,
 		publicSlugOrCode: 'test-slug',

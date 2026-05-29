@@ -69,6 +69,22 @@ describe('buildParticipantSample', () => {
 		}
 	});
 
+	test('stays cheap enough for the server-render path', () => {
+		// `RaffleDrawCard` is a Server Component that calls this in its render
+		// body on every drawing-raffle request, and the reveal dialog rebuilds
+		// it on each replay mount. A CSPRNG-per-handle generator cost ~12ms per
+		// handle (~84ms per sample), blowing a multi-second hole in SSR for a
+		// purely decorative ring. Budget sits ~10x under the old cost and ~100x
+		// over pure pool-sampling, so any regression to a crypto-backed
+		// generator trips deterministically without flaking on a loaded CI box.
+		const BUDGET_MS = 500;
+		const start = performance.now();
+		for (let trial = 0; trial < 64; trial += 1) {
+			buildParticipantSample();
+		}
+		expect(performance.now() - start).toBeLessThan(BUDGET_MS);
+	});
+
 	test('two consecutive calls produce different label sets', () => {
 		// Random selection guarantees variety across renders — the whole
 		// point of the redesign. With a 20-handle pool and 7 picks, the

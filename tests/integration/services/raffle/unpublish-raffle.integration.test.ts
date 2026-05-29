@@ -25,6 +25,7 @@ const VALID_RAFFLE: Raffle = {
 	numberOfWinners: 1,
 	minParticipants: 10,
 	maxParticipants: 1_000,
+	minTickets: 0,
 	deliveryIncluded: false,
 	// Unpublish reverts to draft
 	status: 'draft',

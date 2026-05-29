@@ -28,6 +28,7 @@ const BASE_RAFFLE: Raffle = {
 	numberOfWinners: 1,
 	minParticipants: 10,
 	maxParticipants: 100,
+	minTickets: 0,
 	deliveryIncluded: false,
 	status: 'draft',
 	publicSlugOrCode: 'original-title-abc12',

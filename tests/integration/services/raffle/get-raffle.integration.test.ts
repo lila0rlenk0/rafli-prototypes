@@ -26,6 +26,7 @@ const VALID_RAFFLE: Raffle = {
 	numberOfWinners: 1,
 	minParticipants: 10,
 	maxParticipants: 1_000,
+	minTickets: 0,
 	deliveryIncluded: false,
 	status: 'live',
 	publicSlugOrCode: 'test-raffle',

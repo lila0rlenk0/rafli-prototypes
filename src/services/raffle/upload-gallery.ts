@@ -36,7 +36,7 @@ export async function uploadGalleryImages(
 	raffleId: string,
 	files: File[],
 ): Promise<ServiceResponse<UploadGalleryResponse, RaffleErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		if (files.length === 0) {

@@ -1,21 +1,11 @@
 const SIGN_IN_PATH = '/sign-in';
-const DEFAULT_AUTHENTICATED_PATH = '/browse';
 
 const protectedRoutes: readonly string[] = [
 	'/my-raffles',
+	'/messages',
 	'/profile',
 	'/admin',
 	'/verification',
-];
-
-const authRoutes: readonly string[] = [
-	SIGN_IN_PATH,
-	'/sign-up',
-	'/forgot-password',
-	'/reset-password',
-	'/verify-email',
-	'/auth/callback',
-	'/auth/resend-verification',
 ];
 
 export interface ProxyRouteDecisionInput {
@@ -43,14 +33,9 @@ export function getProxyRedirectPath(
 	const isProtectedRoute = protectedRoutes.some(route =>
 		matchesRoute(pathname, route),
 	);
-	const isAuthRoute = authRoutes.some(route => matchesRoute(pathname, route));
 
 	if (isProtectedRoute && !hasValidToken) {
 		return SIGN_IN_PATH;
-	}
-
-	if (isAuthRoute && hasValidToken) {
-		return DEFAULT_AUTHENTICATED_PATH;
 	}
 
 	return null;

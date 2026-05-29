@@ -1,7 +1,7 @@
 ---
 description: "ESLint"
 alwaysApply: false
-globs: "'eslint.config.mjs','src/**/*.{ts,tsx}'"
+globs: 'eslint.config.mjs','src/**/*.{ts,tsx}'
 ---
 
 # ESLint

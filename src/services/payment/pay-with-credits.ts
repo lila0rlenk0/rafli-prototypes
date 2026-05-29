@@ -33,7 +33,7 @@ import {
 export async function payWithCredits(
 	orderId: string,
 ): Promise<ServiceResponse<SpendCreditsResponse, PaymentErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Non-blocking checkout-started analytics

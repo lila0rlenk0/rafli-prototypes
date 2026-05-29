@@ -1,7 +1,7 @@
 ---
 description: "Routing"
 alwaysApply: false
-globs: "'src/app/**/*.{ts,tsx}'"
+globs: 'src/app/**/*.{ts,tsx}'
 ---
 
 # Routing

@@ -1,7 +1,20 @@
 import Image from 'next/image';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps, CSSProperties, ReactNode } from 'react';
 
 import { FulfillmentBadge } from '@/components/raffle/badges/fulfillment-badge';
+import {
+	FRAME_ENTRANCE_CLASS,
+	STAGE_ENTRANCE_CLASS,
+} from '@/components/raffle/motion-classes';
+import { ConfettiBurst } from '@/components/raffle/reveal/confetti-burst';
+import { cn } from '@/lib/class-names';
+
+// Mirrors the reveal-modal WinnerFrame shake amplitude so the static
+// right-column card lands with the same celebratory wobble after the
+// dialog closes.
+const WON_SHAKE_STYLE: CSSProperties = {
+	'--card-shake-deg': '5deg',
+} as CSSProperties;
 
 interface RaffleWonCardProps {
 	userName: string;
@@ -26,20 +39,47 @@ export function RaffleWonCard({
 	const userInitial = userName.charAt(0).toUpperCase();
 
 	return (
-		<div className="rounded-2xl border border-black bg-white px-16 py-8">
-			<ConfettiIcon className="mx-auto size-12" />
+		<div
+			className={cn(
+				'relative overflow-visible rounded-2xl border border-black bg-white px-16 py-8',
+				FRAME_ENTRANCE_CLASS,
+			)}
+		>
+			<ConfettiBurst />
 
-			<h2 className="font-clash-display mt-8 text-center text-2xl font-semibold">
+			<div
+				aria-hidden
+				style={WON_SHAKE_STYLE}
+				className="motion-safe:animate-card-pop mx-auto w-fit"
+			>
+				<ConfettiIcon className="size-12" />
+			</div>
+
+			<h2
+				className={cn(
+					'font-clash-display mt-8 text-center text-2xl font-semibold',
+					STAGE_ENTRANCE_CLASS,
+					'motion-safe:delay-400',
+				)}
+			>
 				Congratulations
 				<br />
 				you won!
 			</h2>
 
-			<div className="mt-4">
+			<div
+				className={cn('mt-4', STAGE_ENTRANCE_CLASS, 'motion-safe:delay-500')}
+			>
 				<FulfillmentBadge />
 			</div>
 
-			<div className="mt-8 flex flex-col items-center">
+			<div
+				className={cn(
+					'mt-8 flex flex-col items-center',
+					STAGE_ENTRANCE_CLASS,
+					'motion-safe:delay-600',
+				)}
+			>
 				<div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xl font-semibold">
 					{userAvatar ? (
 						<Image
@@ -61,7 +101,11 @@ export function RaffleWonCard({
 				</div>
 			</div>
 
-			{actionsSlot}
+			{actionsSlot ? (
+				<div className={cn(STAGE_ENTRANCE_CLASS, 'motion-safe:delay-700')}>
+					{actionsSlot}
+				</div>
+			) : null}
 		</div>
 	);
 }

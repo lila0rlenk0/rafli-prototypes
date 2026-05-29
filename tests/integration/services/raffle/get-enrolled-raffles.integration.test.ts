@@ -49,12 +49,35 @@ const VALID_LIST_RESPONSE = {
 
 // --- Mocks ---
 
+const mockGetSession = mock();
 const mockGet = mock();
 
-mock.module('@/lib/api/client', () => ({
-	baseClient: { get: mock(), post: mock() },
-	authenticatedClient: { get: mockGet, post: mock() },
+// All session exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
+mock.module('@/lib/auth/session', () => ({
+	getSession: mockGetSession,
+	setAuthCookies: mock(),
+	getAuthToken: mock(),
+	getCurrentUser: mock(),
+	requireAuth: mock(),
+	requireEmailVerification: mock(),
 }));
+
+mock.module('@/lib/api/client', () => ({
+	baseClient: { get: mockGet, post: mock() },
+	cachedBaseClient: { get: mock() },
+	authenticatedClient: { get: mock(), post: mock() },
+}));
+
+// All next/cache exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
+mock.module('next/cache', () => ({
+	cacheLife: mock(),
+	cacheTag: mock(),
+	unstable_cacheLife: mock(),
+	unstable_cacheTag: mock(),
+	revalidatePath: mock(),
+	revalidateTag: mock(),
+}));
+
 mock.module('@/lib/sentry/capture', () => ({
 	captureContractDrift: mock(),
 	captureServiceError: mock(),
@@ -65,9 +88,19 @@ const { getEnrolledRaffles } = await import(
 	'@/services/raffle/get-enrolled-raffles'
 );
 
+// Stub session — used across all tests; individual tests override when needed.
+function stubSession() {
+	mockGetSession.mockResolvedValue({
+		user: { id: 'user-1', email: 'user@example.com' },
+		token: 'test-jwt-token',
+		expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+	});
+}
+
 describe('getEnrolledRaffles', () => {
 	describe('success', () => {
 		test('returns paginated enrolled raffles with ticket count', async () => {
+			stubSession();
 			mockGet.mockResolvedValueOnce(
 				mockAxiosResponse(VALID_LIST_RESPONSE),
 			);
@@ -83,6 +116,7 @@ describe('getEnrolledRaffles', () => {
 		});
 
 		test('returns empty list when user has no enrollments', async () => {
+			stubSession();
 			mockGet.mockResolvedValueOnce(
 				mockAxiosResponse({
 					raffles: [],
@@ -102,6 +136,7 @@ describe('getEnrolledRaffles', () => {
 		});
 
 		test('passes status filter via URLSearchParams', async () => {
+			stubSession();
 			mockGet.mockReset();
 			mockGet.mockResolvedValueOnce(
 				mockAxiosResponse(VALID_LIST_RESPONSE),
@@ -118,7 +153,8 @@ describe('getEnrolledRaffles', () => {
 	});
 
 	describe('zod validation failure', () => {
-		test('returns FETCH_FAILED on invalid response shape', async () => {
+		test('returns VALIDATION_ERROR on invalid response shape', async () => {
+			stubSession();
 			mockGet.mockResolvedValueOnce(
 				mockAxiosResponse({ invalid: true }),
 			);
@@ -134,6 +170,7 @@ describe('getEnrolledRaffles', () => {
 
 	describe('network errors', () => {
 		test('maps ERR_NETWORK to network_error', async () => {
+			stubSession();
 			mockGet.mockRejectedValueOnce(mockAxiosError({ code: 'ERR_NETWORK' }));
 
 			const result = await getEnrolledRaffles();
@@ -145,6 +182,7 @@ describe('getEnrolledRaffles', () => {
 		});
 
 		test('maps ECONNABORTED to timeout_error', async () => {
+			stubSession();
 			mockGet.mockRejectedValueOnce(
 				mockAxiosError({ code: 'ECONNABORTED' }),
 			);
@@ -160,6 +198,7 @@ describe('getEnrolledRaffles', () => {
 
 	describe('HTTP status fallbacks', () => {
 		test('maps 401 to unauthorized', async () => {
+			stubSession();
 			mockGet.mockRejectedValueOnce(mockAxiosError({ status: 401 }));
 
 			const result = await getEnrolledRaffles();
@@ -171,6 +210,7 @@ describe('getEnrolledRaffles', () => {
 		});
 
 		test('maps 500 to internal_server_error', async () => {
+			stubSession();
 			mockGet.mockRejectedValueOnce(mockAxiosError({ status: 500 }));
 
 			const result = await getEnrolledRaffles();

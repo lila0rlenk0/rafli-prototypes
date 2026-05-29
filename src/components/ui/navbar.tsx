@@ -2,7 +2,7 @@
 
 import { Menu, User, X } from 'lucide-react';
 import Link from 'next/link';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useState, useSyncExternalStore } from 'react';
 
 import { Logo } from '@/assets/logo';
 import { ChatNavLink } from '@/components/messages/chat/nav-link';
@@ -13,6 +13,19 @@ import { cn } from '@/lib/class-names';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
 
+// Module-scope store for scroll position — stable references avoid
+// useSyncExternalStore re-subscribing on every render.
+function subscribeScroll(cb: () => void) {
+	window.addEventListener('scroll', cb, { passive: true });
+	return () => window.removeEventListener('scroll', cb);
+}
+function getScrollSnapshot() {
+	return window.scrollY > 10;
+}
+function getServerScrollSnapshot() {
+	return false;
+}
+
 interface NavbarProps {
 	children: ReactNode;
 }
@@ -22,17 +35,11 @@ interface NavbarProps {
  */
 export function Navbar({ children }: NavbarProps) {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
-	const [isScrolled, setIsScrolled] = useState(false);
-
-	useEffect(function watchScroll() {
-		function handleScroll() {
-			setIsScrolled(window.scrollY > 10);
-		}
-
-		handleScroll();
-		window.addEventListener('scroll', handleScroll, { passive: true });
-		return () => window.removeEventListener('scroll', handleScroll);
-	}, []);
+	const isScrolled = useSyncExternalStore(
+		subscribeScroll,
+		getScrollSnapshot,
+		getServerScrollSnapshot,
+	);
 
 	/**
 	 * Toggles the mobile menu open/closed state

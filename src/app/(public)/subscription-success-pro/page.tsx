@@ -1,15 +1,10 @@
 import type { Metadata } from 'next';
 
-import { SubscribeNavbar } from '@/components/subscribe/navbar';
+import { SubscriptionSuccessPage } from '@/components/subscribe/subscription-success-page';
 import {
 	SUBSCRIBE_PLAN_SLUGS,
 	SUBSCRIBE_PLANS,
 } from '@/components/subscribe/plans';
-import { shouldTrackPublicSubscriptionClaim } from '@/components/subscribe/post-payment';
-import { SubscriptionSuccessCard } from '@/components/subscribe/subscription-success-card';
-import { PUBLIC_CREDIT_EVENTS } from '@/lib/analytics/events';
-import { trackAfter } from '@/lib/analytics/mixpanel-server';
-import { getSession } from '@/lib/auth/session';
 
 // Pin the Pro plan at the route level — each subscription-success-*
 // page targets one tier so the success card surfaces the correct credit
@@ -24,9 +19,12 @@ const DESCRIPTION = `Your $${PLAN.payoutUsd} in Rafli credits from the ${PLAN.na
  * `/subscription-success-pro` — Better-Auth magic-link callback for
  * the Pro Access Pass funnel ONLY.
  *
- * See `/subscription-success-basic` for the full flow and the
- * two-state render rationale — the only delta is the pinned tier
- * (which drives the credit-value copy and the fallback CTA target).
+ * See `SubscriptionSuccessPage` for the full flow, session handling, and
+ * Mixpanel tracking rationale. The only per-route delta is the pinned tier.
+ *
+ * `noindex` because a crawler hitting this URL without a real
+ * magic-link session would always fall into the expired branch,
+ * poisoning search-results with an apparent error state.
  */
 export const metadata: Metadata = {
 	title: TITLE,
@@ -39,20 +37,5 @@ export const metadata: Metadata = {
 };
 
 export default async function SubscriptionSuccessProPage() {
-	const session = await getSession();
-
-	const userId = session?.user?.id;
-	if (shouldTrackPublicSubscriptionClaim({ userId })) {
-		void trackAfter(PUBLIC_CREDIT_EVENTS.CLAIMED, {}, { userId });
-	}
-
-	return (
-		<main className="bg-background relative min-h-dvh overflow-x-clip">
-			<SubscribeNavbar>
-				<section className="flex min-h-(--spacing-page-dvh) flex-col items-center justify-center py-16">
-					<SubscriptionSuccessCard plan={PLAN} hasSession={Boolean(session)} />
-				</section>
-			</SubscribeNavbar>
-		</main>
-	);
+	return <SubscriptionSuccessPage plan={PLAN} />;
 }

@@ -1,100 +1,116 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback } from 'react';
 
-import { TicketIcon } from '@/assets/ticket-icon';
+import { EntriesConfirmedBody } from '@/components/raffle/ticket-purchase/entries-confirmed-body';
 import { Button } from '@/components/ui/button';
-import {
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog';
 
 interface PaymentStatusPaidProps {
 	publicSlug: string;
-	/** Raffle title — folded into the share copy so the tweet names the
-	 * specific sweepstakes. Mirrors the in-page `EntriesConfirmedModal`
-	 * so the share UX doesn't drift between tender paths. */
 	raffleTitle: string;
-	/**
-	 * Hosts viewing their own raffle land here too on a Stripe redirect-back;
-	 * they shouldn't see a "View My Sweepstakes" deep-link (their sweepstakes
-	 * surface is the host dashboard, not /my-raffles). The flag keeps the
-	 * participant CTA participant-scoped.
-	 */
+	/** Hosts viewing their own raffle on Stripe redirect-back don't see the
+	 * participant deep-link — the body branches on this. */
 	isParticipant: boolean;
+	/** Quantity from the just-paid order. */
+	ticketQuantity?: number;
+	/**
+	 * Final "Your Entries" total — the page already re-rendered after the
+	 * Stripe redirect, so the page-level value reflects the post-purchase
+	 * count (assuming Stripe webhook landed before the user's redirect, which
+	 * is the common case). The body snapshots on mount so any later refetch
+	 * can't shift the number mid-celebration.
+	 */
+	yourEntries?: number;
+	/** Final "Total in Pool" — same source/snapshot semantics as `yourEntries`. */
+	totalInPool?: number;
 }
 
 /**
- * Stripe-return success state — mirrors `EntriesConfirmedModal` (the
- * in-page success modal that fires on credits + free-tickets flows) so
- * the confirmation moment is visually identical regardless of tender
- * path. Layout, copy, icon, and share text match exactly; the only
- * structural difference is the host-mode branch (Stripe redirect can
- * land hosts back on their own raffle while the in-page modal can't).
+ * Stripe-return success state. Renders the same `EntriesConfirmedBody` as
+ * the in-page credits/free-tickets flow so the confirmation moment is
+ * visually identical across tender paths.
  *
- * Renders inside `PaymentStatusModal`'s `DialogContent`, which carries
- * the matching shell + decor; this component renders only the inner
- * cluster.
+ * Hosts who land here on Stripe redirect (rare, but possible if they bought
+ * into their own sweepstakes from a different surface) skip the participant
+ * deep-link via `isParticipant=false`; the body falls back to a
+ * "Back to sweepstakes" CTA.
+ *
+ * @returns Tier-keyed celebration body — outer Dialog/DialogContent shell
+ *   lives on `PaymentStatusModal`
  */
 export function PaymentStatusPaid({
 	publicSlug,
 	raffleTitle,
 	isParticipant,
+	ticketQuantity,
+	yourEntries,
+	totalInPool,
 }: PaymentStatusPaidProps) {
-	const handleShareOnX = useCallback(() => {
-		// Branch on title presence so the tweet either names the sweepstakes
-		// or falls back to the generic line — `raffleTitle` should always be
-		// non-empty here (page-level prop), but the guard absorbs the
-		// degenerate empty-string case without bleeding "undefined" into
-		// social copy.
-		const text = raffleTitle
-			? `Just entered ${raffleTitle} on Rafli — join me!`
-			: 'Just entered this sweepstakes on Rafli — join me!';
-		const link = `${window.location.origin}/browse/${publicSlug}`;
-		const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-			text,
-		)}&url=${encodeURIComponent(link)}`;
-		window.open(url, '_blank', 'noopener,noreferrer');
-	}, [publicSlug, raffleTitle]);
+	if (
+		ticketQuantity === undefined ||
+		yourEntries === undefined ||
+		totalInPool === undefined
+	) {
+		return (
+			<PaymentStatusPaidFallback
+				publicSlug={publicSlug}
+				isParticipant={isParticipant}
+			/>
+		);
+	}
 
 	return (
-		<>
-			<DialogHeader className="relative z-10 flex flex-col items-center gap-10">
-				<TicketIcon className="size-20" />
-				<div className="flex flex-col items-center gap-4">
-					<DialogTitle className="font-clash-display text-foreground text-center text-4xl/9 font-semibold tracking-tight">
-						Your entries are in!
-					</DialogTitle>
-					<DialogDescription className="text-foreground text-center text-base/6">
-						Your entries are confirmed and your odds are set.
-						<br />
-						Sit tight. Winners drop when the timer hits zero.
-					</DialogDescription>
-					{isParticipant ? (
-						<Button
-							asChild
-							variant="outline"
-							className="mt-2 h-12 w-64 rounded-full px-6 text-base/4 font-semibold"
-						>
-							<Link href="/my-raffles">View my Sweepstakes</Link>
-						</Button>
-					) : null}
-				</div>
-			</DialogHeader>
+		<EntriesConfirmedBody
+			publicSlug={publicSlug}
+			raffleTitle={raffleTitle}
+			ticketQuantity={ticketQuantity}
+			yourEntries={yourEntries}
+			totalInPool={totalInPool}
+			// Stripe-return CTA target — `/my-raffles` (not the per-raffle
+			// deep-link) because the participant may have entered multiple
+			// raffles in one Stripe session and the list view is the
+			// universal landing.
+			participantHrefBase="/my-raffles"
+			isParticipant={isParticipant}
+		/>
+	);
+}
 
-			<div className="relative z-10 flex flex-col items-center gap-4">
-				<p className="text-foreground text-center text-lg/4 font-semibold">
-					Get a free entry by spreading the word!
-				</p>
-				<Button
-					onClick={handleShareOnX}
-					className="h-12 w-64 cursor-pointer rounded-full px-6 text-base/4 font-semibold"
-				>
-					Share on X
-				</Button>
+interface PaymentStatusPaidFallbackProps {
+	publicSlug: string;
+	isParticipant: boolean;
+}
+
+/**
+ * Verified-paid fallback for the rare case where Stripe verification succeeds
+ * but the follow-up stats fetch fails. Keeps payment truth intact: never show
+ * unpaid copy after the backend has already confirmed the charge.
+ *
+ * @returns Paid confirmation without entry stats
+ */
+function PaymentStatusPaidFallback({
+	publicSlug,
+	isParticipant,
+}: PaymentStatusPaidFallbackProps) {
+	return (
+		<div className="relative z-10 flex flex-col items-center gap-6 text-center">
+			<div className="bg-brand-yellow flex size-24 items-center justify-center rounded-3xl text-4xl">
+				Paid
 			</div>
-		</>
+			<div className="flex flex-col items-center gap-3">
+				<h2 className="font-clash-display text-foreground text-30 font-semibold">
+					Your payment is confirmed
+				</h2>
+				<p className="text-ink-500 text-body-sm max-w-sm">
+					Your entries are in. We could not load the final stats here, but your
+					sweepstakes page will show them once it refreshes.
+				</p>
+			</div>
+			<Button asChild size="lg" variant={isParticipant ? 'default' : 'outline'}>
+				<Link href={isParticipant ? '/my-raffles' : `/browse/${publicSlug}`}>
+					{isParticipant ? 'View my sweepstakes' : 'Back to sweepstakes'}
+				</Link>
+			</Button>
+		</div>
 	);
 }

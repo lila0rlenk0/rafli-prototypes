@@ -62,7 +62,7 @@ export async function createCommentBase(
 	// Resolve session in parallel with the POST — we only need it for the
 	// fire-and-forget analytics tracker on the success path, so blocking on
 	// cookies would add latency to the comment UX for no reason.
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Submit comment/reply to backend. The caller pre-built the

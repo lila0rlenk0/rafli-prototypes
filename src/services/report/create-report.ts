@@ -29,7 +29,7 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function createReport(
 	payload: CreateReportPayload,
 ): Promise<ServiceResponse<UserReportResponse, ReportErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Validate payload — reject malformed reports before network call

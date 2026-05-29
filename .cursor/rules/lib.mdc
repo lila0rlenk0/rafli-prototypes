@@ -1,7 +1,7 @@
 ---
 description: "Lib"
 alwaysApply: false
-globs: "'src/lib/**/*.{ts,tsx}'"
+globs: 'src/lib/**/*.{ts,tsx}'
 ---
 
 # Lib
@@ -10,10 +10,10 @@ Infrastructure layer. Leaf dependency — imported by services, components, hook
 
 ## Folders
 
-- `api/` — HTTP clients: `client.ts` (server), `browser-client.ts` (OAuth only; no `server-only`)
-- `auth/` — session management, JWT verification, cookie helpers (`constants.ts` for cookie names / options)
+- `api/` — HTTP clients: `client.ts` (server), `browser-client.ts` (OAuth only)
+- `auth/` — session management, JWT verification, cookie helpers (`constants.ts`)
 - `cache/` — `revalidatePath` / `revalidateTag` wrappers keyed by cache tag constants
-- `chat/` — chat WebSocket client (`stream.ts`), WS event dispatcher (`event-dispatch.ts`)
+- `chat/` — chat WebSocket (`stream.ts`), event dispatcher (`event-dispatch.ts`)
 - `errors/` — error types, domain mappers, `success()` / `failure()` helpers
 - `notifications/` — notification WebSocket client (`stream.ts`)
 - `query/` — React Query client, `serviceError()` bridge to mutations
@@ -21,11 +21,11 @@ Infrastructure layer. Leaf dependency — imported by services, components, hook
 - `analytics/` — Mixpanel client
 - `hooks/` — custom React hooks (one per file, `use-<kebab>.ts`)
 - `permissions.ts` — permission constants
-- `feature-flags.ts` — compile-time feature switches + launch-pricing deadline
+- `feature-flags.ts` — compile-time feature switches
 - `web3/` — Reown AppKit + wagmi, route-gated to `/browse/[slug]` (`format/`, `config/`, `payment/`, `errors.ts` at root)
-- `utils/` — general utilities at root (incl. `run-after.ts`, `ui-constants.ts`); `format/`, `raffle/`, `media/`, `routing/` for grouped modules
-- `class-names.ts` — Tailwind `cn()` helper only (root; not under `utils/`)
-- `verification/` — KYC/verification UI helpers, explorer links
+- `utils/` — general utilities at root (`run-after`, `ui-constants`); `format/`, `raffle/`, `media/`, `routing/` for grouped modules
+- `class-names.ts` — Tailwind `cn()` helper only (root)
+- `verification/` — verification UI helpers, explorer links
 
 ## Rules
 

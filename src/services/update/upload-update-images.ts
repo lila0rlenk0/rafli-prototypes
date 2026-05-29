@@ -9,7 +9,7 @@ import { failure, mapUpdateError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	CLIENT_ERROR_CODES,
-	UPDATE_ERROR_CODES,
+	COMMON_ERROR_CODES,
 	type UpdateErrorCode,
 } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
@@ -80,7 +80,7 @@ export async function uploadUpdateImages(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'update', 'upload-update-images');
-			return failure(UPDATE_ERROR_CODES.FETCH_FAILED);
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
 		return failure(mapUpdateError(error));

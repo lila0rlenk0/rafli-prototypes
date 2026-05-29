@@ -11,7 +11,10 @@ import { API_TIMEOUTS } from '@/lib/api/constants';
 import { mapCheckoutOrderError } from '@/lib/errors/error-mapper';
 import { failure, success } from '@/lib/errors/service-result';
 import { captureContractDrift } from '@/lib/sentry/capture';
-import { ORDER_ERROR_CODES, type CheckoutOrderErrorCode } from '@/types/errors';
+import {
+	COMMON_ERROR_CODES,
+	type CheckoutOrderErrorCode,
+} from '@/types/errors';
 import {
 	createOrderPayloadSchema,
 	orderSchema,
@@ -56,7 +59,7 @@ export async function checkoutOrder(
 		// Step 1: Validate input — defense-in-depth before forwarding to backend
 		const parsed = createOrderPayloadSchema.safeParse(payload);
 		if (!parsed.success) {
-			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
 		// Step 2: Create or reuse checkout order atomically — backend handles promo & reuse
@@ -92,7 +95,7 @@ export async function checkoutOrder(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'order', 'checkout-order');
-			return failure(ORDER_ERROR_CODES.FETCH_FAILED);
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
 		const errorCode = mapCheckoutOrderError(error);

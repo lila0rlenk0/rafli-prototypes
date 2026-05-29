@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 
 import { ChatInbox } from '@/components/messages/chat/inbox';
-import { getCurrentUser } from '@/lib/auth/session';
+import { requireAuth } from '@/lib/auth/session';
 
 export const metadata: Metadata = {
 	title: 'Messages',
@@ -13,16 +12,13 @@ export const metadata: Metadata = {
  * pane on the right inviting the user to pick a conversation; mobile
  * shows only the list.
  *
- * `getCurrentUser` is the React.cache-wrapped accessor required by
- * `.claude/rules/lib.md` for server components — dedupes the cookie read
- * with the parent layout's session check. The `(protected)` layout's
- * `AuthGuard` already blocks unauthenticated access, so the redirect here
- * is a defensive second layer (covers a session that expires between the
- * layout render and this page render).
+ * Auth is enforced by the proxy (`/messages` is a protected route) so no
+ * in-page redirect is needed. `requireAuth()` narrows the session to
+ * non-null and handles the edge case where the JWT expires between the
+ * middleware check and this render without leaking a null-user render.
  */
 export default async function MessagesPage() {
-	const user = await getCurrentUser();
-	if (!user) redirect('/sign-in');
+	const { user } = await requireAuth();
 
 	return (
 		<ChatInbox

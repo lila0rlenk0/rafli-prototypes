@@ -2,7 +2,7 @@ import { InfoIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { PromoCodesCard } from '@/components/browse/public-slug/promo-codes-card';
-import { RaffleAutoRefresh } from '@/components/raffle/countdown/auto-refresh';
+import { RaffleAutoRefreshWithRetry } from '@/components/raffle/countdown/auto-refresh-with-retry';
 import { RaffleDrawWithRefresh } from '@/components/raffle/cards/draw-with-refresh';
 import type { Raffle } from '@/types/raffle';
 
@@ -73,7 +73,7 @@ export function RaffleRightColumn({
 			{showKycNotice ? <RaffleKycNotice /> : null}
 
 			{showAutoRefresh ? (
-				<RaffleAutoRefresh
+				<RaffleAutoRefreshWithRetry
 					status={raffle.status}
 					endAt={raffle.endAt}
 					hasWinners={hasWinners}

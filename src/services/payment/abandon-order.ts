@@ -8,6 +8,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapPaymentError, success } from '@/lib/errors';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -36,12 +37,12 @@ export async function abandonOrder(
 	orderId: string,
 	paymentMethod?: string,
 ): Promise<ServiceResponse<AbandonOrderResponse, PaymentErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Request order abandonment — best-effort, reclaims backend order slot
 		const response = await authenticatedClient.post(
-			`/payments/orders/${encodeURIComponent(orderId)}/abandon`,
+			`/payments/orders/${pathParam(orderId)}/abandon`,
 			{},
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);

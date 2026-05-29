@@ -1,7 +1,7 @@
 ---
 description: "Comments"
 alwaysApply: false
-globs: "'src/**/*.{ts,tsx}'"
+globs: 'src/**/*.{ts,tsx}'
 ---
 
 # Comments

@@ -7,6 +7,7 @@ import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
+import { revalidateMyRaffles } from '@/lib/cache/revalidation';
 import {
 	extractValidationIssues,
 	failure,
@@ -18,7 +19,11 @@ import {
 	captureContractDrift,
 	captureServiceError,
 } from '@/lib/sentry/capture';
-import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
+import {
+	COMMON_ERROR_CODES,
+	RAFFLE_ERROR_CODES,
+	type RaffleErrorCode,
+} from '@/types/errors';
 import type { CreateRaffleInput, Raffle } from '@/types/raffle';
 import { createRafflePayloadSchema, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
@@ -32,7 +37,7 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function createRaffle(
 	input: CreateRaffleInput,
 ): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		const payload = {
@@ -80,6 +85,9 @@ export async function createRaffle(
 
 		const raffle = raffleSchema.parse(response.data);
 
+		// host dashboard reads from MY_RAFFLES — invalidate so the new entry shows without a forced refresh
+		revalidateMyRaffles();
+
 		const userId = (await sessionPromise)?.user?.id;
 
 		await trackAfter(
@@ -101,7 +109,7 @@ export async function createRaffle(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'create-raffle');
-			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
 		// Map and capture — host raffle creation is a critical mutation (gates

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import './raffle-animations.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -413,6 +414,18 @@
 	--spacing-tall-screen: 60vh;
 	--spacing-full-modal: 90vh;
 	--spacing-full-screen: 90dvh;
+	/* Reveal modal — Figma frame height (680px) for the desktop reveal
+	   dialog. The orbital + confetti choreography is absolutely positioned
+	   inside this frame, so a fixed pixel target keeps the trigonometric
+	   maths in lock-step with the design hand-off. Mobile falls back to
+	   `--spacing-full-screen` (90dvh) via a sm: breakpoint. */
+	--spacing-reveal-modal: 680px;
+	/* Sidebar draw card — max size of the square orbit well. The ring sizes
+	   itself in container units (radius 34cqi, cards 28cqi → outer reach
+	   48cqi, inside the 50cqi half) so it always fits; this cap just stops
+	   the well ballooning on wide (mobile/tablet) cards. Used by
+	   `RaffleDrawCard` only; the dialog variant rides `--spacing-reveal-modal`. */
+	--spacing-reveal-draw-orbit: 20rem;
 	--spacing-full-screen-sm: 85%;
 	--spacing-full-screen-md: 90vw;
 	--spacing-full-screen-lg: 90dvw;
@@ -577,6 +590,12 @@
 	   1232 — expanding/shrinking the cards retunes this figure. */
 	--container-subscribe-benefits-heading: 820px;
 	--container-subscribe-benefits-row: 1232px;
+
+	/* Spring back-out easing — overshoots ~12% past the final value
+	   before settling. Reused by every checkout-card entrance so the
+	   landing motion feels consistent across the surface. */
+	--ease-back-out: cubic-bezier(0.34, 1.56, 0.64, 1);
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -783,3 +802,4 @@
 .animate-marquee {
 	animation: marquee 20s linear infinite;
 }
+

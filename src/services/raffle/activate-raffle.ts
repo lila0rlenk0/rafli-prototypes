@@ -8,7 +8,7 @@ import { pathParam } from '@/lib/utils/routing/path-param';
 import { revalidateMyRaffles } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
-import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
+import { COMMON_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -41,7 +41,7 @@ export async function activateRaffle(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'activate-raffle');
-			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
 		return failure(mapRaffleError(error));

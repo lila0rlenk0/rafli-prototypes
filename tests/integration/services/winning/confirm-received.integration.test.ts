@@ -18,8 +18,6 @@ const VALID_WINNING: Winning = {
 	sentAt: '2026-01-03T00:00:00Z',
 	deliveredAt: '2026-01-04T00:00:00Z',
 	receivedAt: '2026-01-05T00:00:00Z',
-	disputedAt: null,
-	resolvedAt: null,
 	shippingInfo: {
 		name: 'John Doe',
 		address: '123 Main St',

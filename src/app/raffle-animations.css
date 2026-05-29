@@ -1,0 +1,169 @@
+@theme inline {
+	/* Reveal experience — concluded-raffle celebration choreography. */
+	--spacing-reveal-orbit-card: 110px;
+	--animate-reveal-orbit-card:
+		reveal-orbit-card-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)
+			var(--card-delay, 0ms) both,
+		reveal-orbit-card-around 10s linear var(--orbit-phase, 0ms) infinite;
+	--animate-reveal-orbit-card-revealing:
+		reveal-orbit-card-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)
+			var(--card-delay, 0ms) both,
+		reveal-orbit-card-around 18s cubic-bezier(0.33, 0, 0.67, 1)
+			var(--orbit-phase, 0ms) infinite;
+	--animate-reveal-progress: reveal-progress-slide 1.4s ease-in-out infinite;
+	--animate-reveal-card-flip:
+		reveal-card-flip-rotate 1.2s ease-in-out forwards,
+		reveal-card-flip-scale 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+	--animate-reveal-confetti: reveal-confetti-fall 1.8s
+		cubic-bezier(0.25, 0.46, 0.45, 0.94) var(--cf-delay, 0ms) forwards;
+
+	/* Confirmation-modal motion tokens. */
+	--animate-card-pop: card-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1)
+		both;
+	--animate-float-ambient: float-ambient 6s ease-in-out infinite;
+	--animate-tier-square: tier-square cubic-bezier(0.34, 1.56, 0.64, 1)
+		forwards;
+}
+
+@keyframes card-pop {
+	0% {
+		opacity: 0;
+		transform: scale(0) rotate(-180deg);
+	}
+	60% {
+		opacity: 1;
+		transform: scale(1) rotate(0deg);
+	}
+	75% {
+		transform: scale(1) rotate(calc(var(--card-shake-deg, 5deg) * -1));
+	}
+	90% {
+		transform: scale(1) rotate(var(--card-shake-deg, 5deg));
+	}
+	100% {
+		transform: scale(1) rotate(0deg);
+	}
+}
+
+@keyframes float-ambient {
+	0%,
+	100% {
+		transform: translate(0, 0);
+	}
+	50% {
+		transform: translate(10px, -20px);
+	}
+}
+
+@keyframes reveal-orbit-card-around {
+	from {
+		transform: translate(-50%, -50%) rotate(0deg)
+			translateX(var(--orbit-r, 150px)) rotate(0deg);
+	}
+	to {
+		transform: translate(-50%, -50%) rotate(360deg)
+			translateX(var(--orbit-r, 150px)) rotate(-360deg);
+	}
+}
+
+@keyframes reveal-orbit-card-in {
+	0% {
+		opacity: 0;
+		scale: 0;
+	}
+	60% {
+		opacity: 1;
+		scale: 1.05;
+	}
+	100% {
+		opacity: 1;
+		scale: 1;
+	}
+}
+
+@keyframes reveal-progress-slide {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(300%);
+	}
+}
+
+@keyframes reveal-card-flip-rotate {
+	0% {
+		opacity: 0;
+		transform: rotateY(0deg);
+	}
+	30% {
+		opacity: 1;
+		transform: rotateY(180deg);
+	}
+	100% {
+		opacity: 1;
+		transform: rotateY(360deg);
+	}
+}
+
+@keyframes reveal-card-flip-scale {
+	0% {
+		scale: 0.8;
+	}
+	50% {
+		scale: 1.05;
+	}
+	100% {
+		scale: 1;
+	}
+}
+
+@keyframes reveal-confetti-fall {
+	0% {
+		opacity: 0;
+		transform: translate3d(0, 0, 0) scale(0) rotate(0deg);
+	}
+	20% {
+		opacity: 1;
+		transform: translate3d(
+				calc(var(--cf-x, 0px) * 0.2),
+				144px,
+				0
+			)
+			scale(1) rotate(calc(var(--cf-r, 0deg) * 0.2));
+	}
+	100% {
+		opacity: 0;
+		transform: translate3d(var(--cf-x, 0px), 720px, 0) scale(0.8)
+			rotate(var(--cf-r, 0deg));
+	}
+}
+
+@keyframes tier-square {
+	0% {
+		opacity: 0;
+		transform: translate3d(0, 0, 0) scale(0) rotate(0deg);
+	}
+	25% {
+		opacity: 1;
+		transform: translate3d(
+				calc(var(--ts-x, 0px) * 0.1),
+				calc(var(--ts-y, 0px) * 0.1),
+				0
+			)
+			scale(1) rotate(calc(var(--ts-r, 0deg) * 0.1));
+	}
+	75% {
+		opacity: 1;
+		transform: translate3d(
+				calc(var(--ts-x, 0px) * 0.7),
+				calc(var(--ts-y, 0px) * 0.7),
+				0
+			)
+			scale(1.2) rotate(calc(var(--ts-r, 0deg) * 0.7));
+	}
+	100% {
+		opacity: 0;
+		transform: translate3d(var(--ts-x, 0px), var(--ts-y, 0px), 0)
+			scale(0.8) rotate(var(--ts-r, 0deg));
+	}
+}

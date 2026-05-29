@@ -1,7 +1,7 @@
 ---
 description: "Code Style"
 alwaysApply: false
-globs: "'src/**/*.{ts,tsx}'"
+globs: 'src/**/*.{ts,tsx}'
 ---
 
 # Code Style

@@ -1,8 +1,20 @@
 import { Goal, ServerCrash, Ticket } from 'lucide-react';
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 
 import { FulfillmentBadge } from '@/components/raffle/badges/fulfillment-badge';
+import {
+	FRAME_ENTRANCE_CLASS,
+	STAGE_ENTRANCE_CLASS,
+} from '@/components/raffle/motion-classes';
+import { cn } from '@/lib/class-names';
 import { RAFFLE_STATUS, type RaffleStatus } from '@/types/raffle';
+
+// Loser-side shake — matches the reveal-modal LoserFrame so the
+// post-dialog static card lands with a gentler wobble than the winner.
+const NOT_WON_SHAKE_STYLE: CSSProperties = {
+	'--card-shake-deg': '3deg',
+} as CSSProperties;
 
 interface RaffleNotWonCardProps {
 	/** Current raffle status */
@@ -50,15 +62,34 @@ export function RaffleNotWonCard({
 	const entryWord = myTicketsTotal === 1 ? 'entry' : 'entries';
 
 	return (
-		<div className="rounded-2xl border border-black bg-white px-16 py-8">
-			<Icon className="mx-auto size-12" />
+		<div
+			className={cn(
+				'rounded-2xl border border-black bg-white px-16 py-8',
+				FRAME_ENTRANCE_CLASS,
+			)}
+		>
+			<div
+				aria-hidden
+				style={NOT_WON_SHAKE_STYLE}
+				className="motion-safe:animate-card-pop mx-auto w-fit"
+			>
+				<Icon className="size-12" />
+			</div>
 
-			<h2 className="font-clash-display mt-8 text-center text-2xl font-semibold">
+			<h2
+				className={cn(
+					'font-clash-display mt-8 text-center text-2xl font-semibold',
+					STAGE_ENTRANCE_CLASS,
+					'motion-safe:delay-400',
+				)}
+			>
 				{getMessage()}
 			</h2>
 
 			{!isFulfilling ? (
-				<div className="mt-4">
+				<div
+					className={cn('mt-4', STAGE_ENTRANCE_CLASS, 'motion-safe:delay-500')}
+				>
 					<FulfillmentBadge />
 				</div>
 			) : null}
@@ -71,7 +102,11 @@ export function RaffleNotWonCard({
 			{hasTickets ? (
 				<Link
 					href={`/browse/${publicSlug}/ticket-ids`}
-					className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full border border-black bg-white px-6 py-3 text-sm font-semibold transition-colors hover:bg-black hover:text-white"
+					className={cn(
+						'mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full border border-black bg-white px-6 py-3 text-sm font-semibold transition-colors hover:bg-black hover:text-white',
+						STAGE_ENTRANCE_CLASS,
+						'motion-safe:delay-700',
+					)}
 				>
 					<Ticket className="size-4" />
 					View your {myTicketsTotal.toLocaleString('en-US')} {entryWord}
@@ -81,7 +116,11 @@ export function RaffleNotWonCard({
 			{isFulfilling ? (
 				<Link
 					href="/how-it-works"
-					className="mt-4 block text-center text-sm text-gray-600 underline hover:text-black"
+					className={cn(
+						'mt-4 block text-center text-sm text-gray-600 underline hover:text-black',
+						STAGE_ENTRANCE_CLASS,
+						'motion-safe:delay-700',
+					)}
 				>
 					Learn how it works
 				</Link>

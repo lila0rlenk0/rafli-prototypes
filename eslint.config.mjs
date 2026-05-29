@@ -24,6 +24,12 @@ const eslintConfig = defineConfig([
 		// that trips `no-unused-expressions` ~80 times per run. Not project
 		// code, not edited by us — out of scope for repo lint policy.
 		'.agents/**',
+		// -- `.tmp*` is the scratch area for downloaded animation prototypes
+		// + other reference material (matches the `.tmp*` glob in
+		// .gitignore). The files are intentionally un-linted: they're
+		// vendored snapshots used to extract motion choreography into
+		// repo-shaped components, not source we maintain.
+		'.tmp*/**',
 	]),
 
 	{

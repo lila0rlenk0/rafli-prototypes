@@ -40,7 +40,7 @@ import {
 export async function confirmCryptoTx(
 	payload: ConfirmCryptoTxPayload,
 ): Promise<ServiceResponse<CryptoTxMutationResponse, PaymentErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Validate input — defense-in-depth before forwarding to backend

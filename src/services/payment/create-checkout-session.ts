@@ -9,6 +9,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapPaymentError, success } from '@/lib/errors';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -26,7 +27,7 @@ import type { ServiceResponse } from '@/types/service-response';
  * Creates a Stripe Checkout Session for an order.
  *
  * Validates the payload locally so we never hit the network with bad data.
- * Uses `publicSlug` for success/cancel URL construction — encodeURIComponent
+ * Uses `publicSlug` for success/cancel URL construction — `pathParam`
  * prevents path traversal via malformed slugs.
  * BE `createCheckoutDtoSchema` only accepts `{ orderId, successUrl, cancelUrl }`.
  *
@@ -36,7 +37,7 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function createCheckoutSession(
 	payload: CreateCheckoutPayload,
 ): Promise<ServiceResponse<CheckoutSessionResponse, PaymentErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Validate payload — reject bad data before network call
@@ -45,12 +46,9 @@ export async function createCheckoutSession(
 			return failure(PAYMENT_ERROR_CODES.CHECKOUT_FAILED);
 		}
 
-		// Step 2: Build success/cancel URLs — encodeURIComponent prevents path traversal
+		// Step 2: Build success/cancel URLs — pathParam prevents path traversal
 		const { orderId, publicSlug } = validationResult.data;
-		const baseUrl = new URL(
-			`/browse/${encodeURIComponent(publicSlug)}`,
-			env.APP_URL,
-		);
+		const baseUrl = new URL(`/browse/${pathParam(publicSlug)}`, env.APP_URL);
 
 		// Step 3: Create Stripe checkout session — backend returns session URL for redirect
 		const response = await authenticatedClient.post(

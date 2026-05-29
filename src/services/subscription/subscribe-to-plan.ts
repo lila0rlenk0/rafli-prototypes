@@ -61,7 +61,7 @@ export async function subscribeToPlan(
 	// Promise.resolve because `getSession` is already async — kept for
 	// symmetry with the rest of the payment actions that capture analytics via
 	// `trackAfter`.
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Validate payload shape locally — cheap, avoids a round-trip

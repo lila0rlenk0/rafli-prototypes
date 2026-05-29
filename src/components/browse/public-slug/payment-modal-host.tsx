@@ -22,6 +22,9 @@ interface PaymentModalHostProps {
 	 * names the specific sweepstakes, matching the in-page entries-confirmed
 	 * modal's titled tweet text. */
 	raffleTitle: string;
+	/** Raffle id — the paid celebration fetches the user's authoritative
+	 * ticket total for this raffle once the Stripe verification settles. */
+	raffleId: string;
 }
 
 /**
@@ -35,6 +38,7 @@ export function PaymentModalHost({
 	publicSlug,
 	searchParams,
 	raffleTitle,
+	raffleId,
 }: PaymentModalHostProps) {
 	const router = useRouter();
 	const params = use(searchParams);
@@ -85,6 +89,7 @@ export function PaymentModalHost({
 			publicSlug={publicSlug}
 			raffleTitle={raffleTitle}
 			stripeSessionId={displayId}
+			raffleId={raffleId}
 			open={isModalOpen}
 			onOpenChange={handleOpenChange}
 		/>

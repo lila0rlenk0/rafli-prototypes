@@ -4,8 +4,7 @@
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
-      "skillPath": "skill/SKILL.md",
-      "computedHash": "8cdf2e788eaca3af7d02026ef9cec55b506100a00d130f938e3fb1ad669c0ad0"
+      "computedHash": "8e6fee1e5bd812ea53a195fae19b57a586754419d47dffad655109f75dc2dd68"
     },
     "shadcn": {
       "source": "shadcn/ui",
@@ -30,7 +29,7 @@
     "vitals-monitor": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "5746d2003b45c64802412f8c3f0ee7d4aff9e5ec8746fa5eed51bb113466b328"
+      "computedHash": "498235df6aa6cca7be1e9d85968dfc46df47074cc9e4eb0c1ac02789df819f01"
     }
   }
 }

@@ -15,6 +15,8 @@ const isDev = env.NODE_ENV === 'development';
 const localConnectSrc = isLocal
 	? ' http://localhost:4000 http://127.0.0.1:4000 ws://localhost:4000 ws://127.0.0.1:4000'
 	: '';
+const tanstackReactQueryAlias = './node_modules/@tanstack/react-query';
+const tanstackQueryCoreAlias = './node_modules/@tanstack/query-core';
 
 type WebpackExternals = NonNullable<
 	Parameters<NonNullable<NextConfig['webpack']>>[0]['externals']
@@ -43,6 +45,16 @@ const nextConfig: NextConfig = {
 			// rewrites to subpath imports so only referenced features ship.
 			'framer-motion',
 		],
+	},
+	turbopack: {
+		resolveAlias: {
+			// Bun can leave peer dependency copies under `node_modules/node_modules`.
+			// Turbopack may otherwise bundle wagmi against that second React Query
+			// instance, making wagmi hooks read a different context than the app's
+			// root `QueryClientProvider`.
+			'@tanstack/react-query': tanstackReactQueryAlias,
+			'@tanstack/query-core': tanstackQueryCoreAlias,
+		},
 	},
 	images: {
 		unoptimized: isLocal,

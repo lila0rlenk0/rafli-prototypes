@@ -127,11 +127,15 @@ export function PaymentMethodModal(props: PaymentMethodModalProps) {
 				    that peeks up from the modal bottom, clipped by the parent's
 				    `overflow-hidden`. `pointer-events-none` so taps fall through;
 				    negative z keeps it behind content without disturbing the
-				    shadcn close button stacking. */}
-				<PaymentModalDecor
-					className="pointer-events-none absolute bottom-0 left-0 -z-10 w-full"
+				    shadcn close button stacking.
+				    Wrapper carries the ambient drift so the picker bookends
+				    the celebration modal's matching float on the same shapes. */}
+				<div
 					aria-hidden
-				/>
+					className="motion-safe:animate-float-ambient pointer-events-none absolute bottom-0 left-0 -z-10 w-full"
+				>
+					<PaymentModalDecor className="w-full" />
+				</div>
 
 				{/* Content cluster — header + tender stack + footer.
 				    `max-w-(--container-tender-content)` (590px) pins the column

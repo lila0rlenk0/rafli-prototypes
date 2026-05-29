@@ -1,7 +1,7 @@
 ---
 description: "Data Fetching"
 alwaysApply: false
-globs: "'src/app/**/*.{ts,tsx}','src/services/**/*.ts','src/lib/api/**/*.ts'"
+globs: 'src/app/**/*.{ts,tsx}','src/services/**/*.ts','src/lib/api/**/*.ts'
 ---
 
 # Data Fetching

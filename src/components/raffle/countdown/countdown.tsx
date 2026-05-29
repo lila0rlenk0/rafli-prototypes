@@ -59,6 +59,39 @@ function CountdownUnit({
 }
 
 /**
+ * Same-height placeholder for the SSR / pre-hydration paint so the countdown
+ * card reserves its final layout box. `aria-hidden` because screen readers
+ * announce the live unit values once hydration completes.
+ *
+ * @returns Static skeleton matching the live countdown frame
+ */
+function CountdownSkeleton() {
+	return (
+		<div aria-hidden className="bg-brand-yellow rounded-2xl p-4">
+			<div className="flex items-center justify-center gap-4">
+				<CountdownUnitPlaceholder label="Days" />
+				<CountdownUnitPlaceholder label="Hours" />
+				<CountdownUnitPlaceholder label="Minutes" />
+				<CountdownUnitPlaceholder label="Seconds" />
+			</div>
+		</div>
+	);
+}
+
+interface CountdownUnitPlaceholderProps {
+	label: string;
+}
+
+function CountdownUnitPlaceholder({ label }: CountdownUnitPlaceholderProps) {
+	return (
+		<div className="flex flex-col items-center gap-2">
+			<p className="font-clash-display text-4xl font-semibold opacity-30">--</p>
+			<p className="text-ink-500 text-sm">{label}</p>
+		</div>
+	);
+}
+
+/**
  * RaffleCountdown Component
  *
  * Displays a live countdown timer showing days, hours, minutes, and seconds
@@ -75,7 +108,12 @@ export function RaffleCountdown({ endAt }: RaffleCountdownProps) {
 	const { isClosingSoon, isExpired, isHydrated, ...timeRemaining } =
 		useRaffleSaleWindow(endAt);
 
-	if (!isHydrated) return null;
+	// Pre-hydration: render the card frame with placeholder digits so the
+	// SSR paint reserves the final height. Returning null here previously
+	// collapsed the countdown to zero height, then expanded on hydration —
+	// visible CLS. Server and client both render the same placeholders so
+	// no hydration mismatch (real digits only swap in via `isHydrated`).
+	if (!isHydrated) return <CountdownSkeleton />;
 
 	// Once expired, replace frozen zeros with a clear message
 	if (isExpired) {

@@ -8,11 +8,13 @@ import { getProxyRedirectPath } from '@/lib/auth/proxy-routing';
  * Next.js 16 proxy function for route protection and authentication flows.
  *
  * SECURITY NOTE: `isJwtExpired()` decodes the JWT payload without signature
- * verification. This is intentional — the proxy is a UX-only guard (redirect
- * unauthenticated users to sign-in, redirect authenticated users away from
- * auth pages). The backend enforces real auth on every API call. A crafted JWT
- * with a future `exp` can access protected route HTML, but no data is leaked
- * because API calls still fail without a valid signature.
+ * verification. This is intentional — the proxy is a UX-only guard that only
+ * redirects unauthenticated users to sign-in for protected pages. Auth pages
+ * perform their own `/me` checks before bouncing users away, because a stale
+ * but unexpired token must still be allowed to reach sign-in. The backend
+ * enforces real auth on every API call. A crafted JWT with a future `exp` can
+ * access protected route HTML, but no data is leaked because API calls still
+ * fail without a valid signature.
  *
  * @param request - NextRequest object from Next.js
  * @returns NextResponse with appropriate redirect or continuation

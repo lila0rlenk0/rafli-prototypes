@@ -6,18 +6,13 @@ import { useStore } from 'zustand';
 
 import { clientEnv } from '@/env/client';
 import { NotificationStream } from '@/lib/notifications/stream';
+import { NOTIFICATION_QUERY_PREFIX } from '@/services/notification/use-notifications';
 import {
 	createNotificationStore,
 	type NotificationStore,
 } from '@/store/notification-store';
 import type { NotificationErrorCode } from '@/types/errors';
 import type { ServiceResponse } from '@/types/service-response';
-
-/**
- * Broad query key prefix — invalidates all notification queries (list, count, etc.)
- * Matches the first segment of keys produced by `notificationsKey()` in use-notifications.
- */
-const NOTIFICATION_QUERY_PREFIX = 'notification' as const;
 
 export type NotificationStoreApi = ReturnType<typeof createNotificationStore>;
 

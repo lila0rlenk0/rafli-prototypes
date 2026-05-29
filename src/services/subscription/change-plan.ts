@@ -10,6 +10,7 @@ import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { revalidateMySubscription } from '@/lib/cache/revalidation';
 import { failure, mapSubscriptionError, success } from '@/lib/errors';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -55,7 +56,7 @@ export async function changePlan(
 > {
 	// Resolve session up-front for analytics attribution regardless of which
 	// branch we exit from. Same pattern as the other subscription actions.
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Validate payload locally — `subscriptionId` is interpolated
@@ -83,10 +84,10 @@ export async function changePlan(
 
 		// Step 3: Hit the backend. Body is `{ newPlanId, effective, successUrl,
 		// cancelUrl }` — no provider field; the dispatcher auto-detects from the
-		// existing subscription row. `encodeURIComponent` belt-and-braces since
-		// the local UUID validation already rejects anything outside `[0-9a-f-]`.
+		// existing subscription row. `pathParam` belt-and-braces since the local
+		// UUID validation already rejects anything outside `[0-9a-f-]`.
 		const response = await authenticatedClient.patch(
-			`/subscriptions/${encodeURIComponent(validation.data.subscriptionId)}`,
+			`/subscriptions/${pathParam(validation.data.subscriptionId)}`,
 			{
 				newPlanId: validation.data.newPlanId,
 				effective: validation.data.effective,

@@ -41,7 +41,7 @@ interface UpdateWinningStatusInput {
 	/** Absolute backend path, e.g. `/winnings/:id/mark-sent` */
 	endpoint: string;
 	/** Optional request body — omitted for no-body POSTs */
-	payload?: unknown;
+	payload?: Record<string, unknown>;
 	/** Telemetry tag — kebab-case action name. Sentry groups events by this. */
 	action: UpdateWinningStatusAction;
 	/** Mixpanel event name from `WINNING_EVENTS` for the success tracker */
@@ -82,7 +82,7 @@ export async function updateWinningStatusBase(
 	// Resolve session in parallel with the POST — we only need it for the
 	// fire-and-forget analytics tracker on the success path, so blocking on
 	// cookies would add latency to the host/winner UX for no reason.
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Hit the status-transition endpoint. Caller pre-built the path

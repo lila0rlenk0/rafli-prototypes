@@ -20,7 +20,7 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function finalizeSubmission(
 	submissionId: string,
 ): Promise<ServiceResponse<undefined, KycSubmissionErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		await authenticatedClient.post(

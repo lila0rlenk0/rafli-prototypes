@@ -86,7 +86,7 @@ describe('publishRaffle', () => {
 	});
 
 	describe('zod validation failure', () => {
-		test('returns FETCH_FAILED on invalid response shape', async () => {
+		test('returns VALIDATION_ERROR on invalid response shape', async () => {
 			mockPost.mockResolvedValueOnce(
 				mockAxiosResponse({ id: 123, invalid: true }),
 			);
@@ -95,7 +95,7 @@ describe('publishRaffle', () => {
 
 			expect(result.success).toBe(false);
 			if (!result.success) {
-				expect(result.error).toBe(RAFFLE_ERROR_CODES.FETCH_FAILED);
+				expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
 			}
 		});
 	});

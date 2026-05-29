@@ -8,6 +8,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { failure, mapPaymentError, success } from '@/lib/errors';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -39,12 +40,12 @@ export type StripeSessionStatus = z.infer<typeof stripeSessionStatusSchema>;
 export async function getStripeSessionStatus(
 	sessionId: string,
 ): Promise<ServiceResponse<StripeSessionStatus, PaymentErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Verify session status against Stripe API (backend-verified, not from redirect URL)
 		const response = await authenticatedClient.get(
-			`/payments/stripe/sessions/${encodeURIComponent(sessionId)}/status`,
+			`/payments/stripe/sessions/${pathParam(sessionId)}/status`,
 			{ timeout: API_TIMEOUTS.QUERY },
 		);
 

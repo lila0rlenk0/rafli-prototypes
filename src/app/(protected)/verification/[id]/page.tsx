@@ -1,10 +1,10 @@
 import { ArrowLeft, FileText } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
 import { KycStatusBadge } from '@/components/verification/badges/kyc-status-badge';
-import { getSession } from '@/lib/auth/session';
+import { requireAuth } from '@/lib/auth/session';
 import { formatDate } from '@/lib/utils/format/date-format';
 import {
 	formatFieldLabel,
@@ -143,10 +143,13 @@ function DocumentCard({ doc }: { doc: KycDocument }) {
 export default async function SubmissionDetailPage({
 	params,
 }: SubmissionDetailPageProps) {
-	const session = await getSession();
-	if (!session?.user) redirect('/');
-
 	const { id } = await params;
+
+	// requireAuth() short-circuits via redirect() before the authenticated
+	// submission fetch fires — saves a backend round-trip for expired sessions
+	// and keeps the cookie read (cache()-deduped) off the critical path for
+	// authenticated users.
+	await requireAuth();
 	const result = await getSubmissionDetail(id);
 
 	if (!result.success) {

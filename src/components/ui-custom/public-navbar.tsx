@@ -9,8 +9,8 @@ import { useState } from 'react';
 import { Logo } from '@/assets/logo';
 import { ChatNavLink } from '@/components/messages/chat/nav-link';
 import { ModeSwitchToggle } from '@/components/mode/switch-toggle';
-import { NotificationBell } from '@/components/notifications/bell';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/notifications/bell';
 import { SubscriptionPill } from '@/components/ui-custom/subscription-pill';
 
 const FEEDBACK_FORM_URL = 'https://forms.gle/pE38Fv2JxfSuPZjK6';
@@ -141,10 +141,7 @@ export function PublicNavbar({
 								</div>
 							</>
 						) : (
-							<Button
-								asChild
-								className="h-[38px] bg-black px-4 text-sm text-white hover:bg-black/90"
-							>
+							<Button asChild>
 								<Link href={getSignInHref()}>Sign In</Link>
 							</Button>
 						)}
@@ -237,10 +234,7 @@ export function PublicNavbar({
 									</Link>
 								</>
 							) : (
-								<Button
-									asChild
-									className="mt-4 h-[38px] bg-black text-sm text-white hover:bg-black/90"
-								>
+								<Button asChild size="lg" className="mt-4">
 									<Link href={getSignInHref()} onClick={closeMenu}>
 										Sign In
 									</Link>

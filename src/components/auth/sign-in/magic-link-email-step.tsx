@@ -115,7 +115,7 @@ export function MagicLinkEmailStep({
 				<LogoIcon className="mx-auto" />
 
 				<div className="my-6 flex flex-col items-center gap-1 text-center">
-					<h1 className="font-clash-display line text-4xl font-semibold">
+					<h1 className="font-clash-display text-4xl font-semibold">
 						Ready to sign in?
 					</h1>
 					<p className="text-muted-foreground">

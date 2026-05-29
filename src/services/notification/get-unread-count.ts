@@ -1,10 +1,8 @@
 'use server';
 
-import { ZodError } from 'zod';
-
 import { authenticatedClient } from '@/lib/api/client';
-import { failure, mapNotificationError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import { callService } from '@/lib/api/call-service';
+import { mapNotificationError } from '@/lib/errors';
 import {
 	NOTIFICATION_ERROR_CODES,
 	type NotificationErrorCode,
@@ -23,16 +21,14 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function getUnreadCount(): Promise<
 	ServiceResponse<UnreadCountResponse, NotificationErrorCode>
 > {
-	try {
-		const response = await authenticatedClient.get(
-			'/me/notifications/unread-count',
-		);
-		return success(unreadCountResponseSchema.parse(response.data));
-	} catch (error) {
-		if (error instanceof ZodError) {
-			captureContractDrift(error, 'notification', 'get-unread-count');
-			return failure(NOTIFICATION_ERROR_CODES.VALIDATION_FAILED);
-		}
-		return failure(mapNotificationError(error));
-	}
+	return callService({
+		client: authenticatedClient,
+		method: 'get',
+		url: '/me/notifications/unread-count',
+		schema: unreadCountResponseSchema,
+		domain: 'notification',
+		action: 'get-unread-count',
+		driftCode: NOTIFICATION_ERROR_CODES.VALIDATION_FAILED,
+		mapError: mapNotificationError,
+	});
 }

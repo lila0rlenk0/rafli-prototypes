@@ -1,11 +1,9 @@
 'use server';
 
-import { ZodError } from 'zod';
-
 import { baseClient } from '@/lib/api/client';
+import { callService } from '@/lib/api/call-service';
 import { buildQueryParamsWithStatus } from '@/lib/api/query-params';
-import { failure, mapRaffleError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import { mapRaffleError } from '@/lib/errors';
 import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import type { HostRafflesQuery } from '@/types/host';
 import {
@@ -26,17 +24,15 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function getHostRaffles(
 	query: HostRafflesQuery,
 ): Promise<ServiceResponse<ListRafflesResponse, RaffleErrorCode>> {
-	try {
-		const response = await baseClient.get('/raffles', {
-			params: buildQueryParamsWithStatus(query),
-		});
-		return success(listRafflesResponseSchema.parse(response.data));
-	} catch (error) {
-		if (error instanceof ZodError) {
-			captureContractDrift(error, 'host', 'get-host-raffles');
-			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
-		}
-
-		return failure(mapRaffleError(error));
-	}
+	return callService({
+		client: baseClient,
+		method: 'get',
+		url: '/raffles',
+		schema: listRafflesResponseSchema,
+		domain: 'host',
+		action: 'get-host-raffles',
+		driftCode: RAFFLE_ERROR_CODES.FETCH_FAILED,
+		mapError: mapRaffleError,
+		config: { params: buildQueryParamsWithStatus(query) },
+	});
 }

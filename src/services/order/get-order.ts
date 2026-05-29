@@ -4,6 +4,7 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { failure, mapOrderError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import { ORDER_ERROR_CODES, type OrderErrorCode } from '@/types/errors';
 import type { Order } from '@/types/order';
 import { orderSchema } from '@/types/order';
@@ -22,7 +23,7 @@ export async function getOrder(
 ): Promise<ServiceResponse<Order, OrderErrorCode>> {
 	try {
 		const response = await authenticatedClient.get(
-			`/orders/${encodeURIComponent(orderId)}`,
+			`/orders/${pathParam(orderId)}`,
 			{ timeout: API_TIMEOUTS.QUERY },
 		);
 		return success(orderSchema.parse(response.data));

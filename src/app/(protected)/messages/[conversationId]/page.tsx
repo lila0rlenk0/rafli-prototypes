@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
 import { ChatInbox } from '@/components/messages/chat/inbox';
-import { getCurrentUser } from '@/lib/auth/session';
+import { requireAuth } from '@/lib/auth/session';
 import { getConversation } from '@/services/chat/get-conversation';
 
 export const metadata: Metadata = {
@@ -19,10 +19,10 @@ interface ConversationPageProps {
  * no information leaks about conversations the viewer can't access.
  *
  * Authorization is enforced twice:
- *   1. Parent `AuthGuard` — unauthenticated users never reach here.
- *      `getCurrentUser` short-circuits to a sign-in redirect on the
- *      narrow window where the session expires between the layout
- *      render and this page render.
+ *   1. Proxy — `/messages` is a protected route; unauthenticated users
+ *      are redirected before reaching this render. `requireAuth()` covers
+ *      the narrow window where the JWT expires between the middleware
+ *      check and this page render.
  *   2. `getConversation` — backend returns 403 for non-members, which
  *      we fold into `notFound()` (same shape as 404).
  */
@@ -31,10 +31,12 @@ export default async function ConversationPage({
 }: ConversationPageProps) {
 	const { conversationId } = await params;
 
-	const user = await getCurrentUser();
-	if (!user) redirect('/sign-in');
+	// Parallel: requireAuth and getConversation are independent — no shared inputs.
+	const [{ user }, result] = await Promise.all([
+		requireAuth(),
+		getConversation(conversationId),
+	]);
 
-	const result = await getConversation(conversationId);
 	if (!result.success) {
 		// Fold forbidden-not-member and not-found into the same response shape.
 		// Any other failure (network, contract drift) also routes to notFound —

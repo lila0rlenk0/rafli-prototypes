@@ -1,9 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { Button } from '@/components/ui/button';
+import { clientEnv } from '@/env/client';
 import { MarqueeBanner } from '@/components/browse/marquee-banner';
 import { MobileBackButton } from '@/components/browse/public-slug/mobile-back-button';
 import { PaymentModalHost } from '@/components/browse/public-slug/payment-modal-host';
@@ -15,8 +17,12 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { RAFFLE_EVENTS } from '@/lib/analytics/events';
 import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { TicketQuantityStoreProvider } from '@/providers/ticket-quantity-store-provider';
+import type { Raffle } from '@/types/raffle';
 import type { XShareConfig } from '@/components/browse/public-slug/x-share/use-share';
 
+import { SimulationRightColumnOverride } from './_sections/dev-simulation/right-column-override';
+import { RaffleSimulationProvider } from './_sections/dev-simulation/store';
+import { RaffleSimulationToolbar } from './_sections/dev-simulation/toolbar';
 import { RaffleLeftColumn } from './_sections/raffle-left-column';
 import { deriveRaffleViewState } from './_sections/raffle-page-derived';
 import { loadRafflePage } from './_sections/raffle-page-loader';
@@ -32,6 +38,47 @@ import { getRaffleSubscriptionContext } from './_sections/raffle-user-context';
 interface PageProps {
 	params: Promise<{ publicSlug: string }>;
 	searchParams: Promise<{ session_id?: string }>;
+}
+
+/**
+ * Generates per-raffle metadata for SEO and social sharing.
+ *
+ * Calls `loadRafflePage` (unauthenticated path — `authed: false`) which is
+ * already wrapped in Next.js Data Cache (`cacheLife`/`cacheTag`) via
+ * `getRaffle`. The page component repeats the same call so both are served
+ * from the cache on the same request; no `React.cache` dedup is in place,
+ * but the PPR-level cache prevents a double network round-trip.
+ *
+ * Returns a minimal fallback on data failure so the page component still
+ * controls the `notFound()` path without duplicating that logic here.
+ *
+ * @returns Metadata with `title`, `description`, and `openGraph` block
+ */
+export async function generateMetadata({
+	params,
+}: PageProps): Promise<Metadata> {
+	const { publicSlug } = await params;
+	const result = await loadRafflePage(publicSlug, { authed: false });
+
+	if (result.status !== 'ok') {
+		// Fallback title — metadata API requires a non-empty string; let the page
+		// render own the notFound() path so we don't call it twice.
+		return { title: 'Sweepstakes | Rafli' };
+	}
+
+	const { raffle } = result.data;
+	const images = raffle.coverMediaUrl ? [{ url: raffle.coverMediaUrl }] : [];
+
+	return {
+		title: `${raffle.title} | Rafli`,
+		description: raffle.description,
+		openGraph: {
+			title: `${raffle.title} | Rafli`,
+			description: raffle.description,
+			images,
+			type: 'website',
+		},
+	};
 }
 
 // Next segment config must be a statically analyzable literal. Keep this
@@ -96,6 +143,91 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 		{ userId: user?.id },
 	);
 
+	const isSimEnabled = clientEnv.NEXT_PUBLIC_APP_ENV !== 'production';
+	const rightColumnUserSlot = buildRightColumnUserSlot({
+		raffle,
+		publicSlug,
+		view,
+		xShareConfig,
+		myUserName: user?.name ?? null,
+		isSimEnabled,
+	});
+	const pageContent = (
+		<div className="container mx-auto flex max-w-6xl flex-col gap-4 px-0 pt-0 pb-8 sm:py-8 lg:gap-8 lg:px-4">
+			<MobileBackButton />
+			<div className="hidden lg:block">
+				<BackLink fallbackHref="/browse" label="Back to all sweepstakes" />
+			</div>
+			{view.showActiveCard ? (
+				<>
+					<MobileCountdownBanner endAt={raffle.endAt} />
+					<div className="h-12 lg:hidden" />
+				</>
+			) : null}
+			<div className="lg:grid-cols-sidebar grid w-full grid-cols-1 items-start gap-4 lg:gap-8">
+				<RaffleLeftColumn
+					raffle={raffle}
+					publicSlug={publicSlug}
+					categories={categories}
+					isOwner={view.isOwner}
+					canManageUpdates={view.canManageUpdates}
+					isCommentable={view.isCommentable}
+					titleMetaSlot={
+						<Suspense fallback={null}>
+							<RaffleTitleMetaAsync
+								raffleId={raffle.id}
+								hostId={raffle.hostId}
+							/>
+						</Suspense>
+					}
+					mobilePurchaseSlot={
+						view.showActiveCard ? (
+							<Suspense fallback={null}>
+								<RaffleMobilePurchaseAsync
+									raffle={raffle}
+									publicSlug={publicSlug}
+									view={view}
+									xShareConfig={xShareConfig}
+								/>
+							</Suspense>
+						) : null
+					}
+					commentSectionSlot={
+						<Suspense fallback={null}>
+							<RaffleCommentSectionAsync
+								raffleId={raffle.id}
+								hostId={raffle.hostId}
+							/>
+						</Suspense>
+					}
+				/>
+				<RaffleRightColumn
+					raffle={raffle}
+					publicSlug={publicSlug}
+					view={view}
+					userAsyncSlot={rightColumnUserSlot}
+				/>
+			</div>
+			<PaymentModalHost
+				publicSlug={publicSlug}
+				searchParams={searchParams}
+				raffleTitle={raffle.title}
+				raffleId={raffle.id}
+			/>
+			{view.showActiveCard ? (
+				<StickyBuyTicketsCta
+					raffleId={xShareConfig.raffleId}
+					isAuthenticated={user !== null}
+					availableTickets={view.availableTickets}
+					disabled={view.showEditButton || view.disablePurchase}
+					price={view.ticketPrice}
+					currency={raffle.ticketPriceCurrency}
+					subscription={subscription}
+				/>
+			) : null}
+			{isSimEnabled ? <RaffleSimulationToolbar /> : null}
+		</div>
+	);
 	return (
 		<PublicNavbar
 			isAuthenticated={user !== null}
@@ -106,89 +238,52 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 			}
 		>
 			<TicketQuantityStoreProvider>
-				<div className="container mx-auto flex max-w-6xl flex-col gap-4 px-0 pt-0 pb-8 sm:py-8 lg:gap-8 lg:px-4">
-					<MobileBackButton />
-					<div className="hidden lg:block">
-						<BackLink fallbackHref="/browse" label="Back to all sweepstakes" />
-					</div>
-					{view.showActiveCard ? (
-						<>
-							<MobileCountdownBanner endAt={raffle.endAt} />
-							<div className="h-12 lg:hidden" />
-						</>
-					) : null}
-					<div className="lg:grid-cols-sidebar grid w-full grid-cols-1 items-start gap-4 lg:gap-8">
-						<RaffleLeftColumn
-							raffle={raffle}
-							publicSlug={publicSlug}
-							categories={categories}
-							isOwner={view.isOwner}
-							canManageUpdates={view.canManageUpdates}
-							isCommentable={view.isCommentable}
-							titleMetaSlot={
-								<Suspense fallback={null}>
-									<RaffleTitleMetaAsync
-										raffleId={raffle.id}
-										hostId={raffle.hostId}
-									/>
-								</Suspense>
-							}
-							mobilePurchaseSlot={
-								view.showActiveCard ? (
-									<Suspense fallback={null}>
-										<RaffleMobilePurchaseAsync
-											raffle={raffle}
-											publicSlug={publicSlug}
-											view={view}
-											xShareConfig={xShareConfig}
-										/>
-									</Suspense>
-								) : null
-							}
-							commentSectionSlot={
-								<Suspense fallback={null}>
-									<RaffleCommentSectionAsync
-										raffleId={raffle.id}
-										hostId={raffle.hostId}
-									/>
-								</Suspense>
-							}
-						/>
-						<RaffleRightColumn
-							raffle={raffle}
-							publicSlug={publicSlug}
-							view={view}
-							userAsyncSlot={
-								<Suspense fallback={null}>
-									<RaffleRightColumnAsync
-										raffle={raffle}
-										publicSlug={publicSlug}
-										view={view}
-										xShareConfig={xShareConfig}
-									/>
-								</Suspense>
-							}
-						/>
-					</div>
-					<PaymentModalHost
-						publicSlug={publicSlug}
-						searchParams={searchParams}
-						raffleTitle={raffle.title}
-					/>
-					{view.showActiveCard ? (
-						<StickyBuyTicketsCta
-							raffleId={xShareConfig.raffleId}
-							isAuthenticated={user !== null}
-							availableTickets={view.availableTickets}
-							disabled={view.showEditButton || view.disablePurchase}
-							price={view.ticketPrice}
-							currency={raffle.ticketPriceCurrency}
-							subscription={subscription}
-						/>
-					) : null}
-				</div>
+				{isSimEnabled ? (
+					<RaffleSimulationProvider>{pageContent}</RaffleSimulationProvider>
+				) : (
+					pageContent
+				)}
 			</TicketQuantityStoreProvider>
 		</PublicNavbar>
+	);
+}
+
+interface BuildRightColumnUserSlotArgs {
+	raffle: Raffle;
+	publicSlug: string;
+	view: ReturnType<typeof deriveRaffleViewState>;
+	xShareConfig: XShareConfig;
+	myUserName: string | null;
+	isSimEnabled: boolean;
+}
+
+function buildRightColumnUserSlot({
+	raffle,
+	publicSlug,
+	view,
+	xShareConfig,
+	myUserName,
+	isSimEnabled,
+}: BuildRightColumnUserSlotArgs) {
+	const userAsyncContent = (
+		<Suspense fallback={null}>
+			<RaffleRightColumnAsync
+				raffle={raffle}
+				publicSlug={publicSlug}
+				view={view}
+				xShareConfig={xShareConfig}
+			/>
+		</Suspense>
+	);
+	if (!isSimEnabled) return userAsyncContent;
+	return (
+		<SimulationRightColumnOverride
+			raffle={raffle}
+			publicSlug={publicSlug}
+			myUserName={myUserName}
+		>
+			{userAsyncContent}
+		</SimulationRightColumnOverride>
 	);
 }
 

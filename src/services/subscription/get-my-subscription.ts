@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { ZodError } from 'zod';
 
 import { authenticatedClient } from '@/lib/api/client';
@@ -18,6 +19,58 @@ import {
 	type MySubscriptionResponse,
 } from '@/types/subscription';
 import type { ServiceResponse } from '@/types/service-response';
+
+/**
+ * Request-deduped implementation of the subscription fetch.
+ *
+ * Wrapped in `React.cache` so multiple RSCs in the same profile render tree
+ * (e.g. `CreditsSection` and `SubscriptionSection`) share a single backend
+ * round-trip rather than issuing two independent `/me/subscription` calls.
+ * Mirrors the `getSession` / `getCurrentUser` pattern in `@/lib/auth/session`.
+ *
+ * NOT a server action — `React.cache` wraps plain async functions only.
+ * The exported `getMySubscription` server action delegates here.
+ */
+const getMySubscriptionCached = cache(
+	async function getMySubscriptionImpl(): Promise<
+		ServiceResponse<MySubscriptionResponse, SubscriptionErrorCode>
+	> {
+		try {
+			// Step 1: Hit the backend. `QUERY` timeout is tuned for cold-start
+			// latency on a serverless read path.
+			const response = await authenticatedClient.get('/me/subscription', {
+				timeout: API_TIMEOUTS.QUERY,
+			});
+
+			// Step 2: Parse the wire envelope and forward it as-is. The wrapper
+			// shape is `{ subscription, capabilities, lockedProvider }`; we keep
+			// the parse on the envelope (rather than partially on the embedded
+			// entity) so a renamed wrapper key surfaces as contract drift instead
+			// of silently reading `undefined`. We deliberately do NOT unwrap to
+			// `parsed.subscription` — see the JSDoc for why capabilities and
+			// lockedProvider need to reach consumers alongside the entity.
+			const parsed = mySubscriptionResponseSchema.parse(response.data);
+			return success(parsed);
+		} catch (error) {
+			// Step 3: Contract drift — response shape changed. Fingerprinted as
+			// a single Sentry issue per deploy regression (see captureContractDrift).
+			if (error instanceof ZodError) {
+				captureContractDrift(error, 'subscription', 'get-my-subscription');
+				return failure(SUBSCRIPTION_ERROR_CODES.FETCH_FAILED);
+			}
+
+			// Step 4: Every other failure — map through the subscription mapper
+			// and capture for Sentry. Expected codes (e.g. unauthenticated) are
+			// dropped by EXPECTED_ERROR_CODES in the Sentry filter.
+			const errorCode = mapSubscriptionError(error);
+			captureServiceError(error, errorCode, {
+				service: 'subscription',
+				action: 'get-my-subscription',
+			});
+			return failure(errorCode);
+		}
+	},
+);
 
 /**
  * Fetches the authenticated user's current subscription envelope from the backend.
@@ -53,38 +106,5 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function getMySubscription(): Promise<
 	ServiceResponse<MySubscriptionResponse, SubscriptionErrorCode>
 > {
-	try {
-		// Step 1: Hit the backend. `QUERY` timeout is tuned for cold-start
-		// latency on a serverless read path.
-		const response = await authenticatedClient.get('/me/subscription', {
-			timeout: API_TIMEOUTS.QUERY,
-		});
-
-		// Step 2: Parse the wire envelope and forward it as-is. The wrapper
-		// shape is `{ subscription, capabilities, lockedProvider }`; we keep
-		// the parse on the envelope (rather than partially on the embedded
-		// entity) so a renamed wrapper key surfaces as contract drift instead
-		// of silently reading `undefined`. We deliberately do NOT unwrap to
-		// `parsed.subscription` — see the JSDoc for why capabilities and
-		// lockedProvider need to reach consumers alongside the entity.
-		const parsed = mySubscriptionResponseSchema.parse(response.data);
-		return success(parsed);
-	} catch (error) {
-		// Step 3: Contract drift — response shape changed. Fingerprinted as
-		// a single Sentry issue per deploy regression (see captureContractDrift).
-		if (error instanceof ZodError) {
-			captureContractDrift(error, 'subscription', 'get-my-subscription');
-			return failure(SUBSCRIPTION_ERROR_CODES.FETCH_FAILED);
-		}
-
-		// Step 4: Every other failure — map through the subscription mapper
-		// and capture for Sentry. Expected codes (e.g. unauthenticated) are
-		// dropped by EXPECTED_ERROR_CODES in the Sentry filter.
-		const errorCode = mapSubscriptionError(error);
-		captureServiceError(error, errorCode, {
-			service: 'subscription',
-			action: 'get-my-subscription',
-		});
-		return failure(errorCode);
-	}
+	return getMySubscriptionCached();
 }

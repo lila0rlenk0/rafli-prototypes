@@ -8,9 +8,12 @@ import type { ListNotificationsResponse } from '@/types/notification';
 
 import { getNotifications } from './get-notifications';
 
+/** Broad prefix — matches the first segment of all notification query keys. */
+export const NOTIFICATION_QUERY_PREFIX = 'notification' as const;
+
 /** Query key for notifications list */
 export function notificationsKey(params?: { limit?: number }) {
-	return ['notification', 'list', params] as const;
+	return [NOTIFICATION_QUERY_PREFIX, 'list', params] as const;
 }
 
 /**

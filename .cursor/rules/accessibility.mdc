@@ -1,7 +1,7 @@
 ---
 description: "Accessibility"
 alwaysApply: false
-globs: "'src/**/*.tsx'"
+globs: 'src/**/*.tsx'
 ---
 
 # Accessibility

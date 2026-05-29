@@ -1,7 +1,7 @@
 ---
 description: "Architecture"
 alwaysApply: false
-globs: "'src/**/*.{ts,tsx}'"
+globs: 'src/**/*.{ts,tsx}'
 ---
 
 # Architecture
@@ -25,25 +25,20 @@ src/
   services/             server actions — one domain per folder
     <domain>/<action>.ts
   lib/
-    api/                HTTP clients (server + browser-client for OAuth)
-    auth/               session, JWT, cookies (constants.ts)
+    api/                HTTP clients (base / authenticated / browser)
+    auth/               session, JWT, cookies
     cache/              revalidation helpers
-    chat/               chat WebSocket stream + event dispatch
-    notifications/    notification WebSocket stream
     errors/             error types + domain mappers
     query/              React Query client + serviceError bridge
     sentry/             capture + beforeSend filter
     hooks/              custom hooks
-    utils/              general utilities (run-after, ui-constants, …)
-    class-names.ts      cn() only (root)
-    verification/       verification UI helpers + explorer links
+    utils/ utils.ts     cn() + general utilities
   providers/            React context providers
   store/                Zustand (vanilla createStore + provider)
   types/                Zod schemas, inferred types, error codes
   env/                  @t3-oss/env-nextjs schemas
   proxy.ts              middleware — redirects only, no auth logic
 tests/integration/      server action integration tests
-e2e/                    Playwright specs
 ```
 
 ## Dependency direction

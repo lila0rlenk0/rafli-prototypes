@@ -37,7 +37,7 @@ export async function claimWinning(
 	payload: ClaimWinningPayload,
 	publicSlug?: string,
 ): Promise<ServiceResponse<Winning, WinningErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Submit claim with shipping info — transitions pending → awaiting_host

@@ -36,7 +36,7 @@ export async function submitRaffleAnswer(
 	raffleId: string,
 	optionId: string,
 ): Promise<SubmitRaffleAnswerResponse> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		const response = await authenticatedClient.post(

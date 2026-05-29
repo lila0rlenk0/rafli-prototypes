@@ -26,7 +26,7 @@ import { walletResponseSchema } from '@/types/wallet';
 export async function verifyWallet(
 	payload: VerifyWalletPayload,
 ): Promise<ServiceResponse<WalletResponse, WalletErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Submit EIP-191 signed payload for backend verification

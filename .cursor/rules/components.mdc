@@ -1,7 +1,7 @@
 ---
 description: "Components"
 alwaysApply: false
-globs: "'src/components/**/*.{ts,tsx}','src/app/**/*.tsx'"
+globs: 'src/components/**/*.{ts,tsx}','src/app/**/*.tsx'
 ---
 
 # Components
@@ -12,7 +12,7 @@ Server Components by default, organized by domain.
 
 - `ui/` — shadcn primitives, managed by CLI, never hand-edit
 - `ui-custom/` — non-stock shell pieces (public navbar, loaders, copy/media helpers) that compose `ui/` primitives
-- domain folders: `auth`, `raffle`, `host`, `payment`, `filters`, `promo-code`, `mode`, `order`, `fulfillment`, `notifications`, `report`, `verification`, `my-raffles`, `browse`, `profile`, `landing`, `pricing`, `messages`, `admin`
+- domain folders: `auth`, `raffle`, `host`, `payment`, `filters`, `promo-code`, `mode`, `order`, `fulfillment`, `notifications`, `report`, `verification`, `my-raffles`, `browse`, `profile`, `landing`, `pricing`, `subscribe`, `messages`, `admin`
 
 ## Server vs Client
 
@@ -62,7 +62,7 @@ export default function Page() {
 - render logic only — pages fetch, domain components render
 - never `useEffect` for data — see `react-effects.md`
 - cross-domain reuse flows through `ui/` primitives — a `raffle/` component never imports from `host/`
-- every CTA goes through the shadcn `<Button>` primitive (or `<Button asChild><Link>`) — don't hand-roll `bg-brand-dark` on a raw `<a>`/`<button>`; the variant belongs in one place. Never use `bg-primary` on a button — `--primary` is cyan (links/progress/selection), buttons resolve to `bg-brand-dark` (`#141416`). ESLint flags `bg-primary` on buttons via `local/no-primary-on-button`.
+- every CTA goes through the shadcn `<Button>` primitive (or `<Button asChild><Link>`) — don't hand-roll `bg-primary`/`bg-brand-dark` on a raw `<a>`/`<button>`; the variant belongs in one place
 
 ## Performance
 

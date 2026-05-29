@@ -26,8 +26,10 @@ interface TicketPurchaseCardProps {
 	isAuthenticated?: boolean;
 	/** Structured crypto options from raffle — null when raffle doesn't accept crypto */
 	cryptoOptions?: RaffleCryptoOptions | null;
-	/** Current user ticket total for this raffle — baseline for crypto post-success sync */
+	/** Current user ticket total for this raffle — baseline for crypto post-success sync + the celebration modal's "Your Entries" projection */
 	myTicketsTotal?: number;
+	/** Raffle pool baseline before this purchase — feeds the celebration modal's "Total in Pool" + odds projection */
+	ticketsSoldCount?: number;
 	userId?: string | null;
 	/** User's available credit balance as decimal string — null when unauthenticated or fetch failed */
 	availableCredits?: string | null;
@@ -74,6 +76,7 @@ export function TicketPurchaseCard({
 	isAuthenticated = true,
 	cryptoOptions,
 	myTicketsTotal = 0,
+	ticketsSoldCount = 0,
 	userId,
 	availableCredits,
 	raffleTitle,
@@ -121,7 +124,7 @@ export function TicketPurchaseCard({
 	);
 
 	return (
-		<div className="flex flex-col gap-4">
+		<div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 flex flex-col gap-4 motion-safe:duration-500 motion-safe:ease-(--ease-back-out)">
 			{/* Quantity surface — price header, stepper, mobile summary.
 			    Hidden for free-tickets promos where the price is $0.
 			    `effectiveUnitPrice` reflects the subscriber-discounted unit so the
@@ -206,11 +209,21 @@ export function TicketPurchaseCard({
 				onPurchaseSettled={handlePurchaseSettled}
 			/>
 
+			{/* `yourEntries` / `totalInPool` projected here from the page's
+			    pre-purchase baselines: handlePurchaseSettled opens this modal
+			    BEFORE router.refresh fires (use-claim-free-tickets), so the
+			    parent's myTicketsTotal/ticketsSoldCount are still pre-purchase
+			    at this exact render. Adding ticketQuantity yields the
+			    post-purchase totals; the body snapshots them at mount so the
+			    later RSC refresh can't shift the figures mid-celebration. */}
 			<EntriesConfirmedModal
 				open={isEntriesConfirmedModalOpen}
 				onOpenChange={setEntriesConfirmedModalOpen}
 				publicSlug={publicSlug}
 				raffleTitle={raffleTitle}
+				ticketQuantity={ticketQuantity}
+				yourEntries={myTicketsTotal + ticketQuantity}
+				totalInPool={ticketsSoldCount + ticketQuantity}
 			/>
 		</div>
 	);

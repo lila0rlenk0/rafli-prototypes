@@ -8,9 +8,14 @@ import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
+import { revalidateMyRaffles } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
-import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
+import {
+	COMMON_ERROR_CODES,
+	RAFFLE_ERROR_CODES,
+	type RaffleErrorCode,
+} from '@/types/errors';
 import type { Raffle, UpdateRafflePayload } from '@/types/raffle';
 import { raffleSchema, updateRafflePayloadSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
@@ -27,7 +32,7 @@ export async function updateRaffle(
 	raffleId: string,
 	payload: UpdateRafflePayload,
 ): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Validate payload — reject malformed updates before network call
@@ -51,7 +56,11 @@ export async function updateRaffle(
 		// Step 4: Validate response shape
 		const raffle = raffleSchema.parse(response.data);
 
-		// Step 5: Must `await` trackAfter — it resolves IP via headers() in
+		// Step 5: Revalidate my-raffles cache so host dashboard reflects the update
+		// Revalidation target: MY_RAFFLES tag
+		revalidateMyRaffles();
+
+		// Step 6: Must `await` trackAfter — it resolves IP via headers() in
 		// request scope then defers Mixpanel via after(). `void trackAfter(...)`
 		// would run headers() post-response and throw.
 		const session = await sessionPromise;
@@ -68,7 +77,7 @@ export async function updateRaffle(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'update-raffle');
-			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
 		return failure(mapRaffleError(error));

@@ -1,5 +1,7 @@
 'use client';
 
+import type { Path, PathValue } from 'react-hook-form';
+
 import { Button } from '@/components/ui/button';
 import {
 	Dropzone,
@@ -17,13 +19,14 @@ import {
 import {
 	ACCEPTED_DOC_TYPES_MAP,
 	MAX_DOC_SIZE,
+	type VerificationFormData,
 } from '@/lib/validation/verification/form-schema';
 import { VERIFICATION_TYPE } from '@/types/kyc-submission';
 
 import { useVerificationForm } from '@/components/verification/form/form-provider';
 
 interface DocumentFieldConfig {
-	name: string;
+	name: Path<VerificationFormData>;
 	label: string;
 	description: string;
 	required: boolean;
@@ -123,7 +126,7 @@ export function DocumentUploadStep() {
 		// caught here instead of only surfacing at final form submission
 		const fieldNames = documentFields.map(f => f.name);
 
-		const isValid = await trigger(fieldNames as never[]);
+		const isValid = await trigger(fieldNames);
 		if (isValid) {
 			nextStep();
 		}
@@ -139,7 +142,7 @@ export function DocumentUploadStep() {
 			<FieldSet>
 				<FieldGroup>
 					{documentFields.map(field => {
-						const files = (watch(field.name as never) as File[]) || [];
+						const files = (watch(field.name) as File[]) || [];
 
 						return (
 							<Field key={field.name}>
@@ -159,9 +162,16 @@ export function DocumentUploadStep() {
 									maxSize={MAX_DOC_SIZE}
 									src={files.length > 0 ? files : undefined}
 									onDrop={acceptedFiles => {
-										setValue(field.name as never, acceptedFiles as never, {
-											shouldValidate: true,
-										});
+										// document fields are all File[]-typed; RHF can't narrow PathValue
+										// from a generic Path<>, so the cast asserts the known contract.
+										setValue(
+											field.name,
+											acceptedFiles as PathValue<
+												VerificationFormData,
+												typeof field.name
+											>,
+											{ shouldValidate: true },
+										);
 									}}
 								>
 									<DropzoneContent />

@@ -59,14 +59,14 @@ describe('createUpdate', () => {
 		}
 	});
 
-	test('returns FETCH_FAILED on invalid response shape', async () => {
+	test('returns VALIDATION_ERROR on invalid response shape', async () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse({ bad: true }));
 
 		const result = await createUpdate('raffle-1', { text: 'Test' });
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
-			expect(result.error).toBe(UPDATE_ERROR_CODES.FETCH_FAILED);
+			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 	});
 

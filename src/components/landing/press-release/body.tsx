@@ -1,5 +1,3 @@
-'use client';
-
 import { PressArticleAudiences } from '@/components/landing/press-release/audiences';
 import { PressArticleClosing } from '@/components/landing/press-release/closing';
 import { PressArticleIntro } from '@/components/landing/press-release/intro';

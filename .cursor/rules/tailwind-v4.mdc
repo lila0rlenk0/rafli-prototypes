@@ -1,7 +1,7 @@
 ---
 description: "Tailwind v4"
 alwaysApply: false
-globs: "'src/**/*.{tsx,css}'"
+globs: 'src/**/*.{tsx,css}'
 ---
 
 # Tailwind v4

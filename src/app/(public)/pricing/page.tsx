@@ -125,10 +125,9 @@ function PricingHero() {
  * silently to the non-subscriber experience. Plans failure renders the
  * shared bug-icon error card.
  *
- * Caching: default RSC behavior. `getPlans` hits a public endpoint whose
- * payload rarely changes; if this becomes a hot path, wrap in
- * `unstable_cache` with a 5-minute revalidation — not done now because
- * the /pricing traffic pattern doesn't justify it.
+ * Caching: `getPlans` declares `'use cache'` with stale: 300 / revalidate: 1_800 / expire: 7_200 —
+ * plans are near-static and shared across all visitors, so the cached path
+ * avoids a backend round-trip on every /pricing render.
  */
 export default async function PricingPage() {
 	// Step 1: Resolve the cookie-backed session first — local decode, no

@@ -10,7 +10,7 @@ import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
 import {
 	CLIENT_ERROR_CODES,
-	RAFFLE_ERROR_CODES,
+	COMMON_ERROR_CODES,
 	type RaffleErrorCode,
 } from '@/types/errors';
 import {
@@ -35,7 +35,7 @@ export async function uploadCover(
 	raffleId: string,
 	file: File,
 ): Promise<ServiceResponse<UploadCoverResponse, RaffleErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -82,7 +82,7 @@ export async function uploadCover(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'upload-cover');
-			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
 		return failure(mapRaffleError(error));

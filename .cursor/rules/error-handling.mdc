@@ -1,7 +1,7 @@
 ---
 description: "Error Handling"
 alwaysApply: false
-globs: "'src/services/**/*.ts','src/lib/errors/**/*.ts','src/lib/sentry/**/*.ts','src/components/**/*.tsx'"
+globs: 'src/services/**/*.ts','src/lib/errors/**/*.ts','src/lib/sentry/**/*.ts','src/components/**/*.tsx'
 ---
 
 # Error Handling

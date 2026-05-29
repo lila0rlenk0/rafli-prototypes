@@ -21,34 +21,34 @@ describe('getProxyRedirectPath', () => {
 		expect(redirectPath).toBeNull();
 	});
 
-	test('redirects authenticated users away from auth routes to browse', () => {
+	test('allows sign-in route even with a valid-looking token', () => {
 		const redirectPath = getProxyRedirectPath({
 			pathname: '/sign-in',
 			hasValidToken: true,
 		});
 
-		expect(redirectPath).toBe('/browse');
+		expect(redirectPath).toBeNull();
 	});
 
-	test('redirects authenticated users away from verify-email and oauth callback', () => {
+	test('allows auth routes to perform authoritative server auth checks', () => {
 		expect(
 			getProxyRedirectPath({
 				pathname: '/verify-email',
 				hasValidToken: true,
 			}),
-		).toBe('/browse');
+		).toBeNull();
 		expect(
 			getProxyRedirectPath({
 				pathname: '/auth/callback',
 				hasValidToken: true,
 			}),
-		).toBe('/browse');
+		).toBeNull();
 		expect(
 			getProxyRedirectPath({
 				pathname: '/auth/resend-verification',
 				hasValidToken: true,
 			}),
-		).toBe('/browse');
+		).toBeNull();
 	});
 
 	test('allows unauthenticated users on auth routes', () => {

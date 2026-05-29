@@ -1,7 +1,6 @@
 'use client';
 
 import Autoplay from 'embla-carousel-autoplay';
-import { useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 
@@ -56,15 +55,14 @@ export function RecentWinnersSection({ winners }: RecentWinnersSectionProps) {
 		}),
 	);
 
-	// `useReducedMotion` returns `null` during SSR / first paint, then
-	// resolves to the real OS preference after mount. We honour `true`
-	// by stopping the plugin; the `false` / `null` paths leave the
-	// default play state intact so the autoplay starts on its own
-	// (avoids racing the plugin's internal init by calling `.play()`).
-	const reducedMotion = useReducedMotion();
+	// mount: stop autoplay if the OS reports prefers-reduced-motion.
+	// Read once on mount — reactive OS changes are an acceptable trade-off
+	// for removing the framer-motion dependency (deliberate per audit).
 	useEffect(() => {
-		if (reducedMotion) autoplay.current.stop();
-	}, [reducedMotion]);
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			autoplay.current.stop();
+		}
+	}, []);
 
 	return (
 		<section className="flex flex-col gap-6">

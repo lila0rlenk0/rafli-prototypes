@@ -9,6 +9,7 @@ import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { revalidateMySubscription } from '@/lib/cache/revalidation';
 import { failure, mapSubscriptionError, success } from '@/lib/errors';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -46,7 +47,7 @@ export async function cancelSubscription(
 ): Promise<ServiceResponse<CancelSubscriptionResponse, SubscriptionErrorCode>> {
 	// Resolve session up-front so analytics attribute the event to the right
 	// user regardless of which branch we exit. Same pattern as subscribe-to-plan.
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Validate payload locally — short-circuit malformed UUIDs (e.g. a
@@ -62,11 +63,11 @@ export async function cancelSubscription(
 		// Step 2: Hit the backend. Ownership and lifecycle gating (must be
 		// active, not already cancelled) live server-side — surfaced here as
 		// `payments:subscription:not-active` / `not-found` codes.
-		// `encodeURIComponent` is belt-and-braces — the local UUID validation
-		// already rejects anything outside `[0-9a-f-]`, but we keep the encode
-		// so the rule "never interpolate raw values into URLs" reads cleanly.
+		// `pathParam` is belt-and-braces — the local UUID validation already
+		// rejects anything outside `[0-9a-f-]`, but we keep the encode so
+		// the rule "never interpolate raw values into URLs" reads cleanly.
 		const response = await authenticatedClient.delete(
-			`/subscriptions/${encodeURIComponent(validation.data.subscriptionId)}`,
+			`/subscriptions/${pathParam(validation.data.subscriptionId)}`,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 

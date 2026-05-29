@@ -11,8 +11,19 @@ const mockCaptureContractDrift = mock();
 mock.module('server-only', () => ({}));
 
 mock.module('@/lib/api/client', () => ({
-	baseClient: { get: mockGet },
+	baseClient: { get: mock() },
+	cachedBaseClient: { get: mockGet },
 	authenticatedClient: { get: mock(), post: mock() },
+}));
+
+// All next/cache exports required — incomplete mocks contaminate other test files via Bun's global mock.module()
+mock.module('next/cache', () => ({
+	cacheLife: mock(),
+	cacheTag: mock(),
+	unstable_cacheLife: mock(),
+	unstable_cacheTag: mock(),
+	revalidatePath: mock(),
+	revalidateTag: mock(),
 }));
 
 mock.module('@/lib/sentry/capture', () => ({

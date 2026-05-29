@@ -1,12 +1,10 @@
 import type { Metadata } from 'next';
 
-import { SubscribeNavbar } from '@/components/subscribe/navbar';
+import { SubscriptionPendingPage } from '@/components/subscribe/subscription-pending-page';
 import {
 	SUBSCRIBE_PLAN_SLUGS,
 	SUBSCRIBE_PLANS,
 } from '@/components/subscribe/plans';
-import { parsePendingSubscriptionEmail } from '@/components/subscribe/post-payment';
-import { SubscriptionPendingCard } from '@/components/subscribe/subscription-pending-card';
 
 // Pin the Starter plan at the route level — each subscription-pending-*
 // page targets one tier so the post-payment confirmation surfaces the
@@ -23,9 +21,8 @@ const DESCRIPTION = `Your ${PLAN.name} Access Pass is queued — we just emailed
  * the webhook fulfillment runs and BEFORE the Better-Auth magic-link
  * email arrives.
  *
- * See `/subscription-pending-basic` for the full end-to-end flow — the
- * only delta is the pinned tier (which drives the credit-value copy
- * and the success-page redirect target).
+ * See `SubscriptionPendingPage` for the full end-to-end flow and render
+ * logic. The only per-route delta is the pinned tier.
  *
  * `noindex` because a crawler hitting this URL outside the funnel has
  * no email param and would render the generic copy, which has zero SEO
@@ -42,25 +39,13 @@ export const metadata: Metadata = {
 };
 
 interface SubscriptionPendingStarterPageProps {
-	// Next.js 16 — searchParams resolves to a plain object after await.
-	// `string | string[] | undefined` mirrors Next.js's inferred shape for
-	// repeated keys; the parser collapses arrays to their first value.
 	readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function SubscriptionPendingStarterPage({
 	searchParams,
 }: SubscriptionPendingStarterPageProps) {
-	const params = await searchParams;
-	const email = parsePendingSubscriptionEmail(params.email);
-
 	return (
-		<main className="bg-brand-mint relative min-h-dvh overflow-x-clip">
-			<SubscribeNavbar>
-				<section className="flex min-h-(--spacing-page-dvh) flex-col items-center justify-center py-16">
-					<SubscriptionPendingCard plan={PLAN} email={email} />
-				</section>
-			</SubscribeNavbar>
-		</main>
+		<SubscriptionPendingPage plan={PLAN} searchParams={await searchParams} />
 	);
 }

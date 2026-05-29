@@ -25,7 +25,7 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function createReview(
 	payload: CreateReviewPayload,
 ): Promise<ServiceResponse<Review, ReviewErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Submit review to backend

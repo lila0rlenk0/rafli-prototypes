@@ -1,7 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 import { CLIENT_ERROR_CODES } from '@/types/errors/client-errors';
-import { UPDATE_ERROR_CODES } from '@/types/errors/update-errors';
 import { COMMON_ERROR_CODES } from '@/types/errors/common-errors';
 
 import { mockAxiosError, mockAxiosResponse } from '@tests/helpers/mock-axios';
@@ -90,7 +89,7 @@ describe('uploadUpdateImages', () => {
 		}
 	});
 
-	test('returns FETCH_FAILED on invalid response shape', async () => {
+	test('returns VALIDATION_ERROR on invalid response shape', async () => {
 		mockPost.mockResolvedValueOnce(mockAxiosResponse({ bad: true }));
 
 		const files = [createMockFile('test.png', 'image/png', 1_000)];
@@ -98,7 +97,7 @@ describe('uploadUpdateImages', () => {
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
-			expect(result.error).toBe(UPDATE_ERROR_CODES.FETCH_FAILED);
+			expect(result.error).toBe(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 	});
 

@@ -7,6 +7,7 @@ import type { NotificationErrorCode } from '@/types/errors';
 import type { MarkReadResponse } from '@/types/notification';
 
 import { markAllNotificationsRead } from './mark-all-notifications-read';
+import { NOTIFICATION_QUERY_PREFIX } from './use-notifications';
 
 /**
  * Mutation hook for marking all notifications as read
@@ -23,7 +24,7 @@ export function useMarkAllNotificationsRead() {
 			return result.data;
 		},
 		onSuccess() {
-			queryClient.invalidateQueries({ queryKey: ['notification'] });
+			queryClient.invalidateQueries({ queryKey: [NOTIFICATION_QUERY_PREFIX] });
 		},
 	});
 }

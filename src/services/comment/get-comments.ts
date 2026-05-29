@@ -1,11 +1,9 @@
 'use server';
 
-import { ZodError } from 'zod';
-
 import { baseClient } from '@/lib/api/client';
+import { callService } from '@/lib/api/call-service';
 import { pathParam } from '@/lib/utils/routing/path-param';
-import { failure, mapCommentError, success } from '@/lib/errors';
-import { captureContractDrift } from '@/lib/sentry/capture';
+import { mapCommentError } from '@/lib/errors';
 import type { CommentSort } from '@/types/comment';
 import {
 	listCommentsResponseSchema,
@@ -32,17 +30,15 @@ export async function getComments(
 	raffleId: string,
 	params?: GetCommentsParams,
 ): Promise<ServiceResponse<ListCommentsResponse, CommentErrorCode>> {
-	try {
-		const response = await baseClient.get(
-			`/raffles/${pathParam(raffleId)}/comments`,
-			{ params },
-		);
-		return success(listCommentsResponseSchema.parse(response.data));
-	} catch (error) {
-		if (error instanceof ZodError) {
-			captureContractDrift(error, 'comment', 'get-comments');
-			return failure(COMMENT_ERROR_CODES.FETCH_FAILED);
-		}
-		return failure(mapCommentError(error));
-	}
+	return callService({
+		client: baseClient,
+		method: 'get',
+		url: `/raffles/${pathParam(raffleId)}/comments`,
+		schema: listCommentsResponseSchema,
+		domain: 'comment',
+		action: 'get-comments',
+		driftCode: COMMENT_ERROR_CODES.FETCH_FAILED,
+		mapError: mapCommentError,
+		config: { params },
+	});
 }

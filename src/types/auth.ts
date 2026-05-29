@@ -62,12 +62,16 @@ export const signInInputSchema = z.object({
  * Validation boundary: client-side — validated in the sign-up form.
  * min(12) on password enforces the platform's password policy before
  * the request reaches the backend's own validation.
+ *
+ * `name` is no longer collected by the form (both magic-link and password
+ * sign-up surfaces skip it). The field stays in the wire payload — the
+ * password path sends an empty string and the backend derives a default.
  */
 export const signUpInputSchema = z.object({
 	email: z.email(),
 	/** 12-char minimum — platform password policy, also enforced by backend */
 	password: z.string().min(12),
-	name: z.string().min(1),
+	name: z.string(),
 	captchaToken: captchaTokenSchema,
 });
 

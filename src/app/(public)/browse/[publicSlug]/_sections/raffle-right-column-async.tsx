@@ -6,18 +6,22 @@ import { HostFulfillmentCard } from '@/components/fulfillment/host-card';
 import { CreditPayoutCard } from '@/components/raffle/cards/credit-payout-card';
 import { PrizeBreakdownCard } from '@/components/raffle/cards/prize-breakdown-card';
 import { RaffleCancelledCard } from '@/components/raffle/cards/cancelled-card';
+import { RaffleDrawCard } from '@/components/raffle/cards/draw-card';
 import { RaffleCountdown } from '@/components/raffle/countdown/countdown';
 import { RaffleExpiredGate } from '@/components/raffle/expired-gate';
 import { RaffleInfoCard } from '@/components/raffle/info-card/info-card';
 import { RaffleNotWonCard } from '@/components/raffle/cards/not-won-card';
 import { RaffleWonCard } from '@/components/raffle/cards/won-card';
 import { RevenueBreakdownCard } from '@/components/raffle/cards/revenue-breakdown-card';
+import { RevealDemoLink } from '@/components/raffle/reveal/reveal-demo-link';
+import { RaffleRevealExperience } from '@/components/raffle/reveal/reveal-experience';
 import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase/ticket-purchase-card';
 import { WinnersList } from '@/components/raffle/winners/winners-list';
 import { CommentSection } from '@/components/raffle/comments/section';
 import { ReportRaffleButton } from '@/components/browse/public-slug/report-raffle-button';
 import { ShareOnXButton } from '@/components/browse/public-slug/share-on-x-button';
 import { SubscribeUpsellCard } from '@/components/pricing/subscribe/subscribe-upsell-card';
+import { clientEnv } from '@/env/client';
 import { getCurrentUser } from '@/lib/auth/session';
 import { isPartialParticipation } from '@/lib/utils/raffle/partial-participation';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
@@ -73,15 +77,42 @@ export async function RaffleRightColumnAsync({
 		!view.isOwner;
 	return (
 		<>
-			<TerminalCards
+			{/* The reveal gate hides the spoiler children (terminal cards,
+			    winners list) for an eligible participant until they trigger
+			    the in-page reveal; for everyone else it renders them through. */}
+			<RaffleRevealExperience
 				raffle={raffle}
 				publicSlug={publicSlug}
-				view={view}
-				ctx={ctx}
-			/>
-			{showCreditPayoutForOther ? (
-				<CreditPayoutCard raffle={raffle} viewer="other" />
-			) : null}
+				myWinning={ctx.myWinning}
+				myTicketsTotal={ctx.myTicketsTotal}
+				myTicketCodes={ctx.myTicketCodes}
+				myUserName={ctx.myUserName}
+				isAuthenticated={ctx.isAuthenticated}
+				isOwner={view.isOwner}
+				isConcluded={view.isConcluded}
+				hasWinners={view.hasWinners}
+				isCancelled={view.isCancelled}
+			>
+				<TerminalCards
+					raffle={raffle}
+					publicSlug={publicSlug}
+					view={view}
+					ctx={ctx}
+				/>
+				{showCreditPayoutForOther ? (
+					<CreditPayoutCard raffle={raffle} viewer="other" />
+				) : null}
+				{view.isConcluded && view.hasWinners && raffle.winners ? (
+					<WinnersList
+						winners={raffle.winners}
+						raffleId={raffle.id}
+						totalTickets={raffle.totalTicketsAtDraw}
+						manifestHash={raffle.manifestHash}
+						commitTxHash={raffle.commitTxHash}
+						currentUserWinnerPosition={ctx.myWinning?.position ?? null}
+					/>
+				) : null}
+			</RaffleRevealExperience>
 			{view.showActiveCard ? (
 				<ActiveCard
 					raffle={raffle}
@@ -102,16 +133,6 @@ export async function RaffleRightColumnAsync({
 			    subscribed" annotation. */}
 			{view.showActiveCard && !view.isOwner && !ctx.subscription.isActive ? (
 				<SubscribeUpsellCard />
-			) : null}
-			{view.isConcluded && view.hasWinners && raffle.winners ? (
-				<WinnersList
-					winners={raffle.winners}
-					raffleId={raffle.id}
-					totalTickets={raffle.totalTicketsAtDraw}
-					manifestHash={raffle.manifestHash}
-					commitTxHash={raffle.commitTxHash}
-					currentUserWinnerPosition={ctx.myWinning?.position ?? null}
-				/>
 			) : null}
 			{!view.isConcluded ? (
 				<RaffleInfoCard
@@ -277,36 +298,50 @@ function ActiveCard({
 }: ActiveCardProps) {
 	const isPurchaseBlocked = view.showEditButton || view.disablePurchase;
 	const showShareOnX = ctx.isAuthenticated && !isPurchaseBlocked;
+	// Single outer gate flips the whole panel to the draw-card surface once
+	// endAt passes. Keeps the orbital ring continuously mounted from Phase B
+	// (live/past-endAt) through Phase C/D (ended/fulfilling, no winners) —
+	// the latter surfaces re-render via `RaffleDrawWithRefresh` once the
+	// backend cron moves status off `live`, but the orbital animation never
+	// unmounts and reappears mid-cycle.
 	return (
-		<div
-			id="checkout-section"
-			className="border-border bg-card/95 hidden h-fit rounded-2xl border p-8 lg:block"
-		>
-			<RaffleFireIcon className="mx-auto size-16" />
-			<h2 className="font-clash-display my-4 text-center text-2xl font-semibold">
-				The sweepstakes is active!
-			</h2>
-			<div className="mb-4">
-				<RaffleCountdown endAt={raffle.endAt} />
-			</div>
-			<RaffleExpiredGate endAt={raffle.endAt}>
-				<Suspense fallback={TICKET_PURCHASE_CARD_FALLBACK}>
-					<ActivePurchaseCard
-						raffle={raffle}
-						publicSlug={publicSlug}
-						view={view}
-						ctx={ctx}
-					/>
-				</Suspense>
-				{view.disablePurchase && !view.showEditButton ? (
-					<p className="text-muted-foreground mt-2 text-center text-sm">
-						You cannot enter your own sweepstakes
-					</p>
-				) : null}
+		<div className="hidden lg:block">
+			<RaffleExpiredGate endAt={raffle.endAt} fallback={<RaffleDrawCard />}>
+				<div
+					id="checkout-section"
+					className="border-border bg-card/95 h-fit rounded-2xl border p-8"
+				>
+					<RaffleFireIcon className="mx-auto size-16" />
+					<h2 className="font-clash-display my-4 text-center text-2xl font-semibold">
+						The sweepstakes is active!
+					</h2>
+					<div className="mb-4">
+						<RaffleCountdown endAt={raffle.endAt} />
+					</div>
+					<Suspense fallback={TICKET_PURCHASE_CARD_FALLBACK}>
+						<ActivePurchaseCard
+							raffle={raffle}
+							publicSlug={publicSlug}
+							view={view}
+							ctx={ctx}
+						/>
+					</Suspense>
+					{view.disablePurchase && !view.showEditButton ? (
+						<p className="text-muted-foreground mt-2 text-center text-sm">
+							You cannot enter your own sweepstakes
+						</p>
+					) : null}
+					{showShareOnX ? (
+						<ShareOnXButton
+							{...xShareConfig}
+							myTicketsTotal={ctx.myTicketsTotal}
+						/>
+					) : null}
+					{clientEnv.NEXT_PUBLIC_APP_ENV !== 'production' ? (
+						<RevealDemoLink raffle={raffle} publicSlug={publicSlug} />
+					) : null}
+				</div>
 			</RaffleExpiredGate>
-			{showShareOnX ? (
-				<ShareOnXButton {...xShareConfig} myTicketsTotal={ctx.myTicketsTotal} />
-			) : null}
 		</div>
 	);
 }
@@ -327,6 +362,7 @@ function ActivePurchaseCard({ raffle, publicSlug, view, ctx }: CardsProps) {
 			isAuthenticated={ctx.isAuthenticated}
 			cryptoOptions={raffle.cryptoOptions}
 			myTicketsTotal={ctx.myTicketsTotal}
+			ticketsSoldCount={raffle.ticketsSoldCount}
 			userId={ctx.currentUserId}
 			availableCredits={ctx.availableCredits}
 			raffleTitle={raffle.title}

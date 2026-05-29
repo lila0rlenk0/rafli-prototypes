@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# temporary files
+.tmp*

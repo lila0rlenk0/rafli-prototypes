@@ -2,6 +2,8 @@
 
 import type { ChangeEvent } from 'react';
 
+import type { Path, PathValue } from 'react-hook-form';
+
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
@@ -14,7 +16,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { CATEGORY_LABELS } from '@/lib/verification/labels';
 import { cn } from '@/lib/class-names';
-import type { IndividualFormData } from '@/lib/validation/verification/form-schema';
+import type {
+	IndividualFormData,
+	VerificationFormData,
+} from '@/lib/validation/verification/form-schema';
 
 import { VERIFICATION_TYPE } from '@/types/kyc-submission';
 
@@ -29,18 +34,26 @@ const PHONE_ALLOWED_CHARS = /[^0-9+\-()\s]/g;
 // only across year rollovers, which never happens during a single session.
 const CURRENT_YEAR = new Date().getFullYear();
 
+// Field names live in the form schema's union; PathValue narrows the value
+// type at each setValue call, so no `as never` cast leaks past the boundary.
+const PLANNED_CATEGORIES_FIELD =
+	'plannedCategories' satisfies Path<VerificationFormData>;
+const PHONE_NUMBER_FIELD = 'phoneNumber' satisfies Path<VerificationFormData>;
+
 // Fields the step validates before advancing — kept adjacent to the step so
 // the schema source of truth (verificationFormSchema) is the only place
-// names are declared authoritatively.
-const INDIVIDUAL_STEP_FIELDS = [
+// names are declared authoritatively. Typed as Path<VerificationFormData>
+// because trigger() accepts the union's path set; all keys exist on
+// IndividualFormData which contributes to that union.
+const INDIVIDUAL_STEP_FIELDS: readonly Path<VerificationFormData>[] = [
 	'fullLegalName',
 	'dateOfBirth',
-	'phoneNumber',
+	PHONE_NUMBER_FIELD,
 	'residentialAddress',
 	'identityDocType',
 	'addressDocType',
-	'plannedCategories',
-] as const;
+	PLANNED_CATEGORIES_FIELD,
+];
 
 /**
  * IndividualDetailsStep Component
@@ -58,10 +71,9 @@ export function IndividualDetailsStep() {
 	// Cast once at the boundary — the union RHF type resists per-branch narrowing.
 	const fieldErrors = formState.errors as Record<string, { message?: string }>;
 	const dob = useDobField(form);
+
 	const plannedCategories =
-		(watch('plannedCategories' as keyof IndividualFormData) as
-			| string[]
-			| undefined) ?? [];
+		(watch(PLANNED_CATEGORIES_FIELD) as string[] | undefined) ?? [];
 
 	function handleCategoryToggle(category: string) {
 		const updated = plannedCategories.includes(category)
@@ -70,11 +82,12 @@ export function IndividualDetailsStep() {
 				})
 			: [...plannedCategories, category];
 		setValue(
-			'plannedCategories' as keyof IndividualFormData,
-			updated as never,
-			{
-				shouldValidate: true,
-			},
+			PLANNED_CATEGORIES_FIELD,
+			updated as PathValue<
+				VerificationFormData,
+				typeof PLANNED_CATEGORIES_FIELD
+			>,
+			{ shouldValidate: true },
 		);
 	}
 
@@ -83,15 +96,15 @@ export function IndividualDetailsStep() {
 	// accepted into state and only fail at submit time.
 	function handlePhoneChange(event: ChangeEvent<HTMLInputElement>) {
 		const cleaned = event.target.value.replace(PHONE_ALLOWED_CHARS, '');
-		setValue('phoneNumber' as keyof IndividualFormData, cleaned as never, {
-			shouldValidate: true,
-		});
+		setValue(
+			PHONE_NUMBER_FIELD,
+			cleaned as PathValue<VerificationFormData, typeof PHONE_NUMBER_FIELD>,
+			{ shouldValidate: true },
+		);
 	}
 
 	async function handleNext() {
-		const isValid = await trigger(
-			INDIVIDUAL_STEP_FIELDS as unknown as (keyof IndividualFormData)[],
-		);
+		const isValid = await trigger([...INDIVIDUAL_STEP_FIELDS]);
 		if (isValid) nextStep();
 	}
 

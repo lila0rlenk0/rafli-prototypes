@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { BugIcon } from '@/assets/icons/bug-icon';
 import { PublicPageHeader } from '@/components/host/public-page-header';
 import { HostProfileCard } from '@/components/host/profile-card';
@@ -51,6 +52,47 @@ const usernameSchema = z
 // emit for valid-format-but-unknown usernames — making the two
 // indistinguishable to an external observer.
 const hostIdentifierSchema = z.union([z.uuid(), usernameSchema]);
+
+/**
+ * Generates per-host metadata for SEO and social sharing.
+ *
+ * `getHostProfile` is React.cache-deduped at the service level, so this call
+ * and the page component's call share a single backend round-trip per request.
+ *
+ * Returns a minimal fallback on data failure so the page component still
+ * controls the `notFound()` path without duplicating that logic here.
+ *
+ * @returns Metadata with `title`, `description`, and `openGraph` block
+ */
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+	const { username: identifier } = await params;
+	const profileResponse = await getHostProfile(identifier);
+
+	if (!profileResponse.success) {
+		// Fallback title — metadata API requires a non-empty string; page owns notFound().
+		return { title: 'Host Profile | Rafli' };
+	}
+
+	const host = profileResponse.data;
+	const displayName = host.name ?? host.username ?? 'Host';
+	const description = host.bio ?? `View ${displayName}'s sweepstakes on Rafli.`;
+	const images = host.image ? [{ url: host.image }] : [];
+
+	return {
+		title: `${displayName} | Rafli`,
+		description,
+		openGraph: {
+			title: `${displayName} | Rafli`,
+			description,
+			images,
+			type: 'profile',
+		},
+	};
+}
 
 /**
  * Public Host Profile Page

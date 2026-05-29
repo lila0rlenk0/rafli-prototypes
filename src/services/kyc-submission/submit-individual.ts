@@ -33,7 +33,7 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function submitIndividual(
 	input: unknown,
 ): Promise<ServiceResponse<KycSubmissionResponse, KycSubmissionErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Validate input shape — server actions are public endpoints,

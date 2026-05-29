@@ -1,7 +1,6 @@
 'use client';
 
 import Autoplay from 'embla-carousel-autoplay';
-import { useReducedMotion } from 'framer-motion';
 import {
 	useCallback,
 	useEffect,
@@ -69,14 +68,14 @@ export function PastDrawsSection({ raffles }: PastDrawsSectionProps) {
 		}),
 	);
 
-	// `useReducedMotion` is `null` until after mount; we only act on an
-	// explicit `true`, leaving the plugin's default play state alone for
-	// the `null` / `false` cases so we don't race the plugin's internal
-	// init with a `.play()` call.
-	const reducedMotion = useReducedMotion();
+	// mount: stop autoplay if the OS reports prefers-reduced-motion.
+	// Read once on mount — reactive OS changes are an acceptable trade-off
+	// for removing the framer-motion dependency (deliberate per audit).
 	useEffect(() => {
-		if (reducedMotion) autoplay.current.stop();
-	}, [reducedMotion]);
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			autoplay.current.stop();
+		}
+	}, []);
 
 	/**
 	 * Embla is an external store. Per the project's react-effects rule,

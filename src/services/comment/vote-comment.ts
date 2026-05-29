@@ -31,7 +31,7 @@ export async function voteComment(
 	commentId: string,
 	type: VoteType,
 ): Promise<ServiceResponse<VoteResponse, CommentErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Submit vote — backend toggles: same direction twice removes the vote

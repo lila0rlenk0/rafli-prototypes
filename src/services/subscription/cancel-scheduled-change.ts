@@ -9,6 +9,7 @@ import { API_TIMEOUTS } from '@/lib/api/constants';
 import { getSession } from '@/lib/auth/session';
 import { revalidateMySubscription } from '@/lib/cache/revalidation';
 import { failure, mapSubscriptionError, success } from '@/lib/errors';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -45,7 +46,7 @@ export async function cancelScheduledChange(
 ): Promise<
 	ServiceResponse<CancelScheduledChangeResponse, SubscriptionErrorCode>
 > {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Validate payload locally — short-circuit malformed UUIDs
@@ -60,7 +61,7 @@ export async function cancelScheduledChange(
 
 		// Step 2: Hit the backend. Ownership + state checks live server-side.
 		const response = await authenticatedClient.delete(
-			`/subscriptions/${encodeURIComponent(validation.data.subscriptionId)}/scheduled-change`,
+			`/subscriptions/${pathParam(validation.data.subscriptionId)}/scheduled-change`,
 			{ timeout: API_TIMEOUTS.MUTATION },
 		);
 

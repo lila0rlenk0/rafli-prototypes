@@ -30,6 +30,13 @@ interface UseStripeVerificationPollResult {
 	status: VerifiedStatus;
 	verificationError: PaymentErrorCode | null;
 	retryVerification: () => void;
+	/**
+	 * Order id captured from the last successful Stripe status poll. Null
+	 * while the loop is still polling or after a verification failure; the
+	 * paid-state celebration needs this to fetch the order's
+	 * `ticketQuantity` for the tier-keyed body.
+	 */
+	orderId: string | null;
 }
 
 /**
@@ -46,6 +53,7 @@ export function useStripeVerificationPoll({
 	const [status, setStatus] = useState<VerifiedStatus>('loading');
 	const [verificationError, setVerificationError] =
 		useState<PaymentErrorCode | null>(null);
+	const [orderId, setOrderId] = useState<string | null>(null);
 	// Manual-retry trigger — incremented by `retryVerification` to re-run
 	// the effect without re-opening the modal.
 	const [verificationAttempt, setVerificationAttempt] = useState(0);
@@ -69,13 +77,15 @@ export function useStripeVerificationPoll({
 		async function verifyStatus() {
 			pollCountRef.current += 1;
 
-			const decision = resolveStripeVerificationState(
-				await pollStatus(stripeSessionId),
-			);
+			const result = await pollStatus(stripeSessionId);
+			const decision = resolveStripeVerificationState(result);
 			if (cancelled) return;
 
 			setStatus(decision.status);
 			setVerificationError(decision.errorCode);
+			if (result.success) {
+				setOrderId(result.data.orderId);
+			}
 
 			if (!decision.shouldPoll) return;
 
@@ -107,5 +117,5 @@ export function useStripeVerificationPoll({
 		setVerificationAttempt(prev => prev + 1);
 	}
 
-	return { status, verificationError, retryVerification };
+	return { status, verificationError, retryVerification, orderId };
 }

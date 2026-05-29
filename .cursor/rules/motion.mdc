@@ -1,7 +1,7 @@
 ---
 description: "Motion"
 alwaysApply: false
-globs: "'src/**/*.tsx'"
+globs: 'src/**/*.tsx'
 ---
 
 # Motion

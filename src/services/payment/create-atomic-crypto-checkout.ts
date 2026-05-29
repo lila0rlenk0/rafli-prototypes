@@ -37,7 +37,7 @@ import {
 export async function createAtomicCryptoCheckout(
 	payload: AtomicCryptoCheckoutPayload,
 ): Promise<ServiceResponse<AtomicCryptoCheckoutResponse, PaymentErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Validate input — defense-in-depth before forwarding to backend

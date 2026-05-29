@@ -5,6 +5,7 @@ import { z, ZodError } from 'zod';
 import { authenticatedClient } from '@/lib/api/client';
 import { API_TIMEOUTS } from '@/lib/api/constants';
 import { failure, mapPaymentError, success } from '@/lib/errors';
+import { pathParam } from '@/lib/utils/routing/path-param';
 import {
 	captureContractDrift,
 	captureServiceError,
@@ -59,7 +60,7 @@ export async function getCryptoSession(
 	try {
 		// Step 1: Fetch authoritative session state from backend
 		const response = await authenticatedClient.get(
-			`/payments/crypto/sessions/${encodeURIComponent(sessionId)}`,
+			`/payments/crypto/sessions/${pathParam(sessionId)}`,
 			{ timeout: API_TIMEOUTS.QUERY },
 		);
 

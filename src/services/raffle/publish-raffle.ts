@@ -7,9 +7,10 @@ import { trackAfter } from '@/lib/analytics/mixpanel-server';
 import { authenticatedClient } from '@/lib/api/client';
 import { pathParam } from '@/lib/utils/routing/path-param';
 import { getSession } from '@/lib/auth/session';
+import { revalidateMyRaffles } from '@/lib/cache/revalidation';
 import { failure, mapRaffleError, success } from '@/lib/errors';
 import { captureContractDrift } from '@/lib/sentry/capture';
-import { RAFFLE_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
+import { COMMON_ERROR_CODES, type RaffleErrorCode } from '@/types/errors';
 import { type Raffle, raffleSchema } from '@/types/raffle';
 import type { ServiceResponse } from '@/types/service-response';
 
@@ -26,7 +27,7 @@ import type { ServiceResponse } from '@/types/service-response';
 export async function publishRaffle(
 	raffleId: string,
 ): Promise<ServiceResponse<Raffle, RaffleErrorCode>> {
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Publish draft — backend transitions to queued or live based on startAt
@@ -37,7 +38,11 @@ export async function publishRaffle(
 		// Step 2: Validate response shape
 		const raffle = raffleSchema.parse(response.data);
 
-		// Step 3: Non-blocking publish analytics
+		// Step 3: Revalidate my-raffles cache so host dashboard reflects new status
+		// Revalidation target: MY_RAFFLES tag
+		revalidateMyRaffles();
+
+		// Step 4: Non-blocking publish analytics
 		const userId = (await sessionPromise)?.user?.id;
 
 		await trackAfter(
@@ -56,7 +61,7 @@ export async function publishRaffle(
 	} catch (error) {
 		if (error instanceof ZodError) {
 			captureContractDrift(error, 'raffle', 'publish-raffle');
-			return failure(RAFFLE_ERROR_CODES.FETCH_FAILED);
+			return failure(COMMON_ERROR_CODES.VALIDATION_ERROR);
 		}
 
 		return failure(mapRaffleError(error));

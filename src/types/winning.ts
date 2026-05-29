@@ -71,8 +71,6 @@ export const winningSchema = z.object({
 	sentAt: z.string().nullable(),
 	deliveredAt: z.string().nullable(),
 	receivedAt: z.string().nullable(),
-	disputedAt: z.string().nullable(),
-	resolvedAt: z.string().nullable(),
 	shippingInfo: shippingInfoSchema.nullable(),
 	proofUrl: z.string().nullable(),
 	hostNotes: z.string().nullable(),

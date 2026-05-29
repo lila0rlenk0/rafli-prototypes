@@ -45,7 +45,7 @@ export async function bulkCreatePromoCodes(
 ): Promise<ServiceResponse<BulkCreatePromoCodesResponse, PromoCodeErrorCode>> {
 	// Defense-in-depth — backend also enforces host ownership
 	await requireAuth();
-	const sessionPromise = Promise.resolve(getSession());
+	const sessionPromise = getSession();
 
 	try {
 		// Step 1: Bulk create promo codes on backend

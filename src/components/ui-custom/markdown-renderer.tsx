@@ -1,4 +1,5 @@
 import { cn } from '@/lib/class-names';
+import { normalizeEditorMarkdown } from '@/lib/editor/normalize-markdown';
 import React from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
@@ -26,6 +27,11 @@ export function MarkdownRenderer({
 	className,
 }: MarkdownRendererProps) {
 	if (!content) return null;
+
+	// The editor exports Lexical-flavored markdown, which encodes whitespace at
+	// emphasis edges as `&#32;` entities. CommonMark mishandles those next to an
+	// emoji and leaks literal `**`, so normalize before parsing.
+	const normalizedContent = normalizeEditorMarkdown(content);
 
 	const components: Components = {
 		// Headings - matching editor-theme.ts heading styles
@@ -137,7 +143,7 @@ export function MarkdownRenderer({
 	return (
 		<div className={cn('prose prose-sm max-w-none', className)}>
 			<ReactMarkdown components={components} remarkPlugins={[remarkBreaks]}>
-				{content}
+				{normalizedContent}
 			</ReactMarkdown>
 		</div>
 	);

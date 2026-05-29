@@ -27,6 +27,7 @@ import { ElementFormatToolbarPlugin } from '@/components/ui/editor/plugins/toolb
 import { FontFormatToolbarPlugin } from '@/components/ui/editor/plugins/toolbar/font-format-toolbar-plugin';
 import { HistoryToolbarPlugin } from '@/components/ui/editor/plugins/toolbar/history-toolbar-plugin';
 import { ToolbarPlugin } from '@/components/ui/editor/plugins/toolbar/toolbar-plugin';
+import { BlockUnderlinePlugin } from '@/lib/editor/block-underline-plugin';
 
 type PluginsProps = {
 	placeholder?: string;
@@ -125,6 +126,7 @@ export function Plugins({
 					ErrorBoundary={LexicalErrorBoundary}
 				/>
 				<HistoryPlugin />
+				<BlockUnderlinePlugin />
 
 				<ListPlugin />
 				<ListMaxIndentLevelPlugin />

@@ -7,22 +7,22 @@ import {
 	FORMAT_TEXT_COMMAND,
 	type TextFormatType,
 } from 'lexical';
-import {
-	BoldIcon,
-	ItalicIcon,
-	StrikethroughIcon,
-	UnderlineIcon,
-} from 'lucide-react';
+import { BoldIcon, ItalicIcon, StrikethroughIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { useToolbarContext } from '@/components/ui/editor/context/toolbar-context';
 import { useUpdateToolbarHandler } from '@/components/ui/editor/editor-hooks/use-update-toolbar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
+// Underline is intentionally omitted: this editor persists as Markdown, which
+// has no underline syntax (and the configured transformers none). Offering the
+// control silently dropped underline on save — every format here round-trips
+// cleanly through Markdown and renders identically in the read view. Removing
+// the button is not enough: core Lexical still binds ⌘/Ctrl+U, so the
+// BlockUnderlinePlugin consumes that command to close the last path.
 const FORMATS = [
 	{ format: 'bold', icon: BoldIcon, label: 'Bold' },
 	{ format: 'italic', icon: ItalicIcon, label: 'Italic' },
-	{ format: 'underline', icon: UnderlineIcon, label: 'Underline' },
 	{ format: 'strikethrough', icon: StrikethroughIcon, label: 'Strikethrough' },
 ] as const;
 

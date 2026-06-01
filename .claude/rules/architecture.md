@@ -20,7 +20,7 @@ src/
   components/
     ui/                 shadcn stock — never hand-edit
     ui-custom/          app shell pieces that extend shadcn (navbar, lightbox) — not CLI-managed
-    <domain>/           auth, raffle, host, payment, filters, ...
+    <domain>/           auth, raffle, host, hub, payment, filters, ...
   services/             server actions — one domain per folder
     <domain>/<action>.ts
   lib/

@@ -1,30 +1,25 @@
 import { InfoIcon } from 'lucide-react';
-import { Suspense } from 'react';
 
 import { FulfillmentTimeline } from '@/components/fulfillment/timeline';
 import { HostFulfillmentCard } from '@/components/fulfillment/host-card';
 import { CreditPayoutCard } from '@/components/raffle/cards/credit-payout-card';
 import { PrizeBreakdownCard } from '@/components/raffle/cards/prize-breakdown-card';
 import { RaffleCancelledCard } from '@/components/raffle/cards/cancelled-card';
-import { RaffleCountdown } from '@/components/raffle/countdown/countdown';
-import { RaffleExpiredGate } from '@/components/raffle/expired-gate';
 import { RaffleInfoCard } from '@/components/raffle/info-card/info-card';
 import { RaffleNotWonCard } from '@/components/raffle/cards/not-won-card';
 import { RaffleWonCard } from '@/components/raffle/cards/won-card';
 import { RevenueBreakdownCard } from '@/components/raffle/cards/revenue-breakdown-card';
-import { TicketPurchaseCard } from '@/components/raffle/ticket-purchase/ticket-purchase-card';
+import { ChooseEntryBlock } from '@/components/raffle/ticket-purchase/choose-entry-block';
 import { WinnersList } from '@/components/raffle/winners/winners-list';
 import { CommentSection } from '@/components/raffle/comments/section';
 import { ReportRaffleButton } from '@/components/browse/public-slug/report-raffle-button';
 import { ShareOnXButton } from '@/components/browse/public-slug/share-on-x-button';
-import { SubscribeUpsellCard } from '@/components/pricing/subscribe/subscribe-upsell-card';
 import { getCurrentUser } from '@/lib/auth/session';
 import { isPartialParticipation } from '@/lib/utils/raffle/partial-participation';
 import { getMyTicketCodes } from '@/services/ticket/get-my-ticket-codes';
 import type { Raffle } from '@/types/raffle';
 import type { XShareConfig } from '@/components/browse/public-slug/x-share/use-share';
 
-import { RaffleFireIcon } from './raffle-fire-icon';
 import type { RaffleViewState } from './raffle-page-derived';
 import {
 	buildUserContext,
@@ -37,11 +32,6 @@ interface RaffleRightColumnAsyncProps {
 	view: RaffleViewState;
 	xShareConfig: XShareConfig;
 }
-
-/** Skeleton shown while the lazy crypto button bundle hydrates client-side. */
-const TICKET_PURCHASE_CARD_FALLBACK = (
-	<div className="bg-muted h-32 animate-pulse rounded-xl" />
-);
 
 /**
  * User-aware right-column content — winner state, host fulfillment, active
@@ -85,23 +75,10 @@ export async function RaffleRightColumnAsync({
 			{view.showActiveCard ? (
 				<ActiveCard
 					raffle={raffle}
-					publicSlug={publicSlug}
 					view={view}
 					ctx={ctx}
 					xShareConfig={xShareConfig}
 				/>
-			) : null}
-			{/* Subscribe upsell — only when the viewer can actually buy entries
-			    and isn't already subscribed. `view.showActiveCard` gates on
-			    the raffle being mid-active (no point promoting discounts on a
-			    concluded surface), `!view.isOwner` hides the card from the
-			    host (they can't enter their own raffle so the discount is
-			    moot), and `!ctx.subscription.isActive` covers both guests
-			    (`EMPTY_CONTEXT` → inactive sentinel) and authenticated
-			    non-subscribers per the Figma "show only if user is not
-			    subscribed" annotation. */}
-			{view.showActiveCard && !view.isOwner && !ctx.subscription.isActive ? (
-				<SubscribeUpsellCard />
 			) : null}
 			{view.isConcluded && view.hasWinners && raffle.winners ? (
 				<WinnersList
@@ -257,81 +234,36 @@ function HostFulfillmentBlock({ raffle, publicSlug, ctx }: CardsProps) {
 
 interface ActiveCardProps {
 	raffle: Raffle;
-	publicSlug: string;
 	view: RaffleViewState;
 	ctx: RaffleUserContext;
 	xShareConfig: XShareConfig;
 }
 
 /**
- * Desktop "sweepstakes is active!" panel — fire icon + heading + countdown
- * + purchase card + share-on-X. User-gated because the purchase card reads
- * credits/my-tickets and the share button is hidden for the host.
+ * Desktop "choose how to enter" panel — the redesigned active-raffle block
+ * (status pill + countdown + entry stats + selectable subscription plan picker
+ * + the one-time "add more entries" panel), plus share-on-X below. User-gated
+ * because the share button is hidden for the host and blocked-purchase viewers.
  */
-function ActiveCard({
-	raffle,
-	publicSlug,
-	view,
-	ctx,
-	xShareConfig,
-}: ActiveCardProps) {
+function ActiveCard({ raffle, view, ctx, xShareConfig }: ActiveCardProps) {
 	const isPurchaseBlocked = view.showEditButton || view.disablePurchase;
 	const showShareOnX = ctx.isAuthenticated && !isPurchaseBlocked;
 	return (
-		<div
-			id="checkout-section"
-			className="border-border bg-card/95 hidden h-fit rounded-2xl border p-8 lg:block"
-		>
-			<RaffleFireIcon className="mx-auto size-16" />
-			<h2 className="font-clash-display my-4 text-center text-2xl font-semibold">
-				The sweepstakes is active!
-			</h2>
-			<div className="mb-4">
-				<RaffleCountdown endAt={raffle.endAt} />
-			</div>
-			<RaffleExpiredGate endAt={raffle.endAt}>
-				<Suspense fallback={TICKET_PURCHASE_CARD_FALLBACK}>
-					<ActivePurchaseCard
-						raffle={raffle}
-						publicSlug={publicSlug}
-						view={view}
-						ctx={ctx}
-					/>
-				</Suspense>
-				{view.disablePurchase && !view.showEditButton ? (
-					<p className="text-muted-foreground mt-2 text-center text-sm">
-						You cannot enter your own sweepstakes
-					</p>
-				) : null}
-			</RaffleExpiredGate>
+		<div id="checkout-section" className="hidden h-fit flex-col gap-4 lg:flex">
+			<ChooseEntryBlock
+				endAt={raffle.endAt}
+				entriesCount={raffle.ticketsSoldCount}
+				price={view.ticketPrice}
+				currency={raffle.ticketPriceCurrency}
+				isSubscriber={ctx.subscription.isActive}
+				subscriptionPlanName={ctx.subscription.planName}
+				subscriptionDiscountPercent={ctx.subscription.discountPercent}
+				sweepstakesName={raffle.title}
+			/>
 			{showShareOnX ? (
 				<ShareOnXButton {...xShareConfig} myTicketsTotal={ctx.myTicketsTotal} />
 			) : null}
 		</div>
-	);
-}
-
-/** Shared purchase card render used by both desktop and mobile active surfaces. */
-function ActivePurchaseCard({ raffle, publicSlug, view, ctx }: CardsProps) {
-	const isPurchaseBlocked = view.showEditButton || view.disablePurchase;
-	return (
-		<TicketPurchaseCard
-			raffleId={raffle.id}
-			publicSlug={publicSlug}
-			endAt={raffle.endAt}
-			price={view.ticketPrice}
-			currency={raffle.ticketPriceCurrency}
-			availableTickets={view.availableTickets}
-			disabled={isPurchaseBlocked}
-			questionId={raffle.questionId}
-			isAuthenticated={ctx.isAuthenticated}
-			cryptoOptions={raffle.cryptoOptions}
-			myTicketsTotal={ctx.myTicketsTotal}
-			userId={ctx.currentUserId}
-			availableCredits={ctx.availableCredits}
-			raffleTitle={raffle.title}
-			subscription={ctx.subscription}
-		/>
 	);
 }
 
@@ -395,7 +327,6 @@ export async function RaffleCommentSectionAsync({
 
 interface MobilePurchaseAsyncProps {
 	raffle: Raffle;
-	publicSlug: string;
 	view: RaffleViewState;
 	/**
 	 * Same X-share config the desktop ActiveCard receives — forwarded here so
@@ -408,18 +339,18 @@ interface MobilePurchaseAsyncProps {
 }
 
 /**
- * Mobile-only purchase card inside the left column hero. Mirrors the desktop
- * active card but stacks the KYC-if-you-win notice below so the CTA stays
- * in reach on narrow viewports.
+ * Mobile active-raffle surface inside the left column hero. Renders the same
+ * redesigned `ChooseEntryBlock` as the desktop sidebar (it is responsive on its
+ * own) so both breakpoints share one entry design, then stacks the
+ * KYC-if-you-win notice and the AMOE / X-share button below it.
  *
- * Renders the AMOE / X-share button after the purchase card so mobile carries
- * the same regulatory free-entry CTA the desktop sidebar shows — matches the
- * `showShareOnX` gate used by `ActiveCard` to keep the surface decisions
- * aligned across breakpoints.
+ * The X-share button uses the same `showShareOnX` gate as the desktop
+ * `ActiveCard` so the free-entry CTA stays aligned across breakpoints.
+ *
+ * @returns The mobile active-raffle entry surface
  */
 export async function RaffleMobilePurchaseAsync({
 	raffle,
-	publicSlug,
 	view,
 	xShareConfig,
 }: MobilePurchaseAsyncProps) {
@@ -430,24 +361,19 @@ export async function RaffleMobilePurchaseAsync({
 	const isPurchaseBlocked = view.showEditButton || view.disablePurchase;
 	const showShareOnX = ctx.isAuthenticated && !isPurchaseBlocked;
 	return (
-		<div className="lg:hidden">
-			<RaffleExpiredGate endAt={raffle.endAt}>
-				<Suspense fallback={TICKET_PURCHASE_CARD_FALLBACK}>
-					<ActivePurchaseCard
-						raffle={raffle}
-						publicSlug={publicSlug}
-						view={view}
-						ctx={ctx}
-					/>
-				</Suspense>
-				{view.disablePurchase && !view.showEditButton ? (
-					<p className="text-muted-foreground mt-2 text-center text-sm">
-						You cannot enter your own sweepstakes
-					</p>
-				) : null}
-			</RaffleExpiredGate>
+		<div className="flex flex-col gap-4 lg:hidden">
+			<ChooseEntryBlock
+				endAt={raffle.endAt}
+				entriesCount={raffle.ticketsSoldCount}
+				price={view.ticketPrice}
+				currency={raffle.ticketPriceCurrency}
+				isSubscriber={ctx.subscription.isActive}
+				subscriptionPlanName={ctx.subscription.planName}
+				subscriptionDiscountPercent={ctx.subscription.discountPercent}
+				sweepstakesName={raffle.title}
+			/>
 			{view.showKycNotice ? (
-				<div className="mt-4 flex items-center gap-2">
+				<div className="flex items-center gap-2">
 					<InfoIcon className="text-ink-500 size-4 shrink-0" />
 					<p className="text-ink-500 text-sm">
 						You&apos;ll only need KYC if you win

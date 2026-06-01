@@ -34,6 +34,14 @@ import { cache } from 'react';
 import { env } from '@/env/server';
 import { AUTH_COOKIES } from '@/lib/auth/constants';
 import { API_RETRY, API_TIMEOUTS } from './constants';
+import { mockAdapter } from './mock/adapter';
+
+/**
+ * Local-preview override: when `MOCK_DATA=true`, swap the axios transport for
+ * the fixture adapter so every client serves mock data without a backend.
+ * Spread into each `axios.create` config — resolves to `{}` (no-op) otherwise.
+ */
+const mockTransport = env.MOCK_DATA ? { adapter: mockAdapter } : {};
 
 /**
  * API base URL with versioned path
@@ -129,6 +137,7 @@ const baseClient: AxiosInstance = axios.create({
 	headers: {
 		'Content-Type': 'application/json',
 	},
+	...mockTransport,
 });
 
 /** Request interceptor to inject S2S secret and client IP */
@@ -181,6 +190,7 @@ const cachedBaseClient: AxiosInstance = axios.create({
 	headers: {
 		'Content-Type': 'application/json',
 	},
+	...mockTransport,
 });
 
 /** Request interceptor: S2S secret only — no `headers()` read */
@@ -203,6 +213,7 @@ const authenticatedClient: AxiosInstance = axios.create({
 	headers: {
 		'Content-Type': 'application/json',
 	},
+	...mockTransport,
 });
 
 /**

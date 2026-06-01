@@ -138,7 +138,6 @@ export default async function RafflePage({ params, searchParams }: PageProps) {
 									<Suspense fallback={null}>
 										<RaffleMobilePurchaseAsync
 											raffle={raffle}
-											publicSlug={publicSlug}
 											view={view}
 											xShareConfig={xShareConfig}
 										/>

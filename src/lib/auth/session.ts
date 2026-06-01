@@ -37,6 +37,9 @@ import {
 import { AUTH_COOKIES, COOKIE_OPTIONS } from './constants';
 import { decodeJwt, isJwtExpired } from './jwt';
 import { clearUserModeCookie, getUserModeCookie } from '@/lib/mode/cookies';
+import { env } from '@/env/server';
+import { buildMockAuthSession, MOCK_TOKEN } from '@/lib/api/mock/fixtures';
+import { isAuthedState, readMockState } from '@/lib/api/mock/state';
 
 /**
  * Sets authentication cookies after successful login
@@ -85,6 +88,13 @@ export async function setAuthCookies(token: string): Promise<void> {
  * @returns JWT token string or null if not authenticated
  */
 export async function getAuthToken(): Promise<string | null> {
+	// Mock preview: hand the axios interceptor a synthetic token for any
+	// signed-in state so authenticated requests reach the fixture adapter.
+	if (env.MOCK_DATA) {
+		const mockState = await readMockState();
+		if (isAuthedState(mockState)) return MOCK_TOKEN;
+	}
+
 	const cookieStore = await cookies();
 	return cookieStore.get(AUTH_COOKIES.TOKEN)?.value ?? null;
 }
@@ -102,6 +112,18 @@ export async function getAuthToken(): Promise<string | null> {
  */
 export const getSession = cache(
 	async function getSessionImpl(): Promise<AuthSession | null> {
+		// Mock preview: a non-guest state returns a synthetic signed-in session
+		// without any backend round-trip. `guest` falls through to the normal
+		// anonymous path below (no token → null).
+		if (env.MOCK_DATA) {
+			const mockState = await readMockState();
+			if (isAuthedState(mockState)) {
+				const session = buildMockAuthSession();
+				setSentryUser(session.user.id);
+				return session;
+			}
+		}
+
 		// Step 1: Retrieve JWT from httpOnly cookie.
 		const token = await getAuthToken();
 		if (!token) {

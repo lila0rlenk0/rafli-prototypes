@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Cash prize">
+  <defs>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd23f"/>
+      <stop offset="1" stop-color="#e8920c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#g3)"/>
+  <circle cx="1300" cy="180" r="240" fill="#ffffff" opacity="0.12"/>
+  <circle cx="260" cy="720" r="220" fill="#ffffff" opacity="0.12"/>
+  <text x="80" y="470" font-family="Geist, Arial, sans-serif" font-size="92" font-weight="700" fill="#141416">$10,000 Cash</text>
+  <text x="80" y="560" font-family="Geist, Arial, sans-serif" font-size="44" fill="#141416" opacity="0.7">Paid straight to your wallet</text>
+</svg>

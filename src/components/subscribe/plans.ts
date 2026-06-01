@@ -49,6 +49,13 @@ export interface SubscribePlan {
 	 */
 	readonly ticketsPerCycle: number;
 	/**
+	 * Free weekly sweepstakes entries granted by the tier. Mirrors the
+	 * "N free entries to the weekly sweepstakes" bullet in `benefits`; surfaced
+	 * as a number so compact plan cards (e.g. the raffle entry block) can render
+	 * "N free entries / week" without parsing the benefit copy. Basic has none.
+	 */
+	readonly weeklyFreeEntries: number;
+	/**
 	 * Four benefit cards rendered in the benefits section. Order is fixed —
 	 * the page reads it top-to-bottom on narrow viewports, so the strongest
 	 * plan-specific value (savings + free entries) sits in cards 1-2 and the
@@ -120,6 +127,7 @@ export const SUBSCRIBE_PLANS = {
 		badgeText: '10% OFF',
 		savingsPercent: 10,
 		ticketsPerCycle: 10,
+		weeklyFreeEntries: 0,
 		benefits: [
 			{
 				image: BENEFIT_IMAGES.content,
@@ -152,6 +160,7 @@ export const SUBSCRIBE_PLANS = {
 		badgeText: '15% OFF',
 		savingsPercent: 15,
 		ticketsPerCycle: 25,
+		weeklyFreeEntries: 5,
 		benefits: [
 			{
 				image: BENEFIT_IMAGES.content,
@@ -191,6 +200,7 @@ export const SUBSCRIBE_PLANS = {
 		badgeText: '20% OFF',
 		savingsPercent: 20,
 		ticketsPerCycle: 100,
+		weeklyFreeEntries: 25,
 		benefits: [
 			{
 				image: BENEFIT_IMAGES.content,

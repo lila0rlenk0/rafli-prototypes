@@ -14,6 +14,7 @@ const ALLOWED_DOMAINS = new Set([
   "filters",
   "fulfillment",
   "host",
+  "hub",
   "landing",
   "messages",
   "mode",

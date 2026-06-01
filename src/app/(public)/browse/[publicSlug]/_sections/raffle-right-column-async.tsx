@@ -222,7 +222,9 @@ function WinnerBlock({ raffle, publicSlug, view, ctx }: CardsProps) {
 	if (!ctx.myWinning) return null;
 	// Partial-participation raffles paid out as credits — the credit card
 	// replaces the prize breakdown so the winner doesn't read a prize-value
-	// figure that doesn't match the credits they actually received.
+	// figure that doesn't match the credits they actually received, and the
+	// delivery timeline is dropped entirely: the credits land in the balance
+	// automatically, so there's no claim / KYC / shipping flow to track.
 	const isCreditPayout = isPartialParticipation(raffle);
 	return (
 		<>
@@ -236,14 +238,16 @@ function WinnerBlock({ raffle, publicSlug, view, ctx }: CardsProps) {
 			) : (
 				<PrizeBreakdownCard raffle={raffle} />
 			)}
-			<FulfillmentTimeline
-				winning={ctx.myWinning}
-				isHost={view.isOwner}
-				raffleId={raffle.id}
-				hostId={raffle.hostId}
-				publicSlug={publicSlug}
-				kycStatus={ctx.kycWinnerStatus}
-			/>
+			{isCreditPayout ? null : (
+				<FulfillmentTimeline
+					winning={ctx.myWinning}
+					isHost={view.isOwner}
+					raffleId={raffle.id}
+					hostId={raffle.hostId}
+					publicSlug={publicSlug}
+					kycStatus={ctx.kycWinnerStatus}
+				/>
+			)}
 		</>
 	);
 }
@@ -251,15 +255,19 @@ function WinnerBlock({ raffle, publicSlug, view, ctx }: CardsProps) {
 /** Host-side post-draw composition — fulfillment CTA + revenue + ticket list. */
 function HostFulfillmentBlock({ raffle, publicSlug, ctx }: CardsProps) {
 	// Partial-participation: the host kept no earnings (revenue went to
-	// winners as credits). Surface the credit-payout breakdown in place of the
-	// host-earnings card so the figures don't contradict each other.
+	// winners as credits) and there's no prize to ship — the credits are
+	// granted automatically. Drop the fulfillment ("Delivery status") card and
+	// surface the credit-payout breakdown in place of the host-earnings card so
+	// the figures don't contradict each other.
 	const isCreditPayout = isPartialParticipation(raffle);
 	return (
 		<>
-			<HostFulfillmentCard
-				publicSlug={publicSlug}
-				winnersCount={raffle.winners?.length ?? 0}
-			/>
+			{isCreditPayout ? null : (
+				<HostFulfillmentCard
+					publicSlug={publicSlug}
+					winnersCount={raffle.winners?.length ?? 0}
+				/>
+			)}
 			{isCreditPayout ? (
 				<CreditPayoutCard raffle={raffle} viewer="host" />
 			) : (

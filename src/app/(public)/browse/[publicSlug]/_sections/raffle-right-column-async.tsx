@@ -256,9 +256,12 @@ function ActiveCard({ raffle, view, ctx, xShareConfig }: ActiveCardProps) {
 				price={view.ticketPrice}
 				currency={raffle.ticketPriceCurrency}
 				isSubscriber={ctx.subscription.isActive}
+				isPastDue={ctx.subscription.isPastDue}
 				subscriptionPlanName={ctx.subscription.planName}
 				subscriptionDiscountPercent={ctx.subscription.discountPercent}
+				availableCredits={ctx.availableCredits}
 				sweepstakesName={raffle.title}
+				publicSlug={raffle.publicSlugOrCode}
 			/>
 			{showShareOnX ? (
 				<ShareOnXButton {...xShareConfig} myTicketsTotal={ctx.myTicketsTotal} />
@@ -368,9 +371,12 @@ export async function RaffleMobilePurchaseAsync({
 				price={view.ticketPrice}
 				currency={raffle.ticketPriceCurrency}
 				isSubscriber={ctx.subscription.isActive}
+				isPastDue={ctx.subscription.isPastDue}
 				subscriptionPlanName={ctx.subscription.planName}
 				subscriptionDiscountPercent={ctx.subscription.discountPercent}
+				availableCredits={ctx.availableCredits}
 				sweepstakesName={raffle.title}
+				publicSlug={raffle.publicSlugOrCode}
 			/>
 			{view.showKycNotice ? (
 				<div className="flex items-center gap-2">

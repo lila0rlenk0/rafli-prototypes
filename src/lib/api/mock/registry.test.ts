@@ -48,16 +48,37 @@ describe('resolveMock', () => {
 		expect(result?.publicSlugOrCode).toBe('mock-live-macbook');
 	});
 
-	test('subscription envelope reflects the active state', () => {
+	test('subscription envelope reflects an active tiered state', () => {
 		const result = resolveMock({
 			method: 'GET',
 			path: '/me/subscription',
 			params: undefined,
 			body: undefined,
-			state: 'active',
-		}) as { subscription: { status: string } | null };
+			state: 'pro_credits',
+		}) as { subscription: { status: string; plan: { name: string } } | null };
 
 		expect(result.subscription?.status).toBe('active');
+		expect(result.subscription?.plan.name).toBe('Pro');
+	});
+
+	test('credits envelope reflects the balance for the state', () => {
+		const withCredits = resolveMock({
+			method: 'GET',
+			path: '/me/credits',
+			params: undefined,
+			body: undefined,
+			state: 'pro_credits',
+		}) as { availableAmount: string };
+		const broke = resolveMock({
+			method: 'GET',
+			path: '/me/credits',
+			params: undefined,
+			body: undefined,
+			state: 'pro_no_credits',
+		}) as { availableAmount: string };
+
+		expect(Number(withCredits.availableAmount)).toBeGreaterThan(0);
+		expect(Number(broke.availableAmount)).toBe(0);
 	});
 
 	test('subscription envelope is empty for the "none" state', () => {

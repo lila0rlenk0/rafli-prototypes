@@ -207,6 +207,43 @@ interface PerksCardProps {
 }
 
 /**
+ * Plan + credits block — the subscribed tier summary (or the guest chooser)
+ * followed by the credit-balance line. Header-less so it drops straight into
+ * the merged card on desktop or the "Plan" tab on mobile.
+ *
+ * @param mode - Audience mode (defaults to subscribed)
+ * @returns The plan + credits block
+ */
+export function PlanBlock({ mode = 'subscribed' }: PerksCardProps) {
+	const isGuest = mode === 'guest';
+	return (
+		<div className="flex flex-col gap-5">
+			{isGuest ? <GuestPlan /> : <PlanSummary />}
+			<CreditsLine locked={isGuest} />
+		</div>
+	);
+}
+
+/**
+ * The perks list — one row per perk, with active chips for subscribers and
+ * locked previews for guests. Header-less for the same reuse reason as
+ * {@link PlanBlock}.
+ *
+ * @param mode - Audience mode (defaults to subscribed)
+ * @returns The perks list
+ */
+export function PerksList({ mode = 'subscribed' }: PerksCardProps) {
+	const isGuest = mode === 'guest';
+	return (
+		<ul className="-mt-1 divide-y divide-black/5">
+			{HUB_PERKS.map(perk => (
+				<PerkRow key={perk.title} perk={perk} locked={isGuest} />
+			))}
+		</ul>
+	);
+}
+
+/**
  * Merged "good stuff you unlocked" card — combines the plan summary, the
  * credit balance, and the perks list in one block. Subscribed shows the PRO
  * tier, price, Manage / Compare tiers, the live credit balance, and active
@@ -233,17 +270,11 @@ export function PerksCard({ mode = 'subscribed' }: PerksCardProps) {
 				</p>
 			</div>
 
-			{isGuest ? <GuestPlan /> : <PlanSummary />}
-
-			<CreditsLine locked={isGuest} />
+			<PlanBlock mode={mode} />
 
 			<div className="h-px bg-black/10" />
 
-			<ul className="-mt-1 divide-y divide-black/5">
-				{HUB_PERKS.map(perk => (
-					<PerkRow key={perk.title} perk={perk} locked={isGuest} />
-				))}
-			</ul>
+			<PerksList mode={mode} />
 		</section>
 	);
 }

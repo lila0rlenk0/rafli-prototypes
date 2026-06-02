@@ -13,6 +13,7 @@ import { GameCard } from '../game-card';
 import { HUB_GAMES, type HubGame } from '../hub-content';
 import { CoinFlipGame } from './coin-flip-game';
 import { GAME_KIND_BY_ID, GAMES_START_CREDITS } from './games-content';
+import { GamesTabs } from './games-tabs';
 import { MysteryCardsGame } from './mystery-cards-game';
 import { ScratchGame } from './scratch-game';
 
@@ -85,7 +86,13 @@ export function GamesDeck() {
 
 	return (
 		<>
-			<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+			{/* Mobile/tablet: one card at a time via tabs — keeps the page short */}
+			<div className="lg:hidden">
+				<GamesTabs games={HUB_GAMES} onPlay={setActiveId} />
+			</div>
+
+			{/* Desktop: all three cards in a row */}
+			<div className="hidden gap-6 lg:grid lg:grid-cols-3">
 				{HUB_GAMES.map(game => (
 					<GameCard
 						key={game.id}

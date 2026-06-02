@@ -148,9 +148,13 @@ function resolveSubscriptionContext(
 		return INACTIVE_SUBSCRIPTION_CONTEXT;
 	}
 	// `discountPercent` is part of the embedded plan — no extra round-trip.
+	// `past_due` still grants benefits during dunning, so it stays `isActive`;
+	// the `isPastDue` flag lets the entry block swap the green subscriber banner
+	// for a red "renew" notice without losing the applied discount math.
 	return {
 		discountPercent: sub.plan.discountPercent,
 		isActive: true,
 		planName: sub.plan.name,
+		isPastDue: sub.status === SUBSCRIPTION_STATUS.PAST_DUE,
 	};
 }

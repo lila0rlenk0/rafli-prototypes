@@ -1206,6 +1206,118 @@
 	animation-iteration-count: infinite;
 }
 
+/* ── Floating colour blocks — brand squares that fly across the screen and
+   rotate as they drift, fading in/out so each loop seams cleanly. Six lane
+   variants give varied motion paths; opacity caps low so the blocks read as a
+   playful background, never competing with content. ── */
+.hg-block {
+	animation-timing-function: ease-in-out;
+	animation-iteration-count: infinite;
+	will-change: transform, opacity;
+}
+@keyframes hg-block-fly-1 {
+	0% {
+		opacity: 0;
+		transform: translate(0, 0) rotate(0deg);
+	}
+	15%,
+	85% {
+		opacity: 0.5;
+	}
+	100% {
+		opacity: 0;
+		transform: translate(130px, -110px) rotate(140deg);
+	}
+}
+@keyframes hg-block-fly-2 {
+	0% {
+		opacity: 0;
+		transform: translate(0, 0) rotate(0deg);
+	}
+	15%,
+	85% {
+		opacity: 0.45;
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-120px, -140px) rotate(-120deg);
+	}
+}
+@keyframes hg-block-fly-3 {
+	0% {
+		opacity: 0;
+		transform: translate(0, 0) rotate(0deg);
+	}
+	15%,
+	85% {
+		opacity: 0.5;
+	}
+	100% {
+		opacity: 0;
+		transform: translate(110px, 130px) rotate(165deg);
+	}
+}
+@keyframes hg-block-fly-4 {
+	0% {
+		opacity: 0;
+		transform: translate(0, 0) rotate(0deg);
+	}
+	15%,
+	85% {
+		opacity: 0.4;
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-150px, 90px) rotate(-150deg);
+	}
+}
+@keyframes hg-block-fly-5 {
+	0% {
+		opacity: 0;
+		transform: translate(0, 0) rotate(0deg);
+	}
+	15%,
+	85% {
+		opacity: 0.5;
+	}
+	100% {
+		opacity: 0;
+		transform: translate(80px, -160px) rotate(95deg);
+	}
+}
+@keyframes hg-block-fly-6 {
+	0% {
+		opacity: 0;
+		transform: translate(0, 0) rotate(0deg);
+	}
+	15%,
+	85% {
+		opacity: 0.45;
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-90px, 150px) rotate(-105deg);
+	}
+}
+.hg-block-fly-1 {
+	animation-name: hg-block-fly-1;
+}
+.hg-block-fly-2 {
+	animation-name: hg-block-fly-2;
+}
+.hg-block-fly-3 {
+	animation-name: hg-block-fly-3;
+}
+.hg-block-fly-4 {
+	animation-name: hg-block-fly-4;
+}
+.hg-block-fly-5 {
+	animation-name: hg-block-fly-5;
+}
+.hg-block-fly-6 {
+	animation-name: hg-block-fly-6;
+}
+
 /* ── Signature neo-brutalist card hover — lift + hard offset block shadow.
    Pasted from the games prototype; 0 blur keeps the shadow crisp. ── */
 .hg-card-lift {
@@ -1243,7 +1355,8 @@
 	.hg-art-card-1,
 	.hg-art-card-2,
 	.hg-art-card-3,
-	.hg-star {
+	.hg-star,
+	.hg-block {
 		animation: none;
 	}
 	.hg-card-lift {

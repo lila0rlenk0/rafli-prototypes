@@ -4,6 +4,7 @@ import { env } from '@/env/server';
 import type { Raffle } from '@/types/raffle';
 
 import {
+	buildMockCreditBalance,
 	buildMockSubscriptionEnvelope,
 	MOCK_CATEGORIES,
 	MOCK_COMPLETED_RAFFLES,
@@ -12,7 +13,12 @@ import {
 	MOCK_ME,
 	MOCK_RECENT_WINNERS,
 } from './fixtures';
-import { type MockState, subscriptionStatusForState } from './state';
+import {
+	creditAmountForState,
+	type MockState,
+	subscriptionStatusForState,
+	subscriptionTierForState,
+} from './state';
 
 /** Every raffle fixture, across lifecycle states — used for slug lookups. */
 const ALL_RAFFLES: readonly Raffle[] = [
@@ -115,8 +121,21 @@ function resolveSubscriptionCheckout(body: unknown) {
 }
 
 /**
- * Handles the POST endpoints the preview funnel needs. Currently just the
- * public subscription checkout; everything else falls through to a 404.
+ * Resolves the Stripe Customer Portal session POST. Stripe can't run on
+ * localhost, so instead of a real portal URL we point the redirect at the
+ * local `/profile` page — clicking "Manage subscription" in the past-due
+ * notice then lands on the in-app subscription surface rather than 404-ing.
+ *
+ * @returns A `{ url }` envelope pointing at the local profile page
+ */
+function resolveBillingPortal() {
+	return { url: `${env.APP_URL}/profile` };
+}
+
+/**
+ * Handles the POST endpoints the preview funnel needs: the public subscription
+ * checkout and the billing-portal session; everything else falls through to a
+ * 404.
  *
  * @param route - Normalised request path
  * @param body - Parsed JSON request body
@@ -125,6 +144,9 @@ function resolveSubscriptionCheckout(body: unknown) {
 function resolvePost(route: string, body: unknown): unknown {
 	if (route === '/payments/fanbasis/public-subscription-checkout') {
 		return resolveSubscriptionCheckout(body);
+	}
+	if (route === '/me/billing-portal-sessions') {
+		return resolveBillingPortal();
 	}
 	return undefined;
 }
@@ -159,7 +181,12 @@ export function resolveMock(request: MockRequest): unknown {
 		case '/me':
 			return MOCK_ME;
 		case '/me/subscription':
-			return buildMockSubscriptionEnvelope(subscriptionStatusForState(state));
+			return buildMockSubscriptionEnvelope(
+				subscriptionStatusForState(state),
+				subscriptionTierForState(state),
+			);
+		case '/me/credits':
+			return buildMockCreditBalance(creditAmountForState(state));
 		default:
 			return resolveDynamicRoute(route);
 	}

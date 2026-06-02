@@ -2,23 +2,27 @@
 
 import {
 	ArrowDownIcon,
+	ArrowLeftIcon,
 	ArrowUpIcon,
 	CheckIcon,
 	MinusIcon,
 	PlusIcon,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import {
 	BuyEntriesPanel,
 	DEFAULT_ENTRY_QUANTITY,
 } from '@/components/raffle/ticket-purchase/buy-entries-panel';
+import { SubscriberEntry } from '@/components/raffle/ticket-purchase/subscriber-entry';
 import {
 	SUBSCRIBE_PLAN_SLUGS,
 	SUBSCRIBE_PLANS,
 	type SubscribePlan,
 	type SubscribePlanSlug,
 } from '@/components/subscribe/plans';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/class-names';
 import { useRaffleSaleWindow } from '@/lib/hooks/use-raffle-sale-window';
 import { formatCurrency } from '@/lib/utils/format/format-currency';
@@ -34,12 +38,22 @@ interface ChooseEntryBlockProps {
 	readonly currency: string;
 	/** Whether the viewer already has benefit-granting subscription. */
 	readonly isSubscriber: boolean;
+	/**
+	 * Whether that subscription is in `past_due` dunning — swaps the green
+	 * subscriber banner for a red "renew" notice. Only meaningful when
+	 * `isSubscriber` is true.
+	 */
+	readonly isPastDue: boolean;
 	/** Active plan name when subscribed — drives the subscriber banner copy. */
 	readonly subscriptionPlanName: string | null;
 	/** Active discount percent when subscribed. */
 	readonly subscriptionDiscountPercent: number;
+	/** Raw credit balance string from `/me/credits` — drives the subscriber credits flow. */
+	readonly availableCredits: string | null;
 	/** Sweepstakes name forwarded to the buy-entries Access Pass disclosure. */
 	readonly sweepstakesName: string;
+	/** Public slug — forwarded to the subscriber confirmation share link. */
+	readonly publicSlug: string;
 }
 
 const STARTER = SUBSCRIBE_PLANS[SUBSCRIBE_PLAN_SLUGS.STARTER];
@@ -116,9 +130,12 @@ export function ChooseEntryBlock({
 	price,
 	currency,
 	isSubscriber,
+	isPastDue,
 	subscriptionPlanName,
 	subscriptionDiscountPercent,
+	availableCredits,
 	sweepstakesName,
+	publicSlug,
 }: ChooseEntryBlockProps) {
 	const { isHydrated, days, hours, minutes, seconds, isExpired } =
 		useRaffleSaleWindow(endAt);
@@ -126,9 +143,6 @@ export function ChooseEntryBlock({
 	// per-entry price and the buy panel's discount copy without navigating away.
 	const [selectedPlanSlug, setSelectedPlanSlug] =
 		useState<SubscribePlanSlug | null>(null);
-	// Guests toggle the one-time purchase panel open/closed; subscribers always
-	// see the amount selector, so this flag only drives the guest toggle.
-	const [oneTimeOpen, setOneTimeOpen] = useState(false);
 	// Owned here (not in the buy panel) so the odds block at the top recomputes
 	// from the same quantity the buy panel's chips/stepper change.
 	const [quantity, setQuantity] = useState<number>(DEFAULT_ENTRY_QUANTITY);
@@ -192,9 +206,9 @@ export function ChooseEntryBlock({
 		seconds,
 	});
 
-	// The amount selector is shared: subscribers always see it; guests reveal it
-	// by opening the one-time purchase toggle. Built once, placed in both branches.
-	const buyPanel = (
+	// The guest one-time panel — discount previewed from the selected plan.
+	// Subscribers use their own credits/cash panels inside SubscriberEntry.
+	const guestBuyPanel = (
 		<BuyEntriesPanel
 			price={price}
 			currency={currency}
@@ -245,53 +259,131 @@ export function ChooseEntryBlock({
 				/>
 			</div>
 
+			{/* The lower half differs by viewer: subscribers get the credits-aware
+			    checkout (State A/B + past-due) owned by SubscriberEntry; guests get
+			    the plan picker with a one-time-purchase escape hatch. */}
 			{isSubscriber ? (
-				<SubscriberBanner
+				<SubscriberEntry
+					price={price}
+					currency={currency}
 					planName={subscriptionPlanName}
 					discountPercent={subscriptionDiscountPercent}
+					isPastDue={isPastDue}
+					availableCredits={availableCredits}
+					quantity={quantity}
+					onQuantityChange={handleQuantityChange}
+					sweepstakesName={sweepstakesName}
+					publicSlug={publicSlug}
 				/>
-			) : null}
-
-			{/* Subscribers: the amount selector is always present — no toggle. */}
-			{isSubscriber ? (
-				<div className="flex flex-col gap-3">
-					<p className="text-base font-medium">Select amount of entries</p>
-					{buyPanel}
-				</div>
-			) : null}
-
-			{!isSubscriber && !oneTimeOpen ? (
-				<PlanPicker
-					selectedSlug={selectedPlanSlug}
-					onSelect={setSelectedPlanSlug}
+			) : (
+				<GuestEntry
+					selectedPlanSlug={selectedPlanSlug}
+					onSelectPlan={setSelectedPlanSlug}
+					quantity={quantity}
+					buyPanel={guestBuyPanel}
 				/>
-			) : null}
+			)}
+		</div>
+	);
+}
 
-			{/* Guests: one-time purchase toggle — carries the selected count so it
-			    stays visible when the panel is collapsed. */}
-			{!isSubscriber ? (
+interface GuestEntryProps {
+	readonly selectedPlanSlug: SubscribePlanSlug | null;
+	readonly onSelectPlan: (slug: SubscribePlanSlug) => void;
+	readonly quantity: number;
+	readonly buyPanel: ReactNode;
+}
+
+/**
+ * Guest lower half — the subscription plan picker (with a "Subscribe & enter"
+ * CTA once a plan is chosen) and a one-time-purchase toggle. Opening one-time
+ * swaps in the buy panel while keeping a "back to subscription plans" link, so
+ * the guest is always one tap from the plans. The open/closed flag lives here
+ * because nothing above this section depends on it.
+ *
+ * @param props - Selected plan, selection handler, quantity, and buy panel
+ * @returns The guest entry section
+ */
+function GuestEntry({
+	selectedPlanSlug,
+	onSelectPlan,
+	quantity,
+	buyPanel,
+}: GuestEntryProps) {
+	const [oneTimeOpen, setOneTimeOpen] = useState(false);
+
+	if (oneTimeOpen) {
+		return (
+			<>
+				<OneTimeToggle
+					open
+					quantity={quantity}
+					onToggle={() => setOneTimeOpen(false)}
+				/>
+				{buyPanel}
 				<button
 					type="button"
-					onClick={() => setOneTimeOpen(open => !open)}
-					aria-expanded={oneTimeOpen}
-					className="border-border hover:bg-muted/50 flex items-center justify-between rounded-xl border px-5 py-4 text-left transition-colors duration-150"
+					onClick={() => setOneTimeOpen(false)}
+					className="text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 text-sm font-medium transition-colors duration-150"
 				>
-					<span className="flex items-center gap-2">
-						<span className="text-base font-medium">One-time purchase</span>
-						<span className="bg-brand-dark rounded-full px-2.5 py-1 text-sm font-semibold text-white tabular-nums">
-							{quantity} entries
-						</span>
-					</span>
-					{oneTimeOpen ? (
-						<MinusIcon className="text-muted-foreground size-5" />
-					) : (
-						<PlusIcon className="text-muted-foreground size-5" />
-					)}
+					<ArrowLeftIcon className="size-4" />
+					Back to subscription plans
 				</button>
-			) : null}
+			</>
+		);
+	}
 
-			{!isSubscriber && oneTimeOpen ? buyPanel : null}
-		</div>
+	return (
+		<>
+			<PlanPicker selectedSlug={selectedPlanSlug} onSelect={onSelectPlan} />
+			{selectedPlanSlug !== null ? (
+				<Button asChild size="lg" className="w-full">
+					<Link href="/pricing">Subscribe &amp; enter</Link>
+				</Button>
+			) : null}
+			<OneTimeToggle
+				open={false}
+				quantity={quantity}
+				onToggle={() => setOneTimeOpen(true)}
+			/>
+		</>
+	);
+}
+
+interface OneTimeToggleProps {
+	readonly open: boolean;
+	readonly quantity: number;
+	readonly onToggle: () => void;
+}
+
+/**
+ * One-time purchase toggle row — carries the selected entry count as a pill so
+ * it stays visible when the buy panel is collapsed, and flips its +/− glyph
+ * with the open state.
+ *
+ * @param props - Open state, current quantity, and the toggle handler
+ * @returns The toggle button
+ */
+function OneTimeToggle({ open, quantity, onToggle }: OneTimeToggleProps) {
+	return (
+		<button
+			type="button"
+			onClick={onToggle}
+			aria-expanded={open}
+			className="border-border hover:bg-muted/50 flex items-center justify-between rounded-xl border px-5 py-4 text-left transition-colors duration-150"
+		>
+			<span className="flex items-center gap-2">
+				<span className="text-base font-medium">One-time purchase</span>
+				<span className="bg-brand-dark rounded-full px-2.5 py-1 text-sm font-semibold text-white tabular-nums">
+					{quantity} entries
+				</span>
+			</span>
+			{open ? (
+				<MinusIcon className="text-muted-foreground size-5" />
+			) : (
+				<PlusIcon className="text-muted-foreground size-5" />
+			)}
+		</button>
 	);
 }
 
@@ -471,9 +563,11 @@ function PerEntryStat({
 					<span className={cn('text-sm line-through', captionClass)}>
 						{formatCurrency(price, currency)}
 					</span>
+					{/* Discounted price is the headline number when a subscription
+					    discount applies — sized up a step from the plain price. */}
 					<span
 						className={cn(
-							'font-clash-display text-xl font-semibold whitespace-nowrap tabular-nums',
+							'font-clash-display text-3xl font-semibold whitespace-nowrap tabular-nums',
 							accent ? accent.text : 'text-green-forest',
 						)}
 					>
@@ -730,29 +824,5 @@ function BasicRow({ isSelected, onSelect }: BasicRowProps) {
 			</div>
 			<SelectionPill isSelected={isSelected} />
 		</button>
-	);
-}
-
-interface SubscriberBannerProps {
-	readonly planName: string | null;
-	readonly discountPercent: number;
-}
-
-/** Shown instead of the plan picker when the viewer is already subscribed. */
-function SubscriberBanner({
-	planName,
-	discountPercent,
-}: SubscriberBannerProps) {
-	return (
-		<div className="bg-brand-mint/40 border-border flex flex-col gap-1 rounded-2xl border p-4">
-			<p className="text-sm font-semibold">
-				You&apos;re a {planName ?? 'subscriber'} member
-			</p>
-			<p className="text-muted-foreground text-xs">
-				{discountPercent > 0
-					? `${discountPercent}% off is already applied to every entry below.`
-					: 'Your subscriber benefits are applied to every entry below.'}
-			</p>
-		</div>
 	);
 }

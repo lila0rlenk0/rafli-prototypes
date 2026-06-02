@@ -40,17 +40,74 @@ interface BuyEntriesPanelProps {
 	readonly quantity: number;
 	/** Raises a new quantity from the chips/stepper up to the parent. */
 	readonly onQuantityChange: (quantity: number) => void;
+	/**
+	 * Tender the order checks out with. `cash` (default) shows currency totals,
+	 * the AMOE acknowledgment, and a gated Continue. `credits` reframes the
+	 * total + CTA in credits and skips the acknowledgment — a subscriber
+	 * spending granted credits has already accepted the terms.
+	 */
+	readonly tender?: 'cash' | 'credits';
+	/**
+	 * Whether to render the "More entries…" Access Pass / AMOE disclosure block.
+	 * Hidden for subscribers — there's nothing to upsell an already-subscribed
+	 * user. Defaults to shown (the guest one-time surface).
+	 */
+	readonly showDisclosure?: boolean;
+	/** Fired when the Continue CTA is pressed. */
+	readonly onContinue?: () => void;
+	/**
+	 * Upper bound on selectable entries. Credits mode passes the balance so the
+	 * user can't select more entries than they can fund. Defaults to unbounded.
+	 */
+	readonly maxQuantity?: number;
+}
+
+interface PerEntryCaptionInput {
+	readonly isCredits: boolean;
+	readonly hasDiscount: boolean;
+	readonly planName: string | null;
+	readonly effectiveUnitPrice: number;
+	readonly price: number;
+	readonly currency: string;
 }
 
 /**
- * "Add more entries" panel — the redesigned one-time entry surface from Figma.
- * Quick-pick chips + a quantity stepper drive a live total, with a subscriber
- * discount either applied (subscriber) or previewed as an upsell (guest), the
- * Access Pass / AMOE disclosure, a required 18+ acknowledgment, and the gated
- * Continue CTA.
+ * Builds the per-entry caption under the panel heading — "1 credit per entry"
+ * in credits mode, the discounted-with-plan line when a discount applies, else
+ * the plain retail price.
  *
- * @param props - Pricing, discount context, and the sweepstakes name
- * @returns The one-time "add more entries" entry panel
+ * @param input - Tender, discount context, and pricing
+ * @returns The caption string
+ */
+function buildPerEntryCaption({
+	isCredits,
+	hasDiscount,
+	planName,
+	effectiveUnitPrice,
+	price,
+	currency,
+}: PerEntryCaptionInput): string {
+	if (isCredits) return '1 credit per entry';
+	if (hasDiscount && planName !== null) {
+		return `${formatCurrency(effectiveUnitPrice, currency)} per entry with your ${planName} discount`;
+	}
+	return `${formatCurrency(price, currency)} per entry`;
+}
+
+/** Pluralises the credits unit for the given count. */
+function creditsLabel(quantity: number): string {
+	return `${quantity} ${quantity === 1 ? 'credit' : 'credits'}`;
+}
+
+/**
+ * "Add more entries" panel — the redesigned entry surface from Figma. Quick-pick
+ * chips + a quantity stepper drive a live total, checked out with cash (currency
+ * total, AMOE acknowledgment, gated Continue) or credits (credits total, no
+ * acknowledgment). The Access Pass / AMOE disclosure is optional so subscriber
+ * surfaces can drop it.
+ *
+ * @param props - Pricing, discount, tender, and the sweepstakes name
+ * @returns The "add more entries" entry panel
  */
 export function BuyEntriesPanel({
 	price,
@@ -61,9 +118,14 @@ export function BuyEntriesPanel({
 	sweepstakesName,
 	quantity,
 	onQuantityChange,
+	tender = 'cash',
+	showDisclosure = true,
+	onContinue,
+	maxQuantity,
 }: BuyEntriesPanelProps) {
 	const [isConfirmed, setIsConfirmed] = useState(false);
 
+	const isCredits = tender === 'credits';
 	const hasDiscount = discountPercent > 0;
 	const effectiveUnitPrice = price * ((100 - discountPercent) / 100);
 	// Subscribers pay the discounted unit price; guests see the full charge with
@@ -71,10 +133,29 @@ export function BuyEntriesPanel({
 	const total = (isSubscriber ? effectiveUnitPrice : price) * quantity;
 	const savings = (price - effectiveUnitPrice) * quantity;
 
-	const perEntryCaption =
-		hasDiscount && planName !== null
-			? `${formatCurrency(effectiveUnitPrice, currency)} per entry with your ${planName} discount`
-			: `${formatCurrency(price, currency)} per entry`;
+	const perEntryCaption = buildPerEntryCaption({
+		isCredits,
+		hasDiscount,
+		planName,
+		effectiveUnitPrice,
+		price,
+		currency,
+	});
+
+	// Credits check out 1:1 (1 credit = 1 entry); cash shows the currency total.
+	const totalLabel = isCredits
+		? creditsLabel(quantity)
+		: formatCurrency(total, currency);
+	const continueLabel = isCredits
+		? `Use ${creditsLabel(quantity)} & enter`
+		: 'Continue';
+	// Cash gates Continue on the 18+ acknowledgment; credits has no checkbox.
+	const isContinueDisabled = isCredits ? false : !isConfirmed;
+	// Savings caption is a cash upsell affordance — irrelevant when paying in credits.
+	const savingsLabel =
+		isCredits || !hasDiscount
+			? null
+			: buildSavingsLabel({ isSubscriber, savings, currency, planName });
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -90,41 +171,45 @@ export function BuyEntriesPanel({
 						value={value}
 						price={price}
 						currency={currency}
+						isCredits={isCredits}
 						isSelected={quantity === value}
+						isDisabled={maxQuantity !== undefined && value > maxQuantity}
 						onSelect={onQuantityChange}
 					/>
 				))}
 			</div>
 
-			<QuantityStepper quantity={quantity} onChange={onQuantityChange} />
+			<QuantityStepper
+				quantity={quantity}
+				maxQuantity={maxQuantity}
+				onChange={onQuantityChange}
+			/>
 
 			<div className="bg-border h-px" />
 
-			<TotalRow
-				total={total}
-				currency={currency}
-				savings={savings}
-				planName={planName}
-				isSubscriber={isSubscriber}
-				hasDiscount={hasDiscount}
-			/>
+			<TotalRow totalLabel={totalLabel} savingsLabel={savingsLabel} />
 
-			<Disclosure sweepstakesName={sweepstakesName} />
+			{showDisclosure ? <Disclosure sweepstakesName={sweepstakesName} /> : null}
 
-			<ConfirmCheckbox checked={isConfirmed} onChange={setIsConfirmed} />
+			{isCredits ? null : (
+				<ConfirmCheckbox checked={isConfirmed} onChange={setIsConfirmed} />
+			)}
 
 			<div className="flex flex-col gap-3">
 				<Button
 					type="button"
 					size="lg"
-					disabled={!isConfirmed}
+					disabled={isContinueDisabled}
+					onClick={onContinue}
 					className="w-full"
 				>
-					Continue
+					{continueLabel}
 				</Button>
-				<p className="text-muted-foreground text-center text-xs">
-					No purchase necessary. Free entry available — see rules.
-				</p>
+				{isCredits ? null : (
+					<p className="text-muted-foreground text-center text-xs">
+						No purchase necessary. Free entry available — see rules.
+					</p>
+				)}
 			</div>
 		</div>
 	);
@@ -134,25 +219,33 @@ interface QuickPickChipProps {
 	readonly value: number;
 	readonly price: number;
 	readonly currency: string;
+	readonly isCredits: boolean;
 	readonly isSelected: boolean;
+	readonly isDisabled: boolean;
 	readonly onSelect: (value: number) => void;
 }
 
-/** One preset-quantity chip — count, "entries" caption, and its full price. */
+/** One preset-quantity chip — count, "entries" caption, and its price / credits. */
 function QuickPickChip({
 	value,
 	price,
 	currency,
+	isCredits,
 	isSelected,
+	isDisabled,
 	onSelect,
 }: QuickPickChipProps) {
+	const priceLabel = isCredits
+		? `${value} ${value === 1 ? 'credit' : 'credits'}`
+		: formatCurrency(price * value, currency);
 	return (
 		<button
 			type="button"
 			aria-pressed={isSelected}
+			disabled={isDisabled}
 			onClick={() => onSelect(value)}
 			className={cn(
-				'flex h-20 flex-col items-center justify-center rounded-xl border text-center transition-colors duration-150',
+				'flex h-20 flex-col items-center justify-center rounded-xl border text-center transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40',
 				isSelected
 					? 'bg-brand-sky border-brand-dark border-2'
 					: 'border-border hover:bg-muted/50',
@@ -162,25 +255,30 @@ function QuickPickChip({
 			<span className="text-muted-foreground text-xs">
 				{value === 1 ? 'entry' : 'entries'}
 			</span>
-			<span className="text-xs font-semibold">
-				{formatCurrency(price * value, currency)}
-			</span>
+			<span className="text-xs font-semibold">{priceLabel}</span>
 		</button>
 	);
 }
 
 interface QuantityStepperProps {
 	readonly quantity: number;
+	readonly maxQuantity?: number;
 	readonly onChange: (quantity: number) => void;
 }
 
-/** Decrement / count / increment row — quantity floor is one entry. */
-function QuantityStepper({ quantity, onChange }: QuantityStepperProps) {
+/** Decrement / count / increment row — floor of one entry, optional ceiling. */
+function QuantityStepper({
+	quantity,
+	maxQuantity,
+	onChange,
+}: QuantityStepperProps) {
+	const isAtMax = maxQuantity !== undefined && quantity >= maxQuantity;
 	function handleDecrement() {
 		onChange(Math.max(1, quantity - 1));
 	}
 	function handleIncrement() {
-		onChange(quantity + 1);
+		const next = quantity + 1;
+		onChange(maxQuantity !== undefined ? Math.min(maxQuantity, next) : next);
 	}
 	return (
 		<div className="border-border flex items-center justify-between rounded-2xl border p-2">
@@ -199,8 +297,9 @@ function QuantityStepper({ quantity, onChange }: QuantityStepperProps) {
 			<button
 				type="button"
 				aria-label="Add one entry"
+				disabled={isAtMax}
 				onClick={handleIncrement}
-				className="bg-brand-dark flex size-9 items-center justify-center rounded-xl text-lg font-bold text-white"
+				className="bg-brand-dark flex size-9 items-center justify-center rounded-xl text-lg font-bold text-white disabled:opacity-40"
 			>
 				+
 			</button>
@@ -209,38 +308,19 @@ function QuantityStepper({ quantity, onChange }: QuantityStepperProps) {
 }
 
 interface TotalRowProps {
-	readonly total: number;
-	readonly currency: string;
-	readonly savings: number;
-	readonly planName: string | null;
-	readonly isSubscriber: boolean;
-	readonly hasDiscount: boolean;
+	readonly totalLabel: string;
+	readonly savingsLabel: string | null;
 }
 
-/** Total amount plus the discount note — applied for subscribers, previewed otherwise. */
-function TotalRow({
-	total,
-	currency,
-	savings,
-	planName,
-	isSubscriber,
-	hasDiscount,
-}: TotalRowProps) {
-	const savingsLabel = buildSavingsLabel({
-		isSubscriber,
-		savings,
-		currency,
-		planName,
-	});
+/** Total amount plus the optional discount note (cash upsell only). */
+function TotalRow({ totalLabel, savingsLabel }: TotalRowProps) {
 	return (
 		<div className="flex flex-col gap-1">
 			<div className="flex items-center justify-between">
 				<span className="text-muted-foreground text-sm font-medium">Total</span>
-				<span className="text-lg font-bold tabular-nums">
-					{formatCurrency(total, currency)}
-				</span>
+				<span className="text-lg font-bold tabular-nums">{totalLabel}</span>
 			</div>
-			{hasDiscount && savingsLabel !== null ? (
+			{savingsLabel !== null ? (
 				<p className="text-green-forest text-right text-xs">{savingsLabel}</p>
 			) : null}
 		</div>

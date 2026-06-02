@@ -72,6 +72,41 @@ interface RecentActivityProps {
 }
 
 /**
+ * Recent-activity body — the populated feed list, or the first-game empty CTA.
+ * Header-less so it drops into the desktop activity card or the mobile
+ * "Activity" tab without dragging its own heading along.
+ *
+ * @param state - Feed state to render
+ * @returns The activity feed body
+ */
+export function ActivityBody({ state = 'populated' }: RecentActivityProps) {
+	const empty = state === 'guest' ? EMPTY_COPY.guest : EMPTY_COPY.empty;
+
+	if (state === 'populated') {
+		return (
+			<ul className="mt-2 divide-y divide-black/5">
+				{ACTIVITY_ENTRIES.map(entry => (
+					<ActivityRow key={entry.title} entry={entry} />
+				))}
+			</ul>
+		);
+	}
+
+	return (
+		<div className="mt-6 flex flex-col items-center gap-3 py-8 text-center">
+			<span className="flex size-12 items-center justify-center rounded-full bg-black/5 text-2xl">
+				🎲
+			</span>
+			<p className="text-ink-900 text-body-md font-semibold">{empty.title}</p>
+			<p className="text-ink-500 text-body-sm max-w-xs">{empty.subtitle}</p>
+			<Button size="sm" className="mt-1">
+				{empty.cta}
+			</Button>
+		</div>
+	);
+}
+
+/**
  * Recent-activity feed — a header above the last five moves, each with a
  * coloured credit delta. The empty state swaps the list for a first-game CTA.
  *
@@ -79,8 +114,6 @@ interface RecentActivityProps {
  * @returns The activity card
  */
 export function RecentActivity({ state = 'populated' }: RecentActivityProps) {
-	const empty = state === 'guest' ? EMPTY_COPY.guest : EMPTY_COPY.empty;
-
 	return (
 		<section className="flex flex-col rounded-2xl border border-black/10 bg-white p-5 sm:p-6">
 			<div className="flex flex-col gap-1">
@@ -90,26 +123,7 @@ export function RecentActivity({ state = 'populated' }: RecentActivityProps) {
 				<p className="text-ink-500 text-body-sm">{ACTIVITY_HEADER.subtitle}</p>
 			</div>
 
-			{state === 'populated' ? (
-				<ul className="mt-2 divide-y divide-black/5">
-					{ACTIVITY_ENTRIES.map(entry => (
-						<ActivityRow key={entry.title} entry={entry} />
-					))}
-				</ul>
-			) : (
-				<div className="mt-6 flex flex-col items-center gap-3 py-8 text-center">
-					<span className="flex size-12 items-center justify-center rounded-full bg-black/5 text-2xl">
-						🎲
-					</span>
-					<p className="text-ink-900 text-body-md font-semibold">
-						{empty.title}
-					</p>
-					<p className="text-ink-500 text-body-sm max-w-xs">{empty.subtitle}</p>
-					<Button size="sm" className="mt-1">
-						{empty.cta}
-					</Button>
-				</div>
-			)}
+			<ActivityBody state={state} />
 		</section>
 	);
 }

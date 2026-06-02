@@ -13,10 +13,12 @@ export const MOCK_STATE_COOKIE = 'rafli-mock-state';
 export const MOCK_STATES = [
 	'guest',
 	'none',
-	'active',
+	'basic_credits',
+	'basic_no_credits',
+	'starter_no_credits',
+	'pro_credits',
+	'pro_no_credits',
 	'past_due',
-	'cancelled',
-	'expired',
 ] as const;
 
 export type MockState = (typeof MOCK_STATES)[number];
@@ -25,8 +27,10 @@ export type MockState = (typeof MOCK_STATES)[number];
 export const MOCK_STATE_LABELS: Readonly<Record<MockState, string>> = {
 	guest: 'Guest (logged out)',
 	none: 'Logged in · no subscription',
-	active: 'Subscription · active',
-	past_due: 'Subscription · past due',
-	cancelled: 'Subscription · cancelled',
-	expired: 'Subscription · expired',
+	basic_credits: 'Sub · Basic · has credits',
+	basic_no_credits: 'Sub · Basic · no credits',
+	starter_no_credits: 'Sub · Starter · no credits',
+	pro_credits: 'Sub · Pro · has credits',
+	pro_no_credits: 'Sub · Pro · no credits',
+	past_due: 'Sub · past due',
 };

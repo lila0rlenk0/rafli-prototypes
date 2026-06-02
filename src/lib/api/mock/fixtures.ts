@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { AuthSession, AuthUser } from '@/types/auth';
 import type { Category } from '@/types/category';
+import type { CreditBalanceResponse } from '@/types/credits';
 import type { Raffle } from '@/types/raffle';
 import type {
 	MySubscriptionResponse,
@@ -9,6 +10,8 @@ import type {
 } from '@/types/subscription';
 import type { MeResponse } from '@/types/user';
 import type { RecentWinner } from '@/types/winning';
+
+import type { MockSubscriptionTier } from './state';
 
 /**
  * Local-preview fixture data, used only when `MOCK_DATA=true` (see
@@ -480,9 +483,52 @@ type MockSubscription = NonNullable<MySubscriptionResponse['subscription']>;
 type MockPlan = MockSubscription['plan'];
 type MockCapabilities = NonNullable<MySubscriptionResponse['capabilities']>;
 
+// Basic-tier plan — 10% discount, no free weekly entries.
+const MOCK_PLAN_BASIC: MockPlan = {
+	id: '0190a1b2-c3d4-7e5f-8a1b-2c3d4e5f6a68',
+	name: 'Basic',
+	monthlyPriceAmount: '10.0000',
+	creditAmount: '11.0000',
+	discountPercent: 10,
+	availableProviders: ['stripe', 'fanbasis'] as const,
+	metadata: {
+		badgeText: null,
+		highlightLabel: null,
+		isHighlighted: false,
+		sortOrder: 0,
+		tagline: 'For casual players',
+		features: [
+			{ text: '10% off every ticket', tag: null },
+			{ text: 'Content library 10k+', tag: null },
+		],
+	},
+};
+
+// Starter-tier plan — 15% discount, 5 free weekly entries.
+const MOCK_PLAN_STARTER: MockPlan = {
+	id: '0190a1b2-c3d4-7e5f-8a1b-2c3d4e5f6a69',
+	name: 'Starter',
+	monthlyPriceAmount: '25.0000',
+	creditAmount: '30.0000',
+	discountPercent: 15,
+	availableProviders: ['stripe', 'fanbasis'] as const,
+	metadata: {
+		badgeText: null,
+		highlightLabel: null,
+		isHighlighted: false,
+		sortOrder: 1,
+		tagline: 'For regular players',
+		features: [
+			{ text: '5 free weekly entries', tag: 'NEW' },
+			{ text: '15% off every ticket', tag: null },
+			{ text: 'Content library 10k+', tag: null },
+		],
+	},
+};
+
 // Pro-tier plan embedded in the subscription envelope — drives the 20%
 // subscriber discount shown on the ticket purchase card.
-const MOCK_PLAN: MockPlan = {
+const MOCK_PLAN_PRO: MockPlan = {
 	id: '0190a1b2-c3d4-7e5f-8a1b-2c3d4e5f6a70',
 	name: 'Pro',
 	monthlyPriceAmount: '100.0000',
@@ -503,6 +549,13 @@ const MOCK_PLAN: MockPlan = {
 	},
 };
 
+/** Tier → embedded plan, so the envelope reflects the previewed mock state. */
+const MOCK_PLANS_BY_TIER: Readonly<Record<MockSubscriptionTier, MockPlan>> = {
+	basic: MOCK_PLAN_BASIC,
+	starter: MOCK_PLAN_STARTER,
+	pro: MOCK_PLAN_PRO,
+};
+
 const MOCK_CAPABILITIES: MockCapabilities = {
 	canCancel: true,
 	canChangePlan: true,
@@ -513,15 +566,19 @@ const MOCK_CAPABILITIES: MockCapabilities = {
 };
 
 /**
- * Builds the `GET /me/subscription` envelope for a given status. A null status
- * (the "logged in, never subscribed" state) returns the empty envelope the
- * backend sends — `subscription`, `capabilities`, and `lockedProvider` all null.
+ * Builds the `GET /me/subscription` envelope for a given status + tier. A null
+ * status (the "logged in, never subscribed" state) returns the empty envelope
+ * the backend sends — `subscription`, `capabilities`, and `lockedProvider` all
+ * null. The tier picks which plan (Basic / Starter / Pro) the envelope embeds,
+ * defaulting to Pro for any status without an explicit tier.
  *
  * @param status - Subscription status to simulate, or null for no subscription
+ * @param tier - Plan tier to embed (defaults to Pro)
  * @returns A `MySubscriptionResponse` matching `mySubscriptionResponseSchema`
  */
 export function buildMockSubscriptionEnvelope(
 	status: SubscriptionStatus | null,
+	tier: MockSubscriptionTier | null = 'pro',
 ): MySubscriptionResponse {
 	if (status === null) {
 		return { subscription: null, capabilities: null, lockedProvider: null };
@@ -530,7 +587,7 @@ export function buildMockSubscriptionEnvelope(
 	return {
 		subscription: {
 			id: '0190a1b2-c3d4-7e5f-9b2c-2c3d4e5f6a71',
-			plan: MOCK_PLAN,
+			plan: MOCK_PLANS_BY_TIER[tier ?? 'pro'],
 			status,
 			currentPeriodEnd: SUB_PERIOD_END_ISO,
 			cancelledAt: status === 'cancelled' ? NOW_ISO : null,
@@ -539,5 +596,23 @@ export function buildMockSubscriptionEnvelope(
 		},
 		capabilities: MOCK_CAPABILITIES,
 		lockedProvider: 'stripe',
+	};
+}
+
+/**
+ * Builds the `GET /me/credits` balance envelope for a given available amount.
+ * `totalGranted` / `totalSpent` are cosmetic in preview, derived so the numbers
+ * read coherently (granted = available, nothing spent yet).
+ *
+ * @param availableAmount - Decimal credit balance string (1 credit = $1)
+ * @returns A `CreditBalanceResponse` matching `creditBalanceResponseSchema`
+ */
+export function buildMockCreditBalance(
+	availableAmount: string,
+): CreditBalanceResponse {
+	return {
+		availableAmount,
+		totalGranted: availableAmount,
+		totalSpent: '0.0000',
 	};
 }

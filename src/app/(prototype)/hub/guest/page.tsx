@@ -1,18 +1,16 @@
 import { BgDecor } from '@/components/hub/bg-decor';
 import { CreditsBadge } from '@/components/hub/credits-badge';
-import { GameCard } from '@/components/hub/game-card';
+import { FloatingBlocks } from '@/components/hub/floating-blocks';
 import {
-	HUB_GAMES,
 	HUB_HEADER_GUEST,
 	MOBILE_GAMES_INTRO,
 } from '@/components/hub/hub-content';
+import { HubDetails } from '@/components/hub/hub-details';
+import { HubGames } from '@/components/hub/hub-games';
 import { HubMobileTabbar } from '@/components/hub/hub-mobile-tabbar';
 import { HubNav } from '@/components/hub/hub-nav';
 import { HubSidebar } from '@/components/hub/hub-sidebar';
 import { PageHeader } from '@/components/hub/page-header';
-import { PerksCard } from '@/components/hub/perks-card';
-import { RecentActivity } from '@/components/hub/recent-activity';
-import { Starfield } from '@/components/hub/starfield';
 import { WeeklyStreak } from '@/components/hub/weekly-streak';
 import { WinnersTicker } from '@/components/hub/winners-ticker';
 
@@ -26,13 +24,16 @@ import { WinnersTicker } from '@/components/hub/winners-ticker';
  * a "Choose a plan" chooser, and credits / activity / perks read as locked
  * empty states. Pure visualization — no auth, no data, no hooks.
  *
+ * Shares the mobile-compact structure with `/hub`: games tab on mobile
+ * (`HubGames`) and the account areas fold into one tabbed card (`HubDetails`).
+ *
  * @returns The guest subscription hub page
  */
 export default function HubGuestPage() {
 	return (
 		<>
 			<BgDecor />
-			<Starfield />
+			<FloatingBlocks />
 			<HubNav mode="guest" />
 			<WinnersTicker />
 
@@ -60,11 +61,7 @@ export default function HubGuestPage() {
 								subtitle={MOBILE_GAMES_INTRO.subtitle}
 							/>
 						</div>
-						<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-							{HUB_GAMES.map(game => (
-								<GameCard key={game.id} game={game} state="guest" />
-							))}
-						</div>
+						<HubGames mode="guest" />
 					</section>
 
 					{/* Weekly streak — desktop slot 3, mobile slot 2 (above games) */}
@@ -72,11 +69,10 @@ export default function HubGuestPage() {
 						<WeeklyStreak state="guest" />
 					</div>
 
-					{/* Empty activity + merged "good stuff" card (choose plan +
-					    locked credits + locked perks) */}
-					<div className="order-4 grid gap-6 lg:grid-cols-2">
-						<RecentActivity state="guest" />
-						<PerksCard mode="guest" />
+					{/* Account — locked plan/credits/perks + empty activity. Mobile
+					    folds these into one tabbed card; desktop keeps them split. */}
+					<div className="order-4">
+						<HubDetails mode="guest" />
 					</div>
 				</div>
 			</div>

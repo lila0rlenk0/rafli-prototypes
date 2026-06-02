@@ -46,21 +46,25 @@ const NO_SUBSCRIPTION = {
 	discountPercent: 0,
 	isActive: false,
 	planName: null,
+	isPastDue: false,
 } as const;
 const TEN_PERCENT_SUBSCRIPTION = {
 	discountPercent: 10,
 	isActive: true,
 	planName: 'Starter',
+	isPastDue: false,
 } as const;
 const TWENTY_PERCENT_SUBSCRIPTION = {
 	discountPercent: 20,
 	isActive: true,
 	planName: 'Premium',
+	isPastDue: false,
 } as const;
 const TWENTY_FIVE_PERCENT_SUBSCRIPTION = {
 	discountPercent: 25,
 	isActive: true,
 	planName: 'Premium',
+	isPastDue: false,
 } as const;
 
 describe('calculateOrderTotal', () => {
@@ -136,6 +140,7 @@ describe('calculateOrderTotal', () => {
 					discountPercent: 20,
 					isActive: false,
 					planName: null,
+					isPastDue: false,
 				},
 			});
 
@@ -352,6 +357,7 @@ describe('calculateOrderTotal', () => {
 					discountPercent: 15,
 					isActive: true,
 					planName: 'Basic',
+					isPastDue: false,
 				},
 			});
 			expect(result.effectiveUnitPrice).toBe(8.5);

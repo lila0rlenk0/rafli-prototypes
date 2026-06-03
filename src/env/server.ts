@@ -27,6 +27,13 @@ export const env = createEnv({
 		MIXPANEL_TOKEN: z.string(),
 		// Optional — Sentry disabled when unset (local dev)
 		SENTRY_DSN: z.string().url().optional(),
+		// Local-only preview switch — when "true", the API clients serve
+		// fixture data instead of calling the backend (see `@/lib/api/mock`).
+		// Optional string coerced to a strict boolean; never set in production.
+		MOCK_DATA: z
+			.string()
+			.optional()
+			.transform(value => value === 'true'),
 	},
 	// Required by @t3-oss/env-nextjs — literal process.env references for static analysis
 	runtimeEnv: {
@@ -36,6 +43,7 @@ export const env = createEnv({
 		S2S_SECRET: process.env.S2S_SECRET,
 		MIXPANEL_TOKEN: process.env.MIXPANEL_TOKEN,
 		SENTRY_DSN: process.env.SENTRY_DSN,
+		MOCK_DATA: process.env.MOCK_DATA,
 	},
 	// CI builds skip validation — env vars may not be present during type-checking
 	skipValidation: process.env.CI === 'true',

@@ -472,6 +472,13 @@ export interface RaffleSubscriptionContext {
 	readonly discountPercent: number;
 	readonly isActive: boolean;
 	readonly planName: string | null;
+	/**
+	 * True when the subscription is in `past_due` dunning (payment failed,
+	 * benefits retained until the period lapses). Drives the red "renew"
+	 * notice in the raffle entry block, swapped in for the green subscriber
+	 * banner — distinct from a healthy `active` subscription.
+	 */
+	readonly isPastDue: boolean;
 }
 
 /** Sentinel used for guests / fetch failures / expired subscriptions. */
@@ -479,4 +486,5 @@ export const INACTIVE_SUBSCRIPTION_CONTEXT: RaffleSubscriptionContext = {
 	discountPercent: 0,
 	isActive: false,
 	planName: null,
+	isPastDue: false,
 };

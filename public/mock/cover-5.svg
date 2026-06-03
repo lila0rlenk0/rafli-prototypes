@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Tesla prize">
+  <defs>
+    <linearGradient id="g5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff5c7a"/>
+      <stop offset="1" stop-color="#a01030"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#g5)"/>
+  <circle cx="1300" cy="200" r="250" fill="#ffffff" opacity="0.08"/>
+  <circle cx="280" cy="740" r="210" fill="#ffffff" opacity="0.08"/>
+  <text x="80" y="470" font-family="Geist, Arial, sans-serif" font-size="92" font-weight="700" fill="#ffffff">Tesla Model 3</text>
+  <text x="80" y="560" font-family="Geist, Arial, sans-serif" font-size="44" fill="#ffffff" opacity="0.85">Long Range · Pearl White</text>
+</svg>

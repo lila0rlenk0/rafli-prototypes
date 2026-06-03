@@ -8,6 +8,8 @@ import Script from 'next/script';
 import { Suspense } from 'react';
 
 import { Toaster } from '@/components/ui/sonner';
+import { MockStatePanel } from '@/components/ui-custom/mock-state-panel';
+import { env } from '@/env/server';
 
 import './globals.css';
 import { ProvidersClient } from './providers-client';
@@ -121,6 +123,9 @@ export default function RootLayout({
 						<Toaster />
 					</ProvidersClient>
 				</Suspense>
+				{/* Dev-only mock preview toggle — never rendered in production
+				    because the flag is unset there (see `@/lib/api/mock`). */}
+				{env.MOCK_DATA ? <MockStatePanel /> : null}
 				{/* Vercel Web Analytics — injects the tracking script; route-aware
 				    via App Router integration, no cookies, privacy-friendly. Sits
 				    outside <Suspense> so it's not gated by the provider tree. */}

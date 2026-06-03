@@ -126,7 +126,8 @@ export function OutOfCreditsModal({
 					</DialogTitle>
 					<DialogDescription className="text-muted-foreground text-sm">
 						You don&apos;t have enough credits for {quantity} {entryWord}.
-						Upgrade to <span className="text-foreground font-semibold">
+						Upgrade to{' '}
+						<span className="text-foreground font-semibold">
 							{nextTier.name}
 						</span>{' '}
 						for a bigger monthly credit drop and a steeper discount on every
@@ -142,7 +143,9 @@ export function OutOfCreditsModal({
 						</span>
 						<span className="text-brand-dark text-2xl font-bold">
 							${nextTier.chargeUsd}
-							<span className="text-brand-dark/70 text-sm font-normal">/mo</span>
+							<span className="text-brand-dark/70 text-sm font-normal">
+								/mo
+							</span>
 						</span>
 					</div>
 

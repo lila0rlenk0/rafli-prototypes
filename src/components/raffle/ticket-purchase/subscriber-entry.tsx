@@ -424,8 +424,47 @@ function SubscriberBanner({
 				<Coins className="size-4 shrink-0" aria-hidden />
 				{creditsAvailable} {creditsAvailable === 1 ? 'credit' : 'credits'}{' '}
 				available
+				<CreditsInfoPopover />
 			</p>
 		</div>
+	);
+}
+
+/**
+ * Info affordance beside the credit balance — a popover (tap-friendly, unlike a
+ * hover tooltip) explaining the ways to keep entering: upgrade the tier for a
+ * bigger discounted credit drop, or buy entries at the normal price.
+ *
+ * @returns The credits-help popover
+ */
+function CreditsInfoPopover() {
+	return (
+		<Popover>
+			<PopoverTrigger asChild>
+				<button
+					type="button"
+					aria-label="How credits work"
+					className="text-brand-dark/60 hover:text-brand-dark transition-colors duration-150"
+				>
+					<InfoIcon className="size-4 shrink-0" />
+				</button>
+			</PopoverTrigger>
+			<PopoverContent align="start" className="flex w-72 flex-col gap-2">
+				<p className="text-sm font-semibold">Want more credits?</p>
+				<p className="text-muted-foreground text-xs/relaxed">
+					Credits are your plan&apos;s discounted entries. To get more,{' '}
+					<span className="text-foreground font-medium">upgrade your tier</span>{' '}
+					for a bigger monthly credit drop and a steeper discount — or buy
+					entries any time at the normal price.
+				</p>
+				<Link
+					href="/pricing"
+					className="text-primary text-xs font-semibold hover:underline"
+				>
+					Upgrade your tier →
+				</Link>
+			</PopoverContent>
+		</Popover>
 	);
 }
 

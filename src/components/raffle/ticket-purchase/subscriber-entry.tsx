@@ -4,10 +4,12 @@ import {
 	Bitcoin,
 	Coins,
 	CreditCard,
+	InfoIcon,
 	Sparkles,
 	Star,
 	TriangleAlertIcon,
 } from 'lucide-react';
+import Link from 'next/link';
 import { type ComponentType, useState } from 'react';
 
 import { useOpenBillingPortal } from '@/components/pricing/subscribe/use-open-billing-portal';
@@ -18,6 +20,11 @@ import {
 	OutOfCreditsModal,
 } from '@/components/raffle/ticket-purchase/out-of-credits-modal';
 import { Button } from '@/components/ui/button';
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/lib/class-names';
 
 interface SubscriberEntryProps {

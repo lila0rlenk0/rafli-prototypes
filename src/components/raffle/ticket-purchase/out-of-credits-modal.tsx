@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 import {
@@ -47,6 +47,38 @@ export function getNextTierUp(planName: string | null): SubscribePlan | null {
 	return tier ? NEXT_TIER_BY_PLAN[tier] : null;
 }
 
+interface PlanPerk {
+	readonly text: string;
+	/** Highlight chip (SAVE / NEW / Only PROs), or null for a plain bullet. */
+	readonly tag: string | null;
+}
+
+/**
+ * Punchy perk lines for the upsell card, synthesised from the plan config so
+ * the copy mirrors the pricing page without re-typing it. Order leads with the
+ * strongest levers (discount + monthly credits), then the tier extras.
+ *
+ * @param plan - The plan to describe
+ * @returns The perk lines to render with check icons
+ */
+function planPerks(plan: SubscribePlan): readonly PlanPerk[] {
+	const perks: PlanPerk[] = [
+		{ text: `${plan.savingsPercent}% off every entry`, tag: 'SAVE' },
+		{ text: `$${plan.payoutUsd} in credits every month`, tag: null },
+	];
+	if (plan.weeklyFreeEntries > 0) {
+		perks.push({
+			text: `${plan.weeklyFreeEntries} free entries every week`,
+			tag: 'NEW',
+		});
+	}
+	perks.push({
+		text: 'FREE access to the 10k+ content library',
+		tag: null,
+	});
+	return perks;
+}
+
 interface OutOfCreditsModalProps {
 	readonly open: boolean;
 	readonly onOpenChange: (open: boolean) => void;
@@ -80,42 +112,47 @@ export function OutOfCreditsModal({
 	onDecline,
 }: OutOfCreditsModalProps) {
 	const entryWord = quantity === 1 ? 'entry' : 'entries';
+	const perks = planPerks(nextTier);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="border-ink-alpha sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2 text-xl font-bold">
-						<Sparkles className="text-brand-dark size-5" aria-hidden />
-						You&apos;re out of credits
+			<DialogContent className="border-ink-alpha gap-5 sm:max-w-md">
+				<DialogHeader className="gap-2">
+					<span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
+						<Sparkles className="text-brand-dark size-4" aria-hidden />
+						Out of credits
+					</span>
+					<DialogTitle className="font-clash-display text-3xl/none font-semibold tracking-tight">
+						Go {nextTier.name} &amp; never run dry
 					</DialogTitle>
 					<DialogDescription className="text-muted-foreground text-sm">
 						You don&apos;t have enough credits for {quantity} {entryWord}.
-						Upgrade to <span className="font-semibold">{nextTier.name}</span> to
-						get{' '}
-						<span className="font-semibold">
-							${nextTier.payoutUsd} in credits
+						Upgrade to <span className="text-foreground font-semibold">
+							{nextTier.name}
 						</span>{' '}
-						every month and {nextTier.savingsPercent}% off every entry.
+						for a bigger monthly credit drop and a steeper discount on every
+						entry.
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="bg-brand-yellow border-brand-dark flex flex-col gap-1 rounded-2xl border p-4">
-					<p className="text-brand-dark flex items-baseline justify-between text-sm font-semibold">
-						<span>{nextTier.name}</span>
-						<span>
-							${nextTier.chargeUsd}
-							<span className="text-brand-dark/70 text-xs font-normal">
-								/mo
-							</span>
+				{/* Highlighted upsell card — bright yellow per the pricing tier hue. */}
+				<div className="bg-brand-yellow border-brand-dark flex flex-col gap-4 rounded-2xl border p-5">
+					<div className="flex items-baseline justify-between">
+						<span className="text-brand-dark text-lg font-bold">
+							{nextTier.name}
 						</span>
-					</p>
-					<p className="text-brand-dark/80 text-xs">
-						${nextTier.payoutUsd} credits/mo · {nextTier.savingsPercent}% off
-						every entry
-						{nextTier.weeklyFreeEntries > 0
-							? ` · ${nextTier.weeklyFreeEntries} free entries / week`
-							: ''}
-					</p>
+						<span className="text-brand-dark text-2xl font-bold">
+							${nextTier.chargeUsd}
+							<span className="text-brand-dark/70 text-sm font-normal">/mo</span>
+						</span>
+					</div>
+
+					<div className="bg-brand-dark/15 h-px" />
+
+					<ul className="flex flex-col gap-2.5">
+						{perks.map(perk => (
+							<PerkRow key={perk.text} perk={perk} />
+						))}
+					</ul>
 				</div>
 
 				<DialogFooter className="flex flex-col gap-2 sm:flex-col">
@@ -132,10 +169,29 @@ export function OutOfCreditsModal({
 						onClick={onDecline}
 						className="w-full"
 					>
-						Continue with one-time purchase
+						Pay the normal price this time
 					</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+interface PerkRowProps {
+	readonly perk: PlanPerk;
+}
+
+/** One perk line — a check, the copy, and an optional highlight chip. */
+function PerkRow({ perk }: PerkRowProps) {
+	return (
+		<li className="text-brand-dark flex items-center gap-2 text-sm font-medium">
+			<Check className="size-4 shrink-0" aria-hidden />
+			<span>{perk.text}</span>
+			{perk.tag !== null ? (
+				<span className="bg-brand-dark text-brand-yellow rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide uppercase">
+					{perk.tag}
+				</span>
+			) : null}
+		</li>
 	);
 }
